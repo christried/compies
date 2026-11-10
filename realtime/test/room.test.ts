@@ -207,7 +207,7 @@ describe('sending to named Users (#227)', () => {
 
   it('sends the named messages in order', async () => {
     const ada = await join('event-1', { sub: 'ada' })
-    const messages = [changed(), envelope({ type: 'member.joined', userId: 'ada' }, Date.now())]
+    const messages = [changed(), envelope({ type: 'veto.cast', drawId: 'draw-1', team: 1 }, Date.now())]
 
     await publishTo('event-1', ['ada'], messages)
     await settle()

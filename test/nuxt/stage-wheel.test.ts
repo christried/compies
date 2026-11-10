@@ -6,7 +6,7 @@ import StageWheel from '~/components/StageWheel.vue'
 import type { EventSettings } from '~~/shared/settings'
 import type { EventView } from '~~/shared/event'
 import type { SpinView, WheelView } from '~~/shared/stage'
-import { VETO_WINDOW_MS } from '~~/shared/rounds'
+import { WINDOW_MS } from '../draw-offsets'
 import { memberView, SANNE, view } from './event-page'
 
 // The wheel block of the Event page (#257, B4): the Lucky Wheel, and the Veto window while a draw has one. Both read the same
@@ -33,7 +33,7 @@ function wheelOf(draw: boolean): WheelView {
     spin: draw ? spin : null,
     vetoes: {
       left: [2, 2], own: null, revealed: null,
-      draw: draw ? { drawId: 'd1', kind: 'spin', stopAt: iso(STOP), vetoEndsAt: iso(STOP + VETO_WINDOW_MS), game: halo } : null,
+      draw: draw ? { drawId: 'd1', kind: 'spin', stopAt: iso(STOP), vetoEndsAt: iso(STOP + WINDOW_MS), game: halo } : null,
     },
   }
 }

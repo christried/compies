@@ -4,13 +4,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import VetoWindow from '~/components/VetoWindow.vue'
 import type { BoardTeam } from '~~/shared/event'
 import type { SpinView, VetoDrawView, VetoView, WheelView } from '~~/shared/stage'
-import { VETO_WINDOW_MS } from '~~/shared/rounds'
+import { WINDOW_MS } from '../draw-offsets'
 
 // The Veto window on the stage (#231, 02-components § VetoWindow): the time left from the server's clock, every Party's Vetoes left
 // before the end, and at the end the tiles with the Parties that vetoed (never the Player, #355), then what happens to the game.
 
 const STOP = Date.parse('2090-10-30T20:00:10.000Z')
-const END = STOP + VETO_WINDOW_MS
+const END = STOP + WINDOW_MS
 const iso = (ms: number) => new Date(ms).toISOString()
 const halo = { id: 'g1', name: 'Halo', imageUrl: null, youtubeId: null, clipStart: 0, clipLength: 30, playersMin: 2, playersMax: 4, suitabilities: [], price: null }
 const teams = [{ position: 1, name: null, frozen: false }, { position: 2, name: null, frozen: false }]
@@ -61,6 +61,14 @@ describe('the Veto window', () => {
     expect(tiles[1]).toContain('Noch 1 Veto')
     // The hold button is the VetoBar's: the inline window shows the time, the game and the Parties only (F4).
     expect(page!.find('button').exists()).toBe(false)
+  })
+
+  it('draws the bar from the Draw\'s own window, not from a 60 s constant: 90 s into a 150 s window it stands at 0.4', async () => {
+    serverMs = STOP + 90_000
+    await mount(wheelOf({ left: [2, 1], own: null, revealed: null }, { vetoEndsAt: iso(STOP + 150_000) }))
+
+    expect(page!.get('[role="timer"]').text()).toBe('Noch 60 Sekunden')
+    expect(page!.get('.origin-left.bg-hot').attributes('style')).toContain('scaleX(0.4)')
   })
 
   it('says "Noch 1 Sekunde" for the last second (F9)', async () => {

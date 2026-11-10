@@ -1,28 +1,12 @@
 import { eq } from 'drizzle-orm'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
-import getActivity from '../../server/api/e/[slug]/activity.get'
-import confirmDate from '../../server/api/e/[slug]/confirm.post'
-import finishEvent from '../../server/api/e/[slug]/finish.post'
-import moveMember from '../../server/api/e/[slug]/move.post'
-import rotateInvite from '../../server/api/e/[slug]/rotate.post'
-import changeSettings from '../../server/api/e/[slug]/settings.patch'
-import setCountdown from '../../server/api/e/[slug]/countdown/index.put'
-import putResult from '../../server/api/e/[slug]/rounds/[id]/result.put'
-import setGame from '../../server/api/e/[slug]/rounds/index.post'
-import endSession from '../../server/api/e/[slug]/sessions/end.post'
-import startSession from '../../server/api/e/[slug]/sessions/start.post'
-import createEvent from '../../server/api/e/index.post'
-import listHome from '../../server/api/e/index.get'
-import readEvent from '../../server/api/e/[slug].get'
-import joinInvite from '../../server/api/invite/[invite].post'
-import { activity, countdowns, eventMembers, eventPoolGames, events, games, pollSlots, roundPlaces, rounds, sessions, users } from '../../server/db/schema'
+import { activity, countdowns, events, sessions } from '../../server/db/schema'
 import { testClock } from '../../server/utils/clock'
 import { memoryRoomNotifier } from '../../server/utils/room-notifier'
-import type { ActivityPage } from '../../shared/activity'
-import type { Place } from '../../shared/board'
-import type { EventView } from '../../shared/event'
+import { createTestApp, errorOf, sendVia, type TestRequest } from './app'
 import { TEST_SETTINGS } from './fixtures'
-import { createTestDb, createTestServer } from './harness'
+import { createTestDb, resetDatabase } from './harness'
+import { readEvent, readFeed, startRunningEvent, type Rig } from './scenario'
 import { setAllowlist, signIn, stubAuthEnv } from './sign-in'
 
 // Finishing the Event (#277, spec #272): `POST /api/e/:slug/finish` through the HTTP API with the in-memory room. What the finish stores
@@ -45,29 +29,15 @@ const T0 = '2090-10-30T10:00:00.000Z'
 
 describe('Finishing the Event', () => {
   let testDb: Awaited<ReturnType<typeof createTestDb>>
-  let request: ReturnType<typeof createTestServer>
+  let request: TestRequest
+  let rig: Rig
   const notifier = memoryRoomNotifier()
   const clock = testClock(T0)
 
   beforeAll(async () => {
     testDb = await createTestDb()
-    request = createTestServer(testDb.db, {
-      'POST /api/e': createEvent,
-      'GET /api/e': listHome,
-      'GET /api/e/:slug': readEvent,
-      'GET /api/e/:slug/activity': getActivity,
-      'POST /api/e/:slug/confirm': confirmDate,
-      'POST /api/e/:slug/move': moveMember,
-      'POST /api/e/:slug/sessions/start': startSession,
-      'POST /api/e/:slug/sessions/end': endSession,
-      'POST /api/e/:slug/rounds': setGame,
-      'PUT /api/e/:slug/rounds/:id/result': putResult,
-      'PUT /api/e/:slug/countdown': setCountdown,
-      'PATCH /api/e/:slug/settings': changeSettings,
-      'POST /api/e/:slug/finish': finishEvent,
-      'POST /api/e/:slug/rotate': rotateInvite,
-      'POST /api/invite/:invite': joinInvite,
-    }, { roomNotifier: notifier, clock })
+    request = createTestApp(testDb.db, { roomNotifier: notifier, clock })
+    rig = { request, db: testDb.db, clock, notifier }
   })
 
   afterAll(async () => {
@@ -78,86 +48,52 @@ describe('Finishing the Event', () => {
     stubAuthEnv()
     clock.set(T0)
     notifier.clear()
-    await testDb.db.delete(countdowns)
-    await testDb.db.delete(roundPlaces)
-    await testDb.db.delete(rounds)
-    await testDb.db.delete(sessions)
-    await testDb.db.delete(eventPoolGames)
-    await testDb.db.delete(activity)
-    await testDb.db.delete(pollSlots)
-    await testDb.db.delete(eventMembers)
-    await testDb.db.delete(events)
-    await testDb.db.delete(games)
-    await testDb.db.delete(users)
+    await resetDatabase(testDb.db)
   })
 
   afterEach(() => {
     vi.unstubAllEnvs()
   })
 
-  function send(method: string, path: string, cookie: string | undefined, body?: unknown) {
-    return request(path, {
-      method,
-      headers: { ...(body === undefined ? {} : { 'content-type': 'application/json' }), ...(cookie ? { cookie } : {}) },
-      body: body === undefined ? undefined : JSON.stringify(body),
-    })
-  }
-
-  async function errorOf(response: Response) {
-    return { status: response.status, code: (await response.json() as { statusMessage: string }).statusMessage }
-  }
+  const send = sendVia(() => request)
 
   /**
    * A running Event: `teams` Parties (2: two Players in each of teams 1 and 2; 3: one Player in each of teams 1 to 3), `sessions` Sessions,
    * of which the first `confirmed` Slots have a Date. The first Session is started. Games: Halo and Kart in the Game pool, Schach in the library.
    */
   async function running({ teams = 2, gameCount = 2, sessions: sessionCount = 2, confirmed = sessionCount }: { teams?: 2 | 3, gameCount?: number, sessions?: number, confirmed?: number } = {}) {
-    setAllowlist({ hosts: 'discord:1' })
-    const hostCookie = (await signIn(testDb.db, host)).cookie
-    const cookies: Partial<Record<keyof typeof players, string>> = {}
-    for (const [key, profile] of Object.entries(players)) cookies[key as keyof typeof players] = (await signIn(testDb.db, profile)).cookie
-    const pointsTable = { preset: 'linear' as const, values: teams === 2 ? [1, 0] : [2, 1, 0] }
-    const settings = { ...TEST_SETTINGS, teamCount: teams, teamSize: teams === 2 ? 2 : 1, gameCount, pointsTable }
-    const created = await send('POST', '/api/e', hostCookie, { name: 'Freitags-Zocken', dateMode: 'poll', sessions: sessionCount, slots: SLOTS.slice(0, sessionCount), settings })
-    const { slug, inviteUrl } = await created.json() as { slug: string, inviteUrl: string }
-    const [eventRow] = await testDb.db.select().from(events).where(eq(events.slug, slug))
-    const eventId = eventRow!.id
-    const ids = {} as Record<'host' | keyof typeof players, string>
-    for (const [key, profile] of Object.entries({ host, ...players })) {
-      const [row] = await testDb.db.select().from(users).where(eq(users.email, profile.email))
-      ids[key as keyof typeof ids] = row!.id
-    }
-    const seated = teams === 2
+    const seats = teams === 2
       ? [['one', 1], ['two', 1], ['three', 2], ['four', 2]] as const
       : [['one', 1], ['two', 2], ['three', 3]] as const
-    for (const [key] of seated) await testDb.db.insert(eventMembers).values({ eventId, userId: ids[key] })
-
-    const inserted = await testDb.db.insert(games).values([
-      { name: 'Halo', createdBy: ids.host },
-      { name: 'Kart', createdBy: ids.host },
-      { name: 'Schach', createdBy: ids.host },
-    ]).returning()
-    const [halo, kart, schach] = inserted as [typeof inserted[number], typeof inserted[number], typeof inserted[number]]
-    await testDb.db.insert(eventPoolGames).values([
-      { eventId, gameId: halo.id },
-      { eventId, gameId: kart.id },
-    ])
-
-    const slotIds = (await testDb.db.select().from(pollSlots).where(eq(pollSlots.eventId, eventId)).orderBy(pollSlots.startsAt)).map(row => row.id)
-    for (const slotId of slotIds.slice(0, confirmed)) expect((await send('POST', `/api/e/${slug}/confirm`, hostCookie, { slotId })).status).toBe(200)
-    for (const [key, position] of seated) {
-      const to: Place = { zone: 'team', team: position }
-      expect((await send('POST', `/api/e/${slug}/move`, cookies[key], { userId: ids[key], to })).status).toBe(200)
-    }
-    expect((await send('POST', `/api/e/${slug}/sessions/start`, hostCookie)).status).toBe(200)
-    await testDb.db.delete(activity)
-    notifier.clear()
-    return { slug, eventId, hostCookie, cookies, ids, halo, kart, schach, inviteUrl }
+    const seatedKeys = seats.map(([key]) => key)
+    const members = Object.fromEntries(seatedKeys.map(key => [key, players[key]])) as Record<typeof seatedKeys[number], typeof players[keyof typeof players]>
+    // Signed in, no Member: the Players the Event has no seat for.
+    const bystanders = Object.fromEntries(Object.entries(players).filter(([key]) => !(seatedKeys as string[]).includes(key)))
+    const ev = await startRunningEvent(rig, {
+      host,
+      players: members,
+      outsiders: bystanders,
+      seats,
+      sessions: sessionCount,
+      slots: SLOTS.slice(0, sessionCount),
+      confirmed,
+      settings: { teamCount: teams, teamSize: teams === 2 ? 2 : 1, gameCount, pointsTable: { preset: 'linear' as const, values: teams === 2 ? [1, 0] : [2, 1, 0] } },
+      games: [
+        { key: 'halo', values: { name: 'Halo' }, pool: true },
+        { key: 'kart', values: { name: 'Kart' }, pool: true },
+        { key: 'schach', values: { name: 'Schach' }, pool: false },
+      ],
+      quiet: 'room-and-feed',
+    })
+    const everyone: Record<string, { cookie: string, id: string }> = { ...ev.players, ...ev.outsiders }
+    const cookies: Partial<Record<keyof typeof players, string>> = Object.fromEntries(Object.entries(everyone).map(([key, signed]) => [key, signed.cookie]))
+    const ids = { host: ev.host.id, ...Object.fromEntries(Object.entries(everyone).map(([key, signed]) => [key, signed.id])) } as Record<'host' | keyof typeof players, string>
+    return { slug: ev.slug, eventId: ev.eventId, hostCookie: ev.host.cookie, cookies, ids, halo: ev.games.halo, kart: ev.games.kart, schach: ev.games.schach, inviteToken: ev.inviteToken }
   }
 
   type Game = Awaited<ReturnType<typeof running>>
 
-  const read = async (game: Game, cookie = game.hostCookie) => await (await send('GET', `/api/e/${game.slug}`, cookie)).json() as EventView
+  const read = (game: Game, cookie = game.hostCookie) => readEvent(rig, cookie, game.slug)
   const set = (game: Game, gameId: string) => send('POST', `/api/e/${game.slug}/rounds`, game.hostCookie, { gameId })
   const setRound = async (game: Game, gameId: string) => (await (await set(game, gameId)).json() as { roundId: string }).roundId
   const enter = (game: Game, roundId: string, body: unknown, cookie = game.hostCookie) => send('PUT', `/api/e/${game.slug}/rounds/${roundId}/result`, cookie, body)
@@ -166,7 +102,7 @@ describe('Finishing the Event', () => {
   const sessionRows = (eventId: string) => testDb.db.select().from(sessions).where(eq(sessions.eventId, eventId)).orderBy(sessions.startsAt)
   const activityTypes = async (eventId: string) => (await testDb.db.select({ type: activity.type }).from(activity).where(eq(activity.eventId, eventId))).map(row => row.type).sort()
   const types = (eventId: string) => notifier.messages(eventId).map(message => message.type)
-  const feedOf = async (game: Game, cookie = game.hostCookie) => (await (await send('GET', `/api/e/${game.slug}/activity`, cookie)).json() as ActivityPage).entries
+  const feedOf = (game: Game, cookie = game.hostCookie) => readFeed(rig, cookie, game.slug)
 
   /** Party 1 wins the Result: one for team 1 first, team 2 second. */
   const teamOneWins = [{ team: 1, place: 1 }, { team: 2, place: 2 }]
@@ -397,7 +333,7 @@ describe('Finishing the Event', () => {
 
       expect((await send('PATCH', `/api/e/${slug}/settings`, cookie, { settings: { gameCount: TEST_SETTINGS.gameCount + 2, teamSize: TEST_SETTINGS.teamSize + 1 } })).status).toBe(200)
 
-      const { entries } = await (await send('GET', `/api/e/${slug}/activity`, cookie)).json() as ActivityPage
+      const entries = await readFeed(rig, cookie, slug)
       expect(entries.map(entry => entry.type)).toEqual(['team_size_changed', 'game_count_changed'])
     })
 
@@ -616,7 +552,7 @@ describe('Finishing the Event', () => {
       const round = await setRound(game, game.halo.id)
       expect((await enter(game, round, { places: teamOneWins })).status).toBe(200)
       expect((await finish(game)).status).toBe(200)
-      const invite = new URL(game.inviteUrl).pathname.slice('/e/'.length)
+      const invite = game.inviteToken
       const { cookie } = await signIn(testDb.db, newcomer)
 
       expect(await (await request(`/api/invite/${invite}`, { method: 'POST', headers: { cookie } })).json()).toEqual({ slug: game.slug, joined: true })

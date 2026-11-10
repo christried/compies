@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Geändert
+
+- Gibt es ein Team nicht mehr, weil der Host die Anzahl Teams gesenkt hat, sagt das Spielbrett jetzt „Dieses Team gibt es nicht mehr.“ Ohne laufende Session nennen „Nächstes Spiel setzen“ und „Rad drehen“ denselben Grund wie die Meldung: „Es läuft gerade keine Session.“ ([#421](https://github.com/christried/compies/issues/421))
+
 ## [0.10.1] - 2026-11-09 – Partyhut
 
 Der Partyhut für das führende Team, schnellere lange Spielelisten und ein Countdown, der auf dem Handy nicht mehr aus dem Bild läuft, dazu Aufräumarbeiten nach dem Review von 0.10, die niemand sieht.

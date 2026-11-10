@@ -3,47 +3,13 @@ import { join, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { eq } from 'drizzle-orm'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
-import getActivity from '../../server/api/e/[slug]/activity.get'
-import castVeto from '../../server/api/e/[slug]/draws/[drawId]/veto.post'
-import bonusVetoes from '../../server/api/e/[slug]/bonus-vetoes.post'
-import clipSkip from '../../server/api/e/[slug]/clip/skip.post'
-import coin from '../../server/api/e/[slug]/coin.post'
-import confirmDate from '../../server/api/e/[slug]/confirm.post'
-import setCountdown from '../../server/api/e/[slug]/countdown/index.put'
-import pauseCountdown from '../../server/api/e/[slug]/countdown/pause.post'
-import resetCountdown from '../../server/api/e/[slug]/countdown/reset.post'
-import startCountdown from '../../server/api/e/[slug]/countdown/start.post'
-import finishEvent from '../../server/api/e/[slug]/finish.post'
-import lastGame from '../../server/api/e/[slug]/last-game.post'
-import moveMember from '../../server/api/e/[slug]/move.post'
-import startCeremony from '../../server/api/e/[slug]/ceremony.post'
-import rotateInvite from '../../server/api/e/[slug]/rotate.post'
-import putResult from '../../server/api/e/[slug]/rounds/[id]/result.put'
-import putBack from '../../server/api/e/[slug]/rounds/[id].delete'
-import setGame from '../../server/api/e/[slug]/rounds/index.post'
-import spinWheel from '../../server/api/e/[slug]/rounds/spin.post'
-import changeSettings from '../../server/api/e/[slug]/settings.patch'
-import addSession from '../../server/api/e/[slug]/sessions/index.post'
-import removeSession from '../../server/api/e/[slug]/sessions/[id].delete'
-import reopenSession from '../../server/api/e/[slug]/sessions/[id]/reopen.post'
-import rescheduleSession from '../../server/api/e/[slug]/sessions/[id]/reschedule.post'
-import endSession from '../../server/api/e/[slug]/sessions/end.post'
-import startSession from '../../server/api/e/[slug]/sessions/start.post'
-import addSlot from '../../server/api/e/[slug]/slots/index.post'
-import deleteSlot from '../../server/api/e/[slug]/slots/[slotId].delete'
-import patchSlot from '../../server/api/e/[slug]/slots/[slotId].patch'
-import voteSlot from '../../server/api/e/[slug]/slots/[slotId]/vote.put'
-import resetTeamName from '../../server/api/e/[slug]/teams/[position]/reset-name.post'
-import teamWord from '../../server/api/e/[slug]/team-word.post'
-import createEvent from '../../server/api/e/index.post'
-import readEvent from '../../server/api/e/[slug].get'
-import { activity, countdowns, draws, eventMembers, eventPoolGames, events, games, pollSlots, roundPlaces, rounds, sessions, users, vetoes } from '../../server/db/schema'
+import { activity, countdowns, events, rounds, sessions } from '../../server/db/schema'
 import { testClock } from '../../server/utils/clock'
 import { memoryRoomNotifier } from '../../server/utils/room-notifier'
-import type { Place } from '../../shared/board'
-import { TEST_SETTINGS } from './fixtures'
-import { createTestDb, createTestServer } from './harness'
-import { setAllowlist, signIn, stubAuthEnv } from './sign-in'
+import { createTestApp, sendVia, type TestRequest } from './app'
+import { createTestDb, resetDatabase } from './harness'
+import { hostEntersResult, hostFinishes, hostSets, startRunningEvent, type Rig } from './scenario'
+import { stubAuthEnv } from './sign-in'
 
 // A finished Event is read-only for good (#277, spec #272): every write answers `wrong_phase`, and nothing it was asked to change changes.
 // The table is list-driven: each write route of the Event API is one entry, sent by the User it needs (the Host, or a Player for the routes
@@ -63,48 +29,15 @@ const T0 = '2090-10-30T10:00:00.000Z'
 
 describe('a finished Event is read-only', () => {
   let testDb: Awaited<ReturnType<typeof createTestDb>>
-  let request: ReturnType<typeof createTestServer>
+  let request: TestRequest
+  let rig: Rig
   const notifier = memoryRoomNotifier()
   const clock = testClock(T0)
 
   beforeAll(async () => {
     testDb = await createTestDb()
-    request = createTestServer(testDb.db, {
-      'POST /api/e': createEvent,
-      'GET /api/e/:slug': readEvent,
-      'GET /api/e/:slug/activity': getActivity,
-      'POST /api/e/:slug/rounds': setGame,
-      'POST /api/e/:slug/rounds/spin': spinWheel,
-      'DELETE /api/e/:slug/rounds/:id': putBack,
-      'PUT /api/e/:slug/rounds/:id/result': putResult,
-      'PATCH /api/e/:slug/settings': changeSettings,
-      'POST /api/e/:slug/sessions': addSession,
-      'DELETE /api/e/:slug/sessions/:id': removeSession,
-      'POST /api/e/:slug/sessions/:id/reopen': reopenSession,
-      'POST /api/e/:slug/sessions/:id/reschedule': rescheduleSession,
-      'POST /api/e/:slug/sessions/start': startSession,
-      'POST /api/e/:slug/sessions/end': endSession,
-      'POST /api/e/:slug/confirm': confirmDate,
-      'POST /api/e/:slug/slots': addSlot,
-      'PATCH /api/e/:slug/slots/:slotId': patchSlot,
-      'DELETE /api/e/:slug/slots/:slotId': deleteSlot,
-      'PUT /api/e/:slug/slots/:slotId/vote': voteSlot,
-      'POST /api/e/:slug/move': moveMember,
-      'POST /api/e/:slug/team-word': teamWord,
-      'POST /api/e/:slug/teams/:position/reset-name': resetTeamName,
-      'POST /api/e/:slug/bonus-vetoes': bonusVetoes,
-      'POST /api/e/:slug/draws/:drawId/veto': castVeto,
-      'POST /api/e/:slug/clip/skip': clipSkip,
-      'POST /api/e/:slug/coin': coin,
-      'PUT /api/e/:slug/countdown': setCountdown,
-      'POST /api/e/:slug/countdown/start': startCountdown,
-      'POST /api/e/:slug/countdown/pause': pauseCountdown,
-      'POST /api/e/:slug/countdown/reset': resetCountdown,
-      'POST /api/e/:slug/finish': finishEvent,
-      'POST /api/e/:slug/last-game': lastGame,
-      'POST /api/e/:slug/rotate': rotateInvite,
-      'POST /api/e/:slug/ceremony': startCeremony,
-    }, { roomNotifier: notifier, clock })
+    request = createTestApp(testDb.db, { roomNotifier: notifier, clock })
+    rig = { request, db: testDb.db, clock, notifier }
   })
 
   afterAll(async () => {
@@ -115,83 +48,44 @@ describe('a finished Event is read-only', () => {
     stubAuthEnv()
     clock.set(T0)
     notifier.clear()
-    await testDb.db.delete(countdowns)
-    await testDb.db.delete(vetoes)
-    await testDb.db.delete(draws)
-    await testDb.db.delete(roundPlaces)
-    await testDb.db.delete(rounds)
-    await testDb.db.delete(sessions)
-    await testDb.db.delete(eventPoolGames)
-    await testDb.db.delete(activity)
-    await testDb.db.delete(pollSlots)
-    await testDb.db.delete(eventMembers)
-    await testDb.db.delete(events)
-    await testDb.db.delete(games)
-    await testDb.db.delete(users)
+    await resetDatabase(testDb.db)
   })
 
   afterEach(() => {
     vi.unstubAllEnvs()
   })
 
-  function send(method: string, path: string, cookie: string | undefined, body?: unknown) {
-    return request(path, {
-      method,
-      headers: { ...(body === undefined ? {} : { 'content-type': 'application/json' }), ...(cookie ? { cookie } : {}) },
-      body: body === undefined ? undefined : JSON.stringify(body),
-    })
-  }
+  const send = sendVia(() => request)
 
   /**
    * A running Lucky Wheel Event with one Result, finished: Game count 1, the Host set Halo and entered team 1's win, and finished it.
    * Players one and two sit in team 1, three and four in team 2. Returns the ids the table needs.
    */
   async function finishedWheel() {
-    setAllowlist({ hosts: 'discord:1' })
-    const hostCookie = (await signIn(testDb.db, host)).cookie
-    const cookies: Partial<Record<keyof typeof players, string>> = {}
-    for (const [key, profile] of Object.entries(players)) cookies[key as keyof typeof players] = (await signIn(testDb.db, profile)).cookie
-    const settings = {
-      ...TEST_SETTINGS,
-      gameCount: 1,
-      pointsTable: { preset: 'linear' as const, values: [1, 0] },
-      selectionMode: 'lucky_wheel' as const,
-      vetoAllowance: 1,
-    }
-    const created = await send('POST', '/api/e', hostCookie, { name: 'Freitags-Zocken', dateMode: 'poll', sessions: 2, slots: SLOTS, settings })
-    const { slug } = await created.json() as { slug: string }
-    const [eventRow] = await testDb.db.select().from(events).where(eq(events.slug, slug))
-    const eventId = eventRow!.id
-    const ids = {} as Record<'host' | keyof typeof players, string>
-    for (const [key, profile] of Object.entries({ host, ...players })) {
-      const [row] = await testDb.db.select().from(users).where(eq(users.email, profile.email))
-      ids[key as keyof typeof ids] = row!.id
-    }
-    const seated = [['one', 1], ['two', 1], ['three', 2], ['four', 2]] as const
-    for (const [key] of seated) await testDb.db.insert(eventMembers).values({ eventId, userId: ids[key] })
-    const inserted = await testDb.db.insert(games).values([
-      { name: 'Halo', createdBy: ids.host },
-      { name: 'Kart', createdBy: ids.host },
-    ]).returning()
-    const [halo, kart] = inserted as [typeof inserted[number], typeof inserted[number]]
-    await testDb.db.insert(eventPoolGames).values([
-      { eventId, gameId: halo.id },
-      { eventId, gameId: kart.id },
-    ])
-    const slotIds = (await testDb.db.select().from(pollSlots).where(eq(pollSlots.eventId, eventId)).orderBy(pollSlots.startsAt)).map(row => row.id)
-    for (const slotId of slotIds) expect((await send('POST', `/api/e/${slug}/confirm`, hostCookie, { slotId })).status).toBe(200)
-    for (const [key, position] of seated) {
-      const to: Place = { zone: 'team', team: position }
-      expect((await send('POST', `/api/e/${slug}/move`, cookies[key], { userId: ids[key], to })).status).toBe(200)
-    }
-    expect((await send('POST', `/api/e/${slug}/sessions/start`, hostCookie)).status).toBe(200)
-    const session = (await testDb.db.select().from(sessions).where(eq(sessions.eventId, eventId))).find(row => row.startedAt !== null)!.id
-    const round = (await (await send('POST', `/api/e/${slug}/rounds`, hostCookie, { gameId: halo.id })).json() as { roundId: string }).roundId
-    const places = [{ team: 1, place: 1 }, { team: 2, place: 2 }]
-    expect((await send('PUT', `/api/e/${slug}/rounds/${round}/result`, hostCookie, { places })).status).toBe(200)
-    expect((await send('POST', `/api/e/${slug}/finish`, hostCookie, { outcome: 'winner', winners: [1] })).status).toBe(200)
+    const ev = await startRunningEvent(rig, {
+      host,
+      players,
+      seats: [['one', 1], ['two', 1], ['three', 2], ['four', 2]],
+      slots: SLOTS,
+      settings: {
+        gameCount: 1,
+        pointsTable: { preset: 'linear' as const, values: [1, 0] },
+        selectionMode: 'lucky_wheel' as const,
+        vetoAllowance: 1,
+      },
+      games: [
+        { key: 'halo', values: { name: 'Halo' }, pool: true },
+        { key: 'kart', values: { name: 'Kart' }, pool: true },
+      ],
+    })
+    const session = (await testDb.db.select().from(sessions).where(eq(sessions.eventId, ev.eventId))).find(row => row.startedAt !== null)!.id
+    const round = await hostSets(rig, ev, ev.games.halo.id)
+    await hostEntersResult(rig, ev, round, [{ team: 1, place: 1 }, { team: 2, place: 2 }])
+    await hostFinishes(rig, ev, { outcome: 'winner', winners: [1] })
     notifier.clear()
-    return { slug, eventId, hostCookie, cookies, ids, round, session, slots: slotIds, kart: kart.id }
+    const cookies = { one: ev.players.one.cookie, two: ev.players.two.cookie, three: ev.players.three.cookie, four: ev.players.four.cookie }
+    const ids = { host: ev.host.id, one: ev.players.one.id, two: ev.players.two.id, three: ev.players.three.id, four: ev.players.four.id }
+    return { slug: ev.slug, eventId: ev.eventId, hostCookie: ev.host.cookie, cookies, ids, round, session, slots: ev.slotIds, kart: ev.games.kart.id }
   }
 
   type Finished = Awaited<ReturnType<typeof finishedWheel>>

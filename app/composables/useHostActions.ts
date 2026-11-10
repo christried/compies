@@ -1,6 +1,8 @@
 import { CalendarCheck, CalendarClock, CirclePlus, Coins, Dices, Flag, Gamepad2, Handshake, Link as LinkIcon, Medal, Play, Settings2, ShieldPlus, Timer, Trash2, Trophy } from '@lucide/vue'
 import type { DockAction } from '~/components/HostDock.vue'
-import { ceremonyBlockedKey, coinBlockedKey, dockLayout, hostDockState, lastGameBlockedKey, setBlockedKey, type DockKey } from '~/utils/host-dock'
+import { reasonKey, type ReasonScreen } from '~/utils/api-error'
+import { ceremonyRejectionAt, coinRejectionAt, dockLayout, hostDockState, type DockKey } from '~/utils/host-dock'
+import type { ApiErrorCode } from '~~/shared/errors'
 import type { EventView } from '~~/shared/event'
 import { settingsPath } from '~~/shared/links'
 import { leadersOf } from '~~/shared/finish'
@@ -71,18 +73,18 @@ export function useHostActions(
     /** Runs `run`, or answers the click with the reason as a toast while the rule refuses. */
     const guarded = (reason: string | undefined, run: () => void) => () => (reason ? toast({ tone: 'info', text: reason }) : run())
 
-    const startReason = state.startRejection === null ? undefined : t(`dock.startBlocked.${state.startRejection}`)
-    const setReason = state.setRejection === null ? undefined : t(setBlockedKey(state.setRejection))
-    const spinReason = state.spinRejection === null ? undefined : t(setBlockedKey(state.spinRejection))
-    const lastGameReason = state.lastGameRejection === null ? undefined : t(lastGameBlockedKey(state.lastGameRejection))
+    /** The words of a rule's reason as a disabled action says them, or undefined while nothing refuses (reasonKey: app/utils/api-error.ts). */
+    const reasonText = (rejection: ApiErrorCode | null, screen?: ReasonScreen) => (rejection === null ? undefined : t(reasonKey(rejection, screen)))
+    const startReason = reasonText(state.startRejection)
+    const setReason = reasonText(state.setRejection)
+    const spinReason = reasonText(state.spinRejection)
+    const lastGameReason = reasonText(state.lastGameRejection, 'lastGame')
     // The coin's reason is the rule's, with the server clock (#235): it stays while the toss flies, and the Event read's landing refetch clears it.
-    const coinKey = coinBlockedKey(current, serverNow())
-    const coinReason = coinKey === null ? undefined : t(coinKey)
+    const coinReason = reasonText(coinRejectionAt(current, serverNow()))
     // The ceremony's reason is the rule's, with the server clock (#309): it stays while a run plays, and the read at the run's end (viewInstants) clears it.
-    const ceremonyKey = ceremonyBlockedKey(current, serverNow())
-    const ceremonyReason = ceremonyKey === null ? undefined : t(ceremonyKey)
+    const ceremonyReason = reasonText(ceremonyRejectionAt(current, serverNow()))
     // „Event löschen“ (#333) is refused while a Session runs: the same rule the route applies (runningOf), so the reason shows at once.
-    const deleteReason = current.runningSessionId === null ? undefined : t('dock.deleteBlocked')
+    const deleteReason = current.runningSessionId === null ? undefined : reasonText('session_running', 'deleteEvent')
     // The Parties on Place 1 of the Standings this dock shows: what the finish tells the server the Host saw (review 0.8 S2).
     const winners = leadersOf(current.standings ?? [])
 

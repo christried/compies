@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Armchair, Eye, Hand, Hourglass, Lock, Users } from '@lucide/vue'
 import type { MoveTarget } from '~/components/MoveToMenuList.vue'
-import { errorCopyKey } from '~/utils/api-error'
+import { reasonKey } from '~/utils/api-error'
 import { placeFromKey, placeKey, teamName, teamNameAt } from '~/utils/board'
 import { startedIn, unevenNoticeIn, type EventPageState } from '~/utils/event-page'
 import { fade, glide, pop } from '~/utils/motion'
@@ -75,8 +75,8 @@ function rejectionFor(userId: string, to: Place) {
 // The slots of a team read „Zu“ (poll) or „Gesperrt“ (running) while the viewer cannot move into a team; the Host always can (#160, #164).
 const lockReason = computed(() => {
   if (props.isHost) return null
-  if (phase.value === 'poll') return t(errorCopyKey('team_choice_closed'))
-  return phase.value === 'running' ? t(errorCopyKey('teams_locked')) : null
+  if (phase.value === 'poll') return t(reasonKey('team_choice_closed'))
+  return phase.value === 'running' ? t(reasonKey('teams_locked')) : null
 })
 
 /** Whether the viewer sits in a team (the running notice tells them their seat is fixed). */
@@ -196,7 +196,7 @@ function openMenu(event: MouseEvent, userId: string) {
 
 function targetFor(place: Place, label: string, extra: Partial<MoveTarget>): MoveTarget {
   const rejection = menu.value ? rejectionFor(menu.value.userId, place) : null
-  return { key: placeKey(place), label, reason: rejection ? t(errorCopyKey(rejection)) : null, ...extra }
+  return { key: placeKey(place), label, reason: rejection ? t(reasonKey(rejection)) : null, ...extra }
 }
 
 const targets = computed((): MoveTarget[] => [

@@ -14,11 +14,12 @@ Each concern below has one home. New code calls it; a second copy is a finding e
 | A User's visible name | `shownName` in `shared/auth.ts` (lint) |
 | Text length | `characterCount` in `shared/text.ts` |
 | Dates and times shown to Users | `app/utils/berlin-time.ts`, `shared/time.ts` |
-| An API error shown to Users | `apiErrorKey` and `CODE_COPY` in `app/utils/api-error.ts`; Event page actions through `useEventMutation` |
+| An API error shown to Users | `reasonKey` / `apiErrorKey` and their table in `app/utils/api-error.ts` (a screen's own words are a screen entry there, not an override at the call site; `test/unit/api-error.test.ts` checks every code × screen); Event page actions through `useEventMutation` |
 | A notice, hint or error line in a page | `NoticeBanner` with its tone |
 | Searching and filtering games | `GameBrowser` |
 | Creating or editing an Event's settings | `EventSetupWizard` |
-| What a viewer may know of a drawn game | `drawGameKnown` (pure) in `server/domain/pool-preview.ts`, `stoppedDraws` (SQL) in `server/utils/draws.ts` (#258) |
+| What a viewer may know of a drawn game | `drawGameKnown` (pure) in `shared/draw-timeline.ts`, `stoppedDraws` (SQL) in `server/utils/draw-timeline.ts` (#258, #414) |
+| A Draw's instants and what each decides (due, game known, window open or ended, Vetoes sealed, the Clip's window) | `shared/draw-timeline.ts`; its SQL twins `stoppedDraws` and `dueDraws` in `server/utils/draw-timeline.ts`, kept in step by `test/integration/draw-timeline.test.ts` (#414) |
 | A GET that must show a settled state (a draw whose instant has passed) | `settleBeforeRead` in `server/utils/rounds.ts` (#229): one cheap select when nothing is due, else a locked transaction that calls `settleDue`. A write goes through `changeEvent`, which settles by itself (#259); lint guards `server/api/e/**` only, so a new timed read calls `settleBeforeRead` instead of opening its own `for('update')` |
 
 A second page, flow or component that does what an existing one does needs its reason in the PR description. Without one, the review asks for the existing module to grow instead.
@@ -36,9 +37,9 @@ A second page, flow or component that does what an existing one does needs its r
 What a feature keeps from some Users (a sealed Veto, a Hidden wheel before its stop), and what it starts showing to Members. Every 0.7 miss sat on a surface the brief or the review had not named.
 
 - A change whose existence is secret commits with `changeEvent(…, { broadcast: false })` (ADR 0013). The `event.changed` that follows every other commit tells every Party that something happened.
-- A value derived from secret rows is secret too, in every section of the read and in every message, Host-only ones included. The Host's `floors.vetoAllowance` counted sealed casts (#231), and the Hidden wheel's slice order gave its result away (review 0.7, spec S1). `knownVetoRows` in `server/utils/vetoes.ts` is the one filter for what a viewer may know of the Vetoes.
+- A value derived from secret rows is secret too, in every section of the read and in every message, Host-only ones included. The Host's `floors.vetoAllowance` counted sealed casts (#231), and the Hidden wheel's slice order gave its result away (review 0.7, spec S1). `knownVetoRows` in `server/utils/vetoes.ts` is the one filter for what a viewer may know of the Vetoes; it asks `vetoesSealed` in `shared/draw-timeline.ts` (#414) whether a window still seals them.
 - A feature that shows Members something they didn't see before (a player, a picture, a thumbnail, an image route) is checked against every section of the Datenschutzerklärung that says who sees what. In 0.7 both the YouTube section and the image section still said only Hosts; the user approves the new text (§ Copy).
-- A read, feed entry or message that names a drawn game goes through `drawGameKnown` or `stoppedDraws` (#258). A copy of the `stopAt <= now` comparison is a finding: `<` instead of `<=` leaks under a Hidden wheel, and the room carries no game data but `activity.added`.
+- A read, feed entry or message that names a drawn game goes through `drawGameKnown` (`shared/draw-timeline.ts`) or `stoppedDraws` (`server/utils/draw-timeline.ts`) (#258, #414). A copy of the `stopAt <= now` comparison is a finding: `<` instead of `<=` leaks under a Hidden wheel, and the room carries no game data but `activity.added`.
 
 ## Motion
 

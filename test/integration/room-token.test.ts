@@ -1,11 +1,10 @@
 import { eq } from 'drizzle-orm'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
-import createEvent from '../../server/api/e/index.post'
-import roomToken from '../../server/api/e/[slug]/room.post'
-import { eventMembers, events, pollSlots, users } from '../../server/db/schema'
+import { eventMembers, events, users } from '../../server/db/schema'
 import { verifyRoomToken } from '../../shared/room-auth'
 import { TEST_SETTINGS } from './fixtures'
-import { createTestDb, createTestServer } from './harness'
+import { createTestApp, type TestRequest } from './app'
+import { createTestDb, resetDatabase } from './harness'
 import { setAllowlist, signIn, stubAuthEnv } from './sign-in'
 
 // The room token (#156, spec #153 § Room access): a Member trades their login for 60 seconds of access to one
@@ -16,11 +15,11 @@ const stranger = { provider: 'twitch', id: '3', name: 'Fremd', email: 'stranger@
 
 describe('POST /api/e/:slug/room', () => {
   let testDb: Awaited<ReturnType<typeof createTestDb>>
-  let request: ReturnType<typeof createTestServer>
+  let request: TestRequest
 
   beforeAll(async () => {
     testDb = await createTestDb()
-    request = createTestServer(testDb.db, { 'POST /api/e': createEvent, 'POST /api/e/:slug/room': roomToken })
+    request = createTestApp(testDb.db)
   })
 
   afterAll(async () => {
@@ -31,10 +30,7 @@ describe('POST /api/e/:slug/room', () => {
     stubAuthEnv()
     vi.stubEnv('REALTIME_URL', 'https://compies-rt-staging.example.workers.dev')
     vi.stubEnv('ROOM_TOKEN_SECRET', 'token-secret')
-    await testDb.db.delete(pollSlots)
-    await testDb.db.delete(eventMembers)
-    await testDb.db.delete(events)
-    await testDb.db.delete(users)
+    await resetDatabase(testDb.db)
   })
 
   afterEach(() => {

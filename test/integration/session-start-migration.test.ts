@@ -1,8 +1,8 @@
 import { rmSync } from 'node:fs'
 import type { PGlite } from '@electric-sql/pglite'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import readEvent from '../../server/api/e/[slug].get'
-import { createTestDbBefore, createTestServer, migrateTo } from './harness'
+import { createTestApp } from './app'
+import { createTestDbBefore, migrateTo } from './harness'
 import { signIn, stubAuthEnv } from './sign-in'
 
 // The migration that adds Session start (#164): Sessions of Events from before it read as not started, the Event read
@@ -49,7 +49,7 @@ describe('migration: Session start', () => {
 
   it('shows no Running Session and no start time in the Event read of an existing Event', async () => {
     stubAuthEnv()
-    const request = createTestServer(db, { 'GET /api/e/:slug': readEvent })
+    const request = createTestApp(db)
     // A Member who signs in after the migration (the seeded Host never signed in through Better Auth).
     const { cookie } = await signIn(db, { provider: 'discord', id: '2', name: 'Gast', email: 'member@example.com', image: undefined })
     const memberId = (await client.query<{ id: string }>(`SELECT id FROM users WHERE email = 'member@example.com'`)).rows[0]!.id

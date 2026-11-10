@@ -52,7 +52,7 @@ export async function applySettingsChange(
   const before = settingsFromRow(eventRow)
   let after: EventSettings
   if (change !== undefined) {
-    const facts = await floorFacts(tx, eventRow.id)
+    const facts = await floorFacts(tx, eventRow.id, now)
     const checked = checkSettingsChange(before, change, { phase: eventRow.phase, floors: teamCount => floorsAt(facts, teamCount), roundBeingDrawn: await roundBeingDrawn(tx, eventRow.id) })
     if (!checked.ok) throw apiError(checked.error)
     after = checked.settings
