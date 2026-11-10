@@ -17,6 +17,11 @@ export interface CoinToss {
   landsAt: Instant
 }
 
+/** The commit of a toss, in epoch ms: the flight starts COIN_LEAD_MS after it. The stage lifts the coin's block at it (#441). */
+export function tossCommitAt(toss: Pick<CoinToss, 'startedAt'>): number {
+  return msOf(toss.startedAt) - COIN_LEAD_MS
+}
+
 /** Whether the toss has landed at `nowMs`: from its landing instant on. */
 export function coinLanded(toss: Pick<CoinToss, 'landsAt'>, nowMs: number): boolean {
   return msOf(toss.landsAt) <= nowMs

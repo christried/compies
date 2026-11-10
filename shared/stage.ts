@@ -115,9 +115,10 @@ export interface ClipView { drawId: string, startAt: string, endsAt: string, gam
 
 /**
  * The Event's Countdown (#236, spec #218 § Countdown): its stored facts, the duration and either the remaining time (paused, ready)
- * or the start instant (running, ISO). The page computes the time left from them and the server clock (remainingMsAt).
+ * or the start instant (running, ISO). The page computes the time left from them and the server clock (remainingMsAt). `lastStartedAt` is the latest start or
+ * resume (ISO, null before the first): a pause clears `startedAt` and leaves it, so the stage block that rose at it stays up (#441).
  */
-export interface CountdownView { durationMs: number, remainingMs: number, startedAt: string | null }
+export interface CountdownView { durationMs: number, remainingMs: number, startedAt: string | null, lastStartedAt: string | null }
 
 /**
  * The Coin flip (#235, spec #218 § Coin flip): the Event's latest toss while a Session runs, for every Member, null otherwise. The

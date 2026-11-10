@@ -1,6 +1,7 @@
-import { eq } from 'drizzle-orm'
+import { eq, inArray } from 'drizzle-orm'
 import type { H3Event } from 'h3'
-import { canEditGame, canSeeLibrary, type GamePrice, type GamePriceInput, type GameTag, type GameView, type PoolGame, type PoolGameFace, type RoundGame } from '../../shared/game'
+import type { EventView } from '../../shared/event'
+import { canEditGame, canSeeLibrary, type GamePrice, type GamePriceInput, type GameTag, type GameView, type HostGameFacts, type PoolGame, type PoolGameFace, type RoundGame } from '../../shared/game'
 import { shownName, type AuthUser } from '../../shared/auth'
 import { games, users } from '../db/schema'
 import { isUuid } from '../domain/uuid'
@@ -124,4 +125,30 @@ export function priceColumns(
   const changed = !storedPrice || storedPrice.cents !== input.price.cents || storedPrice.source !== input.price.source
   if (!input.priceChecked && !changed) return {}
   return { priceCents: input.price.cents, priceSource: input.price.source, priceCheckedAt: now }
+}
+
+/**
+ * The ids of the games the Host's read names as tiles (#443): the Game pool, the open Rounds' games and the latest spin's game, each once. Not the Veto
+ * window's game, the Results' or the clip's: they are no tiles. Derived from the finished sections, so a game the read does not name is none of its ids.
+ */
+export function hostGameIds(view: Pick<EventView, 'pool' | 'rounds' | 'wheel'>): string[] {
+  const ids = new Set<string>()
+  for (const game of view.pool ?? []) ids.add(game.id)
+  for (const round of view.rounds) ids.add(round.game.id)
+  const drawn = view.wheel?.spin?.game
+  if (drawn) ids.add(drawn.id)
+  return [...ids]
+}
+
+/**
+ * The Tags and the Game notes of `ids`, by game id, for the Host's game dialog (#443). A game without Tags gets `tags: []`, one without Notes `notes: null`; an id
+ * that is no game is left out. No ids, no query. Two statements and no lock, like the read it joins.
+ */
+export async function readHostGameFacts(db: Db, ids: string[]): Promise<Record<string, HostGameFacts>> {
+  if (ids.length === 0) return {}
+  const [tags, rows] = await Promise.all([
+    loadTags(db, ids),
+    db.select({ id: games.id, notes: games.notes }).from(games).where(inArray(games.id, ids)),
+  ])
+  return Object.fromEntries(rows.map(row => [row.id, { tags: tags.get(row.id) ?? [], notes: row.notes }]))
 }

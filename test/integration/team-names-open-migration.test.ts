@@ -9,7 +9,7 @@ import { signIn, stubAuthEnv } from './sign-in'
 // whose frozen name is NULL (the Host reset it after the start) loses its words; a finished or archived Event keeps its rows and its words. The
 // previous deployment may still freeze at a start while the build migrates: the new code ignores such rows until the Finish.
 
-const MIGRATION = '0030_team_names_open'
+const MIGRATION = '0031_team_names_open'
 
 const HOST = '00000000-0000-4000-8000-0000000000a1'
 const PLAYERS = ['00000000-0000-4000-8000-0000000000b1', '00000000-0000-4000-8000-0000000000b2', '00000000-0000-4000-8000-0000000000b3']

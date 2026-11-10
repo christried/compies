@@ -8,6 +8,7 @@
 - **Darstellung:** Auf der Profil-Seite wählst du jetzt zwischen Hell, Dunkel und System. Die Seite wechselt sofort, und deine Wahl gilt auf jedem Gerät, auf dem du angemeldet bist, ab dem nächsten Laden. Mit System folgt Compies deinem Gerät, auch wenn es abends auf dunkel umschaltet. Wer nichts wählt, bleibt bei Hell. ([#404](https://github.com/christried/compies/issues/404))
 - **Notizen im Spiele-Picker:** Beim Füllen des Spielepools und bei „Nächstes Spiel setzen“ hat ein Spiel mit Notizen jetzt einen Knopf „Notizen ansehen“. Er zeigt die Notizen, ohne dass du die Auswahl verlässt: am Desktop neben dem Spiel, auf dem Handy als Sheet von unten. ([#436](https://github.com/christried/compies/issues/436))
 - **Free-to-play-Tag:** Ein Spiel ohne Preis oder mit dem Preis Free-to-play trägt in der Bibliothek jetzt von selbst den Tag „Free-to-play“, bei jedem Speichern. Bekommt es einen anderen Preis, fällt der Tag weg. ([#423](https://github.com/christried/compies/issues/423))
+- **Spiel-Dialog für den Host:** Tippst du als Host auf ein Spiel auf der Eventseite, öffnet sich sein Dialog: Bild, Name, Spielerzahl, „Passt zu“, alle Tags, der Preis und deine Notizen, dazu „In der Bibliothek öffnen“. Das geht im Spielepool, bei „Zuletzt gezogen“ und bei „Gerade dran“, ohne dass du das Event verlässt. ([#443](https://github.com/christried/compies/issues/443))
 
 ### Geändert
 
@@ -15,6 +16,7 @@
 - Gibt es ein Team nicht mehr, weil der Host die Anzahl Teams gesenkt hat, sagt das Spielbrett jetzt „Dieses Team gibt es nicht mehr.“ Ohne laufende Session nennen „Nächstes Spiel setzen“ und „Rad drehen“ denselben Grund wie die Meldung: „Es läuft gerade keine Session.“ ([#421](https://github.com/christried/compies/issues/421))
 - **Tags in Farbe:** In der Bibliothek trägt jeder Tag eines Spiels jetzt eine eigene Farbe, auf der Spielkarte, auf der Seite des Spiels und im Formular. Derselbe Tag hat überall dieselbe Farbe; nur wenn zwei Tags eines Spiels dieselbe hätten, nimmt der spätere die nächste freie, so dass sich bis zu acht Tags eines Spiels nie eine Farbe teilen. ([#427](https://github.com/christried/compies/issues/427))
 - **Spiele auf der Eventseite als Kacheln:** Jedes Spiel zeigt sich dort mit Bild und Namen, im Spielepool, bei „Zuletzt gezogen“ und bei „Gerade dran“. ([#435](https://github.com/christried/compies/issues/435))
+- **Die Bühne folgt dem Spiel:** Wo gerade etwas passiert ist, rückt der Block eine halbe Sekunde später nach oben, bei allen zugleich: das Glücksrad beim Drehen, „Gerade dran“, wenn ein Spiel feststeht, die Tabelle bei einem neuen oder korrigierten Ergebnis, der Countdown beim Start und der Münzwurf beim Wurf. Das Neueste steht oben; das Spielbrett rückt nie hoch, und die Seite scrollt nie von allein. ([#441](https://github.com/christried/compies/issues/441))
 
 ## [0.10.1] - 2026-11-09 – Partyhut
 

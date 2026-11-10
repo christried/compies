@@ -10,7 +10,7 @@ import { stubInView } from './in-view'
 
 const T0 = Date.parse('2090-10-30T20:00:00.000Z')
 const START = new Date(T0).toISOString()
-const MINUTE: CountdownView = { durationMs: 60_000, remainingMs: 60_000, startedAt: START }
+const MINUTE: CountdownView = { durationMs: 60_000, remainingMs: 60_000, startedAt: START, lastStartedAt: null }
 
 let serverTime = T0
 const serverNow = vi.fn(() => serverTime)
@@ -103,7 +103,7 @@ describe('the time left while it runs', () => {
   })
 
   it('runs no frames while paused: the server clock is not read again', async () => {
-    await mount({ durationMs: 60_000, remainingMs: 25_000, startedAt: null })
+    await mount({ durationMs: 60_000, remainingMs: 25_000, startedAt: null, lastStartedAt: null })
     const pausedReads = serverNow.mock.calls.length
 
     await passTime(5_000)
@@ -159,7 +159,7 @@ describe('its ticker (#257)', () => {
     const page = await mount(MINUTE)
     await passTime(10_000)
 
-    await page.setProps({ countdown: { durationMs: 60_000, remainingMs: 60_000, startedAt: null } })
+    await page.setProps({ countdown: { durationMs: 60_000, remainingMs: 60_000, startedAt: null, lastStartedAt: null } })
     const reads = serverNow.mock.calls.length
     await passTime(5_000)
 
@@ -168,10 +168,10 @@ describe('its ticker (#257)', () => {
   })
 
   it('runs again from the new start when the Host resumes a paused Countdown', async () => {
-    const page = await mount({ durationMs: 60_000, remainingMs: 25_000, startedAt: null })
+    const page = await mount({ durationMs: 60_000, remainingMs: 25_000, startedAt: null, lastStartedAt: null })
 
     await passTime(10_000)
-    await page.setProps({ countdown: { durationMs: 60_000, remainingMs: 25_000, startedAt: new Date(serverTime).toISOString() } })
+    await page.setProps({ countdown: { durationMs: 60_000, remainingMs: 25_000, startedAt: new Date(serverTime).toISOString(), lastStartedAt: null } })
     await passTime(5_000)
 
     expect(timeOf(page).text()).toBe('0:20')
@@ -180,7 +180,7 @@ describe('its ticker (#257)', () => {
 
 describe('paused and at zero', () => {
   it('shows the stored remainder and „Pausiert“ while paused, without moving', async () => {
-    const page = await mount({ durationMs: 60_000, remainingMs: 25_000, startedAt: null })
+    const page = await mount({ durationMs: 60_000, remainingMs: 25_000, startedAt: null, lastStartedAt: null })
 
     expect(timeOf(page).text()).toBe('0:25')
     expect(page.text()).toContain('Pausiert')
@@ -201,7 +201,7 @@ describe('paused and at zero', () => {
   })
 
   it('shows the full duration while ready, without „Pausiert“ or „Zeit ist um“', async () => {
-    const page = await mount({ durationMs: 300_000, remainingMs: 300_000, startedAt: null })
+    const page = await mount({ durationMs: 300_000, remainingMs: 300_000, startedAt: null, lastStartedAt: null })
 
     expect(timeOf(page).text()).toBe('5:00')
     expect(page.text()).not.toContain('Pausiert')
@@ -211,7 +211,7 @@ describe('paused and at zero', () => {
 
 describe('the Host\'s controls, by state', () => {
   it('offers Starten while ready, and nothing else', async () => {
-    const page = await mount({ durationMs: 60_000, remainingMs: 60_000, startedAt: null })
+    const page = await mount({ durationMs: 60_000, remainingMs: 60_000, startedAt: null, lastStartedAt: null })
 
     expect(buttonLabels(page)).toEqual(['Starten'])
   })
@@ -223,7 +223,7 @@ describe('the Host\'s controls, by state', () => {
   })
 
   it('offers Fortsetzen and Zurücksetzen while paused', async () => {
-    const page = await mount({ durationMs: 60_000, remainingMs: 25_000, startedAt: null })
+    const page = await mount({ durationMs: 60_000, remainingMs: 25_000, startedAt: null, lastStartedAt: null })
 
     expect(buttonLabels(page)).toEqual(['Fortsetzen', 'Zurücksetzen'])
   })
@@ -244,7 +244,7 @@ describe('the Host\'s controls, by state', () => {
   })
 
   it('shows no control to a Member', async () => {
-    const page = await mount({ durationMs: 60_000, remainingMs: 25_000, startedAt: null }, false)
+    const page = await mount({ durationMs: 60_000, remainingMs: 25_000, startedAt: null, lastStartedAt: null }, false)
 
     expect(page.findAll('button')).toHaveLength(0)
     expect(timeOf(page).text()).toBe('0:25')

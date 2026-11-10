@@ -3,6 +3,7 @@ import { GAME_GRID } from '~/utils/game-grid'
 import { reducedMotion } from '~/utils/motion'
 import { SCRAMBLE_FRAME_MS, finalAngle, removalEase, removalEnd, revealStage, scramble, sliceSpans, wheelAngle, type WheelTiming } from '~/utils/wheel'
 import { stopReached } from '~~/shared/draw-timeline'
+import type { HostGameFacts } from '~~/shared/game'
 import type { WheelView } from '~~/shared/stage'
 import { characterCount, cutToCharacters } from '~~/shared/text'
 
@@ -16,14 +17,16 @@ import { characterCount, cutToCharacters } from '~~/shared/text'
 // drawn slice leaves at stop + 2.8 s instead of 2.2 s. The drawn slice shrinks and the others close the gap (0.6 s), or fade and
 // jump under reduced motion. Left out of 0.7: the bulbs, the flapper, Compibert and the sounds (the Release has no sound).
 // The wheel is 340 px at most on a phone and 420 px from md up, and never changes size during a spin.
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   wheel: WheelView
   /** The Event's Hidden wheel setting: it delays the drawn slice's removal for every viewer alike, so the devices stay in step. */
   hidden: boolean
   isHost: boolean
   /** The server's time in epoch ms (useServerClock). */
   serverNow: () => number
-}>()
+  /** The Tags and Notes of the games, for the Host's game dialog on the drawn game's tile (#443); null for every other Member. */
+  hostGames?: Record<string, HostGameFacts> | null
+}>(), { hostGames: null })
 
 const { t } = useI18n()
 
@@ -229,9 +232,10 @@ const headingId = useId()
       </p>
       <!-- The drawn game as a tile in the pool's grid (#435): one column wide, as on the Event page's pool. -->
       <div :class="GAME_GRID">
-        <GameCard
+        <GameTile
           :game="card"
-          layout="tile"
+          :audience="isHost ? 'host' : 'member'"
+          :facts="hostGames?.[card.id] ?? null"
         />
       </div>
     </div>

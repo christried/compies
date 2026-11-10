@@ -43,7 +43,7 @@ export interface Secret { id: string, name: string, videoId: string, notes: stri
 // The Price's amount is a trace (#338): distinct per game, it names the game whose Price a read carries.
 export const priceTrace = (secret: Secret) => `"cents":${secret.cents}`
 export const traces = (secret: Secret) => [secret.name, secret.id, secret.imageKey, secret.videoId, secret.notes, priceTrace(secret)]
-// The Host's read holds every trace but a Tag: Tags live in the library only (#335).
+// The Host's read holds every trace, the Tag too, in `hostGames` (#443); a Player's holds none of them, so the Tag is a player trace like the rest (#335).
 export const playerTraces = (secret: Secret) => [...traces(secret), secret.tag]
 
 export function expectNone(what: Record<string, string>, secrets: readonly Secret[], include: (secret: Secret) => string[] = playerTraces) {
@@ -232,7 +232,7 @@ export function hiddenWheelWorld() {
   async function newGame(name: string, videoId: string): Promise<Secret> {
     // Every game carries notes (#224): a Player must not get them under a Hidden wheel.
     const notes = `Hausregel fuer ${name}`
-    // Lower case, so the key and the label are one string; no Event read carries a Tag, not even the Host's (#335).
+    // Lower case, so the key and the label are one string; only the library and the Host's `hostGames` carry a Tag (#335, #443): no Player's read does.
     const tag = `tag-${name.split(' ')[0]!.toLowerCase()}`
     // Distinct cents per game (#338): the amount names its game in a read.
     const cents = 1000 + 111 * (name.charCodeAt(0) - 64)

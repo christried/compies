@@ -171,3 +171,43 @@ describe('the tile layout (#435)', () => {
     expect(name.className).toContain('line-clamp-2')
   })
 })
+
+// A tile that opens a dialog (#443): the Host's tile is a button, a Member's stays plain.
+describe('the tile that opens (#443)', () => {
+  async function mountOpening(props: { opens?: boolean, to?: string }) {
+    page = await mountSuspended(GameCard, {
+      props: { game: { id: 'g-1', name: 'Mario Kart', imageUrl: null, youtubeId: null, price: null }, layout: 'tile', ...props },
+    })
+    return page
+  }
+
+  it('makes the name a button that names the game, says it opens a dialog, and emits open on a click', async () => {
+    const card = await mountOpening({ opens: true })
+
+    const button = card.get('button')
+    expect(button.text()).toBe('Mario Kart')
+    expect(button.attributes('type')).toBe('button')
+    expect(button.attributes('aria-haspopup')).toBe('dialog')
+    expect(button.classes()).toEqual(expect.arrayContaining(['focus-visible:focus-ring', 'after:absolute', 'after:inset-0']))
+    expect(card.find('b').exists()).toBe(false)
+
+    await button.trigger('click')
+
+    expect(card.emitted('open')).toHaveLength(1)
+  })
+
+  it('has no button without opens, and no aria-haspopup', async () => {
+    const card = await mountOpening({})
+
+    expect(card.find('button').exists()).toBe(false)
+    expect(card.find('[aria-haspopup]').exists()).toBe(false)
+    expect(card.get('b').text()).toBe('Mario Kart')
+  })
+
+  it('lets a link win over opens: with `to` the name is the link and no button', async () => {
+    const card = await mountOpening({ opens: true, to: '/bibliothek/g-1' })
+
+    expect(card.find('button').exists()).toBe(false)
+    expect(card.get('a').attributes('href')).toBe('/bibliothek/g-1')
+  })
+})

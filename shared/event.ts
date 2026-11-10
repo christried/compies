@@ -4,7 +4,7 @@ import type { VoteRow, VoteValue } from './poll'
 import { characterCount } from './text'
 import { beforeFinish, PHASES, type Phase } from './phase'
 import type { EventSettings, SettingsFloors } from './settings'
-import type { PoolGame, PoolGameFace } from './game'
+import type { HostGameFacts, PoolGame, PoolGameFace } from './game'
 import type { BonusVetoView, CeremonyView, ClipView, CoinView, CountdownView, EndView, ResultView, RoundView, SetGameView, StandingView, WheelView } from './stage'
 
 // Event limits shared by the create form and the server (#1 § Domain rules).
@@ -167,6 +167,11 @@ export interface EventView {
    * nothing about the pool, not even how many games it holds.
    */
   pool: (PoolGame | PoolGameFace)[] | null
+  /**
+   * What the Host's game dialog needs beyond the tiles (#443): the Tags and the Game notes of every game the Host's read names as a tile, by game id:
+   * the Game pool, the open Rounds' games and the latest spin's game. Only the Host gets it; null for every other Member, so no Tag and no Game notes reach one here.
+   */
+  hostGames: Record<string, HostGameFacts> | null
   /** The Event's Sessions (ADR 0011): dated ones in Date order first. Each has its Date, and the Date a Reopen withdrew until the next Date is set. */
   sessions: SessionView[]
   /** The removed Sessions that had a Date, earliest first (#65): only for the notice with that Date; they count nowhere else. */
