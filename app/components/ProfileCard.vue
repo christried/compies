@@ -29,7 +29,9 @@ async function save() {
   saveFailed.value = false
   try {
     const response = await $fetch<SavedProfile>('/api/profile/setup', { method: 'POST', body: { displayName: displayName.value } })
-    user.value = response.user
+    // Only the name is taken from the answer: its snapshot of the User can still carry the Appearance from before a choice
+    // made while this save was on its way, and replacing the User would put that one back (#404).
+    if (user.value) user.value = { ...user.value, displayName: response.user.displayName }
     // The trimmed name as stored.
     displayName.value = shownName(response.user)
     toast({ tone: 'success', text: t('profile.saved') })
