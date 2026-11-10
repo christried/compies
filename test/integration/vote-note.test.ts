@@ -1,15 +1,9 @@
 import { eq } from 'drizzle-orm'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
-import createEvent from '../../server/api/e/index.post'
-import readEvent from '../../server/api/e/[slug].get'
-import confirmDate from '../../server/api/e/[slug]/confirm.post'
-import rescheduleSession from '../../server/api/e/[slug]/sessions/[id]/reschedule.post'
-import removeSlot from '../../server/api/e/[slug]/slots/[slotId].delete'
-import putVote from '../../server/api/e/[slug]/slots/[slotId]/vote.put'
-import previewInvite from '../../server/api/invite/[invite].get'
 import { pollSlots, pollVotes, eventMembers, events, sessions, users } from '../../server/db/schema'
+import { createTestApp, type TestRequest } from './app'
 import { TEST_SETTINGS } from './fixtures'
-import { createTestDb, createTestServer } from './harness'
+import { createTestDb, resetDatabase } from './harness'
 import { setAllowlist, signIn, stubAuthEnv } from './sign-in'
 
 // The Note on a Vote (#102). Slots are far in the future; past Slots are made by moving their start into 2001.
@@ -18,19 +12,11 @@ const member = { provider: 'discord', id: '2', name: 'Gast', email: 'member@exam
 
 describe('Notes on Votes', () => {
   let testDb: Awaited<ReturnType<typeof createTestDb>>
-  let request: ReturnType<typeof createTestServer>
+  let request: TestRequest
 
   beforeAll(async () => {
     testDb = await createTestDb()
-    request = createTestServer(testDb.db, {
-      'POST /api/e': createEvent,
-      'GET /api/e/:slug': readEvent,
-      'POST /api/e/:slug/confirm': confirmDate,
-      'POST /api/e/:slug/sessions/:id/reschedule': rescheduleSession,
-      'DELETE /api/e/:slug/slots/:slotId': removeSlot,
-      'PUT /api/e/:slug/slots/:slotId/vote': putVote,
-      'GET /api/invite/:invite': previewInvite,
-    })
+    request = createTestApp(testDb.db)
   })
 
   afterAll(async () => {
@@ -39,11 +25,7 @@ describe('Notes on Votes', () => {
 
   beforeEach(async () => {
     stubAuthEnv()
-    await testDb.db.delete(pollVotes)
-    await testDb.db.delete(pollSlots)
-    await testDb.db.delete(eventMembers)
-    await testDb.db.delete(events)
-    await testDb.db.delete(users)
+    await resetDatabase(testDb.db)
   })
 
   afterEach(() => {
