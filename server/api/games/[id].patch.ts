@@ -3,10 +3,10 @@ import { defineEventHandler, getRouterParam, readBody } from 'h3'
 import { games } from '../../db/schema'
 import { useDb } from '../../utils/db'
 import { apiError } from '../../utils/errors'
-import { saveTags } from '../../utils/game-tags'
-import { loadGame, priceColumns, readGameViews, requireLibraryViewer } from '../../utils/library'
+import { loadTags, saveTags } from '../../utils/game-tags'
+import { loadGame, priceColumns, priceOf, readGameViews, requireLibraryViewer } from '../../utils/library'
 import { useClock } from '../../utils/clock'
-import { canEditGame, isPriceCheckOnly, parseGameInput, type GameView } from '../../../shared/game'
+import { canEditGame, isPriceCheckOnly, parseGameInput, tagsWithFreeToPlay, type GameView } from '../../../shared/game'
 
 // Edits a game of the library (#142). The body is the whole game, as the form sends it, except that `{ priceChecked: true }`
 // alone restamps the Price day and nothing else (#360). Only the creator and the Platform admin may edit; another Host
@@ -33,7 +33,12 @@ export default defineEventHandler(async (event): Promise<GameView> => {
     const [current] = await tx.select().from(games).where(eq(games.id, game.id)).for('update')
     const priceCols = priceColumns({ price, priceChecked }, current!, now)
     const [row] = await tx.update(games).set({ ...columns, ...priceCols }).where(eq(games.id, game.id)).returning()
-    if (tags !== undefined) await saveTags(tx, game.id, tags)
+    // The Tag „Free-to-play“ follows the Price after this save (#423): Tags sent, or the stored ones; written when they
+    // were sent or when the rule changes the stored list.
+    const stored = (await loadTags(tx, [game.id])).get(game.id) ?? []
+    const next = tagsWithFreeToPlay(tags ?? stored, priceOf(row!))
+    const changed = tags !== undefined || next.length !== stored.length || next.some((tag, index) => tag.key !== stored[index]!.key)
+    if (changed) await saveTags(tx, game.id, next)
     const [built] = await readGameViews(tx, [{ game: row!, creatorName }], viewer)
     return built!
   })
