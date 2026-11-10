@@ -1,15 +1,6 @@
 import { eq } from 'drizzle-orm'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
-import getActivity from '../../server/api/e/[slug]/activity.get'
-import grantBonusVeto from '../../server/api/e/[slug]/bonus-vetoes.post'
-import castVeto from '../../server/api/e/[slug]/draws/[drawId]/veto.post'
-import moveMember from '../../server/api/e/[slug]/move.post'
-import spinWheel from '../../server/api/e/[slug]/rounds/spin.post'
-import startSession from '../../server/api/e/[slug]/sessions/start.post'
-import createEvent from '../../server/api/e/index.post'
-import readEvent from '../../server/api/e/[slug].get'
-import confirmDate from '../../server/api/e/[slug]/confirm.post'
-import { activity, bonusVetoes, draws, eventMembers, eventPoolGames, events, games, pollSlots, rounds, users, vetoes } from '../../server/db/schema'
+import { bonusVetoes, events } from '../../server/db/schema'
 import { testClock } from '../../server/utils/clock'
 import { memoryRoomNotifier } from '../../server/utils/room-notifier'
 import type { ActivityPage } from '../../shared/activity'
@@ -17,10 +8,10 @@ import type { EventView } from '../../shared/event'
 import type { BonusVetoGranted } from '../../shared/stage'
 import { BONUS_VETO_MAX } from '../../shared/rounds'
 import { SPIN } from '../draw-offsets'
-import { TEST_SETTINGS } from './fixtures'
-import { createTestDb, createTestServer } from './harness'
-import { startRunningSession } from './running-session'
-import { setAllowlist, signIn, stubAuthEnv } from './sign-in'
+import { createTestApp, errorOf, sendVia, type TestRequest } from './app'
+import { createTestDb, resetDatabase } from './harness'
+import { startRunningEvent, type Stage } from './scenario'
+import { stubAuthEnv } from './sign-in'
 
 // Bonus Vetoes (#233, spec #218 § Bonus Vetoes): the Host grants a Party one, through the HTTP API with the in-memory room and a test
 // clock. The rules are unit-tested in rounds.test.ts; this file checks what a Host, a Member and the Event read observe.
@@ -31,30 +22,21 @@ const players = {
   two: { provider: 'discord', id: '3', name: 'Zwei', email: 'two@example.com', image: undefined },
 } as const
 
-const SLOT = '2090-10-30T20:30'
 const T0 = '2090-10-30T10:00:00.000Z'
 // A draw starts a lead after its spin, stops after 6 s, and its Veto window (when one opens) runs 60 s past the stop.
 const { stop: STOP, end: END } = SPIN
 
 describe('Bonus Vetoes (#233)', () => {
   let testDb: Awaited<ReturnType<typeof createTestDb>>
-  let request: ReturnType<typeof createTestServer>
+  let request: TestRequest
+  let stage: Stage
   const notifier = memoryRoomNotifier()
   const clock = testClock(T0)
 
   beforeAll(async () => {
     testDb = await createTestDb()
-    request = createTestServer(testDb.db, {
-      'POST /api/e': createEvent,
-      'GET /api/e/:slug': readEvent,
-      'GET /api/e/:slug/activity': getActivity,
-      'POST /api/e/:slug/confirm': confirmDate,
-      'POST /api/e/:slug/move': moveMember,
-      'POST /api/e/:slug/sessions/start': startSession,
-      'POST /api/e/:slug/rounds/spin': spinWheel,
-      'POST /api/e/:slug/draws/:drawId/veto': castVeto,
-      'POST /api/e/:slug/bonus-vetoes': grantBonusVeto,
-    }, { roomNotifier: notifier, clock })
+    request = createTestApp(testDb.db, { roomNotifier: notifier, clock })
+    stage = { request, db: testDb.db, clock, notifier }
   })
 
   afterAll(async () => {
@@ -65,66 +47,31 @@ describe('Bonus Vetoes (#233)', () => {
     stubAuthEnv()
     clock.set(T0)
     notifier.clear()
-    await testDb.db.delete(bonusVetoes)
-    await testDb.db.delete(vetoes)
-    await testDb.db.delete(draws)
-    await testDb.db.delete(rounds)
-    await testDb.db.delete(eventPoolGames)
-    await testDb.db.delete(activity)
-    await testDb.db.delete(pollSlots)
-    await testDb.db.delete(eventMembers)
-    await testDb.db.delete(events)
-    await testDb.db.delete(games)
-    await testDb.db.delete(users)
+    await resetDatabase(testDb.db)
   })
 
   afterEach(() => {
     vi.unstubAllEnvs()
   })
 
-  function send(method: string, path: string, cookie: string | undefined, body?: unknown) {
-    return request(path, {
-      method,
-      headers: { ...(body === undefined ? {} : { 'content-type': 'application/json' }), ...(cookie ? { cookie } : {}) },
-      body: body === undefined ? undefined : JSON.stringify(body),
-    })
-  }
-
-  async function errorOf(response: Response) {
-    return { status: response.status, code: (await response.json() as { statusMessage: string }).statusMessage }
-  }
+  const send = sendVia(() => request)
 
   /**
    * A Running Session (or only an Event, with `started: false`) of a Lucky Wheel Event, or of a Host pick one with `mode`: one Player in
    * each of two Parties, four games in the Game pool, the Veto allowance `allowance` (Lucky Wheel only).
    */
   async function event({ mode = 'lucky_wheel', allowance = 1, started = true }: { mode?: 'lucky_wheel' | 'admin_pick', allowance?: number, started?: boolean } = {}) {
-    setAllowlist({ hosts: 'discord:1' })
-    const hostCookie = (await signIn(testDb.db, host)).cookie
-    const one = (await signIn(testDb.db, players.one)).cookie
-    const two = (await signIn(testDb.db, players.two)).cookie
-    const created = await send('POST', '/api/e', hostCookie, {
-      name: 'Freitags-Zocken', dateMode: 'poll', sessions: 1, slots: [SLOT],
-      settings: { ...TEST_SETTINGS, teamSize: 1, selectionMode: mode, vetoAllowance: mode === 'lucky_wheel' ? allowance : null },
+    const ev = await startRunningEvent(stage, {
+      host,
+      players,
+      seats: started ? [['one', 1], ['two', 2]] : [],
+      sessions: 1,
+      confirmed: started ? 1 : 0,
+      start: started,
+      settings: { teamSize: 1, selectionMode: mode, vetoAllowance: mode === 'lucky_wheel' ? allowance : null },
+      games: ['Halo', 'Kart', 'Dart', 'Uno'].map(name => ({ key: name, values: { name }, pool: true })),
     })
-    expect(created.status).toBe(200)
-    const { slug } = await created.json() as { slug: string }
-    const [eventRow] = await testDb.db.select().from(events).where(eq(events.slug, slug))
-    const [hostRow] = await testDb.db.select().from(users).where(eq(users.email, host.email))
-    for (const profile of [players.one, players.two]) {
-      const [row] = await testDb.db.select().from(users).where(eq(users.email, profile.email))
-      await testDb.db.insert(eventMembers).values({ eventId: eventRow!.id, userId: row!.id })
-    }
-    const inserted = await testDb.db.insert(games).values([
-      { name: 'Halo', createdBy: hostRow!.id },
-      { name: 'Kart', createdBy: hostRow!.id },
-      { name: 'Dart', createdBy: hostRow!.id },
-      { name: 'Uno', createdBy: hostRow!.id },
-    ]).returning()
-    await testDb.db.insert(eventPoolGames).values(inserted.map(game => ({ eventId: eventRow!.id, gameId: game.id })))
-    if (started) await startRunningSession(request, testDb.db, { slug, hostCookie, seated: [{ cookie: one, email: players.one.email }, { cookie: two, email: players.two.email }] })
-    notifier.clear()
-    return { slug, eventId: eventRow!.id, hostCookie, one, two }
+    return { slug: ev.slug, eventId: ev.eventId, hostCookie: ev.host.cookie, one: ev.players.one.cookie, two: ev.players.two.cookie }
   }
 
   type Party = Awaited<ReturnType<typeof event>>
