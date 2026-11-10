@@ -33,9 +33,20 @@ async function until(tab, expression, what, ms = 10_000) {
   throw new Error(`${what} never came`)
 }
 
-/** Waits at most 5 s until nothing on the page is loading (the Activity feed and the Share image load after mount), then 300 ms. */
+/**
+ * Waits at most 5 s until nothing on the page is loading (the Activity feed and the Share image load after mount), then until every
+ * element's opacity is the same in two samples 300 ms apart, at most 3 s more: a card that fades in by script (the wheel's „Zuletzt gezogen“)
+ * is no CSS animation, which the runner's settle would wait for, and read half drawn in one Appearance it is a „missing“ difference.
+ */
 async function quiet(tab) {
   for (const end = Date.now() + 5000; Date.now() < end && await tab.evaluate(`!!document.querySelector('[aria-busy="true"], .animate-pulse')`);) await sleep(150)
+  const opacities = () => tab.evaluate(`[...document.body.querySelectorAll('*')].map(el => getComputedStyle(el).opacity).join()`)
+  for (let before = await opacities(), end = Date.now() + 3000; Date.now() < end;) {
+    await sleep(300)
+    const after = await opacities()
+    if (after === before) break
+    before = after
+  }
   await sleep(300)
 }
 
@@ -327,7 +338,7 @@ const clipboard = (tab, outcome) => tab.evaluate(`Object.defineProperty(navigato
  * `hostStops` and `spielerStops` are the stops of each viewer, `only` leaves one of them out, `prepare(ctx)` runs after the page
  * is quiet, `endOfPass` after the last read of the file's list.
  */
-function pair({ name, group, key = name, fresh = false, waitFor = 'h1', hostStops = [], spielerStops = [], only, viewport, stillHolds, prepare, after }) {
+function pair({ name, group, key = name, fresh = false, waitFor = 'h1', hostStops = [], spielerStops = [], only, viewport, differs, stillHolds, prepare, after }) {
   const sides = [
     { suffix: 'host', account: 'host', width: 1440, stops: hostStops },
     { suffix: 'spieler', account: 'member', width: 390, stops: spielerStops },
@@ -338,6 +349,7 @@ function pair({ name, group, key = name, fresh = false, waitFor = 'h1', hostStop
     account: side.account,
     widths: [side.width],
     ...(viewport ? { viewport } : {}),
+    ...(differs ? { differs } : {}),
     async open(ctx) {
       ctx.event = fresh ? await BUILDS[key](ctx) : await made(ctx, key, BUILDS[key])
       await park(ctx, side.account)
@@ -555,7 +567,8 @@ export const STATES = [
       stop('tab-aktivitaet', tab => press(tab, `nav[aria-label=${JSON.stringify(COPY.event.tabs.label)}] button`, COPY.nav.tabs.activity)),
     ],
   }),
-  ...pair({ name: 'muenze', group: 'event-live' }),
+  // The coin lands on a side the server draws at random: Kopf in one pass, Schwanz in the other. The coin card is read in both and compared in neither.
+  ...pair({ name: 'muenze', group: 'event-live', differs: '[data-testid="coin-card"]' }),
   ...pair({ name: 'countdown-laeuft', group: 'event-live' }),
   ...pair({ name: 'countdown-zeit-um', group: 'event-live' }),
   ...pair({ name: 'gleichstand', group: 'event-live' }),
