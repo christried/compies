@@ -3,7 +3,7 @@ import { Lock, Plus } from '@lucide/vue'
 import { teamVar } from '~/utils/team-style'
 
 // One team on the Game board (#160, 02-components § TeamZone, App Lobby screen 09): one header band in the team's
-// colour and pattern with its mark, its name (a TeamChip, #161) and the count (with a lock once the name is frozen, #164); under it the `builder` slot (the Team
+// colour and pattern with its mark, its name (a TeamChip, #161) and the count; under it the `builder` slot (the Team
 // word field, #161); below that the people in the default slot and a free place up to the Team size, in the same cells as the people. While Players
 // cannot move into a team the free places read „Zu“ with the reason; a team a person is held over lights up its first
 // free place. The zone is the drop target of the board's drag: `data-drop-zone` is what the GameBoard finds it by.
@@ -19,12 +19,10 @@ const props = withDefaults(defineProps<{
   lockReason: string | null
   /** What the locked places say: „Zu“ in the poll, „Gesperrt“ once the first Session started (#164). */
   lockLabel?: 'closed' | 'locked'
-  /** The team's name is frozen since the first Session started (#164). */
-  frozen?: boolean
   dropTarget: boolean
   /** The viewer's own team. */
   mine: boolean
-}>(), { lockLabel: 'closed', frozen: false })
+}>(), { lockLabel: 'closed' })
 
 const { t } = useI18n()
 const free = computed(() => Math.max(props.size - props.taken, 0))
@@ -56,18 +54,6 @@ const free = computed(() => Math.max(props.size - props.taken, 0))
         </h3>
       </slot>
       <span class="num-ui ml-auto inline-flex flex-none items-center gap-1 rounded-pill border-2 border-line bg-surface px-[7px] text-[12px] font-extrabold text-ink">
-        <span
-          v-if="frozen"
-          role="img"
-          :aria-label="t('team.word.frozen')"
-          :title="t('team.word.frozen')"
-          class="flex-none"
-        >
-          <AppIcon
-            :icon="Lock"
-            :size="12"
-          />
-        </span>
         {{ taken }}/{{ size }}
       </span>
     </header>

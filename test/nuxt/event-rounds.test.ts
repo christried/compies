@@ -261,7 +261,7 @@ describe('when a Round leaves the open Rounds (#276)', () => {
 })
 
 describe('entering a Result (#273)', () => {
-  const pair: BoardTeam[] = [{ position: 1, name: 'Wilde Gurken', frozen: true }, { position: 2, name: null, frozen: false }]
+  const pair: BoardTeam[] = [{ position: 1, name: 'Wilde Gurken' }, { position: 2, name: null }]
   const enterButtons = (stage: Awaited<ReturnType<typeof mount>>) => stage.get('[aria-label="Offene Spiele"]').findAll('button').filter((button: Wrapper) => button.text() === 'Ergebnis eintragen')
   const HOST_ENTERS = 'Das Ergebnis trägt der Host ein'
 

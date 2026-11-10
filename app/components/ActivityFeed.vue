@@ -19,7 +19,7 @@ const props = withDefaults(defineProps<{
   nextNumber?: number | null
   /** Counts the instants that passed (the page's useInstantRefresh): an entry that waited for its instant (a draw's) is readable now, so the feed reads again (#229). */
   refreshTick?: number
-  /** The Event's teams: a Result's sentence names the winners by their frozen Team name (#273); without them, by colour. */
+  /** The Event's teams: a Result's sentence names the winners by their Team name (#273); without them, by colour. */
   teams?: BoardTeam[]
 }>(), { sessions: () => [], nextNumber: null, refreshTick: 0, teams: () => [] })
 

@@ -111,7 +111,7 @@ describe('EventPageHead', () => {
   describe('in a finished Event', () => {
     const ended = dated('a', 1, SAT, { startedAt: SAT, endedAt: SUN })
     const FINISHED: Partial<PageInput> = { event: { phase: 'finished', isHost: false } }
-    const teams: BoardTeam[] = [{ position: 1, name: 'Wilde Gurken', frozen: true }, { position: 2, name: null, frozen: false }]
+    const teams: BoardTeam[] = [{ position: 1, name: 'Wilde Gurken' }, { position: 2, name: null }]
 
     it('says the Event is over and names the winner by the Team\'s frozen name', async () => {
       const head = await mountHead([ended], FINISHED, false, { winners: [1], teams })
@@ -127,7 +127,7 @@ describe('EventPageHead', () => {
     })
 
     it('wraps the longest Team name instead of overflowing', async () => {
-      const long: BoardTeam[] = [{ position: 1, name: 'Die Unerschrockenen Wanderer', frozen: true }]
+      const long: BoardTeam[] = [{ position: 1, name: 'Die Unerschrockenen Wanderer' }]
       const head = await mountHead([ended], FINISHED, false, { winners: [1], teams: long })
 
       expect(head.get('h1').text()).toBe('Die Unerschrockenen Wanderer gewinnt das Event')

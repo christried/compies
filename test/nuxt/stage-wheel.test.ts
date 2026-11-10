@@ -15,7 +15,7 @@ import { memberView, SANNE, view } from './event-page'
 const STOP = Date.parse('2090-10-30T20:00:10.000Z')
 const iso = (ms: number) => new Date(ms).toISOString()
 const halo = { id: 'g1', name: 'Halo', imageUrl: null, youtubeId: null, clipStart: 0, clipLength: 30, playersMin: 2, playersMax: 4, suitabilities: [], price: null }
-const teams = [{ position: 1, name: null, frozen: false }, { position: 2, name: null, frozen: false }]
+const teams = [{ position: 1, name: null }, { position: 2, name: null }]
 const members = [
   memberView({ id: SANNE, name: 'Sanne', isHost: true, zone: 'team', team: 1 }),
   memberView({ id: 'mate', name: 'Zwei', zone: 'team', team: 2 }),

@@ -196,8 +196,8 @@ describe('Starting and ending Sessions', () => {
         { position: 2, frozenName: null },
       ])
       expect((await read(game, game.cookies.three)).teams).toEqual([
-        { position: 1, name: 'Wilde Gurken', frozen: true },
-        { position: 2, name: null, frozen: true },
+        { position: 1, name: 'Wilde Gurken' },
+        { position: 2, name: null },
       ])
     })
 
@@ -395,13 +395,13 @@ describe('Starting and ending Sessions', () => {
       const game = await ready()
       await send('POST', `/api/e/${game.slug}/team-word`, game.cookies.one, { word: 'Wilde' })
       await start(game)
-      expect((await read(game)).teams[0]).toEqual({ position: 1, name: 'Wilde', frozen: true })
+      expect((await read(game)).teams[0]).toEqual({ position: 1, name: 'Wilde' })
 
       const reset = await send('POST', `/api/e/${game.slug}/teams/1/reset-name`, game.hostCookie)
 
       expect(reset.status).toBe(200)
       const view = await read(game)
-      expect(view.teams[0]).toEqual({ position: 1, name: null, frozen: true })
+      expect(view.teams[0]).toEqual({ position: 1, name: null })
       // The word stays with its Player; only the frozen name changed.
       expect(view.members.find(member => member.id === game.ids.one)!.teamWord).toBe('Wilde')
     })

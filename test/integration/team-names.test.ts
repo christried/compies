@@ -196,7 +196,7 @@ describe('Team names', () => {
       const game = await setup()
       await seat(game, 'one', 1)
 
-      expect((await read(game)).teams).toEqual([{ position: 1, name: null, frozen: false }, { position: 2, name: null, frozen: false }])
+      expect((await read(game)).teams).toEqual([{ position: 1, name: null }, { position: 2, name: null }])
     })
 
     it('is the words in the order the Players joined the team', async () => {
