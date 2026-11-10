@@ -45,14 +45,14 @@ const appearanceOptions = computed<{ value: Appearance, label: string }[]>(() =>
 
       <SettingsRow
         :icon="Sun"
-        :title="t('settings.theme')"
-        :description="t('settings.themeHelp')"
+        :title="t('settings.appearance')"
+        :description="t('settings.appearanceHelp')"
       >
         <template #default="{ descriptionId }">
           <SegmentedControl
             :model-value="appearance.appearance.value"
             :options="appearanceOptions"
-            :label="t('settings.theme')"
+            :label="t('settings.appearance')"
             :aria-describedby="descriptionId"
             @update:model-value="appearance.choose"
           />
@@ -65,7 +65,7 @@ const appearanceOptions = computed<{ value: Appearance, label: string }[]>(() =>
       class="px-[18px] pt-1.5 pb-3"
     >
       <NoticeBanner tone="critical">
-        {{ t('settings.themeSaveFailed') }}
+        {{ t('settings.appearanceSaveFailed') }}
       </NoticeBanner>
     </div>
   </section>
