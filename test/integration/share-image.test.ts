@@ -9,7 +9,7 @@ import type { Phase } from '../../shared/phase'
 import type { ShareImageModel } from '../../shared/share-image'
 import { createTestApp, errorOf, sendVia, type TestRequest } from './app'
 import { createTestDb, resetDatabase } from './harness'
-import { hostEntersResult, hostFinishes, hostSets, startRunningEvent, type Stage } from './scenario'
+import { hostEntersResult, hostFinishes, hostSets, readEventText, readFeedText, startRunningEvent, type Stage } from './scenario'
 import { stubAuthEnv } from './sign-in'
 
 // What the renderer was asked to draw, so a test can read the model the route built (it is the model that says what the picture holds).
@@ -244,8 +244,8 @@ describe('the Share image route', () => {
   describe('what it stores', () => {
     it('leaves the feed, the room and the Event read as they were', async () => {
       const { slug, eventId, cookies } = await event()
-      const readBefore = await (await send('GET', `/api/e/${slug}`, cookies.one)).text()
-      const feedBefore = await (await send('GET', `/api/e/${slug}/activity`, cookies.one)).text()
+      const readBefore = await readEventText(stage, cookies.one, slug)
+      const feedBefore = await readFeedText(stage, cookies.one, slug)
       const rowsBefore = await testDb.db.select().from(activity).where(eq(activity.eventId, eventId))
       notifier.clear()
 
@@ -254,8 +254,8 @@ describe('the Share image route', () => {
 
       expect(notifier.messages(eventId)).toEqual([])
       expect(await testDb.db.select().from(activity).where(eq(activity.eventId, eventId))).toEqual(rowsBefore)
-      expect(await (await send('GET', `/api/e/${slug}/activity`, cookies.one)).text()).toBe(feedBefore)
-      expect(await (await send('GET', `/api/e/${slug}`, cookies.one)).text()).toBe(readBefore)
+      expect(await readFeedText(stage, cookies.one, slug)).toBe(feedBefore)
+      expect(await readEventText(stage, cookies.one, slug)).toBe(readBefore)
       expect((JSON.parse(readBefore) as EventView).event.phase).toBe('finished')
     }, 30_000)
   })

@@ -3,11 +3,10 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } 
 import { activity, bonusVetoes, draws, games, rounds, vetoes } from '../../server/db/schema'
 import { testClock } from '../../server/utils/clock'
 import { memoryRoomNotifier } from '../../server/utils/room-notifier'
-import type { ActivityPage } from '../../shared/activity'
 import type { EventView } from '../../shared/event'
 import { createTestApp, errorOf, sendVia, type TestRequest } from './app'
 import { createTestDb, resetDatabase } from './harness'
-import { startRunningEvent, type Signed, type Stage } from './scenario'
+import { readEvent, readEventText, readFeed, startRunningEvent, type Signed, type Stage } from './scenario'
 import { SPIN, WINDOW_MS } from '../draw-offsets'
 import { stubAuthEnv } from './sign-in'
 
@@ -94,7 +93,7 @@ describe('Vetoes', () => {
 
   type Party = Awaited<ReturnType<typeof running>>
 
-  const read = async (party: Party, cookie = party.hostCookie) => await (await send('GET', `/api/e/${party.slug}`, cookie)).json() as EventView
+  const read = (party: Party, cookie = party.hostCookie) => readEvent(stage, cookie, party.slug)
   const spin = (party: Party, cookie = party.hostCookie) => send('POST', `/api/e/${party.slug}/rounds/spin`, cookie)
   const putBackRound = (party: Party, roundId: string) => send('DELETE', `/api/e/${party.slug}/rounds/${roundId}`, party.hostCookie)
   const set = (party: Party, gameId: string, vetoAllowed?: boolean) => send('POST', `/api/e/${party.slug}/rounds`, party.hostCookie, vetoAllowed === undefined ? { gameId } : { gameId, vetoAllowed })
@@ -102,7 +101,7 @@ describe('Vetoes', () => {
   const roundRows = (party: Party) => testDb.db.select().from(rounds).where(eq(rounds.eventId, party.eventId)).orderBy(rounds.startedAt)
   const drawRows = () => testDb.db.select().from(draws).orderBy(draws.committedAt)
   const vetoRows = () => testDb.db.select().from(vetoes)
-  const feedOf = async (party: Party, cookie: string) => (await (await send('GET', `/api/e/${party.slug}/activity`, cookie)).json() as ActivityPage).entries
+  const feedOf = (party: Party, cookie: string) => readFeed(stage, cookie, party.slug)
 
   /** Spins and answers the Round's and the draw's ids. */
   async function spun(party: Party) {
@@ -324,7 +323,7 @@ describe('Vetoes', () => {
       const party = await running({ hiddenWheel: true })
       await setWithVeto(party)
 
-      const text = await (await send('GET', `/api/e/${party.slug}`, party.cookies.one)).text()
+      const text = await readEventText(stage, party.cookies.one, party.slug)
       const view = JSON.parse(text) as EventView
 
       expect(view.wheel!.vetoes.draw).toMatchObject({ kind: 'set', game: { name: 'Halo' } })

@@ -7,7 +7,7 @@ import type { EventView } from '../../shared/event'
 import { settingsFromRow } from '../../shared/settings'
 import { createTestApp, sendVia, type TestRequest } from './app'
 import { createTestDb, resetDatabase } from './harness'
-import { startRunningEvent, type Stage } from './scenario'
+import { readEvent, startRunningEvent, type Stage } from './scenario'
 import { stubAuthEnv } from './sign-in'
 
 // Settings follow the teams (#163, spec #153 § Game board rules, § API contracts): the Team size never goes below the
@@ -100,7 +100,7 @@ describe('settings follow the teams (#163)', () => {
   }
 
   async function read(game: Game): Promise<EventView> {
-    return await (await send('GET', `/api/e/${game.slug}`, game.hostCookie)).json() as EventView
+    return await readEvent(stage, game.hostCookie, game.slug)
   }
 
   async function seatsOf(game: Game) {

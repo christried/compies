@@ -4,7 +4,7 @@ import { pollSlots, pollVotes, events, sessions, users } from '../../server/db/s
 import { createTestApp, type TestRequest } from './app'
 import { TEST_SETTINGS } from './fixtures'
 import { createTestDb, resetDatabase } from './harness'
-import { startRunningEvent, type Stage } from './scenario'
+import { readEventText, startRunningEvent, type Stage } from './scenario'
 import { setAllowlist, signIn, stubAuthEnv } from './sign-in'
 
 // The Note on a Vote (#102). Slots are far in the future; past Slots are made by moving their start into 2001.
@@ -66,8 +66,9 @@ describe('Notes on Votes', () => {
     })
   }
 
+  /** The Event read untyped: the cases read `sessions[0].notes`, which `EventView` has on a Session with a Date only. */
   async function read(cookie: string, slug: string) {
-    return (await request(`/api/e/${slug}`, { headers: { cookie } })).json()
+    return JSON.parse(await readEventText(stage, cookie, slug))
   }
 
   async function storedNote(slotId: string, userId: string) {

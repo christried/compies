@@ -6,7 +6,7 @@ import type { Place } from '../../shared/board'
 import type { EventView } from '../../shared/event'
 import { createTestApp, errorOf, sendVia, type TestRequest } from './app'
 import { createTestDb, resetDatabase } from './harness'
-import { hostSetsDates, playersTakeSeats, startRunningEvent, type Stage } from './scenario'
+import { hostSetsDates, playersTakeSeats, readEvent, startRunningEvent, type Stage } from './scenario'
 import { stubAuthEnv } from './sign-in'
 
 // Starting and ending Sessions (#164, spec #153 § API contracts): the start rule through the API, what the first start
@@ -72,7 +72,7 @@ describe('Starting and ending Sessions', () => {
   const send = sendVia(() => request)
 
   async function read(game: Game, cookie = game.hostCookie): Promise<EventView> {
-    return await (await send('GET', `/api/e/${game.slug}`, cookie)).json() as EventView
+    return await readEvent(stage, cookie, game.slug)
   }
 
   /** Sets the Dates of the first `count` Sessions from the Slots, in order. */

@@ -46,7 +46,7 @@ import { setAllowlist, signIn, type ProviderProfile } from './sign-in'
 export interface Stage {
   request: TestRequest
   db: Db
-  /** For `clockToStop`, `clockToEnd`, `clockAfter`: the clock the app was built with. */
+  /** For `clockToStop` and `clockToEnd`: the clock the app was built with. */
   clock?: ReturnType<typeof testClock>
   /** Cleared after the start when `quiet` says so. */
   notifier?: ReturnType<typeof memoryRoomNotifier>
@@ -307,12 +307,6 @@ export async function clockToEnd(stage: Stage, drawId: string): Promise<void> {
   const { clock, row } = await drawRow(stage, drawId)
   if (!row.vetoEndsAt) throw new Error(`The draw ${drawId} opened no Veto window`)
   clock.set(row.vetoEndsAt)
-}
-
-/** Moves the clock `ms` after the draw's commit, for a case at an exact instant: the stop minus 1 ms is `SPIN.stop - 1` (test/draw-offsets.ts). */
-export async function clockAfter(stage: Stage, drawId: string, ms: number): Promise<void> {
-  const { clock, row } = await drawRow(stage, drawId)
-  clock.set(new Date(row.committedAt.getTime() + ms))
 }
 
 // --- Reads ----------------------------------------------------------------------------------------------------------------

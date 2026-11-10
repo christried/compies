@@ -8,7 +8,7 @@ import type { GamePrice, GameView } from '../../shared/game'
 import { createTestApp, mountedRoutes, type MountedRoute, type TestRequest } from './app'
 import { TEST_SETTINGS } from './fixtures'
 import { createTestDb, resetDatabase } from './harness'
-import { hostCreatesEvent, playersJoin, signInAs, startRunningSession, type Signed, type Stage } from './scenario'
+import { hostCreatesEvent, playersJoin, readEventText, readFeedText, signInAs, startRunningSession, type Signed, type Stage } from './scenario'
 import { setAllowlist, stubAuthEnv } from './sign-in'
 
 // What the Hidden wheel's secrecy tests share (#148, split in #418): the app with its doubles, the cast, the four games and the
@@ -264,11 +264,7 @@ export function hiddenWheelWorld() {
     return { slug: created.slug, secrets: [a, b, c], a }
   }
 
-  async function rawRead(cookie: string, slug: string) {
-    const response = await request(`/api/e/${slug}`, { headers: { cookie } })
-    expect(response.status).toBe(200)
-    return await response.text()
-  }
+  const rawRead = (cookie: string, slug: string) => readEventText(stage(), cookie, slug)
 
   /**
    * A Running Session under a Hidden wheel: Alpha and Beta in the Game pool, Gamma and Epsilon only in the library. `more` are the
@@ -292,8 +288,8 @@ export function hiddenWheelWorld() {
 
   /** Everything the Player can read: the Event read, the feed and the room. */
   async function whatThePlayerGets(slug: string, eventId: string) {
-    const feed = await request(`/api/e/${slug}/activity?limit=100`, { headers: { cookie: playerSigned.cookie } })
-    return { event: await rawRead(playerSigned.cookie, slug), feed: await feed.text(), room: JSON.stringify(notifier.messages(eventId)) }
+    const feed = await readFeedText(stage(), playerSigned.cookie, slug, 'limit=100')
+    return { event: await rawRead(playerSigned.cookie, slug), feed, room: JSON.stringify(notifier.messages(eventId)) }
   }
 
   return {

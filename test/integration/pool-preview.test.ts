@@ -8,7 +8,7 @@ import { TEST_SETTINGS } from './fixtures'
 import { createTestApp, type TestRequest } from './app'
 import { createTestDb, resetDatabase } from './harness'
 import { second } from './hidden-wheel-world'
-import { hostPutsBack, hostSets, signInAs, startRunningSession, type Signed, type Stage } from './scenario'
+import { hostPutsBack, hostSets, readEventText, readFeedText, signInAs, startRunningSession, type Signed, type Stage } from './scenario'
 import { setAllowlist, stubAuthEnv } from './sign-in'
 
 // The secrecy of the Pool preview (#225), the same promise as the Hidden wheel's (hidden-wheel.test.ts): with the
@@ -106,11 +106,7 @@ describe('Pool preview secrecy (#225)', () => {
     return { slug, pool }
   }
 
-  async function rawRead(cookie: string, slug: string) {
-    const response = await request(`/api/e/${slug}`, { headers: { cookie } })
-    expect(response.status).toBe(200)
-    return await response.text()
-  }
+  const rawRead = (cookie: string, slug: string) => readEventText(stage(), cookie, slug)
 
   // Everything a pool game shows: the Event read of a viewer who may see the pools holds all of it, that of one who may not holds none of it (notes too, #223, #224).
   // The Price's amount is a trace too (#338): distinct per game, it names the game whose Price a read carries.
@@ -291,8 +287,8 @@ describe('Pool preview secrecy (#225)', () => {
     }
 
     async function whatThePlayerGets(slug: string, eventId: string) {
-      const feed = await request(`/api/e/${slug}/activity?limit=100`, { headers: { cookie: playerCookie } })
-      return { event: await rawRead(playerCookie, slug), feed: await feed.text(), room: JSON.stringify(notifier.messages(eventId)) }
+      const feed = await readFeedText(stage(), playerCookie, slug, 'limit=100')
+      return { event: await rawRead(playerCookie, slug), feed, room: JSON.stringify(notifier.messages(eventId)) }
     }
 
     function expectNone(what: Record<string, string>, games: PoolGame[], include: (game: PoolGame) => string[] = hidden) {

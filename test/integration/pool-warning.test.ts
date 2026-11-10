@@ -3,11 +3,10 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } 
 import { bonusVetoes, rounds, vetoes } from '../../server/db/schema'
 import { testClock } from '../../server/utils/clock'
 import { memoryRoomNotifier } from '../../server/utils/room-notifier'
-import type { EventView } from '../../shared/event'
 import { SPIN, WINDOW_MS } from '../draw-offsets'
 import { createTestApp, sendVia, type TestRequest } from './app'
 import { createTestDb, resetDatabase } from './harness'
-import { startRunningEvent, type Stage } from './scenario'
+import { readEvent, startRunningEvent, type Stage } from './scenario'
 import { stubAuthEnv } from './sign-in'
 
 // The Host's pool warning (#234, spec #218 § Pool warning) through the Event read: it shows when the games left may not cover the
@@ -78,7 +77,7 @@ describe('the Host\'s pool warning (#234)', () => {
     expect((await send('POST', `/api/e/${party.slug}/sessions/start`, party.hostCookie)).status).toBe(200)
   }
 
-  const read = async (party: Party, cookie = party.hostCookie) => await (await send('GET', `/api/e/${party.slug}`, cookie)).json() as EventView
+  const read = (party: Party, cookie = party.hostCookie) => readEvent(stage, cookie, party.slug)
   const warningOf = async (party: Party) => (await read(party)).setGame?.poolWarning
   const spin = (party: Party) => send('POST', `/api/e/${party.slug}/rounds/spin`, party.hostCookie)
   const cast = (party: Party, drawId: string, cookie: string) => send('POST', `/api/e/${party.slug}/draws/${drawId}/veto`, cookie)

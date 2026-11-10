@@ -5,7 +5,7 @@ import { memoryRoomNotifier } from '../../server/utils/room-notifier'
 import type { EventView } from '../../shared/event'
 import { createTestApp, errorOf, sendVia, type TestRequest } from './app'
 import { createTestDb, resetDatabase } from './harness'
-import { startRunningEvent, type Stage } from './scenario'
+import { readEvent, startRunningEvent, type Stage } from './scenario'
 import { signIn, stubAuthEnv } from './sign-in'
 
 // Team names (#161, spec #153 stories 34-41): a Player in a team gives one word, the team's name is the words in the
@@ -83,7 +83,7 @@ describe('Team names', () => {
   }
 
   async function read(game: Game, cookie = game.hostCookie): Promise<EventView> {
-    return await (await send('GET', `/api/e/${game.slug}`, cookie)).json() as EventView
+    return await readEvent(stage, cookie, game.slug)
   }
 
   async function names(game: Game) {

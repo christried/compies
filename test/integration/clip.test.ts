@@ -3,12 +3,11 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } 
 import { draws, rounds } from '../../server/db/schema'
 import { testClock } from '../../server/utils/clock'
 import { memoryRoomNotifier } from '../../server/utils/room-notifier'
-import type { EventView } from '../../shared/event'
 import de from '../../i18n/locales/de.json'
 import { SPIN } from '../draw-offsets'
 import { createTestApp, errorOf, sendVia, type TestRequest } from './app'
 import { createTestDb, resetDatabase } from './harness'
-import { startRunningEvent, type Stage } from './scenario'
+import { readEvent, readEventText, startRunningEvent, type Stage } from './scenario'
 import { stubAuthEnv } from './sign-in'
 
 // The synced clip (#230, spec #218 § Clip, § Deadlines): the Event read has the clip of the latest draw from its stop to the end
@@ -81,8 +80,7 @@ describe('the synced clip', () => {
 
   type Game = Awaited<ReturnType<typeof running>>
 
-  const readText = async (game: Game, cookie = game.hostCookie) => await (await send('GET', `/api/e/${game.slug}`, cookie)).text()
-  const read = async (game: Game, cookie = game.hostCookie) => JSON.parse(await readText(game, cookie)) as EventView
+  const read = (game: Game, cookie = game.hostCookie) => readEvent(stage, cookie, game.slug)
   const set = (game: Game, gameId: string) => send('POST', `/api/e/${game.slug}/rounds`, game.hostCookie, { gameId })
   const spin = (game: Game) => send('POST', `/api/e/${game.slug}/rounds/spin`, game.hostCookie)
   const skip = (game: Game, cookie = game.hostCookie) => send('POST', `/api/e/${game.slug}/clip/skip`, cookie)
@@ -186,7 +184,7 @@ describe('the synced clip', () => {
       await spunHalo(game)
 
       clock.advance(STOP - 1)
-      const text = await readText(game, game.cookies.one)
+      const text = await readEventText(stage, game.cookies.one, game.slug)
 
       expect(JSON.parse(text).clip).toBeNull()
       // The names are ones no placeholder contains: "Kart" is in "Mario Kartoffel" and "Halo" in "Halo Hallo", which a Hidden wheel shows (F21).

@@ -4,12 +4,11 @@ import { draws, eventMembers, events, roundPlaces, rounds } from '../../server/d
 import { testClock } from '../../server/utils/clock'
 import { readEventRows } from '../../server/utils/event-read'
 import { memoryRoomNotifier } from '../../server/utils/room-notifier'
-import type { ActivityPage } from '../../shared/activity'
 import type { EventView } from '../../shared/event'
 import { WINDOW_MS } from '../draw-offsets'
 import { createTestApp, errorOf, sendVia, type TestRequest } from './app'
 import { createInterleavingDb, createTestDb, resetDatabase } from './harness'
-import { startRunningEvent, type Stage } from './scenario'
+import { readEvent, readFeed, startRunningEvent, type Stage } from './scenario'
 import { stubAuthEnv } from './sign-in'
 
 // Entering a Result on an open Round (#273, spec #272): `PUT /api/e/:slug/rounds/:id/result` through the HTTP API with the in-memory
@@ -92,12 +91,12 @@ describe('Results', () => {
 
   type Game = Awaited<ReturnType<typeof running>>
 
-  const read = async (game: Game, cookie = game.hostCookie) => await (await send('GET', `/api/e/${game.slug}`, cookie)).json() as EventView
+  const read = (game: Game, cookie = game.hostCookie) => readEvent(stage, cookie, game.slug)
   const set = (game: Game, gameId: string, vetoAllowed?: boolean) => send('POST', `/api/e/${game.slug}/rounds`, game.hostCookie, vetoAllowed === undefined ? { gameId } : { gameId, vetoAllowed })
   const enter = (game: Game, roundId: string, body: unknown, cookie = game.hostCookie) => send('PUT', `/api/e/${game.slug}/rounds/${roundId}/result`, cookie, body)
   const roundRows = (game: Game) => testDb.db.select().from(rounds).where(eq(rounds.eventId, game.eventId)).orderBy(rounds.startedAt, rounds.id)
   const placesOf = (roundId: string) => testDb.db.select().from(roundPlaces).where(eq(roundPlaces.roundId, roundId)).orderBy(roundPlaces.team)
-  const feedOf = async (game: Game, cookie = game.hostCookie) => (await (await send('GET', `/api/e/${game.slug}/activity`, cookie)).json() as ActivityPage).entries
+  const feedOf = (game: Game, cookie = game.hostCookie) => readFeed(stage, cookie, game.slug)
 
   /** Two Parties' Places and the Scores of a Result for two Parties: Party 1 wins, Party 2 is second. */
   const twoParties = [{ team: 1, place: 1, score: ' 16 ' }, { team: 2, place: 2, score: '' }]

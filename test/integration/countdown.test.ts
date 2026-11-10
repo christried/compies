@@ -3,10 +3,9 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } 
 import { countdowns } from '../../server/db/schema'
 import { testClock } from '../../server/utils/clock'
 import { memoryRoomNotifier } from '../../server/utils/room-notifier'
-import type { EventView } from '../../shared/event'
 import { createTestApp, errorOf, sendVia, type TestRequest } from './app'
 import { createTestDb, resetDatabase } from './harness'
-import { startRunningEvent, type Stage } from './scenario'
+import { readEvent, startRunningEvent, type Stage } from './scenario'
 import { stubAuthEnv } from './sign-in'
 
 // The Countdown (#236, spec #218 § Countdown): the Host sets it in minutes and seconds (5 s to 99:59), starts, pauses, resumes
@@ -68,7 +67,7 @@ describe('Countdown', () => {
 
   const setSeconds = (game: Event, seconds: unknown, cookie = game.hostCookie) => send('PUT', `/api/e/${game.slug}/countdown`, cookie, { seconds })
   const act = (game: Event, action: 'start' | 'pause' | 'reset', cookie = game.hostCookie) => send('POST', `/api/e/${game.slug}/countdown/${action}`, cookie)
-  const readCountdown = async (game: Event, cookie = game.hostCookie) => (await (await send('GET', `/api/e/${game.slug}`, cookie)).json() as EventView).countdown
+  const readCountdown = async (game: Event, cookie = game.hostCookie) => (await readEvent(stage, cookie, game.slug)).countdown
   const countdownRow = async (game: Event) => (await testDb.db.select().from(countdowns).where(eq(countdowns.eventId, game.eventId)))[0]
 
   describe('setting it', () => {

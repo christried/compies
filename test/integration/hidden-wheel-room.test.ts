@@ -1,6 +1,6 @@
 import { eq } from 'drizzle-orm'
 import { beforeEach, describe, expect, it } from 'vitest'
-import { draws, events, pollSlots } from '../../server/db/schema'
+import { events, pollSlots } from '../../server/db/schema'
 import type { Db } from '../../server/utils/db'
 import { ACTIVITY_TYPES, type ActivityEntry, type ActivityPage } from '../../shared/activity'
 import type { Place } from '../../shared/board'
@@ -9,7 +9,7 @@ import type { RoomMessageType } from '../../shared/realtime'
 import { SPIN, WINDOW_MS } from '../draw-offsets'
 import { sendVia } from './app'
 import { hiddenWheelWorld } from './hidden-wheel-world'
-import { hostPutsBack, hostSets, signInAs, type Signed } from './scenario'
+import { hostPutsBack, hostSets, hostSpins, hostTossesCoin, playerVetoes, signInAs, type Signed } from './scenario'
 
 // The room and the Activity feed under a Hidden wheel (#165): every message type and Activity type the lobby flow writes, and
 // no pool game in any of them. Split out of hidden-wheel.test.ts in #418.
@@ -139,18 +139,17 @@ describe('Hidden wheel secrecy (#148)', () => {
       const f = await newGame('Foxtrot Fest', 'fffffffffff')
       const openRound = await hostSets(stage(), { slug, host: hostSigned }, f.id)
       // The Host spins the wheel (event.changed; the feed entry game_drawn waits for the stop); the Session ends with that Round still being drawn.
-      expect((await send('POST', `/api/e/${slug}/rounds/spin`, hostCookie)).status).toBe(200)
+      const { drawId } = await hostSpins(stage(), { slug, host: hostSigned })
       if (castVeto) {
         // The wheel stops (the clock moves past it) and Player 1 casts a Veto: veto.cast goes to Player 1's Party only (#231).
-        const [drawn] = (await db.select().from(draws)).filter(row => row.kind === 'spin')
         clock.advance(SPIN.stop + 500)
-        expect((await send('POST', `/api/e/${slug}/draws/${drawn!.id}/veto`, playerCookie)).status).toBe(200)
+        await playerVetoes(stage(), { slug }, drawId, world.playerSigned)
       }
       // The Host sets a Countdown and starts it (event.changed, #236); ending the Session clears it.
       expect((await send('PUT', `/api/e/${slug}/countdown`, hostCookie, { seconds: 60 })).status).toBe(200)
       expect((await send('POST', `/api/e/${slug}/countdown/start`, hostCookie)).status).toBe(200)
       // The Host tosses the coin (event.changed, #235); its feed entry waits for the landing, which the clock passes below.
-      expect((await send('POST', `/api/e/${slug}/coin`, hostCookie)).status).toBe(200)
+      await hostTossesCoin(stage(), { slug, host: hostSigned })
       expect((await send('POST', `/api/e/${slug}/sessions/end`, hostCookie)).status).toBe(200)
       // Between Sessions the Host enters the Result of the open Round (#273): the feed names its game, and no game of the pools.
       expect((await send('PUT', `/api/e/${slug}/rounds/${openRound}/result`, hostCookie, { places: [{ team: 1, place: 1 }, { team: 2, place: 2 }] })).status).toBe(200)

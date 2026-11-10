@@ -8,7 +8,7 @@ import de from '../../i18n/locales/de.json'
 import { WINDOW_MS } from '../draw-offsets'
 import { mountedRoutes } from './app'
 import { bodiesOf, EXPECTED_STATUS, expectStatuses, getRoutes, HOST, hiddenWheelWorld, NOT_SWEPT, OTHER_PARTY, OUTSIDER, PLAYER, vetoRead, type SweptRoute } from './hidden-wheel-world'
-import { clockToEnd, clockToStop, hostPutsBack, hostSets, type Signed } from './scenario'
+import { clockToEnd, clockToStop, hostPutsBack, hostSets, hostSpins, playerVetoes, readFeed, type Signed } from './scenario'
 import { signIn } from './sign-in'
 
 // The platform's random source with an override the slice-order test sets (F2): otherwise it is the real one, so every other test draws as production does.
@@ -171,13 +171,10 @@ describe('Hidden wheel secrecy (#148)', () => {
 
   // A spin under a Hidden wheel reveals the drawn game at the stop and nothing else (#229, spec #218 § Hidden wheel on the wire).
   describe('a spin (#229)', () => {
-    const spin = (slug: string, cookie = hostCookie) => request(`/api/e/${slug}/rounds/spin`, { method: 'POST', headers: { cookie } })
-
     /** A spin of a Running Session under a Hidden wheel, and the games on the wheel in the order of the draw. */
     async function spun() {
       const running = await runningEvent(NO_WINDOW)
-      const response = await spin(running.slug)
-      expect(response.status).toBe(200)
+      await hostSpins(stage(), { slug: running.slug, host: hostSigned })
       const [row] = await db.select().from(draws)
       const drawn = [running.a, running.b].find(secret => secret.id === row!.gameId)!
       const undrawn = [running.a, running.b].find(secret => secret.id !== row!.gameId)!
@@ -300,7 +297,7 @@ describe('Hidden wheel secrecy (#148)', () => {
       const poolOrder = before.wheel!.slices!.map(slice => slice.id)
       expect(poolOrder).toHaveLength(6)
 
-      expect((await spin(running.slug)).status).toBe(200)
+      await hostSpins(stage(), { slug: running.slug, host: hostSigned })
 
       const [row] = await db.select().from(draws)
       expect(row!.sliceGameIds).not.toEqual(poolOrder)
@@ -328,14 +325,11 @@ describe('Hidden wheel secrecy (#148)', () => {
     /** A Running Session with a Veto allowance of 3; the wheel stopped, and Player 1 (team 1) cast the Veto. The room's record starts at the cast. */
     async function playerCasts() {
       const running = await runningEvent()
-      const spun = await request(`/api/e/${running.slug}/rounds/spin`, { method: 'POST', headers: { cookie: hostCookie } })
-      expect(spun.status).toBe(200)
-      const { drawId } = await spun.json() as { drawId: string }
+      const { drawId } = await hostSpins(stage(), { slug: running.slug, host: hostSigned })
       const [row] = await db.select().from(draws)
       clock.set(row!.stopAt)
       notifier.clear()
-      const cast = await request(`/api/e/${running.slug}/draws/${drawId}/veto`, { method: 'POST', headers: { cookie: playerCookie } })
-      expect(cast.status).toBe(200)
+      await playerVetoes(stage(), { slug: running.slug }, drawId, world.playerSigned)
       return { ...running, drawId, row: row!, playerId: await idOf(player.email), secondId: await idOf(second.email) }
     }
 
@@ -349,8 +343,7 @@ describe('Hidden wheel secrecy (#148)', () => {
       expect(await wheelOf(hostCookie, slug)).toMatchObject({ vetoes: { left: [3, 3], own: null, revealed: null } })
       for (const cookie of [hostCookie, (await signIn(db, second)).cookie]) {
         expect(JSON.stringify((JSON.parse(await rawRead(cookie, slug)) as EventView).wheel), 'the Event read').not.toContain(playerId)
-        const feed = JSON.parse(await (await request(`/api/e/${slug}/activity?limit=100`, { headers: { cookie } })).text()) as ActivityPage
-        expect(feed.entries.map(entry => entry.type)).not.toContain('vetoes_revealed')
+        expect((await readFeed(stage(), cookie, slug, 'limit=100')).map(entry => entry.type)).not.toContain('vetoes_revealed')
       }
       // The Party's own Player sees it at once.
       expect((await wheelOf(playerCookie, slug)).vetoes).toEqual(vetoRead({ left: [2, 3], own: { team: 1, cast: true, rejection: 'veto_already_cast' } }))
@@ -364,7 +357,7 @@ describe('Hidden wheel secrecy (#148)', () => {
       const secondCookie = (await signIn(db, second)).cookie
       const hostId = await idOf(host.email)
       // The feed names Members in other entries (a move): only the Veto entry must hold no Player.
-      const feedText = async (cookie: string) => JSON.stringify(((await (await request(`/api/e/${slug}/activity?limit=100`, { headers: { cookie } })).json()) as ActivityPage).entries.filter(entry => entry.type === 'vetoes_revealed'))
+      const feedText = async (cookie: string) => JSON.stringify((await readFeed(stage(), cookie, slug, 'limit=100')).filter(entry => entry.type === 'vetoes_revealed'))
 
       const everyRead = async () => {
         for (const [who, cookie] of [['the Player', playerCookie], ['the Host', hostCookie], ['the other Party', secondCookie]] as const) {
@@ -431,8 +424,7 @@ describe('Hidden wheel secrecy (#148)', () => {
     /** A spin of a Running Session under a Hidden wheel with no Veto window; the wheel holds Alpha, Beta and `extraGames` more. */
     async function spunWheel(extraGames: number) {
       const running = await runningEvent(NO_WINDOW, extraGames)
-      const spun = await request(`/api/e/${running.slug}/rounds/spin`, { method: 'POST', headers: { cookie: hostCookie } })
-      expect(spun.status).toBe(200)
+      await hostSpins(stage(), { slug: running.slug, host: hostSigned })
       const [row] = await db.select().from(draws)
       const pool = [running.a, running.b, ...running.more]
       const drawn = pool.find(secret => secret.id === row!.gameId)!
@@ -481,9 +473,7 @@ describe('Hidden wheel secrecy (#148)', () => {
     // them. So a sealed cast changes nothing a viewer outside its Party can read, on any route: the bodies are byte-identical.
     it('changes no GET route for the Host, the other Party or a non-Member when a Party casts a Veto before the end of its window, and reveals it at the end (#231, #355)', async () => {
       const { slug, inviteToken, secondCookie, a, b, c, e } = await runningEvent()
-      const spun = await request(`/api/e/${slug}/rounds/spin`, { method: 'POST', headers: { cookie: hostCookie } })
-      expect(spun.status).toBe(200)
-      const { drawId } = await spun.json() as { drawId: string }
+      const { drawId } = await hostSpins(stage(), { slug, host: hostSigned })
       await clockToStop(stage(), drawId)
       const [row] = await db.select().from(draws)
       const drawn = [a, b].find(secret => secret.id === row!.gameId)!
@@ -496,8 +486,7 @@ describe('Hidden wheel secrecy (#148)', () => {
       const before = await sweep()
       expectStatuses(before, { seen })
       expect(await playerRead()).toMatchObject({ team: 1, cast: false })
-      const cast = await request(`/api/e/${slug}/draws/${drawId}/veto`, { method: 'POST', headers: { cookie: playerCookie } })
-      expect(cast.status).toBe(200)
+      await playerVetoes(stage(), { slug }, drawId, world.playerSigned)
       expect(await db.select().from(vetoes)).toHaveLength(1)
       const after = await sweep()
       expectStatuses(after, { seen })
