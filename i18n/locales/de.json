@@ -783,7 +783,6 @@
     "kicker": "Fast geschafft",
     "title": "Wie sollen wir dich nennen?",
     "nameHint": "Muss nicht eindeutig sein. Max. 32 Zeichen.",
-    "saveFailed": "Speichern hat nicht geklappt. Versuch’s nochmal.",
     "nameMissing": "Ohne Namen geht’s nicht.",
     "avatarFromProvider": "Bild von {provider} nehmen",
     "avatarUpload": "Eigenes Bild hochladen",

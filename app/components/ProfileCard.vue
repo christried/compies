@@ -1,48 +1,22 @@
 <script setup lang="ts">
-import { DISPLAY_NAME_MAX, parseDisplayName, shownName, type SavedProfile } from '~~/shared/auth'
+import { DISPLAY_NAME_MAX, shownName } from '~~/shared/auth'
 
 // The card „Profil“ on the Profil page (screen 25, #399): the provider picture with its hint, and renaming
-// through the route profile setup uses. A rename publishes nothing; others read the new name at their next
-// load (ADR 0013).
+// through the route profile setup uses (the form is useDisplayNameForm's, as at setup). A rename publishes
+// nothing; others read the new name at their next load (ADR 0013).
 
 const { t } = useI18n()
 const { toast } = useToast()
 const user = useAuthUser()
 // The guard lets only a User with a Display name in, so shownName is their Display name here.
 const saved = computed(() => (user.value ? shownName(user.value) : ''))
-const displayName = ref(saved.value)
-const missing = computed(() => displayName.value.trim() === '')
-const parsed = computed(() => parseDisplayName(displayName.value))
-// Active only for a valid name that differs from the saved one after trimming (#399).
-const canSave = computed(() => parsed.value !== null && parsed.value !== saved.value)
-const saving = ref(false)
-const saveFailed = ref(false)
-const field = useTemplateRef('field')
+const { displayName, missing, canSave, saving, saveFailed, save: saveName } = useDisplayNameForm({ initial: saved.value, saved })
 
-async function save() {
-  if (missing.value) {
-    field.value?.focus()
-    return
-  }
-  if (!canSave.value || saving.value) return
-  saving.value = true
-  saveFailed.value = false
-  try {
-    const response = await $fetch<SavedProfile>('/api/profile/setup', { method: 'POST', body: { displayName: displayName.value } })
-    // Only the name is taken from the answer: its snapshot of the User can still carry the Appearance from before a choice
-    // made while this save was on its way, and replacing the User would put that one back (#404).
-    if (user.value) user.value = { ...user.value, displayName: response.user.displayName }
-    // The trimmed name as stored.
-    displayName.value = shownName(response.user)
-    toast({ tone: 'success', text: t('profile.saved') })
-  }
-  catch {
-    saveFailed.value = true
-  }
-  finally {
-    saving.value = false
-  }
-}
+const save = () => saveName(() => {
+  // The trimmed name as stored.
+  displayName.value = saved.value
+  toast({ tone: 'success', text: t('profile.saved') })
+})
 </script>
 
 <template>
