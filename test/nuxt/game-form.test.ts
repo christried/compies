@@ -473,6 +473,16 @@ describe('the game form', () => {
       expect(page.text()).toContain('Enter oder Komma fügt einen Tag hinzu.')
     })
 
+    it('shows the Free-to-play hint under the Tags field, before the Preis group (#423)', async () => {
+      const page = await mountSuspended(GameForm)
+
+      const hint = page.findAll('p').find(paragraph => paragraph.text() === 'Ohne Preis bekommt das Spiel den Tag „Free-to-play“.')!.element
+      const tags = tagsField(page).element
+      const price = page.findAll('fieldset').find(set => set.find('legend').exists() && set.find('legend').text() === 'Preis')!.element
+      expect(tags.compareDocumentPosition(hint) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+      expect(hint.compareDocumentPosition(price) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    })
+
     it('adds a chip with Enter and empties the field, and Enter does not save the game', async () => {
       const page = await mountSuspended(GameForm)
       await field(page, 'Name').setValue('Mario Kart')
