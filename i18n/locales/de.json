@@ -512,6 +512,11 @@
     "skip": "Überspringen",
     "watch": "Siegerehrung ansehen",
     "again": "Nochmal ansehen",
+    "pending": {
+      "title": "Siegerehrung",
+      "member": "Die Siegerehrung steht noch aus.",
+      "host": "Die Siegerehrung steht noch aus. Starte sie mit „{action}“ im Host-Dock, sobald ihr so weit seid."
+    },
     "place1": "Platz 1",
     "stamp": "SIEGER",
     "standings": "Endstand",

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Lock } from '@lucide/vue'
-import { seatNote, teamsStay, type EventPageState } from '~/utils/event-page'
+import { seatNote, teamsStay, waitsForCeremony, type EventPageState } from '~/utils/event-page'
 import { gamesToStart } from '~/utils/event-stage'
 import type { OptimisticVotes } from '~/composables/useOptimisticVotes'
 import type { StandingsNews } from '~/utils/standings-news'
@@ -89,7 +89,7 @@ const stay = computed(() => teamsStay(props.pageState.next, props.view.event.isH
         v-if="block === 'head'"
         :state="pageState"
         :is-host="view.event.isHost"
-        :winners="leadersOf(view.standings ?? [])"
+        :winners="waitsForCeremony(pageState) ? [] : leadersOf(view.standings ?? [])"
         :teams="view.teams"
       />
 
@@ -103,6 +103,12 @@ const stay = computed(() => teamsStay(props.pageState.next, props.view.event.isH
         :ceremony-started="view.ceremony !== null"
         @share="emit('share')"
         @replay="emit('replay')"
+      />
+
+      <!-- The finished stage while the Award ceremony is still to come (#445): the card has no button, the Host's action is the dock's. -->
+      <CeremonyPendingCard
+        v-else-if="block === 'pending'"
+        :is-host="view.event.isHost"
       />
 
       <!-- A block is listed only when its data is there (event-stage.ts, #256, #274): the data props of the five below are not optional. -->

@@ -9,9 +9,11 @@ import type { EventView } from '~~/shared/event'
 // on to the history, which gives its rows the pencil. `news` (#276, the page's useStandingsNews) goes to the Standings: this tab never
 // celebrates, the stamp and the confetti belong to the stage block.
 defineProps<{
-  view: Pick<EventView, 'standings' | 'end' | 'results' | 'rounds' | 'teams'>
+  view: Pick<EventView, 'standings' | 'end' | 'results' | 'rounds' | 'teams'> & { event: Pick<EventView['event'], 'isHost'> }
   corrections?: HistoryCorrections | null
   news?: StandingsNews | null
+  /** The finished page waits for the Award ceremony: the pending card stands in the place of the Standings and the history (#445). */
+  waiting?: boolean
   /** The id of a heading outside the Standings that names them (#274): the phone's „Tabelle“ view; the side panel keeps the Leaderboard's own h2. */
   labelledBy?: string
 }>()
@@ -19,19 +21,25 @@ defineProps<{
 
 <template>
   <div class="flex min-w-0 flex-col gap-6">
-    <Leaderboard
-      v-if="view.standings && view.end"
-      :standings="view.standings"
-      :end="view.end"
-      :teams="view.teams"
-      :news="news"
-      :labelled-by="labelledBy"
+    <CeremonyPendingCard
+      v-if="waiting"
+      :is-host="view.event.isHost"
     />
-    <GameHistory
-      :results="view.results"
-      :open="view.rounds"
-      :teams="view.teams"
-      :corrections="corrections"
-    />
+    <template v-else>
+      <Leaderboard
+        v-if="view.standings && view.end"
+        :standings="view.standings"
+        :end="view.end"
+        :teams="view.teams"
+        :news="news"
+        :labelled-by="labelledBy"
+      />
+      <GameHistory
+        :results="view.results"
+        :open="view.rounds"
+        :teams="view.teams"
+        :corrections="corrections"
+      />
+    </template>
   </div>
 </template>

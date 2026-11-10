@@ -21,7 +21,9 @@ const props = withDefaults(defineProps<{
   refreshTick?: number
   /** The Event's teams: a Result's sentence names the winners by their frozen Team name (#273); without them, by colour. */
   teams?: BoardTeam[]
-}>(), { sessions: () => [], nextNumber: null, refreshTick: 0, teams: () => [] })
+  /** The finished page waits for the Award ceremony: the Event's end names nobody (#445). */
+  winnersHidden?: boolean
+}>(), { sessions: () => [], nextNumber: null, refreshTick: 0, teams: () => [], winnersHidden: false })
 
 const { t } = useI18n()
 
@@ -112,7 +114,7 @@ const TONE = { primary: 'bg-primary text-on-primary', surface: 'bg-surface text-
 
 /** The entries with their sentence in pieces (names in bold) and their icon; an entry no ticket has a sentence for yet is left out. */
 const shown = computed(() => entries.value.flatMap((entry) => {
-  const parts = activityParts(entry, t, props.teams)
+  const parts = activityParts(entry, t, props.teams, props.winnersHidden)
   return parts === null ? [] : [{ entry, parts, ...activityIcon(entry), time: formatActivityTime(new Date(entry.at), now) }]
 }))
 
