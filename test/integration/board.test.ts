@@ -1,16 +1,12 @@
 import { eq } from 'drizzle-orm'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
-import createEvent from '../../server/api/e/index.post'
-import readEvent from '../../server/api/e/[slug].get'
-import confirmDate from '../../server/api/e/[slug]/confirm.post'
-import moveMember from '../../server/api/e/[slug]/move.post'
-import joinInvite from '../../server/api/invite/[invite].post'
-import { activity, eventMembers, eventPoolGames, events, games, pollSlots, sessions, users } from '../../server/db/schema'
+import { activity, eventMembers, events, pollSlots, sessions, users } from '../../server/db/schema'
 import { memoryRoomNotifier } from '../../server/utils/room-notifier'
 import type { Place } from '../../shared/board'
 import type { EventView } from '../../shared/event'
+import { createTestApp, sendVia, type TestRequest } from './app'
 import { TEST_SETTINGS } from './fixtures'
-import { createInterleavingDb, createTestDb, createTestServer } from './harness'
+import { createInterleavingDb, createTestDb, resetDatabase } from './harness'
 import { setAllowlist, signIn, stubAuthEnv } from './sign-in'
 
 // The Game board (#160, spec #153 § Game board): who may move whom where, the race for the last place, and what a
@@ -22,19 +18,12 @@ const three = { provider: 'twitch', id: '4', name: 'Drei', email: 'three@example
 
 describe('the Game board', () => {
   let testDb: Awaited<ReturnType<typeof createTestDb>>
-  let request: ReturnType<typeof createTestServer>
+  let request: TestRequest
   const notifier = memoryRoomNotifier()
-  const routes = {
-    'POST /api/e': createEvent,
-    'GET /api/e/:slug': readEvent,
-    'POST /api/e/:slug/confirm': confirmDate,
-    'POST /api/e/:slug/move': moveMember,
-    'POST /api/invite/:invite': joinInvite,
-  } as const
 
   beforeAll(async () => {
     testDb = await createTestDb()
-    request = createTestServer(testDb.db, routes, { roomNotifier: notifier })
+    request = createTestApp(testDb.db, { roomNotifier: notifier })
   })
 
   afterAll(async () => {
@@ -44,13 +33,7 @@ describe('the Game board', () => {
   beforeEach(async () => {
     stubAuthEnv()
     notifier.clear()
-    await testDb.db.delete(eventPoolGames)
-    await testDb.db.delete(games)
-    await testDb.db.delete(activity)
-    await testDb.db.delete(pollSlots)
-    await testDb.db.delete(eventMembers)
-    await testDb.db.delete(events)
-    await testDb.db.delete(users)
+    await resetDatabase(testDb.db)
   })
 
   afterEach(() => {
@@ -111,13 +94,7 @@ describe('the Game board', () => {
     notifier.clear()
   }
 
-  function send(method: string, path: string, cookie: string | undefined, body?: unknown) {
-    return request(path, {
-      method,
-      headers: { ...(body === undefined ? {} : { 'content-type': 'application/json' }), ...(cookie ? { cookie } : {}) },
-      body: body === undefined ? undefined : JSON.stringify(body),
-    })
-  }
+  const send = sendVia(() => request)
 
   function move(slug: string, cookie: string, userId: string, to: unknown) {
     return send('POST', `/api/e/${slug}/move`, cookie, { userId, to })
@@ -353,7 +330,7 @@ describe('the Game board', () => {
       const racingDb = createInterleavingDb(testDb.client, /update "event_members"/i, async () => {
         competitor = await move(game.slug, game.cookies.two, game.ids.two, team(1))
       })
-      const racingRequest = createTestServer(racingDb, { 'POST /api/e/:slug/move': moveMember }, { roomNotifier: notifier })
+      const racingRequest = createTestApp(racingDb, { roomNotifier: notifier })
 
       const first = await racingRequest(`/api/e/${game.slug}/move`, {
         method: 'POST',
