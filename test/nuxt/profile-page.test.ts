@@ -10,10 +10,13 @@ import { shownToasts } from './event-page'
 
 const mount = () => mountSuspended(ProfilePage, { route: '/profil' })
 const input = (page: Awaited<ReturnType<typeof mount>>) => page.get('input').element as HTMLInputElement
+// Every Discord and Twitch account has a picture, so the page is tested with one (CODING_STANDARDS § Tests).
+const withPicture = { ...kitty, image: 'https://example.com/kitty_tv.png' }
+const cardPicture = (page: Awaited<ReturnType<typeof mount>>) => page.find('section[aria-labelledby="profile-card-title"] img')
 
 describe('the Profil page', () => {
   beforeEach(() => {
-    signInAs(kitty)
+    signInAs(withPicture)
     useState('toasts').value = []
   })
 
@@ -25,6 +28,16 @@ describe('the Profil page', () => {
     expect(input(page).value).toBe('Kitty')
     expect(page.text()).toContain('5/32')
     expect(page.get('#display-name-help').text()).toBe('Muss nicht eindeutig sein. Alle sehen ihn überall in Compies.')
+    expect(cardPicture(page).attributes('src')).toBe(withPicture.image)
+  })
+
+  it('shows the initial of the Display name when the User has no picture', async () => {
+    signInAs(kitty)
+
+    const page = await mount()
+
+    expect(cardPicture(page).exists()).toBe(false)
+    expect(page.get('section[aria-labelledby="profile-card-title"]').text()).toContain('K')
   })
 
   it('keeps „Speichern“ inactive for an unchanged name, also when only spaces are added', async () => {
