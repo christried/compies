@@ -7,7 +7,7 @@ import { createTestDbBefore, migrateTo } from './harness'
 // and every Event finished before 0.12 is marked shown. The code that serves until the switch-over inserts and updates `events` with explicit columns
 // and starts a ceremony by writing `ceremony_starts_at` and `ceremony_gag` only.
 
-const MIGRATION = '0030_ceremony_shown'
+const MIGRATION = '0031_ceremony_shown'
 
 const HOST = '00000000-0000-4000-8000-0000000000a1'
 const FINISHED = '00000000-0000-4000-8000-0000000000e1'

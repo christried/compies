@@ -83,10 +83,13 @@ const hostActions = useHostActions(
   { actions, dialogs, invite: () => (inviteOpen.value = true) },
 )
 
-// The state of the page for everybody (#166): its kind, and the blocks of the stage in the order that state wants (A4).
+// The state of the page for everybody (#166): its kind, and the blocks of the stage in the order that state wants (A4) at the order clock's `now` (#441: a block that
+// something just happened in rises half a second after its moment). The clock lives here, not in the stage, so it survives a switch of the phone's tab; the stage
+// and the phone's Event tab read the same state.
 // A finished page waits for the Award ceremony (#445): until the Host has started it, and for a viewer who saw it waiting, until their run of the first start is over (useCeremonyHold).
 const { held, release } = useCeremonyHold(data)
-const pageState = computed(() => (data.value ? eventPageState({ ...data.value, ceremonyHeld: held.value }) : null))
+const orderAt = useStageOrder(() => data.value, serverClock.now)
+const pageState = computed(() => (data.value ? eventPageState({ ...data.value, ceremonyHeld: held.value }, orderAt.value) : null))
 /** What waits for the ceremony asks the page state, which the Stage module decides (waitsForCeremony): the Winners, the party hat, the Tabelle tab and the feed. */
 const waits = computed(() => (pageState.value ? waitsForCeremony(pageState.value) : false))
 

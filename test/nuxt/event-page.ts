@@ -14,7 +14,7 @@ export const LARSI = '00000000-0000-4000-8000-000000000002'
 export type Vote = { slotId: string, userId: string, value: 'yes' | 'maybe' | 'no', note?: string | null }
 /** The Date fields of the Event's one Session (#48); the view puts them on a Session, not on the Event. */
 type SessionDates = { startsAt?: string | null, previousStartsAt?: string | null }
-export type EventOverrides = { event?: Partial<ReturnType<typeof eventOf>> & SessionDates, slots?: unknown[], bestSlotId?: string | null, progress?: { voted: number, total: number }, inviteUrl?: string | null, settings?: EventSettings | null, settingsFloors?: SettingsFloors | null, pool?: EventView['pool'], removedSessions?: { id: string, previousStartsAt: string }[], members?: MemberView[], teams?: BoardTeam[], teamChoiceOpen?: boolean, runningSessionId?: string | null, start?: StartView | null, rounds?: RoundView[], setGame?: SetGameView | null, wheel?: WheelView | null, countdown?: CountdownView | null, coin?: CoinView | null, ceremony?: CeremonyView | null, ceremonyShown?: boolean, clip?: ClipView | null, bonusVetoes?: BonusVetoView | null, results?: ResultView[], standings?: StandingView[] | null, end?: EndView | null }
+export type EventOverrides = { event?: Partial<ReturnType<typeof eventOf>> & SessionDates, slots?: unknown[], bestSlotId?: string | null, progress?: { voted: number, total: number }, inviteUrl?: string | null, settings?: EventSettings | null, settingsFloors?: SettingsFloors | null, pool?: EventView['pool'], hostGames?: EventView['hostGames'], removedSessions?: { id: string, previousStartsAt: string }[], members?: MemberView[], teams?: BoardTeam[], teamChoiceOpen?: boolean, runningSessionId?: string | null, start?: StartView | null, rounds?: RoundView[], setGame?: SetGameView | null, wheel?: WheelView | null, countdown?: CountdownView | null, coin?: CoinView | null, ceremony?: CeremonyView | null, ceremonyShown?: boolean, clip?: ClipView | null, bonusVetoes?: BonusVetoView | null, results?: ResultView[], standings?: StandingView[] | null, end?: EndView | null }
 
 function eventOf(slug: string, phase = 'poll', isHost = false): { slug: string, name: string, phase: string, isHost: boolean } {
   return { slug, name: 'Freitags-Zocken', phase, isHost }
@@ -43,6 +43,8 @@ export function view(slug: string, votes: Vote[], overrides: EventOverrides = {}
     settings: overrides.settings === undefined ? null as EventSettings | null : overrides.settings,
     settingsFloors: overrides.settingsFloors === undefined ? (event.isHost ? { teamSize: 1, vetoAllowance: 0, gameCount: 0 } : null) : overrides.settingsFloors,
     pool: overrides.pool ?? null as EventView['pool'],
+    // The Tags and Notes of the games for the Host's game dialog (#443): only the Host's read has them.
+    hostGames: overrides.hostGames ?? null as EventView['hostGames'],
     // The Event's one Session, which the server sends without a number (#70).
     sessions: [{ id: `session-${slug}`, number: null, startsAt, previousStartsAt, notes: [] as SessionNote[], startedAt: null as string | null, endedAt: null as string | null }],
     removedSessions: overrides.removedSessions ?? [],

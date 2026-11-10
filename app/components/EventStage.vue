@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { Lock } from '@lucide/vue'
 import { seatNote, teamsStay, waitsForCeremony, type EventPageState } from '~/utils/event-page'
-import { gamesToStart } from '~/utils/event-stage'
+import { gamesToStart, risen } from '~/utils/event-stage'
 import type { OptimisticVotes } from '~/composables/useOptimisticVotes'
 import type { StandingsNews } from '~/utils/standings-news'
-import { REFLOW_CLASS, unwatched } from '~/utils/motion'
+import { REFLOW_CLASS, reducedMotion, riseFade, unwatched } from '~/utils/motion'
 import { hasStarted } from '~~/shared/session-state'
 import type { EventView } from '~~/shared/event'
 import { settingsPath } from '~~/shared/links'
@@ -15,7 +15,8 @@ import { settingsEditable } from '~~/shared/settings'
 // turns each block into its component. The Stage module (event-stage.ts, #415) is the one that lists: a block is there only when its data is, for
 // who sees it (the Tie banner for Members, the Host's notices for the Host), so nothing here checks the data, the viewer or the order again. The page keeps the
 // shell, the dock, the tabs and the Host's dialogs; what a block asks the dialogs for goes up as an event. The group's enter, leave and move
-// motion is the page's one (04-motion): keep it on this TransitionGroup.
+// motion is the page's one (04-motion): keep it on this TransitionGroup. A block that rises to the top because something just happened (#441) glides like any
+// other that moves; under reduced motion it fades in instead. The page never scrolls by itself: no scroll API is called here.
 const props = defineProps<{
   slug: string
   view: EventView
@@ -71,10 +72,22 @@ const started = computed(() => hasStarted(props.view.sessions))
 // The Host's seat note (teams only): where the Host sits does not change the dock, and the note says so. Closed for this visit.
 const seat = computed(() => seatNote(props.view, t))
 const stay = computed(() => teamsStay(props.pageState.next, props.view.event.isHost, t))
+
+// Reduced motion (04-motion § UI enters, #441): the glide has nothing then (`REFLOW_CLASS`), so a block that moved up past another fades in at its new place. A hidden tab plays no
+// animation at all. After the render: the wrappers stand in their new order.
+const group = useTemplateRef<{ $el: HTMLElement }>('group')
+watch(() => props.pageState.blocks, (after, before) => {
+  if (!reducedMotion() || unwatched()) return
+  for (const block of risen(before, after)) {
+    const wrapper = group.value?.$el.querySelector(`:scope > [data-block="${block}"]`)
+    if (wrapper) riseFade(wrapper)
+  }
+}, { flush: 'post' })
 </script>
 
 <template>
   <TransitionGroup
+    ref="group"
     tag="div"
     :move-class="unwatched() ? undefined : REFLOW_CLASS"
     class="mx-auto flex w-full max-w-[1100px] flex-col gap-[18px] px-3.5 pt-4 md:gap-[22px] md:px-6 md:pt-6"
@@ -83,6 +96,7 @@ const stay = computed(() => teamsStay(props.pageState.next, props.view.event.isH
     <div
       v-for="block in pageState.blocks"
       :key="block"
+      :data-block="block"
       class="min-w-0 empty:hidden"
     >
       <EventPageHead
@@ -157,6 +171,7 @@ const stay = computed(() => teamsStay(props.pageState.next, props.view.event.isH
         :points-table="view.settings?.pointsTable ?? null"
         :enter-result="actions.enterResult"
         :end="view.end"
+        :host-games="view.hostGames"
       />
 
       <Leaderboard
@@ -257,6 +272,7 @@ const stay = computed(() => teamsStay(props.pageState.next, props.view.event.isH
           :edit-to="canEditSettings && view.settings !== null ? settingsPath(slug) : null"
           :locked="started"
           :host-name="hostName"
+          :host-games="view.hostGames"
         />
       </div>
     </div>

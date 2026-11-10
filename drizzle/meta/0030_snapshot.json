@@ -1,5 +1,5 @@
 {
-  "id": "8887533f-39c8-420c-b025-d17f50d28c8a",
+  "id": "3d7aa67a-59bf-4554-931b-52ebe30e1ee8",
   "prevId": "9941cb45-20dc-44c6-9446-acaf83793a5c",
   "version": "7",
   "dialect": "postgresql",
@@ -670,6 +670,12 @@
           "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": false
+        },
+        "last_started_at": {
+          "name": "last_started_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
         }
       },
       "indexes": {},
@@ -1273,13 +1279,6 @@
           "typeSchema": "public",
           "primaryKey": false,
           "notNull": false
-        },
-        "ceremony_shown": {
-          "name": "ceremony_shown",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": true,
-          "default": false
         },
         "deleted_at": {
           "name": "deleted_at",

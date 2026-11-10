@@ -2,12 +2,13 @@
 import { GAME_GRID } from '~/utils/game-grid'
 import { CARD_REFLOW_CLASS, leaveInPlace, unwatched } from '~/utils/motion'
 import type { BoardTeam } from '~~/shared/event'
+import type { HostGameFacts } from '~~/shared/game'
 import type { ResultPlace } from '~~/shared/results'
 import type { PointsTable } from '~~/shared/settings'
 import type { EndView, RoundView } from '~~/shared/stage'
 
 // The open Rounds on the stage (#228, 11-event-seite § EventPage, screen 15): every Round whose game is set and not put back,
-// as a GameCard tile (#435: picture and name only, no „wird gespielt“ badge and no Price; the Price returns in the game dialog, #444),
+// as a game tile (#435: picture and name only, no „wird gespielt“ badge and no Price; the Price is in the game dialog, which the Host's tile opens, #443, and a Member's will, #444),
 // in the order they started. An open Round has no Result and so no number (the number comes with the Result, #273). Everyone sees
 // the game's name and picture; the Host also gets its Game notes, open,
 // „Ergebnis eintragen“, which opens the result sheet for that Round (#273), and „Zurücklegen“ as a hold, which removes the Round and returns
@@ -17,7 +18,7 @@ import type { EndView, RoundView } from '~~/shared/stage'
 // Motion: a row enters as a UI element does (04-motion § UI enters, banner: opacity 0.22 s `ease-out`) and leaves faster
 // (0.14 s `ease-in`); reduced motion keeps the fade, which is all there is. A card that leaves goes out of the layout in the render that starts its
 // fade (`leaveInPlace`, #276), so the blocks below glide up with the page's group and the cards that stay glide to their new cell (`CARD_REFLOW_CLASS`: a card may cross the grid, so a gentler curve than the blocks').
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   rounds: RoundView[]
   isHost: boolean
   /** Puts the Round back; resolves to whether the server took it (the hold shows done or goes idle). */
@@ -30,7 +31,9 @@ const props = defineProps<{
   enterResult: (roundId: string, places: ResultPlace[]) => Promise<boolean>
   /** How far the Event is (#274); null while it is not set up: the sheet then has no kicker. */
   end: EndView | null
-}>()
+  /** The Tags and Notes of the games, for the Host's game dialog (#443); null for every other Member. The Notes under the tile stay the Round's own. */
+  hostGames?: Record<string, HostGameFacts> | null
+}>(), { hostGames: null })
 
 const { t } = useI18n()
 const headingId = useId()
@@ -95,9 +98,10 @@ watch(resultFor, async (id, was) => {
       >
         <!-- The Round's game as a tile in the pool's grid, one column wide (#435); the „wird gespielt“ badge is gone. -->
         <div :class="GAME_GRID">
-          <GameCard
+          <GameTile
             :game="round.game"
-            layout="tile"
+            :audience="isHost ? 'host' : 'member'"
+            :facts="hostGames?.[round.game.id] ?? null"
           />
         </div>
         <GameNotesDisclosure

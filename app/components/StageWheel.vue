@@ -20,6 +20,7 @@ const wheel = computed(() => props.view.wheel!)
       :hidden="view.settings?.hiddenWheel ?? false"
       :is-host="view.event.isHost"
       :server-now="serverNow"
+      :host-games="view.hostGames"
     />
     <VetoWindow
       v-if="wheel.vetoes.draw"

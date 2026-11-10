@@ -33,11 +33,11 @@ const realAnimate = Element.prototype.animate
 /** A running Countdown of `durationMs` with `leftMs` left; the server clock is set to match. */
 function runningWith(leftMs: number, durationMs = DURATION): CountdownView {
   serverTime = T0 + durationMs - leftMs
-  return { durationMs, remainingMs: durationMs, startedAt: new Date(T0).toISOString() }
+  return { durationMs, remainingMs: durationMs, startedAt: new Date(T0).toISOString(), lastStartedAt: null }
 }
-const READY: CountdownView = { durationMs: DURATION, remainingMs: DURATION, startedAt: null }
-const pausedAt = (remainingMs: number): CountdownView => ({ durationMs: DURATION, remainingMs, startedAt: null })
-const DONE: CountdownView = { durationMs: DURATION, remainingMs: 0, startedAt: null }
+const READY: CountdownView = { durationMs: DURATION, remainingMs: DURATION, startedAt: null, lastStartedAt: null }
+const pausedAt = (remainingMs: number): CountdownView => ({ durationMs: DURATION, remainingMs, startedAt: null, lastStartedAt: null })
+const DONE: CountdownView = { durationMs: DURATION, remainingMs: 0, startedAt: null, lastStartedAt: null }
 
 async function mount(countdown: CountdownView, options: { isHost?: boolean, hostName?: string, attachTo?: HTMLElement, announceSet?: boolean } = {}) {
   mounted = await mountSuspended(EventCountdown, {
@@ -417,7 +417,7 @@ describe('the zero burst (04-motion § Countdown)', () => {
 
   it('plays nothing for a viewer who opened the page after zero: the steady view is on screen', async () => {
     serverTime = T0 + DURATION + 200
-    const page = await mount({ durationMs: DURATION, remainingMs: DURATION, startedAt: new Date(T0).toISOString() })
+    const page = await mount({ durationMs: DURATION, remainingMs: DURATION, startedAt: new Date(T0).toISOString(), lastStartedAt: null })
 
     expect(stamp(page).exists()).toBe(true)
     expect(timeOf(page)).toBe('0:00')
@@ -427,7 +427,7 @@ describe('the zero burst (04-motion § Countdown)', () => {
 
   it('plays nothing for one who opened it five seconds after zero', async () => {
     serverTime = T0 + DURATION + 5000
-    const page = await mount({ durationMs: DURATION, remainingMs: DURATION, startedAt: new Date(T0).toISOString() })
+    const page = await mount({ durationMs: DURATION, remainingMs: DURATION, startedAt: new Date(T0).toISOString(), lastStartedAt: null })
 
     expect(stamp(page).exists()).toBe(true)
     expect(burstCalls()).toHaveLength(0)
@@ -473,7 +473,7 @@ describe('the zero burst (04-motion § Countdown)', () => {
     await page.setProps({ countdown: READY })
     calls = []
     serverTime = T0
-    await page.setProps({ countdown: { durationMs: DURATION, remainingMs: DURATION, startedAt: new Date(serverTime - DURATION - 100).toISOString() } })
+    await page.setProps({ countdown: { durationMs: DURATION, remainingMs: DURATION, startedAt: new Date(serverTime - DURATION - 100).toISOString(), lastStartedAt: null } })
 
     expect(burstCalls()).toHaveLength(0)
   })
@@ -665,7 +665,7 @@ describe('for the screen reader', () => {
     await page.setProps({ countdown: pausedAt(130_000) })
     expect(status(page)).toBe('Countdown pausiert. Noch 2 Minuten 10 Sekunden.')
 
-    await page.setProps({ countdown: { durationMs: DURATION, remainingMs: 130_000, startedAt: new Date(serverTime).toISOString() } })
+    await page.setProps({ countdown: { durationMs: DURATION, remainingMs: 130_000, startedAt: new Date(serverTime).toISOString(), lastStartedAt: null } })
     expect(status(page)).toBe('Countdown läuft. Noch 2 Minuten 10 Sekunden.')
 
     await page.setProps({ countdown: READY })
@@ -673,10 +673,10 @@ describe('for the screen reader', () => {
   })
 
   it('writes the start of a ready card, and its own message only when the start also enters the last ten', async () => {
-    const page = await mount({ durationMs: 8000, remainingMs: 8000, startedAt: null }, { announceSet: true })
+    const page = await mount({ durationMs: 8000, remainingMs: 8000, startedAt: null, lastStartedAt: null }, { announceSet: true })
     expect(status(page)).toBe('Countdown gestellt: 8 Sekunden.')
 
-    await page.setProps({ countdown: { durationMs: 8000, remainingMs: 8000, startedAt: new Date(serverTime).toISOString() } })
+    await page.setProps({ countdown: { durationMs: 8000, remainingMs: 8000, startedAt: new Date(serverTime).toISOString(), lastStartedAt: null } })
 
     expect(status(page)).toBe('Countdown läuft. Noch 8 Sekunden.')
   })
