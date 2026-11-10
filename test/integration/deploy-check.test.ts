@@ -1,9 +1,9 @@
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
-import deployCheck from '../../server/api/internal/deploy-check.get'
 import { events, sessions, users } from '../../server/db/schema'
 import { testClock } from '../../server/utils/clock'
 import { ROOM_CALL_SIGNATURE_HEADER, ROOM_CALL_TIMESTAMP_HEADER, signRoomCall } from '../../shared/room-auth'
-import { createTestDb, createTestServer } from './harness'
+import { createTestApp, type TestRequest } from './app'
+import { createTestDb, resetDatabase } from './harness'
 
 // The game-day guard of the Worker deploy (#157, spec #153 § Deploys): the deploy workflow asks this endpoint
 // whether a Session is dated today before it drops every socket. Signed like a call to a room, with the same keys.
@@ -11,12 +11,12 @@ const HOUR = 3_600_000
 
 describe('GET /api/internal/deploy-check', () => {
   let testDb: Awaited<ReturnType<typeof createTestDb>>
-  let request: ReturnType<typeof createTestServer>
+  let request: TestRequest
   let hostId: string
 
   beforeAll(async () => {
     testDb = await createTestDb()
-    request = createTestServer(testDb.db, { 'GET /api/internal/deploy-check': deployCheck })
+    request = createTestApp(testDb.db)
   })
 
   afterAll(async () => {
@@ -26,9 +26,7 @@ describe('GET /api/internal/deploy-check', () => {
   beforeEach(async () => {
     vi.stubEnv('ROOM_INTERNAL_SECRET', 'internal-secret')
     vi.stubEnv('ROOM_INTERNAL_SECRET_PREVIOUS', 'old-internal-secret')
-    await testDb.db.delete(sessions)
-    await testDb.db.delete(events)
-    await testDb.db.delete(users)
+    await resetDatabase(testDb.db)
     const [host] = await testDb.db.insert(users).values({ name: 'Hostess', email: 'host@example.com' }).returning()
     hostId = host!.id
   })
@@ -148,7 +146,7 @@ describe('GET /api/internal/deploy-check', () => {
   // The server's clock comes from the request context (#226): the same Session is a game day until the clock passes its day.
   it('answers by the server clock: busy on the Session\'s day, free once the clock is past it', async () => {
     const clock = testClock('2026-11-07T10:00:00Z')
-    const clocked = createTestServer(testDb.db, { 'GET /api/internal/deploy-check': deployCheck }, { clock })
+    const clocked = createTestApp(testDb.db, { clock })
     const call = await signRoomCall('', 'internal-secret', Date.now())
     const headers = { [ROOM_CALL_TIMESTAMP_HEADER]: call.timestamp, [ROOM_CALL_SIGNATURE_HEADER]: call.signature }
     await eventWith([new Date('2026-11-07T18:00:00Z')])
