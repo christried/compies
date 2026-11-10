@@ -5,9 +5,13 @@
 //   node scripts/worktree-clean.mjs [<agent id> …]    (run it in the background: a worktree with node_modules takes minutes)
 //
 // Done means: named on the command line (`agent-a1b2…` or `a1b2…`, the agents of this session that have reported), or
-// locked by a Claude process that no longer runs (a session that has ended), or not locked at all. A done worktree is
-// kept, with the reason, while it has uncommitted changes, a commit no remote branch contains, or a process running
-// in it (a dev server, the Worker). A folder git no longer lists as a worktree is deleted. One line per folder.
+// locked by a Claude process that no longer runs (a session that has ended). Nothing else is done: an unlocked worktree
+// nobody named, such as another live session's merge worktree or a finished agent of a session that still runs, is kept
+// with „not named; name it if it is yours“ (#477; before, every unlocked worktree counted as done and a call with two
+// names removed a running session's worktrees). A done worktree is kept, with the reason, while it has uncommitted
+// changes, a commit no remote branch contains, or a process running in it (a dev server, the Worker). A folder git no
+// longer lists as a worktree is deleted; one that cannot be deleted prints „failed <name>: …“ and the run goes on. One
+// line per folder.
 import { execFileSync } from 'node:child_process'
 import { existsSync, readdirSync, rmSync } from 'node:fs'
 import { join, resolve } from 'node:path'
@@ -20,14 +24,14 @@ const same = path => resolve(path).replaceAll('\\', '/').toLowerCase()
 
 const named = new Set(process.argv.slice(2).map(arg => arg.replace(/^agent-/, '')))
 
-/** Whether a process with this id runs (a signal 0 only asks). */
+/** Whether a process with this id runs (a signal 0 only asks): only ESRCH says no, so an unexpected error keeps the worktree (#477). */
 function running(pid) {
   try {
     process.kill(pid, 0)
     return true
   }
   catch (error) {
-    return error.code === 'EPERM'
+    return error.code !== 'ESRCH'
   }
 }
 
@@ -62,32 +66,52 @@ git('worktree', 'prune')
 const all = processes()
 for (const tree of worktrees()) {
   const name = tree.path.split('/').pop()
-  const pid = Number(/\(pid (\d+)\)/.exec(tree.lock ?? '')?.[1])
-  const done = named.has(name.replace(/^agent-/, '')) || tree.lock === undefined || (pid > 0 && !running(pid))
-  if (!done) {
-    console.log(`kept ${name}: its session runs (${tree.lock}); name it once its agent has reported`)
-    continue
-  }
-  const reason = keepReason(tree, all)
-  if (reason) {
-    console.log(`kept ${name}: ${reason}`)
-    continue
-  }
+  // One worktree that fails (git -C status on a half-deleted one, a file Windows holds) must not end the run (#477).
   try {
-    if (tree.lock !== undefined) git('worktree', 'unlock', tree.path)
-    git('worktree', 'remove', tree.path)
+    const pid = Number(/\(pid (\d+)\)/.exec(tree.lock ?? '')?.[1])
+    const isNamed = named.has(name.replace(/^agent-/, ''))
+    if (!isNamed && tree.lock === undefined) {
+      // Another live session's worktree has no lock either (#477): only a name says it is ours.
+      console.log(`kept ${name}: not named; name it if it is yours`)
+      continue
+    }
+    if (!isNamed && !(pid > 0 && !running(pid))) {
+      console.log(`kept ${name}: its session runs (${tree.lock}); name it once its agent has reported`)
+      continue
+    }
+    const reason = keepReason(tree, all)
+    if (reason) {
+      console.log(`kept ${name}: ${reason}`)
+      continue
+    }
+    const lockReason = tree.lock
+    try {
+      if (lockReason !== undefined) git('worktree', 'unlock', tree.path)
+      git('worktree', 'remove', tree.path)
+    }
+    catch (error) {
+      // Windows refuses to delete a file a process still holds; what is left is a folder for the next run. A worktree
+      // that stays unlocked and unnamed would stay for ever (#477), so the lock goes back and a dead pid is tried again.
+      if (lockReason !== undefined) {
+        try {
+          git('worktree', 'lock', '--reason', lockReason, tree.path)
+        }
+        catch {
+          // Nothing more to do: the failure below says what went wrong.
+        }
+      }
+      throw error
+    }
+    // The harness's own branch and the agent's, once their tips are safe on origin (checked above for the worktree's HEAD).
+    const branches = [`worktree-${name}`, tree.branch].filter(branch => branch && git('branch', '--list', branch) !== '')
+    for (const branch of new Set(branches)) {
+      if (git('branch', '-r', '--contains', git('rev-parse', branch)) !== '') git('branch', '-D', branch)
+    }
+    console.log(`removed ${name}${branches.length > 0 ? ` and ${[...new Set(branches)].join(', ')}` : ''}`)
   }
   catch (error) {
-    // Windows refuses to delete a file a process still holds; what is left is a folder for the next run.
-    console.log(`failed ${name}: ${String(error.stderr ?? error.message).trim().split('\n')[0]}`)
-    continue
+    console.log(`failed ${name}: ${String(error.stderr || error.message).trim().split('\n')[0]}`)
   }
-  // The harness's own branch and the agent's, once their tips are safe on origin (checked above for the worktree's HEAD).
-  const branches = [`worktree-${name}`, tree.branch].filter(branch => branch && git('branch', '--list', branch) !== '')
-  for (const branch of new Set(branches)) {
-    if (git('branch', '-r', '--contains', git('rev-parse', branch)) !== '') git('branch', '-D', branch)
-  }
-  console.log(`removed ${name}${branches.length > 0 ? ` and ${[...new Set(branches)].join(', ')}` : ''}`)
 }
 
 // What a broken-off removal leaves: a folder without `.git`, which git no longer knows.
@@ -99,6 +123,11 @@ for (const name of existsSync(home) ? readdirSync(home) : []) {
     console.log(`kept ${name}: it has a .git, but git lists no such worktree; look at it`)
     continue
   }
-  rmSync(path, { recursive: true, force: true, maxRetries: 3 })
-  console.log(`deleted ${name}: no longer a worktree`)
+  try {
+    rmSync(path, { recursive: true, force: true, maxRetries: 3 })
+    console.log(`deleted ${name}: no longer a worktree`)
+  }
+  catch (error) {
+    console.log(`failed ${name}: ${String(error.message).trim().split('\n')[0]}`)
+  }
 }
