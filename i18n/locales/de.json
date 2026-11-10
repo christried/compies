@@ -108,9 +108,9 @@
     "shortcut": "Taste H: Host-Steuerung",
     "startDialog": {
       "title": "Los geht’s?",
-      "textFirst": "Mit dem Start werden Teams und Teamnamen gesperrt. Die Tribüne bleibt offen, nachziehen kannst du weiterhin.",
+      "textFirst": "Mit dem Start werden die Teams gesperrt. Die Tribüne bleibt offen, nachziehen kannst du weiterhin.",
       "textLater": "Die Teams bleiben, wie sie sind.",
-      "lock": "{teams} Teams à {size}, Namen werden eingefroren"
+      "lock": "{teams} Teams à {size}, danach gesperrt"
     },
     "more": "Mehr",
     "group": {
@@ -250,8 +250,8 @@
       "poll": "Teamwahl öffnet, sobald der Termin steht. Bis dahin bleibst du auf der Tribüne.",
       "uneven": "{team} hat {small}, die anderen haben {big}. Die Session startet erst, wenn alle Teams gleich groß sind.",
       "running": "Das Event läuft. Die Teams sind gesperrt, nur der Host setzt dich noch in ein Team.",
-      "runningHost": "Event läuft: nur du kannst noch tauschen. Name eingefroren.",
-      "runningPlayer": "Gesperrt seit dem Start. Name eingefroren."
+      "runningHost": "Event läuft: nur du kannst noch tauschen.",
+      "runningPlayer": "Gesperrt seit dem Start. Dein Teamwort kannst du weiter ändern."
     },
     "conflict": "{name} war schneller."
   },
@@ -273,7 +273,6 @@
       "label": "Dein Wort für den Teamnamen",
       "help": "Ein Wort, bis zu 12 Zeichen.",
       "noSpaces": "Nur ein Wort, ohne Leerzeichen.",
-      "frozen": "Eingefroren seit dem Start.",
       "noTeam": "Du bist gerade in keinem Team. Dein Wort zählt, sobald du einem beitrittst.",
       "order": "Reihenfolge:",
       "reset": "Name zurücksetzen",

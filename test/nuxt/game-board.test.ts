@@ -15,7 +15,7 @@ import { LARSI, memberView, SANNE, serve, shownToasts, view } from './event-page
 // the reasons, the own move that shows at once and comes back with a toast, the Host's uneven notice, and the glide of
 // somebody else's move. The room is a fake the test plays messages on; the move endpoint records what is posted.
 const settings: EventSettings = { ...defaultSettings(), teamCount: 2, teamSize: 2 }
-const teams: BoardTeam[] = [{ position: 1, name: null, frozen: false }, { position: 2, name: null, frozen: false }]
+const teams: BoardTeam[] = [{ position: 1, name: null }, { position: 2, name: null }]
 const STANDS: Place = { zone: 'stands' }
 const team = (n: number): Place => ({ zone: 'team', team: n })
 
@@ -48,7 +48,7 @@ interface Options {
   members?: MemberView[]
   settings?: EventSettings | null
   teamChoiceOpen?: boolean
-  /** The first Session has started (#164): the board is locked and the teams are frozen. */
+  /** The first Session has started (#164): the board is locked; the Team names stay open (#438). */
   started?: boolean
   viewerId?: string
   isHost?: boolean
@@ -77,7 +77,7 @@ async function mountBoard(options: Options = {}) {
     props: {
       slug,
       members: options.members ?? [kittyAt(), larsiAt(), sanneAt()],
-      teams: resolvedSettings ? (options.started ? teams.map(entry => ({ ...entry, frozen: true })) : teams) : [],
+      teams: resolvedSettings ? teams : [],
       settings: resolvedSettings,
       teamChoiceOpen: options.started ? false : (options.teamChoiceOpen ?? true),
       pageKind: options.pageKind ?? (options.started ? 'running' : 'teams'),
@@ -230,10 +230,10 @@ describe('GameBoard', () => {
 
     it('tells the Host, a Player in a team and everyone else what is locked', async () => {
       const host = await running({ viewerId: SANNE, isHost: true })
-      expect(host.page.text()).toContain('Event läuft: nur du kannst noch tauschen. Name eingefroren.')
+      expect(host.page.text()).toContain('Event läuft: nur du kannst noch tauschen.')
 
       const player = await running({ members: [kittyAt(team(1)), larsiAt(), sanneAt()] })
-      expect(player.page.text()).toContain('Gesperrt seit dem Start. Name eingefroren.')
+      expect(player.page.text()).toContain('Gesperrt seit dem Start. Dein Teamwort kannst du weiter ändern.')
 
       const other = await running({ members: [kittyAt(), larsiAt(team(1)), sanneAt()] })
       expect(other.page.text()).toContain('Das Event läuft. Die Teams sind gesperrt, nur der Host setzt dich noch in ein Team.')
@@ -275,20 +275,20 @@ describe('GameBoard', () => {
       expect(posted).toEqual([{ userId: kitty.id, to: team(2) }])
     })
 
-    it('marks every team as frozen with a lock in its count pill, not beside the name', async () => {
-      const { page } = await running({ members: [kittyAt(team(1)), larsiAt(), sanneAt()] })
+    it('puts no lock in a team\'s count pill: the Team name stays open after the start (#438)', async () => {
+      const { page } = await running({ members: [kittyAt(team(1)), larsiAt(), sanneAt()], viewerId: SANNE, isHost: true })
 
-      const locks = page.findAll('[aria-label="Eingefroren seit dem Start."]')
-      expect(locks).toHaveLength(2)
-      expect(locks.map(lock => lock.element.parentElement!.textContent!.trim())).toEqual(['1/2', '0/2'])
-      expect(locks.map(lock => lock.attributes('title'))).toEqual(['Eingefroren seit dem Start.', 'Eingefroren seit dem Start.'])
-      for (const heading of page.findAll('h3')) expect(heading.find('[role="img"]').exists()).toBe(false)
+      const pills = page.findAll('[data-drop-zone^="team-"] > header .num-ui')
+      expect(pills.map(pill => pill.text())).toEqual(['1/2', '0/2'])
+      for (const pill of pills) expect(pill.find('[role="img"]').exists()).toBe(false)
+      expect(page.text()).not.toContain('Eingefroren seit dem Start.')
     })
 
-    it('shows no lock on a team name before the start', async () => {
-      const { page } = await mountBoard({ members: [kittyAt(team(1)), larsiAt(), sanneAt()] })
+    it('keeps the lock on the free places for a Player, none in the count pill', async () => {
+      const { page } = await running({ members: [kittyAt(team(1)), larsiAt(), sanneAt()] })
 
-      expect(page.findAll('[aria-label="Eingefroren seit dem Start."]')).toHaveLength(0)
+      expect(page.findAll('[role="img"][aria-label^="Gesperrt"]')).toHaveLength(3)
+      expect(page.text()).not.toContain('Eingefroren')
     })
   })
 

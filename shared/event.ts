@@ -132,10 +132,10 @@ export interface TeamNameReset { team: number }
 
 /**
  * One team of the Game board (#160): its position, 1..team count, which is also its Team colour index. `name` is the
- * Team name composed from the words (or the frozen name), null when the team shows its colour's name (#161); `frozen`
- * says the name is frozen since the first Session started (#164): then `name` is the frozen name, null for the colour name.
+ * Team name composed from the words (a name stored in an Event finished before 0.12 is shown as it is, #438), null when
+ * the team shows its colour's name (#161).
  */
-export interface BoardTeam { position: number, name: string | null, frozen: boolean }
+export interface BoardTeam { position: number, name: string | null }
 
 /** A Member as the Event read lists them. `team` is set exactly when `zone` is `team` (#160). */
 export interface MemberView {

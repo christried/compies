@@ -276,7 +276,7 @@ describe('the settings editor', () => {
       const { slug } = setUp({
         settings: { ...defaultSettings(), teamSize: 4 },
         floors: { teamSize: 4, vetoAllowance: 0, gameCount: 0 },
-        teams: [{ position: 1, name: null, frozen: false }, { position: 2, name: null, frozen: false }],
+        teams: [{ position: 1, name: null }, { position: 2, name: null }],
         members: [seated(kitty.id, 'team', 1), seated(LARSI, 'team', 1), seated(SANNE, 'team', 1), seated(FOUR, 'team', 1)],
       })
 
@@ -331,7 +331,7 @@ describe('the settings editor', () => {
 
   describe('the teams (#163)', () => {
     const four = { ...defaultSettings(), teamCount: 4, teamSize: 3, pointsTable: { preset: 'linear' as const, values: [3, 2, 1, 0] } }
-    const teamsOf4 = [{ position: 1, name: null, frozen: false }, { position: 2, name: null, frozen: false }, { position: 3, name: null, frozen: false }, { position: 4, name: null, frozen: false }]
+    const teamsOf4 = [{ position: 1, name: null }, { position: 2, name: null }, { position: 3, name: null }, { position: 4, name: null }]
 
     it('shows the Team size floor the Event read gives, the fullest team, and says why', async () => {
       const { slug } = setUp({

@@ -3,7 +3,7 @@ import type { PGlite } from '@electric-sql/pglite'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { createTestDbBefore, migrateTo } from './harness'
 
-// The migration that gives Members a team seat (#160). Members of Events from before it stay in no team: on the Bench then, and since 0.12 (#437, migration 0031, which `migrateTo` runs too) on the Stands.
+// The migration that gives Members a team seat (#160). Members of Events from before it stay in no team: on the Bench then, and since 0.12 (#437, migration 0032, which `migrateTo` runs too) on the Stands.
 
 const MIGRATION = '0010_team_seats'
 

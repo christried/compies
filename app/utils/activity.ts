@@ -20,7 +20,7 @@ const STRONG = new Set(['name', 'actor', 'team', 'date', 'game', 'list'])
 
 /**
  * The sentence of an entry in pieces, its names, teams and Dates marked `strong`; null for a type without a sentence. `teams` are the
- * Event's teams, whose frozen names a Result's sentence uses (#273); without them a team is named by its colour, as bonus_veto_granted does.
+ * Event's teams, whose Team names a Result's sentence uses (#273); without them a team is named by its colour, as bonus_veto_granted does.
  */
 export function activityParts(entry: ActivityEntry, t: Translate, teams: BoardTeam[] = []): { text: string, strong: boolean }[] | null {
   const marked: Translate = (key, named, plural) => t(key, named && Object.fromEntries(Object.entries(named).map(([name, value]) => [name, STRONG.has(name) ? OPEN + String(value) + CLOSE : value])), plural)
@@ -123,7 +123,7 @@ function sentence(entry: ActivityEntry, t: Translate, teams: BoardTeam[]): strin
     case 'bonus_veto_granted':
       return t('activity.bonusVeto', { name, team: teamName(entry.params.team, t) })
     // A Result names its game (from `games`, as a set game does) and every Party on Place 1 (#273). The winners are named by their
-    // frozen Team name when the feed has the teams, else by their colour; `count` picks the singular or the plural form.
+    // Team name when the feed has the teams, else by their colour; `count` picks the singular or the plural form.
     case 'result_entered': {
       const game = entry.games[entry.params.gameId]
       if (game === undefined) return null

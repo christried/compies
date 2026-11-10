@@ -15,7 +15,7 @@ const STOP = Date.parse('2090-10-30T20:00:10.000Z')
 const END = STOP + WINDOW_MS
 const iso = (ms: number) => new Date(ms).toISOString()
 const halo = { id: 'g1', name: 'Halo', imageUrl: null, youtubeId: null, clipStart: 0, clipLength: 30, playersMin: 2, playersMax: 4, suitabilities: [], price: null }
-const teams: BoardTeam[] = [{ position: 1, name: null, frozen: false }, { position: 2, name: null, frozen: false }]
+const teams: BoardTeam[] = [{ position: 1, name: null }, { position: 2, name: null }]
 const spin: SpinView = { roundId: 'r1', drawId: 'd1', spinStartAt: iso(STOP - 6000), stopAt: iso(STOP), slices: 4, resultIndex: 0, resultOffset: 0.5, labels: null, game: halo, current: true }
 const windowOf = (fields: Partial<VetoDrawView> = {}): VetoDrawView => ({ drawId: 'd1', kind: 'spin', stopAt: iso(STOP), vetoEndsAt: iso(END), game: halo, ...fields })
 const own = (fields: Partial<OwnVetoView> = {}): OwnVetoView => ({ team: 1, cast: false, rejection: null, ...fields })
@@ -146,7 +146,7 @@ describe('who gets the bar and when', () => {
 
   it('names the Party by its Team name in the lock, also for a Party of one (#355)', async () => {
     serverMs = STOP + 1000
-    const named: BoardTeam[] = [{ position: 1, name: 'Wilde Gurken', frozen: true }, teams[1]!]
+    const named: BoardTeam[] = [{ position: 1, name: 'Wilde Gurken' }, teams[1]!]
     await mount(wheelOf({ own: own({ cast: true, rejection: 'veto_already_cast' }) }), { teams: named, solo: true })
 
     expect(text()).toContain('Wilde Gurken hat schon ein Veto eingelegt')

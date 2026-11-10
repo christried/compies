@@ -223,7 +223,7 @@ describe('ActivityFeed', () => {
   describe('the end of the Event (#277)', () => {
     const at = (minutesAgo: number) => new Date(Date.now() - minutesAgo * 60_000).toISOString()
     const sessions: FeedSession[] = [{ id: 's1', number: 2, startedAt: at(50), endedAt: at(20) }]
-    const teams = [{ position: 1, name: null, frozen: false }, { position: 2, name: 'Wilde Gurken', frozen: true }]
+    const teams = [{ position: 1, name: null }, { position: 2, name: 'Wilde Gurken' }]
 
     it('says who won, in bold, under „Nach Session n“ with the medal', async () => {
       const finished = entry('f', 10, { type: 'event_finished', params: { winners: [2] } })
@@ -252,9 +252,9 @@ describe('ActivityFeed', () => {
 
   describe('a Result (#273)', () => {
     const result = entry('r', 1, { type: 'result_entered', params: { roundId: 'r1', number: 3, gameId: 'g1', first: [2] }, games: { g1: 'Mario Kart' } })
-    const teams = [{ position: 1, name: null, frozen: false }, { position: 2, name: 'Wilde Gurken', frozen: true }]
+    const teams = [{ position: 1, name: null }, { position: 2, name: 'Wilde Gurken' }]
 
-    it('names the winner by the frozen Team name when the feed has the teams', async () => {
+    it('names the winner by the Team name when the feed has the teams', async () => {
       const feed = serveFeed([result])
       const wrapper = await mountSuspended(ActivityFeed, { props: { slug: feed.slug, room: fakeRoom().room, teams } })
       await vi.waitFor(() => expect(lines(wrapper)).toHaveLength(1))

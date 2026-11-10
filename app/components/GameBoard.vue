@@ -313,7 +313,6 @@ const meta = computed(() => {
         :taken="inPlace({ zone: 'team', team: team.position }).length"
         :lock-reason="lockReason"
         :lock-label="phase === 'running' ? 'locked' : 'closed'"
-        :frozen="team.frozen"
         :drop-target="drag.overZone.value === `team-${team.position}`"
         :mine="placeKey(currentPlace(viewerId)) === `team-${team.position}`"
       >
@@ -329,7 +328,6 @@ const meta = computed(() => {
             :name="teamName(team, t)"
             :named="team.name !== null"
             :mine="placeKey(currentPlace(viewerId)) === `team-${team.position}`"
-            :frozen="team.frozen"
             :my-word="myWord"
             :is-host="isHost"
             :authors="authorsIn(team.position)"

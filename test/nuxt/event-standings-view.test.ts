@@ -13,7 +13,7 @@ import type { ResultView, RoundView } from '~~/shared/stage'
 // Both hand the Host's `corrections` (#275) to the history, which gives its rows their pencils.
 
 const halo: RoundGame = { id: 'g-halo', name: 'Halo', imageUrl: null, youtubeId: null, clipStart: 0, clipLength: 30, playersMin: 2, playersMax: 4, suitabilities: [], price: null }
-const teams: BoardTeam[] = [{ position: 1, name: 'Wilde Gurken', frozen: true }, { position: 2, name: null, frozen: false }]
+const teams: BoardTeam[] = [{ position: 1, name: 'Wilde Gurken' }, { position: 2, name: null }]
 const played: ResultView = { roundId: 'r1', number: 1, game: halo, places: [{ team: 2, place: 1, points: 1, score: '9' }, { team: 1, place: 2, points: 0, score: null }], corrected: false, correctedAt: null, resultAt: '2026-11-02T20:00:00.000Z' }
 const open: RoundView = { id: 'r2', startedAt: '2026-11-02T21:00:00.000Z', setAt: '2026-11-02T21:00:00.000Z', game: { ...halo, id: 'g-kart', name: 'Kart' } }
 

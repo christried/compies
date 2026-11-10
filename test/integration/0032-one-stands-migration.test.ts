@@ -8,7 +8,7 @@ import { createTestDbBefore, migrateTo } from './harness'
 // switch-over and may still write it (a move to the Bench from an old tab, a lowered team count); the new code reads such a row as
 // the Stands. So this test also writes `bench` after the migration, as that code does, and checks that the table takes it.
 
-const MIGRATION = '0031_one_stands'
+const MIGRATION = '0032_one_stands'
 
 const HOST = '00000000-0000-4000-8000-0000000000a1'
 const BENCHED = '00000000-0000-4000-8000-0000000000a2'

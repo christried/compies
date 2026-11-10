@@ -135,9 +135,10 @@ export const sessions = pgTable('sessions', {
   uniqueIndex('sessions_one_running_per_event_idx').on(table.eventId).where(sql`${table.startedAt} IS NOT NULL AND ${table.endedAt} IS NULL AND ${table.removedAt} IS NULL`),
 ])
 
-// The teams of an Event from its first Session start on (#164): one row per team position, written once. `frozenName`
-// is the Team name frozen at that start; null means the Team colour's name (also after the Host reset it). An Event
-// that has not started has no rows, and its Team names are composed from the Team words.
+// The names the first Session start froze (#164), read only in an Event finished before 0.12 (#438): one row per team
+// position. `frozenName` null means the Team colour's name. A Team name is composed from the Team words otherwise; the
+// previous deployment may still write rows during the switch-over (ADR 0007), the new code ignores them until the
+// Finish, which deletes them.
 export const eventTeams = pgTable('event_teams', {
   eventId: uuid('event_id').notNull().references(() => events.id, { onDelete: 'cascade' }),
   position: integer('position').notNull(),

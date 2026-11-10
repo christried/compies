@@ -408,7 +408,7 @@ describe('the Game board', () => {
       const view = await read(game.slug, game.cookies.one)
 
       expect(view.members.map(member => [member.zone, member.team])).toEqual([['stands', null], ['stands', null], ['stands', null], ['stands', null]])
-      expect(view.teams).toEqual([{ position: 1, name: null, frozen: false }, { position: 2, name: null, frozen: false }])
+      expect(view.teams).toEqual([{ position: 1, name: null }, { position: 2, name: null }])
       expect(view.teamChoiceOpen).toBe(false)
     })
 

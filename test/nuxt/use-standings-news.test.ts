@@ -14,7 +14,7 @@ import { view } from './event-page'
 // still move the baseline. The announcement is built here, for the page's one polite live region.
 
 const halo: RoundGame = { id: 'g-halo', name: 'Halo', imageUrl: null, youtubeId: null, clipStart: 0, clipLength: 30, playersMin: 2, playersMax: 4, suitabilities: [], price: null }
-const teams: BoardTeam[] = [{ position: 1, name: 'Wilde Gurken', frozen: true }, { position: 2, name: 'Die Füchse', frozen: true }, { position: 3, name: null, frozen: false }]
+const teams: BoardTeam[] = [{ position: 1, name: 'Wilde Gurken' }, { position: 2, name: 'Die Füchse' }, { position: 3, name: null }]
 const T0 = Date.parse('2026-11-02T20:00:00.000Z')
 const at = (seconds: number) => new Date(T0 + seconds * 1000).toISOString()
 
