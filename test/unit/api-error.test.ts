@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import de from '~~/i18n/locales/de.json'
 import { API_ERROR_STATUS, type ApiErrorCode } from '~~/shared/errors'
-import { apiErrorKey, apiFailure, reasonKey, type ReasonPlace } from '../../app/utils/api-error'
+import { apiErrorKey, apiFailure, reasonKey, type ReasonScreen } from '../../app/utils/api-error'
 
 // $fetch errors carry the server's statusMessage in data.statusMessage.
 const refusal = (statusCode: number, code: string) => ({ statusCode, data: { statusMessage: code } })
@@ -23,8 +23,8 @@ describe('apiFailure', () => {
 
 // The ten codes the app deliberately has no words for (each falls back to the caller's line; why: SHARED in app/utils/api-error.ts).
 const UNEXPLAINED: ApiErrorCode[] = ['invalid_name', 'invalid_mode', 'invalid_slots', 'invalid_time', 'invalid_value', 'invalid_settings', 'wheel_options_without_wheel', 'invalid_cursor', 'no_such_team', 'no_live_connection']
-// Exhaustive: a new place fails typecheck until it is listed here.
-const PLACES: Record<ReasonPlace, true> = { setGame: true, lastGame: true, deleteEvent: true, slotEditor: true, directDates: true, eventSettings: true }
+// Exhaustive: a new screen fails typecheck until it is listed here.
+const SCREENS: Record<ReasonScreen, true> = { setGame: true, lastGame: true, deleteEvent: true, slotEditor: true, directDates: true, eventSettings: true }
 
 const text = (key: string): string | undefined => {
   const found = key.split('.').reduce<unknown>((node, part) => (node as Record<string, unknown> | undefined)?.[part], de)
@@ -32,14 +32,14 @@ const text = (key: string): string | undefined => {
 }
 
 describe('reasonKey', () => {
-  const places = [undefined, ...(Object.keys(PLACES) as ReasonPlace[])]
+  const screens = [undefined, ...(Object.keys(SCREENS) as ReasonScreen[])]
   const codes = Object.keys(API_ERROR_STATUS) as ApiErrorCode[]
 
-  it.each(places)('words every code, in place %s, or lists it as an intended fallback', (place) => {
+  it.each(screens)('words every code, on screen %s, or lists it as an intended fallback', (screen) => {
     for (const code of codes) {
-      const key = reasonKey(code, place)
-      expect(text(key), `${place ?? 'shared'} × ${code}: ${key} is in de.json`).toBeTypeOf('string')
-      if (!UNEXPLAINED.includes(code)) expect(key, `${place ?? 'shared'} × ${code} has words`).not.toBe('error.saveFailed')
+      const key = reasonKey(code, screen)
+      expect(text(key), `${screen ?? 'shared'} × ${code}: ${key} is in de.json`).toBeTypeOf('string')
+      if (!UNEXPLAINED.includes(code)) expect(key, `${screen ?? 'shared'} × ${code} has words`).not.toBe('error.saveFailed')
     }
   })
 
@@ -62,7 +62,7 @@ describe('apiErrorKey', () => {
     expect(apiErrorKey(refusal(400, 'invalid_value'), 'error.voteFailed')).toBe('error.voteFailed')
   })
 
-  it('lets a place say it its own way', () => {
+  it('lets a screen say it its own way', () => {
     expect(apiErrorKey(refusal(409, 'wrong_phase'), 'error.saveFailed', 'slotEditor')).toBe('mvp.slots.locked')
     expect(apiErrorKey(refusal(409, 'wrong_phase'))).toBe('error.wrongPhase')
   })
