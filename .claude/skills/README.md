@@ -10,7 +10,7 @@ Each patch is a paragraph starting with `**COMPIES:**` that points at the rules 
 
 - `code-review`: both sub-agents on `sonnet` at high effort, each in its own worktree
 - `implement-spec`: subagent rules, frontier tickets only, integration branch from and into `staging` (where `Closes #n` closes nothing), clean merges by the orchestrator, delivery, the 300k context limit with its handoff, the Release review in place of `code-review`, the worktree cleanup
-- `implement`: delivery
+- `implement`: its own worktree on the ticket's branch from `origin/staging` before the first edit, removed by name once the issue is closed; delivery
 - `implement-spec-max`: a copy of the patched `implement-spec` whose extra paragraph, `**COMPIES (max):**`, and closing section, `## Model tiers`, put every subagent on `fable`, or on `opus` or `sonnet` at `effort: "high"`, by how hard its task is. A change to `implement-spec` is mirrored here: `diff .claude/skills/implement-spec/SKILL.md .claude/skills/implement-spec-max/SKILL.md` shows only the name, the description, that paragraph and that section.
 - `grill-with-docs`, `to-spec`, `to-tickets`: design hand-off flags and tickets; migration numbers, ADR citations, changelog groups and site counts come from the repo (retro 0.10); `to-tickets` also cuts finer tickets and writes a human sweep as a joint session
 - `handoff`: names the subagents still running
