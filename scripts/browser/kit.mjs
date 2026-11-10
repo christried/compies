@@ -167,19 +167,23 @@ const DEFAULT_SETTINGS = {
   poolPreview: true,
 }
 
-/** The Berlin wall-clock `YYYY-MM-DDTHH:mm` of 19:00, two weeks from now. */
-function inTwoWeeks() {
-  const day = new Date(Date.now() + 14 * 86_400_000).toLocaleDateString('sv-SE', { timeZone: 'Europe/Berlin' })
-  return `${day}T19:00`
+/** The Berlin wall-clock `YYYY-MM-DDTHH:mm` of `time` (default 19:00), `n` days from now. */
+export function inDays(n, time = '19:00') {
+  const day = new Date(Date.now() + n * 86_400_000).toLocaleDateString('sv-SE', { timeZone: 'Europe/Berlin' })
+  return `${day}T${time}`
 }
+
+const inTwoWeeks = () => inDays(14)
 
 /**
  * An Event of the tab's account (`POST /api/e`) with one direct Session: `settings` over the defaults, `pool` as
- * `[ids]`, `startsAt` as Berlin wall-clock `YYYY-MM-DDTHH:mm` (default: in two weeks).
+ * `[ids]`, `startsAt` as Berlin wall-clock `YYYY-MM-DDTHH:mm` (default: in two weeks). `slots` (an array of the same): a Date poll
+ * with those Slots for the one Session instead of the direct Date (#408).
  * Returns `{ slug, inviteUrl }`.
  */
-export async function createEvent(tab, { name, settings = {}, pool, startsAt = inTwoWeeks() }) {
-  const body = { name, sessions: 1, dateMode: 'direct', startsAt: [startsAt], settings: { ...DEFAULT_SETTINGS, ...settings }, ...(pool ? { pool } : {}) }
+export async function createEvent(tab, { name, settings = {}, pool, startsAt = inTwoWeeks(), slots }) {
+  const when = slots ? { dateMode: 'poll', slots } : { dateMode: 'direct', startsAt: [startsAt] }
+  const body = { name, sessions: 1, ...when, settings: { ...DEFAULT_SETTINGS, ...settings }, ...(pool ? { pool } : {}) }
   return ok(await api(tab, 'POST', '/api/e', body), 'POST /api/e')
 }
 
@@ -271,12 +275,13 @@ export const enterResult = (host, slug, roundId, places) => ok(api(host, 'PUT', 
  * „<name> Spiel n“) and the Event; the other tabs join through its Invite link; each tab takes its own Party in order.
  * Then the first Session starts (unless `start` is false) and the first `set` pool games are set. `settings` go over a
  * Host pick with one person per Party and Points 5 : 0 (5 : 2 : 0 … for more Parties). Every tab must be signed in
- * (`open`). Returns `{ slug, games, roundIds }`.
+ * (`open`). `pool`: games of the library that exist already (their GameViews); none is created, `games` is then `pool.length` (#408:
+ * a check that makes many Events must not fill the library). Returns `{ slug, games, roundIds }`.
  */
-export async function runningEvent(tabs, { name, games = 5, gameNames = [], settings = {}, start = true, set = 0 }) {
+export async function runningEvent(tabs, { name, games = 5, gameNames = [], settings = {}, start = true, set = 0, pool: given }) {
   const [host, ...others] = tabs
-  const pool = []
-  for (let i = 0; i < games; i++) pool.push(await createGame(host, { name: gameNames[i] ?? `${name} Spiel ${i + 1}`, playersMin: 1, playersMax: 8 }))
+  const pool = given ? [...given] : []
+  for (let i = 0; i < (given ? 0 : games); i++) pool.push(await createGame(host, { name: gameNames[i] ?? `${name} Spiel ${i + 1}`, playersMin: 1, playersMax: 8 }))
   const values = tabs.length === 2 ? [5, 0] : [5, 2, ...Array.from({ length: tabs.length - 2 }, () => 0)]
   const { slug } = await createEvent(host, {
     name,
@@ -299,13 +304,13 @@ export async function runningEvent(tabs, { name, games = 5, gameNames = [], sett
  * A finished Event for a check (retro 0.9): `runningEvent` with `games` pool games, all set and with the Game count at
  * `games`, a Result for each that gives the `outcome`, and the Finish. `'winner'`: the first tab's Party wins every
  * Round. `'tie'`: the Parties take turns on Place 1, so `games` is rounded up to a multiple of the Party count and
- * every Party ends on the same points. Each 0.9 check rebuilt this by hand; on staging the same requests run as one
+ * every Party ends on the same points. `pool` (library games as `runningEvent` takes them) is the count then: pass a multiple of the Parties (#408). Each 0.9 check rebuilt this by hand; on staging the same requests run as one
  * `javascript_tool` call per account (`docs/agents/delivery.md` § Issues). Returns `{ slug, games, roundIds, winners }`.
  */
-export async function finishedEvent(tabs, { name, outcome = 'winner', games = tabs.length, settings = {} }) {
+export async function finishedEvent(tabs, { name, outcome = 'winner', games = tabs.length, settings = {}, pool }) {
   const teams = tabs.map((_, index) => index + 1)
-  const count = outcome === 'tie' ? Math.ceil(games / teams.length) * teams.length : games
-  const event = await runningEvent(tabs, { name, games: count, settings: { gameCount: count, ...settings }, set: count })
+  const count = pool ? pool.length : outcome === 'tie' ? Math.ceil(games / teams.length) * teams.length : games
+  const event = await runningEvent(tabs, { name, games: count, settings: { gameCount: count, ...settings }, set: count, pool })
   const [host] = tabs
   for (const [index, roundId] of event.roundIds.entries()) {
     const order = outcome === 'tie' ? teams.map((_, i) => teams[(i + index) % teams.length]) : teams
