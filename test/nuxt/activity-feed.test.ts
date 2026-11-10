@@ -3,9 +3,11 @@ import { getQuery } from 'h3'
 import { flushPromises } from '@vue/test-utils'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import ActivityFeed from '~/components/ActivityFeed.vue'
+import TeamMark from '~/components/TeamMark.vue'
 import type { FeedSession } from '~/utils/activity'
 import { formatSlotWhen } from '~/utils/berlin-time'
-import type { ActivityEntry, ActivityPage } from '~~/shared/activity'
+import type { ActivityEntry, ActivityPage, TeamNames } from '~~/shared/activity'
+import type { BoardTeam } from '~~/shared/event'
 import { GAME_NAME_MAX } from '~~/shared/game'
 import { envelope, type RoomMessage } from '~~/shared/realtime'
 
@@ -245,7 +247,7 @@ describe('ActivityFeed', () => {
 
       expect(wrapper.findAll('[role="log"] h3').map(heading => heading.text())).toEqual(['Nach Session 2'])
       expect(lines(wrapper)[0]).toContain('Unentschieden: Team Rot und Wilde Gurken')
-      expect(wrapper.findAll('[role="log"] li b').map(bold => bold.text())).toEqual(['Team Rot und Wilde Gurken'])
+      expect(wrapper.findAll('[role="log"] li b').map(bold => bold.text())).toEqual(['Team Rot', 'Wilde Gurken'])
       expect(wrapper.get('[role="log"] li svg').classes()).toContain('lucide-medal')
     })
   })
@@ -278,6 +280,126 @@ describe('ActivityFeed', () => {
       await vi.waitFor(() => expect(lines(wrapper)).toHaveLength(1))
 
       expect(lines(wrapper)[0]).toContain(`Spiel 3: ${longest}, Wilde Gurken gewinnt`)
+    })
+  })
+
+  // The Team names an entry stored (#440, ADR 0016): the name of that moment, with the Team colour's mark right before it.
+  describe('the Team names of an entry (#440)', () => {
+    const live: BoardTeam[] = [{ position: 1, name: 'Neue Bande' }, { position: 2, name: null }]
+    const kinds = (teamNames?: TeamNames) => ({
+      moved: entry('m', 6, { actor: { id: 'u-host', name: 'Hostess' }, people: { 'u-larsi': 'Larsi' }, type: 'member_moved', params: { userId: 'u-larsi', from: { zone: 'stands' }, to: { zone: 'team', team: 1 }, ...(teamNames && { teamNames }) } }),
+      reset: entry('r', 5, { type: 'team_name_reset', params: { team: 1, ...(teamNames && { teamNames }) } }),
+      bonus: entry('b', 4, { type: 'bonus_veto_granted', params: { team: 1, ...(teamNames && { teamNames }) } }),
+      veto: entry('v', 3, { actor: null, type: 'vetoes_revealed', params: { roundId: 'r1', drawId: 'd1', gameId: 'g1', vetoes: [{ team: 1 }], ...(teamNames && { teamNames }) } }),
+      result: entry('e', 2, { type: 'result_entered', games: { g1: 'Mario Kart' }, params: { roundId: 'r1', number: 3, gameId: 'g1', first: [1], ...(teamNames && { teamNames }) } }),
+      finished: entry('f', 1, { type: 'event_finished', params: { winners: [1], ...(teamNames && { teamNames }) } }),
+    })
+
+    async function mountWith(all: ActivityEntry[], props: { teams?: BoardTeam[], winnersHidden?: boolean } = {}) {
+      const feed = serveFeed(all)
+      const live = fakeRoom()
+      const wrapper = await mountSuspended(ActivityFeed, { props: { slug: feed.slug, room: live.room, ...props } })
+      await vi.waitFor(() => expect(lines(wrapper)).toHaveLength(all.length))
+      return { wrapper, send: live.send }
+    }
+    /** The bold names of a line, each with the position of the mark in front of it (null: no mark). */
+    const named = (wrapper: Awaited<ReturnType<typeof mountWith>>['wrapper'], index: number) => wrapper.findAll('[role="log"] li')[index]!.findAll('b').map((bold) => {
+      const mark = bold.findComponent(TeamMark)
+      return { text: bold.text(), mark: mark.exists() ? mark.props('team') : null, markFirst: mark.exists() && bold.html().indexOf('<svg') < bold.html().indexOf(bold.text().split(' ')[0]!) }
+    })
+
+    it('shows the stored name with its TeamMark right before it, in every kind that names a team, whatever the team is called now', async () => {
+      const all = Object.values(kinds({ 1: 'Wilde Gurken' }))
+      const { wrapper } = await mountWith(all, { teams: live })
+
+      const shown = lines(wrapper)
+      expect(shown[0]).toContain('Hostess hat Larsi nach Wilde Gurken verschoben')
+      expect(shown[1]).toContain('Sanne hat den Namen von Wilde Gurken zurückgesetzt')
+      expect(shown[2]).toContain('Sanne hat Wilde Gurken ein Bonus-Veto gegeben')
+      expect(shown[3]).toContain('Veto von Wilde Gurken')
+      expect(shown[4]).toContain('Spiel 3: Mario Kart, Wilde Gurken gewinnt')
+      expect(shown[5]).toContain('Event beendet: Wilde Gurken gewinnt')
+      for (let index = 0; index < 6; index++) expect(named(wrapper, index).filter(item => item.mark !== null), `line ${index}`).toEqual([{ text: 'Wilde Gurken', mark: 1, markFirst: true }])
+      // The mark is decorative: the sentence already says the name.
+      expect(wrapper.findAll('[role="log"] li [role="img"]')).toHaveLength(0)
+    })
+
+    it('names the colour, with its mark, for a stored null: a team that had no words', async () => {
+      const { wrapper } = await mountWith(Object.values(kinds({ 1: null })), { teams: live })
+
+      const shown = lines(wrapper)
+      expect(shown[0]).toContain('nach Team Rot verschoben')
+      expect(shown[1]).toContain('den Namen von Team Rot zurückgesetzt')
+      expect(shown[2]).toContain('Sanne hat Team Rot ein Bonus-Veto gegeben')
+      expect(shown[3]).toContain('Veto von Team Rot')
+      expect(shown[4]).toContain('Mario Kart, Team Rot gewinnt')
+      expect(shown[5]).toContain('Event beendet: Team Rot gewinnt')
+      for (let index = 0; index < 6; index++) expect(named(wrapper, index).filter(item => item.mark !== null), `line ${index}`).toEqual([{ text: 'Team Rot', mark: 1, markFirst: true }])
+    })
+
+    it('resolves an entry without stored names as its kind did before 0.12: live for the Veto, the Result and the Event end, the colour for the others', async () => {
+      const { wrapper } = await mountWith(Object.values(kinds()), { teams: live })
+
+      const shown = lines(wrapper)
+      expect(shown[0]).toContain('nach Team Rot verschoben')
+      expect(shown[1]).toContain('den Namen von Team Rot zurückgesetzt')
+      expect(shown[2]).toContain('Sanne hat Team Rot ein Bonus-Veto gegeben')
+      expect(shown[3]).toContain('Veto von Neue Bande')
+      expect(shown[4]).toContain('Mario Kart, Neue Bande gewinnt')
+      expect(shown[5]).toContain('Event beendet: Neue Bande gewinnt')
+      // Every named team has its mark, an old entry too.
+      for (let index = 0; index < 6; index++) expect(named(wrapper, index).filter(item => item.mark === 1), `line ${index}`).toHaveLength(1)
+    })
+
+    it('gives each Party of a Tie its own mark and name: eight Parties', async () => {
+      const names = Object.fromEntries(Array.from({ length: 8 }, (_, index) => [index + 1, index % 2 === 0 ? `Name ${index + 1}` : null]))
+      const { wrapper } = await mountWith([entry('t', 1, { type: 'event_finished', params: { winners: [1, 2, 3, 4, 5, 6, 7, 8], teamNames: names } })])
+
+      expect(wrapper.findAllComponents(TeamMark).map(mark => mark.props('team'))).toEqual([1, 2, 3, 4, 5, 6, 7, 8])
+      expect(wrapper.findAll('[role="log"] li b').map(bold => bold.text())).toEqual(['Name 1', 'Team Orange', 'Name 3', 'Team Himmel', 'Name 5', 'Team Blau', 'Name 7', 'Team Nacht'])
+      expect(lines(wrapper)[0]).toContain('Unentschieden: Name 1, Team Orange, Name 3, Team Himmel, Name 5, Team Blau, Name 7 und Team Nacht')
+    })
+
+    it('keeps the longest name whole in the DOM, and a word of wide capitals without a break', async () => {
+      const longest = Array.from({ length: 6 }, () => 'Zwölfzeichen').join(' ')
+      const wide = 'W'.repeat(12)
+      const { wrapper } = await mountWith([
+        entry('l', 2, { type: 'bonus_veto_granted', params: { team: 1, teamNames: { 1: longest } } }),
+        entry('w', 1, { type: 'bonus_veto_granted', params: { team: 2, teamNames: { 2: wide } } }),
+      ])
+
+      expect(lines(wrapper)[0]).toContain(`Sanne hat ${longest} ein Bonus-Veto gegeben`)
+      expect(named(wrapper, 0)).toEqual([{ text: 'Sanne', mark: null, markFirst: false }, { text: longest, mark: 1, markFirst: true }])
+      expect(lines(wrapper)[1]).toContain(`${wide} ein Bonus-Veto`)
+    })
+
+    it('shows an entry the room sends with its stored name and mark', async () => {
+      const { wrapper, send } = await mountWith([entry('a', 5)], { teams: live })
+
+      send({ type: 'activity.added', entry: kinds({ 1: 'Wilde Gurken' }).bonus })
+
+      await vi.waitFor(() => expect(lines(wrapper)).toHaveLength(2))
+      expect(lines(wrapper)[1]).toContain('Sanne hat Wilde Gurken ein Bonus-Veto gegeben')
+      expect(named(wrapper, 1).filter(item => item.mark !== null)).toEqual([{ text: 'Wilde Gurken', mark: 1, markFirst: true }])
+    })
+
+    it('names nobody and sets no mark at the Event end while the Winners wait, stored names or not (#445)', async () => {
+      const { wrapper } = await mountWith([kinds({ 1: 'Wilde Gurken' }).finished], { teams: live, winnersHidden: true })
+
+      expect(lines(wrapper)[0]).toContain('Event beendet')
+      expect(lines(wrapper)[0]).not.toContain('Wilde Gurken')
+      expect(wrapper.findAllComponents(TeamMark)).toHaveLength(0)
+      expect(wrapper.findAll('[role="log"] li b')).toHaveLength(0)
+    })
+
+    it('sets a mark beside no one else: the actor and the person are bold without one', async () => {
+      const { wrapper } = await mountWith([kinds({ 1: 'Wilde Gurken' }).moved])
+
+      expect(named(wrapper, 0)).toEqual([
+        { text: 'Hostess', mark: null, markFirst: false },
+        { text: 'Larsi', mark: null, markFirst: false },
+        { text: 'Wilde Gurken', mark: 1, markFirst: true },
+      ])
     })
   })
 

@@ -1,7 +1,8 @@
 import { and, desc, eq, sql } from 'drizzle-orm'
 import { eventMembers } from '../db/schema'
+import { activityTeams } from '../../shared/activity'
 import type { Place } from '../../shared/board'
-import { recordActivity } from './activity'
+import { feedTeamNames, recordActivity } from './activity'
 import type { Db } from './db'
 import type { EventChange } from './event-access'
 
@@ -33,8 +34,12 @@ export async function seatMember(tx: Db, eventId: string, userId: string, to: Pl
  * name) both end here, so a move reads the same wherever it came from. The rules that allow it are the caller's.
  */
 export async function moveMember(tx: Db, publish: EventChange['publish'], now: Date, eventId: string, actorId: string, userId: string, from: Place, to: Place): Promise<void> {
+  // The entry names the team the Player goes to (#440). Read before the seat changes: joining adds no word and seatMember clears the mover's own,
+  // so the name is the same before and after, but the entry says the name `to` had when the move was made. None for the Stands: no statement.
+  const params = { userId, from, to }
+  const teamNames = await feedTeamNames(tx, eventId, activityTeams('member_moved', params))
   await seatMember(tx, eventId, userId, to)
-  await recordActivity(tx, publish, eventId, { type: 'member_moved', actorId, params: { userId, from, to }, now: now })
+  await recordActivity(tx, publish, eventId, { type: 'member_moved', actorId, params: { ...params, teamNames }, now: now })
   publish({ type: 'member.moved', userId, from, to, by: actorId })
 }
 

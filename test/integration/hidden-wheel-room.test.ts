@@ -191,6 +191,23 @@ describe('Hidden wheel secrecy (#148)', () => {
       expectNoGameFacts(room, feed)
     })
 
+    it('carries the Team names of renamed teams in the room and the feed alike, and still no pool game (#440)', async () => {
+      const { slug, eventId, games } = await lobbyFlow()
+      const entries = (await activityOf(playerCookie, slug)).entries
+      const fromRoom = notifier.messages(eventId).flatMap(message => (message.type === 'activity.added' ? [message.entry] : []))
+
+      // The Team words of the flow („Wilde“, „Gurken“, then „Rote“) are Team names in the entries that name a team: team 2 had „Gurken“ when the Host reset it.
+      const names = (type: string) => entries.filter(entry => entry.type === type).map(entry => (entry.params as { teamNames?: unknown }).teamNames)
+      expect(names('team_name_reset')).toEqual([{ 2: 'Gurken' }])
+      expect(names('result_entered')).toEqual([{ 1: 'Wilde' }])
+      expect(names('member_moved')).toEqual([{ 2: null }, {}, { 2: null }, { 1: null }]) // newest first
+      // Every entry the room carried is the feed's entry, names included.
+      expect(fromRoom.length).toBeGreaterThan(0)
+      for (const sent of fromRoom) expect(entries.find(entry => entry.id === sent.id), sent.type).toEqual(sent)
+      // A Team name is made of Team words: no game's name is in it or anywhere else.
+      expectNone({ 'the room': JSON.stringify(fromRoom), 'the Activity feed of Player 1': JSON.stringify(entries) }, games)
+    })
+
     it('names only the set game in the Result entry a Player reads, while the wheel\'s draw is still unstopped (#273)', async () => {
       const { slug, eventId, games, set, player2Cookie } = await lobbyFlow()
 

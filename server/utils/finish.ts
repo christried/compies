@@ -2,7 +2,7 @@ import { eq } from 'drizzle-orm'
 import { eventTeams, events } from '../db/schema'
 import type { EventFinished } from '../../shared/event'
 import { leadersOf, type FinishRequest } from '../../shared/finish'
-import { recordActivity } from './activity'
+import { feedTeamNames, recordActivity } from './activity'
 import { apiError } from './errors'
 import type { ChangeCore } from './event-access'
 import { finishReason, readEventState } from './event-state'
@@ -24,14 +24,17 @@ export async function finishEvent({ tx, eventRow, user, publish, now }: ChangeCo
   const rejection = finishReason(state, eventRow.hostId === user.id, request)
   if (rejection) throw apiError(rejection)
 
+  // The rule above refused an Event without settings, so the Standings exist. The winners are named by the Team name they have now (#440), read
+  // before the updates: a finished Event refuses every write, so a Team name is composed from the words, never from `event_teams.frozen_name`.
+  const winners = leadersOf(state.standing!.standings)
+  const teamNames = await feedTeamNames(tx, eventRow.id, winners)
+
   await tx.update(events).set({ phase: 'finished', finishedAt: now }).where(eq(events.id, eventRow.id))
   await closeSessions(tx, eventRow, now)
   // An Event the previous deployment started during the switch-over has frozen names the new code ignores while it runs; without this the names
   // would jump back to them now (#438). Rows remain only in an Event finished before 0.12.
   await tx.delete(eventTeams).where(eq(eventTeams.eventId, eventRow.id))
-  // The rule above refused an Event without settings, so the Standings exist.
-  const winners = leadersOf(state.standing!.standings)
   // Only this entry: the Sessions' removal and end are the finish's own, not a feed entry each (#277).
-  await recordActivity(tx, publish, eventRow.id, { type: 'event_finished', actorId: user.id, params: { winners }, now })
+  await recordActivity(tx, publish, eventRow.id, { type: 'event_finished', actorId: user.id, params: { winners, teamNames }, now })
   return { phase: 'finished', winners }
 }

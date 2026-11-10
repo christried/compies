@@ -1,7 +1,7 @@
 import { and, eq } from 'drizzle-orm'
 import { defineEventHandler, getRouterParam } from 'h3'
 import { eventMembers } from '../../../../../db/schema'
-import { recordActivity } from '../../../../../utils/activity'
+import { feedTeamNames, recordActivity } from '../../../../../utils/activity'
 import { apiError } from '../../../../../utils/errors'
 import { changeEvent } from '../../../../../utils/event-access'
 import type { TeamNameReset } from '../../../../../../shared/event'
@@ -16,10 +16,12 @@ export default defineEventHandler((event): Promise<TeamNameReset> => changeEvent
   const position = parseTeamPosition(getRouterParam(event, 'position') ?? '')
   if (settings === null || position === null || position > settings.teamCount) throw apiError('no_such_team')
 
+  // The entry names the name it removes (#440, ADR 0016): read before the clear. A team without words is null.
+  const teamNames = await feedTeamNames(tx, eventRow.id, [position])
   await tx
     .update(eventMembers)
     .set({ teamWord: null })
     .where(and(eq(eventMembers.eventId, eventRow.id), eq(eventMembers.team, position)))
-  await recordActivity(tx, publish, eventRow.id, { type: 'team_name_reset', actorId: user.id, params: { team: position }, now })
+  await recordActivity(tx, publish, eventRow.id, { type: 'team_name_reset', actorId: user.id, params: { team: position, teamNames }, now })
   return { team: position }
 }))

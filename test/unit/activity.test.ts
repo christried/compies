@@ -202,7 +202,7 @@ describe('the sentence of an entry', () => {
     expect(text(revealed([{ team: 1 }]))).toBe('Veto von Team Rot')
     expect(text(revealed([{ team: 1 }, { team: 2 }]))).toBe('Veto von Team Rot und Team Orange')
     expect(text(revealed([{ team: 1 }, { team: 2 }, { team: 3 }]))).toBe('Veto von Team Rot, Team Orange und Team Gelb')
-    expect(activityParts(revealed([{ team: 1 }]), t)).toEqual([{ text: 'Veto von ', strong: false }, { text: 'Team Rot', strong: true }])
+    expect(activityParts(revealed([{ team: 1 }]), t)).toEqual([{ text: 'Veto von ', strong: false }, { text: 'Team Rot', strong: true, team: 1 }])
   })
 
   it('names a Party of a Veto by its Team name when the feed has the teams (#355)', () => {
@@ -264,7 +264,9 @@ describe('the sentence of a Result (#273)', () => {
       { text: 'Spiel 3: ', strong: false },
       { text: 'Mario Kart', strong: true },
       { text: ', ', strong: false },
-      { text: 'Team Rot und Team Blau', strong: true },
+      { text: 'Team Rot', strong: true, team: 1 },
+      { text: ' und ', strong: false },
+      { text: 'Team Blau', strong: true, team: 6 },
       { text: ' gewinnen', strong: false },
     ])
   })
@@ -284,7 +286,7 @@ describe('the sentence of a Result (#273)', () => {
   it('sets the winner of the Event in bold, and nothing else', () => {
     expect(activityParts(finishedOf([2]), t)).toEqual([
       { text: 'Event beendet: ', strong: false },
-      { text: 'Team Orange', strong: true },
+      { text: 'Team Orange', strong: true, team: 2 },
       { text: ' gewinnt', strong: false },
     ])
   })
@@ -304,7 +306,11 @@ describe('the sentence of a Result (#273)', () => {
   it('sets the Parties of a Tie in bold, and „Unentschieden: “ not', () => {
     expect(activityParts(finishedOf([1, 2, 3]), t)).toEqual([
       { text: 'Unentschieden: ', strong: false },
-      { text: 'Team Rot, Team Orange und Team Gelb', strong: true },
+      { text: 'Team Rot', strong: true, team: 1 },
+      { text: ', ', strong: false },
+      { text: 'Team Orange', strong: true, team: 2 },
+      { text: ' und ', strong: false },
+      { text: 'Team Gelb', strong: true, team: 3 },
     ])
   })
 
@@ -386,7 +392,7 @@ describe('activityParts', () => {
       { text: ' hat ', strong: false },
       { text: 'Sanne', strong: true },
       { text: ' nach ', strong: false },
-      { text: 'Team Orange', strong: true },
+      { text: 'Team Orange', strong: true, team: 2 },
       { text: ' verschoben', strong: false },
     ])
     expect(activityParts(moved, t)!.map(part => part.text).join('')).toBe('Hostess hat Sanne nach Team Orange verschoben')
@@ -420,5 +426,97 @@ describe('formatActivityTime', () => {
     expect(formatActivityTime(new Date('2026-10-23T18:00:00Z'), now)).toBe('Fr 23.10. 20:00')
     // 23:30 UTC on the 24th is already the 25th in Berlin.
     expect(formatActivityTime(new Date('2026-10-24T23:30:00Z'), new Date('2026-10-24T20:00:00Z'))).toBe('So 25.10. 01:30')
+  })
+})
+
+// The Team names an entry stores (#440, ADR 0016): the six kinds that name a team show the name they stored, with the team's position on its piece
+// for the TeamMark; an entry without a stored name reads as its kind did before 0.12.
+describe('the Team names of an entry (#440)', () => {
+  const live: BoardTeam[] = [{ position: 1, name: 'Neue Bande' }, { position: 2, name: null }]
+  const text = (entry: ActivityEntry, teams?: BoardTeam[]) => activityParts(entry, t, teams)?.map(part => part.text).join('') ?? null
+  const moved = (teamNames?: Record<string, string | null>, to = 1): ActivityEntry => ({ ...base, actor: { id: 'u2', name: 'Hostess' }, people: { u1: 'Sanne' }, type: 'member_moved', params: { userId: 'u1', from: { zone: 'team', team: 2 }, to: { zone: 'team', team: to }, ...(teamNames && { teamNames }) } })
+  const reset = (teamNames?: Record<string, string | null>): ActivityEntry => ({ ...base, type: 'team_name_reset', params: { team: 1, ...(teamNames && { teamNames }) } })
+  const bonus = (teamNames?: Record<string, string | null>): ActivityEntry => ({ ...base, type: 'bonus_veto_granted', params: { team: 1, ...(teamNames && { teamNames }) } })
+  const revealed = (vetoes: number[], teamNames?: Record<string, string | null>): ActivityEntry => ({ ...base, type: 'vetoes_revealed', params: { roundId: 'r', drawId: 'd', gameId: 'g1', vetoes: vetoes.map(team => ({ team })), ...(teamNames && { teamNames }) } })
+  const result = (first: number[], teamNames?: Record<string, string | null>): ActivityEntry => ({ ...base, games: { g1: 'Mario Kart' }, type: 'result_entered', params: { roundId: 'r', number: 3, gameId: 'g1', first, ...(teamNames && { teamNames }) } })
+  const finished = (winners: number[], teamNames?: Record<string, string | null>): ActivityEntry => ({ ...base, type: 'event_finished', params: { winners, ...(teamNames && { teamNames }) } })
+
+  it('says the stored name in every kind that names a team, whatever the team is called now', () => {
+    expect(text(moved({ 1: 'Wilde Gurken' }), live)).toBe('Hostess hat Sanne nach Wilde Gurken verschoben')
+    expect(text(reset({ 1: 'Wilde Gurken' }), live)).toBe('Sanne hat den Namen von Wilde Gurken zurückgesetzt')
+    expect(text(bonus({ 1: 'Wilde Gurken' }), live)).toBe('Sanne hat Wilde Gurken ein Bonus-Veto gegeben')
+    expect(text(revealed([1], { 1: 'Wilde Gurken' }), live)).toBe('Veto von Wilde Gurken')
+    expect(text(result([1], { 1: 'Wilde Gurken' }), live)).toBe('Spiel 3: Mario Kart, Wilde Gurken gewinnt')
+    expect(text(finished([1], { 1: 'Wilde Gurken' }), live)).toBe('Event beendet: Wilde Gurken gewinnt')
+  })
+
+  it('names the colour for a stored null, a team that had no words, also where the team has a name now', () => {
+    expect(text(moved({ 1: null }), live)).toBe('Hostess hat Sanne nach Team Rot verschoben')
+    expect(text(reset({ 1: null }), live)).toBe('Sanne hat den Namen von Team Rot zurückgesetzt')
+    expect(text(bonus({ 1: null }), live)).toBe('Sanne hat Team Rot ein Bonus-Veto gegeben')
+    expect(text(revealed([1], { 1: null }), live)).toBe('Veto von Team Rot')
+    expect(text(result([1], { 1: null }), live)).toBe('Spiel 3: Mario Kart, Team Rot gewinnt')
+    expect(text(finished([1], { 1: null }), live)).toBe('Event beendet: Team Rot gewinnt')
+  })
+
+  it('reads an entry without stored names as its kind did before 0.12: live for a Veto, a Result and the Event end, the colour for the rest', () => {
+    expect(text(revealed([1]), live)).toBe('Veto von Neue Bande')
+    expect(text(result([1]), live)).toBe('Spiel 3: Mario Kart, Neue Bande gewinnt')
+    expect(text(finished([1]), live)).toBe('Event beendet: Neue Bande gewinnt')
+    expect(text(revealed([1]))).toBe('Veto von Team Rot')
+    expect(text(moved(), live)).toBe('Hostess hat Sanne nach Team Rot verschoben')
+    expect(text(reset(), live)).toBe('Sanne hat den Namen von Team Rot zurückgesetzt')
+    expect(text(bonus(), live)).toBe('Sanne hat Team Rot ein Bonus-Veto gegeben')
+  })
+
+  it('puts the position on the piece of every named team, strong, so the feed sets its mark before the name', () => {
+    expect(activityParts(moved({ 3: 'Wilde Gurken' }, 3), t)).toEqual([
+      { text: 'Hostess', strong: true },
+      { text: ' hat ', strong: false },
+      { text: 'Sanne', strong: true },
+      { text: ' nach ', strong: false },
+      { text: 'Wilde Gurken', strong: true, team: 3 },
+      { text: ' verschoben', strong: false },
+    ])
+    expect(activityParts(reset({ 1: 'Rote' }), t)!.filter(part => part.team !== undefined)).toEqual([{ text: 'Rote', strong: true, team: 1 }])
+    expect(activityParts(bonus({ 1: null }), t)!.filter(part => part.team !== undefined)).toEqual([{ text: 'Team Rot', strong: true, team: 1 }])
+    // The actor and the person are strong without a position: no mark.
+    expect(activityParts(moved({ 1: 'Rote' }), t)!.filter(part => part.strong && part.team === undefined).map(part => part.text)).toEqual(['Hostess', 'Sanne'])
+  })
+
+  it('gives each team of a list its own piece and keeps the commas and „und“ plain: 1, 2 and 8 teams', () => {
+    const names = { 1: 'Eins', 2: 'Zwei', 3: 'Drei', 4: null, 5: 'Fünf', 6: 'Sechs', 7: 'Sieben', 8: 'Acht' }
+    expect(activityParts(revealed([2], names), t)).toEqual([{ text: 'Veto von ', strong: false }, { text: 'Zwei', strong: true, team: 2 }])
+    expect(activityParts(revealed([1, 2], names), t)).toEqual([
+      { text: 'Veto von ', strong: false },
+      { text: 'Eins', strong: true, team: 1 },
+      { text: ' und ', strong: false },
+      { text: 'Zwei', strong: true, team: 2 },
+    ])
+    const tie = activityParts(finished([1, 2, 3, 4, 5, 6, 7, 8], names), t)!
+    expect(tie.filter(part => part.team !== undefined).map(part => [part.team, part.text])).toEqual([[1, 'Eins'], [2, 'Zwei'], [3, 'Drei'], [4, 'Team Himmel'], [5, 'Fünf'], [6, 'Sechs'], [7, 'Sieben'], [8, 'Acht']])
+    expect(tie.filter(part => part.team === undefined).map(part => part.text)).toEqual(['Unentschieden: ', ', ', ', ', ', ', ', ', ', ', ', ', ' und '])
+    expect(tie.every(part => part.team === undefined || part.strong)).toBe(true)
+  })
+
+  it('keeps the longest name whole: six words of twelve characters, 77 characters', () => {
+    const longest = Array.from({ length: 6 }, () => 'Zwölfzeichen').join(' ')
+
+    expect(longest).toHaveLength(77)
+    expect(activityParts(result([1], { 1: longest }), t)!.find(part => part.team === 1)!.text).toBe(longest)
+  })
+
+  it('names nobody and sets no mark while the Winners wait, stored names or not (#445)', () => {
+    for (const winners of [[1], [1, 2]]) {
+      const parts = activityParts(finished(winners, { 1: 'Wilde Gurken', 2: null }), t, live, true)
+
+      expect(parts).toEqual([{ text: 'Event beendet', strong: false }])
+    }
+  })
+
+  it('reads no caster out of a stored Veto, names beside it or not', () => {
+    const old: ActivityEntry = { ...base, people: { u1: 'Eins' }, type: 'vetoes_revealed', params: { roundId: 'r', drawId: 'd', gameId: 'g1', vetoes: [{ team: 1, userId: 'u1' }] as never, teamNames: { 1: 'Wilde Gurken' } } }
+
+    expect(text(old)).toBe('Veto von Wilde Gurken')
   })
 })

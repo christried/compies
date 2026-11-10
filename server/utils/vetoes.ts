@@ -1,7 +1,7 @@
 import { bonusVetoes, type draws, type vetoes } from '../db/schema'
 import type { BonusVetoGranted } from '../../shared/stage'
 import { vetoesSealed } from '../../shared/draw-timeline'
-import { recordActivity } from './activity'
+import { feedTeamNames, recordActivity } from './activity'
 import { apiError } from './errors'
 import type { ChangeCore } from './event-access'
 import { bonusCountsOf, bonusVetoReason, readEventState } from './event-state'
@@ -32,7 +32,8 @@ export async function grantBonusVeto({ tx, eventRow, user, publish, now }: Chang
   const rejection = bonusVetoReason(state, eventRow.hostId === user.id, team)
   if (rejection) throw apiError(rejection)
 
+  const teamNames = await feedTeamNames(tx, eventRow.id, [team])
   await tx.insert(bonusVetoes).values({ eventId: eventRow.id, team, grantedBy: user.id, grantedAt: now })
-  await recordActivity(tx, publish, eventRow.id, { type: 'bonus_veto_granted', actorId: user.id, params: { team }, now })
+  await recordActivity(tx, publish, eventRow.id, { type: 'bonus_veto_granted', actorId: user.id, params: { team, teamNames }, now })
   return { team, granted: bonusCountsOf(state)[team - 1]! + 1 }
 }

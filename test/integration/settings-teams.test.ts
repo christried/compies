@@ -179,8 +179,8 @@ describe('settings follow the teams (#163)', () => {
       const entries = await testDb.db.select().from(activity).where(eq(activity.eventId, game.eventId))
       expect(entries).toHaveLength(2)
       expect(entries).toEqual(expect.arrayContaining([
-        expect.objectContaining({ type: 'member_moved', actorId: game.ids.host, params: { userId: game.ids.two, from: team(3), to: STANDS } }),
-        expect.objectContaining({ type: 'member_moved', actorId: game.ids.host, params: { userId: game.ids.three, from: team(4), to: STANDS } }),
+        expect.objectContaining({ type: 'member_moved', actorId: game.ids.host, params: { userId: game.ids.two, from: team(3), to: STANDS, teamNames: {} } }),
+        expect.objectContaining({ type: 'member_moved', actorId: game.ids.host, params: { userId: game.ids.three, from: team(4), to: STANDS, teamNames: {} } }),
       ]))
     })
 
