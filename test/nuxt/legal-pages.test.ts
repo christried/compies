@@ -83,7 +83,7 @@ describe('legal pages', () => {
     expect(events!.text()).toContain('Ist ein Event abgeschlossen, kann jedes Mitglied ein Ergebnisbild herunterladen oder teilen. Es zeigt Namen und Datum des Events, wie viele Leute mitgespielt haben, die Tabelle mit Teamnamen und Punkten und die gespielten Spiele, aber keine Anzeigenamen und keine Profilbilder. Compies erzeugt das Bild bei jedem Abruf neu und speichert es nicht. Teilst du es über die Teilen-Funktion deines Geräts, gibt dein Gerät es an die App weiter, die du wählst; ab dann gelten deren Datenschutzbestimmungen.')
   })
 
-  it('say what deleting an Event means: unreachable for every Member at once, data kept until removed on request, no automatic purge, (#334, spec #332)', async () => {
+  it('say what deleting an Event means: unreachable for every Member at once, data kept until removed on request, no automatic purge (#334, spec #332)', async () => {
     const page = await mountSuspended(DatenschutzPage, { route: '/datenschutz' })
     const sections = page.findAll('section')
     const events = sections.find(s => s.get('h2').text() === '11. Events, Terminvorschläge und Stimmen')

@@ -11,7 +11,6 @@ function page(name, address, { waitFor = 'h1', ...rest } = {}) {
     name,
     group,
     account: 'member',
-    signedOut: true,
     async open(ctx) {
       ctx.signOut(await openSignedOut(ctx.tab, address(ctx), ctx.width, ctx.height, waitFor, { appearance: ctx.appearance, plain: rest.plain }))
     },

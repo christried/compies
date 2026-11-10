@@ -65,6 +65,18 @@ describe('NoticeBanner tones (#172)', () => {
     expect(without.element.querySelectorAll('.max-sm\\:self-start')).toHaveLength(0)
   })
 
+  it('draws the icon of each chip in the on-token of its fill, never in ink (#411 class)', async () => {
+    // Ink is cream in Dunkel: 2.54:1 on the info blue. Every tone's own on-token reads on its fill in both looks.
+    const FILLS = { info: 'bg-info', warning: 'bg-warning', critical: 'bg-error', success: 'bg-success' } as const
+    const ON = { info: 'text-on-info', warning: 'text-on-warning', critical: 'text-on-error', success: 'text-on-success' } as const
+    for (const tone of Object.keys(FILLS) as (keyof typeof FILLS)[]) {
+      const page = await mountSuspended(NoticeBanner, { props: { tone }, slots: { default: 'Text.' } })
+      const chip = page.get(`.${FILLS[tone]}`)
+      expect(chip.classes(), tone).toContain(ON[tone])
+      expect(chip.classes(), tone).not.toContain('text-ink')
+    }
+  })
+
   it('shows the icon chip of its tone by default', async () => {
     const page = await mountSuspended(NoticeBanner, { props: { tone: 'critical' }, slots: { default: 'Kritisch.' } })
     expect(page.find('.bg-error').exists()).toBe(true)
