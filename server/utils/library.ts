@@ -44,7 +44,7 @@ export async function loadGame(db: Db, id: string): Promise<{ game: typeof games
   return { game: row.game, creatorName: creatorNameOf(row) }
 }
 
-/** A games row as an Event's pool shows it to a Member (#224): picture, name and Price (#338). */
+/** A games row as an Event's pool shows it to a Member (#224): picture, name, Price (#338), players and Suitabilities (#444). */
 export function poolGameFace(row: typeof games.$inferSelect): PoolGameFace {
   return {
     id: row.id,
@@ -53,18 +53,18 @@ export function poolGameFace(row: typeof games.$inferSelect): PoolGameFace {
     imageUrl: row.imageKey ? `/api/images/${row.imageKey}` : null,
     youtubeId: row.youtubeId,
     price: priceOf(row),
+    playersMin: row.playersMin,
+    playersMax: row.playersMax,
+    suitabilities: row.suitabilities,
   }
 }
 
-/** A games row as the Host's pool shows it (#146): the face plus what GameCard shows and the notes (#224), no creator and no edit rights. */
+/** A games row as the Host's pool shows it (#146): the face plus the clip and the notes (#224), no creator and no edit rights. */
 export function poolGameView(row: typeof games.$inferSelect): PoolGame {
   return {
     ...poolGameFace(row),
     clipStart: row.clipStart,
     clipLength: row.clipLength,
-    playersMin: row.playersMin,
-    playersMax: row.playersMax,
-    suitabilities: row.suitabilities,
     notes: row.notes,
   }
 }

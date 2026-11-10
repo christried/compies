@@ -182,7 +182,7 @@ describe('setReason', () => {
   })
 
   it('wants every team to have a Player and the teams to be equally big', () => {
-    expect(setReason(state({ members: [member('host', 'stands'), member('a', 'bench')] }), true)).toBe('teams_empty')
+    expect(setReason(state({ members: [member('host', 'stands'), member('a', 'stands')] }), true)).toBe('teams_empty')
     expect(setReason(state({ members: [member('a', 'team', 1), member('b', 'team', 1), member('c', 'team', 2)] }), true)).toBe('teams_uneven')
   })
 
@@ -258,7 +258,7 @@ describe('vetoesLeftOf and vetoReason', () => {
 
   it('refuses a Host outside the teams and a Member on the Stands: not_a_player', () => {
     expect(vetoReason(withWindow(), 'host', windowDraw)).toBe('not_a_player')
-    expect(vetoReason(withWindow({ members: [member('x', 'bench')] }), 'x', windowDraw)).toBe('not_a_player')
+    expect(vetoReason(withWindow({ members: [member('x', 'stands')] }), 'x', windowDraw)).toBe('not_a_player')
     expect(vetoReason(withWindow(), 'stranger', windowDraw)).toBe('not_a_player')
   })
 
@@ -376,12 +376,12 @@ describe('coinReason', () => {
 
 describe('moveReason and the seats', () => {
   it('names a Member the Event does not have', () => {
-    expect(moveReason(state(), { actorId: 'host', userId: 'stranger', to: { zone: 'bench' } })).toBe('member_not_found')
+    expect(moveReason(state(), { actorId: 'host', userId: 'stranger', to: { zone: 'stands' } })).toBe('member_not_found')
   })
 
   it('lets a Player move only themselves, the Host anyone', () => {
-    expect(moveReason(state(), { actorId: 'a', userId: 'b', to: { zone: 'bench' } })).toBe('host_only')
-    expect(moveReason(state(), { actorId: 'host', userId: 'b', to: { zone: 'bench' } })).toBeNull()
+    expect(moveReason(state(), { actorId: 'a', userId: 'b', to: { zone: 'stands' } })).toBe('host_only')
+    expect(moveReason(state(), { actorId: 'host', userId: 'b', to: { zone: 'stands' } })).toBeNull()
   })
 
   it('refuses a move to the seat the Member is in, to a team that does not exist and into a full team', () => {
@@ -391,10 +391,10 @@ describe('moveReason and the seats', () => {
   })
 
   it('locks the teams for a Player once the first Session has started, and before Team choice opens', () => {
-    expect(moveReason(state(), { actorId: 'a', userId: 'a', to: { zone: 'bench' } })).toBe('teams_locked')
+    expect(moveReason(state(), { actorId: 'a', userId: 'a', to: { zone: 'stands' } })).toBe('teams_locked')
     const before = state({ sessions: [waiting('s2', at(60))] })
-    expect(moveReason(before, { actorId: 'a', userId: 'a', to: { zone: 'bench' } })).toBeNull()
-    expect(moveReason(state({ sessions: [waiting('s2', null)] }), { actorId: 'a', userId: 'a', to: { zone: 'bench' } })).toBe('team_choice_closed')
+    expect(moveReason(before, { actorId: 'a', userId: 'a', to: { zone: 'stands' } })).toBeNull()
+    expect(moveReason(state({ sessions: [waiting('s2', null)] }), { actorId: 'a', userId: 'a', to: { zone: 'stands' } })).toBe('team_choice_closed')
   })
 
   it('says whether Team choice is open and whether the first Session has started', () => {
@@ -428,7 +428,7 @@ describe('floorsOf', () => {
   })
 
   it('takes the Team size floor from the fullest team that remains', () => {
-    const members = [member('a', 'team', 1), member('b', 'team', 1), member('c', 'team', 1), member('d', 'team', 2), member('e', 'bench')]
+    const members = [member('a', 'team', 1), member('b', 'team', 1), member('c', 'team', 1), member('d', 'team', 2), member('e', 'stands')]
 
     expect(floorsOf(state({ members })).playersPerTeam).toEqual([3, 1])
   })

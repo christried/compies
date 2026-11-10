@@ -117,11 +117,11 @@ describe('The last game', () => {
       const game = await running({ gameCount: 2 })
       const first = await setRound(game, game.halo.id)
       expect((await enter(game, first, { places: teamOneWins })).status).toBe(200)
-      const { cookie: benchCookie } = await signIn(testDb.db, newcomer)
-      await send('POST', `/api/invite/${game.inviteToken}`, benchCookie)
+      const { cookie: newcomerCookie } = await signIn(testDb.db, newcomer)
+      await send('POST', `/api/invite/${game.inviteToken}`, newcomerCookie)
 
       expect((await read(game, game.cookies.one)).end).toMatchObject({ complete: false, lastGame: null })
-      expect((await read(game, benchCookie)).end).toMatchObject({ lastGame: null })
+      expect((await read(game, newcomerCookie)).end).toMatchObject({ lastGame: null })
 
       const second = await setRound(game, game.kart.id)
       expect((await enter(game, second, { places: teamTwoWins })).status).toBe(200)

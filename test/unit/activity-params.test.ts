@@ -17,7 +17,7 @@ export type NamesAGame = CheckedParams<
 // User id, the games by their game id. The sample params are the ones an entry of the type holds.
 const NAMED: Record<ActivityType, { params: unknown, people: string[], games: string[] }> = {
   member_joined: { params: {}, people: [], games: [] },
-  member_moved: { params: { userId: 'u1', from: { zone: 'bench' }, to: { zone: 'team', team: 2 } }, people: ['u1'], games: [] },
+  member_moved: { params: { userId: 'u1', from: { zone: 'stands' }, to: { zone: 'team', team: 2 } }, people: ['u1'], games: [] },
   date_set: { params: { sessionId: 's', number: 1, startsAt: '2090-11-01T19:30:00.000Z' }, people: [], games: [] },
   date_rescheduled: { params: { sessionId: 's', number: 1, from: '2090-11-01T19:30:00.000Z', to: '2090-11-02T19:30:00.000Z' }, people: [], games: [] },
   date_reopened: { params: { sessionId: 's', number: 1, previousStartsAt: '2090-11-01T19:30:00.000Z' }, people: [], games: [] },
@@ -58,9 +58,9 @@ describe('ACTIVITY_NAMES', () => {
 
 describe('the people and games of an entry', () => {
   it('names the moved Member of a move, and nobody in the entries without a User in their params', () => {
-    const bench: Place = { zone: 'bench' }
+    const stands: Place = { zone: 'stands' }
 
-    expect(activityPeople('member_moved', { userId: 'u1', from: bench, to: { zone: 'team', team: 2 } })).toEqual(['u1'])
+    expect(activityPeople('member_moved', { userId: 'u1', from: stands, to: { zone: 'team', team: 2 } })).toEqual(['u1'])
     expect(activityPeople('session_started', { sessionId: 's1', number: 1 })).toEqual([])
     expect(activityPeople('coin_tossed', { side: 'heads' })).toEqual([])
   })

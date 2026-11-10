@@ -73,7 +73,7 @@ describe('events', () => {
       expect(await eventRows()).toEqual([])
     })
 
-    it('creates a poll with its Slots, the Host on the Bench and an Event link and Invite link', async () => {
+    it('creates a poll with its Slots, the Host on the Stands and an Event link and Invite link', async () => {
       const cookie = await signInAsHost()
 
       const response = await create(cookie, poll({ name: ' Freitags-Zocken ', slots: ['2090-10-30T20:30', '2090-10-31T19:00'] }))
@@ -103,7 +103,7 @@ describe('events', () => {
       ])
 
       const members = await testDb.db.select().from(eventMembers)
-      expect(members).toEqual([{ eventId: event!.id, userId: host!.id, joinedAt: expect.any(Date), zone: 'bench', team: null, teamJoinedAt: null, teamWord: null }])
+      expect(members).toEqual([{ eventId: event!.id, userId: host!.id, joinedAt: expect.any(Date), zone: 'stands', team: null, teamJoinedAt: null, teamWord: null }])
     })
 
     it('creates a direct Date in the phase date_set, without Slots', async () => {

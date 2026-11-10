@@ -17,10 +17,10 @@ try {
   const me = async tab => (await api(tab, 'GET', '/api/me')).body.user.id
   const [hostId, memberId] = [await me(host), await me(member)]
 
-  // The Dev Member joins through the Invite link if they aren't a Member yet, and starts on the Bench like the Host.
+  // The Dev Member joins through the Invite link if they aren't a Member yet, and starts on the Tribüne like the Host (a move to the Tribüne from the Tribüne answers 409, which is fine here; there is one zone since #437).
   await joinEvent(member, slug, host)
   await open(member, `/e/${slug}`, 390, 844, board)
-  for (const [tab, userId] of [[host, hostId], [member, memberId]]) await api(tab, 'POST', `/api/e/${slug}/move`, { userId, to: { zone: 'bench' } })
+  for (const [tab, userId] of [[host, hostId], [member, memberId]]) await api(tab, 'POST', `/api/e/${slug}/move`, { userId, to: { zone: 'stands' } })
   await sleep(3000)
   await animations(host)
   await animations(member)
@@ -35,10 +35,12 @@ try {
     }
   }
 
-  await step('Host: Bench → Stands (API)', () => api(host, 'POST', `/api/e/${slug}/move`, { userId: hostId, to: { zone: 'stands' } }))
+  await step('Host: Tribüne → team 2 (API)', () => api(host, 'POST', `/api/e/${slug}/move`, { userId: hostId, to: { zone: 'team', team: 2 } }))
+  await step('Host: team 2 → Tribüne (API)', () => api(host, 'POST', `/api/e/${slug}/move`, { userId: hostId, to: { zone: 'stands' } }))
   await step('Host: moves the Member to team 1 (API)', () => api(host, 'POST', `/api/e/${slug}/move`, { userId: memberId, to: { zone: 'team', team: 1 } }))
   await step('Member: drags themselves by the avatar picture to team 2 (long press)', () => drag(member, `[data-user-id="${memberId}"] img`, '[data-drop-zone="team-2"]', { touch: true }))
-  await step('Host: drags themselves by the avatar picture to the Bench (mouse)', () => drag(host, `[data-user-id="${hostId}"] img`, '[data-drop-zone="bench"]'))
+  await step('Host: Tribüne → team 1 (API)', () => api(host, 'POST', `/api/e/${slug}/move`, { userId: hostId, to: { zone: 'team', team: 1 } }))
+  await step('Host: drags themselves by the avatar picture to the Tribüne (mouse)', () => drag(host, `[data-user-id="${hostId}"] img`, '[data-drop-zone="stands"]'))
 
   const seats = (await api(host, 'GET', `/api/e/${slug}`)).body.members.map(m => `${m.name}: ${m.zone}${m.team ?? ''}`)
   console.log(`\nSeats now: ${seats.join(', ')}`)

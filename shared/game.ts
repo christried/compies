@@ -93,14 +93,14 @@ export interface PoolGame {
 }
 
 /**
- * What a Member who may see a pool gets of its games: picture, name and Price, nothing else (#224, #338). The
- * Host's pool game is the whole PoolGame. `youtubeId` is the card's thumbnail for a game without an image of its own.
+ * What a Member who may see a pool gets of its games: picture, name, players, Suitabilities and Price, nothing else (#224, #338, #444).
+ * The Host's pool game is the whole PoolGame. `youtubeId` is the card's thumbnail for a game without an image of its own.
  */
-export type PoolGameFace = Pick<PoolGame, 'id' | 'name' | 'imageUrl' | 'youtubeId' | 'price'>
+export type PoolGameFace = Pick<PoolGame, 'id' | 'name' | 'imageUrl' | 'youtubeId' | 'price' | 'playersMin' | 'playersMax' | 'suitabilities'>
 
 /**
- * A set game as its Round shows it to every Member (#228): the whole PoolGame but the notes, which only the Host reads
- * (decided 2026-11-01, #217 comment). The player count, the clip and the Price are there because the Round card and the clip show them.
+ * A set game as its Round shows it to every Member (#228): the face plus the clip, the whole PoolGame but the notes, which only the Host reads
+ * (decided 2026-11-01, #217 comment). The clip is there because the Round card and the clip show it.
  */
 export type RoundGame = Omit<PoolGame, 'notes'>
 
@@ -117,9 +117,6 @@ export interface GameTag {
 
 /** What the Host's game dialog shows of a game beyond what its tile's game carries (#443). Only the Host's read has it. */
 export interface HostGameFacts { tags: GameTag[], notes: string | null }
-
-/** The game a tile and its dialog are given: the face, and the player count and Suitabilities where the read carries them (the Host's pool game, a RoundGame). */
-export type DialogGame = PoolGameFace & Partial<Pick<PoolGame, 'playersMin' | 'playersMax' | 'suitabilities'>>
 
 /** A game as the library shows it (GET /api/games, GET /api/games/:id, POST answers). Times are UTC ISO strings. */
 export interface GameView extends PoolGame {

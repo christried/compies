@@ -26,7 +26,7 @@ describe('SignInCard', () => {
     })
 
     expect(card.get('h1').text()).toBe('Erst kurz anmelden')
-    expect(card.text()).toContain('Sanne hat dich zu Freitags-Zocken eingeladen. Melde dich an, dann geht’s direkt auf die Bench.')
+    expect(card.text()).toContain('Sanne hat dich zu Freitags-Zocken eingeladen. Melde dich an, dann geht’s direkt auf die Tribüne.')
   })
 
   it('Weiterleitung: shows where it goes and blocks a second click', async () => {
