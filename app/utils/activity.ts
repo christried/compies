@@ -1,4 +1,4 @@
-import { Armchair, CalendarCheck, CalendarClock, CalendarMinus, CalendarPlus, CalendarX, Coins, Dices, Eye, Flag, Gamepad2, Medal, Pencil, Play, RotateCcw, ShieldPlus, ShieldX, SlidersHorizontal, Trophy, Undo2, UserPlus, Users } from '@lucide/vue'
+import { Armchair, CalendarCheck, CalendarClock, CalendarMinus, CalendarPlus, CalendarX, Coins, Dices, Flag, Gamepad2, Medal, Pencil, Play, RotateCcw, ShieldPlus, ShieldX, SlidersHorizontal, Trophy, Undo2, UserPlus, Users } from '@lucide/vue'
 import type { Component } from 'vue'
 import { ACTIVITY_TYPES, type ActivityEntry } from '~~/shared/activity'
 import type { BoardTeam } from '~~/shared/event'
@@ -37,7 +37,7 @@ export function activityParts(entry: ActivityEntry, t: Translate, teams: BoardTe
 export function activityIcon(entry: ActivityEntry): { icon: Component, tone: 'primary' | 'surface' | 'success' } {
   switch (entry.type) {
     case 'member_joined': return { icon: UserPlus, tone: 'surface' }
-    case 'member_moved': return { icon: entry.params.to.zone === 'team' ? Users : entry.params.to.zone === 'bench' ? Armchair : Eye, tone: 'surface' }
+    case 'member_moved': return { icon: entry.params.to.zone === 'team' ? Users : Armchair, tone: 'surface' }
     case 'date_set': return { icon: CalendarCheck, tone: 'success' }
     case 'date_rescheduled': return { icon: CalendarClock, tone: 'surface' }
     case 'date_reopened': return { icon: CalendarX, tone: 'surface' }
@@ -155,7 +155,8 @@ function gameSentence(entry: Extract<ActivityEntry, { type: 'game_set' | 'game_p
 /**
  * A move on the Game board (#160): a Member's own move says where they are now, a Host's move says who moved them. The
  * entry keeps the position, not a name, so a team is „Team“ and its colour: a Team name that changes later must not
- * rewrite history (#161).
+ * rewrite history (#161). Every place that is no team reads as the Tribüne (#437): the entries the Bench wrote before 0.12 still
+ * hold `{ zone: 'bench' }`, which the `Place` type no longer has, and they are not rewritten.
  */
 function movedText(entry: Extract<ActivityEntry, { type: 'member_moved' }>, t: Translate): string {
   const { userId, to } = entry.params
@@ -166,8 +167,7 @@ function movedText(entry: Extract<ActivityEntry, { type: 'member_moved' }>, t: T
     const team = teamName(to.team, t)
     return own ? t('activity.moveTeam', { name, team }) : t('activity.movedTeam', { actor, name, team })
   }
-  const key = to.zone === 'bench' ? 'Bench' : 'Stands'
-  return own ? t(`activity.move${key}`, { name }) : t(`activity.moved${key}`, { actor, name })
+  return own ? t('activity.moveStands', { name }) : t('activity.movedStands', { actor, name })
 }
 
 /** A Session that has started, as the feed's groups need it: its shown number (null for the only Session) and when it ran (ISO instants). */

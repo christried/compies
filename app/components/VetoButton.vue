@@ -10,7 +10,7 @@ import type { OwnVetoView } from '~~/shared/stage'
 // the Party: nobody learns which of them cast it (#355). With no Veto left it stays, disabled. Nobody else learns that a Veto was cast: the
 // server sends the cast to the casting Party's Users only, so the bar is the only place that shows it. What it means is the bar's title and line.
 defineProps<{
-  /** The viewer's Party in the Veto window; null for the Bench, the Stands and a Host outside the teams. */
+  /** The viewer's Party in the Veto window; null for the Stands and a Host outside the teams. */
   own: OwnVetoView | null
   /** Whether the window is open now (after the stop, before its end). */
   open: boolean

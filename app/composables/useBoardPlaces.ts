@@ -1,5 +1,5 @@
 import { placeKey } from '~/utils/board'
-import { placeOf as serverPlaceOf, type Place } from '~~/shared/board'
+import { parsePlace, placeOf as serverPlaceOf, type Place } from '~~/shared/board'
 import type { MemberView } from '~~/shared/event'
 import type { BoardPeople } from './useBoardMoves'
 
@@ -30,7 +30,9 @@ export function useBoardPlaces(options: {
 
   // A message the refetch never confirms (a move that was undone meanwhile) is dropped after a while: the Member goes
   // back to the server's place, and the board glides them there like any other change of place.
-  function hear(userId: string, to: Place) {
+  // The place is read as the server reads a request (`parsePlace`): the deployment before 0.12 still publishes `bench` until the switch-over (#437), which is the Stands.
+  function hear(userId: string, heardTo: Place) {
+    const to = parsePlace(heardTo) ?? heardTo
     heard.value = { ...heard.value, [userId]: to }
     clearTimeout(timers.get(userId))
     timers.set(userId, setTimeout(() => forget(userId, to), HEARD_MS))
@@ -51,8 +53,8 @@ export function useBoardPlaces(options: {
   const places = computed(() => new Map(options.members().map(member => [member.id, moves.pending.value[member.id] ?? heard.value[member.id] ?? serverPlaceOf(member)] as const)))
 
   return {
-    /** Where this Member is drawn; the Bench for somebody the board does not know. */
-    placeOf: (userId: string): Place => places.value.get(userId) ?? { zone: 'bench' },
+    /** Where this Member is drawn; the Stands for somebody the board does not know. */
+    placeOf: (userId: string): Place => places.value.get(userId) ?? { zone: 'stands' },
     move: moves.move,
     /** The Members whose move was refused and who are on their way home (not reactive: the board reads and clears it when it animates). */
     bounced: moves.bounced,
