@@ -9,6 +9,7 @@ Each concern below has one home. New code calls it; a second copy is a finding e
 | Concern | Home |
 |---|---|
 | A change to an Event: user, body, transaction, locked Event load, publish after commit | `changeEvent` in `server/utils/event-access.ts` (#183; lint refuses `.transaction(` in `server/api/e/**`); Session changes through `changeSessions` in `server/utils/sessions.ts`, which calls it |
+| The facts a rule runs on (Sessions, seats, Rounds with draws and Places, Vetoes, Bonus Vetoes, Game pool, latest Coin flip) and each rule's reason for a User at `now` | `readEventState` and the `…Reason` functions in `server/utils/event-state.ts` (#416): the Event read and every write route under `changeEvent` take their facts from it, in the parts their rules need; `test/integration/lock-statements.test.ts` holds the statement budget under the lock |
 | A rule both sides enforce (name length, clip, player count, points table, settings) | a pure function in `shared/`, called by the form and by the server parser |
 | Request input | `unknown` until a domain parser has checked it; `asRecord`/`isRecord` from `shared/record.ts`, no casts (lint) |
 | A User's visible name | `shownName` in `shared/auth.ts` (lint) |
