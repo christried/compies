@@ -6,7 +6,7 @@ import type { Db } from '../../server/utils/db'
 import type { memoryRoomNotifier } from '../../server/utils/room-notifier'
 import type { ActivityEntry, ActivityPage } from '../../shared/activity'
 import type { EventFinished, EventView } from '../../shared/event'
-import type { CoinTossed } from '../../shared/stage'
+import type { CeremonyStarted, CoinTossed } from '../../shared/stage'
 import { sendVia, type TestRequest } from './app'
 import { TEST_SETTINGS } from './fixtures'
 import { setAllowlist, signIn, type ProviderProfile } from './sign-in'
@@ -283,6 +283,12 @@ export async function hostEntersResult(rig: Rig, event: Pick<EventRef, 'slug' | 
 export async function hostFinishes(rig: Rig, event: Pick<EventRef, 'slug' | 'host'>, { outcome, winners }: { outcome: 'winner' | 'tie', winners: readonly number[] }): Promise<EventFinished> {
   const response = await expectOk(await sendOf(rig)('POST', `/api/e/${event.slug}/finish`, event.host.cookie, { outcome, winners }), 'finish the Event')
   return await response.json() as EventFinished
+}
+
+/** The Host starts the Award ceremony of the finished Event (#445: it is what shows the result). */
+export async function hostStartsCeremony(rig: Rig, event: Pick<EventRef, 'slug' | 'host'>): Promise<CeremonyStarted> {
+  const response = await expectOk(await sendOf(rig)('POST', `/api/e/${event.slug}/ceremony`, event.host.cookie), 'start the Award ceremony')
+  return await response.json() as CeremonyStarted
 }
 
 /** The Host tosses the Coin. */

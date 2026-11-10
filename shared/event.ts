@@ -211,6 +211,8 @@ export interface EventView {
   coin: CoinView | null
   /** The Award ceremony (#309): the latest start of a finished Event, the same for every Member; null before the first start and for an Event that is not finished. */
   ceremony: CeremonyView | null
+  /** Whether the Award ceremony has been started at least once (#445): the finished page shows its result only from then on. The same for every Member; false before the Finish. */
+  ceremonyShown: boolean
   /** The Bonus Vetoes (#233): the Host gets them while the Event has a Lucky Wheel; null for everyone else and without the wheel. */
   bonusVetoes: BonusVetoView | null
   /** The Best slot, or null when no future Slot has a yes or maybe Vote. */

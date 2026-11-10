@@ -1705,6 +1705,7 @@
     "countdownEnded": "Der Countdown ist abgelaufen. Setz ihn zurück.",
     "coinInAir": "Die Münze fliegt noch.",
     "ceremonyRunning": "Die Siegerehrung läuft noch.",
+    "ceremonyPending": "Das Bild gibt es erst, wenn die Siegerehrung gestartet ist.",
     "resultInvalid": "Das Ergebnis passt nicht. Lade die Seite neu und versuch es nochmal.",
     "roundNotOpen": "Zu diesem Spiel kann gerade kein Ergebnis eingetragen werden. Vielleicht hat es schon eins.",
     "wrongPhase": "Das geht nicht mehr. Die Seite zeigt den neuen Stand.",
