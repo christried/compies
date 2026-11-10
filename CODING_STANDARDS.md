@@ -14,7 +14,7 @@ Each concern below has one home. New code calls it; a second copy is a finding e
 | A User's visible name | `shownName` in `shared/auth.ts` (lint) |
 | Text length | `characterCount` in `shared/text.ts` |
 | Dates and times shown to Users | `app/utils/berlin-time.ts`, `shared/time.ts` |
-| An API error shown to Users | `reasonKey` / `apiErrorKey` and their table in `app/utils/api-error.ts` (a screen's own words are a place there, not an override at the call site; `test/unit/api-error.test.ts` checks every code × place); Event page actions through `useEventMutation` |
+| An API error shown to Users | `reasonKey` / `apiErrorKey` and their table in `app/utils/api-error.ts` (a screen's own words are a screen entry there, not an override at the call site; `test/unit/api-error.test.ts` checks every code × screen); Event page actions through `useEventMutation` |
 | A notice, hint or error line in a page | `NoticeBanner` with its tone |
 | Searching and filtering games | `GameBrowser` |
 | Creating or editing an Event's settings | `EventSetupWizard` |

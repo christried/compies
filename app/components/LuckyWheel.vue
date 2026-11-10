@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { reducedMotion } from '~/utils/motion'
 import { SCRAMBLE_FRAME_MS, finalAngle, removalEase, removalEnd, revealStage, scramble, sliceSpans, wheelAngle, type WheelTiming } from '~/utils/wheel'
+import { stopReached } from '~~/shared/draw-timeline'
 import type { WheelView } from '~~/shared/stage'
 import { characterCount, cutToCharacters } from '~~/shared/text'
 
@@ -50,7 +51,7 @@ const clock = useServerTicker(() => props.serverNow(), {
 })
 /** Whether the spin's own layout is on screen: from the commit until the drawn slice has left. */
 const running = computed(() => timing.value !== null && clock.value !== null && clock.value < removalEnd(timing.value, props.hidden))
-const stopped = computed(() => timing.value !== null && clock.value !== null && clock.value >= timing.value.stopAt)
+const stopped = computed(() => timing.value !== null && clock.value !== null && stopReached(timing.value, clock.value))
 
 // Whether the User prefers reduced motion is read at mount and for each new spin.
 onMounted(() => void (reduced.value = reducedMotion()))
@@ -83,7 +84,7 @@ const held = ref<{ drawId: string, labels: string[] } | null>(null)
 // while the wheel is scrolled away would still count as „before the stop“.
 watchEffect(() => {
   const current = spin.value
-  if (current?.labels && concealed.value && timing.value && clock.value !== null && props.serverNow() < timing.value.stopAt) held.value = { drawId: current.drawId, labels: current.labels }
+  if (current?.labels && concealed.value && timing.value && clock.value !== null && !stopReached(timing.value, props.serverNow())) held.value = { drawId: current.drawId, labels: current.labels }
 })
 
 function labelOf(index: number): { text: string, opacity: number } {
@@ -124,7 +125,7 @@ const drawnOpacity = computed(() => {
 // game is then named in the Veto window's outcome line only.
 const card = computed(() => (stopped.value && spin.value?.current && spin.value.game ? spin.value.game : null))
 const status = computed(() => {
-  if (timing.value && clock.value !== null && clock.value < timing.value.stopAt) return t('wheel.spinning')
+  if (timing.value && clock.value !== null && !stopReached(timing.value, clock.value)) return t('wheel.spinning')
   return count.value === 0 ? t('wheel.empty') : null
 })
 const headingId = useId()

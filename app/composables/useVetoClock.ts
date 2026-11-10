@@ -20,13 +20,22 @@ export function useVetoClock(draw: () => VetoDrawView | null, serverNow: () => n
   /** Server time in epoch ms; 0 before the page has mounted. */
   const now = computed(() => ticker.value ?? 0)
   /** The window is open: after the stop, before its end. */
-  const open = computed(() => mounted.value && draw() !== null && windowOpen(draw()!, now.value))
+  const open = computed(() => {
+    const current = draw()
+    return mounted.value && current !== null && windowOpen(current, now.value)
+  })
   /** The window has ended. */
-  const ended = computed(() => mounted.value && draw() !== null && windowEnded(draw()!, now.value))
+  const ended = computed(() => {
+    const current = draw()
+    return mounted.value && current !== null && windowEnded(current, now.value)
+  })
   const msLeft = computed(() => (endsAt.value === null ? 0 : Math.max(0, endsAt.value - now.value)))
   const secondsLeft = computed(() => Math.ceil(msLeft.value / 1000))
   /** How much of the window is left, 1 to 0, from the Draw's own instants. */
-  const fraction = computed(() => (draw() === null ? 0 : windowFraction(draw()!, now.value)))
+  const fraction = computed(() => {
+    const current = draw()
+    return current === null ? 0 : windowFraction(current, now.value)
+  })
 
-  return { mounted, now, endsAt, open, ended, msLeft, secondsLeft, fraction }
+  return { open, ended, secondsLeft, fraction }
 }

@@ -1,6 +1,6 @@
 import { CalendarCheck, CalendarClock, CirclePlus, Coins, Dices, Flag, Gamepad2, Handshake, Link as LinkIcon, Medal, Play, Settings2, ShieldPlus, Timer, Trash2, Trophy } from '@lucide/vue'
 import type { DockAction } from '~/components/HostDock.vue'
-import { reasonKey, type ReasonPlace } from '~/utils/api-error'
+import { reasonKey, type ReasonScreen } from '~/utils/api-error'
 import { ceremonyRejectionAt, coinRejectionAt, dockLayout, hostDockState, type DockKey } from '~/utils/host-dock'
 import type { ApiErrorCode } from '~~/shared/errors'
 import type { EventView } from '~~/shared/event'
@@ -74,7 +74,7 @@ export function useHostActions(
     const guarded = (reason: string | undefined, run: () => void) => () => (reason ? toast({ tone: 'info', text: reason }) : run())
 
     /** The words of a rule's reason as a disabled action says them, or undefined while nothing refuses (reasonKey: app/utils/api-error.ts). */
-    const reasonText = (rejection: ApiErrorCode | null, place?: ReasonPlace) => (rejection === null ? undefined : t(reasonKey(rejection, place)))
+    const reasonText = (rejection: ApiErrorCode | null, screen?: ReasonScreen) => (rejection === null ? undefined : t(reasonKey(rejection, screen)))
     const startReason = reasonText(state.startRejection)
     const setReason = reasonText(state.setRejection, 'setGame')
     const spinReason = reasonText(state.spinRejection, 'setGame')

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { clipRunning, clipWindow, drawGameKnown, drawInstants, isDue, settleAt, vetoesSealed, windowEnded, windowFraction, windowOpen, type DrawInstants } from '../../shared/draw-timeline'
+import { clipEnded, clipRunning, clipWindow, drawGameKnown, drawInstants, isDue, settleAt, stopReached, vetoesSealed, windowEnded, windowFraction, windowOpen, type DrawInstants } from '../../shared/draw-timeline'
 
 // The Draw's timeline (#414, ADR 0013 amendment 2026-10-31): a Draw's instants and what each decides at `now`. Every comparison
 // keeps its edge, pinned here at the four boundary milliseconds (stop - 1, stop, end - 1, end); nothing may move them silently.
@@ -56,6 +56,11 @@ describe.each(KINDS)('a %s draw with a Veto window', (kind) => {
 
   it('is known to a non-Host from the stop on, stop inclusive', () => {
     expect(at(now => drawGameKnown({ isHost: false, draw: row, now }))).toEqual([false, true, true, true])
+  })
+
+  it('has its stop reached from the stop on, stop inclusive: the client\'s spelling of the edge a non-Host knows the game at', () => {
+    expect(at(now => stopReached(row, now))).toEqual([false, true, true, true])
+    expect(at(now => stopReached(row, now))).toEqual(at(now => drawGameKnown({ isHost: false, draw: row, now })))
   })
 
   it('is known to the Host always', () => {
@@ -157,5 +162,11 @@ describe('the Clip window', () => {
     const clip = clipWindow({ stopAt: S }, { clipLength: 30 })
     const E = S + 30_000
     expect([S - 1, S, E - 1, E].map(now => clipRunning(clip, now))).toEqual([false, true, true, false])
+  })
+
+  it('has ended from its end on, end inclusive', () => {
+    const clip = clipWindow({ stopAt: S }, { clipLength: 30 })
+    const E = S + 30_000
+    expect([S - 1, S, E - 1, E].map(now => clipEnded(clip, now))).toEqual([false, false, false, true])
   })
 })

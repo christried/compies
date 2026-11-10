@@ -68,7 +68,7 @@ const changeBlocked = computed(() => changedTime.value === '' || changeProblem.v
 
 function add() {
   if (addBlocked.value || busy.value) return
-  send('POST', 'slots', { body: { startsAt: newSlot.value }, busy, place: 'slotEditor', done: () => (newSlot.value = '') })
+  send('POST', 'slots', { body: { startsAt: newSlot.value }, busy, screen: 'slotEditor', done: () => (newSlot.value = '') })
 }
 
 function startChange(slot: EditableSlot) {
@@ -80,11 +80,11 @@ function startChange(slot: EditableSlot) {
 function saveChange() {
   if (changeBlocked.value || saving.value) return
   const body = { startsAt: changedTime.value }
-  send<ChangedSlot>('PATCH', `slots/${changingId.value}`, { body, busy: saving, place: 'slotEditor', done: () => (changingId.value = null) })
+  send<ChangedSlot>('PATCH', `slots/${changingId.value}`, { body, busy: saving, screen: 'slotEditor', done: () => (changingId.value = null) })
 }
 
 function remove(slotId: string) {
-  return send('DELETE', `slots/${slotId}`, { place: 'slotEditor' })
+  return send('DELETE', `slots/${slotId}`, { screen: 'slotEditor' })
 }
 </script>
 

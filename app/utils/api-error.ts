@@ -106,7 +106,7 @@ const SHARED: Record<ApiErrorCode, string | null> = {
   invalid_name: null, // create parser; the setup wizard validates the name first
   invalid_mode: null, // create parser; the wizard validates the date mode first
   invalid_slots: null, // create parser; the wizard validates the slots first
-  invalid_time: null, // a malformed value only; the Slot editor has its own words (place slotEditor), the wizard validates
+  invalid_time: null, // a malformed value only; the Slot editor has its own words (screen slotEditor), the wizard validates
   invalid_value: null, // fixed shapes from the client; a vote falls back to error.voteFailed by its own fallback
   invalid_settings: null, // the editor sends a complete draft
   wheel_options_without_wheel: null, // only a draft with wheel options in a mode without a wheel: a defensive refusal
@@ -115,8 +115,8 @@ const SHARED: Record<ApiErrorCode, string | null> = {
   no_live_connection: null, // never copy: useEventRoom takes it as no live connection and polls
 }
 
-/** Words that differ from SHARED in one place, as data. Each entry says where it shows. */
-const PLACES = {
+/** Words that differ from SHARED on one screen, as data. Each entry says where it shows. */
+const SCREENS = {
   /** The dock's disabled reason of „Nächstes Spiel setzen“ and „Rad drehen“ only. The toast of a refused set/spin request keeps the shared words. */
   setGame: { no_running_session: 'dock.setBlocked.no_running_session' },
   /** „Letztes Spiel hinzufügen“: its disabled reason and its toast (#278). */
@@ -131,23 +131,23 @@ const PLACES = {
   eventSettings: { wrong_phase: 'eventSettings.wrongPhase' },
 } as const satisfies Record<string, Partial<Record<ApiErrorCode, string>>>
 
-/** Where a reason is worded differently from the shared words. Absent (undefined) = the shared words. */
-export type ReasonPlace = keyof typeof PLACES
+/** The screen a reason shows on, where it is worded differently from the shared words (not a Place: GLOSSARY). Absent (undefined) = the shared words. */
+export type ReasonScreen = keyof typeof SCREENS
 
 const FALLBACK = 'error.saveFailed'
 
-function words(code: string, place?: ReasonPlace): string | null | undefined {
-  const own: Partial<Record<ApiErrorCode, string>> = place === undefined ? {} : PLACES[place]
+function words(code: string, screen?: ReasonScreen): string | null | undefined {
+  const own: Partial<Record<ApiErrorCode, string>> = screen === undefined ? {} : SCREENS[screen]
   return own[code as ApiErrorCode] ?? SHARED[code as ApiErrorCode] // undefined for a code the contract does not know
 }
 
-/** The i18n key of a rule's reason in a place. A code without words answers 'error.saveFailed' (the ten nulls of SHARED). */
-export function reasonKey(code: ApiErrorCode, place?: ReasonPlace): string {
-  return words(code, place) ?? FALLBACK
+/** The i18n key of a rule's reason on a screen. A code without words answers 'error.saveFailed' (the ten nulls of SHARED). */
+export function reasonKey(code: ApiErrorCode, screen?: ReasonScreen): string {
+  return words(code, screen) ?? FALLBACK
 }
 
-/** The i18n key of a failed call: the failure's code in `place`, else `fallback`. Placeholders such as `{max}` are the caller's to fill. */
-export function apiErrorKey(failure: unknown, fallback = FALLBACK, place?: ReasonPlace): string {
+/** The i18n key of a failed call: the failure's code on `screen`, else `fallback`. Placeholders such as `{max}` are the caller's to fill. */
+export function apiErrorKey(failure: unknown, fallback = FALLBACK, screen?: ReasonScreen): string {
   const code = apiFailure(failure).code
-  return (code ? words(code, place) : null) || fallback
+  return (code ? words(code, screen) : null) ?? fallback
 }
