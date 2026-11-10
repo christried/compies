@@ -1,12 +1,12 @@
 import { eq } from 'drizzle-orm'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
-import { activity, eventMembers, events, pollSlots, users } from '../../server/db/schema'
+import { activity, events } from '../../server/db/schema'
 import { memoryRoomNotifier } from '../../server/utils/room-notifier'
 import type { EventView } from '../../shared/event'
 import { createTestApp, errorOf, sendVia, type TestRequest } from './app'
-import { TEST_SETTINGS } from './fixtures'
 import { createTestDb, resetDatabase } from './harness'
-import { setAllowlist, signIn, stubAuthEnv } from './sign-in'
+import { startRunningEvent, type Stage } from './scenario'
+import { signIn, stubAuthEnv } from './sign-in'
 
 // Team names (#161, spec #153 stories 34-41): a Player in a team gives one word, the team's name is the words in the
 // order the Players joined, and the Host can reset it. Slots are in 2090 so the Date can be set without a fake clock.
@@ -18,11 +18,13 @@ const three = { provider: 'twitch', id: '4', name: 'Drei', email: 'three@example
 describe('Team names', () => {
   let testDb: Awaited<ReturnType<typeof createTestDb>>
   let request: TestRequest
+  let stage: Stage
   const notifier = memoryRoomNotifier()
 
   beforeAll(async () => {
     testDb = await createTestDb()
     request = createTestApp(testDb.db, { roomNotifier: notifier })
+    stage = { request, db: testDb.db, notifier }
   })
 
   afterAll(async () => {
@@ -41,34 +43,25 @@ describe('Team names', () => {
 
   /** An Event with a set Date (Team choice open, 2 teams of 3) by the Host, with Players One, Two and Three on the Bench. */
   async function setup(settings: Record<string, unknown> = {}) {
-    setAllowlist({ hosts: 'discord:1' })
-    const hostCookie = (await signIn(testDb.db, host)).cookie
-    const cookies = { one: (await signIn(testDb.db, one)).cookie, two: (await signIn(testDb.db, two)).cookie, three: (await signIn(testDb.db, three)).cookie }
-    const created = await request('/api/e', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json', 'cookie': hostCookie },
-      body: JSON.stringify({
-        name: 'Freitags-Zocken',
-        dateMode: 'poll',
-        sessions: 1,
-        slots: ['2090-10-30T20:30', '2090-10-31T19:00'],
-        settings: { ...TEST_SETTINGS, teamSize: 3, ...settings },
-      }),
+    // One Session, two Slots: the second is a Slot the poll still offers, beside the Date (`extraSlots`).
+    const event = await startRunningEvent(stage, {
+      host,
+      players: { one, two, three },
+      seats: [],
+      sessions: 1,
+      extraSlots: ['2090-10-31T19:00'],
+      confirmed: 1,
+      start: false,
+      quiet: 'room-and-feed',
+      settings: { teamSize: 3, ...settings },
     })
-    const { slug } = await created.json() as { slug: string }
-    const [eventRow] = await testDb.db.select().from(events).where(eq(events.slug, slug))
-    const ids: Record<string, string> = {}
-    for (const [key, profile] of Object.entries({ host, one, two, three })) {
-      const [row] = await testDb.db.select().from(users).where(eq(users.email, profile.email))
-      ids[key] = row!.id
+    return {
+      slug: event.slug,
+      eventId: event.eventId,
+      hostCookie: event.host.cookie,
+      cookies: { one: event.players.one.cookie, two: event.players.two.cookie, three: event.players.three.cookie },
+      ids: { host: event.host.id, one: event.players.one.id, two: event.players.two.id, three: event.players.three.id },
     }
-    for (const key of ['one', 'two', 'three']) await testDb.db.insert(eventMembers).values({ eventId: eventRow!.id, userId: ids[key]! })
-    const slotIds = (await testDb.db.select().from(pollSlots).where(eq(pollSlots.eventId, eventRow!.id)).orderBy(pollSlots.startsAt)).map(row => row.id)
-    const confirmed = await send('POST', `/api/e/${slug}/confirm`, hostCookie, { slotId: slotIds[0] })
-    expect(confirmed.status).toBe(200)
-    await testDb.db.delete(activity)
-    notifier.clear()
-    return { slug, eventId: eventRow!.id, hostCookie, cookies, ids: ids as Record<'host' | 'one' | 'two' | 'three', string> }
   }
 
   type Game = Awaited<ReturnType<typeof setup>>
