@@ -1,18 +1,17 @@
 import { eq } from 'drizzle-orm'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
-import me from '../../server/api/me.get'
-import profileSetup from '../../server/api/profile/setup.post'
 import { authSessions, users } from '../../server/db/schema'
-import { createTestDb, createTestServer } from './harness'
+import { createTestApp, type TestRequest } from './app'
+import { createTestDb, resetDatabase } from './harness'
 import { setAllowlist, signIn, stubAuthEnv } from './sign-in'
 
 describe('the signed-in User and profile setup', () => {
   let testDb: Awaited<ReturnType<typeof createTestDb>>
-  let request: ReturnType<typeof createTestServer>
+  let request: TestRequest
 
   beforeAll(async () => {
     testDb = await createTestDb()
-    request = createTestServer(testDb.db, { 'GET /api/me': me, 'POST /api/profile/setup': profileSetup })
+    request = createTestApp(testDb.db)
   })
 
   afterAll(async () => {
@@ -21,7 +20,7 @@ describe('the signed-in User and profile setup', () => {
 
   beforeEach(async () => {
     stubAuthEnv()
-    await testDb.db.delete(users)
+    await resetDatabase(testDb.db)
   })
 
   afterEach(() => {
