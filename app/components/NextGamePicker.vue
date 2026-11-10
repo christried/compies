@@ -69,6 +69,10 @@ const isChosen = (id: string) => chosen.value?.id === id
             layout="row"
           >
             <template #actions>
+              <GameNotesButton
+                :name="game.name"
+                :notes="game.notes"
+              />
               <IconButton
                 :icon="Check"
                 :label="t(isChosen(game.id) ? 'nextGame.selected' : 'nextGame.select', { name: game.name })"
@@ -94,6 +98,10 @@ const isChosen = (id: string) => chosen.value?.id === id
         compact
       >
         <template #card-actions="{ game }">
+          <GameNotesButton
+            :name="game.name"
+            :notes="game.notes"
+          />
           <IconButton
             :icon="Check"
             :label="t(isChosen(game.id) ? 'nextGame.selected' : 'nextGame.select', { name: game.name })"
