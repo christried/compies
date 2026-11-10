@@ -92,6 +92,7 @@ Each entry: trigger · targets · timeline · reduced twin. Durations in seconds
 - Modal: `scale .96→1, opacity 0→1`, 0.22 `EASE.out`.
 - Toast: `y 20→0, opacity`, 0.22; out 0.14.
 - Reduced: opacity only, 0.14.
+- **Deviation (0.12, #425, #439):** the Team name in the TeamNameBuilder (02-components § TeamNameBuilder) folds and unfolds with the field in `dur-fast` on `ease-out` (opacity); a new or changed word pops in `dur-slow` on `ease-pop`. Reduced: no motion.
 
 ### Hold to confirm [MVP]
 - Fill `scaleX 0→1` (origin left), 1.0 `none`. Release early: `scaleX → 0`, 0.2 `power2.out`. Confirm: button `scale 1→.96→1`, 0.18; icon swap.
