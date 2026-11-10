@@ -44,7 +44,7 @@ const free = computed(() => Math.max(props.size - props.taken, 0))
       :style="{ backgroundColor: teamVar(team), backgroundImage: teamVar(team, 'pattern'), backgroundSize: '16px 16px' }"
     >
       <slot name="header">
-        <!-- A level 3 heading, as the Bench and the Stands have, so the teams stay in heading navigation. -->
+        <!-- A level 3 heading, as the Stands have, so the teams stay in heading navigation. -->
         <!-- eslint-disable-next-line vuejs-accessibility/heading-has-content -- the TeamChip is the heading's text -->
         <h3 class="m-0 flex min-w-0 text-[length:inherit] font-normal">
           <TeamChip

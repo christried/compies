@@ -336,7 +336,7 @@ const clipboard = (tab, outcome) => tab.evaluate(`Object.defineProperty(navigato
  * One page state as the two viewers: `<name>-host` (the Dev Host, 1440 px) and `<name>-spieler` (the Dev Member, 390 px).
  * `key` and `build` make the Event once per pass; `fresh: true` makes it again in every `open` (a window or a clip that ends).
  * `hostStops` and `spielerStops` are the stops of each viewer, `only` leaves one of them out, `prepare(ctx)` runs after the page
- * is quiet, `endOfPass` after the last read of the file's list.
+ * is quiet, `after(ctx)` after the Spieler's read, the last of the pair.
  */
 function pair({ name, group, key = name, fresh = false, waitFor = 'h1', hostStops = [], spielerStops = [], only, viewport, differs, stillHolds, prepare, after }) {
   const sides = [

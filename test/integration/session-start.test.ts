@@ -50,7 +50,7 @@ describe('Starting and ending Sessions', () => {
 
   /**
    * An Event of two Sessions (2 teams of `teamSize`) with three Slots, by the Host; Players One to Four are Members on the
-   * Bench. No Date is set yet.
+   * Stands. No Date is set yet.
    */
   async function setup({ teamSize = 2, settings = true }: { teamSize?: number, settings?: boolean } = {}) {
     const event = await setUpEvent(rig, {
@@ -128,7 +128,7 @@ describe('Starting and ending Sessions', () => {
       const game = await setup()
       await setDates(game, 1)
       await fillTeams(game)
-      await send('POST', `/api/e/${game.slug}/move`, game.cookies.four, { userId: game.ids.four, to: { zone: 'bench' } })
+      await send('POST', `/api/e/${game.slug}/move`, game.cookies.four, { userId: game.ids.four, to: { zone: 'stands' } })
 
       expect(await errorOf(await start(game))).toEqual({ status: 409, code: 'teams_uneven' })
     })
@@ -358,21 +358,20 @@ describe('Starting and ending Sessions', () => {
   })
 
   describe('the teams after the start', () => {
-    it('lock Players out of joining and leaving, keep Bench and Tribüne free and let the Host move anyone', async () => {
+    it('lock Players out of joining and leaving, let the Host move anyone', async () => {
       const game = await ready()
       await start(game)
       const move = (cookie: string, key: keyof Game['ids'], to: Place) => send('POST', `/api/e/${game.slug}/move`, cookie, { userId: game.ids[key], to })
 
-      // A Player in a team cannot leave it; one on the Bench cannot join one.
-      expect(await errorOf(await move(game.cookies.one, 'one', { zone: 'bench' }))).toEqual({ status: 409, code: 'teams_locked' })
+      // A Player in a team cannot leave it; one on the Stands cannot join one.
+      expect(await errorOf(await move(game.cookies.one, 'one', { zone: 'stands' }))).toEqual({ status: 409, code: 'teams_locked' })
       expect(await errorOf(await move(game.cookies.one, 'one', team(2)))).toEqual({ status: 409, code: 'teams_locked' })
       const hostCookie = game.hostCookie
-      expect((await move(hostCookie, 'one', { zone: 'bench' })).status).toBe(200)
+      expect((await move(hostCookie, 'one', { zone: 'stands' })).status).toBe(200)
       expect(await errorOf(await move(game.cookies.one, 'one', team(1)))).toEqual({ status: 409, code: 'teams_locked' })
 
-      // Bench and Tribüne stay free.
-      expect((await move(game.cookies.one, 'one', { zone: 'stands' })).status).toBe(200)
-      expect((await move(game.cookies.one, 'one', { zone: 'bench' })).status).toBe(200)
+      // The Stands are the one place a Player is already in; there is nowhere else to go but a team.
+      expect(await errorOf(await move(game.cookies.one, 'one', { zone: 'stands' }))).toEqual({ status: 409, code: 'already_there' })
 
       // The Host moves a Player into a team.
       expect((await move(hostCookie, 'one', team(1))).status).toBe(200)

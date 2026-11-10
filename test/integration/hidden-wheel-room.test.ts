@@ -110,10 +110,10 @@ describe('Hidden wheel secrecy (#148)', () => {
       expect((await send('POST', `/api/e/${slug}/sessions/${sessionId}/reopen`, hostCookie)).status).toBe(200)
       expect((await send('DELETE', `/api/e/${slug}/sessions/${sessionId}`, hostCookie)).status).toBe(200)
 
-      // 6. Player 1 moves into team 1, Player 2 into team 2; the Host moves Player 2 to the Bench and back.
+      // 6. Player 1 moves into team 1, Player 2 into team 2; the Host moves Player 2 to the Stands and back.
       expect((await send('POST', `/api/e/${slug}/move`, playerCookie, { userId: ids.player, to: team(1) })).status).toBe(200)
       expect((await send('POST', `/api/e/${slug}/move`, player2Cookie, { userId: ids.player2, to: team(2) })).status).toBe(200)
-      expect((await send('POST', `/api/e/${slug}/move`, hostCookie, { userId: ids.player2, to: { zone: 'bench' } })).status).toBe(200)
+      expect((await send('POST', `/api/e/${slug}/move`, hostCookie, { userId: ids.player2, to: { zone: 'stands' } })).status).toBe(200)
       expect((await send('POST', `/api/e/${slug}/move`, hostCookie, { userId: ids.player2, to: team(2) })).status).toBe(200)
 
       // 7. Both set a Team word; the Host resets team 2's name; Player 2 sets a word again.

@@ -1,24 +1,17 @@
 import { readdirSync, readFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
-import { compile } from 'tailwindcss'
 import { describe, expect, it } from 'vitest'
+import { build, clean, darkVariant, normalise, tokens } from './css-tokens'
 
 // „System“ is CSS only (#402): `<html data-theme="system">` draws the dark set under `@media (prefers-color-scheme: dark)`
 // and the light set otherwise, with no script. So every `[data-theme=dark]` rule has a `[data-theme=system]` twin under that
 // media query. The seam is the stylesheet as text: the DOM test environments compute neither media queries nor cascade order.
 const root = resolve(import.meta.dirname, '../..')
 const read = (path: string) => readFileSync(resolve(root, path), 'utf8')
-const tokens = read('app/assets/css/compies-tokens.css')
-const theme = read('app/assets/css/compies-theme.css')
 const offlinePage = read('public/offline.html')
 
 const DARK_MEDIA = /@media\s*\(\s*prefers-color-scheme:\s*dark\s*\)\s*\{/g
 const PAPER = '--cp-paper: #17121d;'
-
-/** Comments do not count. */
-const clean = (css: string) => css.replace(/\/\*[\s\S]*?\*\//g, '')
-/** `[data-theme="dark"]` and `[data-theme=dark]` read alike, and whitespace does not count. */
-const normalise = (text: string) => text.replace(/\[data-theme="(\w+)"\]/g, '[data-theme=$1]').replace(/\s+/g, ' ').trim()
 
 /** Every `.css` and `.vue` file under a directory, as paths relative to the repo root. */
 function sourceFiles(dir: string): string[] {
@@ -175,11 +168,9 @@ describe('the offline page', () => {
 describe('the dark: variant', () => {
   // Tailwind's own compiler is the seam: it shows what a `dark:` utility really emits.
   it('gives every dark: utility its System twin under the dark media query (#402)', async () => {
-    const variant = clean(theme).match(/@custom-variant dark\s*\{[\s\S]*?\n\}/)?.[0]
-    expect(variant).toBeDefined()
+    expect(darkVariant).toBeDefined()
 
-    const compiler = await compile(`${variant}\n@theme { --color-ink: #151515; }\n@tailwind utilities;`)
-    const css = normalise(compiler.build(['dark:bg-ink']))
+    const css = await build('@theme { --color-ink: #151515; }', ['dark:bg-ink'])
     expect(css).toContain('.dark\\:bg-ink:where([data-theme=dark], [data-theme=dark] *) { background-color: var(--color-ink); }')
     expect(css).toContain('@media (prefers-color-scheme: dark) { .dark\\:bg-ink:where([data-theme=system], [data-theme=system] *) { background-color: var(--color-ink); } }')
   })

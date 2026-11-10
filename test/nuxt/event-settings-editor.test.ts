@@ -24,7 +24,7 @@ const pong = poolGame(2, 'Pong')
 const FOUR = '00000000-0000-4000-8000-000000000004'
 const FIVE = '00000000-0000-4000-8000-000000000005'
 const SIX = '00000000-0000-4000-8000-000000000006'
-const seated = (id: string, zone: 'bench' | 'team', team: number | null = null): MemberView => memberView({ id, name: id.slice(-4), zone, team })
+const seated = (id: string, zone: 'stands' | 'team', team: number | null = null): MemberView => memberView({ id, name: id.slice(-4), zone, team })
 
 function poolGame(n: number, name: string): PoolGame {
   return { id: `00000000-0000-4000-8000-${String(n).padStart(12, '0')}`, name, imageUrl: null, youtubeId: null, clipStart: 0, clipLength: 30, playersMin: null, playersMax: null, suitabilities: [], notes: null, price: null }
@@ -338,7 +338,7 @@ describe('the settings editor', () => {
         settings: four,
         floors: { teamSize: 2, vetoAllowance: 0, gameCount: 0 },
         teams: teamsOf4,
-        members: [seated(kitty.id, 'team', 1), seated(LARSI, 'team', 3), seated(SANNE, 'team', 3), seated(FOUR, 'bench')],
+        members: [seated(kitty.id, 'team', 1), seated(LARSI, 'team', 3), seated(SANNE, 'team', 3), seated(FOUR, 'stands')],
       })
       const page = await mountEditor(slug)
 
@@ -375,29 +375,29 @@ describe('the settings editor', () => {
       expect(button(page, 'Spieler pro Team: weniger').attributes('title')).toBe('Im vollsten Team sind schon 3.')
     })
 
-    it('tells the Host how many Players go to the Bench when the team count drops, singular and plural', async () => {
+    it('tells the Host how many Players go to the Stands when the team count drops, singular and plural', async () => {
       const { slug } = setUp({
         settings: four,
         teams: teamsOf4,
-        members: [seated(kitty.id, 'team', 1), seated(LARSI, 'team', 3), seated(SANNE, 'team', 3), seated(FOUR, 'team', 4), seated(FIVE, 'bench')],
+        members: [seated(kitty.id, 'team', 1), seated(LARSI, 'team', 3), seated(SANNE, 'team', 3), seated(FOUR, 'team', 4), seated(FIVE, 'stands')],
       })
       const page = await mountEditor(slug)
       expect(page.text()).not.toContain('Beim Speichern')
 
       await button(page, 'Anzahl Teams: weniger').trigger('click')
       expect(spin(page, 'Anzahl Teams').text()).toBe('3')
-      expect(page.text()).toContain('Beim Speichern geht 1 Person aus den entfernten Teams auf die Bench.')
+      expect(page.text()).toContain('Beim Speichern geht 1 Person aus den entfernten Teams auf die Tribüne.')
 
       await button(page, 'Anzahl Teams: weniger').trigger('click')
       expect(spin(page, 'Anzahl Teams').text()).toBe('2')
-      expect(page.text()).toContain('Beim Speichern gehen 3 Leute aus den entfernten Teams auf die Bench.')
+      expect(page.text()).toContain('Beim Speichern gehen 3 Leute aus den entfernten Teams auf die Tribüne.')
     })
 
-    it('shows no Bench hint when the teams that go are empty', async () => {
+    it('shows no Stands hint when the teams that go are empty', async () => {
       const { slug } = setUp({
         settings: four,
         teams: teamsOf4,
-        members: [seated(kitty.id, 'team', 1), seated(LARSI, 'team', 2), seated(SANNE, 'bench')],
+        members: [seated(kitty.id, 'team', 1), seated(LARSI, 'team', 2), seated(SANNE, 'stands')],
       })
       const page = await mountEditor(slug)
 

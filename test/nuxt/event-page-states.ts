@@ -15,12 +15,12 @@ export const SECOND = '2026-10-31T19:00:00.000Z'
 export const STARTED = '2026-10-30T19:34:00.000Z'
 export const ENDED = '2026-10-30T22:12:00.000Z'
 
-export type Seat = { zone: 'bench' | 'stands' | 'team', team?: number }
+export type Seat = { zone: 'stands' | 'team', team?: number }
 export const team = (position: number, name: string | null = null): BoardTeam => ({ position, name })
 
-/** Kitty, Larsi and Sanne (the Host) with the seats a test gives them; everyone else sits on the Bench. */
+/** Kitty, Larsi and Sanne (the Host) with the seats a test gives them; everyone else sits on the Tribüne. */
 export function members(seats: { kitty?: Seat, larsi?: Seat, sanne?: Seat } = {}): MemberView[] {
-  const member = (id: string, name: string, isHost: boolean, seat: Seat = { zone: 'bench' }) => memberView({
+  const member = (id: string, name: string, isHost: boolean, seat: Seat = { zone: 'stands' }) => memberView({
     id, name, isHost, zone: seat.zone, team: seat.zone === 'team' ? seat.team ?? 1 : null,
   })
   return [member(kitty.id, 'Kitty', false, seats.kitty), member(LARSI, 'Larsi', false, seats.larsi), member(SANNE, 'Sanne', true, seats.sanne)]

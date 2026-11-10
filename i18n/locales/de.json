@@ -70,7 +70,7 @@
     "proposeDate": "Termin vorschlagen",
     "start": "Session starten",
     "checkTeams": "Teams prüfen",
-    "fillFromBench": "Von der Bench nachziehen",
+    "fillFromStands": "Von der Tribüne nachziehen",
     "spin": "Rad drehen",
     "respin": "Neu drehen",
     "setGame": "Nächstes Spiel setzen",
@@ -108,7 +108,7 @@
     "shortcut": "Taste H: Host-Steuerung",
     "startDialog": {
       "title": "Los geht’s?",
-      "textFirst": "Mit dem Start werden die Teams gesperrt. Bench und Tribüne bleiben offen, nachziehen kannst du weiterhin.",
+      "textFirst": "Mit dem Start werden die Teams gesperrt. Die Tribüne bleibt offen, nachziehen kannst du weiterhin.",
       "textLater": "Die Teams bleiben, wie sie sind.",
       "lock": "{teams} Teams à {size}, danach gesperrt"
     },
@@ -173,13 +173,13 @@
       "setupTitle": "Event einrichten",
       "setup": "Für dieses Event fehlt noch, wie gespielt wird. Leg Format, Spiele und Punkte fest, dann öffnet die Teamwahl.",
       "setupAction": "Jetzt einrichten",
-      "setupMember": "{host} richtet das Event noch ein. Bis dahin: Bench oder Tribüne.",
+      "setupMember": "{host} richtet das Event noch ein. Bis dahin bleibst du auf der Tribüne.",
       "seatTeam": "Du spielst mit, in {team}. Das Host-Dock bleibt genau gleich.",
-      "seatStands": "Du sitzt auf der Tribüne und spielst nicht mit. Das Host-Dock bleibt genau gleich.",
-      "teamsStay": "Die Teams bleiben fürs ganze Event. Wer bei Session {n} fehlt, ersetzt du von der Bench.",
-      "teamsStayNext": "Die Teams bleiben fürs ganze Event. Wer bei der nächsten Session fehlt, ersetzt du von der Bench.",
-      "teamsStayMember": "Die Teams bleiben fürs ganze Event. Wenn du bei Session {n} nicht kannst, setz dich auf die Bench.",
-      "teamsStayMemberNext": "Die Teams bleiben fürs ganze Event. Wenn du bei der nächsten Session nicht kannst, setz dich auf die Bench.",
+      "seatStands": "Du sitzt auf der Tribüne. Das Host-Dock bleibt genau gleich.",
+      "teamsStay": "Die Teams bleiben fürs ganze Event. Wer bei Session {n} fehlt, ersetzt du von der Tribüne.",
+      "teamsStayNext": "Die Teams bleiben fürs ganze Event. Wer bei der nächsten Session fehlt, ersetzt du von der Tribüne.",
+      "teamsStayMember": "Die Teams bleiben fürs ganze Event. Wenn du bei Session {n} nicht kannst, setz dich auf die Tribüne.",
+      "teamsStayMemberNext": "Die Teams bleiben fürs ganze Event. Wenn du bei der nächsten Session nicht kannst, setz dich auf die Tribüne.",
       "tie": "Gleichstand auf Platz 1. Der Host entscheidet.",
       "sessionNeededTitle": "Noch {n} Spiel offen | Noch {n} Spiele offen",
       "sessionNeeded": "Dafür braucht es eine neue Session. Leg sie an und starte sie, wenn ihr so weit seid."
@@ -203,11 +203,8 @@
   },
   "board": {
     "title": "Spielbrett",
-    "bench": "Bench",
-    "benchSub": "Noch ohne Team, unbegrenzt",
     "stands": "Tribüne",
-    "standsSub": "Zuschauer, spielen nicht mit",
-    "benchEmpty": "Niemand auf der Bench.",
+    "standsSub": "Noch ohne Team, unbegrenzt",
     "standsEmpty": "Die Tribüne ist leer.",
     "free": "Frei",
     "dropHere": "Hier rein",
@@ -223,10 +220,8 @@
     "moveTo": "Verschieben nach …",
     "whereTo": "Wohin, {name}?",
     "moveToTeam": "Nach {team}",
-    "moveToBench": "Auf die Bench",
     "moveToStands": "Auf die Tribüne",
     "movedTeam": "{name} ist jetzt in {team}.",
-    "movedBench": "{name} ist jetzt auf der Bench.",
     "movedStands": "{name} ist jetzt auf der Tribüne.",
     "dragHint": "Ziehen oder Enter zum Verschieben",
     "cancelled": "Abgebrochen.",
@@ -240,7 +235,7 @@
       "lostRace": "{name} war schneller. Der letzte Platz in {team} ist weg."
     },
     "note": {
-      "setup": "Teams gibt es, sobald das Event eingerichtet ist. Bis dahin: Bench oder Tribüne."
+      "setup": "Teams gibt es, sobald das Event eingerichtet ist. Bis dahin bleibst du auf der Tribüne."
     },
     "meta": {
       "setup": "{n} Person da | {n} Leute da",
@@ -252,9 +247,9 @@
     "notice": {
       "unevenTitle": "Teams sind ungleich",
       "unevenMember": "{team} sucht noch jemanden. Rück rein, dann kann’s losgehen.",
-      "poll": "Teamwahl öffnet, sobald der Termin steht. Bis dahin: Bench oder Tribüne.",
+      "poll": "Teamwahl öffnet, sobald der Termin steht. Bis dahin bleibst du auf der Tribüne.",
       "uneven": "{team} hat {small}, die anderen haben {big}. Die Session startet erst, wenn alle Teams gleich groß sind.",
-      "running": "Das Event läuft. Zwischen Bench und Tribüne kannst du frei wechseln.",
+      "running": "Das Event läuft. Die Teams sind gesperrt, nur der Host setzt dich noch in ein Team.",
       "runningHost": "Event läuft: nur du kannst noch tauschen.",
       "runningPlayer": "Gesperrt seit dem Start. Dein Teamwort kannst du weiter ändern."
     },
@@ -380,7 +375,7 @@
         "title": "Teams",
         "how": "Du legst fest, wie viele Teams es gibt (2 bis 8). Alle Teams müssen gleich groß sein (max. 6 pro Team). Sobald der Termin steht, ziehen sich die Spieler selbst in ein Team. Jedes Mitglied steuert ein Wort zum Teamnamen bei. Mit dem Start sind die Teams gesperrt.",
         "good": "1v1 bis 6v6, z. B. Counter-Strike 2 im 2v2.",
-        "warn": "Ein Spiel startet nur, wenn alle Teams gleich groß sind. Fehlt jemand, kannst du Leute von der Bench nachziehen."
+        "warn": "Ein Spiel startet nur, wenn alle Teams gleich groß sind. Fehlt jemand, kannst du Leute von der Tribüne nachziehen."
       },
       "admin": {
         "title": "Host-Wahl",
@@ -631,10 +626,8 @@
     "gameHeader": "Spiel {n}, {game}",
     "join": "{name} ist dem Event beigetreten",
     "moveTeam": "{name} ist jetzt in {team}",
-    "moveBench": "{name} ist jetzt auf der Bench",
     "moveStands": "{name} ist jetzt auf der Tribüne",
     "movedTeam": "{actor} hat {name} nach {team} verschoben",
-    "movedBench": "{actor} hat {name} auf die Bench verschoben",
     "movedStands": "{actor} hat {name} auf die Tribüne verschoben",
     "date": "Termin steht: {date}",
     "start": "{name} hat die Session gestartet",
@@ -764,7 +757,7 @@
     "cancelled": "Anmelden hat nicht geklappt. Versuch’s nochmal.",
     "titleInvite": "Erst kurz anmelden",
     "intro": "Einfach nur mit dem Konto, mit dem du eh schon zockst, und das war’s.",
-    "inviteNotice": "{host} hat dich zu {event} eingeladen. Melde dich an, dann geht’s direkt auf die Bench.",
+    "inviteNotice": "{host} hat dich zu {event} eingeladen. Melde dich an, dann geht’s direkt auf die Tribüne.",
     "cancelledTitle": "Anmeldung abgebrochen.",
     "cancelledProvider": "{headline} {provider} hat uns nichts geschickt. Einfach nochmal versuchen.",
     "redirecting": "Weiter zu {provider} …",
@@ -782,7 +775,6 @@
     "kicker": "Fast geschafft",
     "title": "Wie sollen wir dich nennen?",
     "nameHint": "Muss nicht eindeutig sein. Max. 32 Zeichen.",
-    "saveFailed": "Speichern hat nicht geklappt. Versuch’s nochmal.",
     "nameMissing": "Ohne Namen geht’s nicht.",
     "avatarFromProvider": "Bild von {provider} nehmen",
     "avatarUpload": "Eigenes Bild hochladen",
@@ -809,11 +801,11 @@
     "openSignedOut": "Du bist zu {event} eingeladen",
     "invalidTitle": "Dieser Link gilt nicht mehr.",
     "deletedTitle": "Dieses Event gibt’s nicht mehr.",
-    "joinedToast": "Du bist drin! Du sitzt erstmal auf der Bench.",
+    "joinedToast": "Du bist drin! Du sitzt erstmal auf der Tribüne.",
     "copyFailed": "Kopieren hat nicht geklappt. Markier den Link und kopier ihn von Hand.",
     "kicker": "Einladung",
-    "joining": "Einen Moment, wir setzen dich auf die Bench …",
-    "sheetText": "Wer den Link hat und sich anmeldet, landet auf der Bench. Von dort ziehen sich alle selbst ins Team.",
+    "joining": "Einen Moment, wir setzen dich auf die Tribüne …",
+    "sheetText": "Wer den Link hat und sich anmeldet, landet auf der Tribüne. Von dort ziehen sich alle selbst ins Team.",
     "leakedTitle": "Link geleakt?",
     "renew": "Link erneuern",
     "renewTitle": "Einladungslink erneuern?",
@@ -1074,12 +1066,12 @@
   "settings": {
     "title": "Einstellungen",
     "soundHelp": "Clips starten mit Ton. Wird auf diesem Gerät gemerkt.",
-    "theme": "Darstellung",
-    "themeHelp": "Gilt auf allen deinen Geräten. System folgt deinem Gerät.",
+    "appearance": "Darstellung",
+    "appearanceHelp": "Gilt auf allen deinen Geräten. System folgt deinem Gerät.",
     "light": "Hell",
     "dark": "Dunkel",
     "system": "System",
-    "themeSaveFailed": "Das hat nicht geklappt, die Darstellung ist wieder wie vorher. Versuch’s nochmal."
+    "appearanceSaveFailed": "Das hat nicht geklappt, die Darstellung ist wieder wie vorher. Versuch’s nochmal."
   },
   "eventSettings": {
     "kicker": "Einstellungen",
@@ -1507,7 +1499,7 @@
       "teamSizeMin": "Mindestens 1 pro Team.",
       "teamSizeFloor": "Im vollsten Team sind schon {n}.",
       "teamSizeMax": "Höchstens 6 pro Team.",
-      "toBench": "Beim Speichern geht {n} Person aus den entfernten Teams auf die Bench. | Beim Speichern gehen {n} Leute aus den entfernten Teams auf die Bench.",
+      "toStands": "Beim Speichern geht {n} Person aus den entfernten Teams auf die Tribüne. | Beim Speichern gehen {n} Leute aus den entfernten Teams auf die Tribüne.",
       "playersMax": "Höchstens 24 Leute in Teams.",
       "total": "{teams} Teams à {size} = {players} Leute in Teams (max. 24)"
     },
@@ -1789,7 +1781,6 @@
       "title": "Noch nichts passiert.",
       "text": "Beitritte, Spiele und Vetos tauchen hier auf."
     },
-    "bench": "Niemand auf der Bench.",
     "stands": "Die Tribüne ist leer.",
     "pool": {
       "title": "Pool ist leer.",
