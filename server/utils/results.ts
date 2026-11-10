@@ -3,7 +3,7 @@ import { roundPlaces, rounds } from '../db/schema'
 import { nextRoundNumber, resultRejection, sameResult, winnersOf, type ResultPlace } from '../../shared/results'
 import type { ResultEntered } from '../../shared/stage'
 import { settingsFromRow } from '../../shared/settings'
-import { recordActivity } from './activity'
+import { feedTeamNames, recordActivity } from './activity'
 import { apiError } from './errors'
 import type { ChangeCore } from './event-access'
 import { readEventState, roundRowsOf } from './event-state'
@@ -26,9 +26,12 @@ export async function enterResult({ tx, eventRow, user, publish, now }: ChangeCo
   // The rules above refused an Event without settings, a Round that is not open or correctable (so it has its game) and a body without Places.
   if (round!.resultAt !== null) return correctResult({ tx, eventRow, user, publish, now }, round!, state.results.find(entry => entry.round.id === round!.id)?.places ?? [], places!)
   const number = nextRoundNumber(rows.map(row => row.number))
+  const first = winnersOf(places!)
+  // The Parties on Place 1 by the Team name they have now (#440), before anything is written: a Result changes no Team word.
+  const teamNames = await feedTeamNames(tx, eventRow.id, first)
   await tx.insert(roundPlaces).values(places!.map(entry => ({ roundId: round!.id, team: entry.team, place: entry.place, score: entry.score })))
   await tx.update(rounds).set({ number, resultAt: now }).where(eq(rounds.id, round!.id))
-  await recordActivity(tx, publish, eventRow.id, { type: 'result_entered', actorId: user.id, params: { roundId: round!.id, number, gameId: round!.gameId!, first: winnersOf(places!) }, now })
+  await recordActivity(tx, publish, eventRow.id, { type: 'result_entered', actorId: user.id, params: { roundId: round!.id, number, gameId: round!.gameId!, first, teamNames }, now })
   return { roundId: round!.id, number }
 }
 

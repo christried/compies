@@ -7,7 +7,7 @@ import type { Db } from '../../server/utils/db'
 import { memoryRoomNotifier } from '../../server/utils/room-notifier'
 import { createTestApp, sendVia } from './app'
 import { createTestDb, resetDatabase } from './harness'
-import { clockToStop, hostEntersResult, hostSets, hostSpins, setUpEvent, startRunningEvent, type GameSeed, type Rig } from './scenario'
+import { clockToEnd, clockToStop, hostEntersResult, hostSets, hostSpins, playerVetoes, setUpEvent, startRunningEvent, type GameSeed, type Rig } from './scenario'
 import { stubAuthEnv } from './sign-in'
 
 // The statements a write route runs under the Event row lock (#416). The Event state is read in parts, each route asks for the parts its
@@ -140,6 +140,16 @@ describe('statements under the Event row lock (#416)', () => {
       const { ev } = await rich()
       return () => send('PUT', `/api/e/${ev.slug}/countdown`, ev.host.cookie, { seconds: 60 })
     }],
+    // A vetoed draw whose window has ended is settled by the first write after it (#231): its feed entry reads the Team names of the casting Parties (#440).
+    // This stands for every lock-holding route and the two reads that call `settleBeforeRead`.
+    ['PUT countdown (a vetoed draw is due)', async () => {
+      const { ev } = await rich()
+      const { drawId } = await hostSpins(rig, ev)
+      await clockToStop(rig, drawId)
+      await playerVetoes(rig, ev, drawId, ev.players.a)
+      await clockToEnd(rig, drawId)
+      return () => send('PUT', `/api/e/${ev.slug}/countdown`, ev.host.cookie, { seconds: 60 })
+    }],
     ['POST countdown/start', async () => {
       const { ev } = await rich()
       await ok(send('PUT', `/api/e/${ev.slug}/countdown`, ev.host.cookie, { seconds: 60 }))
@@ -153,6 +163,12 @@ describe('statements under the Event row lock (#416)', () => {
     ['POST move', async () => {
       const { ev } = await rich()
       return () => send('POST', `/api/e/${ev.slug}/move`, ev.host.cookie, { userId: ev.players.a.id, to: { zone: 'stands' } })
+    }],
+    // A move into a team reads the Team name its entry stores (#440): one select more than a move to the Stands, which names no team.
+    ['POST move (into a team)', async () => {
+      const { ev } = await rich()
+      await ok(send('POST', `/api/e/${ev.slug}/move`, ev.host.cookie, { userId: ev.players.a.id, to: { zone: 'stands' } }))
+      return () => send('POST', `/api/e/${ev.slug}/move`, ev.host.cookie, { userId: ev.players.e.id, to: { zone: 'team', team: 1 } })
     }],
     ['POST sessions/end', async () => {
       const { ev } = await rich()
