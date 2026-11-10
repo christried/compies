@@ -4,8 +4,6 @@
 
 ### Neu
 
-- **Profil:** „Profil“ in der Navigation öffnet jetzt eine eigene Seite. Dort siehst du dein Bild und änderst deinen Anzeigenamen, so oft du willst: Nach „Speichern“ steht der neue Name sofort oben in deinem Menü, und die anderen sehen ihn beim nächsten Laden überall, auch bei allem, was schon gespielt ist. Abmelden kannst du dort auch. ([#399](https://github.com/christried/compies/issues/399))
-- **Darstellung:** Auf der Profil-Seite wählst du jetzt zwischen Hell, Dunkel und System. Die Seite wechselt sofort, und deine Wahl gilt auf jedem Gerät, auf dem du angemeldet bist, ab dem nächsten Laden. Mit System folgt Compies deinem Gerät, auch wenn es abends auf dunkel umschaltet. Wer nichts wählt, bleibt bei Hell. ([#404](https://github.com/christried/compies/issues/404))
 - **Notizen im Spiele-Picker:** Beim Füllen des Spielepools und bei „Nächstes Spiel setzen“ hat ein Spiel mit Notizen jetzt einen Knopf „Notizen ansehen“. Er zeigt die Notizen, ohne dass du die Auswahl verlässt: am Desktop neben dem Spiel, auf dem Handy als Sheet von unten. ([#436](https://github.com/christried/compies/issues/436))
 - **Free-to-play-Tag:** Ein Spiel ohne Preis oder mit dem Preis Free-to-play trägt in der Bibliothek jetzt von selbst den Tag „Free-to-play“, bei jedem Speichern. Bekommt es einen anderen Preis, fällt der Tag weg. ([#423](https://github.com/christried/compies/issues/423))
 - **Spiel-Dialog für den Host:** Tippst du als Host auf ein Spiel auf der Eventseite, öffnet sich sein Dialog: Bild, Name, Spielerzahl, „Passt zu“, alle Tags, der Preis und deine Notizen, dazu „In der Bibliothek öffnen“. Das geht im Spielepool, bei „Zuletzt gezogen“ und bei „Gerade dran“, ohne dass du das Event verlässt. ([#443](https://github.com/christried/compies/issues/443))
@@ -13,9 +11,6 @@
 
 ### Geändert
 
-- **Datenschutzerklärung:** Sie nennt jetzt, was bei Darstellung und Anzeigename gespeichert wird: Deine Darstellung (Hell, Dunkel oder System) liegt bei deinem Nutzerkonto, ein Cookie merkt sie auf dem Gerät, solange sie Dunkel oder System ist, und deinen Anzeigenamen kannst du jederzeit ändern. ([#405](https://github.com/christried/compies/issues/405))
-- Gibt es ein Team nicht mehr, weil der Host die Anzahl Teams gesenkt hat, sagt das Spielbrett jetzt „Dieses Team gibt es nicht mehr.“ Ohne laufende Session nennen „Nächstes Spiel setzen“ und „Rad drehen“ denselben Grund wie die Meldung: „Es läuft gerade keine Session.“ ([#421](https://github.com/christried/compies/issues/421))
-- **Tags in Farbe:** In der Bibliothek trägt jeder Tag eines Spiels jetzt eine eigene Farbe, auf der Spielkarte, auf der Seite des Spiels und im Formular. Derselbe Tag hat überall dieselbe Farbe; nur wenn zwei Tags eines Spiels dieselbe hätten, nimmt der spätere die nächste freie, so dass sich bis zu acht Tags eines Spiels nie eine Farbe teilen. ([#427](https://github.com/christried/compies/issues/427))
 - **Spiele auf der Eventseite als Kacheln:** Jedes Spiel zeigt sich dort mit Bild und Namen, im Spielepool, bei „Zuletzt gezogen“ und bei „Gerade dran“. ([#435](https://github.com/christried/compies/issues/435))
 - **Die Bühne folgt dem Spiel:** Wo gerade etwas passiert ist, rückt der Block eine halbe Sekunde später nach oben, bei allen zugleich: das Glücksrad beim Drehen, „Gerade dran“, wenn ein Spiel feststeht, die Tabelle bei einem neuen oder korrigierten Ergebnis, der Countdown beim Start und der Münzwurf beim Wurf. Das Neueste steht oben; das Spielbrett rückt nie hoch, und die Seite scrollt nie von allein. Die Tabelle spielt ihr Ergebnis erst, wenn sie oben angekommen ist. ([#441](https://github.com/christried/compies/issues/441), [#442](https://github.com/christried/compies/issues/442))
 - **Teamnamen bleiben offen:** Dein Teamwort kannst du jetzt das ganze Event über ändern, auch zwischen zwei Sessions und wenn der Host dich erst nach dem Start in ein Team gesetzt hat. Der Teamname friert beim Start nicht mehr ein; der Host kann ihn weiter jederzeit auf den Farbnamen zurücksetzen. ([#438](https://github.com/christried/compies/issues/438))
@@ -23,6 +18,21 @@
 - **Siegerehrung zuerst:** Ein beendetes Event verrät den Sieger erst, wenn der Host die Siegerehrung gestartet hat. Bis dahin steht auf der Seite eine Karte „Die Siegerehrung steht noch aus.“, und Tabelle, Spielverlauf, „Bild teilen“, der Partyhut und die Sieger in der Kopfzeile und in der Aktivität warten mit. Wer die Siegerehrung live schaut, sieht den Rest, sobald sie zu Ende ist oder er sie überspringt oder schließt; wer später dazukommt oder den Start verpasst hat, sieht gleich alles. Schon beendete Events bleiben, wie sie sind. ([#445](https://github.com/christried/compies/issues/445))
 - Die Datenschutzerklärung beschreibt jetzt die Tribüne und die offenen Teamnamen: Der Aktivitäts-Feed hält den Teamnamen fest, den ein Team bei jedem Eintrag hatte, ein Teamwort bleibt in diesen Einträgen also stehen, solange das Event besteht. Sie nennt außerdem, dass das Ergebnisbild erst nach dem Start der Siegerehrung bereitsteht und dass der Host eines Events die Notizen eines dort gespielten Spiels liest. ([#446](https://github.com/christried/compies/issues/446))
 - **Aktivität: Teams heißen, wie sie damals hießen:** Jeder Eintrag in der Aktivität nennt ein Team so, wie es in diesem Moment hieß, mit dem Zeichen seiner Teamfarbe daneben. Benennt sich ein Team später um, behalten die alten Einträge den alten Namen. Auch Verschiebungen, Zurücksetzungen und Bonus-Vetos nennen nicht mehr nur die Farbe. Tabelle, Spielverlauf und alles andere zeigen weiter den aktuellen Namen, und Einträge aus der Zeit davor bleiben, wie sie waren. ([#440](https://github.com/christried/compies/issues/440))
+
+## [0.11.0] - 2026-11-10 – Profil
+
+Deine eigene Profil-Seite: Dort änderst du deinen Anzeigenamen, schaltest den Ton und wählst die Darstellung, Hell, Dunkel oder System. Dazu tragen die Tags in der Bibliothek jetzt Farben.
+
+### Neu
+
+- **Profil:** „Profil“ in der Navigation öffnet jetzt eine eigene Seite. Dort siehst du dein Bild und änderst deinen Anzeigenamen, so oft du willst: Nach „Speichern“ steht der neue Name sofort oben in deinem Menü, und die anderen sehen ihn beim nächsten Laden überall, auch bei allem, was schon gespielt ist. Abmelden kannst du dort auch. ([#399](https://github.com/christried/compies/issues/399))
+- **Darstellung:** Auf der Profil-Seite wählst du jetzt zwischen Hell, Dunkel und System. Die Seite wechselt sofort, und deine Wahl gilt auf jedem Gerät, auf dem du angemeldet bist, ab dem nächsten Laden. Mit System folgt Compies deinem Gerät, auch wenn es abends auf dunkel umschaltet. Wer nichts wählt, bleibt bei Hell. ([#404](https://github.com/christried/compies/issues/404))
+
+### Geändert
+
+- **Datenschutzerklärung:** Sie nennt jetzt, was bei Darstellung und Anzeigename gespeichert wird: Deine Darstellung (Hell, Dunkel oder System) liegt bei deinem Nutzerkonto, ein Cookie merkt sie auf dem Gerät, solange sie Dunkel oder System ist, und deinen Anzeigenamen kannst du jederzeit ändern. ([#405](https://github.com/christried/compies/issues/405))
+- Gibt es ein Team nicht mehr, weil der Host die Anzahl Teams gesenkt hat, sagt das Spielbrett jetzt „Dieses Team gibt es nicht mehr.“ Ohne laufende Session nennen „Nächstes Spiel setzen“ und „Rad drehen“ denselben Grund wie die Meldung: „Es läuft gerade keine Session.“ ([#421](https://github.com/christried/compies/issues/421))
+- **Tags in Farbe:** In der Bibliothek trägt jeder Tag eines Spiels jetzt eine eigene Farbe, auf der Spielkarte, auf der Seite des Spiels und im Formular. Derselbe Tag hat überall dieselbe Farbe; nur wenn zwei Tags eines Spiels dieselbe hätten, nimmt der spätere die nächste freie, so dass sich bis zu acht Tags eines Spiels nie eine Farbe teilen. ([#427](https://github.com/christried/compies/issues/427))
 
 ## [0.10.1] - 2026-11-09 – Partyhut
 
