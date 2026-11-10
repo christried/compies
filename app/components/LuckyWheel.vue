@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { GAME_GRID } from '~/utils/game-grid'
 import { reducedMotion } from '~/utils/motion'
 import { SCRAMBLE_FRAME_MS, finalAngle, removalEase, removalEnd, revealStage, scramble, sliceSpans, wheelAngle, type WheelTiming } from '~/utils/wheel'
 import { stopReached } from '~~/shared/draw-timeline'
@@ -226,10 +227,13 @@ const headingId = useId()
       <p class="m-0 text-[13px] font-extrabold tracking-wide text-ink-2 uppercase">
         {{ running ? t('wheel.says') : t('wheel.last') }}
       </p>
-      <GameCard
-        :game="card"
-        layout="row"
-      />
+      <!-- The drawn game as a tile in the pool's grid (#435): one column wide, as on the Event page's pool. -->
+      <div :class="GAME_GRID">
+        <GameCard
+          :game="card"
+          layout="tile"
+        />
+      </div>
     </div>
 
     <!-- The result for screen readers, announced when the wheel stops. -->
