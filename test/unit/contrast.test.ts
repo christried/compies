@@ -161,6 +161,45 @@ describe('judgeBox', () => {
   it('skips an inactive control', () => {
     expect(judgeBox(box({ border: c('#48414c'), inactive: true })).outcome).toBe('skip')
   })
+
+  // A segmented control's options have no edge of their own; the boundary WCAG 1.4.11 asks for is the group's (#430).
+  describe('a radio in a group with a border', () => {
+    const radio = (change: Record<string, unknown> = {}) => box({ role: 'radio', text: 'Hell', fill: c('#221b2b'), ...change })
+
+    it('passes by the group border when the option is the colour of the card', () => {
+      expect(judgeBox(radio({ group: { border: c('#f7efe1'), behind: [flat('#221b2b')] } }))).toMatchObject({ outcome: 'pass', fg: '#f7efe1', need: 3 })
+    })
+
+    it('passes on the page colour too (the stepper)', () => {
+      const verdict = judgeBox(radio({ behind: [flat('#17121d')], group: { border: c('#f7efe1'), behind: [flat('#17121d')] } }))
+      expect(verdict).toMatchObject({ outcome: 'pass', fg: '#f7efe1', bg: '#17121d' })
+    })
+
+    it('fails without a group, and with a null one: the own fill is 1.10:1', () => {
+      for (const raw of [radio({ behind: [flat('#17121d')] }), radio({ behind: [flat('#17121d')], group: null })]) {
+        const verdict = judgeBox(raw)
+        expect(verdict.outcome).toBe('fail')
+        expect(cut(verdict.ratio as number)).toBe('1.10')
+      }
+    })
+
+    it('is not rescued by a weak group border (1.69:1)', () => {
+      expect(judgeBox(radio({ group: { border: c('#48414c'), behind: [flat('#221b2b')] } })).outcome).toBe('fail')
+    })
+
+    it('ignores a group over a picture', () => {
+      expect(judgeBox(radio({ group: { border: c('#f7efe1'), behind: [{ color: c('#221b2b'), image: 'picture' as const, stops: [] as Rgba[] }] } })).outcome).toBe('fail')
+    })
+
+    it('skips an inactive radio even with a good group', () => {
+      expect(judgeBox(radio({ inactive: true, group: { border: c('#f7efe1'), behind: [flat('#221b2b')] } })).outcome).toBe('skip')
+    })
+
+    it('returns an own pass as it is: the fill, not the group', () => {
+      const verdict = judgeBox(radio({ fill: c('#f7efe1'), group: { border: c('#ffd23f'), behind: [flat('#17121d')] } }))
+      expect(verdict).toMatchObject({ outcome: 'pass', fg: '#f7efe1', bg: '#221b2b' })
+    })
+  })
 })
 
 describe('judgeRing', () => {

@@ -108,20 +108,32 @@ export function judgeText(raw) {
   return lowest(grounds(back).map(ground => decide(over([r, g, b, a * raw.opacity], ground), ground, need)))
 }
 
+/** The edge of a thing: the higher ratio of its `layers` (border, fill) against what it sits on (`back`), 3:1, the lowest over a texture's grounds. */
+function edgeVerdict(layers, back) {
+  const best = ground => layers
+    .filter(Boolean)
+    .map(layer => decide(over(layer, ground), ground, 3))
+    .reduce((higher, verdict) => verdict.ratio > higher.ratio ? verdict : higher, { outcome: 'fail', why: 'contrast', fg: null, bg: hex(ground), ratio: 1, need: 3 })
+  return lowest(grounds(back).map(best))
+}
+
 /**
  * A control's edge: its border and its fill, each composited over what it sits on, are compared with it; 3:1 for the
- * higher of the two (WCAG 1.4.11 asks for one of them to show where the control is).
+ * higher of the two (WCAG 1.4.11 asks for one of them to show where the control is). `raw.group` is the border of the
+ * `radiogroup` a radio sits in: a segmented control's options have no edge of their own, the boundary WCAG 1.4.11 asks for is
+ * the group's, so a radio that fails alone passes when the group's border reaches 3:1 on the group's own backdrop (#430).
  * @returns {Verdict}
  */
 export function judgeBox(raw) {
   const back = backdrop(raw.behind)
   if (raw.inactive) return skip('inactive', back)
   if (back.kind === 'picture') return skip('picture', back)
-  const best = ground => [raw.border, raw.fill]
-    .filter(Boolean)
-    .map(layer => decide(over(layer, ground), ground, 3))
-    .reduce((higher, verdict) => verdict.ratio > higher.ratio ? verdict : higher, { outcome: 'fail', why: 'contrast', fg: null, bg: hex(ground), ratio: 1, need: 3 })
-  return lowest(grounds(back).map(best))
+  const own = edgeVerdict([raw.border, raw.fill], back)
+  if (own.outcome === 'pass' || !raw.group?.border) return own
+  const groupBack = backdrop(raw.group.behind)
+  if (groupBack.kind === 'picture') return own
+  const byGroup = edgeVerdict([raw.group.border], groupBack)
+  return byGroup.outcome === 'pass' ? byGroup : own
 }
 
 /**

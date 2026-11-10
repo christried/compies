@@ -323,7 +323,19 @@ function readPage(kit) {
       continue
     }
     if (!free(el, stack)) continue
-    boxes.push({ key: pathOf(el), role: role(el), text: squash(el.textContent ?? ''), behind: behindFrom(carrier.parentElement).behind, border: edge, fill: paint, inactive: inactive(el) })
+    // A segmented control's options have no edge of their own: the boundary is the border of their group (#430). Not part of the Dunkel = System comparison.
+    const group = el.getAttribute('role') === 'radio' ? el.closest('[role=radiogroup]') : null
+    const groupEdge = group ? border(getComputedStyle(group)) : null
+    boxes.push({
+      key: pathOf(el),
+      role: role(el),
+      text: squash(el.textContent ?? ''),
+      behind: behindFrom(carrier.parentElement).behind,
+      border: edge,
+      fill: paint,
+      group: groupEdge ? { border: groupEdge, behind: behindFrom(group.parentElement).behind } : null,
+      inactive: inactive(el),
+    })
   }
 
   // Surfaces: dialogs and sheets, menus, and cards.
