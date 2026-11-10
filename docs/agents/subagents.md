@@ -16,7 +16,7 @@ Rate each task by the hardest thing it asks, the way `/implement-spec-max` § Mo
 - In doubt between the two, take Sonnet.
 - Implementers and reviewers never run on `opus`, with one exception: under `/implement-spec-max` (`.claude/skills/implement-spec-max/SKILL.md`) every subagent, from the brief drafter to the Release reviewers, runs on the tier its task rates in that skill's § Model tiers: `fable`, or `opus` or `sonnet` with `effort: "high"`. The rest of this document applies there unchanged.
 
-Reviewers, the `code-review` sub-agents and the Release review alike, and brief drafters run with `isolation: "worktree"`. Merge jobs work in the main checkout, and a reviewer told to stay read-only still checked out a detached head there (0.5.1).
+Reviewers, the `code-review` sub-agents and the Release review alike, brief drafters and merge jobs run with `isolation: "worktree"`, so none of them touches the main checkout: a reviewer told to stay read-only still checked out a detached head there (0.5.1), and a merge there landed on another session's branch (2026-11-10).
 
 ## Briefs
 
