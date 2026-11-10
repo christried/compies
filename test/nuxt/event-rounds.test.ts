@@ -33,10 +33,10 @@ const round = (id: string, game: PoolGame, notes?: string): RoundView => {
 const pool: EventView['pool'] = [halo, kart, pong]
 const pill = (page: Mounted) => [...page.element.querySelectorAll('[role="toolbar"] button')].map(button => button.textContent?.replace(/\s+/g, ' ').trim())
 
-type Options = { host: boolean, rounds?: RoundView[], setGame?: SetGameView | null, sessions?: Parameters<typeof viewWithSessions>[1], phase?: string, teams?: BoardTeam[], end?: EndView | null }
+type Options = { host: boolean, rounds?: RoundView[], setGame?: SetGameView | null, sessions?: Parameters<typeof viewWithSessions>[1], phase?: string, teams?: BoardTeam[], end?: EndView | null, hostGames?: EventView['hostGames'] }
 
 /** A running Event, set up for Host pick: the Host's or a Member's read of it, with these open Rounds. */
-function serveRunning({ host, rounds = [], setGame, sessions, phase = 'running', teams, end }: Options) {
+function serveRunning({ host, rounds = [], setGame, sessions, phase = 'running', teams, end, hostGames }: Options) {
   return serve(slug => viewWithSessions(slug, sessions ?? [{ number: null, startsAt: FIRST, startedAt: STARTED }], 0, {
     event: { isHost: host, phase },
     settings: defaultSettings(),
@@ -46,6 +46,7 @@ function serveRunning({ host, rounds = [], setGame, sessions, phase = 'running',
     teams,
     ...(end === undefined ? {} : { end }),
     pool: host ? pool : null,
+    hostGames: hostGames ?? null,
   }))
 }
 
@@ -787,7 +788,8 @@ describe('the Round tile carries no Price (#435, was #338)', () => {
     const stage = await mount(slug)
 
     const rounds = stage.get('[aria-label="Offene Spiele"]')
-    expect(rounds.get('li b').text()).toBe('Halo')
+    // The Host's tile is a button (#443), whatever it did not show before.
+    expect(rounds.get('li button[aria-haspopup="dialog"]').text()).toBe('Halo')
     expect(rounds.text()).not.toContain('€')
     expect(rounds.text()).not.toContain(stand())
     expect(rounds.text()).toContain('Hausregel: keine Raketen')
@@ -835,5 +837,57 @@ describe('the Round tile carries no Price (#435, was #338)', () => {
     expect(name.text()).toBe(longName)
     expect(name.classes()).toContain('break-words')
     expect(name.classes()).toContain('line-clamp-2')
+  })
+})
+
+// The Host's game dialog from „Gerade dran“ (#443): the Tags and Notes of a Round's game come from `hostGames`, the Round's own Notes stay open under the tile.
+describe('the game dialog from the Round tiles (#443)', () => {
+  const hostGames = {
+    'g-halo': { tags: [{ key: 'koop', label: 'Koop' }], notes: halo.notes },
+    'g-schach': { tags: [{ key: 'denken', label: 'Denken' }], notes: 'Schach-Notizen' },
+  }
+  const opened = () => document.querySelector('[role="dialog"]') as HTMLElement | null
+
+  // The link to the library entry is for a Host who may see the library.
+  beforeEach(() => signInAs({ ...kitty, canHost: true }))
+
+  it('opens the dialog of a pool game\'s Round with its Tags and Notes, and keeps the Round\'s Notes open under the tile', async () => {
+    const { slug } = serveRunning({ host: true, rounds: [round('r1', halo, halo.notes!)], hostGames })
+    const stage = await mount(slug)
+
+    const rounds = stage.get('[aria-label="Offene Spiele"]')
+    await rounds.get('li button[aria-haspopup="dialog"]').trigger('click')
+    await flushPromises()
+
+    expect(opened()!.querySelector('h2')?.textContent).toBe('Halo')
+    expect(opened()!.textContent).toContain('Koop')
+    expect(opened()!.textContent).toContain('Hausregel: keine Raketen')
+    expect(rounds.get('button[aria-expanded]').attributes('aria-expanded')).toBe('true')
+    expect(rounds.text()).toContain('Ergebnis eintragen')
+  })
+
+  it('opens the same dialog for a Round whose game is in no pool: its Tags come from hostGames, its Notes stay open under the tile', async () => {
+    const { slug } = serveRunning({ host: true, rounds: [round('r1', schach, 'Schach-Notizen')], hostGames })
+    const stage = await mount(slug)
+
+    const rounds = stage.get('[aria-label="Offene Spiele"]')
+    await rounds.get('li button[aria-haspopup="dialog"]').trigger('click')
+    await flushPromises()
+
+    expect(opened()!.querySelector('h2')?.textContent).toBe('Schach')
+    expect(opened()!.textContent).toContain('Denken')
+    expect(opened()!.querySelector('a')?.getAttribute('href')).toBe('/bibliothek/g-schach')
+    expect(rounds.text()).toContain('Schach-Notizen')
+  })
+
+  it('shows a Member\'s Round tile as no button, and a click opens no dialog', async () => {
+    const { slug } = serveRunning({ host: false, rounds: [round('r1', halo)] })
+    const stage = await mount(slug)
+
+    const rounds = stage.get('[aria-label="Offene Spiele"]')
+    expect(rounds.find('[aria-haspopup]').exists()).toBe(false)
+    await rounds.get('li b').trigger('click')
+    await flushPromises()
+    expect(opened()).toBeNull()
   })
 })

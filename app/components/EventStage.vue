@@ -165,6 +165,7 @@ watch(() => props.pageState.blocks, (after, before) => {
         :points-table="view.settings?.pointsTable ?? null"
         :enter-result="actions.enterResult"
         :end="view.end"
+        :host-games="view.hostGames"
       />
 
       <Leaderboard
@@ -265,6 +266,7 @@ watch(() => props.pageState.blocks, (after, before) => {
           :edit-to="canEditSettings && view.settings !== null ? settingsPath(slug) : null"
           :locked="started"
           :host-name="hostName"
+          :host-games="view.hostGames"
         />
       </div>
     </div>

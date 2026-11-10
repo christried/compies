@@ -4,6 +4,7 @@ import { useDb } from '../../utils/db'
 import { loadEvent } from '../../utils/event-access'
 import { boardSection, inviteSection, membersSection, poolGamesOf, poolsSection, pollSection, readPollRows, sessionSection, startSection } from '../../utils/event-read'
 import { readEventState, withParts } from '../../utils/event-state'
+import { hostGameIds, readHostGameFacts } from '../../utils/library'
 import { READ_PARTS, stageParts, stageSections, type StageFields } from '../../utils/stage-read'
 import { settleBeforeRead } from '../../utils/rounds'
 import { requireUser } from '../../utils/user'
@@ -48,5 +49,7 @@ export default defineEventHandler(async (event): Promise<EventView> => {
   // The stage sections run together (#256). `StageFields` is derived from what they return, so `{ ...fixed, ...stage }` fails to compile when
   // a field of the view is in neither part (review 0.8 Q7); the integration test "the stage sections of the Event read" (rounds.test.ts) is the runtime backstop.
   const stage: StageFields = Object.assign({}, ...await Promise.all(stageSections.map(section => section({ db, eventRow, state, viewer, now }))))
-  return { ...fixed, ...stage }
+  // The Host's game dialog (#443): the Tags and Notes of the games the finished sections name as tiles, never from a second look at the database.
+  const view = { ...fixed, ...stage }
+  return { ...view, hostGames: viewer.isHost ? await readHostGameFacts(db, hostGameIds(view)) : null }
 })
