@@ -1,16 +1,12 @@
 import { eq } from 'drizzle-orm'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
-import createEvent from '../../server/api/e/index.post'
-import readEvent from '../../server/api/e/[slug].get'
-import changeSettings from '../../server/api/e/[slug]/settings.patch'
-import createGame from '../../server/api/games/index.post'
-import joinInvite from '../../server/api/invite/[invite].post'
-import { eventMembers, eventPoolGames, events, games, users } from '../../server/db/schema'
+import { eventMembers, eventPoolGames, events, users } from '../../server/db/schema'
 import type { CreatedEvent, EventView } from '../../shared/event'
 import type { GameView } from '../../shared/game'
 import { settingsFromRow, type EventSettings } from '../../shared/settings'
+import { createTestApp, type TestRequest } from './app'
 import { TEST_SETTINGS } from './fixtures'
-import { createTestDb, createTestServer } from './harness'
+import { createTestDb, resetDatabase } from './harness'
 import { setAllowlist, signIn, stubAuthEnv } from './sign-in'
 
 // The Host changes an Event's settings and pools after creating it (#147).
@@ -21,19 +17,13 @@ const outsider = { provider: 'discord', id: '4', name: 'Fremd', email: 'outsider
 
 describe('changing the settings of an Event (#147)', () => {
   let testDb: Awaited<ReturnType<typeof createTestDb>>
-  let request: ReturnType<typeof createTestServer>
+  let request: TestRequest
   let hostCookie: string
   let memberCookie: string
 
   beforeAll(async () => {
     testDb = await createTestDb()
-    request = createTestServer(testDb.db, {
-      'POST /api/e': createEvent,
-      'GET /api/e/:slug': readEvent,
-      'PATCH /api/e/:slug/settings': changeSettings,
-      'POST /api/games': createGame,
-      'POST /api/invite/:invite': joinInvite,
-    })
+    request = createTestApp(testDb.db)
   })
 
   afterAll(async () => {
@@ -43,11 +33,7 @@ describe('changing the settings of an Event (#147)', () => {
   beforeEach(async () => {
     stubAuthEnv()
     setAllowlist({ hosts: 'discord:1', admins: 'discord:9' })
-    await testDb.db.delete(eventPoolGames)
-    await testDb.db.delete(eventMembers)
-    await testDb.db.delete(events)
-    await testDb.db.delete(games)
-    await testDb.db.delete(users)
+    await resetDatabase(testDb.db)
     hostCookie = (await signIn(testDb.db, host)).cookie
     memberCookie = (await signIn(testDb.db, member)).cookie
   })
