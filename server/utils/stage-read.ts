@@ -34,7 +34,7 @@ import { roundGameView } from './library'
 import { readClip } from './clip'
 import { countdownView, readCountdown } from './countdown'
 import { coinView } from './coin'
-import { ceremonyViewOf } from './ceremony'
+import { ceremonyShownOf, ceremonyViewOf } from './ceremony'
 import type { DrawRow } from './rounds'
 import { knownVetoRows } from './vetoes'
 
@@ -278,10 +278,10 @@ export async function coinSection({ state }: StageContext): Promise<Pick<EventVi
 }
 
 /** The Award ceremony (#309, spec #308): the latest start of a finished Event, identical for every viewer (nothing in it is secret); null before the first start. */
-export async function ceremonySection({ eventRow, state }: StageContext): Promise<Pick<EventView, 'ceremony'>> {
+export async function ceremonySection({ eventRow, state }: StageContext): Promise<Pick<EventView, 'ceremony' | 'ceremonyShown'>> {
   // The end of a run depends on how many Parties are on rank 1 (#315): the Standings of the Results, which a finished Event never changes.
   const winners = state.standing === null ? 0 : leadersOf(state.standing.standings).length
-  return { ceremony: ceremonyViewOf(eventRow, winners) }
+  return { ceremony: ceremonyViewOf(eventRow, winners), ceremonyShown: ceremonyShownOf(eventRow) }
 }
 
 /**

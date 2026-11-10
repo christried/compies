@@ -60,6 +60,7 @@ function eventRow(fields: Partial<EventRow> = {}): EventRow {
     finishedAt: null,
     ceremonyStartsAt: null,
     ceremonyGag: null,
+    ceremonyShown: false,
     deletedAt: null,
     createdAt: at(-600),
     updatedAt: at(-600),

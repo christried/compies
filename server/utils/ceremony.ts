@@ -31,6 +31,14 @@ export function ceremonyViewOf(row: EventRow, winners: number): CeremonyView | n
 }
 
 /**
+ * Whether the Award ceremony has been started at least once (#445): the finished page shows its result only from then on. The stored flag, or a stored start: the previous
+ * deployment starts a ceremony by writing the start and the gag only (ADR 0007), and a start is shown by definition. A restart changes nothing.
+ */
+export function ceremonyShownOf(row: Pick<EventRow, 'ceremonyShown' | 'ceremonyStartsAt'>): boolean {
+  return row.ceremonyShown || row.ceremonyStartsAt !== null
+}
+
+/**
  * The Host starts the ceremony (#309): refused with the reason of ceremonyRejection, else the start is `now` plus the lead and the gag the
  * other one than last time (the first start picks through `randomInt`). A restart overwrites both columns. No Activity entry and no
  * message of its own: `changeEvent` tells the room `event.changed`, and the clients refetch the Event read, which carries the ceremony.
@@ -49,6 +57,6 @@ export async function startCeremony({ tx, eventRow, user, now }: ChangeCore, ran
   requireSettings(eventRow)
   const ceremonyStartsAt = new Date(now.getTime() + CEREMONY_LEAD_MS)
   const ceremonyGag = nextGag(eventRow.ceremonyGag, randomInt)
-  await tx.update(events).set({ ceremonyStartsAt, ceremonyGag }).where(eq(events.id, eventRow.id))
+  await tx.update(events).set({ ceremonyStartsAt, ceremonyGag, ceremonyShown: true }).where(eq(events.id, eventRow.id))
   return ceremonyViewOf({ ...eventRow, ceremonyStartsAt, ceremonyGag }, winners)!
 }

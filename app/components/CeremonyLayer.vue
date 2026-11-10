@@ -25,6 +25,8 @@ const props = defineProps<{
 const emit = defineEmits<{
   /** „Bild teilen“ of the end frame (#313): the page owns the sheet, which opens over this layer. */
   share: []
+  /** This viewer's run of the synced start is over (#445): the finished page then shows what it held back. Never for a replay. */
+  over: []
 }>()
 
 const { t } = useI18n()
@@ -147,6 +149,20 @@ const failed = ref(false)
 const ready = ref(false)
 const skipped = computed(() => ceremony.value !== null && skippedFor.value === ceremony.value.startsAt)
 const frame = computed(() => (ended.value || skipped.value || reduced.value || failed.value ? 'end' : 'run'))
+
+// Whether this viewer's run of the synced start is over (#445), which the finished page waits for before it shows the Standings and the rest (useCeremonyHold): they closed or
+// skipped it; or its layer is open on the synced start and shows the end frame (the clock, reduced motion and a failed chunk show it at once); or the layer never opened and the
+// server's end has passed (a page that came after the run). Never a replay's: a replay has its own start, and needs the ceremony shown anyway.
+const over = computed(() => {
+  const start = synced.value
+  if (!start) return false
+  if (closedFor.value === start.startsAt || skippedFor.value === start.startsAt) return true
+  if (openedFor.value === start.startsAt) return frame.value === 'end'
+  return now.value !== null && now.value >= Date.parse(start.endsAt)
+})
+watch(over, (is) => {
+  if (is) emit('over')
+}, { immediate: true })
 /** Compibert's pose: the timeline's calls change it as the clock crosses them; the end frame and a late joiner set it from the clock. */
 const rig = ref<RigState>('idle')
 const endPose = (): RigState => (reduced.value ? 'cheer' : 'dance')

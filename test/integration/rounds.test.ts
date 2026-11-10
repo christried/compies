@@ -753,14 +753,14 @@ describe('Rounds', () => {
   // The stage sections (#256): each section returns all its fields in every case, so a section left out of the array
   // would show here as a missing key. The shape is asserted per field, not with toEqual, since the stage grows.
   describe('the stage sections of the Event read (#256)', () => {
-    const STAGE_KEYS = ['rounds', 'setGame', 'wheel', 'roundBeingDrawn', 'clip', 'countdown', 'coin', 'ceremony', 'bonusVetoes', 'results', 'standings', 'end'] as const
+    const STAGE_KEYS = ['rounds', 'setGame', 'wheel', 'roundBeingDrawn', 'clip', 'countdown', 'coin', 'ceremony', 'ceremonyShown', 'bonusVetoes', 'results', 'standings', 'end'] as const
 
     it('gives every stage field to the Host of a Host pick Event, the null ones as null', async () => {
       const game = await running()
       const view = await read(game)
 
       for (const key of STAGE_KEYS) expect(view).toHaveProperty(key)
-      expect(view).toMatchObject({ wheel: null, clip: null, countdown: null, coin: null, ceremony: null, bonusVetoes: null })
+      expect(view).toMatchObject({ wheel: null, clip: null, countdown: null, coin: null, ceremony: null, ceremonyShown: false, bonusVetoes: null })
     })
 
     it('gives the Host of a Lucky Wheel Event its wheel and the Bonus Vetoes', async () => {
