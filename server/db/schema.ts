@@ -103,6 +103,8 @@ export const events = pgTable('events', {
   // 0025 (#309): the Award ceremony's latest start (the request's clock plus the lead, ADR 0013) and its gag. The run's end is not stored: shared/ceremony.ts derives it. A restart overwrites both.
   ceremonyStartsAt: timestamp('ceremony_starts_at', { withTimezone: true }),
   ceremonyGag: ceremonyGag('ceremony_gag'),
+  // 0030 (#445): true once the Host has started the Award ceremony at least once; ceremonyShownOf also counts a stored start (the previous deployment writes only the start). A restart changes nothing.
+  ceremonyShown: boolean('ceremony_shown').default(false).notNull(),
   deletedAt: timestamp('deleted_at', { withTimezone: true }),
   createdAt: createdAt(),
   updatedAt: updatedAt(),
