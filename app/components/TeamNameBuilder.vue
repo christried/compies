@@ -50,8 +50,11 @@ const count = computed(() => characterCount(draft.value))
 
 const canWrite = computed(() => props.mine && !props.isHost)
 const canReset = computed(() => props.isHost && props.named)
-/** The composed name shows folded once the team has a word, unless the Player's field is open. */
-const showName = computed(() => props.named && !(canWrite.value && editing.value))
+/**
+ * The composed name shows folded once the team has a word, unless the Player's field is in use: opened with the pencil, or the Player is
+ * in it (focus) or holds an unsaved draft. Another Player's word naming the team never takes the field away mid-typing (#488).
+ */
+const showName = computed(() => props.named && !(canWrite.value && (editing.value || focused.value || draft.value !== saved.value)))
 
 const inputEl = useTemplateRef<HTMLInputElement>('input')
 const pencil = useTemplateRef<{ $el: HTMLElement }>('pencil')
@@ -102,8 +105,10 @@ function onBlur() {
   void save()
 }
 
-// Enter saves; Escape only drops the draft (no request). Both fold the field again in a named team (#439).
+// Enter saves; Escape only drops the draft (no request). Both fold the field again in a named team (#439). The field is left first,
+// so that it counts as unused and the focus can go to the pencil (#488); leaving runs onBlur, which clears the return flag.
 function fold() {
+  inputEl.value?.blur()
   stripped.value = false
   editing.value = false
   returnFocus.value = true
@@ -126,15 +131,13 @@ watch(showName, (folded) => {
   pencil.value?.$el.focus()
 }, { flush: 'post' })
 
-// The composed name, announced when it changes (not when the board first draws).
+// The composed name, announced when it changes (not when the board first draws). A word that arrives or changes pops in while the
+// name is folded; a reset to the colour name does not (#439).
 const announced = ref('')
 watch(() => props.name, (name, before) => {
-  if (name !== before) announced.value = t('team.word.announce', { name })
-})
-
-// A word that arrives or changes pops in while the name is folded; a reset to the colour name does not (#439).
-watch(() => props.name, (name, before) => {
-  if (name !== before && props.named && nameEl.value) namePop(nameEl.value)
+  if (name === before) return
+  announced.value = t('team.word.announce', { name })
+  if (props.named && nameEl.value) namePop(nameEl.value)
 }, { flush: 'post' })
 
 const asking = ref(false)
