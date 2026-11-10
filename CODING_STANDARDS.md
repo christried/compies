@@ -21,7 +21,7 @@ Each concern below has one home. New code calls it; a second copy is a finding e
 | What a viewer may know of a drawn game | `drawGameKnown` (pure) in `shared/draw-timeline.ts`, `stoppedDraws` (SQL) in `server/utils/draw-timeline.ts` (#258, #414) |
 | A Draw's instants and what each decides (due, game known, window open or ended, Vetoes sealed, the Clip's window) | `shared/draw-timeline.ts`; its SQL twins `stoppedDraws` and `dueDraws` in `server/utils/draw-timeline.ts`, kept in step by `test/integration/draw-timeline.test.ts` (#414) |
 | A GET that must show a settled state (a draw whose instant has passed) | `settleBeforeRead` in `server/utils/rounds.ts` (#229): one cheap select when nothing is due, else a locked transaction that calls `settleDue`. A write goes through `changeEvent`, which settles by itself (#259); lint guards `server/api/e/**` only, so a new timed read calls `settleBeforeRead` instead of opening its own `for('update')` |
-| A stage piece: its block and place per page state, who sees it, the instants the page reads again at | `app/utils/event-stage.ts` (#415: one row per piece; a new piece is a row there and its component) |
+| A stage piece: its block and place per page state, who sees it, the moment it rises at, the instants the page reads again at | `app/utils/event-stage.ts` (#415: one row per piece; a new piece is a row there and its component) |
 
 A second page, flow or component that does what an existing one does needs its reason in the PR description. Without one, the review asks for the existing module to grow instead.
 

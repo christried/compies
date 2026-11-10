@@ -695,12 +695,13 @@ describe('the Lucky Wheel on the stage (#229)', () => {
     return served
   }
 
-  it('shows the wheel with its games on top of the open Rounds, to a Member too', async () => {
+  // The Round was set (its moment) and the wheel has no spin: the stage follows the game (#441), so the open Round is the news and takes the top. Without a Round the wheel is on top (event-stage.test.ts).
+  it('shows the wheel with its games, to a Member too, below an open Round that was set when the wheel has not turned', async () => {
     const { slug } = serveWheel({ host: false, rounds: [round('r1', kart)] })
 
     const stage = await mount(slug)
 
-    expect(regionHeadings(stage)).toEqual(['Glücksrad', 'Gerade dran', 'Spielbrett', 'Sessions', 'So wird gespielt'])
+    expect(regionHeadings(stage)).toEqual(['Gerade dran', 'Glücksrad', 'Spielbrett', 'Sessions', 'So wird gespielt'])
     expect(stage.get('[role="img"][aria-label="Glücksrad mit 2 Spielen"]').text()).toContain('Halo')
   })
 
