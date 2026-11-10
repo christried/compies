@@ -4,7 +4,7 @@ import { resolve } from 'node:path'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 // The built page carries its Appearance from the first byte (#401): a visitor without a User gets `data-theme="light"` and the
-// one light browser bar colour in the server-rendered HTML, before any script runs, or the device's cookie's look (#403). The built server runs without a database:
+// light browser bar colour (on both media, always two metas, #404) in the server-rendered HTML, before any script runs, or the device's cookie's look (#403). The built server runs without a database:
 // a signed-out request never opens one (Better Auth finds no login session cookie, and the Pool connects only on a query).
 // Run `pnpm test:build` (builds first).
 const SERVER = resolve(import.meta.dirname, '../../.output/server/index.mjs')
@@ -55,16 +55,18 @@ describe('Appearance in the built page', () => {
     server?.kill()
   })
 
-  it('renders a visitor without a User light, with the one light theme-color meta', async () => {
+  it('renders a visitor without a User light, with the light theme-color on both media', async () => {
     const response = await fetch(`${origin}/anmelden`)
     const html = await response.text()
 
     expect(response.status).toBe(200)
     expect(html).toMatch(/<html[^>]*\sdata-theme="light"/)
     const metas = html.match(/<meta[^>]*name="theme-color"[^>]*>/g) ?? []
-    expect(metas).toHaveLength(1)
+    expect(metas).toHaveLength(2)
     expect(metas[0]).toContain('content="#fff3df"')
-    expect(metas[0]).not.toContain('media=')
+    expect(metas[0]).toContain('media="(prefers-color-scheme: light)"')
+    expect(metas[1]).toContain('content="#fff3df"')
+    expect(metas[1]).toContain('media="(prefers-color-scheme: dark)"')
   })
 
   // Signed out, the device's cookie decides (#403), already in the server HTML: the Anmelden page after Abmelden
@@ -77,13 +79,15 @@ describe('Appearance in the built page', () => {
     return { html, metas: html.match(/<meta[^>]*name="theme-color"[^>]*>/g) ?? [] }
   }
 
-  it('renders a visitor with the cookie dark in Dunkel, with the one dark theme-color meta', async () => {
+  it('renders a visitor with the cookie dark in Dunkel, with the dark theme-color on both media', async () => {
     const { html, metas } = await anmeldenWith('compies-appearance=dark')
 
     expect(html).toMatch(/<html[^>]*\sdata-theme="dark"/)
-    expect(metas).toHaveLength(1)
+    expect(metas).toHaveLength(2)
     expect(metas[0]).toContain('content="#17121d"')
-    expect(metas[0]).not.toContain('media=')
+    expect(metas[0]).toContain('media="(prefers-color-scheme: light)"')
+    expect(metas[1]).toContain('content="#17121d"')
+    expect(metas[1]).toContain('media="(prefers-color-scheme: dark)"')
   })
 
   it('renders a visitor with the cookie system in System, with both theme-color metas and their media', async () => {
@@ -91,7 +95,10 @@ describe('Appearance in the built page', () => {
 
     expect(html).toMatch(/<html[^>]*\sdata-theme="system"/)
     expect(metas).toHaveLength(2)
-    for (const meta of metas) expect(meta).toContain('media=')
+    expect(metas[0]).toContain('content="#fff3df"')
+    expect(metas[0]).toContain('media="(prefers-color-scheme: light)"')
+    expect(metas[1]).toContain('content="#17121d"')
+    expect(metas[1]).toContain('media="(prefers-color-scheme: dark)"')
   })
 
   it.each(['nuxt-color-mode=dark', 'compies-appearance=sepia'])('renders a visitor with only %s light', async (cookie) => {
