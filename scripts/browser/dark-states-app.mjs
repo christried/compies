@@ -27,32 +27,6 @@ async function until(tab, expression, what, ms = 10_000) {
   throw new Error(`${what} never came`)
 }
 
-// `einrichten` signs the Dev Admin in without a Display name. The next state of the run signs the Dev Admin in plainly
-// again, from here, so the name is back as soon as the read is over; the runner's `finally` does it too, for a run that
-// stops after `einrichten`. A plain sign-in puts the dev name back where there is none (`server/dev/sign-in.ts`).
-let adminNameless = false
-async function adminNamed() {
-  if (!adminNameless) return
-  await fetch(`${BASE}/api/dev/sign-in?as=admin`, { redirect: 'manual' })
-  adminNameless = false
-}
-
-/** The first of Dev Admin and Dev Member whose Home has no Event, else null (then `home-leer` fakes the answer). */
-async function accountWithoutEvents() {
-  for (const account of ['admin', 'member']) {
-    try {
-      const signIn = await fetch(`${BASE}/api/dev/sign-in?as=${account}`, { redirect: 'manual' })
-      const cookie = signIn.headers.getSetCookie().map(header => header.split(';')[0]).join('; ')
-      const { events } = await (await fetch(`${BASE}/api/e`, { headers: { cookie } })).json()
-      if (Array.isArray(events) && events.length === 0) return account
-    }
-    catch {
-      // The server is not up (a run that lists the states only): the fallback answers.
-    }
-  }
-  return null
-}
-
 /** A state that opens `address(ctx)` as `account` and waits for `waitFor`. */
 function page(name, group, account, address, { waitFor = 'h1', after, ...rest } = {}) {
   return {
@@ -60,7 +34,6 @@ function page(name, group, account, address, { waitFor = 'h1', after, ...rest } 
     group,
     account,
     async open(ctx) {
-      await adminNamed()
       await open(ctx.tab, address(ctx), ctx.width, ctx.height, waitFor, { appearance: ctx.appearance })
       await after?.(ctx)
     },
@@ -107,9 +80,8 @@ async function loadUpTo(tab, gameId) {
   if (!await tab.evaluate(there)) throw new Error('the 60-character game is not on the library page')
 }
 
-// Home without an Event (`mvp.home.titleEmpty`). When Dev Admin and Dev Member each have an Event, the Dev Member opens Profil, the page's
-// `fetch` answers `GET /api/e` with no Events, and the nav link to Home (a client navigation, so the page fetches) shows the empty Home.
-const nobody = await accountWithoutEvents()
+// Home without an Event (`mvp.home.titleEmpty`). Every dev User has an Event, so the Dev Member opens Profil, the page's `fetch` answers
+// `GET /api/e` with no Events, and the nav link to Home (a client navigation, so the page fetches) shows the empty Home.
 const FAKE_NO_EVENTS = `(() => {
   const real = window.fetch
   window.fetch = (input, init) => {
@@ -122,33 +94,30 @@ const FAKE_NO_EVENTS = `(() => {
 let homeNoted = false
 
 export const STATES = [
-  // Profile setup: the Dev Admin without a Display name (`?name=unset`). The page redirects there from every address.
+  // Profile setup: the Dev Admin without a Display name (`?name=unset`). The page redirects there from every address. `after` signs the
+  // Dev Admin in plainly again, so the name is back as soon as the read is over (a plain sign-in puts the dev name back where there is none, `server/dev/sign-in.ts`).
   {
     name: 'einrichten',
     group: 'hub',
     account: 'admin',
     async open(ctx) {
-      adminNameless = true
       await open(ctx.tab, '/', ctx.width, ctx.height, 'form input', { appearance: ctx.appearance, setup: true })
+    },
+    async after() {
+      await fetch(`${BASE}/api/dev/sign-in?as=admin`, { redirect: 'manual' })
     },
   },
   {
     name: 'home-leer',
     group: 'hub',
-    account: nobody ?? 'member',
+    account: 'member',
     async open(ctx) {
-      await adminNamed()
       const title = JSON.stringify(COPY.mvp.home.titleEmpty)
-      if (nobody) {
-        await open(ctx.tab, '/', ctx.width, ctx.height, 'h1', { appearance: ctx.appearance })
-      }
-      else {
-        await open(ctx.tab, '/profil', ctx.width, ctx.height, 'h1', { appearance: ctx.appearance })
-        await ctx.tab.evaluate(FAKE_NO_EVENTS)
-        if (!await clickText(ctx.tab, 'a[href="/"]')) throw new Error('no link to Home on Profil')
-      }
+      await open(ctx.tab, '/profil', ctx.width, ctx.height, 'h1', { appearance: ctx.appearance })
+      await ctx.tab.evaluate(FAKE_NO_EVENTS)
+      if (!await clickText(ctx.tab, 'a[href="/"]')) throw new Error('no link to Home on Profil')
       await until(ctx.tab, `document.querySelector('h1')?.textContent.trim() === ${title}`, 'the empty Home')
-      if (!homeNoted) note(nobody ? `home-leer: the Dev ${nobody === 'admin' ? 'Admin' : 'Member'} has no Event, the page is real` : 'home-leer: Dev Admin and Dev Member each have an Event, the Dev Member\'s `GET /api/e` answered no Events by a replaced `window.fetch`, Home reached by the nav link')
+      if (!homeNoted) note('home-leer: the Dev Member\'s `GET /api/e` answered no Events by a replaced `window.fetch`, Home reached by the nav link')
       homeNoted = true
     },
   },
@@ -161,7 +130,8 @@ export const STATES = [
     },
   }),
   // Both cards; „Darstellung“ and „Speichern“ are never clicked.
-  page('profil', 'hub', 'host', () => '/profil'),
+  // The control „Darstellung“ shows the stored choice, so it is „Dunkel“ in one pass and „System“ in the other: it stays out of the comparison.
+  page('profil', 'hub', 'host', () => '/profil', { differs: '[role="radiogroup"]' }),
   page('baustelle-archiv', 'hub', 'host', () => '/archiv'),
   page('baustelle-admin', 'hub', 'admin', () => '/admin'),
   page('baustelle-allgemein', 'hub', 'member', () => '/gibt-es-nicht'),
@@ -173,7 +143,6 @@ export const STATES = [
     group: 'hub',
     account: 'member',
     async open(ctx) {
-      await adminNamed()
       await open(ctx.tab, '/', ctx.width, ctx.height, '[role=dialog]', { appearance: ctx.appearance, news: true })
     },
   },

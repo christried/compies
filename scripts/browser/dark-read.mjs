@@ -23,6 +23,9 @@ export const EXCLUDED = [
   // The Award ceremony's scene, the stage of Compibert's run (`AwardCeremony.vue`): the trophy he carries (fixed colours,
   // „a physical sticker in both themes“) and the box he runs in. The winner card and the rows are measured.
   { selector: '[data-part="compibert"], [data-part="trophy"]', why: 'the Award ceremony scene' },
+  // The Share image: `ShareDialog.vue`'s <img>, the blob of `useShareImage`. The server draws it light whatever the Appearance (#398);
+  // the frame around it and the sheet are measured.
+  { selector: '[role="dialog"] img[src^="blob:"]', why: 'the Share image' },
 ]
 
 /** The helpers both page functions share. Returns them as an object; runs in the page. */
@@ -180,12 +183,38 @@ function makeKit(exclusionSelector) {
     return stack
   }
 
-  /** Scrolls a rect's element to the middle and returns the stack at the rect's centre, or null when that point is off the viewport. */
+  /**
+   * The middle of what of `rect` can be seen: cut to the viewport and to every ancestor that clips (`overflow` other than visible). A text
+   * that runs on past its box (`truncate`: the 60-character game name, #408) has its rect's middle outside the viewport and under the clip;
+   * the middle of the part that shows is where it is hit. Null when nothing shows.
+   */
+  function visibleMiddle(el, rect) {
+    let { left, top, right, bottom } = rect
+    for (let e = el; e && e !== document.documentElement; e = e.parentElement) {
+      const style = getComputedStyle(e)
+      if (style.overflowX === 'visible' && style.overflowY === 'visible') continue
+      const box = e.getBoundingClientRect()
+      if (style.overflowX !== 'visible') {
+        left = Math.max(left, box.left)
+        right = Math.min(right, box.right)
+      }
+      if (style.overflowY !== 'visible') {
+        top = Math.max(top, box.top)
+        bottom = Math.min(bottom, box.bottom)
+      }
+    }
+    left = Math.max(left, 0)
+    top = Math.max(top, 0)
+    right = Math.min(right, window.innerWidth)
+    bottom = Math.min(bottom, window.innerHeight)
+    return right > left && bottom > top ? { x: (left + right) / 2, y: (top + bottom) / 2 } : null
+  }
+
+  /** Scrolls a rect's element to the middle and returns the stack at the middle of what shows of the rect, or null when that is off the viewport. */
   function reach(el, rectOf) {
     el.scrollIntoView({ block: 'center', behavior: 'instant' })
     const rect = rectOf()
-    const x = rect.left + rect.width / 2
-    const y = rect.top + rect.height / 2
+    const { x, y } = visibleMiddle(el, rect) ?? { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 }
     if (x < 0 || y < 0 || x >= window.innerWidth || y >= window.innerHeight) return null
     return stackAt(el, x, y)
   }
@@ -320,7 +349,19 @@ function readPage(kit) {
       continue
     }
     if (!free(el, stack)) continue
-    boxes.push({ key: pathOf(el), role: role(el), text: squash(el.textContent ?? ''), behind: behindFrom(carrier.parentElement).behind, border: edge, fill: paint, inactive: inactive(el) })
+    // A segmented control's options have no edge of their own: the boundary is the border of their group (#430). Not part of the Dunkel = System comparison.
+    const group = el.getAttribute('role') === 'radio' ? el.closest('[role=radiogroup]') : null
+    const groupEdge = group ? border(getComputedStyle(group)) : null
+    boxes.push({
+      key: pathOf(el),
+      role: role(el),
+      text: squash(el.textContent ?? ''),
+      behind: behindFrom(carrier.parentElement).behind,
+      border: edge,
+      fill: paint,
+      group: groupEdge ? { border: groupEdge, behind: behindFrom(group.parentElement).behind } : null,
+      inactive: inactive(el),
+    })
   }
 
   // Surfaces: dialogs and sheets, menus, and cards.
@@ -414,6 +455,9 @@ function readRings(kit) {
     const rect = el.getBoundingClientRect()
     if (rect.width <= 0 || rect.height <= 0 || !inDocument(rect)) continue
     el.focus()
+    // A control with `transition-colors` animates `outline-color` from its text colour to --cp-focus for 80 to 150 ms; read at once, the
+    // ring would be the text colour (#17121d on the selected option of a segmented control, #430). What a User sees at rest counts.
+    for (const animation of document.getAnimations()) if (animation instanceof CSSTransition) animation.finish()
     const stack = reach(el, () => el.getBoundingClientRect())
     if (!stack) {
       unseen.push(`${pathOf(el)} (ring)`)
@@ -427,8 +471,15 @@ function readRings(kit) {
   return { rings, unseen }
 }
 
+/** The page function behind `keysOf`: the DOM path of every element matching `selector`. */
+function readKeys(kit, selector) {
+  return [...document.querySelectorAll(selector)].map(el => kit.pathOf(el))
+}
+
 const sources = fn => `(${fn})((${makeKit})(${JSON.stringify(EXCLUDED.map(entry => entry.selector).join(', '))}))`
 
+/** Evaluated in the page: the keys (DOM paths) of the elements matching `selector`, as the readings' items carry them (#408, `State.differs`). */
+export const keysOf = selector => `(${readKeys})((${makeKit})(''), ${JSON.stringify(selector)})`
 /** Evaluated in the page: the `Reading` (theme, scheme, texts, boxes, surfaces, excluded, unseen). */
 export const READ = sources(readPage)
 /** Evaluated in the page after a Tab press: `{ rings, unseen }`. */
