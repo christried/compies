@@ -89,7 +89,7 @@ export interface SweptRoute {
   who: string
   status: number
   contentType: string | null
-  /** The raw text; `null` for a picture (its status and content type are what is checked). The request's own URL is cut out: h3's error body echoes it. */
+  /** The raw text; `null` for a picture (its status and content type are what is checked). */
   body: string | null
 }
 
@@ -122,7 +122,7 @@ export async function sweepGets(request: TestRequest, { viewers, event, games }:
         const response = await request(path, { headers: cookie ? { cookie } : {} })
         const contentType = response.headers.get('content-type')
         const picture = contentType?.startsWith('image/') ?? false
-        const body = picture ? null : (await response.text()).replaceAll(new URL(path, 'http://localhost').href, '')
+        const body = picture ? null : await response.text()
         swept.push({ label, route, path, who, status: response.status, contentType, body })
       }
     }

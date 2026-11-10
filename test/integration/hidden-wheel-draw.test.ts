@@ -5,8 +5,9 @@ import type { ActivityPage } from '../../shared/activity'
 import type { EventView } from '../../shared/event'
 import de from '../../i18n/locales/de.json'
 import { WINDOW_MS } from '../draw-offsets'
-import { hiddenWheelWorld, vetoRead } from './hidden-wheel-world'
-import { hostPutsBack, hostSets } from './scenario'
+import { mountedRoutes } from './app'
+import { bodiesOf, getRoutes, hiddenWheelWorld, NOT_SWEPT, vetoRead, type SweptRoute } from './hidden-wheel-world'
+import { clockToEnd, clockToStop, hostPutsBack, hostSets } from './scenario'
 import { signIn } from './sign-in'
 
 // The platform's random source with an override the slice-order test sets (F2): otherwise it is the real one, so every other test draws as production does.
@@ -22,7 +23,7 @@ vi.mock('node:crypto', async (importOriginal) => {
 
 describe('Hidden wheel secrecy (#148)', () => {
   const world = hiddenWheelWorld()
-  const { testDb, request, notifier, clock, rawRead, playerTraces, priceTrace, newGame, runningEvent, imageStatus, whatThePlayerGets, expectNone, NO_WINDOW, host, player, second } = world
+  const { testDb, request, notifier, clock, rawRead, playerTraces, priceTrace, newGame, runningEvent, imageStatus, whatThePlayerGets, expectNone, NO_WINDOW, host, player, second, stranger, sweepGets, stage } = world
   let hostCookie: string
   let playerCookie: string
 
@@ -397,6 +398,116 @@ describe('Hidden wheel secrecy (#148)', () => {
       const other = await wheelOf((await signIn(testDb.db, second)).cookie, slug)
 
       expect(other.vetoes).toEqual({ left: [2, 3], own: { team: 2, cast: false, rejection: 'veto_window_closed' }, revealed: [{ team: 1 }], draw: expect.objectContaining({ kind: 'spin' }) })
+    })
+  })
+
+  // The secrecy check over every read (#418): CODING_STANDARDS § Secrecy records that every 0.7 miss sat on a surface nobody had named.
+  // So the routes are not listed here: they are every file under server/api that answers GET (the test app's own scan), and a new read
+  // is under the check the day it lands. The Event read, the Activity feed, the image route, the library, the Share image, the .ics,
+  // Home's cards, the Invite preview and `me` are the surfaces a drawn game or a Veto can show on; the room carries no game data and
+  // is no GET (the room tests above stay).
+  describe('every GET route (#418)', () => {
+    const PLAYER = 'the Player'
+    const OUTSIDER = 'the non-Member'
+    const HOST = 'the Host'
+    const OTHER_PARTY = 'the other Party'
+
+    it('sweeps every route that answers GET, the Share image, the .ics and Home among them, and names the ones it leaves out', () => {
+      const routes = getRoutes().map(route => route.route)
+
+      expect(routes).toEqual(expect.arrayContaining(['/api/e', '/api/e/:slug', '/api/e/:slug/activity', '/api/e/:slug/ics', '/api/e/:slug/share-image', '/api/games', '/api/games/:id', '/api/images/:key', '/api/invite/:invite', '/api/me']))
+      expect(routes).toHaveLength(mountedRoutes().filter(route => route.method === 'get').length)
+      // Each file left out answers every method and exists: a name that outlives its file is a finding too.
+      for (const file of Object.keys(NOT_SWEPT)) expect(mountedRoutes().find(route => route.file === file)?.method, `${file} is no longer a route without a method`).toBeNull()
+    })
+
+    const strangerCookie = async () => (await signIn(testDb.db, stranger)).cookie
+    const okOf = (sweep: readonly SweptRoute[], who: string) => sweep.filter(entry => entry.who === who && entry.status === 200).map(entry => entry.route)
+    const statusOf = (sweep: readonly SweptRoute[], route: string, who: string) => sweep.filter(entry => entry.route === route && entry.who === who).map(entry => entry.status)
+
+    /** A spin of a Running Session under a Hidden wheel with no Veto window; the wheel holds Alpha, Beta and `extraGames` more. */
+    async function spunWheel(extraGames: number) {
+      const running = await runningEvent(NO_WINDOW, extraGames)
+      const spun = await request(`/api/e/${running.slug}/rounds/spin`, { method: 'POST', headers: { cookie: hostCookie } })
+      expect(spun.status).toBe(200)
+      const [row] = await testDb.db.select().from(draws)
+      const pool = [running.a, running.b, ...running.more]
+      const drawn = pool.find(secret => secret.id === row!.gameId)!
+      return { ...running, drawn, undrawn: pool.filter(secret => secret.id !== drawn.id), games: [running.a, running.b, running.c, running.e, ...running.more], stopAt: row!.stopAt.getTime() }
+    }
+
+    it.each([0, 4])('shows a Player and a non-Member no game of the draw on any GET route before its stop, and the drawn one to the Player from the stop on (%i more games in the pool)', async (extraGames) => {
+      const { slug, inviteToken, drawn, undrawn, c, e, games, stopAt } = await spunWheel(extraGames)
+      const viewers = [{ who: PLAYER, cookie: playerCookie }, { who: OUTSIDER, cookie: await strangerCookie() }, { who: HOST, cookie: hostCookie }]
+      const sweep = () => sweepGets({ viewers, event: { slug, inviteToken }, games })
+
+      clock.set(new Date(stopAt - 1))
+      const before = await sweep()
+
+      // No trace of any game, on any route, for the Player or the non-Member. A picture is checked by its status: the image route
+      // answers the Player a 404 here, and a 404 has a body to search.
+      expectNone({ ...bodiesOf(before, PLAYER), ...bodiesOf(before, OUTSIDER) }, games)
+      // The controls: the sweep reads bodies (the Host's holds the drawn game's name) and it is not passing on 404s.
+      expect(bodiesOf(before, HOST)['GET /api/e/:slug as the Host']).toContain(drawn.name)
+      expect(okOf(before, PLAYER)).toEqual(expect.arrayContaining(['/api/e', '/api/e/:slug', '/api/e/:slug/activity', '/api/e/:slug/ics', '/api/me']))
+      expect(statusOf(before, '/api/e/:slug/share-image', PLAYER)).toEqual([409])
+      expect(statusOf(before, '/api/e/:slug/share-image', OUTSIDER)).toEqual([404])
+      expect(statusOf(before, '/api/images/:key', PLAYER)).toEqual(games.map(() => 404))
+      expect(statusOf(before, '/api/images/:key', OUTSIDER)).toEqual(games.map(() => 404))
+      // The Host's images answer a picture: its bytes are no text, so the sweep keeps its status and type.
+      expect(before.filter(entry => entry.route === '/api/images/:key' && entry.who === HOST).map(entry => [entry.status, entry.contentType, entry.body])).toEqual(games.map(() => [200, 'image/webp', null]))
+
+      clock.set(new Date(stopAt))
+      const after = await sweep()
+
+      // From the stop on the Player knows the drawn game, and still no other game of the pools, no notes or Tag of the drawn one.
+      expect(Object.values(bodiesOf(after, PLAYER)).some(body => body.includes(drawn.name)), 'a body the Player reads names the drawn game').toBe(true)
+      // The extra games are all Z...: one Price amount, so an undrawn one's Price is the drawn one's own, which the Player now reads (#338).
+      expectNone(bodiesOf(after, PLAYER), [...undrawn, c, e], secret => playerTraces(secret).filter(trace => trace !== priceTrace(drawn)))
+      expectNone(bodiesOf(after, PLAYER), [drawn], secret => [secret.notes, secret.tag])
+      expect(after.find(entry => entry.route === '/api/images/:key' && entry.who === PLAYER && entry.path.endsWith(drawn.imageKey))?.status).toBe(200)
+      // The non-Member learns nothing at any time (ADR 0006).
+      expectNone(bodiesOf(after, OUTSIDER), games)
+    })
+
+    // GLOSSARY, Veto window: „until it ends, only a Party's own Players see its casts, and a Host who moves into a Party during its
+    // window sees them too, a privilege of the Host, who may move anyone at any time“. The Host of this sweep is in no Party. And
+    // #355: „No cast time in any payload“, `own.cast: boolean` („your Party has cast“); the database keeps the caster, no read names
+    // them. So a sealed cast changes nothing a viewer outside its Party can read, on any route: the bodies are byte-identical.
+    it('changes no GET route for the Host, the other Party or a non-Member when a Party casts a Veto before the end of its window, and reveals it at the end (#231, #355)', async () => {
+      const { slug, inviteToken, secondCookie, a, b, c, e } = await runningEvent()
+      const spun = await request(`/api/e/${slug}/rounds/spin`, { method: 'POST', headers: { cookie: hostCookie } })
+      expect(spun.status).toBe(200)
+      const { drawId } = await spun.json() as { drawId: string }
+      await clockToStop(stage(), drawId)
+      const viewers = [{ who: HOST, cookie: hostCookie }, { who: OTHER_PARTY, cookie: secondCookie }, { who: OUTSIDER, cookie: await strangerCookie() }]
+      const sweep = () => sweepGets({ viewers, event: { slug, inviteToken }, games: [a, b, c, e] })
+      const playerRead = async () => (JSON.parse(await rawRead(playerCookie, slug)) as EventView).wheel!.vetoes.own
+
+      const before = await sweep()
+      expect(await playerRead()).toMatchObject({ team: 1, cast: false })
+      const cast = await request(`/api/e/${slug}/draws/${drawId}/veto`, { method: 'POST', headers: { cookie: playerCookie } })
+      expect(cast.status).toBe(200)
+      const after = await sweep()
+
+      expect(after.map(entry => entry.label)).toEqual(before.map(entry => entry.label))
+      for (const [index, entry] of before.entries()) {
+        expect(after[index], `${entry.label} as ${entry.who} changed with a sealed cast`).toEqual(entry)
+      }
+      // The controls: the sweep read Event bodies for all three, the cast is real (Player 1's own read changed), and the end of the
+      // window reveals it to the Host and the other Party.
+      expect(okOf(before, HOST)).toContain('/api/e/:slug')
+      expect(okOf(before, OTHER_PARTY)).toContain('/api/e/:slug')
+      expect(okOf(before, OUTSIDER)).not.toContain('/api/e/:slug')
+      expect(await playerRead()).toMatchObject({ team: 1, cast: true })
+      await clockToEnd(stage(), drawId)
+      const revealed = await sweep()
+      for (const who of [HOST, OTHER_PARTY]) {
+        const sealedRead = before.find(entry => entry.route === '/api/e/:slug' && entry.who === who)
+        const revealedRead = revealed.find(entry => entry.route === '/api/e/:slug' && entry.who === who)
+        expect(revealedRead!.body, `the Event read of ${who} at the end of the window`).not.toBe(sealedRead!.body)
+        expect((JSON.parse(revealedRead!.body!) as EventView).wheel!.vetoes.revealed).toEqual([{ team: 1 }])
+      }
     })
   })
 })
