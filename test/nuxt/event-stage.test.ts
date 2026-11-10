@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { eventPageState } from '~/utils/event-page'
-import { gamesToStart, RISE_DELAY_MS, risen, stageBlocks, stageInstants, stageMoments, stageRises, stageUnsettled, type Block, type StageInput } from '~/utils/event-stage'
+import { gamesToStart, RISE_DELAY_MS, risen, stageArrival, stageArrivals, stageBlocks, stageCounted, stageInstants, stageMoments, stageRises, stageUnsettled, type Block, type StageCounted, type StageInput } from '~/utils/event-stage'
 import type { EventView } from '~~/shared/event'
 import type { ResultView, RoundView, SpinView, VetoView } from '~~/shared/stage'
 import { defaultSettings } from '~~/shared/settings'
@@ -754,6 +754,110 @@ describe('the stage follows the game (#441)', () => {
 
     it('names the block that rose when another sank below it', () => {
       expect(risen(['head', 'standings', 'wheel'], ['head', 'wheel', 'standings'])).toEqual(['wheel'])
+    })
+  })
+})
+
+// What the page has counted (#442): a read never lowers a block the page already shows risen, and the Standings' arrival on top is the instant their sequence waits for.
+describe('what the page has counted (#442)', () => {
+  const SETTLE = 410
+  const view = (fields: Fields = {}) => viewOf(ONE_RUNNING, { ...LIVE, ...fields })
+  const blocksAt = (now: number | null, fields: Fields, counted?: StageCounted) => stageBlocks(view(fields), 'running', now, counted)
+  const standingsNew: Fields = { results: [resultAt(ago(100))] }
+
+  describe('the order with `counted`', () => {
+    it('keeps a block whose newer moment is not counted yet where its last counted moment put it', () => {
+      expect(blocksAt(NOW, standingsNew, { standings: ago(60_000) })).toEqual(lifted(today(standingsNew), 'standings'))
+    })
+
+    it('drops the block into its rank place without `counted`: today\'s behaviour, pinned', () => {
+      expect(blocksAt(NOW, standingsNew)).toEqual(today(standingsNew))
+    })
+
+    it('orders equal keys by rank, and by key before that', () => {
+      const fields: Fields = { ...standingsNew, countdown: countdownAt(ago(100)) }
+      expect(blocksAt(NOW, fields, { standings: ago(5000), countdown: ago(5000) })).toEqual(lifted(today(fields), 'standings', 'countdown'))
+      expect(blocksAt(NOW, fields, { standings: ago(5000), countdown: ago(4000) })).toEqual(lifted(today(fields), 'countdown', 'standings'))
+    })
+
+    it('counts a moment that is counted at `now` whatever `counted` says: the truth wins', () => {
+      expect(blocksAt(NOW, { results: [resultAt(ago(2000))] }, { standings: ago(60_000) })).toEqual(lifted(today({}), 'standings'))
+      expect(blocksAt(null, { countdown: countdownAt(ago(100)) }, {})).toEqual(lifted(today({}), 'countdown'))
+    })
+
+    it('does not change a finished Event, which has no moments', () => {
+      const finished = viewOf(DONE, { ...FINISHED_STAGE, results: [resultAt(ago(100))] })
+      expect(stageBlocks(finished, 'finished', NOW, { standings: ago(5000) })).toEqual(stageBlocks(finished, 'finished', NOW))
+    })
+  })
+
+  describe('the counted moments', () => {
+    it('counts the moments that are counted at `now`, and all of them for a null clock', () => {
+      const fields: Fields = { results: [resultAt(ago(2000))], countdown: countdownAt(ago(100)) }
+      expect(stageCounted(view(fields), 'running', NOW)).toEqual({ standings: ago(2000) })
+      expect(stageCounted(view(fields), 'running', null)).toEqual({ standings: ago(2000), countdown: ago(100) })
+    })
+
+    it('keeps what was counted for a moment that is not counted yet, and never lowers it', () => {
+      const before = { standings: ago(60_000) }
+      expect(stageCounted(view(standingsNew), 'running', NOW, before)).toBe(before)
+      expect(stageCounted(view(standingsNew), 'running', NOW + RISE_DELAY_MS, before)).toEqual({ standings: ago(100) })
+    })
+
+    it('takes a lower moment that is counted: a put-back lowers a block, as #441 accepts', () => {
+      expect(stageCounted(view({ results: [resultAt(ago(5000))] }), 'running', NOW, { standings: ago(1000) })).toEqual({ standings: ago(5000) })
+    })
+
+    it('drops the blocks the kind does not list and the pieces without a moment', () => {
+      const before = { coin: ago(9000), wheel: ago(9000), standings: ago(9000) }
+      expect(stageCounted(view({ results: [resultAt(ago(2000))] }), 'running', NOW, before)).toEqual({ standings: ago(2000) })
+      expect(stageCounted(viewOf(BETWEEN, { ...RUNNING, ...STANDINGS, results: [resultAt(ago(2000))] }), 'between', NOW, { coin: ago(1) })).toEqual({ standings: ago(2000) })
+    })
+
+    it('returns `before` itself when nothing changed', () => {
+      const before = { standings: ago(2000) }
+      expect(stageCounted(view({ results: [resultAt(ago(2000))] }), 'running', NOW, before)).toBe(before)
+    })
+  })
+
+  describe('the arrival of a block on top', () => {
+    const resultNow = ago(100)
+    const moving: Fields = { results: [resultAt(resultNow)], countdown: countdownAt(ago(5000)) }
+
+    it('is the end of the glide when the rise moves the block: the rise plus the settle', () => {
+      expect(stageArrival(view(moving), 'running', 'standings', SETTLE)).toBe(resultNow + RISE_DELAY_MS + SETTLE)
+    })
+
+    it('is the rise itself when the block is on top already', () => {
+      expect(stageArrival(view({ results: [resultAt(resultNow)] }), 'running', 'standings', SETTLE, { standings: ago(60_000) })).toBe(resultNow + RISE_DELAY_MS)
+    })
+
+    it('moves for a block that another one rose above after its last Result', () => {
+      // The Countdown rose after the first Result and sits above the Standings; the second Result lifts them above it.
+      expect(stageArrival(view(moving), 'running', 'standings', SETTLE, { standings: ago(60_000), countdown: ago(5000) })).toBe(resultNow + RISE_DELAY_MS + SETTLE)
+    })
+
+    it('is its own rise when another block is rising: a Countdown at T and a Result at T + 200', () => {
+      const countdownMoment = ago(1000)
+      const own = countdownMoment + 200
+      expect(stageArrival(view({ countdown: countdownAt(countdownMoment), results: [resultAt(own)] }), 'running', 'standings', SETTLE, { standings: ago(60_000) }))
+        .toBe(own + RISE_DELAY_MS + SETTLE)
+    })
+
+    it('is null without a moment, for a block the kind does not list and for a finished Event', () => {
+      expect(stageArrival(view(), 'running', 'standings', SETTLE)).toBeNull()
+      expect(stageArrival(view(), 'running', 'coin', SETTLE)).toBeNull()
+      expect(stageArrival(viewOf(DONE, { ...FINISHED_STAGE, results: [resultAt(ago(100))] }), 'finished', 'standings', SETTLE)).toBeNull()
+    })
+
+    it('says an instant in the past for a Result read late: nothing is left to wait for', () => {
+      expect(stageArrival(view({ results: [resultAt(ago(60_000))], countdown: countdownAt(ago(70_000)) }), 'running', 'standings', SETTLE)).toBeLessThan(NOW)
+    })
+
+    it('lists the arrival of the blocks something waits for, and of the listed ones only', () => {
+      expect(stageArrivals(view(moving), 'running', SETTLE)).toEqual({ standings: resultNow + RISE_DELAY_MS + SETTLE })
+      expect(stageArrivals(view({ countdown: countdownAt(ago(100)) }), 'running', SETTLE)).toEqual({})
+      expect(stageArrivals(viewOf([dated(1, SAT), undated()], { results: [resultAt(ago(100))] }), 'teams', SETTLE)).toEqual({})
     })
   })
 })
