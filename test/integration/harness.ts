@@ -3,8 +3,10 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { PGlite } from '@electric-sql/pglite'
+import { is } from 'drizzle-orm'
 import { drizzle } from 'drizzle-orm/pglite'
 import { migrate } from 'drizzle-orm/pglite/migrator'
+import { getTableConfig, PgTable } from 'drizzle-orm/pg-core'
 import { createApp, createRouter, eventHandler, toWebHandler, type EventHandler, type H3EventContext, type RouterMethod } from 'h3'
 import * as schema from '../../server/db/schema'
 import type { Db } from '../../server/utils/db'
@@ -102,7 +104,8 @@ export function createInterleavingDb(client: PGlite, pattern: RegExp, competitor
   return drizzle({ client: wrap(client), schema })
 }
 
-type Route = `${Uppercase<RouterMethod>} /${string}`
+/** A route key like Nitro's file names: `GET /api/health`; `ALL` answers every method (a file without a method suffix). */
+export type Route = `${Uppercase<RouterMethod> | 'ALL'} /${string}`
 
 /**
  * Serves the given handlers the way Nitro would, with `db` in place of the per-request Neon Pool.
@@ -118,9 +121,43 @@ export function createTestServer(db: Db, routes: Record<Route, EventHandler>, co
   const router = createRouter()
   for (const [route, handler] of Object.entries(routes)) {
     const [method, path] = route.split(' ') as [string, string]
-    router.add(path, handler, method.toLowerCase() as RouterMethod)
+    if (method === 'ALL') router.use(path, handler)
+    else router.add(path, handler, method.toLowerCase() as RouterMethod)
   }
   app.use(router)
   const handle = toWebHandler(app)
   return (path: string, init?: RequestInit) => handle(new Request(new URL(path, 'http://localhost'), init))
+}
+
+/** Every table the schema declares, in the order a reset empties them: a table before the tables it references. */
+const emptyingOrder = (() => {
+  const tables = Object.values(schema).filter(value => is(value, PgTable))
+  const parentsFirst: PgTable[] = []
+  const state = new Map<PgTable, 'visiting' | 'done'>()
+  const visit = (table: PgTable) => {
+    if (state.get(table) === 'done') return
+    if (state.get(table) === 'visiting') throw new Error(`The tables ${getTableConfig(table).name} reference each other in a cycle: the reset needs one TRUNCATE ... CASCADE`)
+    state.set(table, 'visiting')
+    for (const foreignKey of getTableConfig(table).foreignKeys) {
+      const parent = foreignKey.reference().foreignTable
+      if (parent !== table) visit(parent)
+    }
+    state.set(table, 'done')
+    parentsFirst.push(table)
+  }
+  tables.forEach(visit)
+  return parentsFirst.reverse()
+})()
+
+/** The SQL table names in the order `resetDatabase` empties them, derived from the schema's foreign keys. */
+export function resetOrder(): string[] {
+  return emptyingOrder.map(table => getTableConfig(table).name)
+}
+
+/**
+ * Empties every table the schema declares (not the migrations table), so a test starts clean by construction (#418).
+ * A DELETE per table, children first: one `TRUNCATE ... CASCADE` took twice as long on PGlite.
+ */
+export async function resetDatabase(db: Db): Promise<void> {
+  for (const table of emptyingOrder) await db.delete(table)
 }

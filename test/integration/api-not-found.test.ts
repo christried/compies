@@ -1,22 +1,17 @@
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
-import health from '../../server/api/health.get'
-import unknownApi from '../../server/api/[...]'
-import { createTestDb, createTestServer } from './harness'
+import { createTestApp, type TestRequest } from './app'
+import { createTestDb } from './harness'
 import { signIn, stubAuthEnv } from './sign-in'
 
 const member = { provider: 'discord', id: '2', name: 'Gast', email: 'member@example.com', image: undefined } as const
 
 describe('unknown /api/** requests (review Spec F2)', () => {
   let testDb: Awaited<ReturnType<typeof createTestDb>>
-  let request: ReturnType<typeof createTestServer>
+  let request: TestRequest
 
   beforeAll(async () => {
     testDb = await createTestDb()
-    request = createTestServer(testDb.db, {
-      'GET /api/health': health,
-      'GET /api/**': unknownApi,
-      'POST /api/**': unknownApi,
-    })
+    request = createTestApp(testDb.db)
   })
 
   afterAll(async () => {
