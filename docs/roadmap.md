@@ -1,10 +1,10 @@
 # Roadmap
 
-Where COMPIES goes after „Mehr Termine“ (0.3): a polished **Teams** Event with the **Lucky Wheel**, an equal **Veto allowance** per Party, in-app scores and the **Award ceremony**. Agreed on 2026-10-28 in a grilling session. Re-planned on 2026-10-31, in the grilling for „Glücksrad“: the Releases were renumbered, „Notizen“ was split out, and **Rounds** were added. Extended on 2026-11-08, in the grilling for „Feinschliff“: 0.10 takes the list that waited for the first Event, and 0.11 „Profil“ follows. Extended on 2026-11-09 from the first production check (the user's production-check notes (sorted here, then removed on 2026-11-09), #342): 0.12 „Eventseite“ and 0.13 „Glücksrad & Clip“ hold its bigger findings, § Später the ideas for after the roadmap. Detailed on 2026-11-09, in the grilling for „Profil“: § 0.11 holds its rules. Terms follow `GLOSSARY.md`.
+Where COMPIES goes after „Mehr Termine“ (0.3): a polished **Teams** Event with the **Lucky Wheel**, an equal **Veto allowance** per Party, in-app scores and the **Award ceremony**. Agreed on 2026-10-28 in a grilling session. Re-planned on 2026-10-31, in the grilling for „Glücksrad“: the Releases were renumbered, „Notizen“ was split out, and **Rounds** were added. Extended on 2026-11-08, in the grilling for „Feinschliff“: 0.10 takes the list that waited for the first Event, and 0.11 „Profil“ follows. Extended on 2026-11-09 from the first production check (the user's production-check notes (sorted here, then removed on 2026-11-09), #342): 0.12 „Eventseite“ and 0.13 „Glücksrad & Clip“ hold its bigger findings; its ideas for after the roadmap were listed in § Später until 2026-11-10 and are Idea issues now (#452–#468). Detailed on 2026-11-09, in the grilling for „Profil“: § 0.11 holds its rules. Terms follow `GLOSSARY.md`.
 
 **Numbering.** Releases count from 0.1 while COMPIES is being built; 1.0.0 is the Release the user declares ready (`docs/agents/release.md` § Semantic versioning). Before 0.5.1 they were numbered 1.x: 1.0.0 is 0.1.0, 1.1.x is 0.2.x, 1.2.0 is 0.3.0, 1.3.0 is 0.4.0 and 1.4.0 is 0.5.0. Older specs, issues, reviews, ADRs and code comments keep the old numbers; in them, the planned 1.5 „Glücksrad“ is 0.7, 1.6 „Punkte“ is 0.8 and 1.7 „Siegerehrung“ is 0.9.
 
-Each release is one spec and usable on its own. A release is grilled, specced and ticketed in one fresh session **while the release before it is being built**, once the code it builds on exists, never all releases up front: the specs name real modules and seams, and the first game night in the app will change what comes after. 0.9 „Siegerehrung“ was the minimum for the first Event in the app; since 0.10 the first Event gates nothing any more (decided 2026-11-08), and there is no date pressure. This order replaces the 1.0 ticket order in `docs/design_handoff_compies/07-scope-and-tickets.md` for everything below; ticket numbers (T…) and screen numbers refer to that file and `03-screens.md`.
+Each release is one spec and usable on its own. A release is grilled, specced and ticketed in one fresh session **while the release before it is being built**, once the code it builds on exists, never all releases up front: the specs name real modules and seams, and the first game night in the app will change what comes after. Besides this file, the grilling reads the open Idea issues (`docs/agents/issue-tracker.md` § Ideas): since 2026-11-10 an idea that isn't grilled yet lives there, not here. 0.9 „Siegerehrung“ was the minimum for the first Event in the app; since 0.10 the first Event gates nothing any more (decided 2026-11-08), and there is no date pressure. This order replaces the 1.0 ticket order in `docs/design_handoff_compies/07-scope-and-tickets.md` for everything below; ticket numbers (T…) and screen numbers refer to that file and `03-screens.md`.
 
 | Release | Name | Status |
 |---|---|---|
@@ -286,27 +286,6 @@ The wheel, the clip and the Share image findings of the first production check, 
 - **Clips 10–120 s** (today 5–60), with start, end and length as inputs of which two suffice. From the user's later list, pulled here because the Veto window depends on it: a 120 s clip makes a 150 s window.
 - **The Share image without pills**: more text-based, graphic where it helps, no capsule for the Event name, no chips for the games. A _Claude Design hand-off_, [#357](https://github.com/christried/compies/issues/357) (`ready-for-human`), which blocks the build ticket of this Release.
 
-## Später
-
-The user's list for after the roadmap (2026-11-09, the user's production-check notes (sorted here, then removed on 2026-11-09)), one line each, not grilled:
-
-- A LICENSE for the public repository, chosen together with the user.
-- The Veto allowance stays hidden from Members until the Event starts, so nobody plans around it.
-- Game notes as rich text with an editor, up to 2000 characters.
-- The Game library is one per User, and every text in the app says so; later a game can be shared (a share view, a modal perhaps, with „zu meiner Bibliothek hinzufügen“). Contradicts `GLOSSARY.md` § Game library and the 0.6 rule of one note per game shared across Hosts.
-- „Noch eins hinzufügen“ after creating a game.
-- The game's image can be adjusted after upload (the visible crop).
-- Min and max players are optional and say so subtly; a minimum of 2 is not shown on the card, since no COMPIES game is for one person.
-- The project's folder structure for humans: sub-categorised folders instead of one components and one composables folder.
-- Last of all: a walkthrough tour for invited Players with Compibert (as the one with Topfbert in malkochen), a pop-up „du wurdest als Host freigeschaltet“ for new Hosts, and a second tour for the Host features.
-- The wording sweep (#343) as a throwaway app (`/prototype`): every text with where it appears, a field for the replacement, „so lassen“, „Alternativen“ for a second pass with alternatives, and a notes field for styling or position remarks.
-- Game notes split into general notes and notes for one Event.
-- Ctrl+Enter submits the game form.
-- One functional-review ticket that collects every staging walkthrough of every Release (all checkboxes), to repeat the whole check once.
-- Archive a game in the library (not playable any more, servers gone).
-- Age-restricted videos do not play embedded. Not fixable: YouTube requires a signed-in viewer on youtube.com for age-gated videos; such a game gets the card fallback the Glossary's Clip entry describes.
-- A pass over every use of the mono font: show each to the user and decide whether it stays.
-
 ## Out of scope for this roadmap
 
-Free-for-all; Pick & Ban, Loser's Pick, Loser's Advantage; chat and emotes; sound before 0.13; push notifications; Compibert states outside the ceremony (the party hat is an accessory, not a state); the boot splash (screen 01), the smoke background and the PWA install hint (screen 29; decided 2026-11-08); second provider, avatar upload and the settings 0.11 leaves out (Push, Sprache, Weniger Bewegung; T2b); account deletion in the app; Host permission admin page (T3, Hosts stay on the env allowlist); archive list (T16); battle replay; 3D podium; a public link to the Share image (a public URL would show the Team words in the Team names to anyone who has it; decided 2026-11-05).
+Free-for-all; Pick & Ban, Loser's Pick, Loser's Advantage; chat and emotes; sound before 0.13; push notifications; Compibert states outside the ceremony (the party hat is an accessory, not a state); the boot splash (screen 01), the smoke background and the PWA install hint (screen 29; decided 2026-11-08); second provider, avatar upload and the settings 0.11 leaves out (Push, Sprache, Weniger Bewegung; T2b); account deletion in the app; Host permission admin page (T3, Hosts stay on the env allowlist); archive list (T16); battle replay; 3D podium; a public link to the Share image (a public URL would show the Team words in the Team names to anyone who has it; decided 2026-11-05); age-restricted videos playing embedded (not fixable: YouTube requires a signed-in viewer on youtube.com for age-gated videos, so such a game gets the card fallback the Glossary's Clip entry describes; from the production check of 2026-11-09).

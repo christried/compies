@@ -4,7 +4,7 @@
 
 ### Issue tracker
 
-Issues and specs live in GitHub Issues on christried/compies (via `gh`). See `docs/agents/issue-tracker.md`.
+Issues and specs live in GitHub Issues on christried/compies (via `gh`). An idea that isn't grilled yet is an `Idea: …` issue (`enhancement`, `needs-triage`), never a roadmap line. See `docs/agents/issue-tracker.md`.
 
 ### Triage labels
 
