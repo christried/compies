@@ -35,7 +35,12 @@ import { setAllowlist, signIn, type ProviderProfile } from './sign-in'
 // | hidden-wheel (`runningEvent`)                 | joins by Invite, games made over HTTP, 1 Session         | `join: 'invite'`, or `hostCreatesEvent` + `playersJoin` + `startRunningSession` |
 // | finished-readonly (`finishedWheel`)           | finishes through the API after one Result                | `startRunningEvent` + `hostSpins`/`hostSets` + `hostEntersResult` + `hostFinishes` |
 // | share-image (`event`)                         | Spectator + Bench Member + outsider, optional finish     | `seats` with 'stands', `outsiders`, `hostFinishes`   |
-// | session-start, delete-event, team-names, settings-teams | local set-ups                          | not expressed yet: see the report of #418 part B     |
+// | session-start, team-names, settings-teams     | Event in its poll or with one Date, Members on the Bench | `confirmed: 0 | 1`, `seats: []`, `start: false`; settings-teams seats by the Host (a `send`) |
+// | delete-event (`buildEvent(phase)`)            | one Event per Phase, a stranger                          | `confirmed`, `start`, `hostEndsSession`, `outsiders`  |
+//
+// Not expressed: an Event with no settings (session-start `settings: false` updates the row after the set-up: a local wrapper), and an
+// Event whose games are created over HTTP with an image upload (hidden-wheel: the Host must be signed in first, so it goes through
+// `hostSignsIn` + the local `newGame` + `hostCreatesEvent({ pool })` + `playersJoin` + `startRunningSession`).
 
 /** Where the verbs run: the app (`createTestApp`), its database, and the doubles the test already owns. */
 export interface Stage {
@@ -60,14 +65,14 @@ export interface GameSeed { key: string, values: Omit<typeof games.$inferInsert,
 /** Where a Player takes a seat: a team position (1, 2, …) or the Stands. A Player not seated stays a Member on the Bench. */
 export type Seat = number | 'stands'
 
-export interface RunningEventOptions<Player extends string, Game extends string = never> {
+export interface RunningEventOptions<Player extends string, Game extends string = never, Outsider extends string = never> {
   host: ProviderProfile
   /** Each signs in and becomes a Member of the Event (by rows, or by Invite with `join: 'invite'`). */
   players: Record<Player, ProviderProfile>
   /** `[player, seat]`: the Player moves THEMSELF there through POST move, as the builders do. A Player not listed is a Member on the Bench. */
-  seats: readonly (readonly [Player, Seat])[]
+  seats: readonly (readonly [NoInfer<Player>, Seat])[]
   /** Sign in, are no Member. */
-  outsiders?: Record<string, ProviderProfile>
+  outsiders?: Record<Outsider, ProviderProfile>
   /** Default 'Freitags-Zocken'. */
   name?: string
   /** Default 2 (one Slot per Session). */
@@ -90,15 +95,15 @@ export interface RunningEventOptions<Player extends string, Game extends string 
 /** What the verbs need of an Event: it is made by `hostCreatesEvent`, and `startRunningEvent` adds the Players. */
 export interface CreatedEvent { slug: string, eventId: string, inviteToken: string, slotIds: string[] }
 
-export interface RunningEvent<Player extends string = string, Game extends string = never> extends CreatedEvent {
+export interface RunningEvent<Player extends string = string, Game extends string = never, Outsider extends string = never> extends CreatedEvent {
   host: Signed
   players: Record<Player, Signed>
-  outsiders: Record<string, Signed>
+  outsiders: Record<Outsider, Signed>
   games: Record<Game, typeof games.$inferSelect>
 }
 
 /** What a verb on a started Event needs: its slug, its ids and the Host's login. `RunningEvent` is one. */
-type EventRef = Pick<RunningEvent, 'slug' | 'eventId' | 'inviteToken' | 'slotIds' | 'host'>
+type EventRef = Pick<RunningEvent<string, string, string>, 'slug' | 'eventId' | 'inviteToken' | 'slotIds' | 'host'>
 
 const via = (request: TestRequest): Send => sendVia(() => request)
 const sendOf = (stage: Stage) => via(stage.request)
@@ -190,7 +195,7 @@ export async function hostEndsSession(stage: Stage, event: Pick<EventRef, 'slug'
  * The whole set-up in the order the builders used: sign in (Host, Players, outsiders), create the Event, make the Members, insert the
  * games, set the Dates, seat the Players, start the Session, then `quiet`. Every Player in `players` is a Member, seated or not.
  */
-export async function startRunningEvent<Player extends string, Game extends string = never>(stage: Stage, options: RunningEventOptions<Player, Game>): Promise<RunningEvent<Player, Game>> {
+export async function startRunningEvent<Player extends string, Game extends string = never, Outsider extends string = never>(stage: Stage, options: RunningEventOptions<Player, Game, Outsider>): Promise<RunningEvent<Player, Game, Outsider>> {
   const { sessions = 2, confirmed = sessions, join = 'rows', start = true, quiet = 'room' } = options
   const slots = options.slots ?? defaultSlots(sessions)
   expect(slots, 'slots and sessions must have the same length').toHaveLength(sessions)
@@ -198,8 +203,8 @@ export async function startRunningEvent<Player extends string, Game extends stri
   const host = await hostSignsIn(stage, options.host)
   const players = {} as Record<Player, Signed>
   for (const [key, profile] of Object.entries<ProviderProfile>(options.players)) players[key as Player] = await signInAs(stage, profile)
-  const outsiders: Record<string, Signed> = {}
-  for (const [key, profile] of Object.entries(options.outsiders ?? {})) outsiders[key] = await signInAs(stage, profile)
+  const outsiders = {} as Record<Outsider, Signed>
+  for (const [key, profile] of Object.entries<ProviderProfile>(options.outsiders ?? {})) outsiders[key as Outsider] = await signInAs(stage, profile)
 
   const created = await hostCreatesEvent(stage, host, { name: options.name, sessions, slots, settings: { ...TEST_SETTINGS, ...options.settings } })
   const members = Object.values<Signed>(players)
@@ -215,7 +220,7 @@ export async function startRunningEvent<Player extends string, Game extends stri
     for (const [index, seed] of seeds.entries()) seeded[seed.key] = rows[index]!
   }
 
-  const event: RunningEvent<Player, Game> = { ...created, host, players, outsiders, games: seeded }
+  const event: RunningEvent<Player, Game, Outsider> = { ...created, host, players, outsiders, games: seeded }
   await hostSetsDates(stage, event, confirmed)
   await playersTakeSeats(stage, event, options.seats)
   if (start) await hostStartsSession(stage, event)
