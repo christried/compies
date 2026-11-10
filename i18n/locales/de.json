@@ -650,7 +650,8 @@
     "resultEntered": "Spiel {n}: {game}, {list} gewinnt | Spiel {n}: {game}, {list} gewinnen",
     "resultCorrected": "{name} hat Spiel {n} ({game}) korrigiert",
     "eventFinished": "Event beendet: {list} gewinnt | Event beendet: {list} gewinnen",
-    "eventFinishedTie": "Unentschieden: {list}"
+    "eventFinishedTie": "Unentschieden: {list}",
+    "eventFinishedPlain": "Event beendet"
   },
   "emote": {
     "send": "Emote senden: {name}",

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { dateBlockedKey, eventPageState, headerPill, pagePill, pollingNumber, seatNote, sessionMenuKeys, shownSessionNumbers, startedIn, teamsStay, type PageInput, unevenNoticeIn, wearsPartyhat } from '../../app/utils/event-page'
+import { dateBlockedKey, eventPageState, headerPill, pagePill, pollingNumber, seatNote, sessionMenuKeys, shownSessionNumbers, startedIn, teamsStay, type PageInput, unevenNoticeIn, waitsForCeremony, wearsPartyhat } from '../../app/utils/event-page'
 import type { BoardTeam, MemberView } from '../../shared/event'
 import type { RoundGame } from '../../shared/game'
 import type { ResultView, StandingView } from '../../shared/stage'
@@ -21,6 +21,22 @@ function input(sessions: PageInput['sessions'], fields: Partial<PageInput> = {})
 
 const SAT = '2090-10-25T18:30:00.000Z'
 const SUN = '2090-10-26T18:30:00.000Z'
+
+// The finished page waits for the Award ceremony (#445): the Stage module's one answer, which every client consumer asks.
+describe('waitsForCeremony', () => {
+  const finished = (fields: Partial<PageInput> & { ceremonyHeld?: boolean }) => eventPageState(input([dated('a', 1, SAT, { startedAt: SAT, endedAt: SUN })], { event: { phase: 'finished', isHost: false }, ...fields }))
+
+  it('is yes on the finished page until the ceremony has been shown, and for a viewer who holds the first run', () => {
+    expect(waitsForCeremony(finished({ ceremonyShown: false }))).toBe(true)
+    expect(waitsForCeremony(finished({ ceremonyShown: true, ceremonyHeld: true }))).toBe(true)
+  })
+
+  it('is no once shown, for a view without the field, and on every other page', () => {
+    expect(waitsForCeremony(finished({ ceremonyShown: true }))).toBe(false)
+    expect(waitsForCeremony(finished({}))).toBe(false)
+    expect(waitsForCeremony(eventPageState(input([undated('a')], { ceremonyShown: false })))).toBe(false)
+  })
+})
 
 describe('eventPageState', () => {
   it('is setup without settings, whatever the Sessions are', () => {
@@ -261,6 +277,12 @@ describe('wearsPartyhat', () => {
 
   it('is yes for a Player in the Winners\' Party on the finished page', () => {
     expect(wearsPartyhat(partyView({ members: [seated(ME, 'team', 1)], points: [3, 1, 0], phase: 'finished' }))).toBe(true)
+  })
+
+  it('is no while the finished page waits for the Award ceremony (#445), also for a Player in the Winners\' Party', () => {
+    const view = partyView({ members: [seated(ME, 'team', 1)], points: [3, 1, 0], phase: 'finished' })
+    expect(wearsPartyhat(view, true)).toBe(false)
+    expect(wearsPartyhat(view, false)).toBe(true)
   })
 
   it('is yes for the Host seated in the Leading Party, and no for the Host on the Bench', () => {

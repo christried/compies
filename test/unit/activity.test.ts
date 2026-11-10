@@ -301,6 +301,23 @@ describe('the sentence of a Result (#273)', () => {
     expect(text(finishedOf([]))).toBeNull()
   })
 
+  // The finished page waits for the Award ceremony (#445): the entry says the Event ended and names nobody, for one Winner and for a Tie alike.
+  it('says only „Event beendet“ while the Winners wait, for one Winner and for a Tie, with nothing in bold', () => {
+    for (const winners of [[2], [1, 2]]) {
+      expect(activityParts(finishedOf(winners), t, [], true)).toEqual([{ text: 'Event beendet', strong: false }])
+    }
+  })
+
+  it('names the Winners as before when they do not wait', () => {
+    expect(activityParts(finishedOf([2]), t, [], false)).toEqual(activityParts(finishedOf([2]), t))
+    expect(text(finishedOf([2]))).toBe('Event beendet: Team Orange gewinnt')
+  })
+
+  it('leaves the other entries as they are while the Winners wait', () => {
+    const joined: ActivityEntry = { ...base, type: 'member_joined', params: {} }
+    expect(activityParts(joined, t, [], true)).toEqual(activityParts(joined, t))
+  })
+
   describe('a Correction (#275)', () => {
     const correctedOf = (games: Record<string, string> = { g1: 'Mario Kart' }): ActivityEntry => ({ ...base, games, type: 'result_corrected', params: { roundId: 'r', number: 3, gameId: 'g1' } })
 
