@@ -68,11 +68,17 @@ function page(name, group, account, address, { waitFor = 'h1', after, ...rest } 
   }
 }
 
+// The close button, not Escape: after the reading focus is on the page, not in the sheet, and Escape would not reach it.
 const closeSheet = async (tab) => {
   if (!await tab.evaluate(`!!document.querySelector('[role=dialog]')`)) return
-  await pressKey(tab, 'Escape')
+  if (!await clickText(tab, '[role=dialog] button', COPY.common.close)) await pressKey(tab, 'Escape')
   await until(tab, `!document.querySelector('[role=dialog]')`, 'the sheet to close')
 }
+
+// The game browser loads the next 40 cards when its sentinel scrolls into view, and the runner scrolls every page through
+// once before it reads: the dev library has 1598 games, and a page with all of them cannot be read inside the protocol's
+// 30 s. The sentinel goes, so only „Mehr laden“ loads cards, and a state decides how many.
+const noAutoLoad = tab => tab.evaluate(`document.querySelectorAll('div[aria-hidden="true"].h-px').forEach(el => el.remove())`)
 
 const stepHeading = `document.querySelector('form h1')?.textContent ?? ''`
 
@@ -92,10 +98,13 @@ const step = (name, go, rest = {}) => ({
 })
 const forward = name => step(name, next)
 
-/** Every game card of the library on the page: „Mehr laden“ until it is gone. */
-async function loadAll(tab) {
+/** The library up to the card of `gameId` (the 60-character name, at about 360 of 1598): „Mehr laden“ until its link is on the page. */
+async function loadUpTo(tab, gameId) {
   await until(tab, `!!document.querySelector('ul[aria-label=${JSON.stringify(COPY.library.title)}] li')`, 'the library', 30_000)
-  for (let i = 0; i < 100 && await clickText(tab, 'button', COPY.library.loadMore); i++) await sleep(200)
+  await noAutoLoad(tab)
+  const there = `!!document.querySelector('a[href$="/bibliothek/${gameId}"]')`
+  for (let i = 0; i < 100 && !await tab.evaluate(there) && await clickText(tab, 'button', COPY.library.loadMore); i++) await sleep(250)
+  if (!await tab.evaluate(there)) throw new Error('the 60-character game is not on the library page')
 }
 
 // Home without an Event (`mvp.home.titleEmpty`). When Dev Admin and Dev Member each have an Event, the Dev Member opens Profil, the page's
@@ -171,7 +180,7 @@ export const STATES = [
 
   // The whole dev library with the 60-character name on the page, then a search that finds nothing.
   page('bibliothek', 'library', 'host', () => '/bibliothek', {
-    after: ctx => loadAll(ctx.tab),
+    after: ctx => loadUpTo(ctx.tab, ctx.data.longGame.id),
     stops: [step('bibliothek-leer', async (tab) => {
       await typeInto(tab, 'input[type=search]', 'zzzqqq')
       await until(tab, `!document.querySelector('ul[aria-label=${JSON.stringify(COPY.library.title)}] li')`, 'the empty search')
@@ -207,6 +216,7 @@ export const STATES = [
       step('neu-pool', async (tab) => {
         await next(tab)
         await until(tab, `!!document.querySelector('button[aria-label$="in den Pool"]')`, 'the library in the pool step', 30_000)
+        await noAutoLoad(tab)
         await clickText(tab, 'button[aria-label$="in den Pool"]')
         await sleep(300)
       }),
@@ -221,6 +231,13 @@ export const STATES = [
   // The settings editor of the Event: every step is a link, the last button is „Speichern“ and is never pressed.
   page('einstellungen-format', 'stepper', 'host', ctx => `/e/${ctx.data.slug}/einstellungen`, {
     waitFor: 'form h1',
-    stops: ['games', 'points', 'mode', 'pool'].map(key => forward(`einstellungen-${key}`)),
+    stops: [
+      ...['games', 'points', 'mode'].map(key => forward(`einstellungen-${key}`)),
+      step('einstellungen-pool', async (tab) => {
+        await next(tab)
+        await until(tab, `!!document.querySelector('ul[aria-label=${JSON.stringify(COPY.library.title)}] li')`, 'the library in the pool step', 30_000)
+        await noAutoLoad(tab)
+      }),
+    ],
   }),
 ]
