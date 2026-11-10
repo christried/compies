@@ -1,17 +1,14 @@
 import { eq } from 'drizzle-orm'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineEventHandler } from 'h3'
-import createEvent from '../../server/api/e/index.post'
-import rotateInvite from '../../server/api/e/[slug]/rotate.post'
-import changeSettings from '../../server/api/e/[slug]/settings.patch'
-import joinInvite from '../../server/api/invite/[invite].post'
-import { draws, eventMembers, events, games, pollSlots, rounds, users } from '../../server/db/schema'
+import { draws, events, games, rounds, users } from '../../server/db/schema'
 import { testClock } from '../../server/utils/clock'
 import { apiError } from '../../server/utils/errors'
 import { changeEvent } from '../../server/utils/event-access'
 import { memoryRoomNotifier } from '../../server/utils/room-notifier'
+import { createTestApp, type TestRequest } from './app'
 import { TEST_SETTINGS } from './fixtures'
-import { createTestDb, createTestServer } from './harness'
+import { createTestDb, resetDatabase } from './harness'
 import { setAllowlist, signIn, stubAuthEnv } from './sign-in'
 
 // The one place an Event changes (#183): what runs after the transaction commits, and only then. The step after the
@@ -22,17 +19,14 @@ const newcomer = { provider: 'twitch', id: '3', name: 'Neu', email: 'neu@example
 describe('changeEvent', () => {
   const clock = testClock('2090-10-30T10:00:00.000Z')
   let testDb: Awaited<ReturnType<typeof createTestDb>>
-  let request: ReturnType<typeof createTestServer>
+  let request: TestRequest
   const notifier = memoryRoomNotifier()
   const types = (eventId: string) => notifier.messages(eventId).map(message => message.type)
 
   beforeAll(async () => {
     testDb = await createTestDb()
-    request = createTestServer(testDb.db, {
-      'POST /api/e': createEvent,
-      'POST /api/e/:slug/rotate': rotateInvite,
-      'PATCH /api/e/:slug/settings': changeSettings,
-      'POST /api/invite/:invite': joinInvite,
+    // The probes are not routes of the tree: they go in `extra`, beside the routes that are.
+    request = createTestApp(testDb.db, { roomNotifier: notifier, clock }, {
       // A change that queues messages and then either finishes or is refused by a rule.
       // A change that answers the request's clock, and one that stays out of the Host's reach.
       'POST /api/e/:slug/probe-now': defineEventHandler(event => changeEvent(event, { lock: 'update' }, async ({ now }) => ({ now: now.toISOString() }))),
@@ -50,7 +44,7 @@ describe('changeEvent', () => {
         if (body !== null && typeof body === 'object' && 'refuse' in body) throw apiError('wrong_phase')
         return { done: true }
       })),
-    }, { roomNotifier: notifier, clock })
+    })
   })
 
   afterAll(async () => {
@@ -61,13 +55,7 @@ describe('changeEvent', () => {
     stubAuthEnv()
     notifier.clear()
     clock.set('2090-10-30T10:00:00.000Z')
-    await testDb.db.delete(draws)
-    await testDb.db.delete(rounds)
-    await testDb.db.delete(games)
-    await testDb.db.delete(pollSlots)
-    await testDb.db.delete(eventMembers)
-    await testDb.db.delete(events)
-    await testDb.db.delete(users)
+    await resetDatabase(testDb.db)
   })
 
   afterEach(() => {

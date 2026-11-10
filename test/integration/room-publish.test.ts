@@ -1,22 +1,10 @@
 import { eq } from 'drizzle-orm'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
-import createEvent from '../../server/api/e/index.post'
-import confirmDate from '../../server/api/e/[slug]/confirm.post'
-import rotateInvite from '../../server/api/e/[slug]/rotate.post'
-import addSession from '../../server/api/e/[slug]/sessions/index.post'
-import removeSession from '../../server/api/e/[slug]/sessions/[id].delete'
-import reopenSession from '../../server/api/e/[slug]/sessions/[id]/reopen.post'
-import rescheduleSession from '../../server/api/e/[slug]/sessions/[id]/reschedule.post'
-import changeSettings from '../../server/api/e/[slug]/settings.patch'
-import editSlot from '../../server/api/e/[slug]/slots/[slotId].patch'
-import deleteSlot from '../../server/api/e/[slug]/slots/[slotId].delete'
-import addSlot from '../../server/api/e/[slug]/slots/index.post'
-import putVote from '../../server/api/e/[slug]/slots/[slotId]/vote.put'
-import joinInvite from '../../server/api/invite/[invite].post'
-import { eventMembers, events, pollSlots, pollVotes, sessions, users } from '../../server/db/schema'
+import { eventMembers, events, pollSlots, sessions, users } from '../../server/db/schema'
 import { memoryRoomNotifier } from '../../server/utils/room-notifier'
+import { createTestApp, sendVia, type TestRequest } from './app'
 import { TEST_SETTINGS } from './fixtures'
-import { createTestDb, createTestServer } from './harness'
+import { createTestDb, resetDatabase } from './harness'
 import { setAllowlist, signIn, stubAuthEnv } from './sign-in'
 
 // Every change of an Event tells its room, once, after the commit (#156, spec #153 § Room notifier); a refused
@@ -27,26 +15,12 @@ const stranger = { provider: 'twitch', id: '3', name: 'Fremd', email: 'stranger@
 
 describe('publishing to the room', () => {
   let testDb: Awaited<ReturnType<typeof createTestDb>>
-  let request: ReturnType<typeof createTestServer>
+  let request: TestRequest
   const notifier = memoryRoomNotifier()
 
   beforeAll(async () => {
     testDb = await createTestDb()
-    request = createTestServer(testDb.db, {
-      'POST /api/e': createEvent,
-      'POST /api/e/:slug/confirm': confirmDate,
-      'POST /api/e/:slug/rotate': rotateInvite,
-      'POST /api/e/:slug/sessions': addSession,
-      'DELETE /api/e/:slug/sessions/:id': removeSession,
-      'POST /api/e/:slug/sessions/:id/reopen': reopenSession,
-      'POST /api/e/:slug/sessions/:id/reschedule': rescheduleSession,
-      'PATCH /api/e/:slug/settings': changeSettings,
-      'POST /api/e/:slug/slots': addSlot,
-      'PATCH /api/e/:slug/slots/:slotId': editSlot,
-      'DELETE /api/e/:slug/slots/:slotId': deleteSlot,
-      'PUT /api/e/:slug/slots/:slotId/vote': putVote,
-      'POST /api/invite/:invite': joinInvite,
-    }, { roomNotifier: notifier })
+    request = createTestApp(testDb.db, { roomNotifier: notifier })
   })
 
   afterAll(async () => {
@@ -56,11 +30,7 @@ describe('publishing to the room', () => {
   beforeEach(async () => {
     stubAuthEnv()
     notifier.clear()
-    await testDb.db.delete(pollVotes)
-    await testDb.db.delete(pollSlots)
-    await testDb.db.delete(eventMembers)
-    await testDb.db.delete(events)
-    await testDb.db.delete(users)
+    await resetDatabase(testDb.db)
   })
 
   afterEach(() => {
@@ -87,13 +57,7 @@ describe('publishing to the room', () => {
     return { slug, eventId: eventRow!.id, slotIds, hostCookie, memberCookie, strangerCookie, invite: new URL(inviteUrl).pathname.slice('/e/'.length) }
   }
 
-  function send(method: string, path: string, cookie: string | undefined, body?: unknown) {
-    return request(path, {
-      method,
-      headers: { ...(body === undefined ? {} : { 'content-type': 'application/json' }), ...(cookie ? { cookie } : {}) },
-      body: body === undefined ? undefined : JSON.stringify(body),
-    })
-  }
+  const send = sendVia(() => request)
 
   const types = (eventId: string) => notifier.messages(eventId).map(message => message.type)
 
@@ -189,7 +153,7 @@ describe('publishing to the room', () => {
         await gate
       },
     }
-    const slowRequest = createTestServer(testDb.db, { 'PUT /api/e/:slug/slots/:slotId/vote': putVote }, { roomNotifier: slowWorker })
+    const slowRequest = createTestApp(testDb.db, { roomNotifier: slowWorker })
     // Guards the red run: without the fix the request waits on the gate, and this race settles instead of hanging.
     let timer: ReturnType<typeof setTimeout> | undefined
     const stalled = new Promise<'stalled'>(resolve => (timer = setTimeout(() => resolve('stalled'), 1000)))
