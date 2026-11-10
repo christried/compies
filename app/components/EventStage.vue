@@ -68,7 +68,7 @@ const hostName = computed(() => props.view.members.find(member => member.isHost)
 // The settings editor (#147): the Host opens it from the dock, and from a notice while the Event is not set up.
 const canEditSettings = computed(() => props.view.event.isHost && settingsEditable(props.view.event.phase))
 const needsSetup = computed(() => canEditSettings.value && props.view.settings === null)
-/** The first Session has started: the teams and their names are locked for Players. */
+/** The first Session has started: the settings rows of „So spielen wir“ lock (HowWePlayCard). Team names stay open to Players (#438). */
 const started = computed(() => hasStarted(props.view.sessions))
 
 // The Host's seat note (teams only): where the Host sits does not change the dock, and the note says so. Closed for this visit.
