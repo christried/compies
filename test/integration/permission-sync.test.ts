@@ -1,7 +1,7 @@
 import { eq } from 'drizzle-orm'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { authAccounts, users } from '../../server/db/schema'
-import { createTestDb } from './harness'
+import { createTestDb, resetDatabase } from './harness'
 import { createAuthServer, linkAccount, setAllowlist, signIn, stubAuthEnv, unlinkAccount, type ProviderProfile } from './sign-in'
 
 describe('sign-in and the allowlist sync', () => {
@@ -17,7 +17,7 @@ describe('sign-in and the allowlist sync', () => {
 
   beforeEach(async () => {
     stubAuthEnv()
-    await testDb.db.delete(users)
+    await resetDatabase(testDb.db)
   })
 
   afterEach(() => {
