@@ -2,7 +2,7 @@
 import { Link as LinkIcon } from '@lucide/vue'
 import { formatSlotDay, formatSlotTime } from '~/utils/berlin-time'
 import { feedSessions } from '~/utils/activity'
-import { viewInstants, waitsForSettle } from '~/utils/event-instants'
+import { stageInstants, stageUnsettled } from '~/utils/event-stage'
 import { dateBlockedKey, eventPageState, headerPill, wearsPartyhat } from '~/utils/event-page'
 import { historyCorrections } from '~/utils/history-corrections'
 import { datePollOpen, sessionsEditable } from '~~/shared/event'
@@ -31,11 +31,11 @@ const votes = useOptimisticVotes(slug, data, refresh)
 // and the Activity feed again when an instant it knows passes (#229: the wheel's stop; #230: the end of the clip, which the
 // overlay closes at by itself and the read then drops; the next tickets add their own).
 const feedTick = ref(0)
-// The instants the page knows (viewInstants, #256). A read taken a hair before one can still miss what it decides: the page then reads again (F13, waitsForSettle).
-useInstantRefresh(() => (data.value ? viewInstants(data.value) : []), serverClock.now, () => {
+// The instants the page knows (stageInstants, #256, #415). A read taken a hair before one can still miss what it decides: the page then reads again (F13, stageUnsettled).
+useInstantRefresh(() => (data.value ? stageInstants(data.value) : []), serverClock.now, () => {
   void refresh()
   feedTick.value += 1
-}, () => (data.value ? waitsForSettle(data.value, serverClock.now()) : false))
+}, () => (data.value ? stageUnsettled(data.value, serverClock.now()) : false))
 
 /** The open Slots with their day and time in Berlin, for the poll and the confirm dialog. */
 const slots = computed(() => (data.value?.slots ?? []).map((slot) => {
