@@ -9,7 +9,7 @@ import type { Phase } from '../../shared/phase'
 import type { ShareImageModel } from '../../shared/share-image'
 import { createTestApp, errorOf, sendVia, type TestRequest } from './app'
 import { createTestDb, resetDatabase } from './harness'
-import { hostEntersResult, hostFinishes, hostSets, startRunningEvent, type Stage } from './scenario'
+import { hostEntersResult, hostFinishes, hostSets, readEventText, readFeedText, startRunningEvent, type Rig } from './scenario'
 import { stubAuthEnv } from './sign-in'
 
 // What the renderer was asked to draw, so a test can read the model the route built (it is the model that says what the picture holds).
@@ -47,14 +47,14 @@ const PNG_SIGNATURE = [137, 80, 78, 71, 13, 10, 26, 10]
 describe('the Share image route', () => {
   let testDb: Awaited<ReturnType<typeof createTestDb>>
   let request: TestRequest
-  let stage: Stage
+  let rig: Rig
   const notifier = memoryRoomNotifier()
   const clock = testClock(T0)
 
   beforeAll(async () => {
     testDb = await createTestDb()
     request = createTestApp(testDb.db, { roomNotifier: notifier, clock, shareAssets: fileShareAssets() })
-    stage = { request, db: testDb.db, clock, notifier }
+    rig = { request, db: testDb.db, clock, notifier }
   })
 
   afterAll(async () => {
@@ -80,15 +80,15 @@ describe('the Share image route', () => {
    * played (Kart stays in the pool). `finish: false` leaves it running with its result in; the Host's cookie, the Members' and an outsider's come back.
    */
   async function event({ finish = true, tie = false }: { finish?: boolean, tie?: boolean } = {}) {
-    const game = await startRunningEvent(stage, {
+    const game = await startRunningEvent(rig, {
       host, players, outsiders: { outsider }, sessions: 1,
       seats: [['one', 1], ['two', 1], ['three', 2], ['four', 2], ['spectator', 'stands']] as const,
       settings: { teamCount: 2, teamSize: 2, gameCount: 1, pointsTable: { preset: 'linear' as const, values: [1, 0] } },
       games: [{ key: 'halo', values: { name: 'Halo' }, pool: true }, { key: 'kart', values: { name: 'Kart' }, pool: true }],
     })
-    const roundId = await hostSets(request, game.slug, game.host.cookie, game.games.halo.id)
-    await hostEntersResult(stage, game, roundId, [{ team: 1, place: 1 }, { team: 2, place: tie ? 1 : 2 }])
-    if (finish) await hostFinishes(stage, game, tie ? { outcome: 'tie', winners: [1, 2] } : { outcome: 'winner', winners: [1] })
+    const roundId = await hostSets(rig, game, game.games.halo.id)
+    await hostEntersResult(rig, game, roundId, [{ team: 1, place: 1 }, { team: 2, place: tie ? 1 : 2 }])
+    if (finish) await hostFinishes(rig, game, tie ? { outcome: 'tie', winners: [1, 2] } : { outcome: 'winner', winners: [1] })
     notifier.clear()
     const cookies = {
       one: game.players.one.cookie, two: game.players.two.cookie, three: game.players.three.cookie, four: game.players.four.cookie,
@@ -244,8 +244,8 @@ describe('the Share image route', () => {
   describe('what it stores', () => {
     it('leaves the feed, the room and the Event read as they were', async () => {
       const { slug, eventId, cookies } = await event()
-      const readBefore = await (await send('GET', `/api/e/${slug}`, cookies.one)).text()
-      const feedBefore = await (await send('GET', `/api/e/${slug}/activity`, cookies.one)).text()
+      const readBefore = await readEventText(rig, cookies.one, slug)
+      const feedBefore = await readFeedText(rig, cookies.one, slug)
       const rowsBefore = await testDb.db.select().from(activity).where(eq(activity.eventId, eventId))
       notifier.clear()
 
@@ -254,8 +254,8 @@ describe('the Share image route', () => {
 
       expect(notifier.messages(eventId)).toEqual([])
       expect(await testDb.db.select().from(activity).where(eq(activity.eventId, eventId))).toEqual(rowsBefore)
-      expect(await (await send('GET', `/api/e/${slug}/activity`, cookies.one)).text()).toBe(feedBefore)
-      expect(await (await send('GET', `/api/e/${slug}`, cookies.one)).text()).toBe(readBefore)
+      expect(await readFeedText(rig, cookies.one, slug)).toBe(feedBefore)
+      expect(await readEventText(rig, cookies.one, slug)).toBe(readBefore)
       expect((JSON.parse(readBefore) as EventView).event.phase).toBe('finished')
     }, 30_000)
   })

@@ -4,7 +4,7 @@ import { pollSlots, pollVotes, events, sessions, users } from '../../server/db/s
 import { createTestApp, type TestRequest } from './app'
 import { TEST_SETTINGS } from './fixtures'
 import { createTestDb, resetDatabase } from './harness'
-import { startRunningEvent, type Stage } from './scenario'
+import { readEventText, setUpEvent, type Rig } from './scenario'
 import { setAllowlist, signIn, stubAuthEnv } from './sign-in'
 
 // The Note on a Vote (#102). Slots are far in the future; past Slots are made by moving their start into 2001.
@@ -14,12 +14,12 @@ const member = { provider: 'discord', id: '2', name: 'Gast', email: 'member@exam
 describe('Notes on Votes', () => {
   let testDb: Awaited<ReturnType<typeof createTestDb>>
   let request: TestRequest
-  let stage: Stage
+  let rig: Rig
 
   beforeAll(async () => {
     testDb = await createTestDb()
     request = createTestApp(testDb.db)
-    stage = { request, db: testDb.db }
+    rig = { request, db: testDb.db }
   })
 
   afterAll(async () => {
@@ -45,7 +45,7 @@ describe('Notes on Votes', () => {
   /** A poll Event by the Host with three Slots; returns the Host, a Member and the Slot ids in time order. */
   async function setUp() {
     // One Session, so the poll stays open until a Date is set; the third Slot is one the poll offers beside the first two (`extraSlots`).
-    const event = await startRunningEvent(stage, {
+    const event = await setUpEvent(rig, {
       host,
       players: { guest: member },
       seats: [],
@@ -53,7 +53,6 @@ describe('Notes on Votes', () => {
       slots: ['2090-10-30T20:30'],
       extraSlots: ['2090-10-31T19:00', '2090-11-01T19:00'],
       confirmed: 0,
-      start: false,
     })
     return { slug: event.slug, eventId: event.eventId, hostCookie: event.host.cookie, hostId: event.host.id, guestCookie: event.players.guest.cookie, guestId: event.players.guest.id, slotIds: event.slotIds }
   }
@@ -66,8 +65,9 @@ describe('Notes on Votes', () => {
     })
   }
 
+  /** The Event read untyped: the cases read `sessions[0].notes`, which `EventView` has on a Session with a Date only. */
   async function read(cookie: string, slug: string) {
-    return (await request(`/api/e/${slug}`, { headers: { cookie } })).json()
+    return JSON.parse(await readEventText(rig, cookie, slug))
   }
 
   async function storedNote(slotId: string, userId: string) {

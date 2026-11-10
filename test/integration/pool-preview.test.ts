@@ -1,6 +1,5 @@
-import { eq } from 'drizzle-orm'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
-import { eventMembers, eventPoolGames, events, users } from '../../server/db/schema'
+import { eventMembers, eventPoolGames, events } from '../../server/db/schema'
 import { memoryImageStore } from '../../server/utils/image-store'
 import { memoryRoomNotifier } from '../../server/utils/room-notifier'
 import type { CreatedEvent, EventView } from '../../shared/event'
@@ -8,8 +7,9 @@ import type { GamePrice, GameView } from '../../shared/game'
 import { TEST_SETTINGS } from './fixtures'
 import { createTestApp, type TestRequest } from './app'
 import { createTestDb, resetDatabase } from './harness'
-import { hostPutsBack, hostSets, startRunningSession } from './scenario'
-import { setAllowlist, signIn, stubAuthEnv } from './sign-in'
+import { second } from './hidden-wheel-world'
+import { hostPutsBack, hostSets, readEventText, readFeedText, signInAs, startRunningSession, type Signed, type Rig } from './scenario'
+import { setAllowlist, stubAuthEnv } from './sign-in'
 
 // The secrecy of the Pool preview (#225), the same promise as the Hidden wheel's (hidden-wheel.test.ts): with the
 // Pool preview off a Player learns nothing about the pools, not through the Event read, not through the image route,
@@ -17,7 +17,6 @@ import { setAllowlist, signIn, stubAuthEnv } from './sign-in'
 
 const host = { provider: 'discord', id: '1', name: 'Hostess', email: 'host@example.com', image: undefined } as const
 const player = { provider: 'discord', id: '2', name: 'Gast', email: 'player@example.com', image: undefined } as const
-const second = { provider: 'twitch', id: '5', name: 'Zweite', email: 'second@example.com', image: undefined } as const
 
 const ascii = (text: string) => Array.from(text, char => char.charCodeAt(0))
 function webp(payload: string): Uint8Array {
@@ -34,6 +33,10 @@ describe('Pool preview secrecy (#225)', () => {
   let request: TestRequest
   const store = memoryImageStore()
   const notifier = memoryRoomNotifier()
+  // The rig is made when used: `beforeAll` assigns the app and the database.
+  const rig = (): Rig => ({ request, db: testDb.db, notifier })
+  let hostSigned: Signed
+  let playerSigned: Signed
   let hostCookie: string
   let playerCookie: string
 
@@ -52,8 +55,10 @@ describe('Pool preview secrecy (#225)', () => {
     await resetDatabase(testDb.db)
     store.clear()
     notifier.clear()
-    hostCookie = (await signIn(testDb.db, host)).cookie
-    playerCookie = (await signIn(testDb.db, player)).cookie
+    hostSigned = await signInAs(rig(), host)
+    playerSigned = await signInAs(rig(), player)
+    hostCookie = hostSigned.cookie
+    playerCookie = playerSigned.cookie
   })
 
   afterEach(() => {
@@ -101,11 +106,7 @@ describe('Pool preview secrecy (#225)', () => {
     return { slug, pool }
   }
 
-  async function rawRead(cookie: string, slug: string) {
-    const response = await request(`/api/e/${slug}`, { headers: { cookie } })
-    expect(response.status).toBe(200)
-    return await response.text()
-  }
+  const rawRead = (cookie: string, slug: string) => readEventText(rig(), cookie, slug)
 
   // Everything a pool game shows: the Event read of a viewer who may see the pools holds all of it, that of one who may not holds none of it (notes too, #223, #224).
   // The Price's amount is a trace too (#338): distinct per game, it names the game whose Price a read carries.
@@ -275,10 +276,10 @@ describe('Pool preview secrecy (#225)', () => {
     async function runningEvent() {
       const { slug, pool } = await setUp(settings)
       const library = await newGame('Epsilon Eck', 'eeeeeeeeeee')
-      const secondCookie = (await signIn(testDb.db, second)).cookie
+      const secondSigned = await signInAs(rig(), second)
       const [eventRow] = await testDb.db.select().from(events)
-      await testDb.db.insert(eventMembers).values({ eventId: eventRow!.id, userId: (await testDb.db.select().from(users).where(eq(users.email, second.email)))[0]!.id })
-      await startRunningSession(request, testDb.db, { slug, hostCookie, seated: [{ cookie: playerCookie, email: player.email }, { cookie: secondCookie, email: second.email }] })
+      await testDb.db.insert(eventMembers).values({ eventId: eventRow!.id, userId: secondSigned.id })
+      await startRunningSession(rig(), { slug, host: hostSigned }, [playerSigned, secondSigned])
       notifier.clear()
       wheelGames.clear()
       if (onWheel) for (const game of [pool[0]!, pool[1]!]) wheelGames.add(game.id)
@@ -286,8 +287,8 @@ describe('Pool preview secrecy (#225)', () => {
     }
 
     async function whatThePlayerGets(slug: string, eventId: string) {
-      const feed = await request(`/api/e/${slug}/activity?limit=100`, { headers: { cookie: playerCookie } })
-      return { event: await rawRead(playerCookie, slug), feed: await feed.text(), room: JSON.stringify(notifier.messages(eventId)) }
+      const feed = await readFeedText(rig(), playerCookie, slug, 'limit=100')
+      return { event: await rawRead(playerCookie, slug), feed, room: JSON.stringify(notifier.messages(eventId)) }
     }
 
     function expectNone(what: Record<string, string>, games: PoolGame[], include: (game: PoolGame) => string[] = hidden) {
@@ -310,7 +311,7 @@ describe('Pool preview secrecy (#225)', () => {
     it('shows a Player exactly the game that is set, never its notes, and no other game of the pools', async () => {
       const { slug, eventId, alpha, beta, gamma, library } = await runningEvent()
 
-      await hostSets(request, slug, hostCookie, alpha.id)
+      await hostSets(rig(), { slug, host: hostSigned }, alpha.id)
 
       const got = await whatThePlayerGets(slug, eventId)
       expect(JSON.parse(got.event)).toMatchObject({ pool: null, rounds: [{ game: { id: alpha.id, name: 'Alpha Arena', price: alpha.price } }] })
@@ -326,7 +327,7 @@ describe('Pool preview secrecy (#225)', () => {
 
     it('gives a Player the set game with its Price and no notes or Tags, under the same keys as its name', async () => {
       const { slug, alpha } = await runningEvent()
-      await hostSets(request, slug, hostCookie, alpha.id)
+      await hostSets(rig(), { slug, host: hostSigned }, alpha.id)
 
       const [round] = (JSON.parse(await rawRead(playerCookie, slug)) as EventView).rounds
       expect(Object.keys(round!.game).sort()).toEqual(['clipLength', 'clipStart', 'id', 'imageUrl', 'name', 'playersMax', 'playersMin', 'price', 'suitabilities', 'youtubeId'])
@@ -336,7 +337,7 @@ describe('Pool preview secrecy (#225)', () => {
     it('shows a Player a library game that is set, and none of the pools\' games', async () => {
       const { slug, eventId, alpha, beta, gamma, library } = await runningEvent()
 
-      await hostSets(request, slug, hostCookie, library.id)
+      await hostSets(rig(), { slug, host: hostSigned }, library.id)
 
       const got = await whatThePlayerGets(slug, eventId)
       expect((JSON.parse(got.event) as EventView).rounds).toMatchObject([{ game: { name: 'Epsilon Eck' } }])
@@ -347,7 +348,7 @@ describe('Pool preview secrecy (#225)', () => {
 
     it('names the set game in the Result a Player reads, and no other game of the pools (#273)', async () => {
       const { slug, eventId, alpha, beta, gamma, library } = await runningEvent()
-      const roundId = await hostSets(request, slug, hostCookie, alpha.id)
+      const roundId = await hostSets(rig(), { slug, host: hostSigned }, alpha.id)
 
       const entered = await request(`/api/e/${slug}/rounds/${roundId}/result`, {
         method: 'PUT',
@@ -366,7 +367,7 @@ describe('Pool preview secrecy (#225)', () => {
 
     it('names the set game in the Results a Player reads (#274), and no other game of the pools; the room sends nothing new', async () => {
       const { slug, eventId, alpha, beta, gamma, library } = await runningEvent()
-      const roundId = await hostSets(request, slug, hostCookie, alpha.id)
+      const roundId = await hostSets(rig(), { slug, host: hostSigned }, alpha.id)
 
       const entered = await request(`/api/e/${slug}/rounds/${roundId}/result`, {
         method: 'PUT',
@@ -390,7 +391,7 @@ describe('Pool preview secrecy (#225)', () => {
 
     it('names only the set game in a Correction a Player reads, and the room carries no other pool game (#275)', async () => {
       const { slug, eventId, alpha, beta, gamma, library } = await runningEvent()
-      const roundId = await hostSets(request, slug, hostCookie, alpha.id)
+      const roundId = await hostSets(rig(), { slug, host: hostSigned }, alpha.id)
       const put = (places: unknown) => request(`/api/e/${slug}/rounds/${roundId}/result`, {
         method: 'PUT',
         headers: { 'content-type': 'application/json', 'cookie': hostCookie },
@@ -412,7 +413,7 @@ describe('Pool preview secrecy (#225)', () => {
 
     it('carries no Tag in the Host\'s or a Player\'s read of a set game and of its Result, and the Price only of the set game for a Player (#335, #338)', async () => {
       const { slug, alpha, beta, gamma, library } = await runningEvent()
-      const roundId = await hostSets(request, slug, hostCookie, alpha.id)
+      const roundId = await hostSets(rig(), { slug, host: hostSigned }, alpha.id)
       // The Host sees the pool (Alpha, Beta) and the set game; the Player sees the set game only.
       const reads = async () => [await rawRead(hostCookie, slug), await rawRead(playerCookie, slug)]
       const expectPrices = (hostRaw: string, playerRaw: string) => {
@@ -455,9 +456,9 @@ describe('Pool preview secrecy (#225)', () => {
 
     it('reveals nothing more when the Round is put back', async () => {
       const { slug, eventId, alpha, beta, gamma, library } = await runningEvent()
-      const roundId = await hostSets(request, slug, hostCookie, alpha.id)
+      const roundId = await hostSets(rig(), { slug, host: hostSigned }, alpha.id)
 
-      await hostPutsBack(request, slug, hostCookie, roundId)
+      await hostPutsBack(rig(), { slug, host: hostSigned }, roundId)
 
       const got = await whatThePlayerGets(slug, eventId)
       expect(JSON.parse(got.event)).toMatchObject({ pool: null, rounds: [] })

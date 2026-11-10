@@ -7,7 +7,7 @@ import { ROOM_CALL_SIGNATURE_HEADER, ROOM_CALL_TIMESTAMP_HEADER, signRoomCall } 
 import { createTestApp, sendVia, type TestRequest } from './app'
 import { TEST_SETTINGS } from './fixtures'
 import { createTestDb, resetDatabase } from './harness'
-import { hostEndsSession, hostEntersResult, hostFinishes, hostSets, startRunningEvent, type Stage } from './scenario'
+import { hostEndsSession, hostEntersResult, hostFinishes, hostSets, setUpEvent, startRunningEvent, type Rig } from './scenario'
 import { stubAuthEnv } from './sign-in'
 
 // Deleting an Event (#333, spec #332, GLOSSARY: Deleted Event): the Host's soft delete through `changeEvent`. It sets the deleted mark and
@@ -33,14 +33,14 @@ type Phase = 'poll' | 'date_set' | 'between' | 'running' | 'finished'
 describe('deleting an Event', () => {
   let testDb: Awaited<ReturnType<typeof createTestDb>>
   let request: TestRequest
-  let stage: Stage
+  let rig: Rig
   const notifier = memoryRoomNotifier()
   const clock = testClock(T0)
 
   beforeAll(async () => {
     testDb = await createTestDb()
     request = createTestApp(testDb.db, { roomNotifier: notifier, clock })
-    stage = { request, db: testDb.db, clock, notifier }
+    rig = { request, db: testDb.db, clock, notifier }
   })
 
   afterAll(async () => {
@@ -82,7 +82,8 @@ describe('deleting an Event', () => {
 
   async function buildEvent(phase: Phase) {
     const started = phase === 'running' || phase === 'between' || phase === 'finished'
-    const ev = await startRunningEvent(stage, {
+    const make = started ? startRunningEvent : setUpEvent
+    const ev = await make(rig, {
       host,
       players: { member, second },
       outsiders: { stranger },
@@ -92,14 +93,13 @@ describe('deleting an Event', () => {
       settings: SETTINGS,
       // A finished Event (#277): the Host sets one game in the running Session, enters team 1's win and finishes it.
       games: phase === 'finished' ? [{ key: 'halo', values: { name: 'Halo' }, pool: true }] : [],
-      start: started,
     })
     if (phase === 'finished') {
-      const roundId = await hostSets(request, ev.slug, ev.host.cookie, ev.games.halo.id)
-      await hostEntersResult(stage, ev, roundId, [{ team: 1, place: 1 }, { team: 2, place: 2 }])
-      await hostFinishes(stage, ev, { outcome: 'winner', winners: [1] })
+      const roundId = await hostSets(rig, ev, ev.games.halo.id)
+      await hostEntersResult(rig, ev, roundId, [{ team: 1, place: 1 }, { team: 2, place: 2 }])
+      await hostFinishes(rig, ev, { outcome: 'winner', winners: [1] })
     }
-    if (phase === 'between') await hostEndsSession(stage, ev)
+    if (phase === 'between') await hostEndsSession(rig, ev)
     return {
       slug: ev.slug,
       eventId: ev.eventId,

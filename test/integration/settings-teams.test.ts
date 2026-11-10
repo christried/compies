@@ -7,7 +7,7 @@ import type { EventView } from '../../shared/event'
 import { settingsFromRow } from '../../shared/settings'
 import { createTestApp, sendVia, type TestRequest } from './app'
 import { createTestDb, resetDatabase } from './harness'
-import { startRunningEvent, type Stage } from './scenario'
+import { readEvent, setUpEvent, type Rig } from './scenario'
 import { stubAuthEnv } from './sign-in'
 
 // Settings follow the teams (#163, spec #153 § Game board rules, § API contracts): the Team size never goes below the
@@ -27,13 +27,13 @@ const LINEAR_2 = { preset: 'linear', values: [1, 0] }
 describe('settings follow the teams (#163)', () => {
   let testDb: Awaited<ReturnType<typeof createTestDb>>
   let request: TestRequest
-  let stage: Stage
+  let rig: Rig
   const notifier = memoryRoomNotifier()
 
   beforeAll(async () => {
     testDb = await createTestDb()
     request = createTestApp(testDb.db, { roomNotifier: notifier })
-    stage = { request, db: testDb.db, notifier }
+    rig = { request, db: testDb.db, notifier }
   })
 
   afterAll(async () => {
@@ -57,13 +57,12 @@ describe('settings follow the teams (#163)', () => {
 
   /** An Event of 4 teams of 3 (poll, no Date needed: the Host seats people), with every Player a Member on the Bench. */
   async function setup() {
-    const event = await startRunningEvent(stage, {
+    const event = await setUpEvent(rig, {
       host,
       players,
       seats: [],
       sessions: 1,
       confirmed: 0,
-      start: false,
       settings: { teamCount: 4, teamSize: 3, pointsTable: LINEAR_4 },
     })
     const { one, two, three, four } = event.players
@@ -100,7 +99,7 @@ describe('settings follow the teams (#163)', () => {
   }
 
   async function read(game: Game): Promise<EventView> {
-    return await (await send('GET', `/api/e/${game.slug}`, game.hostCookie)).json() as EventView
+    return await readEvent(rig, game.hostCookie, game.slug)
   }
 
   async function seatsOf(game: Game) {

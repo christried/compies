@@ -3,14 +3,12 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } 
 import { bonusVetoes, events } from '../../server/db/schema'
 import { testClock } from '../../server/utils/clock'
 import { memoryRoomNotifier } from '../../server/utils/room-notifier'
-import type { ActivityPage } from '../../shared/activity'
-import type { EventView } from '../../shared/event'
 import type { BonusVetoGranted } from '../../shared/stage'
 import { BONUS_VETO_MAX } from '../../shared/rounds'
 import { SPIN } from '../draw-offsets'
 import { createTestApp, errorOf, sendVia, type TestRequest } from './app'
 import { createTestDb, resetDatabase } from './harness'
-import { startRunningEvent, type Stage } from './scenario'
+import { readEvent, readFeed, setUpEvent, startRunningEvent, type Rig } from './scenario'
 import { stubAuthEnv } from './sign-in'
 
 // Bonus Vetoes (#233, spec #218 § Bonus Vetoes): the Host grants a Party one, through the HTTP API with the in-memory room and a test
@@ -29,14 +27,14 @@ const { stop: STOP, end: END } = SPIN
 describe('Bonus Vetoes (#233)', () => {
   let testDb: Awaited<ReturnType<typeof createTestDb>>
   let request: TestRequest
-  let stage: Stage
+  let rig: Rig
   const notifier = memoryRoomNotifier()
   const clock = testClock(T0)
 
   beforeAll(async () => {
     testDb = await createTestDb()
     request = createTestApp(testDb.db, { roomNotifier: notifier, clock })
-    stage = { request, db: testDb.db, clock, notifier }
+    rig = { request, db: testDb.db, clock, notifier }
   })
 
   afterAll(async () => {
@@ -61,13 +59,13 @@ describe('Bonus Vetoes (#233)', () => {
    * each of two Parties, four games in the Game pool, the Veto allowance `allowance` (Lucky Wheel only).
    */
   async function event({ mode = 'lucky_wheel', allowance = 1, started = true }: { mode?: 'lucky_wheel' | 'admin_pick', allowance?: number, started?: boolean } = {}) {
-    const ev = await startRunningEvent(stage, {
+    const make = started ? startRunningEvent : setUpEvent
+    const ev = await make(rig, {
       host,
       players,
       seats: started ? [['one', 1], ['two', 2]] : [],
       sessions: 1,
       confirmed: started ? 1 : 0,
-      start: started,
       settings: { teamSize: 1, selectionMode: mode, vetoAllowance: mode === 'lucky_wheel' ? allowance : null },
       games: ['Halo', 'Kart', 'Dart', 'Uno'].map(name => ({ key: name, values: { name }, pool: true })),
     })
@@ -77,10 +75,9 @@ describe('Bonus Vetoes (#233)', () => {
   type Party = Awaited<ReturnType<typeof event>>
 
   const grant = (party: Party, team: number, cookie = party.hostCookie) => send('POST', `/api/e/${party.slug}/bonus-vetoes`, cookie, { team })
-  const read = async (party: Party, cookie = party.hostCookie) => await (await send('GET', `/api/e/${party.slug}`, cookie)).json() as EventView
+  const read = (party: Party, cookie = party.hostCookie) => readEvent(rig, cookie, party.slug)
   const spin = (party: Party) => send('POST', `/api/e/${party.slug}/rounds/spin`, party.hostCookie)
   const cast = (party: Party, drawId: string, cookie: string) => send('POST', `/api/e/${party.slug}/draws/${drawId}/veto`, cookie)
-  const feedOf = async (party: Party, cookie: string) => (await (await send('GET', `/api/e/${party.slug}/activity`, cookie)).json() as ActivityPage).entries
   const bonusRows = (party: Party) => testDb.db.select().from(bonusVetoes).where(eq(bonusVetoes.eventId, party.eventId))
 
   /** Spins and answers the draw's id. */
@@ -164,7 +161,7 @@ describe('Bonus Vetoes (#233)', () => {
 
     expect((await grant(party, 2)).status).toBe(200)
 
-    const entries = await feedOf(party, party.one)
+    const entries = await readFeed(rig, party.one, party.slug)
     expect(entries.filter(entry => entry.type === 'bonus_veto_granted')).toMatchObject([{ type: 'bonus_veto_granted', params: { team: 2 }, actor: { name: 'Hostess' } }])
     expect(notifier.messages(party.eventId).map(message => message.type)).toEqual(['event.changed', 'activity.added'])
   })

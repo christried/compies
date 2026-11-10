@@ -3,12 +3,11 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } 
 import { draws, rounds } from '../../server/db/schema'
 import { testClock } from '../../server/utils/clock'
 import { memoryRoomNotifier } from '../../server/utils/room-notifier'
-import type { EventView } from '../../shared/event'
 import de from '../../i18n/locales/de.json'
 import { SPIN } from '../draw-offsets'
 import { createTestApp, errorOf, sendVia, type TestRequest } from './app'
 import { createTestDb, resetDatabase } from './harness'
-import { startRunningEvent, type Stage } from './scenario'
+import { readEvent, readEventText, startRunningEvent, type Rig } from './scenario'
 import { stubAuthEnv } from './sign-in'
 
 // The synced clip (#230, spec #218 § Clip, § Deadlines): the Event read has the clip of the latest draw from its stop to the end
@@ -28,14 +27,14 @@ const CLIP_MS = 30_000
 describe('the synced clip', () => {
   let testDb: Awaited<ReturnType<typeof createTestDb>>
   let request: TestRequest
-  let stage: Stage
+  let rig: Rig
   const notifier = memoryRoomNotifier()
   const clock = testClock(T0)
 
   beforeAll(async () => {
     testDb = await createTestDb()
     request = createTestApp(testDb.db, { roomNotifier: notifier, clock })
-    stage = { request, db: testDb.db, clock, notifier }
+    rig = { request, db: testDb.db, clock, notifier }
   })
 
   afterAll(async () => {
@@ -64,7 +63,7 @@ describe('the synced clip', () => {
    */
   async function running({ wheel = false, hidden = false }: { wheel?: boolean, hidden?: boolean } = {}) {
     const selection = wheel ? { selectionMode: 'lucky_wheel', ...(hidden ? { hiddenWheel: true, vetoAllowance: 3 } : {}) } : {}
-    const event = await startRunningEvent(stage, {
+    const event = await startRunningEvent(rig, {
       host, players, seats: [['one', 1], ['two', 2]] as const, settings: { teamSize: 1, ...selection },
       games: [
         { key: 'halo', pool: true, values: { name: 'Halo Infinite', youtubeId: 'aaaaaaaaaaa', clipStart: 90, clipLength: 30, priceCents: 1999, priceSource: 'steam', priceCheckedAt: new Date('2026-11-03T10:00:00.000Z') } },
@@ -81,8 +80,7 @@ describe('the synced clip', () => {
 
   type Game = Awaited<ReturnType<typeof running>>
 
-  const readText = async (game: Game, cookie = game.hostCookie) => await (await send('GET', `/api/e/${game.slug}`, cookie)).text()
-  const read = async (game: Game, cookie = game.hostCookie) => JSON.parse(await readText(game, cookie)) as EventView
+  const read = (game: Game, cookie = game.hostCookie) => readEvent(rig, cookie, game.slug)
   const set = (game: Game, gameId: string) => send('POST', `/api/e/${game.slug}/rounds`, game.hostCookie, { gameId })
   const spin = (game: Game) => send('POST', `/api/e/${game.slug}/rounds/spin`, game.hostCookie)
   const skip = (game: Game, cookie = game.hostCookie) => send('POST', `/api/e/${game.slug}/clip/skip`, cookie)
@@ -186,7 +184,7 @@ describe('the synced clip', () => {
       await spunHalo(game)
 
       clock.advance(STOP - 1)
-      const text = await readText(game, game.cookies.one)
+      const text = await readEventText(rig, game.cookies.one, game.slug)
 
       expect(JSON.parse(text).clip).toBeNull()
       // The names are ones no placeholder contains: "Kart" is in "Mario Kartoffel" and "Halo" in "Halo Hallo", which a Hidden wheel shows (F21).

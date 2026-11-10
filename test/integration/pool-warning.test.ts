@@ -3,11 +3,10 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } 
 import { bonusVetoes, rounds, vetoes } from '../../server/db/schema'
 import { testClock } from '../../server/utils/clock'
 import { memoryRoomNotifier } from '../../server/utils/room-notifier'
-import type { EventView } from '../../shared/event'
 import { SPIN, WINDOW_MS } from '../draw-offsets'
 import { createTestApp, sendVia, type TestRequest } from './app'
 import { createTestDb, resetDatabase } from './harness'
-import { startRunningEvent, type Stage } from './scenario'
+import { readEvent, setUpEvent, startRunningEvent, type Rig } from './scenario'
 import { stubAuthEnv } from './sign-in'
 
 // The Host's pool warning (#234, spec #218 § Pool warning) through the Event read: it shows when the games left may not cover the
@@ -28,14 +27,14 @@ const { stop: STOP } = SPIN
 describe('the Host\'s pool warning (#234)', () => {
   let testDb: Awaited<ReturnType<typeof createTestDb>>
   let request: TestRequest
-  let stage: Stage
+  let rig: Rig
   const notifier = memoryRoomNotifier()
   const clock = testClock(T0)
 
   beforeAll(async () => {
     testDb = await createTestDb()
     request = createTestApp(testDb.db, { roomNotifier: notifier, clock })
-    stage = { request, db: testDb.db, clock, notifier }
+    rig = { request, db: testDb.db, clock, notifier }
   })
 
   afterAll(async () => {
@@ -57,11 +56,12 @@ describe('the Host\'s pool warning (#234)', () => {
 
   /**
    * An Event with two Parties of two (One and Two in team 1, Three and Four in team 2) and `poolSize` games in the Game pool. Under the
-   * Lucky Wheel the Veto allowance is `allowance` per Party; `start` runs the first Session (the Event is running only then).
+   * Lucky Wheel the Veto allowance is `allowance` per Party; `started` runs the first Session (the Event is running only then).
    */
-  async function event({ wheel = true, allowance = 0, gameCount = 10, poolSize = 4, start = true }: { wheel?: boolean, allowance?: number, gameCount?: number, poolSize?: number, start?: boolean } = {}) {
-    const game = await startRunningEvent(stage, {
-      host, players: people, seats: [['one', 1], ['two', 1], ['three', 2], ['four', 2]] as const, start,
+  async function event({ wheel = true, allowance = 0, gameCount = 10, poolSize = 4, started = true }: { wheel?: boolean, allowance?: number, gameCount?: number, poolSize?: number, started?: boolean } = {}) {
+    const make = started ? startRunningEvent : setUpEvent
+    const game = await make(rig, {
+      host, players: people, seats: [['one', 1], ['two', 1], ['three', 2], ['four', 2]] as const,
       settings: { teamSize: 2, gameCount, ...(wheel ? { selectionMode: 'lucky_wheel', vetoAllowance: allowance } : {}) },
       games: Array.from({ length: poolSize }, (_, index) => ({ key: `spiel${index + 1}`, values: { name: `Spiel ${index + 1}` }, pool: true })),
     })
@@ -78,7 +78,7 @@ describe('the Host\'s pool warning (#234)', () => {
     expect((await send('POST', `/api/e/${party.slug}/sessions/start`, party.hostCookie)).status).toBe(200)
   }
 
-  const read = async (party: Party, cookie = party.hostCookie) => await (await send('GET', `/api/e/${party.slug}`, cookie)).json() as EventView
+  const read = (party: Party, cookie = party.hostCookie) => readEvent(rig, cookie, party.slug)
   const warningOf = async (party: Party) => (await read(party)).setGame?.poolWarning
   const spin = (party: Party) => send('POST', `/api/e/${party.slug}/rounds/spin`, party.hostCookie)
   const cast = (party: Party, drawId: string, cookie: string) => send('POST', `/api/e/${party.slug}/draws/${drawId}/veto`, cookie)
@@ -113,7 +113,7 @@ describe('the Host\'s pool warning (#234)', () => {
   })
 
   it('shows the warning only while the Event runs: the setup hint covers the time before the first Session', async () => {
-    const party = await event({ allowance: 2, gameCount: 10, poolSize: 4, start: false })
+    const party = await event({ allowance: 2, gameCount: 10, poolSize: 4, started: false })
     expect(await warningOf(party)).toBeNull()
 
     await startNow(party)

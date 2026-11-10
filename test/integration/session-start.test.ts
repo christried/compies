@@ -6,7 +6,7 @@ import type { Place } from '../../shared/board'
 import type { EventView } from '../../shared/event'
 import { createTestApp, errorOf, sendVia, type TestRequest } from './app'
 import { createTestDb, resetDatabase } from './harness'
-import { hostSetsDates, playersTakeSeats, startRunningEvent, type Stage } from './scenario'
+import { hostSetsDates, playersTakeSeats, readEvent, setUpEvent, type Rig } from './scenario'
 import { stubAuthEnv } from './sign-in'
 
 // Starting and ending Sessions (#164, spec #153 § API contracts): the start rule through the API, what the first start
@@ -23,13 +23,13 @@ const SLOTS = ['2090-10-30T20:30', '2090-10-31T19:00', '2090-11-01T19:00']
 describe('Starting and ending Sessions', () => {
   let testDb: Awaited<ReturnType<typeof createTestDb>>
   let request: TestRequest
-  let stage: Stage
+  let rig: Rig
   const notifier = memoryRoomNotifier()
 
   beforeAll(async () => {
     testDb = await createTestDb()
     request = createTestApp(testDb.db, { roomNotifier: notifier })
-    stage = { request, db: testDb.db, notifier }
+    rig = { request, db: testDb.db, notifier }
   })
 
   afterAll(async () => {
@@ -53,8 +53,8 @@ describe('Starting and ending Sessions', () => {
    * Bench. No Date is set yet.
    */
   async function setup({ teamSize = 2, settings = true }: { teamSize?: number, settings?: boolean } = {}) {
-    const event = await startRunningEvent(stage, {
-      host, players: { one, two, three, four }, seats: [], confirmed: 0, start: false,
+    const event = await setUpEvent(rig, {
+      host, players: { one, two, three, four }, seats: [], confirmed: 0,
       sessions: 2, slots: SLOTS.slice(0, 2), extraSlots: SLOTS.slice(2), settings: { teamSize },
     })
     // An Event from before 1.3 was never set up: no settings.
@@ -72,17 +72,17 @@ describe('Starting and ending Sessions', () => {
   const send = sendVia(() => request)
 
   async function read(game: Game, cookie = game.hostCookie): Promise<EventView> {
-    return await (await send('GET', `/api/e/${game.slug}`, cookie)).json() as EventView
+    return await readEvent(rig, cookie, game.slug)
   }
 
   /** Sets the Dates of the first `count` Sessions from the Slots, in order. */
   async function setDates(game: Game, count: number) {
-    await hostSetsDates(stage, game, count)
+    await hostSetsDates(rig, game, count)
   }
 
   /** Two Players in each team: One and Two in team 1, Three and Four in team 2 (the Players move themselves). */
   async function fillTeams(game: Game) {
-    await playersTakeSeats(stage, game, [['one', 1], ['two', 1], ['three', 2], ['four', 2]] as const)
+    await playersTakeSeats(rig, game, [['one', 1], ['two', 1], ['three', 2], ['four', 2]] as const)
   }
 
   /** An Event ready to start: both Dates set, the teams full. */
