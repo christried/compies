@@ -1,9 +1,5 @@
 import { eq } from 'drizzle-orm'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
-import getActivity from '../../server/api/e/[slug]/activity.get'
-import startCeremony from '../../server/api/e/[slug]/ceremony.post'
-import createEvent from '../../server/api/e/index.post'
-import readEvent from '../../server/api/e/[slug].get'
 import { activity, eventMembers, events, games, roundPlaces, rounds, users } from '../../server/db/schema'
 import { testClock } from '../../server/utils/clock'
 import { memoryRoomNotifier } from '../../server/utils/room-notifier'
@@ -12,8 +8,9 @@ import type { EventView } from '../../shared/event'
 import type { CeremonyStarted } from '../../shared/stage'
 import { CEREMONY_LEAD_MS } from '../../shared/ceremony'
 import { withTeams } from '../../shared/settings'
+import { createTestApp, errorOf, sendVia, type TestRequest } from './app'
 import { TEST_SETTINGS } from './fixtures'
-import { createTestDb, createTestServer } from './harness'
+import { createTestDb, resetDatabase } from './harness'
 import { setAllowlist, signIn, stubAuthEnv } from './sign-in'
 
 // The platform's random source with an override the gag tests set: otherwise it is the real one (the pattern of hidden-wheel.test.ts).
@@ -51,18 +48,13 @@ const TIE_END_MS = { twoOfFour: { trip: 6660, bonk: 8060 }, twoOfTwo: { trip: 57
 
 describe('starting the Award ceremony (#309)', () => {
   let testDb: Awaited<ReturnType<typeof createTestDb>>
-  let request: ReturnType<typeof createTestServer>
+  let request: TestRequest
   const notifier = memoryRoomNotifier()
   const clock = testClock(T0)
 
   beforeAll(async () => {
     testDb = await createTestDb()
-    request = createTestServer(testDb.db, {
-      'POST /api/e': createEvent,
-      'GET /api/e/:slug': readEvent,
-      'GET /api/e/:slug/activity': getActivity,
-      'POST /api/e/:slug/ceremony': startCeremony,
-    }, { roomNotifier: notifier, clock })
+    request = createTestApp(testDb.db, { roomNotifier: notifier, clock })
   })
 
   afterAll(async () => {
@@ -75,30 +67,14 @@ describe('starting the Award ceremony (#309)', () => {
     notifier.clear()
     source.override = null
     source.asked = []
-    await testDb.db.delete(activity)
-    await testDb.db.delete(roundPlaces)
-    await testDb.db.delete(rounds)
-    await testDb.db.delete(eventMembers)
-    await testDb.db.delete(events)
-    await testDb.db.delete(games)
-    await testDb.db.delete(users)
+    await resetDatabase(testDb.db)
   })
 
   afterEach(() => {
     vi.unstubAllEnvs()
   })
 
-  function send(method: string, path: string, cookie: string | undefined, body?: unknown) {
-    return request(path, {
-      method,
-      headers: { ...(body === undefined ? {} : { 'content-type': 'application/json' }), ...(cookie ? { cookie } : {}) },
-      body: body === undefined ? undefined : JSON.stringify(body),
-    })
-  }
-
-  async function errorOf(response: Response) {
-    return { status: response.status, code: (await response.json() as { statusMessage: string }).statusMessage }
-  }
+  const send = sendVia(() => request)
 
   /**
    * The Results a finished Event stands on (the Standings, and so the Winner count, are computed from them, #315): `sole`, team 1 wins
