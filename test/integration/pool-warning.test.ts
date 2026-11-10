@@ -6,7 +6,7 @@ import { memoryRoomNotifier } from '../../server/utils/room-notifier'
 import { SPIN, WINDOW_MS } from '../draw-offsets'
 import { createTestApp, sendVia, type TestRequest } from './app'
 import { createTestDb, resetDatabase } from './harness'
-import { readEvent, startRunningEvent, type Stage } from './scenario'
+import { readEvent, setUpEvent, startRunningEvent, type Stage } from './scenario'
 import { stubAuthEnv } from './sign-in'
 
 // The Host's pool warning (#234, spec #218 § Pool warning) through the Event read: it shows when the games left may not cover the
@@ -56,11 +56,12 @@ describe('the Host\'s pool warning (#234)', () => {
 
   /**
    * An Event with two Parties of two (One and Two in team 1, Three and Four in team 2) and `poolSize` games in the Game pool. Under the
-   * Lucky Wheel the Veto allowance is `allowance` per Party; `start` runs the first Session (the Event is running only then).
+   * Lucky Wheel the Veto allowance is `allowance` per Party; `started` runs the first Session (the Event is running only then).
    */
-  async function event({ wheel = true, allowance = 0, gameCount = 10, poolSize = 4, start = true }: { wheel?: boolean, allowance?: number, gameCount?: number, poolSize?: number, start?: boolean } = {}) {
-    const game = await startRunningEvent(stage, {
-      host, players: people, seats: [['one', 1], ['two', 1], ['three', 2], ['four', 2]] as const, start,
+  async function event({ wheel = true, allowance = 0, gameCount = 10, poolSize = 4, started = true }: { wheel?: boolean, allowance?: number, gameCount?: number, poolSize?: number, started?: boolean } = {}) {
+    const make = started ? startRunningEvent : setUpEvent
+    const game = await make(stage, {
+      host, players: people, seats: [['one', 1], ['two', 1], ['three', 2], ['four', 2]] as const,
       settings: { teamSize: 2, gameCount, ...(wheel ? { selectionMode: 'lucky_wheel', vetoAllowance: allowance } : {}) },
       games: Array.from({ length: poolSize }, (_, index) => ({ key: `spiel${index + 1}`, values: { name: `Spiel ${index + 1}` }, pool: true })),
     })
@@ -112,7 +113,7 @@ describe('the Host\'s pool warning (#234)', () => {
   })
 
   it('shows the warning only while the Event runs: the setup hint covers the time before the first Session', async () => {
-    const party = await event({ allowance: 2, gameCount: 10, poolSize: 4, start: false })
+    const party = await event({ allowance: 2, gameCount: 10, poolSize: 4, started: false })
     expect(await warningOf(party)).toBeNull()
 
     await startNow(party)

@@ -7,7 +7,7 @@ import { ROOM_CALL_SIGNATURE_HEADER, ROOM_CALL_TIMESTAMP_HEADER, signRoomCall } 
 import { createTestApp, sendVia, type TestRequest } from './app'
 import { TEST_SETTINGS } from './fixtures'
 import { createTestDb, resetDatabase } from './harness'
-import { hostEndsSession, hostEntersResult, hostFinishes, hostSets, startRunningEvent, type Stage } from './scenario'
+import { hostEndsSession, hostEntersResult, hostFinishes, hostSets, setUpEvent, startRunningEvent, type Stage } from './scenario'
 import { stubAuthEnv } from './sign-in'
 
 // Deleting an Event (#333, spec #332, GLOSSARY: Deleted Event): the Host's soft delete through `changeEvent`. It sets the deleted mark and
@@ -82,7 +82,8 @@ describe('deleting an Event', () => {
 
   async function buildEvent(phase: Phase) {
     const started = phase === 'running' || phase === 'between' || phase === 'finished'
-    const ev = await startRunningEvent(stage, {
+    const make = started ? startRunningEvent : setUpEvent
+    const ev = await make(stage, {
       host,
       players: { member, second },
       outsiders: { stranger },
@@ -92,7 +93,6 @@ describe('deleting an Event', () => {
       settings: SETTINGS,
       // A finished Event (#277): the Host sets one game in the running Session, enters team 1's win and finishes it.
       games: phase === 'finished' ? [{ key: 'halo', values: { name: 'Halo' }, pool: true }] : [],
-      start: started,
     })
     if (phase === 'finished') {
       const roundId = await hostSets(stage, ev, ev.games.halo.id)

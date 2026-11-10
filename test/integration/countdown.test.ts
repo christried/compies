@@ -5,7 +5,7 @@ import { testClock } from '../../server/utils/clock'
 import { memoryRoomNotifier } from '../../server/utils/room-notifier'
 import { createTestApp, errorOf, sendVia, type TestRequest } from './app'
 import { createTestDb, resetDatabase } from './harness'
-import { readEvent, startRunningEvent, type Stage } from './scenario'
+import { readEvent, setUpEvent, startRunningEvent, type Stage } from './scenario'
 import { stubAuthEnv } from './sign-in'
 
 // The Countdown (#236, spec #218 § Countdown): the Host sets it in minutes and seconds (5 s to 99:59), starts, pauses, resumes
@@ -53,12 +53,12 @@ describe('Countdown', () => {
 
   /** An Event with a Host and two Members. `running` starts its first Session (both Members seated in a team each). */
   async function event({ running = true }: { running?: boolean } = {}) {
-    const ev = await startRunningEvent(stage, {
+    const make = running ? startRunningEvent : setUpEvent
+    const ev = await make(stage, {
       host,
       players,
       seats: running ? [['one', 1], ['two', 2]] : [],
       confirmed: running ? 1 : 0,
-      start: running,
     })
     return { slug: ev.slug, eventId: ev.eventId, hostCookie: ev.host.cookie, cookies: { one: ev.players.one.cookie, two: ev.players.two.cookie } }
   }

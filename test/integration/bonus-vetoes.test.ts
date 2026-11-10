@@ -8,7 +8,7 @@ import { BONUS_VETO_MAX } from '../../shared/rounds'
 import { SPIN } from '../draw-offsets'
 import { createTestApp, errorOf, sendVia, type TestRequest } from './app'
 import { createTestDb, resetDatabase } from './harness'
-import { readEvent, readFeed, startRunningEvent, type Stage } from './scenario'
+import { readEvent, readFeed, setUpEvent, startRunningEvent, type Stage } from './scenario'
 import { stubAuthEnv } from './sign-in'
 
 // Bonus Vetoes (#233, spec #218 § Bonus Vetoes): the Host grants a Party one, through the HTTP API with the in-memory room and a test
@@ -59,13 +59,13 @@ describe('Bonus Vetoes (#233)', () => {
    * each of two Parties, four games in the Game pool, the Veto allowance `allowance` (Lucky Wheel only).
    */
   async function event({ mode = 'lucky_wheel', allowance = 1, started = true }: { mode?: 'lucky_wheel' | 'admin_pick', allowance?: number, started?: boolean } = {}) {
-    const ev = await startRunningEvent(stage, {
+    const make = started ? startRunningEvent : setUpEvent
+    const ev = await make(stage, {
       host,
       players,
       seats: started ? [['one', 1], ['two', 2]] : [],
       sessions: 1,
       confirmed: started ? 1 : 0,
-      start: started,
       settings: { teamSize: 1, selectionMode: mode, vetoAllowance: mode === 'lucky_wheel' ? allowance : null },
       games: ['Halo', 'Kart', 'Dart', 'Uno'].map(name => ({ key: name, values: { name }, pool: true })),
     })

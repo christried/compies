@@ -5,7 +5,7 @@ import { memoryRoomNotifier } from '../../server/utils/room-notifier'
 import type { EventView } from '../../shared/event'
 import { createTestApp, errorOf, sendVia, type TestRequest } from './app'
 import { createTestDb, resetDatabase } from './harness'
-import { readEvent, startRunningEvent, type Stage } from './scenario'
+import { readEvent, setUpEvent, type Stage } from './scenario'
 import { signIn, stubAuthEnv } from './sign-in'
 
 // Team names (#161, spec #153 stories 34-41): a Player in a team gives one word, the team's name is the words in the
@@ -44,14 +44,13 @@ describe('Team names', () => {
   /** An Event with a set Date (Team choice open, 2 teams of 3) by the Host, with Players One, Two and Three on the Bench. */
   async function setup(settings: Record<string, unknown> = {}) {
     // One Session, two Slots: the second is a Slot the poll still offers, beside the Date (`extraSlots`).
-    const event = await startRunningEvent(stage, {
+    const event = await setUpEvent(stage, {
       host,
       players: { one, two, three },
       seats: [],
       sessions: 1,
       extraSlots: ['2090-10-31T19:00'],
       confirmed: 1,
-      start: false,
       quiet: 'room-and-feed',
       settings: { teamSize: 3, ...settings },
     })

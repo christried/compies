@@ -4,7 +4,7 @@ import { pollSlots, pollVotes, events, sessions, users } from '../../server/db/s
 import { createTestApp, type TestRequest } from './app'
 import { TEST_SETTINGS } from './fixtures'
 import { createTestDb, resetDatabase } from './harness'
-import { readEventText, startRunningEvent, type Stage } from './scenario'
+import { readEventText, setUpEvent, type Stage } from './scenario'
 import { setAllowlist, signIn, stubAuthEnv } from './sign-in'
 
 // The Note on a Vote (#102). Slots are far in the future; past Slots are made by moving their start into 2001.
@@ -45,7 +45,7 @@ describe('Notes on Votes', () => {
   /** A poll Event by the Host with three Slots; returns the Host, a Member and the Slot ids in time order. */
   async function setUp() {
     // One Session, so the poll stays open until a Date is set; the third Slot is one the poll offers beside the first two (`extraSlots`).
-    const event = await startRunningEvent(stage, {
+    const event = await setUpEvent(stage, {
       host,
       players: { guest: member },
       seats: [],
@@ -53,7 +53,6 @@ describe('Notes on Votes', () => {
       slots: ['2090-10-30T20:30'],
       extraSlots: ['2090-10-31T19:00', '2090-11-01T19:00'],
       confirmed: 0,
-      start: false,
     })
     return { slug: event.slug, eventId: event.eventId, hostCookie: event.host.cookie, hostId: event.host.id, guestCookie: event.players.guest.cookie, guestId: event.players.guest.id, slotIds: event.slotIds }
   }

@@ -7,7 +7,7 @@ import type { CoinTossed } from '../../shared/stage'
 import { COIN_DURATION_MS, COIN_LEAD_MS } from '../../shared/coin'
 import { createTestApp, errorOf, sendVia, type TestRequest } from './app'
 import { createTestDb, resetDatabase } from './harness'
-import { readEvent, readFeed, startRunningEvent, type Stage } from './scenario'
+import { readEvent, readFeed, setUpEvent, startRunningEvent, type Stage } from './scenario'
 import { stubAuthEnv } from './sign-in'
 
 // The Coin flip (#235, spec #218 § Coin flip): the Host tosses a coin in a running Session, through the HTTP API with a test clock and
@@ -57,12 +57,12 @@ describe('the Coin flip (#235)', () => {
 
   /** An Event with a Host and two Members. `running` starts its first Session (both Members seated in a team each). */
   async function event({ running = true }: { running?: boolean } = {}) {
-    const ev = await startRunningEvent(stage, {
+    const make = running ? startRunningEvent : setUpEvent
+    const ev = await make(stage, {
       host,
       players,
       seats: running ? [['one', 1], ['two', 2]] : [],
       confirmed: running ? 1 : 0,
-      start: running,
     })
     return { slug: ev.slug, eventId: ev.eventId, hostCookie: ev.host.cookie, cookies: { one: ev.players.one.cookie, two: ev.players.two.cookie } }
   }

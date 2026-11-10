@@ -8,7 +8,7 @@ import { createTestApp, errorOf, sendVia } from './app'
 import { createTestDb, resetDatabase } from './harness'
 import {
   clockToEnd, clockToStop, hostCreatesEvent, hostEndsSession, hostEntersResult, hostFinishes, hostPutsBack, hostSets, hostSignsIn, hostSpins,
-  playersJoin, playerVetoes, readEvent, readFeed, signInAs, startRunningEvent, startRunningSession, type GameSeed, type Signed, type Stage,
+  playersJoin, playerVetoes, readEvent, readFeed, setUpEvent, signInAs, startRunningEvent, startRunningSession, type GameSeed, type Signed, type Stage,
 } from './scenario'
 import { stubAuthEnv } from './sign-in'
 
@@ -87,7 +87,7 @@ describe('the Event scenario', () => {
     })
 
     it('extraSlots: the poll offers Slots beyond the Sessions, and only the Sessions take a Date', async () => {
-      const ev = await startRunningEvent(stage, { ...base, extraSlots: ['2090-11-01T19:00'], start: false })
+      const ev = await setUpEvent(stage, { ...base, extraSlots: ['2090-11-01T19:00'] })
 
       expect(ev.slotIds).toHaveLength(3)
       const view = await readEvent(stage, ev.host.cookie, ev.slug)
@@ -95,8 +95,8 @@ describe('the Event scenario', () => {
       expect(view.missingDates).toBe(0)
     })
 
-    it('start: false leaves no Running Session, with the Dates set', async () => {
-      const ev = await startRunningEvent(stage, { ...base, start: false })
+    it('setUpEvent leaves no Running Session, with the Dates set', async () => {
+      const ev = await setUpEvent(stage, base)
 
       const view = await readEvent(stage, ev.host.cookie, ev.slug)
       expect(view.runningSessionId).toBeNull()

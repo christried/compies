@@ -65,7 +65,7 @@ export interface GameSeed { key: string, values: Omit<typeof games.$inferInsert,
 /** Where a Player takes a seat: a team position (1, 2, …) or the Stands. A Player not seated stays a Member on the Bench. */
 export type Seat = number | 'stands'
 
-export interface RunningEventOptions<Player extends string, Game extends string = never, Outsider extends string = never> {
+export interface ScenarioEventOptions<Player extends string, Game extends string = never, Outsider extends string = never> {
   host: ProviderProfile
   /** Each signs in and becomes a Member of the Event (by rows, or by Invite with `join: 'invite'`). */
   players: Record<Player, ProviderProfile>
@@ -88,24 +88,22 @@ export interface RunningEventOptions<Player extends string, Game extends string 
   games?: readonly (GameSeed & { key: Game })[]
   /** Default 'rows': `event_members` inserted straight. 'invite': POST /api/invite/:invite, which writes `member_joined` feed entries and room messages like a real join. */
   join?: 'rows' | 'invite'
-  /** Default true: POST sessions/start. False leaves the Event with its Dates set and no Running Session. */
-  start?: boolean
   /** After the setup: `notifier.clear()` / also delete the `activity` rows / nothing. Default 'room'. */
   quiet?: 'room' | 'room-and-feed' | false
 }
 
-/** What the verbs need of an Event: it is made by `hostCreatesEvent`, and `startRunningEvent` adds the Players. */
+/** What the verbs need of an Event: it is made by `hostCreatesEvent`; `startRunningEvent` and `setUpEvent` add the Players. */
 export interface CreatedEvent { slug: string, eventId: string, inviteToken: string, slotIds: string[] }
 
-export interface RunningEvent<Player extends string = string, Game extends string = never, Outsider extends string = never> extends CreatedEvent {
+export interface ScenarioEvent<Player extends string = string, Game extends string = never, Outsider extends string = never> extends CreatedEvent {
   host: Signed
   players: Record<Player, Signed>
   outsiders: Record<Outsider, Signed>
   games: Record<Game, typeof games.$inferSelect>
 }
 
-/** What a verb on a started Event needs: its slug, its ids and the Host's login. `RunningEvent` is one. */
-type EventRef = Pick<RunningEvent<string, string, string>, 'slug' | 'eventId' | 'inviteToken' | 'slotIds' | 'host'>
+/** What a verb on an Event needs: its slug, its ids and the Host's login. `ScenarioEvent` is one. */
+type EventRef = Pick<ScenarioEvent<string, string, string>, 'slug' | 'eventId' | 'inviteToken' | 'slotIds' | 'host'>
 
 const sendOf = (stage: Stage) => sendVia(() => stage.request)
 
@@ -142,7 +140,7 @@ export async function hostSignsIn(stage: Stage, profile: ProviderProfile): Promi
 
 /**
  * The Host creates an Event with a poll (POST /api/e). `settings` go in as given (default `TEST_SETTINGS`), so a file whose settings omit
- * a key keeps omitting it; `pool` is a list of library game ids for the Game pool. `startRunningEvent` calls this first.
+ * a key keeps omitting it; `pool` is a list of library game ids for the Game pool. `startRunningEvent` and `setUpEvent` call this first.
  */
 export async function hostCreatesEvent(stage: Stage, host: Signed, { name = 'Freitags-Zocken', sessions = 2, slots, settings = TEST_SETTINGS, pool }: {
   name?: string
@@ -195,11 +193,11 @@ export async function hostEndsSession(stage: Stage, event: Pick<EventRef, 'slug'
 }
 
 /**
- * The whole set-up in the order the builders used: sign in (Host, Players, outsiders), create the Event, make the Members, insert the
- * games, set the Dates, seat the Players, start the Session, then `quiet`. Every Player in `players` is a Member, seated or not.
+ * The whole set-up, in this order: sign in (Host, Players, outsiders), create the Event, make the Members, insert the games, set the
+ * Dates, seat the Players, start the Session when `start` says so, then `quiet`. Every Player in `players` is a Member, seated or not.
  */
-export async function startRunningEvent<Player extends string, Game extends string = never, Outsider extends string = never>(stage: Stage, options: RunningEventOptions<Player, Game, Outsider>): Promise<RunningEvent<Player, Game, Outsider>> {
-  const { sessions = 2, confirmed = sessions, join = 'rows', start = true, quiet = 'room' } = options
+async function buildEvent<Player extends string, Game extends string = never, Outsider extends string = never>(stage: Stage, options: ScenarioEventOptions<Player, Game, Outsider>, start: boolean): Promise<ScenarioEvent<Player, Game, Outsider>> {
+  const { sessions = 2, confirmed = sessions, join = 'rows', quiet = 'room' } = options
   const dated = options.slots ?? defaultSlots(sessions)
   expect(dated, 'slots and sessions must have the same length').toHaveLength(sessions)
   const slots = [...dated, ...(options.extraSlots ?? [])]
@@ -224,13 +222,29 @@ export async function startRunningEvent<Player extends string, Game extends stri
     for (const [index, seed] of seeds.entries()) seeded[seed.key] = rows[index]!
   }
 
-  const event: RunningEvent<Player, Game, Outsider> = { ...created, host, players, outsiders, games: seeded }
+  const event: ScenarioEvent<Player, Game, Outsider> = { ...created, host, players, outsiders, games: seeded }
   await hostSetsDates(stage, event, confirmed)
   await playersTakeSeats(stage, event, options.seats)
   if (start) await hostStartsSession(stage, event)
   if (quiet === 'room-and-feed') await stage.db.delete(activity)
   if (quiet) stage.notifier?.clear()
   return event
+}
+
+/**
+ * An Event with a Running Session: the Host and the Players signed in, the Event created, its Members, games, Dates (`confirmed`) and
+ * seats, the Session started, then `quiet`.
+ */
+export async function startRunningEvent<Player extends string, Game extends string = never, Outsider extends string = never>(stage: Stage, options: ScenarioEventOptions<Player, Game, Outsider>): Promise<ScenarioEvent<Player, Game, Outsider>> {
+  return await buildEvent(stage, options, true)
+}
+
+/**
+ * An Event that has no Running Session: the Host and the Players signed in, the Event created, its Members, games, Dates (`confirmed`)
+ * and seats, then `quiet`; no Session start.
+ */
+export async function setUpEvent<Player extends string, Game extends string = never, Outsider extends string = never>(stage: Stage, options: ScenarioEventOptions<Player, Game, Outsider>): Promise<ScenarioEvent<Player, Game, Outsider>> {
+  return await buildEvent(stage, options, false)
 }
 
 // --- During the Session ---------------------------------------------------------------------------------------------------
