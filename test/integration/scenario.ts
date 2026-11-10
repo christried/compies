@@ -35,7 +35,7 @@ import { setAllowlist, signIn, type ProviderProfile } from './sign-in'
 // | hidden-wheel (`runningEvent`)                 | joins by Invite, games made over HTTP, 1 Session         | `join: 'invite'`, or `hostCreatesEvent` + `playersJoin` + `startRunningSession` |
 // | finished-readonly (`finishedWheel`)           | finishes through the API after one Result                | `startRunningEvent` + `hostSpins`/`hostSets` + `hostEntersResult` + `hostFinishes` |
 // | share-image (`event`)                         | Spectator + Bench Member + outsider, optional finish     | `seats` with 'stands', `outsiders`, `hostFinishes`   |
-// | session-start, team-names, settings-teams     | Event in its poll or with one Date, Members on the Bench | `confirmed: 0 | 1`, `seats: []`, `start: false`; settings-teams seats by the Host (a `send`) |
+// | session-start, team-names, settings-teams     | Event in its poll or with one Date, Members on the Bench | `confirmed: 0 | 1`, `extraSlots` (a Slot beyond the Sessions), `seats: []`, `start: false`; settings-teams seats by the Host (a `send`) |
 // | delete-event (`buildEvent(phase)`)            | one Event per Phase, a stranger                          | `confirmed`, `start`, `hostEndsSession`, `outsiders`  |
 //
 // Not expressed: an Event with no settings (session-start `settings: false` updates the row after the set-up: a local wrapper), and an
