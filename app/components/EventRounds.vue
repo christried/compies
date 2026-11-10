@@ -8,7 +8,7 @@ import type { PointsTable } from '~~/shared/settings'
 import type { EndView, RoundView } from '~~/shared/stage'
 
 // The open Rounds on the stage (#228, 11-event-seite § EventPage, screen 15): every Round whose game is set and not put back,
-// as a game tile (#435: picture and name only, no „wird gespielt“ badge and no Price; the Price is in the game dialog, which the Host's tile opens, #443, and a Member's will, #444),
+// as a game tile (#435: picture and name only, no „wird gespielt“ badge and no Price; the Price is in the game dialog, which every Member's tile opens, #443, #444),
 // in the order they started. An open Round has no Result and so no number (the number comes with the Result, #273). Everyone sees
 // the game's name and picture; the Host also gets its Game notes, open,
 // „Ergebnis eintragen“, which opens the result sheet for that Round (#273), and „Zurücklegen“ as a hold, which removes the Round and returns

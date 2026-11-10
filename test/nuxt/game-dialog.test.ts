@@ -3,15 +3,15 @@ import { flushPromises, type VueWrapper } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import GameDialog from '~/components/GameDialog.vue'
 import GameTile from '~/components/GameTile.vue'
-import { GAME_NAME_MAX, GAME_NOTES_MAX, TAG_MAX, TAGS_PER_GAME_MAX, type DialogGame, type HostGameFacts } from '~~/shared/game'
+import { GAME_NAME_MAX, GAME_NOTES_MAX, TAG_MAX, TAGS_PER_GAME_MAX, type HostGameFacts, type PoolGameFace } from '~~/shared/game'
 import { colorTags } from '~~/shared/tag-colors'
 import { kitty, signInAs } from './auth'
 
-// The game dialog (#443): the library entry's parts in the sheet shell, read-only. The Host gets everything the library knows but a Clip;
-// a Member's audience never gets Tags, Notes or the link, whatever the caller hands it. The sheet is teleported, so the tests read the document.
+// The game dialog (#443, #444): the library entry's parts in the sheet shell, read-only. The Host gets everything the library knows but a Clip;
+// a Member's audience gets picture, name, players, Suitabilities and Price, never Tags, Notes or the link, whatever the caller hands it. The sheet is teleported, so the tests read the document.
 
 const PRICE = { cents: 1999, source: 'steam' as const, checkedAt: '2026-11-03T10:00:00.000Z' }
-const FULL: DialogGame = {
+const FULL: PoolGameFace = {
   id: '00000000-0000-4000-8000-0000000000a1',
   name: 'Mario Kart',
   imageUrl: '/api/images/kart.webp',
@@ -28,7 +28,7 @@ const FACTS: HostGameFacts = { tags: EIGHT_TAGS, notes: NOTES }
 
 let wrapper: VueWrapper | undefined
 
-async function open(props: { game?: DialogGame, audience?: 'host' | 'member', facts?: HostGameFacts | null } = {}) {
+async function open(props: { game?: PoolGameFace, audience?: 'host' | 'member', facts?: HostGameFacts | null } = {}) {
   wrapper = await mountSuspended(GameDialog, { props: { open: true, game: FULL, audience: 'host', facts: FACTS, ...props } })
   await flushPromises()
   return wrapper
@@ -122,7 +122,7 @@ describe('the game dialog for the Host (#443)', () => {
   })
 
   it('shows only the picture and the name, and the link, for a game with no player count, Suitabilities, Price, Tags or Notes', async () => {
-    await open({ game: { id: FULL.id, name: 'Pong', imageUrl: null, youtubeId: null, price: null }, facts: { tags: [], notes: null } })
+    await open({ game: { id: FULL.id, name: 'Pong', imageUrl: null, youtubeId: null, price: null, playersMin: null, playersMax: null, suitabilities: [] }, facts: { tags: [], notes: null } })
 
     expect(dialog().querySelector('h2')?.textContent).toBe('Pong')
     expect(dialog().querySelector('[data-cover="placeholder"]')).not.toBeNull()
@@ -184,7 +184,7 @@ describe('the game dialog for the Host (#443)', () => {
   })
 })
 
-describe('the game dialog for a Member (#443)', () => {
+describe('the game dialog for a Member (#443, #444)', () => {
   it('shows picture, name, players, Suitabilities and the Price, and never Tags, Notes or the link, even when handed the facts', async () => {
     await open({ audience: 'member', facts: FACTS })
 
@@ -206,9 +206,67 @@ describe('the game dialog for a Member (#443)', () => {
 
     expect(link()).toBeNull()
   })
+
+  it('shows the Price with its day, and plays no Clip', async () => {
+    await open({ audience: 'member' })
+
+    expect(pills()).toEqual(['2 bis 6', 'Teams, 1 gegen 1', expect.stringMatching(/^19,99 € bei Steam · Stand 3\. Nov\./)])
+    expect(dialog().querySelector('iframe')).toBeNull()
+    expect(text()).not.toContain('Clip')
+  })
+
+  it('shows no Price pill and no gap for a game without a Price', async () => {
+    await open({ audience: 'member', game: { ...FULL, price: null } })
+
+    expect(pills()).toEqual(['2 bis 6', 'Teams, 1 gegen 1'])
+    expect(text()).not.toContain('€')
+    expect(text()).not.toContain('Stand')
+  })
+
+  it('shows picture and name only, with no empty pill row, for a game with no players, no Suitabilities and no Price', async () => {
+    await open({ audience: 'member', game: { ...FULL, playersMin: null, playersMax: null, suitabilities: [], price: null } })
+
+    expect(dialog().querySelector('h2')?.textContent).toBe('Mario Kart')
+    expect(dialog().querySelector('img')).not.toBeNull()
+    expect(dialog().querySelectorAll('ul')).toHaveLength(0)
+    expect(dialog().querySelectorAll('li')).toHaveLength(0)
+  })
+
+  it('shows a game with only a Suitability as that one pill', async () => {
+    await open({ audience: 'member', game: { ...FULL, playersMin: null, playersMax: null, suitabilities: ['ffa'], price: null } })
+
+    expect(pills()).toEqual(['Jeder gegen jeden'])
+  })
+
+  it('shows a game with one player count as one pill', async () => {
+    await open({ audience: 'member', game: { ...FULL, playersMin: 1, playersMax: 1, suitabilities: [], price: null } })
+
+    expect(pills()).toEqual(['1 Spieler'])
+  })
+
+  it('holds the longest name allowed, without spaces, wrapped in the title', async () => {
+    const name = 'x'.repeat(GAME_NAME_MAX)
+    await open({ audience: 'member', game: { ...FULL, name } })
+
+    expect(dialog().querySelector('h2')?.textContent).toBe(name)
+    expect(dialog().querySelector('h2')?.className).toContain('[overflow-wrap:anywhere]')
+  })
+
+  it('has the Clip\'s thumbnail and no player for a game with a Clip and no image, and the placeholder for a game with neither', async () => {
+    await open({ audience: 'member', game: { ...FULL, imageUrl: null } })
+    expect(dialog().querySelector('img')?.getAttribute('src')).toContain('dQw4w9WgXcQ')
+    expect(dialog().querySelector('iframe')).toBeNull()
+    expect(text()).not.toContain('Clip')
+    wrapper!.unmount()
+    document.body.innerHTML = ''
+
+    await open({ audience: 'member', game: { ...FULL, imageUrl: null, youtubeId: null } })
+    expect(dialog().querySelector('img')).toBeNull()
+    expect(dialog().querySelector('[data-cover="placeholder"]')).not.toBeNull()
+  })
 })
 
-describe('the game tile with its dialog (#443)', () => {
+describe('the game tile with its dialog (#443, #444)', () => {
   const mountTile = async (audience: 'host' | 'member', facts: HostGameFacts | null = FACTS) => {
     wrapper = await mountSuspended(GameTile, { props: { game: FULL, audience, facts }, attachTo: document.body })
     return wrapper
@@ -243,14 +301,44 @@ describe('the game tile with its dialog (#443)', () => {
     expect(document.activeElement).toBe(button)
   })
 
-  it('is no button for a Member, mounts no dialog and opens nothing on a click (#444 opens it)', async () => {
+  it.each([
+    ['a Member', { ...kitty, canHost: false }],
+    ['a Member who holds the Host permission for other Events', { ...kitty, canHost: true }],
+  ])('is a button named after the game for %s, and a tap opens the dialog without Tags, Notes, a footer or the library link, even with the facts handed in (#444)', async (_who, user) => {
+    signInAs(user)
     const tile = await mountTile('member')
 
-    expect(tile.find('button').exists()).toBe(false)
-    expect(tile.find('[aria-haspopup]').exists()).toBe(false)
-    expect(tile.text()).toBe('Mario Kart')
-    await tile.get('b').trigger('click')
-    await flushPromises()
+    const button = tile.get('button')
+    expect(button.text()).toBe('Mario Kart')
+    expect(button.attributes('aria-haspopup')).toBe('dialog')
     expect(document.querySelector('[role="dialog"]')).toBeNull()
+
+    await button.trigger('click')
+    await flushPromises()
+
+    expect(dialog().querySelector('h2')?.textContent).toBe('Mario Kart')
+    expect(dialog().querySelector('img')?.getAttribute('src')).toBe('/api/images/kart.webp')
+    expect(pills()).toEqual(['2 bis 6', 'Teams, 1 gegen 1', expect.stringContaining('19,99 €')])
+    expect(text()).toContain('Stand')
+    expect(dialog().querySelector('ul[aria-label="Tags"]')).toBeNull()
+    expect(text()).not.toContain('Notizen')
+    expect(text()).not.toContain('Erste Zeile')
+    expect(dialog().querySelector('a[href^="/bibliothek/"]')).toBeNull()
+    expect(dialog().querySelector('footer')).toBeNull()
+  })
+
+  it('closes a Member\'s dialog on Escape and returns focus to the tile', async () => {
+    const tile = await mountTile('member')
+    const button = tile.get('button').element as HTMLButtonElement
+    button.focus()
+
+    await tile.get('button').trigger('click')
+    await flushPromises()
+    expect(dialog().contains(document.activeElement)).toBe(true)
+
+    dialog().dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+    await flushPromises()
+
+    expect(document.activeElement).toBe(button)
   })
 })

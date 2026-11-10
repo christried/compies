@@ -1,17 +1,16 @@
 <script setup lang="ts">
-import type { DialogGame, HostGameFacts } from '~~/shared/game'
+import type { HostGameFacts, PoolGameFace } from '~~/shared/game'
 
-// A game as a tile with its dialog (#443): the tile (#435) is a button that opens the game dialog, and the dialog lives in its tile, so it goes with the
-// tile when the tile leaves the page (a Round settled from another tab, a game that left the pool). A Member's tile stays plain until #444: its one edit is
-// that `opens` becomes true for them too.
-const props = defineProps<{
-  game: DialogGame
+// A game as a tile with its dialog (#443, #444): the tile (#435) is a button that opens the game dialog, for every Member, and the dialog lives in its tile, so it goes
+// with the tile when the tile leaves the page (a Round settled from another tab, a game that left the pool). `audience` only decides what the dialog shows: the Host's
+// has the Tags, the Notes and the library link, a Member's never has them.
+defineProps<{
+  game: PoolGameFace
   audience: 'host' | 'member'
   /** The Tags and Notes of the game from the Host's read; null for a Member and where the read has none. */
   facts?: HostGameFacts | null
 }>()
 
-const opens = computed(() => props.audience === 'host')
 const dialogOpen = ref(false)
 </script>
 
@@ -19,11 +18,10 @@ const dialogOpen = ref(false)
   <GameCard
     :game="game"
     layout="tile"
-    :opens="opens"
+    opens
     @open="dialogOpen = true"
   />
   <GameDialog
-    v-if="opens"
     :open="dialogOpen"
     :game="game"
     :audience="audience"

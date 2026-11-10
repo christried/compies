@@ -10,13 +10,12 @@ import { colorTags } from '~~/shared/tag-colors'
 // A game as a card or a row (02-components § GameCard, #141). The cover is the uploaded image, else the
 // clip's YouTube thumbnail, else a neutral placeholder. It is decorative: the name is the text. With `to`
 // the name is the link and stretches over the whole card (so `#actions` can hold buttons of their own);
-// without it the card is a plain element, not a button. #146 and #148 reuse it; a game that came as its face only (a Member's
-// pool game, #224) has no player count and no Suitabilities to show, so the card shows neither. `layout="responsive"` (#173) is a row
+// without it the card is a plain element, not a button. #146 and #148 reuse it; a game with no player count and no Suitabilities shows neither. `layout="responsive"` (#173) is a row
 // below md and a card from md up, decided in CSS, so the game browser needs no `matchMedia`. A library game shows its first
 // three Tags and „+N“ (#335), each in the colour the game's whole Tag order gives it (#427, as on its page) and its Price line under the meta line (#337, #338: a pool and a Round game carry the Price too); only a wheel slice carries neither. They are
 // spans, not a list: the tests count the cards as `li`. The picker's rows are these cards too, so they show the Price as well.
 // The `tile` layout (#435) is the cover and the name only, on the Event page: no players, Suitabilities, Tags or Price, and no link. With `opens` (#443) the
-// name is a button that emits `open` (the Host's tile opens the game dialog) and stretches over the tile like the link does; a tile without it stays plain.
+// name is a button that emits `open` (a tile opens the game dialog, #443, #444) and stretches over the tile like the link does; a tile without it stays plain.
 const props = withDefaults(defineProps<{
   game: PoolGameFace & Partial<Pick<GameView, 'playersMin' | 'playersMax' | 'suitabilities' | 'tags' | 'price'>>
   layout?: 'card' | 'row' | 'responsive' | 'tile'

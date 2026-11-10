@@ -172,11 +172,11 @@ describe('the tile layout (#435)', () => {
   })
 })
 
-// A tile that opens a dialog (#443): the Host's tile is a button, a Member's stays plain.
+// A tile that opens a dialog (#443, #444): a tile with `opens` is a button, one without it stays plain.
 describe('the tile that opens (#443)', () => {
   async function mountOpening(props: { opens?: boolean, to?: string }) {
     page = await mountSuspended(GameCard, {
-      props: { game: { id: 'g-1', name: 'Mario Kart', imageUrl: null, youtubeId: null, price: null }, layout: 'tile', ...props },
+      props: { game: { id: 'g-1', name: 'Mario Kart', imageUrl: null, youtubeId: null, price: null, playersMin: null, playersMax: null, suitabilities: [] }, layout: 'tile', ...props },
     })
     return page
   }
