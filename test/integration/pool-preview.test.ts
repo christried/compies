@@ -8,6 +8,7 @@ import type { GamePrice, GameView } from '../../shared/game'
 import { TEST_SETTINGS } from './fixtures'
 import { createTestApp, type TestRequest } from './app'
 import { createTestDb, resetDatabase } from './harness'
+import { second } from './hidden-wheel-world'
 import { hostPutsBack, hostSets, startRunningSession } from './scenario'
 import { setAllowlist, signIn, stubAuthEnv } from './sign-in'
 
@@ -17,7 +18,6 @@ import { setAllowlist, signIn, stubAuthEnv } from './sign-in'
 
 const host = { provider: 'discord', id: '1', name: 'Hostess', email: 'host@example.com', image: undefined } as const
 const player = { provider: 'discord', id: '2', name: 'Gast', email: 'player@example.com', image: undefined } as const
-const second = { provider: 'twitch', id: '5', name: 'Zweite', email: 'second@example.com', image: undefined } as const
 
 const ascii = (text: string) => Array.from(text, char => char.charCodeAt(0))
 function webp(payload: string): Uint8Array {

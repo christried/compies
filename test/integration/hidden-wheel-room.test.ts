@@ -1,22 +1,21 @@
 import { eq } from 'drizzle-orm'
 import { beforeEach, describe, expect, it } from 'vitest'
-import { draws, events, pollSlots, users } from '../../server/db/schema'
+import { draws, events, pollSlots } from '../../server/db/schema'
 import { ACTIVITY_TYPES, type ActivityEntry, type ActivityPage } from '../../shared/activity'
 import type { Place } from '../../shared/board'
 import type { CreatedEvent, EventView } from '../../shared/event'
 import type { RoomMessageType } from '../../shared/realtime'
 import { SPIN, WINDOW_MS } from '../draw-offsets'
 import { sendVia } from './app'
-import { hiddenWheelWorld, HIDDEN_WHEEL, type Secret } from './hidden-wheel-world'
-import { hostPutsBack, hostSets } from './scenario'
-import { signIn } from './sign-in'
+import { hiddenWheelWorld } from './hidden-wheel-world'
+import { hostPutsBack, hostSets, signInAs } from './scenario'
 
 // The room and the Activity feed under a Hidden wheel (#165): every message type and Activity type the lobby flow writes, and
 // no pool game in any of them. Split out of hidden-wheel.test.ts in #418.
 
 describe('Hidden wheel secrecy (#148)', () => {
   const world = hiddenWheelWorld()
-  const { testDb, request, notifier, clock, newGame, rawRead, traces, playerTraces, player } = world
+  const { testDb, request, notifier, clock, newGame, rawRead, traces, second, stage, expectNone, LOBBY } = world
   let hostCookie: string
   let playerCookie: string
 
@@ -32,24 +31,10 @@ describe('Hidden wheel secrecy (#148)', () => {
     type WorkerSent = 'presence.sync' | 'presence.join' | 'presence.leave' | 'clock.pong'
     const everyTypeListed: Exclude<RoomMessageType, (typeof SERVER_SENT)[number] | WorkerSent> extends never ? true : never = true
 
-    const LOBBY_SETTINGS = { ...HIDDEN_WHEEL, teamCount: 2, teamSize: 1 } as const
     const LOBBY_SLOTS = ['2090-10-30T20:30', '2090-10-31T19:00']
-    const player2 = { provider: 'twitch', id: '5', name: 'Zweite', email: 'second@example.com', image: undefined } as const
     const team = (position: number): Place => ({ zone: 'team', team: position })
 
     const send = sendVia(() => request)
-
-    async function userIdOf(email: string) {
-      const [row] = await testDb.db.select().from(users).where(eq(users.email, email))
-      return row!.id
-    }
-
-    /** Fails on the first trace of a pool game that `raw` holds, and names the place it leaks to (#165). */
-    function expectNoTrace(place: string, raw: string, secrets: readonly Secret[]) {
-      for (const secret of secrets) {
-        for (const trace of playerTraces(secret)) expect(raw, `${place} leaks ${trace}`).not.toContain(trace)
-      }
-    }
 
     /** The Activity feed as a Member reads it: every page, following `next` until it is null (#159). */
     async function activityOf(cookie: string, slug: string) {
@@ -82,7 +67,7 @@ describe('Hidden wheel secrecy (#148)', () => {
         method: 'POST',
         headers: { 'content-type': 'application/json', 'cookie': hostCookie },
         body: JSON.stringify({
-          name: 'Freitags-Zocken', dateMode: 'poll', sessions: 1, slots: LOBBY_SLOTS, settings: LOBBY_SETTINGS,
+          name: 'Freitags-Zocken', dateMode: 'poll', sessions: 1, slots: LOBBY_SLOTS, settings: LOBBY,
           pool: [a.id, b.id],
         }),
       })
@@ -92,8 +77,9 @@ describe('Hidden wheel secrecy (#148)', () => {
       const [eventRow] = await testDb.db.select().from(events).where(eq(events.slug, slug))
       const eventId = eventRow!.id
       const slotIds = (await testDb.db.select().from(pollSlots).where(eq(pollSlots.eventId, eventId)).orderBy(pollSlots.startsAt)).map(row => row.id)
-      const player2Cookie = (await signIn(testDb.db, player2)).cookie
-      const ids = { player: await userIdOf(player.email), player2: await userIdOf(player2.email) }
+      const secondSigned = await signInAs(stage(), second)
+      const player2Cookie = secondSigned.cookie
+      const ids = { player: world.playerSigned.id, player2: secondSigned.id }
 
       // 1. Both Players join through the Invite link (member_joined).
       expect((await send('POST', `/api/invite/${token}`, playerCookie)).status).toBe(200)
@@ -190,10 +176,10 @@ describe('Hidden wheel secrecy (#148)', () => {
       const room = JSON.stringify(notifier.messages(eventId))
       const feed = (await activityOf(playerCookie, slug)).raw
 
-      expectNoTrace('the room', room, games)
-      expectNoTrace('the Activity feed of Player 1', feed, games)
-      expectNoTrace('the Event read of Player 1', await rawRead(playerCookie, slug), games)
-      expectNoTrace('the Event read of Player 2', await rawRead(player2Cookie, slug), games)
+      expectNone({ 'the room': room }, games)
+      expectNone({ 'the Activity feed of Player 1': feed }, games)
+      expectNone({ 'the Event read of Player 1': await rawRead(playerCookie, slug) }, games)
+      expectNone({ 'the Event read of Player 2': await rawRead(player2Cookie, slug) }, games)
       // A Price is no part of the room or the feed, whoever reads them (#338).
       expect(room).not.toContain('"price"')
       expect(feed).not.toContain('"price"')
@@ -205,9 +191,9 @@ describe('Hidden wheel secrecy (#148)', () => {
       const entries = (await activityOf(playerCookie, slug)).entries.filter(entry => entry.type === 'result_entered')
       expect(entries).toMatchObject([{ type: 'result_entered', params: { gameId: set.id, number: 1, first: [1] }, games: { [set.id]: 'Foxtrot Fest' } }])
       expect(Object.keys(entries[0]!.games)).toEqual([set.id])
-      expectNoTrace('the Activity feed entry of the Result', JSON.stringify(entries), games)
-      expectNoTrace('the room\'s entry of the Result', JSON.stringify(notifier.messages(eventId).filter(message => message.type === 'activity.added' && message.entry.type === 'result_entered')), games)
-      expectNoTrace('the Event read of Player 2', await rawRead(player2Cookie, slug), games)
+      expectNone({ 'the Activity feed entry of the Result': JSON.stringify(entries) }, games)
+      expectNone({ 'the room\'s entry of the Result': JSON.stringify(notifier.messages(eventId).filter(message => message.type === 'activity.added' && message.entry.type === 'result_entered')) }, games)
+      expectNone({ 'the Event read of Player 2': await rawRead(player2Cookie, slug) }, games)
     })
 
     it('names only the set game in the Correction a Player reads, and the Event read still names no pool game (#275)', async () => {
@@ -216,10 +202,10 @@ describe('Hidden wheel secrecy (#148)', () => {
       const entries = (await activityOf(playerCookie, slug)).entries.filter(entry => entry.type === 'result_corrected')
       expect(entries).toMatchObject([{ type: 'result_corrected', params: { gameId: set.id, number: 1 }, games: { [set.id]: 'Foxtrot Fest' } }])
       expect(Object.keys(entries[0]!.games)).toEqual([set.id])
-      expectNoTrace('the Activity feed entry of the Correction', JSON.stringify(entries), games)
-      expectNoTrace('the room\'s entry of the Correction', JSON.stringify(notifier.messages(eventId).filter(message => message.type === 'activity.added' && message.entry.type === 'result_corrected')), games)
+      expectNone({ 'the Activity feed entry of the Correction': JSON.stringify(entries) }, games)
+      expectNone({ 'the room\'s entry of the Correction': JSON.stringify(notifier.messages(eventId).filter(message => message.type === 'activity.added' && message.entry.type === 'result_corrected')) }, games)
       expect((JSON.parse(await rawRead(player2Cookie, slug)) as EventView).results).toMatchObject([{ number: 1, corrected: true }])
-      expectNoTrace('the Event read of Player 2', await rawRead(player2Cookie, slug), games)
+      expectNone({ 'the Event read of Player 2': await rawRead(player2Cookie, slug) }, games)
     })
 
     it('names only the set game in the Results a Player reads (#274), and no pool game in the Standings or the end', async () => {
@@ -232,7 +218,7 @@ describe('Hidden wheel secrecy (#148)', () => {
       expect(view.standings?.map(row => row.team)).toEqual([2, 1])
       expect(view.end).toMatchObject({ played: 1, gameCount: 6, complete: false, tie: null, finish: null })
       // The Hidden wheel's spin is still unstopped for Player 2: its game is in none of the three fields.
-      expectNoTrace('the results, the Standings and the end of Player 2', raw, games)
+      expectNone({ 'the results, the Standings and the end of Player 2': raw }, games)
     })
 
     it('keeps the pools hidden through the finish (#277): the room, the feed and the reads name no pool game after it', async () => {
@@ -245,9 +231,9 @@ describe('Hidden wheel secrecy (#148)', () => {
       const feed = await activityOf(playerCookie, slug)
       // The lobby flow's Correction (#275) swapped the Places, so Party 2 wins.
       expect(feed.entries[0]).toMatchObject({ type: 'event_finished', params: { winners: [2] } })
-      expectNoTrace('the room after the finish', JSON.stringify(notifier.messages(eventId)), games)
-      expectNoTrace('the Activity feed of Player 1 after the finish', feed.raw, games)
-      expectNoTrace('the Event read of Player 2 after the finish', await rawRead(player2Cookie, slug), games)
+      expectNone({ 'the room after the finish': JSON.stringify(notifier.messages(eventId)) }, games)
+      expectNone({ 'the Activity feed of Player 1 after the finish': feed.raw }, games)
+      expectNone({ 'the Event read of Player 2 after the finish': await rawRead(player2Cookie, slug) }, games)
     })
 
     it('shows the pools to a Player once the Hidden wheel is off and the Pool preview on, and the room still carries no game', async () => {
@@ -266,7 +252,7 @@ describe('Hidden wheel secrecy (#148)', () => {
         expect(open).not.toContain(game.notes)
         expect(open).not.toContain(game.tag)
       }
-      expectNoTrace('the room', JSON.stringify(notifier.messages(eventId)), games)
+      expectNone({ 'the room': JSON.stringify(notifier.messages(eventId)) }, games)
 
       const hostRaw = await rawRead(hostCookie, slug)
       for (const game of [a, d]) expect(hostRaw).toContain(game.name)

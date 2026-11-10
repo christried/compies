@@ -312,6 +312,7 @@ export function hiddenWheelWorld() {
     clock,
     get hostCookie() { return hostSigned.cookie },
     get playerCookie() { return playerSigned.cookie },
+    get playerSigned() { return playerSigned },
     newGame,
     setUp,
     rawRead,
