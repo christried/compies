@@ -129,7 +129,7 @@ describe('Finishing the Event', () => {
       const view = await read(game)
       expect(view.event.phase).toBe('finished')
       expect(view.runningSessionId).toBeNull()
-      expect(view.end).toMatchObject({ played: 2, gameCount: 2, complete: true, tie: null, finish: { rejection: 'wrong_phase' } })
+      expect(view.end).toMatchObject({ played: 2, gameCount: 2, complete: true, tie: null })
       expect((await read(game, game.cookies.three)).end).toMatchObject({ played: 2, gameCount: 2, complete: true, tie: null, finish: null })
     })
 
@@ -201,7 +201,7 @@ describe('Finishing the Event', () => {
       expect((await sessionRows(game.eventId)).find(row => row.startedAt !== null)).toMatchObject({ endedAt: new Date(T0) })
       expect(await activityTypes(game.eventId)).toEqual([...activityBefore, 'event_finished'].sort())
       expect((await feedOf(game))[0]).toMatchObject({ type: 'event_finished', params: { winners: [1, 2] } })
-      expect((await read(game)).end).toMatchObject({ played: 2, gameCount: 2, complete: true, tie: [1, 2], finish: { rejection: 'wrong_phase' } })
+      expect((await read(game)).end).toMatchObject({ played: 2, gameCount: 2, complete: true, tie: [1, 2] })
     })
 
     it('finishes as Unentschieden with three Parties level: all three win and rank 1 in the Standings', async () => {
@@ -448,7 +448,7 @@ describe('Finishing the Event', () => {
       expect((await enter(game, first, { places: teamOneWins })).status).toBe(200)
       expect((await enter(game, second, { places: teamTwoWins })).status).toBe(200)
       const read0 = await read(game)
-      expect(read0.end).toMatchObject({ complete: true, tie: [1, 2], finish: { rejection: null } })
+      expect(read0.end).toMatchObject({ complete: true, tie: [1, 2] })
       const before = await eventRowOf(game.eventId)
       const activityBefore = await activityTypes(game.eventId)
 

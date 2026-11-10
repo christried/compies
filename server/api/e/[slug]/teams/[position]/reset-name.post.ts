@@ -4,9 +4,10 @@ import { eventMembers, eventTeams } from '../../../../../db/schema'
 import { recordActivity } from '../../../../../utils/activity'
 import { apiError } from '../../../../../utils/errors'
 import { changeEvent } from '../../../../../utils/event-access'
-import { eventHasStarted } from '../../../../../utils/sessions'
+import { readEventState } from '../../../../../utils/event-state'
 import type { TeamNameReset } from '../../../../../../shared/event'
 import { parseTeamPosition } from '../../../../../../shared/board'
+import { hasStarted } from '../../../../../../shared/session-state'
 import { settingsFromRow } from '../../../../../../shared/settings'
 
 // The Host resets a team's name to its colour name (#161, spec #153 § API contracts). Before the first start that
@@ -18,7 +19,7 @@ export default defineEventHandler((event): Promise<TeamNameReset> => changeEvent
   const position = parseTeamPosition(getRouterParam(event, 'position') ?? '')
   if (settings === null || position === null || position > settings.teamCount) throw apiError('no_such_team')
 
-  if (await eventHasStarted(tx, eventRow.id)) {
+  if (hasStarted((await readEventState(tx, eventRow, now, ['sessions'])).sessions)) {
     await tx
       .update(eventTeams)
       .set({ frozenName: null })
