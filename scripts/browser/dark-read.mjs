@@ -23,6 +23,9 @@ export const EXCLUDED = [
   // The Award ceremony's scene, the stage of Compibert's run (`AwardCeremony.vue`): the trophy he carries (fixed colours,
   // „a physical sticker in both themes“) and the box he runs in. The winner card and the rows are measured.
   { selector: '[data-part="compibert"], [data-part="trophy"]', why: 'the Award ceremony scene' },
+  // The Share image: `ShareDialog.vue`'s <img>, the blob of `useShareImage`. The server draws it light whatever the Appearance (#398);
+  // the frame around it and the sheet are measured.
+  { selector: '[role="dialog"] img[src^="blob:"]', why: 'the Share image' },
 ]
 
 /** The helpers both page functions share. Returns them as an object; runs in the page. */
