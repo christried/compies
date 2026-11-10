@@ -212,6 +212,14 @@ export function highlightRow(row: Element): void {
 /** The page's blocks glide to their new place (the Round cards: `CARD_REFLOW_CLASS`): a transform over `dur-slow` on `ease-out`, and at once under reduced motion (04-motion § UI enters: „Reduced: opacity only“). */
 export const REFLOW_CLASS = 'transition-transform dur-slow ease-out motion-reduce:transition-none reduced:transition-none'
 
+/** One frame on top of the move, so what waits for a block's arrival starts after the last frame of its glide (or fade) and not on it (#442). */
+export const SETTLE_MS = 50
+
+/** How long a block that rose takes to be in place (#442): the glide (`REFLOW_CLASS`: `dur-slow`), under reduced motion the fade (`riseFade`: `dur-fast`), plus SETTLE_MS. */
+export function riseSettleMs(): number {
+  return (reducedMotion() ? motionMs('--cp-dur-fast', '140ms') : motionMs('--cp-dur-slow', '360ms')) + SETTLE_MS
+}
+
 /**
  * The cards of a list that can cross it (the Round cards in a two-column grid: the second Result sends Round 3 540 px to the other side) glide on the in-out curve
  * over the slower duration, the UI's own tokens with no overshoot. On `REFLOW_CLASS`'s steep ease-out that move is 150 px in its first 60 fps frame, which reads
