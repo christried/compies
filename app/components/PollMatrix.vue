@@ -119,7 +119,7 @@ const cellsOf = (person: MatrixPerson) => props.slots.map(slot => cells.value.ge
               :key="slot.id"
               scope="col"
               class="border-b-2 border-line-soft px-1 py-2 text-center text-[12px] leading-tight font-extrabold whitespace-nowrap"
-              :class="slot.past && 'text-ink-3'"
+              :class="slot.past && 'text-ink-3 dark:text-ink-2'"
             >
               <span class="block">{{ slot.day }}</span>
               <span class="block">{{ slot.time }}</span>
