@@ -75,10 +75,6 @@ function joinCookies(...headers: (string | undefined)[]) {
   return [...jar.values()].join('; ')
 }
 
-export function createAuthServer(db: Db) {
-  return createTestApp(db)
-}
-
 /** Where the provider sends the browser, and the cookies that came with it. */
 interface OAuthStart { url: string, cookie: string }
 
@@ -92,7 +88,7 @@ async function oauthRoundTrip(db: Db, profile: ProviderProfile, start: () => Pro
   try {
     const { url, cookie: startCookie } = await start()
     const state = new URL(url).searchParams.get('state')!
-    const callback = await createAuthServer(db)(`/api/auth/callback/${profile.provider}?code=code&state=${state}`, {
+    const callback = await createTestApp(db)(`/api/auth/callback/${profile.provider}?code=code&state=${state}`, {
       headers: { cookie: joinCookies(cookie, startCookie) },
       redirect: 'manual',
     })
@@ -106,7 +102,7 @@ async function oauthRoundTrip(db: Db, profile: ProviderProfile, start: () => Pro
 /** Signs in as the provider account. Returns the login session cookie header and the redirect. */
 export function signIn(db: Db, profile: ProviderProfile, callbackURL = '/') {
   return oauthRoundTrip(db, profile, async () => {
-    const response = await createAuthServer(db)('/api/auth/sign-in/social', {
+    const response = await createTestApp(db)('/api/auth/sign-in/social', {
       method: 'POST',
       headers: { 'content-type': 'application/json', 'origin': 'http://localhost' },
       body: JSON.stringify({ provider: profile.provider, callbackURL }),

@@ -86,7 +86,7 @@ describe('the Share image route', () => {
       settings: { teamCount: 2, teamSize: 2, gameCount: 1, pointsTable: { preset: 'linear' as const, values: [1, 0] } },
       games: [{ key: 'halo', values: { name: 'Halo' }, pool: true }, { key: 'kart', values: { name: 'Kart' }, pool: true }],
     })
-    const roundId = await hostSets(request, game.slug, game.host.cookie, game.games.halo.id)
+    const roundId = await hostSets(stage, game, game.games.halo.id)
     await hostEntersResult(stage, game, roundId, [{ team: 1, place: 1 }, { team: 2, place: tie ? 1 : 2 }])
     if (finish) await hostFinishes(stage, game, tie ? { outcome: 'tie', winners: [1, 2] } : { outcome: 'winner', winners: [1] })
     notifier.clear()

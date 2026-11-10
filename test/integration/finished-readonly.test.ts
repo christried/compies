@@ -79,7 +79,7 @@ describe('a finished Event is read-only', () => {
       ],
     })
     const session = (await testDb.db.select().from(sessions).where(eq(sessions.eventId, ev.eventId))).find(row => row.startedAt !== null)!.id
-    const round = await hostSets(request, ev.slug, ev.host.cookie, ev.games.halo.id)
+    const round = await hostSets(stage, ev, ev.games.halo.id)
     await hostEntersResult(stage, ev, round, [{ team: 1, place: 1 }, { team: 2, place: 2 }])
     await hostFinishes(stage, ev, { outcome: 'winner', winners: [1] })
     notifier.clear()

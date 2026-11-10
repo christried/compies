@@ -161,9 +161,9 @@ describe('the Event scenario', () => {
     it('sets a game, puts it back, enters a Result and finishes the Event', async () => {
       const ev = await startRunningEvent(stage, { ...base, settings: { teamSize: 1, gameCount: 1 }, games: [{ key: 'halo', values: { name: 'Halo' }, pool: true }] })
 
-      const first = await hostSets(stage.request, ev.slug, ev.host.cookie, ev.games.halo.id)
-      await hostPutsBack(stage.request, ev.slug, ev.host.cookie, first)
-      const second = await hostSets(stage.request, ev.slug, ev.host.cookie, ev.games.halo.id)
+      const first = await hostSets(stage, ev, ev.games.halo.id)
+      await hostPutsBack(stage, ev, first)
+      const second = await hostSets(stage, ev, ev.games.halo.id)
       expect(await hostEntersResult(stage, ev, second, [{ team: 1, place: 1 }, { team: 2, place: 2 }])).toEqual({ roundId: second, number: 1 })
       expect(await hostFinishes(stage, ev, { outcome: 'winner', winners: [1] })).toMatchObject({ phase: 'finished', winners: [1] })
 
@@ -194,7 +194,7 @@ describe('the Event scenario', () => {
   })
 
   describe('the verbs of the older builders', () => {
-    it('keep their signatures: startRunningSession, hostSets and hostPutsBack on a request, a slug and a cookie', async () => {
+    it('take a stage and an event: startRunningSession, hostSets and hostPutsBack', async () => {
       const hostSigned = await hostSignsIn(stage, host)
       const one = await signInAs(stage, players.one)
       const two = await signInAs(stage, players.two)
@@ -202,10 +202,12 @@ describe('the Event scenario', () => {
       await playersJoin(stage, created, [one, two])
       const [halo] = await stage.db.insert(games).values({ name: 'Halo', createdBy: hostSigned.id }).returning()
 
-      await startRunningSession(stage.request, stage.db, { slug: created.slug, hostCookie: hostSigned.cookie, seated: [{ cookie: one.cookie, email: players.one.email }, { cookie: two.cookie, email: players.two.email }] })
-      const roundId = await hostSets(stage.request, created.slug, hostSigned.cookie, halo!.id)
+      const event = { slug: created.slug, host: hostSigned }
+
+      await startRunningSession(stage, event, [one, two])
+      const roundId = await hostSets(stage, event, halo!.id)
       expect((await readEvent(stage, hostSigned.cookie, created.slug)).rounds).toHaveLength(1)
-      await hostPutsBack(stage.request, created.slug, hostSigned.cookie, roundId)
+      await hostPutsBack(stage, event, roundId)
 
       expect((await readEvent(stage, hostSigned.cookie, created.slug)).rounds).toEqual([])
     })

@@ -1,13 +1,13 @@
 import { eq } from 'drizzle-orm'
 import { expect } from 'vitest'
-import { activity, authAccounts, draws, eventMembers, eventPoolGames, events, games, pollSlots, users } from '../../server/db/schema'
+import { activity, authAccounts, draws, eventMembers, eventPoolGames, events, games, pollSlots } from '../../server/db/schema'
 import type { testClock } from '../../server/utils/clock'
 import type { Db } from '../../server/utils/db'
 import type { memoryRoomNotifier } from '../../server/utils/room-notifier'
 import type { ActivityEntry, ActivityPage } from '../../shared/activity'
 import type { EventFinished, EventView } from '../../shared/event'
 import type { CoinTossed } from '../../shared/stage'
-import { sendVia, type Send, type TestRequest } from './app'
+import { sendVia, type TestRequest } from './app'
 import { TEST_SETTINGS } from './fixtures'
 import { setAllowlist, signIn, type ProviderProfile } from './sign-in'
 
@@ -107,8 +107,7 @@ export interface RunningEvent<Player extends string = string, Game extends strin
 /** What a verb on a started Event needs: its slug, its ids and the Host's login. `RunningEvent` is one. */
 type EventRef = Pick<RunningEvent<string, string, string>, 'slug' | 'eventId' | 'inviteToken' | 'slotIds' | 'host'>
 
-const via = (request: TestRequest): Send => sendVia(() => request)
-const sendOf = (stage: Stage) => via(stage.request)
+const sendOf = (stage: Stage) => sendVia(() => stage.request)
 
 /** The first two Slots every file used; more Sessions follow a day apart. */
 const DEFAULT_SLOTS = ['2090-10-30T20:30', '2090-10-31T19:00']
@@ -174,13 +173,15 @@ export async function hostSetsDates(stage: Stage, event: Pick<EventRef, 'slug' |
   }
 }
 
-/** Each Player moves THEMSELF to their seat (POST move with their own cookie); the Host moving a Player is a request a test sends itself. */
+/** The Player moves THEMSELF to the seat (POST move with their own cookie). */
+async function takeSeat(stage: Stage, slug: string, player: Signed, seat: Seat): Promise<void> {
+  const to = seat === 'stands' ? { zone: 'stands' } : { zone: 'team', team: seat }
+  await expectOk(await sendOf(stage)('POST', `/api/e/${slug}/move`, player.cookie, { userId: player.id, to }), `${player.profile.name} takes a seat`)
+}
+
+/** Each Player moves THEMSELF to their seat; the Host moving a Player is a request a test sends itself. */
 export async function playersTakeSeats<Player extends string>(stage: Stage, event: { slug: string, players: Record<Player, Signed> }, seats: readonly (readonly [Player, Seat])[]): Promise<void> {
-  for (const [key, seat] of seats) {
-    const player = event.players[key]
-    const to = seat === 'stands' ? { zone: 'stands' } : { zone: 'team', team: seat }
-    await expectOk(await sendOf(stage)('POST', `/api/e/${event.slug}/move`, player.cookie, { userId: player.id, to }), `${player.profile.name} takes a seat`)
-  }
+  for (const [key, seat] of seats) await takeSeat(stage, event.slug, event.players[key], seat)
 }
 
 /** The Host starts the next Session. */
@@ -234,34 +235,27 @@ export async function startRunningEvent<Player extends string, Game extends stri
 
 // --- During the Session ---------------------------------------------------------------------------------------------------
 
-/** A Player of the older builders: their cookie and the email their user row was made with. */
-export interface Seated { cookie: string, email: string }
-
-/** Sets the first Session's Date, seats the Players in teams 1, 2, … (one each) and starts the Session. */
-export async function startRunningSession(request: TestRequest, db: Db, { slug, hostCookie, seated }: { slug: string, hostCookie: string, seated: Seated[] }): Promise<void> {
-  const send = via(request)
-  const [eventRow] = await db.select().from(events).where(eq(events.slug, slug))
-  const [slot] = await db.select().from(pollSlots).where(eq(pollSlots.eventId, eventRow!.id)).orderBy(pollSlots.startsAt)
-  expect((await send('POST', `/api/e/${slug}/confirm`, hostCookie, { slotId: slot!.id })).status).toBe(200)
-  for (const [index, player] of seated.entries()) {
-    const [row] = await db.select().from(users).where(eq(users.email, player.email))
-    const moved = await send('POST', `/api/e/${slug}/move`, player.cookie, { userId: row!.id, to: { zone: 'team', team: index + 1 } })
-    expect(moved.status).toBe(200)
-  }
-  expect((await send('POST', `/api/e/${slug}/sessions/start`, hostCookie)).status).toBe(200)
+/**
+ * Sets the first Session's Date, seats the Players in teams 1, 2, … (one each) and starts the Session: for an Event a file made itself
+ * (`hostCreatesEvent`), so the first Slot is looked up by the slug.
+ */
+export async function startRunningSession(stage: Stage, event: Pick<EventRef, 'slug' | 'host'>, seated: readonly Signed[]): Promise<void> {
+  const [eventRow] = await stage.db.select().from(events).where(eq(events.slug, event.slug))
+  const [slot] = await stage.db.select().from(pollSlots).where(eq(pollSlots.eventId, eventRow!.id)).orderBy(pollSlots.startsAt)
+  await expectOk(await sendOf(stage)('POST', `/api/e/${event.slug}/confirm`, event.host.cookie, { slotId: slot!.id }), 'confirm a Date')
+  for (const [index, player] of seated.entries()) await takeSeat(stage, event.slug, player, index + 1)
+  await hostStartsSession(stage, event)
 }
 
 /** The Host sets a game in the Running Session; answers the Round's id. */
-export async function hostSets(request: TestRequest, slug: string, hostCookie: string, gameId: string): Promise<string> {
-  const response = await via(request)('POST', `/api/e/${slug}/rounds`, hostCookie, { gameId })
-  expect(response.status).toBe(200)
+export async function hostSets(stage: Stage, event: Pick<EventRef, 'slug' | 'host'>, gameId: string): Promise<string> {
+  const response = await expectOk(await sendOf(stage)('POST', `/api/e/${event.slug}/rounds`, event.host.cookie, { gameId }), 'set a game')
   return (await response.json() as { roundId: string }).roundId
 }
 
 /** The Host puts a Round back. */
-export async function hostPutsBack(request: TestRequest, slug: string, hostCookie: string, roundId: string): Promise<void> {
-  const response = await via(request)('DELETE', `/api/e/${slug}/rounds/${roundId}`, hostCookie)
-  expect(response.status).toBe(200)
+export async function hostPutsBack(stage: Stage, event: Pick<EventRef, 'slug' | 'host'>, roundId: string): Promise<void> {
+  await expectOk(await sendOf(stage)('DELETE', `/api/e/${event.slug}/rounds/${roundId}`, event.host.cookie), 'put a Round back')
 }
 
 /** The Host spins the Lucky Wheel; answers the Round's and the draw's ids. */

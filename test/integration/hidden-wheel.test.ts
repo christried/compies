@@ -1,6 +1,7 @@
 import { eq } from 'drizzle-orm'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { eventPoolGames, events, users } from '../../server/db/schema'
+import type { Db } from '../../server/utils/db'
 import type { CreatedEvent, EventView } from '../../shared/event'
 import { hiddenWheelWorld, HIDDEN_WHEEL, stranger, webp, type Secret } from './hidden-wheel-world'
 import { signIn } from './sign-in'
@@ -12,18 +13,20 @@ import { signIn } from './sign-in'
 
 describe('Hidden wheel secrecy (#148)', () => {
   const world = hiddenWheelWorld()
-  const { testDb, request, newGame, setUp, rawRead, traces, playerTraces, priceTrace } = world
+  const { request, newGame, setUp, rawRead, traces, playerTraces, priceTrace } = world
+  let db: Db
   let hostCookie: string
   let playerCookie: string
 
   beforeEach(() => {
+    db = world.db
     hostCookie = world.hostCookie
     playerCookie = world.playerCookie
   })
 
   function setWheelHidden(hidden: boolean) {
     // The Pool preview follows the wheel here, as a Host who made the wheel visible and turned the preview on (#225).
-    return testDb.db.update(events).set({ hiddenWheel: hidden, poolPreview: !hidden })
+    return db.update(events).set({ hiddenWheel: hidden, poolPreview: !hidden })
   }
 
   it('gives a Player under a Hidden wheel nothing about the pools: not a count, name, id, image key, video id or notes anywhere in the raw response', async () => {
@@ -41,8 +44,8 @@ describe('Hidden wheel secrecy (#148)', () => {
     const before = await rawRead(playerCookie, slug)
 
     const delta = await newGame('Delta Dart', 'ddddddddddd')
-    const [eventRow] = await testDb.db.select({ id: events.id }).from(events).where(eq(events.slug, slug))
-    await testDb.db.insert(eventPoolGames).values({ eventId: eventRow!.id, gameId: delta.id })
+    const [eventRow] = await db.select({ id: events.id }).from(events).where(eq(events.slug, slug))
+    await db.insert(eventPoolGames).values({ eventId: eventRow!.id, gameId: delta.id })
     const after = await rawRead(playerCookie, slug)
 
     // The control: the Host sees the new game, so the insert really changed the pools.
@@ -153,14 +156,14 @@ describe('Hidden wheel secrecy (#148)', () => {
       const { a } = await setUp()
       expect((await fetchImage(a, hostCookie)).status).toBe(200)
 
-      await testDb.db.update(users).set({ canHost: false }).where(eq(users.name, 'Hostess'))
+      await db.update(users).set({ canHost: false }).where(eq(users.name, 'Hostess'))
 
       expect((await fetchImage(a, hostCookie)).status).toBe(200)
     })
 
     it('refuses a signed-in User who is no Member of the Event, whatever the wheel says', async () => {
       const { a } = await setUp()
-      const strangerCookie = (await signIn(testDb.db, stranger)).cookie
+      const strangerCookie = (await signIn(db, stranger)).cookie
 
       expect((await fetchImage(a, strangerCookie)).status).toBe(404)
       await setWheelHidden(false)
@@ -173,7 +176,7 @@ describe('Hidden wheel secrecy (#148)', () => {
       await setWheelHidden(false)
       expect((await fetchImage(a, playerCookie)).status).toBe(200)
 
-      await testDb.db.update(events).set({ deletedAt: new Date() })
+      await db.update(events).set({ deletedAt: new Date() })
 
       expect((await fetchImage(a, playerCookie)).status).toBe(404)
     })

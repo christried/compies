@@ -1,6 +1,7 @@
 import { eq } from 'drizzle-orm'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { draws, events, pollSlots } from '../../server/db/schema'
+import type { Db } from '../../server/utils/db'
 import { ACTIVITY_TYPES, type ActivityEntry, type ActivityPage } from '../../shared/activity'
 import type { Place } from '../../shared/board'
 import type { CreatedEvent, EventView } from '../../shared/event'
@@ -8,18 +9,22 @@ import type { RoomMessageType } from '../../shared/realtime'
 import { SPIN, WINDOW_MS } from '../draw-offsets'
 import { sendVia } from './app'
 import { hiddenWheelWorld } from './hidden-wheel-world'
-import { hostPutsBack, hostSets, signInAs } from './scenario'
+import { hostPutsBack, hostSets, signInAs, type Signed } from './scenario'
 
 // The room and the Activity feed under a Hidden wheel (#165): every message type and Activity type the lobby flow writes, and
 // no pool game in any of them. Split out of hidden-wheel.test.ts in #418.
 
 describe('Hidden wheel secrecy (#148)', () => {
   const world = hiddenWheelWorld()
-  const { testDb, request, notifier, clock, newGame, rawRead, traces, second, stage, expectNone, LOBBY } = world
+  const { request, notifier, clock, newGame, rawRead, traces, second, stage, expectNone, LOBBY } = world
+  let db: Db
+  let hostSigned: Signed
   let hostCookie: string
   let playerCookie: string
 
   beforeEach(() => {
+    db = world.db
+    hostSigned = world.hostSigned
     hostCookie = world.hostCookie
     playerCookie = world.playerCookie
   })
@@ -74,9 +79,9 @@ describe('Hidden wheel secrecy (#148)', () => {
       expect(created.status).toBe(200)
       const { slug, inviteUrl } = await created.json() as CreatedEvent
       const token = new URL(inviteUrl).pathname.slice('/e/'.length)
-      const [eventRow] = await testDb.db.select().from(events).where(eq(events.slug, slug))
+      const [eventRow] = await db.select().from(events).where(eq(events.slug, slug))
       const eventId = eventRow!.id
-      const slotIds = (await testDb.db.select().from(pollSlots).where(eq(pollSlots.eventId, eventId)).orderBy(pollSlots.startsAt)).map(row => row.id)
+      const slotIds = (await db.select().from(pollSlots).where(eq(pollSlots.eventId, eventId)).orderBy(pollSlots.startsAt)).map(row => row.id)
       const secondSigned = await signInAs(stage(), second)
       const player2Cookie = secondSigned.cookie
       const ids = { player: world.playerSigned.id, player2: secondSigned.id }
@@ -128,16 +133,16 @@ describe('Hidden wheel secrecy (#148)', () => {
       // the Session. That game is everyone's from the moment it is set (#228).
       expect((await send('POST', `/api/e/${slug}/sessions/start`, hostCookie)).status).toBe(200)
       const e = await newGame('Epsilon Eck', 'eeeeeeeeeee')
-      const roundId = await hostSets(request, slug, hostCookie, e.id)
-      await hostPutsBack(request, slug, hostCookie, roundId)
+      const roundId = await hostSets(stage(), { slug, host: hostSigned }, e.id)
+      await hostPutsBack(stage(), { slug, host: hostSigned }, roundId)
       // A library game that stays open: its Round gets its Result once the Session has ended (#273, between Sessions).
       const f = await newGame('Foxtrot Fest', 'fffffffffff')
-      const openRound = await hostSets(request, slug, hostCookie, f.id)
+      const openRound = await hostSets(stage(), { slug, host: hostSigned }, f.id)
       // The Host spins the wheel (event.changed; the feed entry game_drawn waits for the stop); the Session ends with that Round still being drawn.
       expect((await send('POST', `/api/e/${slug}/rounds/spin`, hostCookie)).status).toBe(200)
       if (castVeto) {
         // The wheel stops (the clock moves past it) and Player 1 casts a Veto: veto.cast goes to Player 1's Party only (#231).
-        const [drawn] = (await testDb.db.select().from(draws)).filter(row => row.kind === 'spin')
+        const [drawn] = (await db.select().from(draws)).filter(row => row.kind === 'spin')
         clock.advance(SPIN.stop + 500)
         expect((await send('POST', `/api/e/${slug}/draws/${drawn!.id}/veto`, playerCookie)).status).toBe(200)
       }
@@ -224,7 +229,7 @@ describe('Hidden wheel secrecy (#148)', () => {
     it('keeps the pools hidden through the finish (#277): the room, the feed and the reads name no pool game after it', async () => {
       const { slug, eventId, games, player2Cookie } = await lobbyFlow()
       // One Result stands (Foxtrot Fest, between Sessions): the Game count drops to it, so the Event is complete and the Host may finish.
-      await testDb.db.update(events).set({ gameCount: 1 }).where(eq(events.id, eventId))
+      await db.update(events).set({ gameCount: 1 }).where(eq(events.id, eventId))
 
       expect((await send('POST', `/api/e/${slug}/finish`, hostCookie, { outcome: 'winner', winners: [2] })).status).toBe(200)
 

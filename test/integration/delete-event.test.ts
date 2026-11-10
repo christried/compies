@@ -95,7 +95,7 @@ describe('deleting an Event', () => {
       start: started,
     })
     if (phase === 'finished') {
-      const roundId = await hostSets(request, ev.slug, ev.host.cookie, ev.games.halo.id)
+      const roundId = await hostSets(stage, ev, ev.games.halo.id)
       await hostEntersResult(stage, ev, roundId, [{ team: 1, place: 1 }, { team: 2, place: 2 }])
       await hostFinishes(stage, ev, { outcome: 'winner', winners: [1] })
     }

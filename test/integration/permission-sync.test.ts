@@ -1,8 +1,9 @@
 import { eq } from 'drizzle-orm'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { authAccounts, users } from '../../server/db/schema'
+import { createTestApp } from './app'
 import { createTestDb, resetDatabase } from './harness'
-import { createAuthServer, linkAccount, setAllowlist, signIn, stubAuthEnv, unlinkAccount, type ProviderProfile } from './sign-in'
+import { linkAccount, setAllowlist, signIn, stubAuthEnv, unlinkAccount, type ProviderProfile } from './sign-in'
 
 describe('sign-in and the allowlist sync', () => {
   let testDb: Awaited<ReturnType<typeof createTestDb>>
@@ -102,7 +103,7 @@ describe('sign-in and the allowlist sync', () => {
 
   it('serves only the endpoints the app uses: no email via get-session, no name or image edits', async () => {
     const { cookie } = await signIn(testDb.db, kitty)
-    const request = createAuthServer(testDb.db)
+    const request = createTestApp(testDb.db)
     const headers = { 'content-type': 'application/json', 'origin': 'http://localhost', cookie }
 
     expect((await request('/api/auth/get-session', { headers })).status).toBe(404)

@@ -13,8 +13,8 @@ import { setAllowlist, stubAuthEnv } from './sign-in'
 
 // What the Hidden wheel's secrecy tests share (#148, split in #418): the app with its doubles, the cast, the four games and the
 // Event they sit in, the readers and the trace helpers. `hiddenWheelWorld()` is called inside a `describe`; it registers the hooks
-// and returns what the files use. The cookies and the database are assigned in hooks, so they are getters: a file that wants them
-// as plain names copies them in a `beforeEach` of its own (it runs after the world's).
+// and returns what the files use. The cookies, the signed-in Users and the database are assigned in hooks, so they are getters: a
+// file that wants them as plain names copies them in a `beforeEach` of its own (it runs after the world's).
 
 export const host = { provider: 'discord', id: '1', name: 'Hostess', email: 'host@example.com', image: undefined } as const
 export const player = { provider: 'discord', id: '2', name: 'Gast', email: 'player@example.com', image: undefined } as const
@@ -224,16 +224,9 @@ export function hiddenWheelWorld() {
     vi.unstubAllEnvs()
   })
 
+  // `app` exists only after `beforeAll`, and the files take `request` when their `describe` runs: the forwarder reads it when called.
   const request: TestRequest = (path, init) => app(path, init)
-  // `testDb` and the stage are read when used: the hooks assign them.
-  const db = {
-    get db() {
-      return testDb.db
-    },
-    get client() {
-      return testDb.client
-    },
-  }
+  // The stage is made when used: the hooks assign `testDb`.
   const stage = (): Stage => ({ request, db: testDb.db, clock, notifier })
 
   async function newGame(name: string, videoId: string): Promise<Secret> {
@@ -289,7 +282,7 @@ export function hiddenWheelWorld() {
     const created = await hostCreatesEvent(stage(), hostSigned, { sessions: 1, slots: ['2090-10-30T20:30'], settings, pool: [a.id, b.id, ...more.map(game => game.id)] })
     const secondSigned = await signInAs(stage(), second)
     await playersJoin(stage(), created, [playerSigned, secondSigned])
-    await startRunningSession(request, testDb.db, { slug: created.slug, hostCookie: hostSigned.cookie, seated: [{ cookie: playerSigned.cookie, email: player.email }, { cookie: secondSigned.cookie, email: second.email }] })
+    await startRunningSession(stage(), { slug: created.slug, host: hostSigned }, [playerSigned, secondSigned])
     notifier.clear()
     const [eventRow] = await testDb.db.select().from(events).where(eq(events.slug, created.slug))
     return { slug: created.slug, eventId: eventRow!.id, inviteToken: created.inviteToken, a, b, c, e, more, secondCookie: secondSigned.cookie }
@@ -304,7 +297,7 @@ export function hiddenWheelWorld() {
   }
 
   return {
-    testDb: db,
+    get db() { return testDb.db },
     request,
     stage,
     store,
@@ -312,6 +305,7 @@ export function hiddenWheelWorld() {
     clock,
     get hostCookie() { return hostSigned.cookie },
     get playerCookie() { return playerSigned.cookie },
+    get hostSigned() { return hostSigned },
     get playerSigned() { return playerSigned },
     newGame,
     setUp,
