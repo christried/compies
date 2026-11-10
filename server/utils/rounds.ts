@@ -1,66 +1,24 @@
-import { and, asc, eq, sql } from 'drizzle-orm'
-import { draws, eventMembers, eventPoolGames, events, games, rounds, vetoes } from '../db/schema'
+import { eq } from 'drizzle-orm'
+import { draws, events, games, rounds, vetoes } from '../db/schema'
 import { WHEEL_PLACEHOLDERS, drawSpin } from '../domain/wheel'
-import { countSeats, type Place } from '../../shared/board'
 import type { RoundSpun, VetoCast } from '../../shared/stage'
 import { drawInstants, settleAt } from '../../shared/draw-timeline'
-import { gameTaken, gamesLeft, isBeingDrawn, opensWindow, roundState, setRejection, spinRejection, vetoRejection, waitsForRespin, type SetRejection, type SpinRejection } from '../../shared/rounds'
-import { runningOf } from '../../shared/session-state'
-import { hasWheel, settingsFromRow } from '../../shared/settings'
+import { gameTaken, opensWindow, roundState, waitsForRespin } from '../../shared/rounds'
+import { hasWheel } from '../../shared/settings'
 import { recordActivity } from './activity'
 import type { Db } from './db'
 import { apiError } from './errors'
 import type { ChangeCore, EventChange, EventRow } from './event-access'
-import { readSeats } from './board'
-import { eventSessions, type SessionRow } from './sessions'
 import { dueDraws } from './draw-timeline'
+import { gamesLeftOf, partyOf, readEventState, roundRowsOf, setReason, spinReason, vetoReason, vetoesLeftOf, withParts } from './event-state'
 import { settleDue } from './settle'
-import { partyVetoesLeft, readBonusTeams, readVetoes } from './vetoes'
 
-// The Event's Rounds (GLOSSARY: Round, #228): the reads the rules and the Event read share, and the changes the Host
-// makes, setting the next game, spinning the wheel and putting a Round back. The rules are `shared/rounds.ts`; every instant
-// written here comes from the request's clock (ADR 0013, amended 2026-10-31), never the database's `now()`.
+// The Event's Rounds (GLOSSARY: Round, #228): the changes the Host makes, setting the next game, spinning the wheel and putting a Round
+// back, and a Player's Veto. Their facts and reasons come from the Event state (event-state.ts, #416), read inside the change, in the parts each
+// needs. The rules are `shared/rounds.ts`; every instant written here comes from the request's clock (ADR 0013, amended 2026-10-31), never the database's `now()`.
 
 export type RoundRow = typeof rounds.$inferSelect
 export type DrawRow = typeof draws.$inferSelect
-
-/** The Event's Rounds in start order, the put-back ones too (the rules decide what they count for). */
-export function readRounds(db: Db, eventId: string): Promise<RoundRow[]> {
-  return db.select().from(rounds).where(eq(rounds.eventId, eventId)).orderBy(asc(rounds.startedAt), asc(rounds.id))
-}
-
-/** Every draw of the Event's Rounds. */
-export async function readDraws(db: Db, eventId: string): Promise<DrawRow[]> {
-  const found = await db.select({ draw: draws }).from(draws).innerJoin(rounds, eq(draws.roundId, rounds.id)).where(eq(rounds.eventId, eventId))
-  return found.map(row => row.draw)
-}
-
-/** Whether a game is being drawn in the Event: a Round's draw is open, the wheel spins or its Veto window runs (isBeingDrawn). */
-export async function roundBeingDrawn(db: Db, eventId: string): Promise<boolean> {
-  const [roundRows, drawRows] = await Promise.all([readRounds(db, eventId), readDraws(db, eventId)])
-  return roundRows.some(round => isBeingDrawn(round, drawRows))
-}
-
-/** The ids of the games in the Game pool, in the order of their names (the order the pools show them in). */
-export async function readGamePool(db: Db, eventId: string): Promise<string[]> {
-  const found = await db
-    .select({ id: games.id })
-    .from(eventPoolGames)
-    .innerJoin(games, eq(eventPoolGames.gameId, games.id))
-    .where(eq(eventPoolGames.eventId, eventId))
-    .orderBy(asc(sql`lower(${games.name})`), asc(games.id))
-  return found.map(row => row.id)
-}
-
-/** Why the Host cannot set the next game now, or null (shared/rounds.ts setRejection), from the rows the callers have read. */
-export function setRejectionOf(eventRow: EventRow, sessions: readonly SessionRow[], places: readonly Place[], roundRows: readonly RoundRow[], drawRows: readonly DrawRow[], isHost: boolean): SetRejection | null {
-  return setRejection({ isHost, settings: settingsFromRow(eventRow), sessions, seats: countSeats(places), rounds: roundRows, draws: drawRows })
-}
-
-/** Why the Host cannot spin the wheel now, or null (shared/rounds.ts spinRejection): the same rows, and the games left on the wheel. */
-export function spinRejectionOf(eventRow: EventRow, sessions: readonly SessionRow[], places: readonly Place[], roundRows: readonly RoundRow[], drawRows: readonly DrawRow[], left: readonly string[], isHost: boolean): SpinRejection | null {
-  return spinRejection({ isHost, settings: settingsFromRow(eventRow), sessions, seats: countSeats(places), rounds: roundRows, draws: drawRows, left })
-}
 
 /**
  * The Event read's share (#229): when a draw is due, settle it in a locked transaction before reading. The check is one cheap
@@ -72,18 +30,6 @@ export async function settleBeforeRead(db: Db, eventRow: Pick<EventRow, 'id'>, n
     await tx.select({ id: events.id }).from(events).where(eq(events.id, eventRow.id)).for('update')
     await settleDue(tx, eventRow, now)
   })
-}
-
-/** What the rules of a round change read in its transaction, all at the same time. */
-async function readRoundFacts(tx: Db, eventRow: EventRow) {
-  const [sessions, seats, roundRows, drawRows, pool] = await Promise.all([
-    eventSessions(tx, eventRow.id),
-    readSeats(tx, eventRow.id),
-    readRounds(tx, eventRow.id),
-    readDraws(tx, eventRow.id),
-    readGamePool(tx, eventRow.id),
-  ])
-  return { sessions, places: seats.map(seat => seat.place), roundRows, drawRows, pool }
 }
 
 /**
@@ -115,20 +61,22 @@ async function insertDraw(tx: Db, roundId: string, now: Date, fields: Omit<typeo
  * setRejection, `no_wheel`, or `unknown_game`.
  */
 export async function setNextGame({ tx, eventRow, user, publish, now }: ChangeCore, gameId: string, vetoAllowed: boolean): Promise<{ roundId: string }> {
-  const { sessions, places, roundRows, drawRows, pool } = await readRoundFacts(tx, eventRow)
-  const rejection = setRejectionOf(eventRow, sessions, places, roundRows, drawRows, eventRow.hostId === user.id)
+  const state = await readEventState(tx, eventRow, now, ['sessions', 'members', 'rounds', 'pool'])
+  const rejection = setReason(state, eventRow.hostId === user.id)
   if (rejection) throw apiError(rejection)
   // The rules above refused an Event without settings. Host pick has no Vetoes (spec #218 § Vetoes).
-  if (vetoAllowed && !hasWheel(settingsFromRow(eventRow)!.selectionMode)) throw apiError('no_wheel')
+  if (vetoAllowed && !hasWheel(state.settings!.selectionMode)) throw apiError('no_wheel')
   const [game] = await tx.select({ id: games.id }).from(games).where(eq(games.id, gameId))
   if (!game) throw apiError('unknown_game')
+  const roundRows = roundRowsOf(state)
   // A retried „Setzen“ would open a second Round of the same game, and a vetoed game stays vetoed, library or pool (review 0.7, F14).
-  if (gameTaken(game.id, drawRows, roundRows)) throw apiError('game_already_drawn')
-  const windowOpens = vetoAllowed && opensWindow(partyVetoesLeft(eventRow, await readVetoes(tx, eventRow.id), await readBonusTeams(tx, eventRow.id)))
+  if (gameTaken(game.id, state.draws, roundRows)) throw apiError('game_already_drawn')
+  // The Vetoes are read only for a set that may open a window: the budget under the lock (#416) lets no route read more than it needs.
+  const windowOpens = vetoAllowed && opensWindow(vetoesLeftOf(await withParts(tx, state, ['vetoes', 'bonus'])))
 
-  const source = gamesLeft(pool, drawRows, roundRows).includes(game.id) ? 'pool' : 'library'
+  const source = gamesLeftOf(state).includes(game.id) ? 'pool' : 'library'
   // With a window the Round takes its game when the draw settles, so it stays without one (and without `setAt`) until then.
-  const roundId = await roundForDraw(tx, eventRow.id, roundRows, drawRows, now, windowOpens ? {} : { gameId: game.id, setAt: now })
+  const roundId = await roundForDraw(tx, eventRow.id, roundRows, state.draws, now, windowOpens ? {} : { gameId: game.id, setAt: now })
   const instants = drawInstants({ kind: 'set', commitAt: now, windowOpens })
   const timing = windowOpens
     ? { stopAt: instants.stopAt, vetoEndsAt: instants.vetoEndsAt }
@@ -149,18 +97,18 @@ export async function setNextGame({ tx, eventRow, user, publish, now }: ChangeCo
  * Event read, which shows the wheel per viewer (#258). Refused with the reason of spinRejection.
  */
 export async function spinWheel({ tx, eventRow, user, publish, now }: ChangeCore, randomInt: (n: number) => number): Promise<RoundSpun> {
-  const { sessions, places, roundRows, drawRows, pool } = await readRoundFacts(tx, eventRow)
-  const left = gamesLeft(pool, drawRows, roundRows)
-  const rejection = spinRejectionOf(eventRow, sessions, places, roundRows, drawRows, left, eventRow.hostId === user.id)
+  const state = await readEventState(tx, eventRow, now, ['sessions', 'members', 'rounds', 'pool'])
+  const rejection = spinReason(state, eventRow.hostId === user.id)
   if (rejection) throw apiError(rejection)
-  // The rules above refused an Event without settings.
-  const hidden = settingsFromRow(eventRow)!.hiddenWheel
-  const vetoesLeft = partyVetoesLeft(eventRow, await readVetoes(tx, eventRow.id), await readBonusTeams(tx, eventRow.id))
+  // The rules above refused an Event without settings. The Vetoes are read after them: a refused spin reads no more.
+  const hidden = state.settings!.hiddenWheel
+  const vetoesLeft = vetoesLeftOf(await withParts(tx, state, ['vetoes', 'bonus']))
 
+  const left = gamesLeftOf(state)
   const spin = drawSpin(left, hidden ? WHEEL_PLACEHOLDERS : null, randomInt)
   const instants = drawInstants({ kind: 'spin', commitAt: now, windowOpens: opensWindow(vetoesLeft) })
   const gameId = spin.sliceGameIds[spin.resultIndex]!
-  const roundId = await roundForDraw(tx, eventRow.id, roundRows, drawRows, now, {})
+  const roundId = await roundForDraw(tx, eventRow.id, roundRowsOf(state), state.draws, now, {})
   const drawId = await insertDraw(tx, roundId, now, {
     gameId,
     source: 'pool',
@@ -183,30 +131,17 @@ export async function spinWheel({ tx, eventRow, user, publish, now }: ChangeCore
  * got past the check (it cannot under the lock) answers `veto_already_cast` too.
  */
 export async function castVeto({ tx, eventRow, user, publishTo, now }: Pick<EventChange, 'tx' | 'eventRow' | 'user' | 'publishTo' | 'now'>, drawId: string): Promise<VetoCast> {
-  const [sessions, drawRows, vetoRows, bonusTeams, [member]] = await Promise.all([
-    eventSessions(tx, eventRow.id),
-    readDraws(tx, eventRow.id),
-    readVetoes(tx, eventRow.id),
-    readBonusTeams(tx, eventRow.id),
-    tx.select({ zone: eventMembers.zone, team: eventMembers.team }).from(eventMembers).where(and(eq(eventMembers.eventId, eventRow.id), eq(eventMembers.userId, user.id))),
-  ])
-  const draw = drawRows.find(row => row.id === drawId) ?? null
-  const viewerTeam = member?.zone === 'team' ? member.team : null
-  const rejection = vetoRejection({
-    viewerTeam,
-    draw,
-    now,
-    running: runningOf(sessions) !== undefined,
-    castTeams: vetoRows.filter(row => row.drawId === drawId).map(row => row.team),
-    left: partyVetoesLeft(eventRow, vetoRows, bonusTeams)[(viewerTeam ?? 1) - 1] ?? 0,
-  })
+  const state = await readEventState(tx, eventRow, now, ['sessions', 'members', 'rounds', 'vetoes', 'bonus'])
+  const rejection = vetoReason(state, user.id, state.draws.find(row => row.id === drawId) ?? null)
   if (rejection) throw apiError(rejection)
 
-  const team = viewerTeam!
+  // No rejection: the User plays in a team.
+  const team = partyOf(state, user.id)!
   const [cast] = await tx.insert(vetoes).values({ drawId, team, userId: user.id, castAt: now }).onConflictDoNothing().returning({ team: vetoes.team })
   if (!cast) throw apiError('veto_already_cast')
-  const party = await tx.select({ userId: eventMembers.userId }).from(eventMembers).where(and(eq(eventMembers.eventId, eventRow.id), eq(eventMembers.zone, 'team'), eq(eventMembers.team, team)))
-  publishTo(party.map(row => row.userId), { type: 'veto.cast', drawId, team })
+  // The Users of the casting Party come from the Members the state read: nobody changes seats under the lock.
+  const party = state.members.filter(member => member.zone === 'team' && member.team === team)
+  publishTo(party.map(member => member.id), { type: 'veto.cast', drawId, team })
   return { drawId, team }
 }
 
@@ -216,7 +151,7 @@ export async function castVeto({ tx, eventRow, user, publishTo, now }: Pick<Even
  * can be put back: an unknown or put-back one is `round_not_found`, one being drawn `round_being_drawn`, one with a Result `round_not_open` (#273).
  */
 export async function putBackRound({ tx, eventRow, user, publish, now }: ChangeCore, roundId: string | undefined): Promise<{ roundId: string }> {
-  const round = (await readRounds(tx, eventRow.id)).find(row => row.id === roundId && row.putBackAt === null)
+  const round = roundRowsOf(await readEventState(tx, eventRow, now, ['rounds'])).find(row => row.id === roundId && row.putBackAt === null)
   if (!round) throw apiError('round_not_found')
   if (roundState(round) === 'drawn') throw apiError('round_being_drawn')
   // A Round with a Result stands for good (#273): its Result is in the feed, and putting the Round back would take the Result away.

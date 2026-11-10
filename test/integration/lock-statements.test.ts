@@ -7,7 +7,7 @@ import type { Db } from '../../server/utils/db'
 import { memoryRoomNotifier } from '../../server/utils/room-notifier'
 import { createTestApp, sendVia } from './app'
 import { createTestDb, resetDatabase } from './harness'
-import { clockToStop, hostEntersResult, hostSets, hostSpins, setUpEvent, startRunningEvent, type GameSeed, type Rig, type ScenarioEvent } from './scenario'
+import { clockToStop, hostEntersResult, hostSets, hostSpins, setUpEvent, startRunningEvent, type GameSeed, type Rig } from './scenario'
 import { stubAuthEnv } from './sign-in'
 
 // The statements a write route runs under the Event row lock (#416). The Event state is read in parts, each route asks for the parts its
@@ -29,7 +29,6 @@ const players = {
 const seats = [['a', 1], ['b', 1], ['c', 2], ['d', 2], ['e', 'stands']] as const
 const wheel = { teamCount: 2, teamSize: 2, gameCount: 6, selectionMode: 'lucky_wheel', vetoAllowance: 2, hiddenWheel: false } as const
 
-type World = ScenarioEvent<keyof typeof players & string, string, never>
 type Call = () => Promise<Response>
 
 describe('statements under the Event row lock (#416)', () => {
@@ -65,17 +64,17 @@ describe('statements under the Event row lock (#416)', () => {
   afterEach(() => vi.unstubAllEnvs())
 
   const send = sendVia(() => rig.request)
-  const pool = (count: number) => Array.from({ length: count }, (_, index) => ({
-    key: `G${index + 1}`,
+  const poolKeys = ['G1', 'G2', 'G3', 'G4', 'G5', 'G6', 'G7'] as const
+  const pool = poolKeys.map(key => ({
+    key,
     // G1 has a clip, so POST clip/skip has one to skip.
-    values: index === 0 ? { name: 'G1', youtubeId: 'abcdefghijk', clipStart: 0, clipLength: 30 } : { name: `G${index + 1}` },
+    values: key === 'G1' ? { name: key, youtubeId: 'abcdefghijk', clipStart: 0, clipLength: 30 } : { name: key },
     pool: true,
   }) satisfies GameSeed)
-  const library = { key: 'LIB', values: { name: 'LIB' }, pool: false } satisfies GameSeed
+  const library = { key: 'LIB' as const, values: { name: 'LIB' }, pool: false } satisfies GameSeed
 
-  const running = (settings: Record<string, unknown> = wheel) =>
-    startRunningEvent(rig, { host, players, seats: [...seats], settings, games: [...pool(7), library] }) as unknown as Promise<World>
-  const notStarted = () => setUpEvent(rig, { host, players, seats: [...seats], settings: wheel, games: [...pool(7), library] }) as unknown as Promise<World>
+  const running = (settings: Record<string, unknown> = wheel) => startRunningEvent(rig, { host, players, seats: [...seats], settings, games: [...pool, library] })
+  const notStarted = () => setUpEvent(rig, { host, players, seats: [...seats], settings: wheel, games: [...pool, library] })
 
   /** A running Event with history: a Round with a Result, an open Round (G3) and a Bonus Veto for team 1. */
   async function rich(settings: Record<string, unknown> = wheel) {
@@ -182,8 +181,8 @@ describe('statements under the Event row lock (#416)', () => {
     }],
     ['PATCH settings (team count 3 to 2, two Players move)', async () => {
       const ev = await setUpEvent(rig, {
-        host, players, seats: [['a', 1], ['b', 1], ['c', 3], ['d', 3], ['e', 'stands']], settings: { ...wheel, teamCount: 3, pointsTable: { preset: 'linear', values: [2, 1, 0] } }, games: [...pool(7), library],
-      }) as unknown as World
+        host, players, seats: [['a', 1], ['b', 1], ['c', 3], ['d', 3], ['e', 'stands']], settings: { ...wheel, teamCount: 3, pointsTable: { preset: 'linear', values: [2, 1, 0] } }, games: [...pool, library],
+      })
       return () => send('PATCH', `/api/e/${ev.slug}/settings`, ev.host.cookie, { settings: { teamCount: 2, pointsTable: { preset: 'linear', values: [1, 0] } } })
     }],
     ['POST team-word', async () => {

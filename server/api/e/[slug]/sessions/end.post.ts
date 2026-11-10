@@ -4,14 +4,15 @@ import { sessions } from '../../../../db/schema'
 import { recordActivity } from '../../../../utils/activity'
 import { apiError } from '../../../../utils/errors'
 import { changeEvent } from '../../../../utils/event-access'
-import { eventSessions, onSessionEnded, shownNumber } from '../../../../utils/sessions'
+import { readEventState } from '../../../../utils/event-state'
+import { onSessionEnded, shownNumber } from '../../../../utils/sessions'
 import { runningOf } from '../../../../../shared/session-state'
 import type { SessionEnded } from '../../../../../shared/event'
 
 // The Host ends the Running Session (#164, spec #153 § API contracts): the one that is started and not ended. The Event
 // stays running; the next Session starts with its own start. Without a Running Session there is nothing to end.
 export default defineEventHandler((event): Promise<SessionEnded> => changeEvent(event, { hostOnly: true, lock: 'update' }, async ({ tx, now, eventRow, user, publish }) => {
-  const running = runningOf(await eventSessions(tx, eventRow.id))
+  const running = runningOf((await readEventState(tx, eventRow, now, ['sessions'])).sessions)
   if (!running) throw apiError('no_running_session')
 
   await tx.update(sessions).set({ endedAt: now }).where(eq(sessions.id, running.id))

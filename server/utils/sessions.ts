@@ -4,7 +4,7 @@ import { countdowns, events, pollSlots, sessions } from '../db/schema'
 import { phaseAfterChange } from '../domain/phase'
 import { numberedSessions, sequenceRaises } from '../domain/session'
 import type { Phase } from '../../shared/event'
-import { hasStarted, isStarted, runningOf } from '../../shared/session-state'
+import { isStarted, runningOf } from '../../shared/session-state'
 import type { AuthUser } from '../../shared/auth'
 import { asRecord } from '../../shared/record'
 import type { RoomMessage } from '../../shared/realtime'
@@ -87,11 +87,6 @@ export const sessionNotRemoved = isNull(sessions.removedAt)
 /** The Sessions of an Event. A removed Session is not one of them (#65). */
 export function eventSessions(db: Db, eventId: string): Promise<SessionRow[]> {
   return db.select().from(sessions).where(and(eq(sessions.eventId, eventId), sessionNotRemoved))
-}
-
-/** Whether any Session of the Event has started (#164, hasStarted): the probe of the handlers that only need that one fact. */
-export async function eventHasStarted(db: Db, eventId: string): Promise<boolean> {
-  return hasStarted(await eventSessions(db, eventId))
 }
 
 /**

@@ -3,13 +3,12 @@ import { eventPoolGames, events } from '../db/schema'
 import { parsePoolChange } from '../domain/pools'
 import { checkSettingsChange, floorsAt, settingsEditable, settingsFromRow, type EventSettings } from '../../shared/settings'
 import type { Place } from '../../shared/board'
-import { moveMember, readSeats } from './board'
+import { moveMember } from './board'
 import type { Db } from './db'
 import { apiError } from './errors'
 import type { EventChange, EventRow } from './event-access'
+import { floorsOf, readEventState, roundBeingDrawnOf, seatOf, type EventState } from './event-state'
 import { assertGamesExist, assertNoOldPools } from './pools'
-import { roundBeingDrawn } from './rounds'
-import { floorFacts } from './settings-floors'
 import { asRecord } from '../../shared/record'
 
 const BENCH: Place = { zone: 'bench' }
@@ -51,9 +50,12 @@ export async function applySettingsChange(
   if (change === undefined && rawPool === undefined) throw apiError('invalid_settings')
   const before = settingsFromRow(eventRow)
   let after: EventSettings
+  // The state is read only for a change of the settings: a pool alone reads nothing (the budget under the lock, #416).
+  let state: EventState<'members' | 'rounds' | 'vetoes'> | null = null
   if (change !== undefined) {
-    const facts = await floorFacts(tx, eventRow.id, now)
-    const checked = checkSettingsChange(before, change, { phase: eventRow.phase, floors: teamCount => floorsAt(facts, teamCount), roundBeingDrawn: await roundBeingDrawn(tx, eventRow.id) })
+    state = await readEventState(tx, eventRow, now, ['members', 'rounds', 'vetoes'])
+    const facts = floorsOf(state)
+    const checked = checkSettingsChange(before, change, { phase: eventRow.phase, floors: teamCount => floorsAt(facts, teamCount), roundBeingDrawn: roundBeingDrawnOf(state) })
     if (!checked.ok) throw apiError(checked.error)
     after = checked.settings
   }
@@ -67,17 +69,18 @@ export async function applySettingsChange(
     await tx.delete(eventPoolGames).where(eq(eventPoolGames.eventId, eventRow.id))
     if (pool.length > 0) await tx.insert(eventPoolGames).values(pool.map(gameId => ({ eventId: eventRow.id, gameId })))
   }
-  if (before !== null && after.teamCount < before.teamCount) await benchRemovedTeams(tx, publish, now, eventRow.id, after.teamCount, hostId)
+  // A lowered team count only comes with a change of the settings, so the state above has the Members.
+  if (state && before !== null && after.teamCount < before.teamCount) await benchRemovedTeams(tx, publish, now, eventRow.id, after.teamCount, hostId, state)
   return { before, after }
 }
 
 /**
  * Every Player seated in a team the lowered team count removes goes to the Bench (#163). Each one is a move made by the
- * Host, written the way the move endpoint writes it (moveMember).
+ * Host, written the way the move endpoint writes it (moveMember). The Players come from the Members the state read before the change (#416).
  */
-async function benchRemovedTeams(tx: Db, publish: EventChange['publish'], now: Date, eventId: string, teamCount: number, hostId: string): Promise<void> {
-  const removed = (await readSeats(tx, eventId)).filter(seat => seat.place.zone === 'team' && seat.place.team > teamCount)
-  for (const { userId, place } of removed) {
-    await moveMember(tx, publish, now, eventId, hostId, userId, place, BENCH)
+async function benchRemovedTeams(tx: Db, publish: EventChange['publish'], now: Date, eventId: string, teamCount: number, hostId: string, state: EventState<'members'>): Promise<void> {
+  for (const { id } of state.members) {
+    const place = seatOf(state, id)
+    if (place?.zone === 'team' && place.team > teamCount) await moveMember(tx, publish, now, eventId, hostId, id, place, BENCH)
   }
 }
