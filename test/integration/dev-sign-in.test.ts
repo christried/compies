@@ -1,11 +1,11 @@
 import { eq } from 'drizzle-orm'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import me from '../../server/api/me.get'
 import devSignIn from '../../server/dev/sign-in'
 import { users } from '../../server/db/schema'
 import type { MeView } from '../../shared/auth'
 import { version as current } from '../../package.json'
-import { createTestDb, createTestServer } from './harness'
+import { createTestApp } from './app'
+import { createTestDb } from './harness'
 import { stubAuthEnv } from './sign-in'
 
 // The sign-in for `pnpm dev` (retro 1.3): a real Better Auth login session for a fixed Dev User.
@@ -16,7 +16,7 @@ describe('dev sign-in', { timeout: 20_000 }, () => {
 
   async function signInAs(query: string, db?: Awaited<ReturnType<typeof createTestDb>>['db']) {
     const database = db ?? (await createTestDb()).db
-    const server = createTestServer(database, { 'GET /api/dev/sign-in': devSignIn, 'GET /api/me': me })
+    const server = createTestApp(database, {}, { 'GET /api/dev/sign-in': devSignIn })
     const response = await server(`/api/dev/sign-in${query}`, { redirect: 'manual' })
     const cookie = response.headers.getSetCookie().map(header => header.split(';')[0]).join('; ')
     const view = await (await server('/api/me', { headers: { cookie } })).json() as MeView
