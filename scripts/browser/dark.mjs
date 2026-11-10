@@ -137,9 +137,19 @@ const detail = (line) => {
   return `${line.fg} on ${line.bg} ${cut(line.ratio)}:1, needs ${line.need}:1`
 }
 
-/** Waits for fonts and for every animation with a finite run to end, at most 3 s. */
+/**
+ * Waits for fonts and for every animation with a finite run to end, at most 3 s. Before that the page is scrolled through
+ * once: what lands when it comes into view (the stamp on Neuigkeiten) starts then, not in the middle of the reading,
+ * where it would show in one reading and not in the other.
+ */
 const settle = tab => tab.evaluate(`(async () => {
   await document.fonts.ready
+  for (let y = 0; y < document.documentElement.scrollHeight; y += Math.max(200, innerHeight / 2)) {
+    scrollTo(0, y)
+    await new Promise(resolve => setTimeout(resolve, 30))
+  }
+  scrollTo(0, 0)
+  await new Promise(resolve => setTimeout(resolve, 700))
   const end = Date.now() + 3000
   while (Date.now() < end && document.getAnimations().some(a => a.playState === 'running' && Number.isFinite(a.effect?.getComputedTiming().iterations ?? 1))) await new Promise(resolve => setTimeout(resolve, 100))
 })()`)
@@ -185,7 +195,8 @@ async function measure({ tab, state, name, width, appearance, first }) {
     }
   }
   stat(state).excluded += reading.excluded
-  if (reading.unseen || ringsUnseen) log.note(`${where} ${reading.unseen + ringsUnseen} elements could not be brought into view and were not read`)
+  const lost = [...reading.unseen, ...ringsUnseen]
+  if (lost.length) log.note(`${where} ${lost.length} elements could not be brought into view and were not read: ${lost.slice(0, 3).join(' ; ')}`)
   const items = [
     ...reading.texts.map(raw => ({ kind: 'text', ...raw })),
     ...reading.boxes.map(raw => ({ kind: 'box', ...raw })),

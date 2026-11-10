@@ -219,7 +219,7 @@ function readPage(kit) {
   const texts = []
   const boxes = []
   const surfaces = []
-  let unseen = 0
+  const unseen = []
 
   /** Whether something is drawn over the picture-like elements between `el` and what closed its backdrop. */
   function overPicture(el, stack, closer) {
@@ -234,7 +234,7 @@ function readPage(kit) {
   function pushText(el, text, key, rectOf, style, extra = {}) {
     const stack = reach(el, rectOf)
     if (!stack) {
-      unseen++
+      unseen.push(`${key} (${style.fontSize})`)
       return
     }
     if (!free(el, stack)) return
@@ -308,7 +308,7 @@ function readPage(kit) {
     if (!edge && !paint) continue
     const stack = reach(el, () => el.getBoundingClientRect())
     if (!stack) {
-      unseen++
+      unseen.push(`${pathOf(el)} (box)`)
       continue
     }
     if (!free(el, stack)) continue
@@ -334,7 +334,7 @@ function readPage(kit) {
     if (rect.width <= 0 || rect.height <= 0 || !shown(el) || !inDocument(rect)) continue
     const stack = reach(el, () => el.getBoundingClientRect())
     if (!stack) {
-      unseen++
+      unseen.push(`${pathOf(el)} (surface)`)
       continue
     }
     if (!free(el, stack)) continue
@@ -398,7 +398,7 @@ function readRings(kit) {
   }
 
   const rings = []
-  let unseen = 0
+  const unseen = []
   for (const el of document.querySelectorAll(CONTROLS)) {
     // `[tabindex]` alone is a control from 0 up; -1 is a screen reader target (a heading), not a control.
     if (!el.matches(`${ROVING}, a[href], button, input, select, textarea, summary`) && el.tabIndex < 0) continue
@@ -408,7 +408,7 @@ function readRings(kit) {
     el.focus()
     const stack = reach(el, () => el.getBoundingClientRect())
     if (!stack) {
-      unseen++
+      unseen.push(`${pathOf(el)} (ring)`)
       continue
     }
     if (!free(el, stack)) continue
