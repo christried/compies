@@ -1,9 +1,10 @@
 import { eq } from 'drizzle-orm'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
-import { pollSlots, pollVotes, eventMembers, events, sessions, users } from '../../server/db/schema'
+import { pollSlots, pollVotes, events, sessions, users } from '../../server/db/schema'
 import { createTestApp, type TestRequest } from './app'
 import { TEST_SETTINGS } from './fixtures'
 import { createTestDb, resetDatabase } from './harness'
+import { startRunningEvent, type Stage } from './scenario'
 import { setAllowlist, signIn, stubAuthEnv } from './sign-in'
 
 // The Note on a Vote (#102). Slots are far in the future; past Slots are made by moving their start into 2001.
@@ -13,10 +14,12 @@ const member = { provider: 'discord', id: '2', name: 'Gast', email: 'member@exam
 describe('Notes on Votes', () => {
   let testDb: Awaited<ReturnType<typeof createTestDb>>
   let request: TestRequest
+  let stage: Stage
 
   beforeAll(async () => {
     testDb = await createTestDb()
     request = createTestApp(testDb.db)
+    stage = { request, db: testDb.db }
   })
 
   afterAll(async () => {
@@ -41,18 +44,18 @@ describe('Notes on Votes', () => {
 
   /** A poll Event by the Host with three Slots; returns the Host, a Member and the Slot ids in time order. */
   async function setUp() {
-    const { cookie, id: hostId } = await signInAs(host, { hostPermission: true })
-    const response = await request('/api/e', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json', cookie },
-      body: JSON.stringify({ name: 'Freitags-Zocken', dateMode: 'poll', slots: ['2090-10-30T20:30', '2090-10-31T19:00', '2090-11-01T19:00'], settings: TEST_SETTINGS }),
+    // One Session, so the poll stays open until a Date is set; the third Slot is one the poll offers beside the first two (`extraSlots`).
+    const event = await startRunningEvent(stage, {
+      host,
+      players: { guest: member },
+      seats: [],
+      sessions: 1,
+      slots: ['2090-10-30T20:30'],
+      extraSlots: ['2090-10-31T19:00', '2090-11-01T19:00'],
+      confirmed: 0,
+      start: false,
     })
-    const { slug } = await response.json()
-    const [event] = await testDb.db.select().from(events).where(eq(events.slug, slug))
-    const rows = await testDb.db.select().from(pollSlots).where(eq(pollSlots.eventId, event!.id)).orderBy(pollSlots.startsAt)
-    const guest = await signInAs(member)
-    await testDb.db.insert(eventMembers).values({ eventId: event!.id, userId: guest.id })
-    return { slug, eventId: event!.id, hostCookie: cookie, hostId, guestCookie: guest.cookie, guestId: guest.id, slotIds: rows.map(row => row.id) }
+    return { slug: event.slug, eventId: event.eventId, hostCookie: event.host.cookie, hostId: event.host.id, guestCookie: event.players.guest.cookie, guestId: event.players.guest.id, slotIds: event.slotIds }
   }
 
   function put(cookie: string, slug: string, slotId: string, body: Record<string, unknown>) {
