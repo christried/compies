@@ -1,26 +1,13 @@
 import { eq } from 'drizzle-orm'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
-import createEvent from '../../server/api/e/index.post'
-import readEvent from '../../server/api/e/[slug].get'
-import confirmDate from '../../server/api/e/[slug]/confirm.post'
-import moveMember from '../../server/api/e/[slug]/move.post'
-import removeSession from '../../server/api/e/[slug]/sessions/[id].delete'
-import reopenSession from '../../server/api/e/[slug]/sessions/[id]/reopen.post'
-import rescheduleSession from '../../server/api/e/[slug]/sessions/[id]/reschedule.post'
-import addSession from '../../server/api/e/[slug]/sessions/index.post'
-import endSession from '../../server/api/e/[slug]/sessions/end.post'
-import startSession from '../../server/api/e/[slug]/sessions/start.post'
-import addSlot from '../../server/api/e/[slug]/slots/index.post'
-import putVote from '../../server/api/e/[slug]/slots/[slotId]/vote.put'
-import setTeamWord from '../../server/api/e/[slug]/team-word.post'
-import resetTeamName from '../../server/api/e/[slug]/teams/[position]/reset-name.post'
-import { activity, eventMembers, eventPoolGames, eventTeams, events, games, pollSlots, pollVotes, sessions, users } from '../../server/db/schema'
+import { activity, eventTeams, events, sessions } from '../../server/db/schema'
 import { memoryRoomNotifier } from '../../server/utils/room-notifier'
 import type { Place } from '../../shared/board'
 import type { EventView } from '../../shared/event'
-import { TEST_SETTINGS } from './fixtures'
-import { createTestDb, createTestServer } from './harness'
-import { setAllowlist, signIn, stubAuthEnv } from './sign-in'
+import { createTestApp, errorOf, sendVia, type TestRequest } from './app'
+import { createTestDb, resetDatabase } from './harness'
+import { hostSetsDates, playersTakeSeats, startRunningEvent, type Stage } from './scenario'
+import { stubAuthEnv } from './sign-in'
 
 // Starting and ending Sessions (#164, spec #153 § API contracts): the start rule through the API, what the first start
 // freezes, the Running Session, and what a started Session and the teams allow afterwards. Slots are in 2090 so Dates
@@ -35,28 +22,14 @@ const SLOTS = ['2090-10-30T20:30', '2090-10-31T19:00', '2090-11-01T19:00']
 
 describe('Starting and ending Sessions', () => {
   let testDb: Awaited<ReturnType<typeof createTestDb>>
-  let request: ReturnType<typeof createTestServer>
+  let request: TestRequest
+  let stage: Stage
   const notifier = memoryRoomNotifier()
-  const routes = {
-    'POST /api/e': createEvent,
-    'GET /api/e/:slug': readEvent,
-    'POST /api/e/:slug/confirm': confirmDate,
-    'POST /api/e/:slug/move': moveMember,
-    'POST /api/e/:slug/team-word': setTeamWord,
-    'POST /api/e/:slug/teams/:position/reset-name': resetTeamName,
-    'POST /api/e/:slug/sessions': addSession,
-    'POST /api/e/:slug/sessions/start': startSession,
-    'POST /api/e/:slug/sessions/end': endSession,
-    'DELETE /api/e/:slug/sessions/:id': removeSession,
-    'POST /api/e/:slug/sessions/:id/reopen': reopenSession,
-    'POST /api/e/:slug/sessions/:id/reschedule': rescheduleSession,
-    'POST /api/e/:slug/slots': addSlot,
-    'PUT /api/e/:slug/slots/:slotId/vote': putVote,
-  } as const
 
   beforeAll(async () => {
     testDb = await createTestDb()
-    request = createTestServer(testDb.db, routes, { roomNotifier: notifier })
+    request = createTestApp(testDb.db, { roomNotifier: notifier })
+    stage = { request, db: testDb.db, notifier }
   })
 
   afterAll(async () => {
@@ -66,14 +39,7 @@ describe('Starting and ending Sessions', () => {
   beforeEach(async () => {
     stubAuthEnv()
     notifier.clear()
-    await testDb.db.delete(eventPoolGames)
-    await testDb.db.delete(games)
-    await testDb.db.delete(activity)
-    await testDb.db.delete(pollVotes)
-    await testDb.db.delete(pollSlots)
-    await testDb.db.delete(eventMembers)
-    await testDb.db.delete(events)
-    await testDb.db.delete(users)
+    await resetDatabase(testDb.db)
   })
 
   afterEach(() => {
@@ -87,74 +53,36 @@ describe('Starting and ending Sessions', () => {
    * Bench. No Date is set yet.
    */
   async function setup({ teamSize = 2, settings = true }: { teamSize?: number, settings?: boolean } = {}) {
-    setAllowlist({ hosts: 'discord:1' })
-    const hostCookie = (await signIn(testDb.db, host)).cookie
-    const cookies = {
-      one: (await signIn(testDb.db, one)).cookie,
-      two: (await signIn(testDb.db, two)).cookie,
-      three: (await signIn(testDb.db, three)).cookie,
-      four: (await signIn(testDb.db, four)).cookie,
-    }
-    const created = await request('/api/e', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json', 'cookie': hostCookie },
-      body: JSON.stringify({ name: 'Freitags-Zocken', dateMode: 'poll', sessions: 2, slots: SLOTS, settings: { ...TEST_SETTINGS, teamSize } }),
+    const event = await startRunningEvent(stage, {
+      host, players: { one, two, three, four }, seats: [], confirmed: 0, start: false,
+      sessions: 2, slots: SLOTS.slice(0, 2), extraSlots: SLOTS.slice(2), settings: { teamSize },
     })
-    const { slug } = await created.json() as { slug: string }
     // An Event from before 1.3 was never set up: no settings.
-    if (!settings) await testDb.db.update(events).set({ format: null, teamCount: null, teamSize: null, gameCount: null, pointsTable: null, selectionMode: null, hiddenWheel: null, vetoAllowance: null }).where(eq(events.slug, slug))
-    const [eventRow] = await testDb.db.select().from(events).where(eq(events.slug, slug))
-    const ids: Record<string, string> = {}
-    for (const [key, profile] of Object.entries({ host, one, two, three, four })) {
-      const [row] = await testDb.db.select().from(users).where(eq(users.email, profile.email))
-      ids[key] = row!.id
-    }
-    for (const key of ['one', 'two', 'three', 'four']) await testDb.db.insert(eventMembers).values({ eventId: eventRow!.id, userId: ids[key]! })
-    const slotIds = (await testDb.db.select().from(pollSlots).where(eq(pollSlots.eventId, eventRow!.id)).orderBy(pollSlots.startsAt)).map(row => row.id)
-    notifier.clear()
+    if (!settings) await testDb.db.update(events).set({ format: null, teamCount: null, teamSize: null, gameCount: null, pointsTable: null, selectionMode: null, hiddenWheel: null, vetoAllowance: null }).where(eq(events.slug, event.slug))
     return {
-      slug,
-      eventId: eventRow!.id,
-      slotIds,
-      hostCookie,
-      cookies,
-      ids: ids as Record<'host' | 'one' | 'two' | 'three' | 'four', string>,
+      ...event,
+      hostCookie: event.host.cookie,
+      cookies: { one: event.players.one.cookie, two: event.players.two.cookie, three: event.players.three.cookie, four: event.players.four.cookie },
+      ids: { host: event.host.id, one: event.players.one.id, two: event.players.two.id, three: event.players.three.id, four: event.players.four.id },
     }
   }
 
   type Game = Awaited<ReturnType<typeof setup>>
 
-  function send(method: string, path: string, cookie: string | undefined, body?: unknown) {
-    return request(path, {
-      method,
-      headers: { ...(body === undefined ? {} : { 'content-type': 'application/json' }), ...(cookie ? { cookie } : {}) },
-      body: body === undefined ? undefined : JSON.stringify(body),
-    })
-  }
+  const send = sendVia(() => request)
 
   async function read(game: Game, cookie = game.hostCookie): Promise<EventView> {
     return await (await send('GET', `/api/e/${game.slug}`, cookie)).json() as EventView
   }
 
-  async function errorOf(response: Response) {
-    return { status: response.status, code: (await response.json() as { statusMessage: string }).statusMessage }
-  }
-
   /** Sets the Dates of the first `count` Sessions from the Slots, in order. */
   async function setDates(game: Game, count: number) {
-    for (let index = 0; index < count; index++) {
-      const response = await send('POST', `/api/e/${game.slug}/confirm`, game.hostCookie, { slotId: game.slotIds[index] })
-      expect(response.status).toBe(200)
-    }
+    await hostSetsDates(stage, game, count)
   }
 
   /** Two Players in each team: One and Two in team 1, Three and Four in team 2 (the Players move themselves). */
   async function fillTeams(game: Game) {
-    const seats = [['one', 1], ['two', 1], ['three', 2], ['four', 2]] as const
-    for (const [key, position] of seats) {
-      const response = await send('POST', `/api/e/${game.slug}/move`, game.cookies[key], { userId: game.ids[key], to: team(position) })
-      expect(response.status).toBe(200)
-    }
+    await playersTakeSeats(stage, game, [['one', 1], ['two', 1], ['three', 2], ['four', 2]] as const)
   }
 
   /** An Event ready to start: both Dates set, the teams full. */

@@ -86,6 +86,15 @@ describe('the Event scenario', () => {
       expect((await readEvent(stage, ev.host.cookie, ev.slug)).missingDates).toBe(1)
     })
 
+    it('extraSlots: the poll offers Slots beyond the Sessions, and only the Sessions take a Date', async () => {
+      const ev = await startRunningEvent(stage, { ...base, extraSlots: ['2090-11-01T19:00'], start: false })
+
+      expect(ev.slotIds).toHaveLength(3)
+      const view = await readEvent(stage, ev.host.cookie, ev.slug)
+      expect(view.sessions).toHaveLength(2)
+      expect(view.missingDates).toBe(0)
+    })
+
     it('start: false leaves no Running Session, with the Dates set', async () => {
       const ev = await startRunningEvent(stage, { ...base, start: false })
 

@@ -35,7 +35,7 @@ import { setAllowlist, signIn, type ProviderProfile } from './sign-in'
 // | hidden-wheel (`runningEvent`)                 | joins by Invite, games made over HTTP, 1 Session         | `join: 'invite'`, or `hostCreatesEvent` + `playersJoin` + `startRunningSession` |
 // | finished-readonly (`finishedWheel`)           | finishes through the API after one Result                | `startRunningEvent` + `hostSpins`/`hostSets` + `hostEntersResult` + `hostFinishes` |
 // | share-image (`event`)                         | Spectator + Bench Member + outsider, optional finish     | `seats` with 'stands', `outsiders`, `hostFinishes`   |
-// | session-start, team-names, settings-teams     | Event in its poll or with one Date, Members on the Bench | `confirmed: 0 | 1`, `seats: []`, `start: false`; settings-teams seats by the Host (a `send`) |
+// | session-start, team-names, settings-teams     | Event in its poll or with one Date, Members on the Bench | `confirmed: 0 | 1`, `extraSlots` (a Slot beyond the Sessions), `seats: []`, `start: false`; settings-teams seats by the Host (a `send`) |
 // | delete-event (`buildEvent(phase)`)            | one Event per Phase, a stranger                          | `confirmed`, `start`, `hostEndsSession`, `outsiders`  |
 //
 // Not expressed: an Event with no settings (session-start `settings: false` updates the row after the set-up: a local wrapper), and an
@@ -79,6 +79,8 @@ export interface RunningEventOptions<Player extends string, Game extends string 
   sessions?: number
   /** Default `['2090-10-30T20:30', '2090-10-31T19:00']` cut to `sessions` (later ones follow day by day); the length must equal `sessions`. */
   slots?: readonly string[]
+  /** Slots the poll offers after `slots`, beyond one Date per Session (a Session that waits for its Date, #164): `confirmed` does not count them. */
+  extraSlots?: readonly string[]
   /** How many Slots get a Date through POST confirm, in Slot order. Default `sessions`; 0 leaves the Event in its poll. */
   confirmed?: number
   /** Spread over `TEST_SETTINGS`, e.g. `{ teamSize: 2, selectionMode: 'lucky_wheel', vetoAllowance: 1, hiddenWheel: true, gameCount: 10 }`. */
@@ -197,8 +199,9 @@ export async function hostEndsSession(stage: Stage, event: Pick<EventRef, 'slug'
  */
 export async function startRunningEvent<Player extends string, Game extends string = never, Outsider extends string = never>(stage: Stage, options: RunningEventOptions<Player, Game, Outsider>): Promise<RunningEvent<Player, Game, Outsider>> {
   const { sessions = 2, confirmed = sessions, join = 'rows', start = true, quiet = 'room' } = options
-  const slots = options.slots ?? defaultSlots(sessions)
-  expect(slots, 'slots and sessions must have the same length').toHaveLength(sessions)
+  const dated = options.slots ?? defaultSlots(sessions)
+  expect(dated, 'slots and sessions must have the same length').toHaveLength(sessions)
+  const slots = [...dated, ...(options.extraSlots ?? [])]
 
   const host = await hostSignsIn(stage, options.host)
   const players = {} as Record<Player, Signed>
