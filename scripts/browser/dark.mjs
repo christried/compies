@@ -14,7 +14,7 @@
 // the file's states made on the dev database.
 //
 //   State = { name, group,                   // `group` names the file's area: 'signed-out', 'app', …
-//             account: 'host' | 'member' | 'admin', signedOut?: true,
+//             account: 'host' | 'member' | 'admin',
 //             static?: true,                 // committed content only: every text may be named in the log
 //             widths?: number[],             // default [390, 1440]
 //             appearances?: ('dark' | 'system')[],   // default both
@@ -28,7 +28,7 @@
 //   ctx = { tab, tabs, width, height, appearance, data, signOut(how) }   // 390 × 844 and 1440 × 900; `tabs` = { host, member, admin }, the other accounts for the API
 //   data = { slug, invitePath, game, longGame }                      // made once by this runner
 //
-// `open` signs in (`open`, `openSignedOut`) with `ctx.appearance` and loads the page; a `signedOut` state reports how its
+// `open` signs in (`open`, `openSignedOut`) with `ctx.appearance` and loads the page; a state that opens signed out reports how its
 // sign-out went through `ctx.signOut`. A state that cannot be reached throws, and is one FAIL line. Personal data: the
 // log, findings.json and report.md reach a public issue, so a text is named only when `label()` says so.
 import { execFileSync } from 'node:child_process'
