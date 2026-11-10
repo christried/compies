@@ -286,7 +286,7 @@ describe('the session-needed notice on the Event page', () => {
 // navigation, is not (#340, 13-countdown § Accessibility; #332 F8). The stage remembers it rendered the Event without one.
 describe('the arrival of the Countdown on the Event page', () => {
   const RUNNING_ONE = SESSION(1, FIRST, { startedAt: STARTED })
-  const READY = { durationMs: 300_000, remainingMs: 300_000, startedAt: null }
+  const READY = { durationMs: 300_000, remainingMs: 300_000, startedAt: null, lastStartedAt: null }
   const countdownStatus = (page: Awaited<ReturnType<typeof mount>>) =>
     page.get('[data-testid="countdown-tile"]').element.closest('section')!.querySelector('[role="status"]')!.textContent
 

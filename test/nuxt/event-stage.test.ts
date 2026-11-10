@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { eventPageState } from '~/utils/event-page'
-import { gamesToStart, stageInstants, stageUnsettled, type StageInput } from '~/utils/event-stage'
+import { gamesToStart, RISE_DELAY_MS, risen, stageBlocks, stageInstants, stageMoments, stageRises, stageUnsettled, type Block, type StageInput } from '~/utils/event-stage'
 import type { EventView } from '~~/shared/event'
-import type { RoundView, SpinView, VetoView } from '~~/shared/stage'
+import type { ResultView, RoundView, SpinView, VetoView } from '~~/shared/stage'
 import { defaultSettings } from '~~/shared/settings'
 import { SPIN } from '../draw-offsets'
 import { viewWithSessions, type EventOverrides } from './event-page'
@@ -19,7 +19,7 @@ type SessionSpec = Parameters<typeof viewWithSessions>[1][number]
 const dated = (number: number | null, startsAt: string, times: { startedAt?: string, endedAt?: string } = {}): SessionSpec => ({ startsAt, number, ...times })
 const undated = (): SessionSpec => ({ startsAt: null, number: null })
 
-type Fields = Pick<EventOverrides, 'settings' | 'wheel' | 'countdown' | 'coin' | 'setGame' | 'end' | 'rounds'> & { phase?: string, isHost?: boolean }
+type Fields = Pick<EventOverrides, 'settings' | 'wheel' | 'countdown' | 'coin' | 'setGame' | 'end' | 'rounds' | 'results' | 'bonusVetoes'> & { phase?: string, isHost?: boolean }
 
 /** The Event read of a page in this state, as the module takes it: the fixture types `phase` as a string. */
 function viewOf(sessions: SessionSpec[], { phase = 'poll', isHost = false, ...fields }: Fields = {}): StageInput {
@@ -27,12 +27,14 @@ function viewOf(sessions: SessionSpec[], { phase = 'poll', isHost = false, ...fi
   return viewWithSessions('stage', sessions, missing, { settings: defaultSettings(), event: { phase, isHost }, ...fields }) as unknown as StageInput
 }
 
-const blocks = (sessions: SessionSpec[], fields: Fields = {}) => eventPageState(viewOf(sessions, fields)).blocks
+// The tests below this line read today's per-state order: `now` 0 lies before every moment of a fixture (#441), so none is counted and nothing lifts.
+// The moments and the lifted order are the last describes of the file.
+const blocks = (sessions: SessionSpec[], fields: Fields = {}) => eventPageState(viewOf(sessions, fields), 0).blocks
 
 const ONE_RUNNING = [dated(1, SAT, { startedAt: SAT }), undated()]
 const RUNNING: Fields = { phase: 'running' }
 const WHEEL: Fields = { wheel: { count: 2, slices: null, spin: null, vetoes: { left: [2, 2], own: null, revealed: null, draw: null } } }
-const COUNTDOWN: Fields = { countdown: { durationMs: 60_000, remainingMs: 60_000, startedAt: null } }
+const COUNTDOWN: Fields = { countdown: { durationMs: 60_000, remainingMs: 60_000, startedAt: null, lastStartedAt: null } }
 const TOSS: Fields = { coin: { id: 'toss-1', side: 'heads', startedAt: SAT, landsAt: SUN } }
 const POOL_WARNING: Fields = { setGame: { rejection: null, spinRejection: null, respin: false, left: [], poolWarning: { needed: 10, have: 2 } } }
 const endOf = (played: number, gameCount: number, tie: number[] | null = null): Fields => ({ end: { played, gameCount, complete: played >= gameCount, tie, finish: null, lastGame: null } })
@@ -404,5 +406,313 @@ describe('a read that still waits for a passed instant', () => {
 
   it('is settled without a wheel', () => {
     expect(stageUnsettled(wheelView(null), NOW)).toBe(false)
+  })
+})
+
+// The stage follows the game (#441): a block with a moment that has been counted (moment + 0.5 s <= now) rises under the pinned blocks, newest first; what has no counted
+// moment keeps today's order. The moments are the instants the Event read carries, one per piece (event-stage.ts); nothing here reads the game, the Vetoes or a seat.
+const at = (epoch: number) => new Date(epoch).toISOString()
+/** The epoch ms of a moment `ms` before NOW. */
+const ago = (ms: number) => NOW - ms
+
+const wheelWith = ({ spun, set, ...veto }: { spun?: number, set?: number } & Partial<VetoView> = {}): NonNullable<EventView['wheel']> => ({
+  count: 3,
+  slices: null,
+  // A spin written at `spun` starts 1.5 s later and stops 6 s after that.
+  spin: spun === undefined ? null : spin(spun - NOW + 7500, true),
+  vetoes: {
+    left: [1, 1],
+    own: null,
+    revealed: null,
+    draw: set === undefined ? null : { drawId: 'd2', kind: 'set', stopAt: at(set), vetoEndsAt: at(set + 60_000), game },
+    ...veto,
+  },
+})
+const roundAt = (id: string, setAt: number): RoundView => ({ ...round(id), setAt: at(setAt) })
+const resultAt = (resultAtMs: number, correctedAt: number | null = null): ResultView => ({
+  roundId: 'r1', number: 1, game: round('r1').game, places: [], corrected: correctedAt !== null, correctedAt: correctedAt === null ? null : at(correctedAt), resultAt: at(resultAtMs),
+})
+const countdownAt = (startedAt: number | null, lastStartedAt: number | null = null): NonNullable<EventView['countdown']> => ({
+  durationMs: 60_000, remainingMs: 60_000, startedAt: startedAt === null ? null : at(startedAt), lastStartedAt: lastStartedAt === null ? null : at(lastStartedAt),
+})
+const tossAt = (commit: number): NonNullable<EventView['coin']> => ({ id: 'toss-2', side: 'heads', startedAt: at(commit + 1500), landsAt: at(commit + 5100) })
+
+// A running page with the pieces that have no moment of their own: the wheel (no draw), the pool warning, the Standings' end and a Countdown that never started.
+const LIVE: Fields = { ...RUNNING, ...POOL_WARNING, ...STANDINGS, wheel: wheelWith(), countdown: countdownAt(null) }
+const BETWEEN = [dated(1, SAT, ENDED), dated(2, SUN)]
+const DONE = [dated(1, SAT, ENDED)]
+const FINISHED_STAGE: Fields = { phase: 'finished', ...endOf(3, 3) }
+/** The blocks of a page at `now` (null: the server render, every moment counted). */
+const listAt = (now: number | null, sessions: SessionSpec[], fields: Fields) => eventPageState(viewOf(sessions, fields), now).blocks
+const running = (fields: Fields, now: number | null = NOW) => listAt(now, ONE_RUNNING, { ...LIVE, ...fields })
+/** Today's order of the same page: `now` 0 lies before every moment. */
+const today = (fields: Fields) => listAt(0, ONE_RUNNING, { ...LIVE, ...fields })
+const momentsOf = (fields: Fields) => stageMoments(viewOf(ONE_RUNNING, { ...LIVE, ...fields }), 'running')
+const PINNED_ON_TOP: Block[] = ['head', 'reopen']
+/** `list` with `first` taken to the top under the Head and the Reopen notices, the rest as it was. */
+const lifted = (list: Block[], ...first: Block[]) => [...PINNED_ON_TOP, ...first, ...list.filter(block => !PINNED_ON_TOP.includes(block) && !first.includes(block))]
+
+describe('the stage follows the game (#441)', () => {
+  it('has today\'s order for every kind when no block has a moment', () => {
+    const everything: Fields = { ...WHEEL, ...POOL_WARNING, ...COUNTDOWN, ...STANDINGS }
+    const cases: [SessionSpec[], Fields][] = [
+      [[undated()], { settings: null }],
+      [[undated(), undated()], {}],
+      [[dated(1, SAT), undated()], {}],
+      [ONE_RUNNING, RUNNING],
+      [BETWEEN, RUNNING],
+      [DONE, RUNNING],
+      [DONE, FINISHED_STAGE],
+    ]
+    for (const [sessions, fields] of cases) {
+      const view = { ...everything, ...fields }
+      expect(listAt(NOW, sessions, view)).toEqual(listAt(0, sessions, view))
+      expect(listAt(null, sessions, view)).toEqual(listAt(0, sessions, view))
+    }
+    expect(running({})).toEqual(['head', 'reopen', 'wheel', 'rounds', 'standings', 'pool', 'countdown', 'board', 'poll', 'cards'])
+  })
+
+  describe('the moment of each trigger lifts its block', () => {
+    const cases: [string, Fields, Block][] = [
+      ['a spin (its commit)', { wheel: wheelWith({ spun: ago(1000) }) }, 'wheel'],
+      ['a set game with a Veto window (its stop, which is its commit)', { wheel: wheelWith({ set: ago(1000) }) }, 'wheel'],
+      ['a settled Round', { rounds: [roundAt('o1', ago(1000))] }, 'rounds'],
+      ['a Result', { results: [resultAt(ago(1000))] }, 'standings'],
+      ['a Correction', { results: [resultAt(ago(60_000), ago(1000))] }, 'standings'],
+      ['a Countdown start or resume', { countdown: countdownAt(ago(1000), ago(1000)) }, 'countdown'],
+      ['a Countdown start by the build before the switch-over (startedAt only)', { countdown: countdownAt(ago(1000), null) }, 'countdown'],
+      ['a toss (its commit)', { coin: tossAt(ago(1000)) }, 'coin'],
+    ]
+    for (const [name, fields, block] of cases) {
+      it(`lifts ${block} for ${name}, under the Head and the Reopen notices`, () => {
+        expect(running(fields)).toEqual(lifted(today(fields), block))
+        expect(running(fields).indexOf(block)).toBe(2)
+      })
+    }
+
+    it('lifts a Countdown above the wheel, the open Rounds and the Standings, where today it sits below them', () => {
+      expect(running({ countdown: countdownAt(ago(1000), ago(1000)) })).toEqual(['head', 'reopen', 'countdown', 'wheel', 'rounds', 'standings', 'pool', 'board', 'poll', 'cards'])
+    })
+
+    it('lifts the Standings above the wheel and an older open Round, where today they sit below', () => {
+      expect(running({ results: [resultAt(ago(1000))], rounds: [roundAt('o1', ago(9000))] })).toEqual(['head', 'reopen', 'standings', 'rounds', 'wheel', 'pool', 'countdown', 'board', 'poll', 'cards'])
+    })
+
+    it('reads a spin\'s commit and not its stop: a spin with a window lifts at the commit, 7.5 s before the wheel stops', () => {
+      const wheel = wheelWith({ spun: ago(10_000), draw: { drawId: 'd1', kind: 'spin', stopAt: at(ago(2500)), vetoEndsAt: at(ago(2500) + 60_000), game } })
+      expect(momentsOf({ wheel })).toEqual({ wheel: ago(10_000) })
+    })
+
+    it('takes the later of a spin and a set game for the wheel', () => {
+      expect(momentsOf({ wheel: wheelWith({ spun: ago(10_000), set: ago(3000) }) })).toEqual({ wheel: ago(3000) })
+      expect(momentsOf({ wheel: wheelWith({ spun: ago(3000), set: ago(10_000) }) })).toEqual({ wheel: ago(3000) })
+    })
+  })
+
+  describe('the order of several moments', () => {
+    it('puts the newest first', () => {
+      expect(running({ results: [resultAt(ago(2000))], countdown: countdownAt(ago(1000), ago(1000)) }))
+        .toEqual(['head', 'reopen', 'countdown', 'standings', 'wheel', 'rounds', 'pool', 'board', 'poll', 'cards'])
+      expect(running({ results: [resultAt(ago(1000))], countdown: countdownAt(ago(2000), ago(2000)) }))
+        .toEqual(['head', 'reopen', 'standings', 'countdown', 'wheel', 'rounds', 'pool', 'board', 'poll', 'cards'])
+    })
+
+    it('puts three in the order of their moments, and the blocks without one after them in today\'s order', () => {
+      expect(running({ coin: tossAt(ago(3000)), results: [resultAt(ago(2000))], rounds: [roundAt('o1', ago(1000))] }))
+        .toEqual(['head', 'reopen', 'rounds', 'standings', 'coin', 'wheel', 'pool', 'countdown', 'board', 'poll', 'cards'])
+      expect(running({ coin: tossAt(ago(1000)), results: [resultAt(ago(2000))], rounds: [roundAt('o1', ago(3000))] }))
+        .toEqual(['head', 'reopen', 'coin', 'standings', 'rounds', 'wheel', 'pool', 'countdown', 'board', 'poll', 'cards'])
+    })
+
+    it('keeps today\'s order for equal moments', () => {
+      const same: Fields = { wheel: wheelWith({ spun: ago(1000) }), rounds: [roundAt('o1', ago(1000))], results: [resultAt(ago(1000))] }
+      expect(running(same)).toEqual(['head', 'reopen', 'wheel', 'rounds', 'standings', 'pool', 'countdown', 'board', 'poll', 'cards'])
+      const later: Fields = { results: [resultAt(ago(1000))], countdown: countdownAt(ago(1000), ago(1000)), coin: tossAt(ago(1000)) }
+      expect(running(later)).toEqual(['head', 'reopen', 'standings', 'countdown', 'coin', 'wheel', 'rounds', 'pool', 'board', 'poll', 'cards'])
+    })
+
+    it('counts a moment at exactly now - 500 ms and not at now - 499 ms', () => {
+      expect(running({ results: [resultAt(ago(RISE_DELAY_MS))] }).indexOf('standings')).toBe(2)
+      expect(running({ results: [resultAt(ago(RISE_DELAY_MS - 1))] })).toEqual(today({ results: [resultAt(ago(RISE_DELAY_MS - 1))] }))
+    })
+
+    it('counts every moment at now null (the server render, a hidden tab), also one that lies after the page\'s clock', () => {
+      const fields = { results: [resultAt(NOW + 10_000)] }
+      expect(running(fields, null).indexOf('standings')).toBe(2)
+      expect(running(fields, NOW)).toEqual(today(fields))
+    })
+
+    it('reads the same at any later time: news that arrives late is counted at once, and a reload shows the order of someone who watched', () => {
+      const fields = { results: [resultAt(ago(2000))], coin: tossAt(ago(5000)) }
+      expect(running(fields, NOW + 60_000)).toEqual(running(fields, null))
+      expect(running(fields, NOW)).toEqual(running(fields, null))
+    })
+  })
+
+  describe('what stays where it is', () => {
+    const MOMENTS: Fields = {
+      wheel: wheelWith({ spun: ago(1000) }),
+      rounds: [roundAt('o1', ago(2000))],
+      results: [resultAt(ago(3000))],
+      countdown: countdownAt(ago(4000), ago(4000)),
+      coin: tossAt(ago(5000)),
+    }
+
+    it('keeps the Head, the Reopen notices and the Tie banner in front of every moment, for a Member', () => {
+      expect(listAt(NOW, ONE_RUNNING, { ...LIVE, ...MOMENTS, ...TIE })).toEqual(['head', 'reopen', 'tie', 'wheel', 'rounds', 'standings', 'countdown', 'coin', 'pool', 'board', 'poll', 'cards'])
+      expect(listAt(NOW, DONE, { ...RUNNING, ...MOMENTS, ...TIE })).toEqual(['head', 'reopen', 'tie', 'rounds', 'standings', 'cards', 'board'])
+      expect(listAt(NOW, BETWEEN, { ...RUNNING, ...TIE, results: [resultAt(ago(1000))] })).toEqual(['head', 'reopen', 'tie', 'standings', 'rounds', 'cards', 'stay', 'board'])
+    })
+
+    it('keeps the Host\'s Session notice in front of every moment', () => {
+      const host: Fields = { ...RUNNING, isHost: true, ...endOf(2, 3), results: [resultAt(ago(1000))] }
+      expect(listAt(NOW, DONE, host)).toEqual(['head', 'reopen', 'sessionNeeded', 'standings', 'rounds', 'cards', 'board'])
+      expect(listAt(0, DONE, host)).toEqual(['head', 'reopen', 'sessionNeeded', 'rounds', 'standings', 'cards', 'board'])
+    })
+
+    it('never raises the Game board, the Date poll or the Sessions cards, with every moment present: while a Session runs, between Sessions and after the last', () => {
+      expect(listAt(NOW, ONE_RUNNING, { ...LIVE, ...MOMENTS }).slice(-3)).toEqual(['board', 'poll', 'cards'])
+      expect(listAt(NOW, [dated(1, SAT, ENDED), undated()], { ...RUNNING, ...MOMENTS, ...STANDINGS })).toEqual(['head', 'reopen', 'rounds', 'standings', 'cards', 'stay', 'board', 'poll'])
+      expect(listAt(NOW, BETWEEN, { ...RUNNING, ...MOMENTS, ...STANDINGS })).toEqual(['head', 'reopen', 'rounds', 'standings', 'cards', 'stay', 'board'])
+      expect(listAt(NOW, DONE, { ...RUNNING, ...MOMENTS, ...STANDINGS })).toEqual(['head', 'reopen', 'rounds', 'standings', 'cards', 'board'])
+    })
+
+    it('never reorders a finished Event: no moment is read', () => {
+      const withMoments: Fields = { ...FINISHED_STAGE, ...MOMENTS }
+      expect(listAt(NOW, DONE, withMoments)).toEqual(['head', 'reopen', 'actions', 'standings', 'history', 'cards'])
+      expect(listAt(null, DONE, withMoments)).toEqual(listAt(0, DONE, withMoments))
+      expect(stageMoments(viewOf(DONE, withMoments), 'finished')).toEqual({})
+      expect(stageRises(viewOf(DONE, withMoments), 'finished')).toEqual([])
+    })
+
+    it('has no moment for a block the kind does not list: the wheel, the Countdown and the coin between Sessions', () => {
+      expect(stageMoments(viewOf(BETWEEN, { ...RUNNING, ...STANDINGS, ...MOMENTS }), 'between')).toEqual({ rounds: ago(2000), standings: ago(3000) })
+    })
+  })
+
+  describe('what is not a moment', () => {
+    it('keeps a paused Countdown where it rose: its last start survives the pause', () => {
+      const started = countdownAt(ago(10_000), ago(10_000))
+      const paused: NonNullable<EventView['countdown']> = { ...started, startedAt: null, remainingMs: 40_000 }
+      expect(momentsOf({ countdown: paused })).toEqual({ countdown: ago(10_000) })
+      expect(running({ countdown: paused })).toEqual(running({ countdown: started }))
+      expect(running({ countdown: paused }).indexOf('countdown')).toBe(2)
+    })
+
+    it('keeps a Countdown that reached zero where it is, and does not lift it again', () => {
+      const countdown = countdownAt(ago(70_000), ago(70_000))
+      expect(momentsOf({ countdown })).toEqual({ countdown: ago(70_000) })
+      expect(running({ countdown }, NOW - 65_000)).toEqual(running({ countdown }, NOW + 65_000))
+    })
+
+    it('takes the later of startedAt and lastStartedAt: the build before the switch-over writes startedAt only', () => {
+      expect(momentsOf({ countdown: countdownAt(ago(1000), ago(5000)) }).countdown).toBe(ago(1000))
+      expect(momentsOf({ countdown: countdownAt(ago(5000), ago(1000)) }).countdown).toBe(ago(1000))
+      expect(momentsOf({ countdown: countdownAt(null, ago(5000)) }).countdown).toBe(ago(5000))
+      expect(momentsOf({ countdown: countdownAt(ago(5000), null) }).countdown).toBe(ago(5000))
+      expect(momentsOf({ countdown: countdownAt(null, null) }).countdown).toBeUndefined()
+    })
+
+    it('does not lift the wheel for a set game without a Veto window (it has no draw in the read)', () => {
+      expect(momentsOf({})).toEqual({})
+      expect(running({ wheel: wheelWith({ draw: null }) })).toEqual(today({}))
+    })
+
+    it('does not move for a Bonus Veto', () => {
+      const bonus = { bonusVetoes: { left: [1, 0], granted: [] } } as unknown as Fields
+      const moments: Fields = { results: [resultAt(ago(1000))], countdown: countdownAt(ago(2000), ago(2000)) }
+      expect(running({ ...moments, ...bonus })).toEqual(running(moments))
+      expect(momentsOf({ ...moments, ...bonus })).toEqual(momentsOf(moments))
+    })
+
+    it('does not move for a Veto cast: the Vetoes left, the own cast and the revealed ones feed no moment (a lift would tell the other Parties, #355)', () => {
+      const before = wheelWith({ spun: ago(1000) })
+      const cast = wheelWith({ spun: ago(1000), left: [0, 1], own: { team: 1, cast: true, rejection: null }, revealed: [{ team: 1 }] })
+      expect(momentsOf({ wheel: cast })).toEqual(momentsOf({ wheel: before }))
+      const moments: Fields = { results: [resultAt(ago(500))] }
+      expect(running({ ...moments, wheel: cast })).toEqual(running({ ...moments, wheel: before }))
+    })
+
+    it('reads the latest settle of the open Rounds: a put-back of the older of two moves nothing', () => {
+      const two = [roundAt('o1', ago(5000)), roundAt('o2', ago(2000))]
+      expect(momentsOf({ rounds: two })).toEqual({ rounds: ago(2000) })
+      expect(momentsOf({ rounds: [two[1]!] })).toEqual({ rounds: ago(2000) })
+    })
+  })
+
+  describe('the edges', () => {
+    it('has no moment for no open Round, and the latest settle for one or two', () => {
+      expect(momentsOf({ rounds: [] }).rounds).toBeUndefined()
+      expect(momentsOf({ rounds: [roundAt('o1', ago(4000))] }).rounds).toBe(ago(4000))
+      expect(momentsOf({ rounds: [roundAt('o1', ago(4000)), roundAt('o2', ago(1000))] }).rounds).toBe(ago(1000))
+      expect(momentsOf({ rounds: [roundAt('o2', ago(1000)), roundAt('o1', ago(4000))] }).rounds).toBe(ago(1000))
+    })
+
+    it('has no moment for no Result, and the latest Result or Correction for one or two', () => {
+      expect(momentsOf({ results: [] }).standings).toBeUndefined()
+      expect(momentsOf({ results: [resultAt(ago(4000))] }).standings).toBe(ago(4000))
+      expect(momentsOf({ results: [resultAt(ago(9000), ago(2000))] }).standings).toBe(ago(2000))
+      expect(momentsOf({ results: [resultAt(ago(9000), ago(2000)), resultAt(ago(4000))] }).standings).toBe(ago(2000))
+      expect(momentsOf({ results: [resultAt(ago(9000), ago(5000)), resultAt(ago(1000))] }).standings).toBe(ago(1000))
+    })
+
+    it('has no moment for a wheel with no spin, no wheel, or a coin with no toss', () => {
+      expect(momentsOf({ wheel: wheelWith() }).wheel).toBeUndefined()
+      expect(momentsOf({ wheel: null }).wheel).toBeUndefined()
+      expect(momentsOf({ coin: null }).coin).toBeUndefined()
+    })
+
+    it('reads the moment of a toss as its commit, 1.5 s before the coin flies', () => {
+      expect(momentsOf({ coin: tossAt(ago(4000)) }).coin).toBe(ago(4000))
+    })
+
+    it('reads a missing list of Rounds and Results as none (the Host dock passes neither)', () => {
+      const view = { ...viewOf(ONE_RUNNING, LIVE), rounds: undefined, results: undefined } as StageInput
+      expect(stageMoments(view, 'running')).toEqual({})
+      expect(stageBlocks(view, 'running', NOW)).toEqual(today({}))
+    })
+  })
+
+  describe('the instants the page waits for', () => {
+    it('lists one rise per moment, half a second after it', () => {
+      const view = viewOf(ONE_RUNNING, { ...LIVE, results: [resultAt(ago(2000))], coin: tossAt(ago(1000)) })
+      expect(stageRises(view, 'running').sort()).toEqual([ago(2000) + RISE_DELAY_MS, ago(1000) + RISE_DELAY_MS])
+    })
+
+    it('lists none without a moment, and none for a finished Event', () => {
+      expect(stageRises(viewOf(ONE_RUNNING, LIVE), 'running')).toEqual([])
+      expect(stageRises(viewOf(DONE, { ...FINISHED_STAGE, results: [resultAt(ago(1000))] }), 'finished')).toEqual([])
+    })
+
+    it('has the moments of the blocks the kind lists only', () => {
+      const view = viewOf(BETWEEN, { ...RUNNING, ...STANDINGS, coin: tossAt(ago(1000)), results: [resultAt(ago(3000))] })
+      expect(stageRises(view, 'between')).toEqual([ago(3000) + RISE_DELAY_MS])
+    })
+  })
+
+  describe('the blocks that moved up', () => {
+    it('names a block that rose past another', () => {
+      expect(risen(['head', 'wheel', 'rounds', 'standings'], ['head', 'standings', 'wheel', 'rounds'])).toEqual(['standings'])
+    })
+
+    it('names two blocks that each rose', () => {
+      expect(risen(['wheel', 'rounds', 'standings', 'pool'], ['rounds', 'wheel', 'pool', 'standings']).sort()).toEqual(['pool', 'rounds'])
+    })
+
+    it('does not name a block that only shifted down because another rose, or up because another left', () => {
+      expect(risen(['head', 'wheel', 'rounds', 'standings'], ['head', 'standings', 'wheel', 'rounds'])).not.toContain('wheel')
+      expect(risen(['head', 'wheel', 'rounds'], ['head', 'rounds'])).toEqual([])
+    })
+
+    it('names nothing for equal lists, and nothing for a block that is in one list only', () => {
+      expect(risen(['head', 'wheel'], ['head', 'wheel'])).toEqual([])
+      expect(risen(['head', 'rounds'], ['head', 'coin', 'rounds'])).toEqual([])
+      expect(risen(['head', 'coin', 'rounds'], ['head', 'rounds'])).toEqual([])
+      expect(risen([], ['head'])).toEqual([])
+    })
+
+    it('names the block that rose when another sank below it', () => {
+      expect(risen(['head', 'standings', 'wheel'], ['head', 'wheel', 'standings'])).toEqual(['wheel'])
+    })
   })
 })

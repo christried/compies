@@ -22,8 +22,13 @@ export async function readCountdown(db: Db, eventId: string): Promise<CountdownR
 }
 
 /** The Countdown as the Event read and the change answers send it: the stored facts; the time left is computed from them. */
-export function countdownView(row: Pick<CountdownRow, 'durationMs' | 'remainingMs' | 'startedAt'>): CountdownView {
-  return { durationMs: row.durationMs, remainingMs: row.remainingMs, startedAt: row.startedAt ? isoInstant(row.startedAt) : null }
+export function countdownView(row: Pick<CountdownRow, 'durationMs' | 'remainingMs' | 'startedAt' | 'lastStartedAt'>): CountdownView {
+  return {
+    durationMs: row.durationMs,
+    remainingMs: row.remainingMs,
+    startedAt: row.startedAt ? isoInstant(row.startedAt) : null,
+    lastStartedAt: row.lastStartedAt ? isoInstant(row.lastStartedAt) : null,
+  }
 }
 
 type Change = Pick<EventChange, 'tx' | 'eventRow' | 'now'>
@@ -72,7 +77,7 @@ async function changeRunning(action: Exclude<CountdownAction, 'set'>, change: Ch
   if (rejection) throw apiError(rejection)
 
   const next = action === 'start'
-    ? { startedAt: now }
+    ? { startedAt: now, lastStartedAt: now }
     : action === 'pause'
       ? { remainingMs: remainingMsAt(row!, now.getTime()), startedAt: null }
       : { remainingMs: row!.durationMs, startedAt: null }

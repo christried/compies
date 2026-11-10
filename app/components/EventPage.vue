@@ -83,8 +83,11 @@ const hostActions = useHostActions(
   { actions, dialogs, invite: () => (inviteOpen.value = true) },
 )
 
-// The state of the page for everybody (#166): its kind, and the blocks of the stage in the order that state wants (A4).
-const pageState = computed(() => (data.value ? eventPageState(data.value) : null))
+// The state of the page for everybody (#166): its kind, and the blocks of the stage in the order that state wants (A4) at the order clock's `now` (#441: a block that
+// something just happened in rises half a second after its moment). The clock lives here, not in the stage, so it survives a switch of the phone's tab; the stage
+// and the phone's Event tab read the same state.
+const orderAt = useStageOrder(() => data.value, serverClock.now)
+const pageState = computed(() => (data.value ? eventPageState(data.value, orderAt.value) : null))
 
 // Compibert's header wears the party hat for a Player seated in a Leading Party (#38); no data (loading, error) is the plain head.
 const accessory = computed(() => (data.value && wearsPartyhat(data.value) ? 'partyhat' as const : undefined))
