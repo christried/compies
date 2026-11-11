@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="./tokens/compies-tokens.css">
+</helmet>
+<div style="display:flex;flex-direction:column;gap:12px;width:{{ fw }}px">
+<sc-if value="{{ live }}">
+  <div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px;font-family:var(--cp-font-mono);font-size:13px;color:#151515">
+    <span style="display:inline-flex;align-items:center;height:30px;padding:0 12px;border-radius:999px;border:2px solid #151515;background:{{ lpBg }};font-weight:700">Phase: {{ lpLabel }}</span>
+    <span style="display:inline-flex;align-items:center;height:30px;padding:0 12px;border-radius:999px;border:2px solid #151515;background:#fffdf8;font-weight:700">Compibert: {{ cbLabel }}</span>
+    <span style="color:#5d5650">Tap the wheel's centre („Drehen“) to spin.</span>
+  </div>
+</sc-if>
+<div data-theme="{{ theme }}" data-motion="{{ motionAttr }}" lang="de" style="width:{{ fw }}px;box-sizing:border-box;background-color:var(--cp-paper);background-image:var(--cp-tex-image);background-size:var(--cp-tex-size);color:var(--cp-ink);font-family:var(--cp-font-sans);font-weight:500;font-size:15px;line-height:1.45;overflow:hidden;outline:2px solid rgba(21,21,21,.18);border-radius:{{ frameR }}">
+  <div style="height:{{ hdrH }}px;box-sizing:border-box;display:flex;align-items:center;gap:10px;padding:0 {{ padX }}px;border-bottom:var(--cp-bw) solid var(--cp-line);background:var(--cp-surface)">
+    <img src="./assets/compibert/compibert-head.svg" alt="" width="34" height="34" style="flex:none;display:block"></img>
+    <span style="flex:none;font-family:var(--cp-font-display);font-size:22px;line-height:1">COMPIES</span>
+    <span style="flex:1;min-width:0;font-weight:700;font-size:14px;color:var(--cp-ink-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ evTitle }}</span>
+    <span style="flex:none;display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 10px;border-radius:999px;border:2px solid var(--cp-line);background:var(--cp-surface);font-size:12px;font-weight:800"><span style="width:9px;height:9px;border-radius:50%;background:var(--cp-hot);border:1.5px solid var(--cp-line)"></span>Live</span>
+  </div>
+  <div style="display:grid;grid-template-columns:{{ cols }};gap:24px;max-width:1280px;margin:0 auto;padding:{{ bodyPad }};box-sizing:border-box">
+    <section style="min-width:0;display:flex;flex-direction:column;align-items:center;padding:{{ cardPad }}px;border:var(--cp-bw) solid var(--cp-line);border-radius:var(--cp-r-xl);background:var(--cp-surface);box-shadow:var(--cp-shadow-card)">
+      <div style="align-self:stretch;display:flex;align-items:flex-end;gap:12px;min-height:{{ headMin }}px;border-bottom:{{ headBd }}">
+        <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;padding-bottom:{{ headPb }}px">
+          <h2 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:{{ h2s }}px;line-height:1">Glücksrad</h2>
+          <span style="font-size:14px;font-weight:700;color:var(--cp-ink-2)">{{ status }}</span>
+        </div>
+        <sc-if value="{{ cbInHead }}">
+          <div aria-hidden="true" style="position:relative;flex:none;width:{{ g.w }}px;height:{{ g.h }}px;overflow:hidden;pointer-events:none;outline:{{ zoneSlot }};outline-offset:-2px">
+            <sc-if value="{{ cbOn }}">
+              <div ref="{{ mvRef }}" style="position:absolute;left:0;bottom:{{ g.b }}px;transform:{{ tf }};opacity:{{ op }};transform-origin:{{ g.to }}">
+                <sc-if value="{{ still }}"><dc-import name="CompibertRig" variant="{{ g.v }}" size="{{ g.s }}" state="{{ cbState }}" still="{{ true }}" hint-size="92px,92px"></dc-import></sc-if>
+                <sc-if value="{{ moving }}"><dc-import name="CompibertRig" variant="{{ g.v }}" size="{{ g.s }}" state="{{ cbState }}" still="{{ rigStill }}" hint-size="92px,92px"></dc-import></sc-if>
+              </div>
+            </sc-if>
+          </div>
+        </sc-if>
+      </div>
+      <div style="position:relative;flex:none;width:{{ W }}px;height:{{ W }}px;margin-top:{{ zoneMt }}px;z-index:0">
+        <sc-if value="{{ cbInZone }}">
+          <div aria-hidden="true" style="position:absolute;left:{{ g.l }}px;top:{{ g.t }}px;width:{{ g.w }}px;height:{{ g.h }}px;z-index:{{ g.z }};overflow:{{ g.ov }};pointer-events:none;outline:{{ zoneSlot }};outline-offset:-2px">
+            <sc-if value="{{ cbOn }}">
+              <div ref="{{ mvRef }}" style="position:absolute;left:0;bottom:{{ g.b }}px;transform:{{ tf }};opacity:{{ op }};transform-origin:{{ g.to }}">
+                <sc-if value="{{ still }}"><dc-import name="CompibertRig" variant="{{ g.v }}" size="{{ g.s }}" state="{{ cbState }}" still="{{ true }}" hint-size="120px,120px"></dc-import></sc-if>
+                <sc-if value="{{ moving }}"><dc-import name="CompibertRig" variant="{{ g.v }}" size="{{ g.s }}" state="{{ cbState }}" still="{{ rigStill }}" hint-size="120px,120px"></dc-import></sc-if>
+              </div>
+            </sc-if>
+          </div>
+        </sc-if>
+        <div style="position:absolute;left:0;top:0;width:{{ W }}px;height:{{ W }}px;z-index:1;clip-path:inset(-80px -400px -13px -400px)">
+          <dc-import name="GameWheel" skin="show" size="{{ W }}" games="{{ games }}" freeze="{{ freeze }}" freeze-at="{{ freezeAt }}" hidden="{{ hidden }}" can-spin="{{ true }}" controls="{{ false }}" muted="{{ true }}" spin-sec="{{ spinSec }}" motion="{{ motion }}" on-phase="{{ onPhase }}" hint-size="100%,100%"></dc-import>
+        </div>
+        <sc-if value="{{ zones }}">
+          <div aria-hidden="true" style="position:absolute;inset:0;z-index:3;pointer-events:none">
+            <div style="position:absolute;left:{{ lzL }}px;top:{{ lzL }}px;width:{{ lzD }}px;height:{{ lzD }}px;border-radius:50%;border:2px dashed #1f5fe0;box-sizing:border-box;background:rgba(31,95,224,.06)"></div>
+            <div style="position:absolute;left:{{ fzL }}px;top:-26px;width:48px;height:62px;border-radius:10px;border:2px dashed #1f5fe0;box-sizing:border-box;background:rgba(31,95,224,.08)"></div>
+          </div>
+        </sc-if>
+      </div>
+      <sc-if value="{{ hasResult }}">
+        <div style="align-self:center;width:100%;max-width:{{ W }}px;box-sizing:border-box;margin-top:26px;display:flex;flex-direction:column;gap:8px;padding:12px;border:var(--cp-bw) solid var(--cp-line);border-radius:var(--cp-r-lg);background:var(--cp-primary);color:var(--cp-on-primary);box-shadow:var(--cp-shadow-sm);outline:{{ zoneOut }};outline-offset:4px">
+          <span style="font-size:13px;font-weight:800;letter-spacing:.06em;text-transform:uppercase">Das Rad sagt</span>
+          <dc-import name="GameCard" layout="row" title="{{ resGame }}" players="2–8" fmt="Teams" hint-size="100%,60px"></dc-import>
+        </div>
+      </sc-if>
+    </section>
+    <sc-if value="{{ desk }}">
+      <aside style="display:flex;flex-direction:column;gap:14px;min-width:0">
+        <div style="display:flex;flex-direction:column;gap:10px;padding:16px;border:var(--cp-bw) solid var(--cp-line);border-radius:var(--cp-r-lg);background:var(--cp-surface)">
+          <div style="display:flex;align-items:baseline;gap:8px"><b style="flex:1;font-family:var(--cp-font-display);font-weight:400;font-size:22px;line-height:1.1">Vetos übrig</b><span style="font-size:12px;color:var(--cp-ink-2)">1 pro Spiel und Team</span></div>
+          <sc-for list="{{ teams }}" as="t" hint-placeholder-count="4">
+            <div style="display:flex;align-items:center;gap:10px;min-height:36px">
+              <span style="flex:none;width:22px;height:22px;border-radius:6px;border:2px solid var(--cp-line);background:{{ t.c }}"></span>
+              <span style="flex:1;min-width:0;font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ t.n }}</span>
+              <span style="width:14px;height:14px;border-radius:4px;border:2px solid var(--cp-line);background:var(--cp-primary)"></span>
+            </div>
+          </sc-for>
+        </div>
+      </aside>
+    </sc-if>
+  </div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1440,&quot;height&quot;:840},&quot;w&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[1440,390],&quot;default&quot;:1440,&quot;tsType&quot;:&quot;1440|390&quot;},&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;light&quot;,&quot;dark&quot;],&quot;default&quot;:&quot;light&quot;,&quot;tsType&quot;:&quot;'light'|'dark'&quot;},&quot;opt&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;A&quot;,&quot;B&quot;,&quot;C&quot;],&quot;default&quot;:&quot;B&quot;,&quot;tsType&quot;:&quot;'A'|'B'|'C'&quot;},&quot;phase&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;rest&quot;,&quot;enter&quot;,&quot;spin&quot;,&quot;brake&quot;,&quot;stop&quot;,&quot;exit&quot;],&quot;default&quot;:&quot;spin&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;n&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:8,&quot;min&quot;:2,&quot;max&quot;:30,&quot;tsType&quot;:&quot;number&quot;},&quot;reduced&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;},&quot;zones&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;},&quot;calm&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;},&quot;live&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;},&quot;hidden&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;},&quot;spinSec&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:7,&quot;min&quot;:3,&quot;max&quot;:10,&quot;tsType&quot;:&quot;number&quot;}}">
+const NAMES=['Mario Kart 8','Rocket League','Counter-Strike 2','Overcooked 2','Gang Beasts','Codenames','Trackmania','Tetris 99','Fall Guys','Among Us','Jackbox Party 9','Brawlhalla','Worms W.M.D','Golf With Friends','Pummel Party','Chicken Horse','Stardew Valley','Minecraft','Valorant','Fortnite','Smash Bros.','Halo Infinite','Lethal Company','Phasmophobia','Skribbl.io','Geoguessr','Moving Out 2','Unrailed!','Human Fall Flat','It Takes Two'];
+const TEAMS=[['Wilde Gurken','var(--cp-team-5)'],['Pixelpiraten','var(--cp-team-4)'],['Couch-Kommando','var(--cp-team-2)'],['Die Ratlosen','var(--cp-team-7)']].map(([n,c])=>({n,c}));
+// geometry relative to the wheel square (W = 420 desk, 332 phone); ox/oy = start offset of the enter path
+const GEO={
+  A:{d:{zone:1,l:432,t:210,w:190,h:210,ov:'hidden',z:2,v:'full',s:190,b:0,to:'50% 100%'},
+     m:{zone:0,w:92,h:70,ov:'hidden',z:2,v:'bust',s:92,b:-22,to:'50% 100%'}},
+  B:{d:{zone:1,l:300,t:18,w:232,h:232,ov:'visible',z:0,v:'bust',s:232,b:0,ox:-130,oy:100,to:'50% 50%'},
+     m:{zone:1,l:190,t:-20,w:150,h:150,ov:'visible',z:0,v:'bust',s:150,b:0,ox:-100,oy:80,to:'50% 50%'}},
+  C:{d:{zone:1,l:364,t:-28,w:92,h:92,ov:'visible',z:2,v:'head',s:92,b:0,to:'15% 85%'},
+     m:{zone:1,l:288,t:-22,w:56,h:56,ov:'visible',z:2,v:'head',s:56,b:0,to:'15% 85%'}}};
+const BACK='cubic-bezier(.18,.89,.32,1.32)', P2IN='cubic-bezier(.55,.085,.68,.53)', POP='cubic-bezier(.34,1.56,.64,1)', EIN='cubic-bezier(.7,0,.84,0)', EOUT='cubic-bezier(.16,1,.3,1)';
+const LP={rest:['Ruhe','#fbe9cc'],spin:['Dreht','#ffd23f'],brake:['Bremst','#ff70c3'],stop:['Stopp','#2ec4b6'],after:['Feld raus','#fbe9cc']};
+class Component extends DCLogic {
+  state={lp:'rest',cb:'idle',vis:false,game:'',cnt:null};
+  mvRef=React.createRef();
+  componentWillUnmount(){ [this._t1,this._t2,this._t3,this._tb].forEach(clearTimeout); }
+  geo(){ const o=GEO[this.props.opt]||GEO.B; return this.props.w===390?o.m:o.d; }
+  anim(kind,done){ const el=this.mvRef.current; if(!el) { done&&done(); return; } const g=this.geo(), o=this.props.opt||'B', rm=!!this.props.reduced, inn=kind==='in';
+    let k,d,e;
+    if(rm){ k=[{opacity:0},{opacity:1}]; d=220; e=EOUT; }
+    else if(o==='A'){ k=[{transform:'translateY(100%)'},{transform:'translateY(0)'}]; d=inn?450:400; e=inn?BACK:P2IN; }
+    else if(o==='B'){ const s=`translate(${g.ox}px,${g.oy}px)`; k=[{transform:s,opacity:0},{opacity:1,offset:.3},{transform:'translate(0,0)',opacity:1}]; d=inn?450:400; e=inn?BACK:P2IN; }
+    else { k=[{transform:'scale(.3) rotate(-20deg)',opacity:0},{transform:'none',opacity:1}]; d=inn?420:220; e=inn?POP:EIN; }
+    if(!inn) k=k.slice().reverse().map((f,i,a)=>Object.assign({},f,f.offset!=null?{offset:1-f.offset}:{}));
+    const a=el.animate(k,{duration:d,easing:e,fill:'forwards'}); if(done) a.onfinish=done; }
+  onPhase=(ph,x)=>{ if(!this.props.live) return; const rm=!!this.props.reduced, hid=!!this.props.hidden;
+    if(ph==='spin'){ [this._t1,this._t2,this._t3,this._tb].forEach(clearTimeout);
+      this.setState({lp:'spin',cb:'excited',vis:true,game:''},()=>requestAnimationFrame(()=>this.anim('in')));
+      if(rm) this._tb=setTimeout(()=>this.onPhase('brake'),(x.dur||1200)*.6); }
+    else if(ph==='brake'){ this.setState({lp:'brake',cb:'suspense'}); }
+    else if(ph==='stop'){ const go=()=>{ this.setState({cb:'cheer',game:x.game}); this._t2=setTimeout(()=>this.setState({cb:'idle'}),1600); };
+      this.setState({lp:'stop'}); if(hid&&!rm) this._t1=setTimeout(go,500); else go();
+      this._t3=setTimeout(()=>{ this.setState(s=>({lp:'after',cnt:(s.cnt??(this.props.n||8))-1})); this.anim('out',()=>this.setState({vis:false})); },hid?2800:2200); }
+  };
+  renderVals(){
+    const p=this.props, desk=p.w!==390, W=desk?420:332, opt=p.opt||'B', g=this.geo(), live=!!p.live, rm=!!p.reduced, n=p.n||8;
+    const phase=live?this.state.lp:(p.phase||'spin');
+    const all=NAMES.slice(0,n);
+    const exit=phase==='exit'||phase==='after';
+    const games=(!live&&exit)?all.slice(1):all;
+    const freeze=live?'':(phase==='enter'||phase==='spin'||phase==='brake')?'spin':phase==='stop'?'stop':'';
+    const freezeAt=phase==='brake'?Math.min(3,n-1):0;
+    const cbState=live?this.state.cb:({rest:'idle',enter:'excited',spin:'excited',brake:'suspense',stop:'cheer',exit:'idle'})[phase]||'idle';
+    const cbOn=live?this.state.vis:(phase!=='rest'||!!p.calm);
+    let tf='none',op=1;
+    if(!live&&!rm){
+      if(phase==='enter'){ if(opt==='A') tf='translateY(38%)'; else if(opt==='B'){ tf=`translate(${Math.round(g.ox*.38)}px,${Math.round(g.oy*.38)}px)`; op=.92; } else { tf='scale(.62) rotate(-10deg)'; op=.9; } }
+      if(phase==='exit'){ if(opt==='A') tf='translateY(32%)'; else if(opt==='B'){ tf=`translate(${Math.round(g.ox*.5)}px,${Math.round(g.oy*.5)}px)`; op=.7; } else { tf='scale(.5)'; op=.6; } }
+    }
+    if(!live&&rm&&(phase==='enter'||phase==='exit')) op=.5;
+    const cnt=live?(this.state.cnt??n):n;
+    let status=`${cnt} Spiele auf dem Rad`;
+    if(phase==='enter'||phase==='spin'||phase==='brake') status='Das Rad dreht …';
+    if(phase==='stop') status=live&&!this.state.game?'Das Rad sagt …':'Gezogen: '+(live?this.state.game:'Mario Kart 8');
+    if(!live&&exit) status=`${n-1} Spiele auf dem Rad`;
+    const hasResult=live?!!this.state.game:(phase==='stop'||phase==='exit');
+    const zones=!!p.zones, lzD=Math.round(W*.82), lzL=Math.round((W-lzD)/2);
+    const head=!g.zone;
+    return {fw:desk?1440:390,theme:p.theme==='dark'?'dark':'light',motionAttr:rm?'reduced':'full',frameR:desk?'10px':'28px',live,
+      hdrH:desk?64:56,padX:desk?32:14,evTitle:desk?'Zockabend bei Sanne · Spiel 3 von 6':'Spiel 3 von 6',cols:desk?'minmax(0,1fr) 360px':'minmax(0,1fr)',bodyPad:desk?'28px 40px 40px':'12px 12px 28px',cardPad:desk?24:14,
+      headMin:head?70:0,headBd:head?'2px solid var(--cp-line-soft)':'0',headPb:head?8:0,h2s:desk?32:26,status,
+      W,zoneMt:desk?36:30,g,cbInHead:head,cbInZone:!head,cbOn,tf,op,still:rm,moving:!rm,rigStill:!live&&!p.animate,cbState,mvRef:this.mvRef,
+      games,freeze,freezeAt,hidden:!!p.hidden,spinSec:p.spinSec||7,motion:(rm||!live)?'reduced':'full',onPhase:this.onPhase,
+      zones,lzD,lzL,fzL:W/2-24,zoneOut:zones?'2px dashed #1f5fe0':'none',zoneSlot:zones&&opt==='A'?'2px dotted #1f5fe0':'none',
+      hasResult,resGame:live?this.state.game:'Mario Kart 8',desk,teams:TEAMS,
+      lpLabel:(LP[this.state.lp]||LP.rest)[0],lpBg:(LP[this.state.lp]||LP.rest)[1],cbLabel:this.state.vis?this.state.cb:'—'};
+  }
+}
+</script>
+</body>
+</html>
