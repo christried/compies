@@ -130,7 +130,7 @@ export const API_ERROR_STATUS = {
   round_not_open: 409,
   /** The Places are no Result of the Event: a Party missing, doubled or out of range, a Place that skips, or a Score too long (#273). */
   invalid_result: 400,
-  /** The Veto is for a viewer who plays in no Party: on the Bench, in the Stands, or without a team (#231). */
+  /** The Veto is for a viewer who plays in no Party: on the Stands or without a team (#231). */
   not_a_player: 403,
   /** The draw has no Veto window (no Party had a Veto left when it was drawn, or the Host set it), or the Event has no such draw (#231). */
   no_veto_window: 409,
@@ -164,6 +164,8 @@ export const API_ERROR_STATUS = {
   coin_in_air: 409,
   /** The Host starts the Award ceremony while the current run has not reached its end (#309). */
   ceremony_running: 409,
+  /** The Share image is asked for before the Host first started the Award ceremony (#445). */
+  ceremony_pending: 409,
   /** The Party has its 9 Bonus Vetoes already: the Host cannot grant it another (#233). */
   bonus_veto_limit: 409,
   wrong_phase: 409,

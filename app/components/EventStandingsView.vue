@@ -7,9 +7,11 @@ import type { EventView } from '~~/shared/event'
 // place of the page's Head, built like the Activity view. The page's tab bar switches to it (useEventTabs); the content is the side panel's, and so is the Host's `corrections` (#275)
 // and the page's `news` (#276).
 defineProps<{
-  view: Pick<EventView, 'standings' | 'end' | 'results' | 'rounds' | 'teams'>
+  view: Pick<EventView, 'standings' | 'end' | 'results' | 'rounds' | 'teams'> & { event: Pick<EventView['event'], 'isHost'> }
   corrections?: HistoryCorrections | null
   news?: StandingsNews | null
+  /** The finished page waits for the Award ceremony: the tab shows the pending card (#445). */
+  waiting?: boolean
 }>()
 
 const { t } = useI18n()
@@ -30,6 +32,7 @@ const { t } = useI18n()
       :view="view"
       :corrections="corrections"
       :news="news"
+      :waiting="waiting"
       labelled-by="standings-title"
     />
   </section>

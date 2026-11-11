@@ -286,7 +286,7 @@ describe('vetoRejection', () => {
     expect(vetoRejection(input())).toBeNull()
   })
 
-  it('refuses a viewer who is no Player: on the Bench, in the Stands or without a Member', () => {
+  it('refuses a viewer who is no Player: on the Stands or without a Member', () => {
     expect(vetoRejection(input({ viewerTeam: null }))).toBe('not_a_player')
   })
 

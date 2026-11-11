@@ -12,8 +12,8 @@ import { clickHostAction, dialog, openHostMenu, serve, viewWithSessions } from '
 // disables a Party's button at 9 with the reason. The Host's dock action opens it; a Member has neither.
 
 const teams: BoardTeam[] = [
-  { position: 1, name: null, frozen: false },
-  { position: 2, name: 'Die Füchse', frozen: false },
+  { position: 1, name: null },
+  { position: 2, name: 'Die Füchse' },
 ]
 
 const rows = () => [...document.querySelectorAll<HTMLElement>('[role="dialog"] li')]

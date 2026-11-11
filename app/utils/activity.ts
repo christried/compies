@@ -1,6 +1,6 @@
-import { Armchair, CalendarCheck, CalendarClock, CalendarMinus, CalendarPlus, CalendarX, Coins, Dices, Eye, Flag, Gamepad2, Medal, Pencil, Play, RotateCcw, ShieldPlus, ShieldX, SlidersHorizontal, Trophy, Undo2, UserPlus, Users } from '@lucide/vue'
+import { Armchair, CalendarCheck, CalendarClock, CalendarMinus, CalendarPlus, CalendarX, Coins, Dices, Flag, Gamepad2, Medal, Pencil, Play, RotateCcw, ShieldPlus, ShieldX, SlidersHorizontal, Trophy, Undo2, UserPlus, Users } from '@lucide/vue'
 import type { Component } from 'vue'
-import { ACTIVITY_TYPES, type ActivityEntry } from '~~/shared/activity'
+import { ACTIVITY_TYPES, type ActivityEntry, type TeamNamingType } from '~~/shared/activity'
 import type { BoardTeam } from '~~/shared/event'
 import { isStarted, nextSession } from '~~/shared/session-state'
 import { isRecord } from '~~/shared/record'
@@ -13,31 +13,63 @@ import type { Translate } from './settings-summary'
 // whether a message from the room is an entry at all.
 
 // The names, teams and Dates of a sentence are set in bold (DS Communication § ActivityFeed). The sentence is built once, with
-// markers around those values, so no sentence is written twice.
+// markers around those values, so no sentence is written twice. A team is marked by `teamPiece` before it goes in (the sentence's
+// `{team}` and each item of its `{list}`): it is bold too and carries its position, for the TeamMark beside it (#440).
 const OPEN = '\u0001'
 const CLOSE = '\u0002'
-const STRONG = new Set(['name', 'actor', 'team', 'date', 'game', 'list'])
+const TEAM_OPEN = '\u0003'
+const TEAM_SEPARATOR = '\u0004'
+const STRONG = new Set(['name', 'actor', 'date', 'game'])
+const PIECES = new RegExp(`${OPEN}([^${CLOSE}]*)${CLOSE}|${TEAM_OPEN}(\\d+)${TEAM_SEPARATOR}([^${CLOSE}]*)${CLOSE}`, 'g')
+
+/** One piece of a sentence: plain, or `strong` (bold); a team's name is strong and carries the team's `position`, so the feed sets its mark before it (#440). */
+export interface ActivityPart { text: string, strong: boolean, team?: number }
 
 /**
- * The sentence of an entry in pieces, its names, teams and Dates marked `strong`; null for a type without a sentence. `teams` are the
- * Event's teams, whose frozen names a Result's sentence uses (#273); without them a team is named by its colour, as bonus_veto_granted does.
+ * The sentence of an entry in pieces, its names, teams and Dates marked `strong`; null for a type without a sentence. A team's piece
+ * carries its position (`team`), one piece per team, also in a list („Veto von A und B“): the separators stay plain. The Team name is the
+ * one the entry stored (`teamNameOf`); `teams` are the Event's teams, which only an entry without a stored name resolves live (#273, #440).
+ * `winnersHidden`: the finished page waits for the Award ceremony, so the Event's end names nobody, and no mark (#445).
  */
-export function activityParts(entry: ActivityEntry, t: Translate, teams: BoardTeam[] = []): { text: string, strong: boolean }[] | null {
+export function activityParts(entry: ActivityEntry, t: Translate, teams: BoardTeam[] = [], winnersHidden = false): ActivityPart[] | null {
   const marked: Translate = (key, named, plural) => t(key, named && Object.fromEntries(Object.entries(named).map(([name, value]) => [name, STRONG.has(name) ? OPEN + String(value) + CLOSE : value])), plural)
-  const text = sentence(entry, marked, teams)
+  const text = sentence(entry, marked, teams, winnersHidden)
   if (text === null) return null
-  return text.split(OPEN).flatMap((chunk, index) => {
-    if (index === 0) return chunk ? [{ text: chunk, strong: false }] : []
-    const [strong = '', rest = ''] = chunk.split(CLOSE)
-    return [{ text: strong, strong: true }, ...(rest ? [{ text: rest, strong: false }] : [])]
-  })
+  const parts: ActivityPart[] = []
+  let from = 0
+  for (const match of text.matchAll(PIECES)) {
+    if (match.index > from) parts.push({ text: text.slice(from, match.index), strong: false })
+    parts.push(match[2] === undefined ? { text: match[1]!, strong: true } : { text: match[3]!, strong: true, team: Number(match[2]) })
+    from = match.index + match[0].length
+  }
+  if (from < text.length) parts.push({ text: text.slice(from), strong: false })
+  return parts
+}
+
+/** A team as a marked piece of a sentence (see `activityParts`). */
+const teamPiece = (position: number, name: string): string => TEAM_OPEN + position + TEAM_SEPARATOR + name + CLOSE
+
+/** The kinds that showed the live Team name before 0.12 and still do for an entry stored without names: the others named the colour. */
+const LIVE_WHEN_UNSTORED = new Set<TeamNamingType>(['vetoes_revealed', 'result_entered', 'event_finished'])
+
+/**
+ * The Team name an entry shows for a team it names (#440, ADR 0016): the one it stored, as it was in that moment (`null` is a team without
+ * words, shown by its colour). An entry without a stored name was written before 0.12, or by the previous deployment during the switch-over,
+ * and reads as its kind always did: a Veto, a Result and the Event's end by the Team name the team has now (the colour while `teams` is
+ * empty), a move, a reset and a Bonus Veto by the colour. Nothing is invented for it.
+ */
+export function teamNameOf(entry: Extract<ActivityEntry, { type: TeamNamingType }>, position: number, t: Translate, teams: BoardTeam[] = []): string {
+  const stored = entry.params.teamNames?.[String(position)]
+  if (typeof stored === 'string') return stored
+  if (stored === null) return teamName(position, t)
+  return LIVE_WHEN_UNSTORED.has(entry.type) ? teamNameAt(teams, position, t) : teamName(position, t)
 }
 
 /** The icon in the disc before an entry and the disc's tone (DS Communication § ActivityFeed): the date set is the good news, the start the highlight. */
 export function activityIcon(entry: ActivityEntry): { icon: Component, tone: 'primary' | 'surface' | 'success' } {
   switch (entry.type) {
     case 'member_joined': return { icon: UserPlus, tone: 'surface' }
-    case 'member_moved': return { icon: entry.params.to.zone === 'team' ? Users : entry.params.to.zone === 'bench' ? Armchair : Eye, tone: 'surface' }
+    case 'member_moved': return { icon: entry.params.to.zone === 'team' ? Users : Armchair, tone: 'surface' }
     case 'date_set': return { icon: CalendarCheck, tone: 'success' }
     case 'date_rescheduled': return { icon: CalendarClock, tone: 'surface' }
     case 'date_reopened': return { icon: CalendarX, tone: 'surface' }
@@ -63,8 +95,10 @@ export function activityIcon(entry: ActivityEntry): { icon: Component, tone: 'pr
   }
 }
 
-function sentence(entry: ActivityEntry, t: Translate, teams: BoardTeam[]): string | null {
+function sentence(entry: ActivityEntry, t: Translate, teams: BoardTeam[], winnersHidden: boolean): string | null {
   const name = entry.actor?.name ?? ''
+  /** One team of the entry as a marked piece, by the name the entry stored. */
+  const team = (position: number) => teamPiece(position, teamNameOf(entry as Extract<ActivityEntry, { type: TeamNamingType }>, position, t, teams))
   switch (entry.type) {
     case 'member_joined':
       return t('activity.join', { name })
@@ -93,10 +127,10 @@ function sentence(entry: ActivityEntry, t: Translate, teams: BoardTeam[]): strin
     case 'team_size_changed':
       return t('activity.teamSize', { name, to: entry.params.to })
     case 'member_moved':
-      return movedText(entry, t)
-    // The entry keeps the position, so the sentence names the colour, not a name that has changed since (#161).
+      return movedText(entry, t, team)
+    // The entry stores the Team name the Host removed (#440), so the sentence names it as it was, not the colour it is now.
     case 'team_name_reset':
-      return t('activity.teamNameReset', { name, team: teamName(entry.params.team, t) })
+      return t('activity.teamNameReset', { name, team: team(entry.params.team) })
     case 'session_started':
       return entry.params.number === null ? t('activity.sessionStartedSingle', { name }) : t('activity.sessionStarted', { name, n: entry.params.number })
     case 'session_ended':
@@ -110,25 +144,24 @@ function sentence(entry: ActivityEntry, t: Translate, teams: BoardTeam[]): strin
     // What the wheel drew (#229) is in the feed from its stop on, and the server names the game only then (the same rule).
     case 'game_drawn':
       return entry.games[entry.params.gameId] === undefined ? null : t('activity.wheel', { game: entry.games[entry.params.gameId] })
-    // The Vetoes of a draw, from the end of its Veto window on (#231): the Parties that cast them, by Team name, never the Player (#355;
+    // The Vetoes of a draw, from the end of its Veto window on (#231): the Parties that cast them, by the Team name the entry stored, never the Player (#355;
     // an entry stored before that may still hold a `userId`, which is not read). It names no game, so a Hidden wheel stays hidden.
     case 'vetoes_revealed': {
-      const list = joinNames(entry.params.vetoes.map(veto => teamNameAt(teams, veto.team, t)))
+      const list = joinNames(entry.params.vetoes.map(veto => team(veto.team)))
       return t('activity.veto', { list })
     }
     // A coin toss says its side from the landing on (#235): the entry is written with the landing as its instant, so the feed has it then.
     case 'coin_tossed':
       return t('activity.coin', { side: t(`coin.side.${entry.params.side}`) })
-    // The Party that got the Bonus Veto is named by its Team (#233): a Team name that changes later does not rewrite the entry.
+    // The Party that got the Bonus Veto is named by its Team name of that moment (#233, #440): a Team name that changes later does not rewrite the entry.
     case 'bonus_veto_granted':
-      return t('activity.bonusVeto', { name, team: teamName(entry.params.team, t) })
-    // A Result names its game (from `games`, as a set game does) and every Party on Place 1 (#273). The winners are named by their
-    // frozen Team name when the feed has the teams, else by their colour; `count` picks the singular or the plural form.
+      return t('activity.bonusVeto', { name, team: team(entry.params.team) })
+    // A Result names its game (from `games`, as a set game does) and every Party on Place 1 (#273), each by the Team name the entry stored (#440);
+    // `count` picks the singular or the plural form.
     case 'result_entered': {
       const game = entry.games[entry.params.gameId]
       if (game === undefined) return null
-      const winners = entry.params.first.map(position => teamNameAt(teams, position, t))
-      const list = joinNames(winners)
+      const list = joinNames(entry.params.first.map(team))
       return t('activity.resultEntered', { n: entry.params.number, game, list, count: entry.params.first.length })
     }
     // A Correction (#275) names the actor, the Round's number and its game, from `games` like a Result does: without the game's name there is no sentence.
@@ -140,7 +173,8 @@ function sentence(entry: ActivityEntry, t: Translate, teams: BoardTeam[]): strin
     case 'event_finished': {
       const { winners } = entry.params
       if (winners.length === 0) return null
-      const list = joinNames(winners.map(position => teamNameAt(teams, position, t)))
+      if (winnersHidden) return t('activity.eventFinishedPlain')
+      const list = joinNames(winners.map(team))
       return winners.length === 1 ? t('activity.eventFinished', { list, count: 1 }, 1) : t('activity.eventFinishedTie', { list })
     }
   }
@@ -153,21 +187,21 @@ function gameSentence(entry: Extract<ActivityEntry, { type: 'game_set' | 'game_p
 }
 
 /**
- * A move on the Game board (#160): a Member's own move says where they are now, a Host's move says who moved them. The
- * entry keeps the position, not a name, so a team is „Team“ and its colour: a Team name that changes later must not
- * rewrite history (#161).
+ * A move on the Game board (#160): a Member's own move says where they are now, a Host's move says who moved them. A team is named by
+ * the Team name the entry stored (#440): a name that changes later must not rewrite history (#161); an entry from before 0.12 stored none
+ * and names the colour (teamNameOf). Every place that is no team reads as the Tribüne (#437): the entries the Bench wrote before 0.12 still
+ * hold `{ zone: 'bench' }`, which the `Place` type no longer has, and they are not rewritten.
  */
-function movedText(entry: Extract<ActivityEntry, { type: 'member_moved' }>, t: Translate): string {
+function movedText(entry: Extract<ActivityEntry, { type: 'member_moved' }>, t: Translate, teamOf: (position: number) => string): string {
   const { userId, to } = entry.params
   const name = entry.people[userId] ?? ''
   const own = entry.actor?.id === userId
   const actor = entry.actor?.name ?? ''
   if (to.zone === 'team') {
-    const team = teamName(to.team, t)
+    const team = teamOf(to.team)
     return own ? t('activity.moveTeam', { name, team }) : t('activity.movedTeam', { actor, name, team })
   }
-  const key = to.zone === 'bench' ? 'Bench' : 'Stands'
-  return own ? t(`activity.move${key}`, { name }) : t(`activity.moved${key}`, { actor, name })
+  return own ? t('activity.moveStands', { name }) : t('activity.movedStands', { actor, name })
 }
 
 /** A Session that has started, as the feed's groups need it: its shown number (null for the only Session) and when it ran (ISO instants). */

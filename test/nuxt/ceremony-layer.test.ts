@@ -58,7 +58,7 @@ const ceremonyAt = (startsAt: number, parties = 2, gag: CeremonyGag = 'trip', wi
 })
 /** The Standings of `parties` Parties, the first `winners` of them on rank 1. */
 const standingsOf = (parties: number, winners = 1) => Array.from({ length: parties }, (_, index) => ({ team: index + 1, rank: index < winners ? 1 : index + 1, points: index < winners ? 9 : Math.max(9 - index, 1) }))
-const team = (position: number, name: string | null = null): BoardTeam => ({ position, name, frozen: true })
+const team = (position: number, name: string | null = null): BoardTeam => ({ position, name })
 const player = (id: string, name: string, teamPosition: number): MemberView => memberView({ id, name, zone: 'team', team: teamPosition })
 const people = (count: number, teamPosition: number): MemberView[] => Array.from({ length: count }, (_, index) => player(`p${teamPosition}-${index}`, `Leute ${teamPosition}-${index + 1}`, teamPosition))
 
@@ -75,6 +75,8 @@ const finished = (overrides: Partial<Layer> = {}): Layer => ({
 
 let serverTime = T0
 const serverNow = vi.fn(() => serverTime)
+/** The layer's `over` (#445): the page lifts what waits for the ceremony when it hears it. */
+const overs = vi.fn()
 let mounted: Awaited<ReturnType<typeof mountSuspended>> | undefined
 
 /** The page around the layer: its heading (the focus's fallback), a button to have focus on, a button that replays (the finished page's, #314), and the layer. */
@@ -88,7 +90,7 @@ const Page = defineComponent({
         h('button', { id: 'page-button', type: 'button' }, 'Seite'),
         h('button', { id: 'replay-button', type: 'button', onClick: () => layer.value?.replay() }, 'Siegerehrung ansehen'),
       ]),
-      h(CeremonyLayer, { ref: layer, view: props.view, serverNow }),
+      h(CeremonyLayer, { ref: layer, view: props.view, serverNow, onOver: overs }),
     ])
   },
 })
@@ -152,6 +154,7 @@ beforeEach(() => {
   Element.prototype.animate = vi.fn(() => ({ onfinish: null })) as unknown as typeof Element.prototype.animate
   serverTime = T0
   serverNow.mockClear()
+  overs.mockClear()
   vi.useFakeTimers({ toFake: ['requestAnimationFrame', 'cancelAnimationFrame', 'setTimeout', 'clearTimeout', 'Date'] })
   vi.setSystemTime(new Date(T0))
 })
@@ -1964,5 +1967,95 @@ describe('a Tie (#315)', () => {
       expect(sieger()).toBe(2)
       expect(tieEnd(true)).toBe(true)
     })
+  })
+})
+
+// The viewer's run of the synced start is over (#445): the finished page holds back what waits for the ceremony until then, so the side panel does not spoil it.
+// `over` is said once the viewer has closed or skipped the run, its end frame shows (the clock, reduced motion, a failed chunk), or the run was over when the page
+// came; never for a replay's own end, which needs the ceremony shown anyway.
+describe('the run being over for this viewer (#445)', () => {
+  it('says nothing before the start, during the lead, and while the run plays', async () => {
+    await mount(finished(), STARTS - CEREMONY_LEAD_MS)
+    await passTo(STARTS - 1)
+    expect(overs).not.toHaveBeenCalled()
+
+    await passTo(STARTS)
+    await passTo(ENDS - 1)
+    expect(dialog()).not.toBeNull()
+    expect(overs).not.toHaveBeenCalled()
+  })
+
+  it('says it once, when the clock reaches the end frame', async () => {
+    await mount(finished(), STARTS)
+
+    await passTo(ENDS)
+    expect(frame()).toBe('end')
+    expect(overs).toHaveBeenCalledTimes(1)
+
+    await passTo(ENDS + 5000)
+    expect(overs).toHaveBeenCalledTimes(1)
+  })
+
+  it('says it when the viewer skips', async () => {
+    await mount(finished(), STARTS + 500)
+    expect(overs).not.toHaveBeenCalled()
+
+    skipButton()!.click()
+    await settle()
+
+    expect(overs).toHaveBeenCalledTimes(1)
+  })
+
+  it('says it when the viewer closes the layer during the run', async () => {
+    await mount(finished(), STARTS + 500)
+    expect(overs).not.toHaveBeenCalled()
+
+    closeButton()!.click()
+    await settle()
+
+    expect(overs).toHaveBeenCalledTimes(1)
+  })
+
+  it('says it at open under reduced motion', async () => {
+    motion('reduced')
+    await mount(finished(), STARTS)
+
+    expect(frame()).toBe('end')
+    expect(overs).toHaveBeenCalledTimes(1)
+  })
+
+  it('says it at open when the chunk does not load', async () => {
+    chunk.fail = true
+    await mount(finished(), STARTS)
+
+    expect(frame()).toBe('end')
+    expect(overs).toHaveBeenCalledTimes(1)
+  })
+
+  it('says it once for a page that is mounted after the end, where the layer never opens', async () => {
+    await mount(finished(), ENDS + 60_000)
+
+    expect(dialog()).toBeNull()
+    expect(overs).toHaveBeenCalledTimes(1)
+  })
+
+  it('says nothing for the end of a replay', async () => {
+    await mount(finished(), STARTS + 500)
+    await passTo(ENDS + 100)
+    expect(overs).toHaveBeenCalledTimes(1)
+
+    replayButton().click()
+    await settle()
+    expect(frame()).toBe('run')
+    await passTo(ENDS + 100 + RUN + 100)
+
+    expect(frame()).toBe('end')
+    expect(overs).toHaveBeenCalledTimes(1)
+  })
+
+  it('says nothing without a ceremony', async () => {
+    await mount(finished({ ceremony: null }), T0)
+
+    expect(overs).not.toHaveBeenCalled()
   })
 })

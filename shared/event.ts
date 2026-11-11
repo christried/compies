@@ -1,10 +1,10 @@
-import type { Place, Zone } from './board'
+import type { Place, PlaceZone } from './board'
 import type { StartRejection } from './session-state'
 import type { VoteRow, VoteValue } from './poll'
 import { characterCount } from './text'
 import { beforeFinish, PHASES, type Phase } from './phase'
 import type { EventSettings, SettingsFloors } from './settings'
-import type { PoolGame, PoolGameFace } from './game'
+import type { HostGameFacts, PoolGame, PoolGameFace } from './game'
 import type { BonusVetoView, CeremonyView, ClipView, CoinView, CountdownView, EndView, ResultView, RoundView, SetGameView, StandingView, WheelView } from './stage'
 
 // Event limits shared by the create form and the server (#1 § Domain rules).
@@ -132,10 +132,10 @@ export interface TeamNameReset { team: number }
 
 /**
  * One team of the Game board (#160): its position, 1..team count, which is also its Team colour index. `name` is the
- * Team name composed from the words (or the frozen name), null when the team shows its colour's name (#161); `frozen`
- * says the name is frozen since the first Session started (#164): then `name` is the frozen name, null for the colour name.
+ * Team name composed from the words (a name stored in an Event finished before 0.12 is shown as it is, #438), null when
+ * the team shows its colour's name (#161).
  */
-export interface BoardTeam { position: number, name: string | null, frozen: boolean }
+export interface BoardTeam { position: number, name: string | null }
 
 /** A Member as the Event read lists them. `team` is set exactly when `zone` is `team` (#160). */
 export interface MemberView {
@@ -143,7 +143,7 @@ export interface MemberView {
   name: string
   image: string | null
   isHost: boolean
-  zone: Zone
+  zone: PlaceZone
   team: number | null
   /** The Member's Team word; null without one, and always null outside a team (#161). */
   teamWord: string | null
@@ -167,6 +167,11 @@ export interface EventView {
    * nothing about the pool, not even how many games it holds.
    */
   pool: (PoolGame | PoolGameFace)[] | null
+  /**
+   * What the Host's game dialog needs beyond the tiles (#443): the Tags and the Game notes of every game the Host's read names as a tile, by game id:
+   * the Game pool, the open Rounds' games and the latest spin's game. Only the Host gets it; null for every other Member, so no Tag and no Game notes reach one here.
+   */
+  hostGames: Record<string, HostGameFacts> | null
   /** The Event's Sessions (ADR 0011): dated ones in Date order first. Each has its Date, and the Date a Reopen withdrew until the next Date is set. */
   sessions: SessionView[]
   /** The removed Sessions that had a Date, earliest first (#65): only for the notice with that Date; they count nowhere else. */
@@ -211,6 +216,8 @@ export interface EventView {
   coin: CoinView | null
   /** The Award ceremony (#309): the latest start of a finished Event, the same for every Member; null before the first start and for an Event that is not finished. */
   ceremony: CeremonyView | null
+  /** Whether the Award ceremony has been started at least once (#445): the finished page shows its result only from then on. The same for every Member; false before the Finish. */
+  ceremonyShown: boolean
   /** The Bonus Vetoes (#233): the Host gets them while the Event has a Lucky Wheel; null for everyone else and without the wheel. */
   bonusVetoes: BonusVetoView | null
   /** The Best slot, or null when no future Slot has a yes or maybe Vote. */

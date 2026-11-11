@@ -37,6 +37,11 @@ export function drawInstants({ kind, commitAt, windowOpens }: NewDraw): DrawInst
   return { spinStartAt: spinStart === null ? null : new Date(spinStart), stopAt: new Date(stop), vetoEndsAt: end === null ? null : new Date(end) }
 }
 
+/** READER. The commit of a spin, in epoch ms: the inverse of `drawInstants` (the spin starts SPIN_LEAD_MS after it). The stage lifts the wheel's block at it (#441). */
+export function spinCommitAt(spin: { spinStartAt: Instant }): number {
+  return msOf(spin.spinStartAt) - SPIN_LEAD_MS
+}
+
 /**
  * READER. The one rule for who may know the game of a draw (#258, ADR 0013 amendment: reads are gated by time). The Host always;
  * every other Member from the draw's stop instant on, inclusive: at `stopAt` itself the game is known. A Hidden wheel needs

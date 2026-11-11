@@ -19,9 +19,11 @@ const props = withDefaults(defineProps<{
   nextNumber?: number | null
   /** Counts the instants that passed (the page's useInstantRefresh): an entry that waited for its instant (a draw's) is readable now, so the feed reads again (#229). */
   refreshTick?: number
-  /** The Event's teams: a Result's sentence names the winners by their frozen Team name (#273); without them, by colour. */
+  /** The Event's teams: a Result's sentence names the winners by their Team name (#273); without them, by colour. */
   teams?: BoardTeam[]
-}>(), { sessions: () => [], nextNumber: null, refreshTick: 0, teams: () => [] })
+  /** The finished page waits for the Award ceremony: the Event's end names nobody (#445). */
+  winnersHidden?: boolean
+}>(), { sessions: () => [], nextNumber: null, refreshTick: 0, teams: () => [], winnersHidden: false })
 
 const { t } = useI18n()
 
@@ -108,11 +110,20 @@ watch(props.room.state, (state) => {
 watch(() => props.refreshTick, () => void loadFirst())
 onMounted(() => void loadFirst())
 
+/**
+ * A team's name split after its first word (#440): the TeamMark is bound to that word in a no-wrap span, so the mark never ends a line
+ * alone, and the rest of a long name wraps where it likes. A name of one word has an empty rest.
+ */
+function splitName(text: string): [first: string, rest: string] {
+  const space = text.indexOf(' ')
+  return space < 0 ? [text, ''] : [text.slice(0, space), text.slice(space)]
+}
+
 const TONE = { primary: 'bg-primary text-on-primary', surface: 'bg-surface text-ink', success: 'bg-success text-on-success' }
 
 /** The entries with their sentence in pieces (names in bold) and their icon; an entry no ticket has a sentence for yet is left out. */
 const shown = computed(() => entries.value.flatMap((entry) => {
-  const parts = activityParts(entry, t, props.teams)
+  const parts = activityParts(entry, t, props.teams, props.winnersHidden)
   return parts === null ? [] : [{ entry, parts, ...activityIcon(entry), time: formatActivityTime(new Date(entry.at), now) }]
 }))
 
@@ -208,7 +219,13 @@ const groups = computed(() => {
                   v-for="(part, index) in item.parts"
                   :key="index"
                 ><b
-                  v-if="part.strong"
+                  v-if="part.team !== undefined"
+                  class="font-extrabold"
+                ><span class="whitespace-nowrap"><span class="mr-1 inline-block align-[-4px]"><TeamMark
+                  :team="part.team"
+                  :size="18"
+                /></span>{{ splitName(part.text)[0] }}</span>{{ splitName(part.text)[1] }}</b><b
+                  v-else-if="part.strong"
                   class="font-extrabold"
                 >{{ part.text }}</b><template v-else>{{ part.text }}</template></template>
               </span>

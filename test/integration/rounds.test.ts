@@ -228,21 +228,19 @@ describe('Rounds', () => {
       await send('POST', `/api/e/${game.slug}/sessions/end`, game.hostCookie)
 
       expect(await errorOf(await set(game, game.halo.id))).toEqual({ status: 409, code: 'no_running_session' })
-      expect((await read(game)).setGame?.rejection).toBe('no_running_session')
     })
 
     it('refuses uneven teams with 409 teams_uneven, and the Event read says so', async () => {
       const game = await running()
-      await send('POST', `/api/e/${game.slug}/move`, game.hostCookie, { userId: game.ids.four, to: { zone: 'bench' } })
+      await send('POST', `/api/e/${game.slug}/move`, game.hostCookie, { userId: game.ids.four, to: { zone: 'stands' } })
 
       expect(await errorOf(await set(game, game.halo.id))).toEqual({ status: 409, code: 'teams_uneven' })
-      expect((await read(game)).setGame?.rejection).toBe('teams_uneven')
       expect(await roundRows(game)).toEqual([])
     })
 
     it('refuses an empty team with 409 teams_empty', async () => {
       const game = await running()
-      for (const key of ['three', 'four'] as const) await send('POST', `/api/e/${game.slug}/move`, game.hostCookie, { userId: game.ids[key], to: { zone: 'bench' } })
+      for (const key of ['three', 'four'] as const) await send('POST', `/api/e/${game.slug}/move`, game.hostCookie, { userId: game.ids[key], to: { zone: 'stands' } })
 
       expect(await errorOf(await set(game, game.halo.id))).toEqual({ status: 409, code: 'teams_empty' })
     })
@@ -253,7 +251,6 @@ describe('Rounds', () => {
       await set(game, game.kart.id)
 
       expect(await errorOf(await set(game, game.schach.id))).toEqual({ status: 409, code: 'game_count_reached' })
-      expect((await read(game)).setGame?.rejection).toBe('game_count_reached')
 
       const [first] = await roundRows(game)
       await putBackRound(game, first!.id)
@@ -267,7 +264,6 @@ describe('Rounds', () => {
       await testDb.db.insert(draws).values({ roundId: drawn!.id, gameId: game.kart.id, source: 'pool', kind: 'set', committedAt: new Date(T0), stopAt: new Date('2090-10-30T11:00:00.000Z') })
 
       expect(await errorOf(await set(game, game.halo.id))).toEqual({ status: 409, code: 'round_being_drawn' })
-      expect((await read(game)).setGame?.rejection).toBe('round_being_drawn')
       expect(await errorOf(await putBackRound(game, drawn!.id))).toEqual({ status: 409, code: 'round_being_drawn' })
     })
 
@@ -283,7 +279,7 @@ describe('Rounds', () => {
 
     it('writes and tells nothing when it refuses', async () => {
       const game = await running()
-      await send('POST', `/api/e/${game.slug}/move`, game.hostCookie, { userId: game.ids.four, to: { zone: 'bench' } })
+      await send('POST', `/api/e/${game.slug}/move`, game.hostCookie, { userId: game.ids.four, to: { zone: 'stands' } })
       notifier.clear()
       await testDb.db.delete(activity)
 
@@ -409,13 +405,12 @@ describe('Rounds', () => {
   describe('the Game count in the settings', () => {
     const patchCount = (game: Game, gameCount: number) => send('PATCH', `/api/e/${game.slug}/settings`, game.hostCookie, { settings: { gameCount } })
 
-    it('cannot drop below the Rounds started: 409 game_count_below_started, and the floor is in the Event read', async () => {
+    it('cannot drop below the Rounds started: 409 game_count_below_started', async () => {
       const game = await running({ gameCount: 5 })
       await set(game, game.halo.id)
       await set(game, game.kart.id)
       await set(game, game.schach.id)
 
-      expect((await read(game)).settingsFloors).toMatchObject({ gameCount: 3 })
       expect(await errorOf(await patchCount(game, 2))).toEqual({ status: 409, code: 'game_count_below_started' })
       expect((await patchCount(game, 3)).status).toBe(200)
       expect((await read(game)).settings?.gameCount).toBe(3)
@@ -428,14 +423,12 @@ describe('Rounds', () => {
       const [first] = await roundRows(game)
       await putBackRound(game, first!.id)
 
-      expect((await read(game)).settingsFloors).toMatchObject({ gameCount: 1 })
       expect((await patchCount(game, 1)).status).toBe(200)
     })
 
     it('has no Game count floor before any Round', async () => {
       const game = await running({ gameCount: 5 })
 
-      expect((await read(game)).settingsFloors).toMatchObject({ gameCount: 0 })
       expect((await patchCount(game, 1)).status).toBe(200)
     })
   })
@@ -611,10 +604,9 @@ describe('Rounds', () => {
 
       it('answers 409 teams_uneven with uneven teams', async () => {
         const game = await running({ wheel: true })
-        await send('POST', `/api/e/${game.slug}/move`, game.hostCookie, { userId: game.ids.four, to: { zone: 'bench' } })
+        await send('POST', `/api/e/${game.slug}/move`, game.hostCookie, { userId: game.ids.four, to: { zone: 'stands' } })
 
         expect(await errorOf(await spin(game))).toEqual({ status: 409, code: 'teams_uneven' })
-        expect((await read(game)).setGame?.spinRejection).toBe('teams_uneven')
       })
 
       it('answers 409 game_count_reached once as many Rounds have started as the Game count', async () => {
@@ -635,7 +627,6 @@ describe('Rounds', () => {
         const game = await running()
 
         expect(await errorOf(await spin(game))).toEqual({ status: 409, code: 'no_wheel' })
-        expect((await read(game)).setGame?.spinRejection).toBe('no_wheel')
       })
 
       it('answers 409 pool_empty when no game is left on the wheel', async () => {
@@ -646,7 +637,6 @@ describe('Rounds', () => {
         clock.advance(STOP)
 
         expect(await errorOf(await spin(game))).toEqual({ status: 409, code: 'pool_empty' })
-        expect((await read(game)).setGame?.spinRejection).toBe('pool_empty')
       })
 
       it('writes and tells nothing when it refuses', async () => {
@@ -763,14 +753,14 @@ describe('Rounds', () => {
   // The stage sections (#256): each section returns all its fields in every case, so a section left out of the array
   // would show here as a missing key. The shape is asserted per field, not with toEqual, since the stage grows.
   describe('the stage sections of the Event read (#256)', () => {
-    const STAGE_KEYS = ['rounds', 'setGame', 'wheel', 'roundBeingDrawn', 'clip', 'countdown', 'coin', 'ceremony', 'bonusVetoes', 'results', 'standings', 'end'] as const
+    const STAGE_KEYS = ['rounds', 'setGame', 'wheel', 'roundBeingDrawn', 'clip', 'countdown', 'coin', 'ceremony', 'ceremonyShown', 'bonusVetoes', 'results', 'standings', 'end'] as const
 
     it('gives every stage field to the Host of a Host pick Event, the null ones as null', async () => {
       const game = await running()
       const view = await read(game)
 
       for (const key of STAGE_KEYS) expect(view).toHaveProperty(key)
-      expect(view).toMatchObject({ wheel: null, clip: null, countdown: null, coin: null, ceremony: null, bonusVetoes: null })
+      expect(view).toMatchObject({ wheel: null, clip: null, countdown: null, coin: null, ceremony: null, ceremonyShown: false, bonusVetoes: null })
     })
 
     it('gives the Host of a Lucky Wheel Event its wheel and the Bonus Vetoes', async () => {

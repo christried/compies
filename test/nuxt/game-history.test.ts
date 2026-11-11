@@ -16,7 +16,7 @@ import { dialog } from './event-page'
 // the result sheet on that Result; without `corrections` (a Member, a finished Event) there is no button and no sheet.
 
 const game = (name: string, price: GamePrice | null = null): RoundGame => ({ id: `g-${name}`, name, imageUrl: null, youtubeId: null, clipStart: 0, clipLength: 30, playersMin: 2, playersMax: 4, suitabilities: [], price })
-const named = (names: (string | null)[]): BoardTeam[] => names.map((name, index) => ({ position: index + 1, name, frozen: name !== null }))
+const named = (names: (string | null)[]): BoardTeam[] => names.map((name, index) => ({ position: index + 1, name }))
 const three = named(['Wilde Gurken', 'Die Füchse', null])
 const line = (team: number, place: number, points: number, score: string | null = null): ResultLineView => ({ team, place, points, score })
 const result = (number: number, name: string, places: ResultLineView[], corrected = false): ResultView => ({

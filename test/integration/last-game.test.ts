@@ -112,24 +112,22 @@ describe('The last game', () => {
   }
 
   describe('what the Host reads', () => {
-    it('shows the Host why the last game cannot be added, and every other viewer nothing', async () => {
+    // The Host's reasons are the state's rules (test/unit/event-state.test.ts, and the dock = route cases of test/integration/event-state.test.ts).
+    it('shows every other viewer nothing of the last game, and a refused last game stays a 409', async () => {
       const game = await running({ gameCount: 2 })
       const first = await setRound(game, game.halo.id)
       expect((await enter(game, first, { places: teamOneWins })).status).toBe(200)
-      const { cookie: benchCookie } = await signIn(testDb.db, newcomer)
-      await send('POST', `/api/invite/${game.inviteToken}`, benchCookie)
+      const { cookie: newcomerCookie } = await signIn(testDb.db, newcomer)
+      await send('POST', `/api/invite/${game.inviteToken}`, newcomerCookie)
 
-      expect((await read(game)).end).toMatchObject({ complete: false, lastGame: { rejection: 'results_missing' } })
-      expect((await read(game, game.cookies.one)).end).toMatchObject({ lastGame: null })
-      expect((await read(game, benchCookie)).end).toMatchObject({ lastGame: null })
+      expect((await read(game, game.cookies.one)).end).toMatchObject({ complete: false, lastGame: null })
+      expect((await read(game, newcomerCookie)).end).toMatchObject({ lastGame: null })
 
       const second = await setRound(game, game.kart.id)
       expect((await enter(game, second, { places: teamTwoWins })).status).toBe(200)
-      expect((await read(game)).end).toMatchObject({ complete: true, tie: [1, 2], lastGame: { rejection: null } })
-      expect((await read(game, game.cookies.two)).end).toMatchObject({ lastGame: null })
+      expect((await read(game, game.cookies.two)).end).toMatchObject({ complete: true, tie: [1, 2], lastGame: null })
 
       expect((await enter(game, second, { places: teamOneWins })).status).toBe(200)
-      expect((await read(game)).end).toMatchObject({ complete: true, tie: null, lastGame: { rejection: 'no_tie' } })
       expect(await errorOf(await addLastGame(game))).toEqual({ status: 409, code: 'no_tie' })
     })
   })
@@ -180,7 +178,7 @@ describe('The last game', () => {
       expect((await addLastGame(game)).status).toBe(200)
       const third = await setRound(game, game.schach.id)
       expect((await enter(game, third, { places: level })).status).toBe(200)
-      expect((await read(game)).end).toMatchObject({ played: 3, gameCount: 3, complete: true, tie: [1, 2], lastGame: { rejection: null } })
+      expect((await read(game)).end).toMatchObject({ played: 3, gameCount: 3, complete: true, tie: [1, 2] })
 
       expect(await (await addLastGame(game)).json()).toEqual({ gameCount: 4 })
       const [tetris] = await testDb.db.insert(games).values({ name: 'Tetris', createdBy: game.ids.host }).returning()
@@ -270,7 +268,7 @@ describe('The last game', () => {
     it('refuses the last game with game_count_range and writes nothing, and the Host can still finish the Tie', async () => {
       const game = await running({ gameCount: GAME_COUNT_MAX })
       await seedAlternating(game, GAME_COUNT_MAX)
-      expect((await read(game)).end).toMatchObject({ played: GAME_COUNT_MAX, gameCount: GAME_COUNT_MAX, complete: true, tie: [1, 2], lastGame: { rejection: 'game_count_range' } })
+      expect((await read(game)).end).toMatchObject({ played: GAME_COUNT_MAX, gameCount: GAME_COUNT_MAX, complete: true, tie: [1, 2] })
       const before = await eventRowOf(game.eventId)
       const activityBefore = await activityTypes(game.eventId)
 

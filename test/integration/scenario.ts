@@ -6,7 +6,7 @@ import type { Db } from '../../server/utils/db'
 import type { memoryRoomNotifier } from '../../server/utils/room-notifier'
 import type { ActivityEntry, ActivityPage } from '../../shared/activity'
 import type { EventFinished, EventView } from '../../shared/event'
-import type { CoinTossed } from '../../shared/stage'
+import type { CeremonyStarted, CoinTossed } from '../../shared/stage'
 import { sendVia, type TestRequest } from './app'
 import { TEST_SETTINGS } from './fixtures'
 import { setAllowlist, signIn, type ProviderProfile } from './sign-in'
@@ -18,7 +18,7 @@ import { setAllowlist, signIn, type ProviderProfile } from './sign-in'
 // In order of use:
 // - `signInAs`, or `hostSignsIn` for a Host (it sets the allowlist).
 // - `startRunningEvent` (an Event with a Running Session) or `setUpEvent` (the same, no Session started). Options: `host`,
-//   `players` and `seats` (a Player not seated is a Member on the Bench), `outsiders` (none), `sessions` (2), `slots` (one per
+//   `players` and `seats` (a Player not seated is a Member on the Stands), `outsiders` (none), `sessions` (2), `slots` (one per
 //   Session, from 2090-10-30), `extraSlots` (none), `confirmed` (every Session), `settings` (spread over `TEST_SETTINGS`), `games`
 //   (none), `join` ('rows'), `quiet` ('room').
 // - A file that makes its own games over HTTP: `hostCreatesEvent` + `playersJoin`, then `startRunningSession` (the first Date, one
@@ -52,14 +52,14 @@ export interface Signed { profile: ProviderProfile, cookie: string, id: string }
  */
 export interface GameSeed { key: string, values: Omit<typeof games.$inferInsert, 'createdBy'>, pool: boolean }
 
-/** Where a Player takes a seat: a team position (1, 2, …) or the Stands. A Player not seated stays a Member on the Bench. */
+/** Where a Player takes a seat: a team position (1, 2, …) or the Stands. A Player not seated stays a Member on the Stands. */
 export type Seat = number | 'stands'
 
 export interface ScenarioEventOptions<Player extends string, Game extends string = never, Outsider extends string = never> {
   host: ProviderProfile
   /** Each signs in and becomes a Member of the Event (by rows, or by Invite with `join: 'invite'`). */
   players: Record<Player, ProviderProfile>
-  /** `[player, seat]`: the Player moves THEMSELF there through POST move, as the builders do. A Player not listed is a Member on the Bench. */
+  /** `[player, seat]`: the Player moves THEMSELF there through POST move, as the builders do. A Player not listed is a Member on the Stands. */
   seats: readonly (readonly [NoInfer<Player>, Seat])[]
   /** Sign in, are no Member. */
   outsiders?: Record<Outsider, ProviderProfile>
@@ -149,7 +149,7 @@ export async function hostCreatesEvent(rig: Rig, host: Signed, { name = 'Freitag
   return { slug, eventId: eventRow!.id, inviteToken: new URL(inviteUrl).pathname.slice('/e/'.length), slotIds: slotRows.map(row => row.id) }
 }
 
-/** The signed-in Users join through the Invite link (POST /api/invite/:invite): Members on the Bench, with a `member_joined` entry and a room message each. */
+/** The signed-in Users join through the Invite link (POST /api/invite/:invite): Members on the Stands, with a `member_joined` entry and a room message each. */
 export async function playersJoin(rig: Rig, event: Pick<CreatedEvent, 'inviteToken'>, players: readonly Signed[]): Promise<void> {
   for (const player of players) await expectOk(await sendOf(rig)('POST', `/api/invite/${event.inviteToken}`, player.cookie), `join as ${player.profile.name}`)
 }
@@ -161,9 +161,10 @@ export async function hostSetsDates(rig: Rig, event: Pick<EventRef, 'slug' | 'sl
   }
 }
 
-/** The Player moves THEMSELF to the seat (POST move with their own cookie). */
+/** The Player moves THEMSELF to the seat (POST move with their own cookie). The Stands are where a joined Player already is (#437): no move. */
 async function takeSeat(rig: Rig, slug: string, player: Signed, seat: Seat): Promise<void> {
-  const to = seat === 'stands' ? { zone: 'stands' } : { zone: 'team', team: seat }
+  if (seat === 'stands') return
+  const to = { zone: 'team', team: seat }
   await expectOk(await sendOf(rig)('POST', `/api/e/${slug}/move`, player.cookie, { userId: player.id, to }), `${player.profile.name} takes a seat`)
 }
 
@@ -283,6 +284,12 @@ export async function hostEntersResult(rig: Rig, event: Pick<EventRef, 'slug' | 
 export async function hostFinishes(rig: Rig, event: Pick<EventRef, 'slug' | 'host'>, { outcome, winners }: { outcome: 'winner' | 'tie', winners: readonly number[] }): Promise<EventFinished> {
   const response = await expectOk(await sendOf(rig)('POST', `/api/e/${event.slug}/finish`, event.host.cookie, { outcome, winners }), 'finish the Event')
   return await response.json() as EventFinished
+}
+
+/** The Host starts the Award ceremony of the finished Event (#445: it is what shows the result). */
+export async function hostStartsCeremony(rig: Rig, event: Pick<EventRef, 'slug' | 'host'>): Promise<CeremonyStarted> {
+  const response = await expectOk(await sendOf(rig)('POST', `/api/e/${event.slug}/ceremony`, event.host.cookie), 'start the Award ceremony')
+  return await response.json() as CeremonyStarted
 }
 
 /** The Host tosses the Coin. */

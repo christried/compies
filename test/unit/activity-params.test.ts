@@ -1,5 +1,5 @@
 import { describe, expect, expectTypeOf, it } from 'vitest'
-import { ACTIVITY_NAMES, ACTIVITY_TYPES, INSTANT_ACTIVITY_TYPES, activityGames, activityPeople, isoInstant, type ActivityParams, type ActivityType, type CheckedParams, type IsoInstant, type ParamsSafe } from '../../shared/activity'
+import { ACTIVITY_NAMES, ACTIVITY_TYPES, INSTANT_ACTIVITY_TYPES, TEAM_NAMING_TYPES, activityGames, activityPeople, activityTeams, isoInstant, type ActivityParams, type ActivityType, type CheckedParams, type IsoInstant, type ParamsSafe } from '../../shared/activity'
 import type { Place } from '../../shared/board'
 import { recordActivity } from '../../server/utils/activity'
 import type { Db } from '../../server/utils/db'
@@ -15,52 +15,70 @@ export type NamesAGame = CheckedParams<
 
 // What each Activity type names before 0.8 (#273 makes one table of ACTIVITY_PEOPLE and ACTIVITY_GAMES): the people by their
 // User id, the games by their game id. The sample params are the ones an entry of the type holds.
-const NAMED: Record<ActivityType, { params: unknown, people: string[], games: string[] }> = {
-  member_joined: { params: {}, people: [], games: [] },
-  member_moved: { params: { userId: 'u1', from: { zone: 'bench' }, to: { zone: 'team', team: 2 } }, people: ['u1'], games: [] },
-  date_set: { params: { sessionId: 's', number: 1, startsAt: '2090-11-01T19:30:00.000Z' }, people: [], games: [] },
-  date_rescheduled: { params: { sessionId: 's', number: 1, from: '2090-11-01T19:30:00.000Z', to: '2090-11-02T19:30:00.000Z' }, people: [], games: [] },
-  date_reopened: { params: { sessionId: 's', number: 1, previousStartsAt: '2090-11-01T19:30:00.000Z' }, people: [], games: [] },
-  session_added: { params: { sessionId: 's', startsAt: null }, people: [], games: [] },
-  session_removed: { params: { sessionId: 's', number: 1, startsAt: null }, people: [], games: [] },
-  session_started: { params: { sessionId: 's', number: 1 }, people: [], games: [] },
-  session_ended: { params: { sessionId: 's', number: 1 }, people: [], games: [] },
-  team_name_reset: { params: { team: 1 }, people: [], games: [] },
-  game_count_changed: { params: { from: 3, to: 4 }, people: [], games: [] },
-  team_size_changed: { params: { from: 2, to: 3 }, people: [], games: [] },
-  game_drawn: { params: { roundId: 'r', drawId: 'd', gameId: 'g1' }, people: [], games: ['g1'] },
-  vetoes_revealed: { params: { roundId: 'r', drawId: 'd', gameId: 'g1', vetoes: [{ team: 1 }, { team: 2 }] }, people: [], games: ['g1'] },
-  game_set: { params: { roundId: 'r', gameId: 'g1' }, people: [], games: ['g1'] },
-  game_put_back: { params: { roundId: 'r', gameId: 'g1' }, people: [], games: ['g1'] },
-  bonus_veto_granted: { params: { team: 2 }, people: [], games: [] },
-  coin_tossed: { params: { side: 'heads' }, people: [], games: [] },
+const NAMED: Record<ActivityType, { params: unknown, people: string[], games: string[], teams: number[] }> = {
+  member_joined: { params: {}, people: [], games: [], teams: [] },
+  member_moved: { params: { userId: 'u1', from: { zone: 'stands' }, to: { zone: 'team', team: 2 } }, people: ['u1'], games: [], teams: [2] },
+  date_set: { params: { sessionId: 's', number: 1, startsAt: '2090-11-01T19:30:00.000Z' }, people: [], games: [], teams: [] },
+  date_rescheduled: { params: { sessionId: 's', number: 1, from: '2090-11-01T19:30:00.000Z', to: '2090-11-02T19:30:00.000Z' }, people: [], games: [], teams: [] },
+  date_reopened: { params: { sessionId: 's', number: 1, previousStartsAt: '2090-11-01T19:30:00.000Z' }, people: [], games: [], teams: [] },
+  session_added: { params: { sessionId: 's', startsAt: null }, people: [], games: [], teams: [] },
+  session_removed: { params: { sessionId: 's', number: 1, startsAt: null }, people: [], games: [], teams: [] },
+  session_started: { params: { sessionId: 's', number: 1 }, people: [], games: [], teams: [] },
+  session_ended: { params: { sessionId: 's', number: 1 }, people: [], games: [], teams: [] },
+  team_name_reset: { params: { team: 1 }, people: [], games: [], teams: [1] },
+  game_count_changed: { params: { from: 3, to: 4 }, people: [], games: [], teams: [] },
+  team_size_changed: { params: { from: 2, to: 3 }, people: [], games: [], teams: [] },
+  game_drawn: { params: { roundId: 'r', drawId: 'd', gameId: 'g1' }, people: [], games: ['g1'], teams: [] },
+  vetoes_revealed: { params: { roundId: 'r', drawId: 'd', gameId: 'g1', vetoes: [{ team: 1 }, { team: 2 }] }, people: [], games: ['g1'], teams: [1, 2] },
+  game_set: { params: { roundId: 'r', gameId: 'g1' }, people: [], games: ['g1'], teams: [] },
+  game_put_back: { params: { roundId: 'r', gameId: 'g1' }, people: [], games: ['g1'], teams: [] },
+  bonus_veto_granted: { params: { team: 2 }, people: [], games: [], teams: [2] },
+  coin_tossed: { params: { side: 'heads' }, people: [], games: [], teams: [] },
   // 0.8 (#273): a Result names its game and no User; its winners are team positions.
-  result_entered: { params: { roundId: 'r', number: 3, gameId: 'g1', first: [1, 2] }, people: [], games: ['g1'] },
-  result_corrected: { params: { roundId: 'r', number: 3, gameId: 'g1' }, people: [], games: ['g1'] },
-  event_finished: { params: { winners: [2] }, people: [], games: [] },
+  result_entered: { params: { roundId: 'r', number: 3, gameId: 'g1', first: [1, 2] }, people: [], games: ['g1'], teams: [1, 2] },
+  result_corrected: { params: { roundId: 'r', number: 3, gameId: 'g1' }, people: [], games: ['g1'], teams: [] },
+  event_finished: { params: { winners: [2] }, people: [], games: [], teams: [2] },
 }
 
 describe('ACTIVITY_NAMES', () => {
-  it('has an entry only for the types that name someone or a game', () => {
-    const named = ACTIVITY_TYPES.filter(type => NAMED[type].people.length > 0 || NAMED[type].games.length > 0)
+  it('has an entry only for the types that name someone, a game or a team', () => {
+    const named = ACTIVITY_TYPES.filter(type => NAMED[type].people.length > 0 || NAMED[type].games.length > 0 || NAMED[type].teams.length > 0)
 
     expect(Object.keys(ACTIVITY_NAMES).sort()).toEqual([...named].sort())
   })
 
-  it('gives every Activity type the people and the games it named before (0.8 adds result_entered, result_corrected and event_finished)', () => {
+  it('gives every Activity type the people, the games and the teams it names (0.8 adds result_entered, result_corrected and event_finished; 0.12 the teams, #440)', () => {
     for (const type of ACTIVITY_TYPES) {
       const expected = NAMED[type]
       expect(activityPeople(type, expected.params as ActivityParams[typeof type]), `${type} people`).toEqual(expected.people)
       expect(activityGames(type, expected.params as ActivityParams[typeof type]), `${type} games`).toEqual(expected.games)
+      expect(activityTeams(type, expected.params as ActivityParams[typeof type]), `${type} teams`).toEqual(expected.teams)
     }
+  })
+})
+
+describe('the teams of an entry (#440)', () => {
+  it('names the team a move goes to and never the one it comes from; a move to the Stands names none', () => {
+    expect(activityTeams('member_moved', { userId: 'u1', from: { zone: 'team', team: 1 }, to: { zone: 'team', team: 3 } })).toEqual([3])
+    expect(activityTeams('member_moved', { userId: 'u1', from: { zone: 'team', team: 1 }, to: { zone: 'stands' } })).toEqual([])
+  })
+
+  it('names no team in a correction, which holds no position, nor in the entries about a game or a date', () => {
+    expect(activityTeams('result_corrected', { roundId: 'r', number: 1, gameId: 'g1' })).toEqual([])
+    expect(activityTeams('game_set', { roundId: 'r', gameId: 'g1' })).toEqual([])
+  })
+
+  it('lists exactly the six kinds that store a Team name, and every one of them names teams in its sample', () => {
+    expect([...TEAM_NAMING_TYPES].sort()).toEqual(['bonus_veto_granted', 'event_finished', 'member_moved', 'result_entered', 'team_name_reset', 'vetoes_revealed'])
+    expect(ACTIVITY_TYPES.filter(type => NAMED[type].teams.length > 0).sort()).toEqual([...TEAM_NAMING_TYPES].sort())
   })
 })
 
 describe('the people and games of an entry', () => {
   it('names the moved Member of a move, and nobody in the entries without a User in their params', () => {
-    const bench: Place = { zone: 'bench' }
+    const stands: Place = { zone: 'stands' }
 
-    expect(activityPeople('member_moved', { userId: 'u1', from: bench, to: { zone: 'team', team: 2 } })).toEqual(['u1'])
+    expect(activityPeople('member_moved', { userId: 'u1', from: stands, to: { zone: 'team', team: 2 } })).toEqual(['u1'])
     expect(activityPeople('session_started', { sessionId: 's1', number: 1 })).toEqual([])
     expect(activityPeople('coin_tossed', { side: 'heads' })).toEqual([])
   })
@@ -97,6 +115,16 @@ describe('the params rule', () => {
     expectTypeOf<ParamsSafe<{ games: string[] }>>().toEqualTypeOf<false>()
   })
 
+  it('widens by one key: Team names (#440), keyed by position, and still refuses a game\'s name next to them', () => {
+    expectTypeOf<ParamsSafe<{ teamNames: Record<string, string | null> }>>().toEqualTypeOf<true>()
+    expectTypeOf<ParamsSafe<{ teamNames?: Record<string, string | null> }>>().toEqualTypeOf<true>()
+    expectTypeOf<ParamsSafe<{ team: number, teamNames: Record<string, string | null> }>>().toEqualTypeOf<true>()
+    expectTypeOf<ParamsSafe<{ gameNames: Record<string, string | null> }>>().toEqualTypeOf<false>()
+    expectTypeOf<ParamsSafe<{ teamNames: string }>>().toEqualTypeOf<false>()
+    expectTypeOf<ParamsSafe<{ teamNames: string[] }>>().toEqualTypeOf<false>()
+    expectTypeOf<ParamsSafe<{ gameName: string, teamNames: Record<string, string | null> }>>().toEqualTypeOf<false>()
+  })
+
   it('lets numbers, booleans, null, string literals, places and instants through, also inside arrays and objects', () => {
     expectTypeOf<ParamsSafe<{ number: number | null, on: boolean }>>().toEqualTypeOf<true>()
     expectTypeOf<ParamsSafe<{ side: 'heads' | 'tails' }>>().toEqualTypeOf<true>()
@@ -129,13 +157,27 @@ describe('recordActivity and INSTANT_ACTIVITY_TYPES', () => {
   it('takes `at` for an instant type and the request clock for any other, and refuses each the other way round', () => {
     const calls = (tx: Db): void => {
       void recordActivity(tx, noop, 'e', { type: 'coin_tossed', actorId: null, params: { side: 'heads' }, at })
-      void recordActivity(tx, noop, 'e', { type: 'team_name_reset', actorId: null, params: { team: 1 }, now: at })
+      void recordActivity(tx, noop, 'e', { type: 'team_name_reset', actorId: null, params: { team: 1, teamNames: {} }, now: at })
       // @ts-expect-error an instant type needs the `at` it may be read from
       void recordActivity(tx, noop, 'e', { type: 'coin_tossed', actorId: null, params: { side: 'heads' }, now: at })
       // @ts-expect-error a type outside INSTANT_ACTIVITY_TYPES is published at once and takes no `at`
-      void recordActivity(tx, noop, 'e', { type: 'team_name_reset', actorId: null, params: { team: 1 }, at })
+      void recordActivity(tx, noop, 'e', { type: 'team_name_reset', actorId: null, params: { team: 1, teamNames: {} }, at })
       // @ts-expect-error a type outside INSTANT_ACTIVITY_TYPES needs the request's clock
-      void recordActivity(tx, noop, 'e', { type: 'team_name_reset', actorId: null, params: { team: 1 } })
+      void recordActivity(tx, noop, 'e', { type: 'team_name_reset', actorId: null, params: { team: 1, teamNames: {} } })
+    }
+    expect(calls).toBeTypeOf('function')
+  })
+
+  it('requires the Team names of the six kinds that name a team, so a writer cannot forget them (#440)', () => {
+    const calls = (tx: Db): void => {
+      void recordActivity(tx, noop, 'e', { type: 'team_name_reset', actorId: null, params: { team: 1, teamNames: { 1: null } }, now: at })
+      void recordActivity(tx, noop, 'e', { type: 'member_moved', actorId: null, params: { userId: 'u', from: { zone: 'stands' }, to: { zone: 'stands' }, teamNames: {} }, now: at })
+      // @ts-expect-error a kind that names a team stores the Team name it had
+      void recordActivity(tx, noop, 'e', { type: 'team_name_reset', actorId: null, params: { team: 1 }, now: at })
+      // @ts-expect-error a move stores its names too, an empty map when it names no team
+      void recordActivity(tx, noop, 'e', { type: 'member_moved', actorId: null, params: { userId: 'u', from: { zone: 'stands' }, to: { zone: 'stands' } }, now: at })
+      // @ts-expect-error a kind that names no team stores no names
+      void recordActivity(tx, noop, 'e', { type: 'game_set', actorId: null, params: { roundId: 'r', gameId: 'g', teamNames: {} }, now: at })
     }
     expect(calls).toBeTypeOf('function')
   })

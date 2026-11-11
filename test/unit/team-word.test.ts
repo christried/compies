@@ -30,6 +30,20 @@ describe('parseTeamWord', () => {
     expect(parseTeamWord('Wilde᠎Gurken')).toEqual({ ok: false, error: 'invalid_team_word' })
   })
 
+  // The activity feed marks its bold spans with U+0001 to U+0004, and a Team name flows into its sentences (#440, #488).
+  it('refuses a control character, U+0000 to U+001F and U+007F, like any other invalid word', () => {
+    for (const code of [...Array.from({ length: 0x20 }, (_, code) => code), 0x7F]) {
+      const bad = `Wil${String.fromCharCode(code)}de`
+      expect(parseTeamWord(bad), `U+${code.toString(16).padStart(4, '0')}`).toEqual({ ok: false, error: 'invalid_team_word' })
+    }
+    expect(parseTeamWord('\u0003\u0004')).toEqual({ ok: false, error: 'invalid_team_word' })
+  })
+
+  it('keeps the characters around the control range: emoji, umlauts and U+0080 and up', () => {
+    expect(parseTeamWord('Gürkchen👍')).toEqual({ ok: true, word: 'Gürkchen👍' })
+    expect(parseTeamWord('\u0080')).toEqual({ ok: true, word: '\u0080' })
+  })
+
   it('turns an empty word into null, which removes the word', () => {
     expect(parseTeamWord('')).toEqual({ ok: true, word: null })
   })

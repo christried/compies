@@ -1,4 +1,4 @@
-import { eq } from 'drizzle-orm'
+import { and, eq } from 'drizzle-orm'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { draws, eventPoolGames, users, vetoes } from '../../server/db/schema'
 import type { Db } from '../../server/utils/db'
@@ -24,7 +24,7 @@ vi.mock('node:crypto', async (importOriginal) => {
 
 describe('Hidden wheel secrecy (#148)', () => {
   const world = hiddenWheelWorld()
-  const { request, notifier, clock, rawRead, playerTraces, priceTrace, newGame, runningEvent, imageStatus, whatThePlayerGets, expectNone, NO_WINDOW, host, player, second, stranger, sweepGets, rig } = world
+  const { request, notifier, clock, rawRead, playerTraces, playersTraces, priceTrace, newGame, runningEvent, imageStatus, whatThePlayerGets, expectNone, expectNoGameFacts, NO_WINDOW, host, player, second, stranger, sweepGets, rig } = world
   let db: Db
   let hostSigned: Signed
   let hostCookie: string
@@ -41,13 +41,19 @@ describe('Hidden wheel secrecy (#148)', () => {
     source.override = null
   })
 
+  /** The Player's read never carries what the Host's game dialog needs (#443): hostGames is null, whatever the Event's state. */
+  const hostGamesOf = (raw: string) => (JSON.parse(raw) as EventView).hostGames
+
   // A game the Host sets is every Member's from the moment it is set, and nothing else becomes known with it (#228).
   describe('a game the Host sets (#228)', () => {
     it('shows a Player no game of the pools before a set: nothing in the Event read, the feed or the room, and no image', async () => {
       const { slug, eventId, a, b, c, epsilon } = await runningEvent()
 
-      expectNone(await whatThePlayerGets(slug, eventId), [a, b, c, epsilon])
-      expect((JSON.parse(await rawRead(playerCookie, slug)) as EventView)).toMatchObject({ pool: null, rounds: [], setGame: null })
+      const got = await whatThePlayerGets(slug, eventId)
+      expectNone(got, [a, b, c, epsilon])
+      // No game of the pools, so no game fact key either: no player count, no Suitabilities (#444).
+      expectNoGameFacts(got.event, got.feed, got.room)
+      expect((JSON.parse(await rawRead(playerCookie, slug)) as EventView)).toMatchObject({ pool: null, rounds: [], setGame: null, hostGames: null })
       // The pool warning (#234) is the Host's: the Host's read carries it here (2 games in the pool, 16 needed), the Player's and the room's do not.
       expect((JSON.parse(await rawRead(hostCookie, slug)) as EventView).setGame?.poolWarning).toEqual({ needed: 16, have: 2 })
       expect(await rawRead(playerCookie, slug)).not.toContain('poolWarning')
@@ -63,7 +69,10 @@ describe('Hidden wheel secrecy (#148)', () => {
       const got = await whatThePlayerGets(slug, eventId)
       expect(got.event).toContain('Alpha Arena')
       expect(got.event).toContain(a.imageKey)
-      expect((JSON.parse(got.event) as EventView)).toMatchObject({ pool: null, rounds: [{ game: { id: a.id, name: 'Alpha Arena', youtubeId: 'aaaaaaaaaaa' } }] })
+      expect((JSON.parse(got.event) as EventView)).toMatchObject({ pool: null, hostGames: null, rounds: [{ game: { id: a.id, name: 'Alpha Arena', youtubeId: 'aaaaaaaaaaa' } }] })
+      // The set game's own players and Suitabilities are every Member's (#444); no other game's are.
+      expect((JSON.parse(got.event) as EventView).rounds[0]!.game).toMatchObject({ playersMin: a.playersMin, playersMax: a.playersMax, suitabilities: ['teams'] })
+      for (const trace of playersTraces(a)) expect(got.event).toContain(trace)
       expect(got.feed).toContain('Alpha Arena')
       expect(got.feed).not.toContain('"price"')
       expect(got.room).not.toContain('"price"')
@@ -79,14 +88,15 @@ describe('Hidden wheel secrecy (#148)', () => {
       await hostSets(rig(), { slug, host: hostSigned }, epsilon.id)
 
       const got = await whatThePlayerGets(slug, eventId)
-      expect((JSON.parse(got.event) as EventView).rounds).toMatchObject([{ game: { id: epsilon.id, name: 'Epsilon Eck' } }])
+      expect((JSON.parse(got.event) as EventView).rounds).toMatchObject([{ game: { id: epsilon.id, name: 'Epsilon Eck', playersMin: epsilon.playersMin, playersMax: epsilon.playersMax, suitabilities: ['teams'] } }])
+      expect(hostGamesOf(got.event)).toBeNull()
       expectNone(got, [a, b, c])
       expectNone(got, [epsilon], secret => [secret.notes, secret.tag])
       expect(await imageStatus(epsilon)).toBe(200)
       for (const secret of [a, b, c]) expect(await imageStatus(secret)).toBe(404)
     })
 
-    it('carries no Tag in the Host\'s or a Player\'s read of a set game and of its Result, and the Price only of the set game for a Player (#335, #338)', async () => {
+    it('carries the Tags only in the Host\'s hostGames, none in a Player\'s read of a set game and of its Result, and the Price only of the set game for a Player (#335, #338, #443)', async () => {
       const { slug, a, b, c, epsilon } = await runningEvent()
       const roundId = await hostSets(rig(), { slug, host: hostSigned }, a.id)
       // The Host sees the pool (Alpha, Beta) and the set game; the Player sees the set game only.
@@ -106,10 +116,13 @@ describe('Hidden wheel secrecy (#148)', () => {
 
       const [hostBefore, playerBefore] = await reads()
       expect(playerBefore).toContain('Alpha Arena')
-      for (const raw of [hostBefore!, playerBefore!]) {
-        expect(raw).not.toContain('"tags"')
-        for (const secret of [a, b, c, epsilon]) expect(raw).not.toContain(secret.tag)
-      }
+      expect(hostGamesOf(playerBefore!)).toBeNull()
+      expect(playerBefore).not.toContain('"tags"')
+      for (const secret of [a, b, c, epsilon]) expect(playerBefore).not.toContain(secret.tag)
+      // The Host's hostGames names the pool (Alpha, Beta) and, once, the set game that is in it; Gamma and Epsilon are in no read.
+      expect(Object.keys(hostGamesOf(hostBefore!)!).sort()).toEqual([a.id, b.id].sort())
+      for (const secret of [a, b]) expect(hostBefore).toContain(secret.tag)
+      for (const secret of [c, epsilon]) expect(hostBefore).not.toContain(secret.tag)
       expectPrices(hostBefore!, playerBefore!)
 
       const entered = await request(`/api/e/${slug}/rounds/${roundId}/result`, {
@@ -120,12 +133,17 @@ describe('Hidden wheel secrecy (#148)', () => {
       expect(entered.status).toBe(200)
       const [hostAfter, playerAfter] = await reads()
       expect((JSON.parse(hostAfter!) as EventView).results).toMatchObject([{ game: { price: a.price } }])
-      expect((JSON.parse(playerAfter!) as EventView).results).toMatchObject([{ game: { price: a.price } }])
-      for (const raw of [hostAfter!, playerAfter!]) {
-        expect((JSON.parse(raw) as EventView).results).toHaveLength(1)
-        expect(raw).not.toContain('"tags"')
-        for (const secret of [a, b, c, epsilon]) expect(raw).not.toContain(secret.tag)
-      }
+      expect((JSON.parse(playerAfter!) as EventView).results).toMatchObject([{ game: { price: a.price, playersMin: a.playersMin, playersMax: a.playersMax, suitabilities: ['teams'] } }])
+      // After a Result the Round's game stays known and the others stay unknown (#444).
+      for (const trace of playersTraces(a)) expect(playerAfter).toContain(trace)
+      for (const secret of [b, c, epsilon]) for (const trace of playersTraces(secret)) expect(playerAfter).not.toContain(trace)
+      for (const raw of [hostAfter!, playerAfter!]) expect((JSON.parse(raw) as EventView).results).toHaveLength(1)
+      expect(hostGamesOf(playerAfter!)).toBeNull()
+      expect(playerAfter).not.toContain('"tags"')
+      for (const secret of [a, b, c, epsilon]) expect(playerAfter).not.toContain(secret.tag)
+      // A Result adds no game to the Host's hostGames: the results are no tiles.
+      expect(Object.keys(hostGamesOf(hostAfter!)!).sort()).toEqual([a.id, b.id].sort())
+      for (const secret of [c, epsilon]) expect(hostAfter).not.toContain(secret.tag)
       expectPrices(hostAfter!, playerAfter!)
     })
 
@@ -139,6 +157,30 @@ describe('Hidden wheel secrecy (#148)', () => {
       expect(view.pool?.map(game => game.name)).toEqual(['Alpha Arena', 'Beta Bowling'])
     })
 
+    it('gives the Host the Tags and Notes of a library game outside the pool once it is set, and not before (#443)', async () => {
+      const { slug, a, b, epsilon } = await runningEvent()
+      const before = JSON.parse(await rawRead(hostCookie, slug)) as EventView
+      expect(Object.keys(before.hostGames!).sort()).toEqual([a.id, b.id].sort())
+
+      await hostSets(rig(), { slug, host: hostSigned }, epsilon.id)
+
+      const view = JSON.parse(await rawRead(hostCookie, slug)) as EventView
+      expect(Object.keys(view.hostGames!).sort()).toEqual([a.id, b.id, epsilon.id].sort())
+      expect(view.hostGames![epsilon.id]).toEqual({ tags: [{ key: epsilon.tag, label: epsilon.tag }], notes: epsilon.notes })
+    })
+
+    it('keeps the Tags and Notes of a game in hostGames while its Round shows it, after the game left the pool (#443)', async () => {
+      const { slug, eventId, a, b } = await runningEvent()
+      await hostSets(rig(), { slug, host: hostSigned }, a.id)
+      await db.delete(eventPoolGames).where(and(eq(eventPoolGames.eventId, eventId), eq(eventPoolGames.gameId, a.id)))
+
+      const view = JSON.parse(await rawRead(hostCookie, slug)) as EventView
+
+      expect(view.pool?.map(game => game.id)).toEqual([b.id])
+      expect(view.rounds).toMatchObject([{ game: { id: a.id } }])
+      expect(view.hostGames![a.id]).toEqual({ tags: [{ key: a.tag, label: a.tag }], notes: a.notes })
+    })
+
     it('reveals nothing more when the Host puts the Round back: the pools stay hidden, the games not set stay unknown', async () => {
       const { slug, eventId, a, b, c, epsilon } = await runningEvent()
       const roundId = await hostSets(rig(), { slug, host: hostSigned }, a.id)
@@ -146,9 +188,11 @@ describe('Hidden wheel secrecy (#148)', () => {
       await hostPutsBack(rig(), { slug, host: hostSigned }, roundId)
 
       const got = await whatThePlayerGets(slug, eventId)
-      expect(JSON.parse(got.event)).toMatchObject({ pool: null, rounds: [] })
+      expect(JSON.parse(got.event)).toMatchObject({ pool: null, rounds: [], hostGames: null })
       expectNone(got, [b, c, epsilon])
       expectNone(got, [a], secret => [secret.notes, secret.tag])
+      // The Round is gone, so is the game's fact: the Player knows no game again (#444).
+      expectNoGameFacts(got.event, got.feed, got.room)
       for (const secret of [b, c, epsilon]) expect(await imageStatus(secret)).toBe(404)
     })
 
@@ -189,6 +233,8 @@ describe('Hidden wheel secrecy (#148)', () => {
       const got = await whatThePlayerGets(slug, eventId)
 
       expectNone(got, [a, b, c, epsilon])
+      expectNoGameFacts(got.event, got.feed, got.room)
+      expect(hostGamesOf(got.event)).toBeNull()
       for (const secret of [a, b, c, epsilon]) expect(await imageStatus(secret)).toBe(404)
       expect((JSON.parse(got.feed) as ActivityPage).entries.map(entry => entry.type)).not.toContain('game_drawn')
     })
@@ -223,8 +269,10 @@ describe('Hidden wheel secrecy (#148)', () => {
       clock.set(new Date(stopAt - 1))
       const before = await whatThePlayerGets(slug, eventId)
       expectNone(before, [drawn, undrawn, c, epsilon])
+      expectNoGameFacts(before.event, before.feed, before.room)
       expect((JSON.parse(before.event) as EventView).clip).toBeNull()
       expect((JSON.parse(before.event) as EventView).wheel?.spin?.game).toBeNull()
+      expect(hostGamesOf(before.event)).toBeNull()
       // Before the stop no Price reaches the Player: not in the Event read, the feed or the room (#338).
       for (const place of [before.event, before.feed, before.room]) expect(place).not.toContain('"price"')
       // The Host knows the drawn game's Price before the stop.
@@ -235,12 +283,18 @@ describe('Hidden wheel secrecy (#148)', () => {
       const at = await whatThePlayerGets(slug, eventId)
       const view = JSON.parse(at.event) as EventView
       expect(view.wheel?.spin?.game).toMatchObject({ id: drawn.id })
+      expect(view.hostGames).toBeNull()
       expect(view.clip).toMatchObject({ drawId: row.id, game: { id: drawn.id } })
       expect(view.rounds).toMatchObject([{ game: { id: drawn.id } }])
       // From the stop on the drawn game's Price is on every surface that names it, and only its (#338).
       expect(view.wheel?.spin?.game?.price).toEqual(drawn.price)
       expect(view.clip?.game.price).toEqual(drawn.price)
       expect(view.rounds[0]!.game.price).toEqual(drawn.price)
+      // Players and Suitabilities of the drawn game from the stop on, on each surface that carries its face, and nobody else's (#444).
+      const facts = { playersMin: drawn.playersMin, playersMax: drawn.playersMax, suitabilities: ['teams'] }
+      expect(view.wheel?.spin?.game).toMatchObject(facts)
+      expect(view.clip?.game).toMatchObject(facts)
+      expect(view.rounds[0]!.game).toMatchObject(facts)
       expect((JSON.parse(at.feed) as ActivityPage).entries.filter(entry => entry.type === 'game_drawn')).toMatchObject([{ games: { [drawn.id]: drawn.name } }])
       expect(at.feed).not.toContain('"price"')
       expect(at.room).not.toContain('"price"')
@@ -256,6 +310,7 @@ describe('Hidden wheel secrecy (#148)', () => {
 
       const view = JSON.parse(got.event) as EventView
       expect(view.wheel?.spin?.game).toMatchObject({ id: drawn.id, name: drawn.name })
+      expect(view.hostGames).toBeNull()
       expect(view.wheel?.spin?.labels?.[row.resultIndex!]).toBe(drawn.name)
       expect(view.rounds).toMatchObject([{ game: { id: drawn.id, name: drawn.name } }])
       expect(got.feed).toContain(drawn.name)
@@ -273,6 +328,7 @@ describe('Hidden wheel secrecy (#148)', () => {
       const raw = await rawRead(playerCookie, slug)
 
       expect((JSON.parse(raw) as EventView).wheel).toMatchObject({ count: 1, slices: null })
+      expect(hostGamesOf(raw)).toBeNull()
       for (const trace of playerTraces(undrawn)) expect(raw).not.toContain(trace)
     })
 
@@ -287,6 +343,16 @@ describe('Hidden wheel secrecy (#148)', () => {
       clock.set(new Date(stopAt))
       const after = JSON.parse(await rawRead(hostCookie, slug)) as EventView
       expect(after.wheel?.spin?.labels).toEqual(before.wheel?.spin?.labels)
+    })
+
+    it('gives the Host the drawn game\'s Tags and Notes in hostGames, before the stop too (#443)', async () => {
+      const { slug, drawn, a, b } = await spun()
+
+      const view = JSON.parse(await rawRead(hostCookie, slug)) as EventView
+
+      expect(view.wheel?.spin?.game).toMatchObject({ id: drawn.id })
+      expect(Object.keys(view.hostGames!).sort()).toEqual([a.id, b.id].sort())
+      expect(view.hostGames![drawn.id]).toEqual({ tags: [{ key: drawn.tag, label: drawn.tag }], notes: drawn.notes })
     })
 
     it('lays a Hidden wheel out in an order of its own, not that of the pool, and the drawn game is the slice at the result index (F2)', async () => {
@@ -314,7 +380,9 @@ describe('Hidden wheel secrecy (#148)', () => {
       const { slug, eventId, a, b, stopAt } = await spun()
       clock.set(new Date(stopAt - 1))
 
-      expectNone(await whatThePlayerGets(slug, eventId), [a, b])
+      const got = await whatThePlayerGets(slug, eventId)
+      expectNone(got, [a, b])
+      expectNoGameFacts(got.event, got.feed, got.room)
     })
   })
 
@@ -443,6 +511,8 @@ describe('Hidden wheel secrecy (#148)', () => {
       // No trace of any game, on any route, for the Player or the non-Member. A picture is checked by its status: the image route
       // answers the Player a 404 here, and a 404 has a body to search.
       expectNone({ ...bodiesOf(before, PLAYER), ...bodiesOf(before, OUTSIDER) }, games)
+      // And no game fact key either: no player count, no Suitabilities (#444).
+      expectNoGameFacts(...Object.values({ ...bodiesOf(before, PLAYER), ...bodiesOf(before, OUTSIDER) }))
       // The controls: the sweep reads bodies (the Host's holds the drawn game's name) and it is not passing on 404s.
       expect(bodiesOf(before, HOST)['GET /api/e/:slug as the Host']).toContain(drawn.name)
       expect(okOf(before, PLAYER)).toEqual(expect.arrayContaining(['/api/e', '/api/e/:slug', '/api/e/:slug/activity', '/api/e/:slug/ics', '/api/me']))
@@ -459,12 +529,20 @@ describe('Hidden wheel secrecy (#148)', () => {
 
       // From the stop on the Player knows the drawn game, and still no other game of the pools, no notes or Tag of the drawn one.
       expect(Object.values(bodiesOf(after, PLAYER)).some(body => body.includes(drawn.name)), 'a body the Player reads names the drawn game').toBe(true)
-      // The extra games are all Z...: one Price amount, so an undrawn one's Price is the drawn one's own, which the Player now reads (#338).
-      expectNone(bodiesOf(after, PLAYER), [...undrawn, c, epsilon], secret => playerTraces(secret).filter(trace => trace !== priceTrace(drawn)))
+      // The extra games are all Z...: one Price amount and one player count, so an undrawn one's Price and players are the drawn one's own, which the Player now reads (#338, #444).
+      expectNone(bodiesOf(after, PLAYER), [...undrawn, c, epsilon], secret => playerTraces(secret).filter(trace => ![priceTrace(drawn), ...playersTraces(drawn)].includes(trace)))
       expectNone(bodiesOf(after, PLAYER), [drawn], secret => [secret.notes, secret.tag])
+      // The drawn game's players are in the Player's Event read from the stop on (#444).
+      const playerEvent = after.find(entry => entry.route === '/api/e/:slug' && entry.who === PLAYER)!.body!
+      for (const trace of playersTraces(drawn)) expect(playerEvent).toContain(trace)
       expect(after.find(entry => entry.route === '/api/images/:key' && entry.who === PLAYER && entry.path.endsWith(drawn.imageKey))?.status).toBe(200)
       // The non-Member learns nothing at any time (ADR 0006).
       expectNone(bodiesOf(after, OUTSIDER), games)
+      // The Player's Event read has no hostGames, before and after the stop (#443).
+      for (const swept of [before, after]) {
+        const read = swept.find(entry => entry.route === '/api/e/:slug' && entry.who === PLAYER)
+        expect(hostGamesOf(read!.body!)).toBeNull()
+      }
     })
 
     // GLOSSARY, Veto window: „until it ends, only a Party's own Players see its casts, and a Host who moves into a Party during its
@@ -500,6 +578,8 @@ describe('Hidden wheel secrecy (#148)', () => {
       expect(okOf(before, HOST)).toContain('/api/e/:slug')
       expect(okOf(before, OTHER_PARTY)).toContain('/api/e/:slug')
       expect(okOf(before, OUTSIDER)).not.toContain('/api/e/:slug')
+      // The other Party's Event read has no hostGames either, sealed cast or not (#443).
+      for (const swept of [before, after]) expect(hostGamesOf(swept.find(entry => entry.route === '/api/e/:slug' && entry.who === OTHER_PARTY)!.body!)).toBeNull()
       // The Members' 200s on the four Event routes; the non-Member's 404 there and 200 on Home are the table's (#418).
       for (const route of ['/api/e', '/api/e/:slug', '/api/e/:slug/activity', '/api/e/:slug/ics']) for (const who of [HOST, OTHER_PARTY]) expect(statusOf(before, route, who), `${route} as ${who}`).toEqual([200])
       expect(await playerRead()).toMatchObject({ team: 1, cast: true })

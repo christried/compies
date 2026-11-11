@@ -50,7 +50,7 @@ describe('Starting and ending Sessions', () => {
 
   /**
    * An Event of two Sessions (2 teams of `teamSize`) with three Slots, by the Host; Players One to Four are Members on the
-   * Bench. No Date is set yet.
+   * Stands. No Date is set yet.
    */
   async function setup({ teamSize = 2, settings = true }: { teamSize?: number, settings?: boolean } = {}) {
     const event = await setUpEvent(rig, {
@@ -128,7 +128,7 @@ describe('Starting and ending Sessions', () => {
       const game = await setup()
       await setDates(game, 1)
       await fillTeams(game)
-      await send('POST', `/api/e/${game.slug}/move`, game.cookies.four, { userId: game.ids.four, to: { zone: 'bench' } })
+      await send('POST', `/api/e/${game.slug}/move`, game.cookies.four, { userId: game.ids.four, to: { zone: 'stands' } })
 
       expect(await errorOf(await start(game))).toEqual({ status: 409, code: 'teams_uneven' })
     })
@@ -183,21 +183,17 @@ describe('Starting and ending Sessions', () => {
       expect(view.start).toEqual({ sessionId: rows[1]!.id, number: 2, rejection: 'session_running' })
     })
 
-    it('freezes every team\'s composed name into event_teams, and the Event read shows them frozen', async () => {
+    it('writes no event_teams row, and the Event read shows the names composed from the words (#438)', async () => {
       const game = await ready()
       await send('POST', `/api/e/${game.slug}/team-word`, game.cookies.one, { word: 'Wilde' })
       await send('POST', `/api/e/${game.slug}/team-word`, game.cookies.two, { word: 'Gurken' })
 
       await start(game)
 
-      const teams = await testDb.db.select().from(eventTeams).where(eq(eventTeams.eventId, game.eventId)).orderBy(eventTeams.position)
-      expect(teams.map(row => ({ position: row.position, frozenName: row.frozenName }))).toEqual([
-        { position: 1, frozenName: 'Wilde Gurken' },
-        { position: 2, frozenName: null },
-      ])
+      expect(await testDb.db.select().from(eventTeams).where(eq(eventTeams.eventId, game.eventId))).toEqual([])
       expect((await read(game, game.cookies.three)).teams).toEqual([
-        { position: 1, name: 'Wilde Gurken', frozen: true },
-        { position: 2, name: null, frozen: true },
+        { position: 1, name: 'Wilde Gurken' },
+        { position: 2, name: null },
       ])
     })
 
@@ -267,13 +263,13 @@ describe('Starting and ending Sessions', () => {
   })
 
   describe('the second start', () => {
-    it('starts the next Session, keeps the Phase, and freezes nothing again', async () => {
+    it('starts the next Session, keeps the Phase, and writes no name either', async () => {
       const game = await ready()
       await send('POST', `/api/e/${game.slug}/team-word`, game.cookies.one, { word: 'Wilde' })
       await start(game)
       await end(game)
-      // A word cannot change a frozen name, and the reset gives the colour name.
-      expect(await errorOf(await send('POST', `/api/e/${game.slug}/team-word`, game.cookies.one, { word: 'Neu' }))).toEqual({ status: 409, code: 'teams_locked' })
+      // Between the Sessions the word still changes the name (#438).
+      expect((await send('POST', `/api/e/${game.slug}/team-word`, game.cookies.one, { word: 'Neu' })).status).toBe(200)
       notifier.clear()
 
       const response = await start(game)
@@ -283,8 +279,8 @@ describe('Starting and ending Sessions', () => {
       expect(await response.json()).toEqual({ sessionId: rows[1]!.id, phase: 'running' })
       expect(rows[1]!.startedAt).toBeInstanceOf(Date)
       expect(notifier.messages(game.eventId).map(message => message.type)).toEqual(['event.changed', 'activity.added'])
-      const teams = await testDb.db.select().from(eventTeams).where(eq(eventTeams.eventId, game.eventId)).orderBy(eventTeams.position)
-      expect(teams.map(row => row.frozenName)).toEqual(['Wilde', null])
+      expect(await testDb.db.select().from(eventTeams).where(eq(eventTeams.eventId, game.eventId))).toEqual([])
+      expect((await read(game)).teams[0]).toEqual({ position: 1, name: 'Neu' })
       const entries = await testDb.db.select().from(activity).where(eq(activity.type, 'session_started')).orderBy(activity.at)
       expect(entries.map(entry => (entry.params as { number: number }).number)).toEqual([1, 2])
     })
@@ -362,21 +358,20 @@ describe('Starting and ending Sessions', () => {
   })
 
   describe('the teams after the start', () => {
-    it('lock Players out of joining and leaving, keep Bench and Tribüne free and let the Host move anyone', async () => {
+    it('lock Players out of joining and leaving, let the Host move anyone', async () => {
       const game = await ready()
       await start(game)
       const move = (cookie: string, key: keyof Game['ids'], to: Place) => send('POST', `/api/e/${game.slug}/move`, cookie, { userId: game.ids[key], to })
 
-      // A Player in a team cannot leave it; one on the Bench cannot join one.
-      expect(await errorOf(await move(game.cookies.one, 'one', { zone: 'bench' }))).toEqual({ status: 409, code: 'teams_locked' })
+      // A Player in a team cannot leave it; one on the Stands cannot join one.
+      expect(await errorOf(await move(game.cookies.one, 'one', { zone: 'stands' }))).toEqual({ status: 409, code: 'teams_locked' })
       expect(await errorOf(await move(game.cookies.one, 'one', team(2)))).toEqual({ status: 409, code: 'teams_locked' })
       const hostCookie = game.hostCookie
-      expect((await move(hostCookie, 'one', { zone: 'bench' })).status).toBe(200)
+      expect((await move(hostCookie, 'one', { zone: 'stands' })).status).toBe(200)
       expect(await errorOf(await move(game.cookies.one, 'one', team(1)))).toEqual({ status: 409, code: 'teams_locked' })
 
-      // Bench and Tribüne stay free.
-      expect((await move(game.cookies.one, 'one', { zone: 'stands' })).status).toBe(200)
-      expect((await move(game.cookies.one, 'one', { zone: 'bench' })).status).toBe(200)
+      // The Stands are the one place a Player is already in; there is nowhere else to go but a team.
+      expect(await errorOf(await move(game.cookies.one, 'one', { zone: 'stands' }))).toEqual({ status: 409, code: 'already_there' })
 
       // The Host moves a Player into a team.
       expect((await move(hostCookie, 'one', team(1))).status).toBe(200)
@@ -384,26 +379,27 @@ describe('Starting and ending Sessions', () => {
       expect(members.find(member => member.id === game.ids.one)).toMatchObject({ zone: 'team', team: 1 })
     })
 
-    it('refuse a Player\'s Team word with 409 teams_locked', async () => {
+    it('accept a Player\'s Team word, and the name follows it (#438)', async () => {
       const game = await ready()
       await start(game)
 
-      expect(await errorOf(await send('POST', `/api/e/${game.slug}/team-word`, game.cookies.one, { word: 'Wilde' }))).toEqual({ status: 409, code: 'teams_locked' })
+      expect((await send('POST', `/api/e/${game.slug}/team-word`, game.cookies.one, { word: 'Wilde' })).status).toBe(200)
+
+      expect((await read(game)).teams[0]).toEqual({ position: 1, name: 'Wilde' })
     })
 
-    it('give the colour name after the Host reset a frozen name, although words exist', async () => {
+    it('give the colour name after the Host reset, and the words are gone (#438)', async () => {
       const game = await ready()
       await send('POST', `/api/e/${game.slug}/team-word`, game.cookies.one, { word: 'Wilde' })
       await start(game)
-      expect((await read(game)).teams[0]).toEqual({ position: 1, name: 'Wilde', frozen: true })
+      expect((await read(game)).teams[0]).toEqual({ position: 1, name: 'Wilde' })
 
       const reset = await send('POST', `/api/e/${game.slug}/teams/1/reset-name`, game.hostCookie)
 
       expect(reset.status).toBe(200)
       const view = await read(game)
-      expect(view.teams[0]).toEqual({ position: 1, name: null, frozen: true })
-      // The word stays with its Player; only the frozen name changed.
-      expect(view.members.find(member => member.id === game.ids.one)!.teamWord).toBe('Wilde')
+      expect(view.teams[0]).toEqual({ position: 1, name: null })
+      expect(view.members.find(member => member.id === game.ids.one)!.teamWord).toBeNull()
     })
   })
 

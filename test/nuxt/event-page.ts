@@ -14,7 +14,7 @@ export const LARSI = '00000000-0000-4000-8000-000000000002'
 export type Vote = { slotId: string, userId: string, value: 'yes' | 'maybe' | 'no', note?: string | null }
 /** The Date fields of the Event's one Session (#48); the view puts them on a Session, not on the Event. */
 type SessionDates = { startsAt?: string | null, previousStartsAt?: string | null }
-export type EventOverrides = { event?: Partial<ReturnType<typeof eventOf>> & SessionDates, slots?: unknown[], bestSlotId?: string | null, progress?: { voted: number, total: number }, inviteUrl?: string | null, settings?: EventSettings | null, settingsFloors?: SettingsFloors | null, pool?: EventView['pool'], removedSessions?: { id: string, previousStartsAt: string }[], members?: MemberView[], teams?: BoardTeam[], teamChoiceOpen?: boolean, runningSessionId?: string | null, start?: StartView | null, rounds?: RoundView[], setGame?: SetGameView | null, wheel?: WheelView | null, countdown?: CountdownView | null, coin?: CoinView | null, ceremony?: CeremonyView | null, clip?: ClipView | null, bonusVetoes?: BonusVetoView | null, results?: ResultView[], standings?: StandingView[] | null, end?: EndView | null }
+export type EventOverrides = { event?: Partial<ReturnType<typeof eventOf>> & SessionDates, slots?: unknown[], bestSlotId?: string | null, progress?: { voted: number, total: number }, inviteUrl?: string | null, settings?: EventSettings | null, settingsFloors?: SettingsFloors | null, pool?: EventView['pool'], hostGames?: EventView['hostGames'], removedSessions?: { id: string, previousStartsAt: string }[], members?: MemberView[], teams?: BoardTeam[], teamChoiceOpen?: boolean, runningSessionId?: string | null, start?: StartView | null, rounds?: RoundView[], setGame?: SetGameView | null, wheel?: WheelView | null, countdown?: CountdownView | null, coin?: CoinView | null, ceremony?: CeremonyView | null, ceremonyShown?: boolean, clip?: ClipView | null, bonusVetoes?: BonusVetoView | null, results?: ResultView[], standings?: StandingView[] | null, end?: EndView | null }
 
 function eventOf(slug: string, phase = 'poll', isHost = false): { slug: string, name: string, phase: string, isHost: boolean } {
   return { slug, name: 'Freitags-Zocken', phase, isHost }
@@ -28,7 +28,7 @@ function defaultStart(slug: string, startsAt: string | null, setUp: boolean): St
 
 /**
  * A Member as the Event read sends them: with a picture, as every Discord and Twitch account has one (#207). A test
- * gives the id, the name and whatever it asserts on; everything else is the Bench of an ordinary Member.
+ * gives the id, the name and whatever it asserts on; everything else is the Tribüne of an ordinary Member.
  */
 export function memberView(overrides: Partial<MemberView> & Pick<MemberView, 'id' | 'name'>): MemberView {
   return { image: `https://example.com/${overrides.name}.png`, isHost: false, zone: 'stands', team: null, teamWord: null, ...overrides }
@@ -43,6 +43,8 @@ export function view(slug: string, votes: Vote[], overrides: EventOverrides = {}
     settings: overrides.settings === undefined ? null as EventSettings | null : overrides.settings,
     settingsFloors: overrides.settingsFloors === undefined ? (event.isHost ? { teamSize: 1, vetoAllowance: 0, gameCount: 0 } : null) : overrides.settingsFloors,
     pool: overrides.pool ?? null as EventView['pool'],
+    // The Tags and Notes of the games for the Host's game dialog (#443): only the Host's read has them.
+    hostGames: overrides.hostGames ?? null as EventView['hostGames'],
     // The Event's one Session, which the server sends without a number (#70).
     sessions: [{ id: `session-${slug}`, number: null, startsAt, previousStartsAt, notes: [] as SessionNote[], startedAt: null as string | null, endedAt: null as string | null }],
     removedSessions: overrides.removedSessions ?? [],
@@ -55,11 +57,11 @@ export function view(slug: string, votes: Vote[], overrides: EventOverrides = {}
       { id: 'old', startsAt: '2026-10-20T18:00:00.000Z', past: true },
     ],
     votes: votes.map(vote => ({ note: null, ...vote })),
-    // Everyone on the Bench, no teams and Team choice closed, unless a test says otherwise (#160).
+    // Everyone on the Tribüne, no teams and Team choice closed, unless a test says otherwise (#160).
     members: overrides.members ?? [
-      memberView({ id: kitty.id, name: 'Kitty', zone: 'bench' }),
-      memberView({ id: LARSI, name: 'Larsi', zone: 'bench' }),
-      memberView({ id: SANNE, name: 'Sanne', isHost: true, zone: 'bench' }),
+      memberView({ id: kitty.id, name: 'Kitty', zone: 'stands' }),
+      memberView({ id: LARSI, name: 'Larsi', zone: 'stands' }),
+      memberView({ id: SANNE, name: 'Sanne', isHost: true, zone: 'stands' }),
     ],
     teams: overrides.teams ?? [] as BoardTeam[],
     teamChoiceOpen: overrides.teamChoiceOpen ?? false,
@@ -80,6 +82,8 @@ export function view(slug: string, votes: Vote[], overrides: EventOverrides = {}
     coin: overrides.coin ?? null as CoinView | null,
     // No Award ceremony (#309) unless a test starts one: the Event read has it only for a finished Event.
     ceremony: overrides.ceremony ?? null as CeremonyView | null,
+    // The finished page of the tests that came before #445 describes the shown page; a running or poll Event has false, as the server sends it.
+    ceremonyShown: overrides.ceremonyShown ?? event.phase === 'finished',
     // No Bonus Veto (#233) unless a test gives the Host one: the read has it for the Host of a Lucky Wheel Event only.
     bonusVetoes: overrides.bonusVetoes ?? null as BonusVetoView | null,
     // No Result (#274) unless a test says so: the Event read has the Standings and the end only for an Event that is set up, and the fixture is not.

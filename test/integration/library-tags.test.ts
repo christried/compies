@@ -73,7 +73,7 @@ describe('the Game library Tags (#365)', () => {
       const cookie = await cookieOf(host)
       expect(await (await tags(cookie)).json()).toEqual([])
 
-      await created(cookie, { name: 'Mario Kart' })
+      await created(cookie, { price: { cents: 1999, source: 'steam' }, name: 'Mario Kart' })
 
       const response = await tags(cookie)
       expect(response.status).toBe(200)
@@ -82,15 +82,15 @@ describe('the Game library Tags (#365)', () => {
 
     it('answers one Tag as one entry, with no game id, count or creator', async () => {
       const cookie = await cookieOf(host)
-      await created(cookie, { name: 'Mario Kart', tags: ['Co-op'] })
+      await created(cookie, { price: { cents: 1999, source: 'steam' }, name: 'Mario Kart', tags: ['Co-op'] })
 
       expect(await (await tags(cookie)).json()).toEqual([{ key: 'co-op', label: 'Co-op' }])
     })
 
     it('answers the Tags in use once per key, by key, under the first label, as the list does', async () => {
       const cookie = await cookieOf(host)
-      await created(cookie, { name: 'Eins', tags: ['Retro', 'Co-op'] })
-      await created(cookie, { name: 'Zwei', tags: ['Ärger', 'retro'] })
+      await created(cookie, { price: { cents: 1999, source: 'steam' }, name: 'Eins', tags: ['Retro', 'Co-op'] })
+      await created(cookie, { price: { cents: 1999, source: 'steam' }, name: 'Zwei', tags: ['Ärger', 'retro'] })
 
       const answer = await (await tags(cookie)).json()
 
@@ -104,8 +104,8 @@ describe('the Game library Tags (#365)', () => {
 
     it('drops a Tag when its last game loses it, and keeps one another game carries', async () => {
       const cookie = await cookieOf(host)
-      const first = await created(cookie, { name: 'Eins', tags: ['Co-op', 'Retro'] })
-      await created(cookie, { name: 'Zwei', tags: ['Retro'] })
+      const first = await created(cookie, { price: { cents: 1999, source: 'steam' }, name: 'Eins', tags: ['Co-op', 'Retro'] })
+      await created(cookie, { price: { cents: 1999, source: 'steam' }, name: 'Zwei', tags: ['Retro'] })
 
       await edit(cookie, first.id, { name: 'Eins', tags: [] })
 
@@ -113,7 +113,7 @@ describe('the Game library Tags (#365)', () => {
     })
 
     it('answers signed-out visitors and a Member as for a missing route, and the Host and the Platform admin with the list', async () => {
-      await created(await cookieOf(host), { name: 'Mario Kart', tags: ['Co-op'] })
+      await created(await cookieOf(host), { price: { cents: 1999, source: 'steam' }, name: 'Mario Kart', tags: ['Co-op'] })
 
       for (const cookie of [undefined, await cookieOf(member)]) {
         const response = await tags(cookie)
@@ -130,9 +130,9 @@ describe('the Game library Tags (#365)', () => {
 
   it('answers every game of a batch with its own Tags, a Tag-less game among them, on the list and the detail', async () => {
     const cookie = await cookieOf(host)
-    const charlie = await created(cookie, { name: 'Charlie', tags: ['Retro'] })
-    const alpha = await created(cookie, { name: 'Alpha', tags: ['Co-op', 'Party'] })
-    const bravo = await created(cookie, { name: 'Bravo' })
+    const charlie = await created(cookie, { price: { cents: 1999, source: 'steam' }, name: 'Charlie', tags: ['Retro'] })
+    const alpha = await created(cookie, { price: { cents: 1999, source: 'steam' }, name: 'Alpha', tags: ['Co-op', 'Party'] })
+    const bravo = await created(cookie, { price: { cents: 1999, source: 'steam' }, name: 'Bravo' })
 
     const listed = ((await (await list(cookie)).json()) as GameList).games
     const byName = (name: string) => listed.find(game => game.name === name)!.tags

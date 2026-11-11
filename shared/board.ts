@@ -1,4 +1,4 @@
-// The Game board rules (GLOSSARY: Game board, Team choice, Bench, Stands; spec #153 § Game board rules module, #160).
+// The Game board rules (GLOSSARY: Game board, Team choice, Stands; spec #153 § Game board rules module, #160).
 // Pure, so the server enforces them and the board's MoveToMenu shows the same reasons. The Worker reaches this file
 // through shared/realtime.ts (the `Place` in `member.moved`), so it imports nothing outside shared/. It keeps places, moves,
 // seats, Team names and states; a Session's state and the start rule are in shared/session-state.ts (#226).
@@ -8,20 +8,27 @@ import { isRecord } from './record'
 /** What the board needs of an Event's settings (EventSettings has it). Declared here so this file imports nothing but shared/record. */
 export interface BoardSettings { teamCount: number, teamSize: number }
 
-/** The zones a Member row can stand in; the schema's `member_zone` enum, the Event read and `placeOf` spell it from here (review 1.4 A9). */
+/**
+ * The zones a Member row can stand in; the schema's `member_zone` enum, the Event read and `placeOf` spell it from here (review 1.4 A9).
+ * `bench` is legacy (#437): only the deployment before 0.12 writes it, and the code reads it as the Stands.
+ */
 export const ZONES = ['bench', 'stands', 'team'] as const
 export type Zone = (typeof ZONES)[number]
 
-/** Where a Member stands on the Game board: the Bench, the Stands (Tribüne) or a team by its position (1..team count). */
-export type Place = { zone: Exclude<Zone, 'team'> } | { zone: 'team', team: number }
+/** Where a Member stands on the Game board: the Stands (Tribüne) or a team by its position (1..team count). The board knows no Bench (#437). */
+export type Place = { zone: 'stands' } | { zone: 'team', team: number }
+
+/** The zone of a Place: what the Event read sends and the board draws. */
+export type PlaceZone = Place['zone']
 
 /**
  * The place a Member row stands for (the Event read's and the table's `zone` and `team`). `team` is set exactly when the zone
- * is `team`: the DB check `event_members_team_zone_check` makes a `team` row with a null `team` impossible, so the Bench
- * fallback is a defensive default and no row the table holds reaches it (A9).
+ * is `team`: the DB check `event_members_team_zone_check` makes a `team` row with a null `team` impossible, so the Stands
+ * fallback for it is a defensive default and no row the table holds reaches it (A9). Everything else is the Stands, a legacy
+ * `bench` row too (#437: the deployment before 0.12 may write one until the switch-over).
  */
 export function placeOf(row: { zone: Zone, team: number | null }): Place {
-  return row.zone === 'team' && row.team !== null ? { zone: 'team', team: row.team } : { zone: row.zone === 'stands' ? 'stands' : 'bench' }
+  return row.zone === 'team' && row.team !== null ? { zone: 'team', team: row.team } : { zone: 'stands' }
 }
 
 /** Why a move is refused. `teams_locked` needs `started`: the first Session has started (#164). */
@@ -59,7 +66,7 @@ function samePlace(a: Place, b: Place): boolean {
 
 /**
  * The reason a move is refused, or null when it may happen. A Player moves only themselves, and into or out of a team
- * only while Team choice is open; Bench and Stands are always free. The Host moves anyone at any time, within the
+ * only while Team choice is open (a team is the only place that is not free); the Host moves anyone at any time, within the
  * Team size.
  */
 export function moveRejection({ actorId, actorIsHost, userId, from, to, settings, teamChoiceOpen: choiceOpen, started, seats }: MoveCheck): MoveRejection | null {
@@ -74,7 +81,7 @@ export function moveRejection({ actorId, actorIsHost, userId, from, to, settings
   return null
 }
 
-/** The Players per team position of these places (Bench and Stands count for no team). */
+/** The Players per team position of these places (the Stands count for no team). */
 export function countSeats(places: readonly Place[]): Seats {
   const seats: Record<number, number> = {}
   for (const place of places) {
@@ -95,10 +102,10 @@ export function teamWords(seats: readonly TeamSeat[]): string[] {
 }
 
 /**
- * The Team name (GLOSSARY: Team name, #161, #164). `frozen` undefined means the team is not frozen: the name is
- * composed from its words in the order given (teamWords), joined by a space. From the first Session start `frozen` is
- * what `event_teams.frozen_name` holds: the string, or null for the Team colour's name, which stays null even when
- * words exist (the Host reset it). Null means the client shows the Team colour's name.
+ * The Team name (GLOSSARY: Team name, #161, #438). `frozen` undefined means the name is composed from its words in the
+ * order given (teamWords), joined by a space. A value is what `event_teams.frozen_name` holds, read only in an Event
+ * finished before 0.12 (the previous deployment may still write rows): the string, or null for the Team colour's name,
+ * which stays null even when words exist. Null means the client shows the Team colour's name.
  */
 export function composedTeamName({ frozen, words }: { frozen?: string | null, words: readonly string[] }): string | null {
   if (frozen !== undefined) return frozen
@@ -110,7 +117,7 @@ export interface TeamMember { team: number | null, teamWord: string | null, team
 
 /**
  * The Team name of one team from the Event's Members (composedTeamName of its words, teamWords): the Event read shows it
- * and the first start freezes it (#161, #164). `frozen` is the frozen name, or undefined while the team is not frozen.
+ * (#161). `frozen` is the stored name of a finished Event (#438), or undefined: then the name is composed.
  */
 export function composeTeamName(members: readonly TeamMember[], position: number, frozen?: string | null): string | null {
   const seats = members
@@ -126,11 +133,12 @@ export function parseTeamPosition(raw: string): number | null {
   return position >= 1 ? position : null
 }
 
-/** The place a request names, or null when it is none: a zone, and for `team` a whole position (its range is moveRejection's). */
+/** The place a request names, or null when it is none: the Stands, and for `team` a whole position (its range is moveRejection's). */
 export function parsePlace(value: unknown): Place | null {
   if (!isRecord(value)) return null
   const { zone, team } = value
-  if (zone === 'bench' || zone === 'stands') return { zone }
+  // `bench` is what an old browser tab still sends (#437): the Stands.
+  if (zone === 'stands' || zone === 'bench') return { zone: 'stands' }
   if (zone === 'team' && typeof team === 'number' && Number.isInteger(team)) return { zone, team }
   return null
 }

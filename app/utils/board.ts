@@ -12,15 +12,16 @@ export function placeKey(place: Place): string {
 
 /** The place a `data-drop-zone` key stands for, or null for a key that is none. */
 export function placeFromKey(key: string | undefined): Place | null {
-  if (key === 'bench' || key === 'stands') return { zone: key }
+  if (key === 'stands') return { zone: 'stands' }
   const team = /^team-(\d+)$/.exec(key ?? '')
   return team ? { zone: 'team', team: Number(team[1]) } : null
 }
 
 /**
  * The name a team is shown with (#161): its Team name when it has one (a BoardTeam from the Event read), else the Team
- * colour's name („Team Rot“), the rule of shared/team-name.ts with vue-i18n's copy. A bare position is always the colour's name:
- * the Activity feed keeps it, because its entries store the position and a name that changes later would rewrite history.
+ * colour's name („Team Rot“), the rule of shared/team-name.ts with vue-i18n's copy. A bare position is always the colour's name. The
+ * Activity feed's entries store the Team name of their moment (#440) and show that; a bare position is only the colour of a stored null
+ * and of an entry from before 0.12 that never named a team by a name.
  */
 export function teamName(team: BoardTeam | number, t: Translate): string {
   const [own, position] = typeof team === 'number' ? [null, team] : [team.name, team.position]

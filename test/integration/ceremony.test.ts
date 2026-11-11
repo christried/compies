@@ -304,4 +304,57 @@ describe('starting the Award ceremony (#309)', () => {
       expect(await feedOf(game)).toEqual(entries)
     })
   })
+
+  describe('whether the ceremony has been shown (#445)', () => {
+    const shownOf = async (game: Event, cookie = game.hostCookie) => (await (await send('GET', `/api/e/${game.slug}`, cookie)).json() as EventView).ceremonyShown
+    const storedShown = async (game: Event) => (await testDb.db.select({ shown: events.ceremonyShown }).from(events).where(eq(events.id, game.eventId)))[0]!.shown
+
+    it('reads false before the first start for the Host, a Player and a Member on the Stands', async () => {
+      const game = await event()
+
+      expect(await shownOf(game)).toBe(false)
+      expect(await shownOf(game, game.cookies.one)).toBe(false)
+      expect(await shownOf(game, game.cookies.two)).toBe(false)
+    })
+
+    it('reads true for everybody from the first start on', async () => {
+      const game = await event()
+
+      await start(game)
+
+      expect(await storedShown(game)).toBe(true)
+      expect(await shownOf(game)).toBe(true)
+      expect(await shownOf(game, game.cookies.one)).toBe(true)
+      expect(await shownOf(game, game.cookies.two)).toBe(true)
+    })
+
+    it('keeps true on a restart after the end of the run, and the run refuses a restart before it', async () => {
+      const game = await event()
+      source.override = () => 0
+      await start(game)
+      const endsAt = STARTS + END_MS[2].trip
+
+      clock.set(new Date(endsAt - 1))
+      expect(await errorOf(await start(game))).toEqual({ status: 409, code: 'ceremony_running' })
+      expect(await shownOf(game)).toBe(true)
+
+      clock.set(new Date(endsAt))
+      expect((await start(game)).status).toBe(200)
+      expect(await shownOf(game)).toBe(true)
+    })
+
+    it('counts a stored start as shown, as the previous deployment writes only the start and the gag', async () => {
+      const game = await event()
+      await testDb.db.update(events).set({ ceremonyStartsAt: new Date(STARTS), ceremonyGag: 'trip', ceremonyShown: false }).where(eq(events.id, game.eventId))
+
+      expect(await shownOf(game)).toBe(true)
+      expect(await shownOf(game, game.cookies.one)).toBe(true)
+    })
+
+    it('reads false for an Event that is not finished', async () => {
+      const game = await event({ finished: false })
+
+      expect(await shownOf(game)).toBe(false)
+    })
+  })
 })

@@ -38,13 +38,21 @@ export function vetoRead({ left, own = null, revealed = null, draw = expect.obje
   return { left, own, revealed, draw }
 }
 
-export interface Secret { id: string, name: string, videoId: string, notes: string, tag: string, imageUrl: string, imageKey: string, cents: number, price: GamePrice | null }
+export interface Secret { id: string, name: string, videoId: string, notes: string, tag: string, imageUrl: string, imageKey: string, cents: number, price: GamePrice | null, playersMin: number, playersMax: number }
 
 // The Price's amount is a trace (#338): distinct per game, it names the game whose Price a read carries.
 export const priceTrace = (secret: Secret) => `"cents":${secret.cents}`
-export const traces = (secret: Secret) => [secret.name, secret.id, secret.imageKey, secret.videoId, secret.notes, priceTrace(secret)]
-// The Host's read holds every trace but a Tag: Tags live in the library only (#335).
+// The player count is a trace too (#444): two-digit and distinct per game, so `"playersMin":11` cannot match `"playersMin":110`. Every game has the one Suitability
+// `teams` (a Suitability cannot name its game), so the Suitabilities are guarded by `expectNoGameFacts` instead.
+export const playersTraces = (secret: Secret) => [`"playersMin":${secret.playersMin}`, `"playersMax":${secret.playersMax}`]
+export const traces = (secret: Secret) => [secret.name, secret.id, secret.imageKey, secret.videoId, secret.notes, priceTrace(secret), ...playersTraces(secret)]
+// The Host's read holds every trace, the Tag too, in `hostGames` (#443); a Player's holds none of them, so the Tag is a player trace like the rest (#335).
 export const playerTraces = (secret: Secret) => [...traces(secret), secret.tag]
+
+/** A read that shows no game at all carries no game fact key either (#444): no player count and no Suitabilities, which have no trace of their own. */
+export function expectNoGameFacts(...texts: string[]) {
+  for (const raw of texts) for (const key of ['"playersMin"', '"playersMax"', '"suitabilities"']) expect(raw, `carries ${key}`).not.toContain(key)
+}
 
 export function expectNone(what: Record<string, string>, secrets: readonly Secret[], include: (secret: Secret) => string[] = playerTraces) {
   for (const [place, raw] of Object.entries(what)) {
@@ -232,14 +240,18 @@ export function hiddenWheelWorld() {
   async function newGame(name: string, videoId: string): Promise<Secret> {
     // Every game carries notes (#224): a Player must not get them under a Hidden wheel.
     const notes = `Hausregel fuer ${name}`
-    // Lower case, so the key and the label are one string; no Event read carries a Tag, not even the Host's (#335).
+    // Lower case, so the key and the label are one string; only the library and the Host's `hostGames` carry a Tag (#335, #443): no Player's read does.
     const tag = `tag-${name.split(' ')[0]!.toLowerCase()}`
     // Distinct cents per game (#338): the amount names its game in a read.
     const cents = 1000 + 111 * (name.charCodeAt(0) - 64)
+    // Distinct player counts per game (#444), two-digit each; every game suits teams.
+    const n = name.charCodeAt(0) - 64
+    const playersMin = 10 + n
+    const playersMax = 50 + n
     const created = await request('/api/games', {
       method: 'POST',
       headers: { 'content-type': 'application/json', 'cookie': hostSigned.cookie },
-      body: JSON.stringify({ name, youtubeUrl: `https://youtu.be/${videoId}`, notes, tags: [tag], price: { cents, source: 'steam' } }),
+      body: JSON.stringify({ name, youtubeUrl: `https://youtu.be/${videoId}`, notes, tags: [tag], price: { cents, source: 'steam' }, playersMin, playersMax, suitabilities: ['teams'] }),
     })
     expect(created.status).toBe(200)
     const { id, price } = await created.json() as GameView
@@ -251,7 +263,7 @@ export function hiddenWheelWorld() {
     expect(uploaded.status).toBe(200)
     const view = await uploaded.json() as GameView
     expect(view.youtubeId).toBe(videoId)
-    return { id, name, videoId, notes, tag, imageUrl: view.imageUrl!, imageKey: view.imageUrl!.slice('/api/images/'.length), cents, price }
+    return { id, name, videoId, notes, tag, imageUrl: view.imageUrl!, imageKey: view.imageUrl!.slice('/api/images/'.length), cents, price, playersMin, playersMax }
   }
 
   /** A, B in the Game pool, C in the library only (#279: there is no Tiebreaker pool); the Player has joined. */
@@ -309,7 +321,9 @@ export function hiddenWheelWorld() {
     traces,
     playerTraces,
     priceTrace,
+    playersTraces,
     expectNone,
+    expectNoGameFacts,
     runningEvent,
     imageStatus,
     whatThePlayerGets,

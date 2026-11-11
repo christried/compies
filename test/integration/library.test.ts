@@ -113,7 +113,7 @@ describe('the Game library API (#141)', () => {
       expect(row).toMatchObject({ name: 'Mario Kart', youtubeId: 'dQw4w9WgXcQ', clipStart: 72, clipLength: 45, imageKey: null })
       expect(game).toEqual({
         id: row!.id, name: 'Mario Kart', imageUrl: null, youtubeId: 'dQw4w9WgXcQ', clipStart: 72, clipLength: 45,
-        playersMin: null, playersMax: null, suitabilities: [], tags: [], price: null,
+        playersMin: null, playersMax: null, suitabilities: [], tags: [{ key: 'free-to-play', label: 'Free-to-play' }], price: null,
         createdBy: { id: row!.createdBy, name: 'Hostess' }, createdAt: row!.createdAt.toISOString(), canEdit: true, notes: null,
       })
     })
@@ -579,7 +579,7 @@ describe('the Game library API (#141)', () => {
     it('stores the Tags trimmed and collapsed, in the order sent, and answers them on the game, the list and the detail', async () => {
       const cookie = await cookieOf(host)
 
-      const game = await created(cookie, { name: 'Mario Kart', tags: ['  Co-op ', 'Battle   Royale'] })
+      const game = await created(cookie, { price: { cents: 1999, source: 'steam' }, name: 'Mario Kart', tags: ['  Co-op ', 'Battle   Royale'] })
 
       const expected = [{ key: 'co-op', label: 'Co-op' }, { key: 'battle royale', label: 'Battle Royale' }]
       expect(game.tags).toEqual(expected)
@@ -594,7 +594,7 @@ describe('the Game library API (#141)', () => {
     it('gives a game without tags an empty list, and the library no Tags in use', async () => {
       const cookie = await cookieOf(host)
 
-      const game = await created(cookie, { name: 'Mario Kart' })
+      const game = await created(cookie, { price: { cents: 1999, source: 'steam' }, name: 'Mario Kart' })
 
       expect(game.tags).toEqual([])
       expect(await tagsInUse(cookie)).toEqual([])
@@ -605,8 +605,8 @@ describe('the Game library API (#141)', () => {
       const cookie = await cookieOf(host)
       const eight = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h']
 
-      const game = await created(cookie, { name: 'Mario Kart', tags: eight })
-      const flags = await created(cookie, { name: 'Flaggen', tags: [flag.repeat(20)] })
+      const game = await created(cookie, { price: { cents: 1999, source: 'steam' }, name: 'Mario Kart', tags: eight })
+      const flags = await created(cookie, { price: { cents: 1999, source: 'steam' }, name: 'Flaggen', tags: [flag.repeat(20)] })
 
       expect(game.tags.map(tag => tag.label)).toEqual(eight)
       expect(flags.tags).toEqual([{ key: flag.repeat(20), label: flag.repeat(20) }])
@@ -632,7 +632,7 @@ describe('the Game library API (#141)', () => {
 
     it('keeps the game and its Tags when an edit is refused', async () => {
       const cookie = await cookieOf(host)
-      const { id } = await created(cookie, { name: 'Mario Kart', tags: ['Co-op'] })
+      const { id } = await created(cookie, { price: { cents: 1999, source: 'steam' }, name: 'Mario Kart', tags: ['Co-op'] })
 
       const response = await edit(cookie, id, { name: 'Neu', tags: ['a', 'A'] })
 
@@ -643,7 +643,7 @@ describe('the Game library API (#141)', () => {
 
     it('reorders, adds and drops Tags on an edit and answers the new order', async () => {
       const cookie = await cookieOf(host)
-      const { id } = await created(cookie, { name: 'Mario Kart', tags: ['Co-op', 'Party'] })
+      const { id } = await created(cookie, { price: { cents: 1999, source: 'steam' }, name: 'Mario Kart', tags: ['Co-op', 'Party'] })
 
       const response = await edit(cookie, id, { name: 'Mario Kart', tags: ['Retro', 'Co-op'] })
 
@@ -656,7 +656,7 @@ describe('the Game library API (#141)', () => {
 
     it('clears every Tag with an empty list', async () => {
       const cookie = await cookieOf(host)
-      const { id } = await created(cookie, { name: 'Mario Kart', tags: ['Co-op', 'Party'] })
+      const { id } = await created(cookie, { price: { cents: 1999, source: 'steam' }, name: 'Mario Kart', tags: ['Co-op', 'Party'] })
 
       const response = await edit(cookie, id, { name: 'Mario Kart', tags: [] })
 
@@ -666,7 +666,7 @@ describe('the Game library API (#141)', () => {
 
     it('keeps the Tags when an edit sends none, as a browser tab of 0.9 does', async () => {
       const cookie = await cookieOf(host)
-      const { id } = await created(cookie, { name: 'Mario Kart', tags: ['Co-op', 'Party'] })
+      const { id } = await created(cookie, { price: { cents: 1999, source: 'steam' }, name: 'Mario Kart', tags: ['Co-op', 'Party'] })
 
       const response = await edit(cookie, id, { name: 'Mario Kart 8' })
 
@@ -676,7 +676,7 @@ describe('the Game library API (#141)', () => {
 
     it('keeps the spelling a Tag already has on the game when it is typed in another case', async () => {
       const cookie = await cookieOf(host)
-      const { id } = await created(cookie, { name: 'Mario Kart', tags: ['Co-op'] })
+      const { id } = await created(cookie, { price: { cents: 1999, source: 'steam' }, name: 'Mario Kart', tags: ['Co-op'] })
 
       const response = await edit(cookie, id, { name: 'Mario Kart', tags: ['CO-OP', 'Party'] })
 
@@ -685,9 +685,9 @@ describe('the Game library API (#141)', () => {
 
     it('shows a Tag under the spelling first used in the library, on a second game too', async () => {
       const cookie = await cookieOf(host)
-      await created(cookie, { name: 'Mario Kart', tags: ['Co-op'] })
+      await created(cookie, { price: { cents: 1999, source: 'steam' }, name: 'Mario Kart', tags: ['Co-op'] })
 
-      const second = await created(cookie, { name: 'Halo', tags: ['CO-OP'] })
+      const second = await created(cookie, { price: { cents: 1999, source: 'steam' }, name: 'Halo', tags: ['CO-OP'] })
 
       expect(second.tags).toEqual([{ key: 'co-op', label: 'Co-op' }])
       expect(await tagRows(second.id)).toEqual([{ key: 'co-op', label: 'Co-op', position: 0 }])
@@ -696,8 +696,8 @@ describe('the Game library API (#141)', () => {
 
     it('lists the Tags in use once per key, by key with the umlaut where German sorts it', async () => {
       const cookie = await cookieOf(host)
-      await created(cookie, { name: 'Eins', tags: ['Retro', 'Co-op'] })
-      await created(cookie, { name: 'Zwei', tags: ['Ärger', 'retro'] })
+      await created(cookie, { price: { cents: 1999, source: 'steam' }, name: 'Eins', tags: ['Retro', 'Co-op'] })
+      await created(cookie, { price: { cents: 1999, source: 'steam' }, name: 'Zwei', tags: ['Ärger', 'retro'] })
 
       expect(await tagsInUse(cookie)).toEqual([
         { key: 'ärger', label: 'Ärger' },
@@ -708,8 +708,8 @@ describe('the Game library API (#141)', () => {
 
     it('drops a Tag from the Tags in use when its last game loses it, and keeps one another game carries', async () => {
       const cookie = await cookieOf(host)
-      const first = await created(cookie, { name: 'Eins', tags: ['Co-op', 'Retro'] })
-      await created(cookie, { name: 'Zwei', tags: ['Retro'] })
+      const first = await created(cookie, { price: { cents: 1999, source: 'steam' }, name: 'Eins', tags: ['Co-op', 'Retro'] })
+      await created(cookie, { price: { cents: 1999, source: 'steam' }, name: 'Zwei', tags: ['Retro'] })
 
       await edit(cookie, first.id, { name: 'Eins', tags: [] })
 
@@ -717,7 +717,7 @@ describe('the Game library API (#141)', () => {
     })
 
     it('refuses another Host\'s edit of the Tags, and answers a Member as for a missing route', async () => {
-      const { id } = await created(await cookieOf(host), { name: 'Mario Kart', tags: ['Co-op'] })
+      const { id } = await created(await cookieOf(host), { price: { cents: 1999, source: 'steam' }, name: 'Mario Kart', tags: ['Co-op'] })
 
       const other = await edit(await cookieOf(otherHost), id, { name: 'Mario Kart', tags: [] })
       const guest = await edit(await cookieOf(member), id, { name: 'Mario Kart', tags: [] })
