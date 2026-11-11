@@ -30,9 +30,9 @@ const free = computed(() => Math.max(props.size - props.taken, 0))
 
 <template>
   <div
-    class="flex min-w-0 flex-col rounded-[14px] border-line bg-surface text-ink transition-[box-shadow,border-color] dur-fast"
+    class="flex min-w-0 flex-col rounded-[14px] bg-surface text-ink transition-[box-shadow,border-color] dur-fast"
     :class="[
-      dropTarget ? 'border-[3px] border-focus shadow-card' : mine ? 'border-[3px] shadow-card' : 'border-(length:--cp-bw)',
+      dropTarget ? 'border-[3px] border-focus shadow-card' : mine ? 'border-[3px] border-line shadow-card' : 'border-(length:--cp-bw) border-line',
     ]"
     role="group"
     :aria-label="t('board.zoneAria', { name, n: free, size })"
