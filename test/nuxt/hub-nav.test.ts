@@ -226,6 +226,20 @@ describe('HubNav on an Event page', () => {
     expect(pill.classes()).toContain('h-[18px]')
   })
 
+  it('does not play the enter while Vue hydrates a server-rendered header, so a full load does not flash the line (#426)', async () => {
+    const nuxtApp = useNuxtApp()
+    const was = nuxtApp.isHydrating
+    nuxtApp.isHydrating = true
+    try {
+      const nav = await mountSuspended(HubNav, { props: { layout: 'header', context: context() }, route: EVENT })
+
+      expect(nav.findComponent({ name: 'Transition' }).props('appear')).toBe(false)
+    }
+    finally {
+      nuxtApp.isHydrating = was
+    }
+  })
+
   // 15-header-eventseite § HubNav Motion: jsdom computes no transition, so the test reads the classes and the tokens they stand for.
   it('lets the second line in with dur-base and ease-out from 4 px below, and cross-fades a change of name and Phase with dur-fast', async () => {
     const nav = await mountSuspended(HubNav, { props: { layout: 'header', context: context() }, route: EVENT })

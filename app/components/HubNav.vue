@@ -74,6 +74,8 @@ onBeforeUnmount(() => observer?.disconnect())
 
 // Row 2 arrives with Events (04-motion: dur-base, ease-out, from 4 px below; no leave), and a change of name or Phase cross-fades (dur-fast).
 // Under reduced motion everything appears at once.
+// Only a client-side mount plays the enter: `appear` would also fire on the server-rendered header while Vue hydrates it, drawing, hiding and fading the line in on every full load (#426).
+const arrives = !useNuxtApp().isHydrating
 const OFF = 'motion-reduce:transition-none reduced:transition-none'
 const ENTER = `transition-[opacity,translate] dur-base ease-out ${OFF}`
 const FADE = `transition-opacity dur-fast ease-out ${OFF}`
@@ -127,7 +129,7 @@ const FADE = `transition-opacity dur-fast ease-out ${OFF}`
             {{ item.label }}
           </span>
           <Transition
-            appear
+            :appear="arrives"
             :enter-active-class="ENTER"
             enter-from-class="opacity-0 translate-y-1"
           >
