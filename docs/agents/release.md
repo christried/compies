@@ -67,7 +67,7 @@ Which case applies depends on what `staging` holds after the cut.
 Releases count from 0.1 while COMPIES is being built; 1.0.0 is the Release the user declares ready, never an agent. Until 0.5.1 the Releases were numbered 1.x; 0.5.1 renumbers them `1.N.p` → `0.(N+1).p` (1.0.0 is 0.1.0, 1.4.0 is 0.5.0), tags included. The tags `v0.2.2`, `v0.3.0`, `v0.4.0` and `v0.5.0` go on the commits of `v1.1.2`, `v1.2.0`, `v1.3.0` and `v1.4.0` (`git rev-parse v1.x.y^{}`) after the 0.5.1 Release merge, annotated with the new number; the `v1.x` tags are deleted on `origin` only after the user's OK (#220). Specs, issues, reviews, ADRs and code comments written before keep the old numbers; `docs/roadmap.md` maps them.
 
 - A Release with a new feature raises the minor number and resets the patch number: `0.2.1` → `0.3.0`.
-- A Release with fixes only raises the patch number: `0.2.1` → `0.2.2`.
+- A Release with fixes only raises the patch number: `0.2.1` → `0.2.2`. So does a Release with small additions, and each further part of a big Release that was split: 0.13 „Glücksrad & Clip“ ships as `0.13.0`, `0.13.1`, `0.13.2` and `0.13.3` (decided 2026-11-11).
 - From 1.0.0 on, the major number is reserved for a break Users feel, for example everyone having to sign in again. Before 1.0.0, such a break raises the minor number.
 
 ## Checks
