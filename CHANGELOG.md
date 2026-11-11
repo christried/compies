@@ -2,12 +2,17 @@
 
 ## [Unreleased]
 
+### Neu
+
+- **Speichern und noch eins:** Legst du mehrere Spiele hintereinander an, speichert „Speichern und noch eins“ das Spiel und leert das Formular für das nächste; der Cursor steht gleich im Namen. Nichts wird übernommen, auch das Bild nicht. „Spiel anlegen“ führt wie bisher auf die Seite des Spiels. ([#456](https://github.com/christried/compies/issues/456))
+
 ### Geändert
 
 - **Der Clip läuft für alle gleich:** Das Video im Clip nimmt in einer Session keinen Tipp, Klick und keine Taste mehr an. Niemand kann es anhalten, YouTubes „Weitere Videos“ erscheinen nicht, und kein Link führt aus dem Event heraus. Stoppt dein Gerät das Video von sich aus, etwa durch die Kopfhörer-Taste, springt es zur Sekunde der anderen und läuft weiter. Ton an und aus, „Für mich schließen“ und für den Host „Clip überspringen“ bleiben. Der Titel des Videos zeigt sich in den ersten Sekunden: YouTube erlaubt nicht, ihn zu verbergen. ([#509](https://github.com/christried/compies/issues/509))
 - **Clips von 10 bis 120 s:** Du kannst einem Spiel jetzt einen Clip von 10 bis 120 Sekunden geben, bisher 5 bis 60. Im Spielformular trägst du Start, Ende und Länge ein, zwei davon genügen: Die beiden Felder, die du zuletzt geändert hast, gelten, das dritte rechnet sich von selbst mit. Ein Clip, der kürzer als 10 Sekunden war, läuft jetzt 10 Sekunden ab derselben Stelle. ([#507](https://github.com/christried/compies/issues/507), [#508](https://github.com/christried/compies/issues/508))
 - **Das Veto-Fenster passt zum Clip:** Es dauert jetzt so lange wie der Clip des gezogenen Spiels plus 30 Sekunden, bei einem Spiel ohne Video 30 Sekunden. Bisher waren es immer 60. Die Karte eines Spiels ohne Video bleibt dabei höchstens 30 Sekunden stehen. Überspringt der Host den Clip, endet das Fenster 30 Sekunden nach dem Überspringen, wenn das früher ist; länger wird es dadurch nie. Die Uhr zählt in Minuten und Sekunden. ([#505](https://github.com/christried/compies/issues/505), [#506](https://github.com/christried/compies/issues/506))
 - **Neues Ergebnis-Bild:** Das Bild zum Teilen ist jetzt eine „Anzeigetafel“: oben der Name des Events mit den Terminen, groß in der Teamfarbe der Sieger mit seinen Punkten, dazu die Tabelle und die gespielten Spiele als schlichte Zeilen. Zu lange Namen werden mit „…“ gekürzt, lange Listen mit „+N weitere“. Endet ein Event unentschieden, steht jeder Sieger auf einem eigenen Band in seiner Teamfarbe, ab sieben Siegern die ersten fünf und „+N weitere“. Ein Spiel mit mehreren Erstplatzierten trägt einen geteilten Streifen. Das neue Bild gibt es auch für Events, die schon vorher zu Ende gingen. ([#510](https://github.com/christried/compies/issues/510), [#511](https://github.com/christried/compies/issues/511))
+- **Die Zahl der Vetos bleibt bis zum Start verborgen:** Bevor die erste Session eines Events startet, weiß nur der Host, wie viele Vetos jede Partei hat. Alle anderen lesen in „So wird gespielt“ „Vetos: Anzahl erst zum Start“ und erfahren die Zahl auch sonst nirgends. Mit dem Start der ersten Session sehen sie alle, auch zwischen den Sessions und wenn das Event beendet ist. Bei Host-Wahl bleibt alles, wie es war. ([#453](https://github.com/christried/compies/issues/453))
 
 ### Behoben
 
