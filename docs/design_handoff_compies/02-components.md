@@ -14,6 +14,7 @@ Common rules for every component:
 ## Index
 - [`AppButton`](#appbutton) [MVP]
 - [`IconButton`](#iconbutton) [MVP]
+- [`HintElement`](#hintelement) [0.13.1]
 - [`HoldToConfirmButton`](#holdtoconfirmbutton) [MVP]
 - [`TextField`](#textfield) [MVP]
 - [`DateTimeField`](#datetimefield) [MVP]
@@ -128,6 +129,18 @@ Round icon-only button (sound toggle, close, remove slot).
 - **Desktop / mobile:** Visual 32–40 px, hit area always ≥ 44 (`hit-44`). The Note editor's ✓ and ✗ are 36 px with an 8 px gap, so their 44 px hit areas touch (#124).
 - **Accessibility:** `aria-label` required; toggles use `aria-pressed`. Tooltip on hover/focus (desktop) with the same label.
 - **Motion:** as AppButton.
+
+## HintElement
+**Scope:** [0.13.1] · **Ref:** none, own build from IconButton and the popover look (#515)
+
+A small round „?“ that opens a popover with a short hint. Used first by the game form (#465), where its caller hides it on devices without a fine pointer.
+
+- **Props / variants:** `label?` (the button's accessible name, default „Hinweis anzeigen“), `text?` (the short text), `size: 32 | 36 | 40` (default 32, passed on to IconButton). The icon is lucide `CircleHelp`, as the Event stepper's info button.
+- **States:** closed · open (popover in the Notes popover's look: `rounded-[18px]`, line border, `bg-surface`, `shadow-modal`, on `layer-popover`, so above a Sheet). A click toggles; Esc, a press outside, a scroll outside the popover and a window resize close it.
+- **Slots:** default (replaces `text` for a richer hint)
+- **Desktop / mobile:** A popover at every width, no sheet. As wide as its content up to 288 px; placed by `placeNotePopover`: above the button with a 12 px gap, below when there is no room, 12 px inside the window's edges, and capped to the roomier side with its own scroll when it fits on neither (#494). The component does no media query and takes its place in the page from its caller's class.
+- **Accessibility:** the button carries `aria-expanded` at all times and `aria-controls` while open; the popover is `role="note"` and holds no control, so the focus stays on the button and returns to it on every close. Esc stops at the hint: it does not close a Sheet around it, the next Esc does.
+- **Motion:** the popover enters with `animate-enter` (04-motion § UI enters; reduced motion handled there). Nothing else moves.
 
 ## HoldToConfirmButton
 **Scope:** [MVP] · **Ref:** DS Basics, VetoWindow, DS Game
