@@ -75,7 +75,12 @@ onBeforeUnmount(() => observer?.disconnect())
 // Row 2 arrives with Events (04-motion: dur-base, ease-out, from 4 px below; no leave), and a change of name or Phase cross-fades (dur-fast).
 // Under reduced motion everything appears at once.
 // Only a client-side mount plays the enter: `appear` would also fire on the server-rendered header while Vue hydrates it, drawing, hiding and fading the line in on every full load (#426).
-const arrives = !useNuxtApp().isHydrating
+// The server renders the line (its `arrives` is false), and so does the hydrating client.
+// A client-side switch builds the header while the Event page's `setup` is still awaiting its data, inside the router's pending Suspense, and Vue calls no Transition hook for what mounts
+// there (`needTransition` in runtime-core): the line appeared without its enter (#498). So that switch leaves the Transition out of the first render and mounts it once the header is mounted, which for a pending Suspense is when the page is in.
+const arrives = import.meta.client && !useNuxtApp().isHydrating
+const mounted = ref(!arrives)
+onMounted(() => (mounted.value = true))
 const OFF = 'motion-reduce:transition-none reduced:transition-none'
 const ENTER = `transition-[opacity,translate] dur-base ease-out ${OFF}`
 const FADE = `transition-opacity dur-fast ease-out ${OFF}`
@@ -129,6 +134,7 @@ const FADE = `transition-opacity dur-fast ease-out ${OFF}`
             {{ item.label }}
           </span>
           <Transition
+            v-if="mounted"
             :appear="arrives"
             :enter-active-class="ENTER"
             enter-from-class="opacity-0 translate-y-1"

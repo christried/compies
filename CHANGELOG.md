@@ -20,6 +20,10 @@
 - **Aktivität: Teams heißen, wie sie damals hießen:** Jeder Eintrag in der Aktivität nennt ein Team so, wie es in diesem Moment hieß, mit dem Zeichen seiner Teamfarbe daneben. Benennt sich ein Team später um, behalten die alten Einträge den alten Namen. Auch Verschiebungen, Zurücksetzungen und Bonus-Vetos nennen nicht mehr nur die Farbe. Tabelle, Spielverlauf und alles andere zeigen weiter den aktuellen Namen, und Einträge aus der Zeit davor bleiben, wie sie waren. ([#440](https://github.com/christried/compies/issues/440))
 - **Navigation auf der Eventseite:** Auf dem Computer und auf großen Tablets steht die Hauptnavigation jetzt auch auf der Eventseite oben im Kopf: Events, Archiv und Profil, für Hosts auch die Bibliothek. „Events“ ist als aktuelle Seite markiert, und darunter stehen der Name des Events und seine Phase. Auf dem Handy bleibt alles, wie es war. ([#426](https://github.com/christried/compies/issues/426))
 
+### Behoben
+
+- **Ziehen auf ein Team:** Ziehst du jemanden über ein Team oder über die Tribüne, zeigt deren Rand jetzt die Fokusfarbe, wie gedacht. Bisher blieb er in der Linienfarbe. ([#496](https://github.com/christried/compies/issues/496))
+
 ## [0.11.0] - 2026-11-10 – Profil
 
 Deine eigene Profil-Seite: Dort änderst du deinen Anzeigenamen, schaltest den Ton und wählst die Darstellung, Hell, Dunkel oder System. Dazu tragen die Tags in der Bibliothek jetzt Farben.
