@@ -22,10 +22,12 @@
 - **Der Clip läuft für alle gleich:** Das Video im Clip nimmt in einer Session keinen Tipp, Klick und keine Taste mehr an. Niemand kann es anhalten, YouTubes „Weitere Videos“ erscheinen nicht, und kein Link führt aus dem Event heraus. Stoppt dein Gerät das Video von sich aus, etwa durch die Kopfhörer-Taste, springt es zur Sekunde der anderen und läuft weiter. Ton an und aus, „Für mich schließen“ und für den Host „Clip überspringen“ bleiben. Der Titel des Videos zeigt sich in den ersten Sekunden: YouTube erlaubt nicht, ihn zu verbergen. ([#509](https://github.com/christried/compies/issues/509))
 - **Clips von 10 bis 120 s:** Du kannst einem Spiel jetzt einen Clip von 10 bis 120 Sekunden geben, bisher 5 bis 60. Ein Clip, der kürzer als 10 Sekunden war, läuft jetzt 10 Sekunden ab derselben Stelle. ([#507](https://github.com/christried/compies/issues/507))
 - **Das Veto-Fenster passt zum Clip:** Es dauert jetzt so lange wie der Clip des gezogenen Spiels plus 30 Sekunden, bei einem Spiel ohne Video 30 Sekunden. Bisher waren es immer 60. Die Uhr zählt in Minuten und Sekunden. ([#505](https://github.com/christried/compies/issues/505))
+- **Neues Ergebnis-Bild:** Das Bild zum Teilen ist jetzt eine „Anzeigetafel“ ohne Kapseln und Chips: oben der Name des Events mit den Terminen, links in der Teamfarbe der Sieger mit seinen Punkten, rechts die Tabelle und die gespielten Spiele als schlichte Zeilen. Zu lange Namen werden mit „…“ gekürzt, lange Listen mit „+N weitere“. Endet ein Event unentschieden, bekommt jeder Sieger ein eigenes Band, und ein Spiel mit mehreren Erstplatzierten trägt einen geteilten Streifen. Das neue Bild gibt es auch für Events, die schon vorher zu Ende gingen. ([#510](https://github.com/christried/compies/issues/510))
 
 ### Behoben
 
 - **Ziehen auf ein Team:** Ziehst du jemanden über ein Team oder über die Tribüne, zeigt deren Rand jetzt die Fokusfarbe, wie gedacht. Bisher blieb er in der Linienfarbe. ([#496](https://github.com/christried/compies/issues/496))
+- **Das Spielbrett bleibt stehen:** Hast du die Eventseite bis zum Spielbrett gescrollt, springt es nicht mehr weg, wenn der Host ein Spiel mit Veto-Fenster setzt und unten die Veto-Leiste erscheint. ([#541](https://github.com/christried/compies/issues/541))
 
 ## [0.11.0] - 2026-11-10 – Profil
 
