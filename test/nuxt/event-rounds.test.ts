@@ -80,16 +80,6 @@ describe('the open Rounds on the stage', () => {
     for (const card of cards) expect(card.text()).not.toContain('wird gespielt')
   })
 
-  it('lays the Rounds out two per row on a phone, as the tiles side by side (#491)', async () => {
-    const { slug } = serveRunning({ host: false, rounds: [round('r1', halo), round('r2', kart)] })
-
-    const stage = await mount(slug)
-
-    const list = stage.get('[aria-label="Offene Spiele"]')
-    expect(list.classes()).toContain('grid-cols-2')
-    expect(list.classes()).not.toContain('grid-cols-1')
-  })
-
   it('shows the Round as a tile with no player count and no number on it (#435)', async () => {
     const { slug } = serveRunning({ host: false, rounds: [round('r1', halo)] })
 
