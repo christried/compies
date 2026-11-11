@@ -2,7 +2,7 @@ import { mountSuspended } from '@nuxt/test-utils/runtime'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import EventPage from '~/pages/e/[slug]/index.vue'
 import { kitty, signInAs } from './auth'
-import { clickButton, regionHeadings, stubScreen } from './event-page'
+import { clickButton, clickIconButton, regionHeadings, stubScreen } from './event-page'
 import { ENDED, FIRST, members, mount, SECOND, SESSION, serveState, STARTED, unmountPage, type Setup, type SessionSpec } from './event-page-states'
 
 // The composition of the Event page (#166, 11-event-seite § EventPage): what has to happen now goes on top. The order of
@@ -229,22 +229,56 @@ describe('the stage of the Event page', () => {
   })
 
   describe('the header', () => {
-    it('shows the Host an Einladen button that opens the invite sheet', async () => {
+    it('shows the Host an Einladen button that opens the invite sheet, as an icon from md to 1023 px and as the button from 1024 px (#426)', async () => {
       const { slug } = serveState({ sessions: [SESSION(1, FIRST)], missing: 0, host: true, phase: 'date_set', overrides: { inviteUrl: 'https://compies.test/e/x-abc' } })
       const page = await mount(slug)
 
-      const invite = page.get('header').findAll('button').find(button => button.text() === 'Einladen')!
-      expect(invite.classes()).toContain('max-md:hidden')
-      await clickButton(invite.element.parentElement, 'Einladen')
+      const header = page.get('header')
+      const invite = header.findAll('button').find(button => button.text() === 'Einladen')!
+      expect(invite.classes()).toContain('max-[63.99rem]:hidden')
+      expect(invite.classes()).not.toContain('max-md:hidden')
+      const icon = header.get('button[aria-label="Einladen"]')
+      expect(icon.classes()).toEqual(expect.arrayContaining(['max-md:hidden', 'min-[64rem]:hidden']))
+      expect(icon.text()).toBe('')
+      expect(header.findAll('button').filter(button => button.text() === 'Einladen' || button.attributes('aria-label') === 'Einladen')).toHaveLength(2)
+
+      for (const button of [invite, icon]) {
+        await clickButton(button.element.parentElement, 'Einladen')
+      }
+      await vi.waitFor(() => expect([...document.querySelectorAll<HTMLInputElement>('[role="dialog"] input[readonly]')].some(input => input.value === 'https://compies.test/e/x-abc')).toBe(true))
+    })
+
+    it('opens the invite sheet from the icon button, too', async () => {
+      const { slug } = serveState({ sessions: [SESSION(1, FIRST)], missing: 0, host: true, phase: 'date_set', overrides: { inviteUrl: 'https://compies.test/e/x-abc' } })
+      const page = await mount(slug)
+
+      await clickIconButton(page.get('header').element, 'Einladen')
 
       await vi.waitFor(() => expect([...document.querySelectorAll<HTMLInputElement>('[role="dialog"] input[readonly]')].some(input => input.value === 'https://compies.test/e/x-abc')).toBe(true))
     })
 
-    it('has no Einladen for a Member', async () => {
+    it('has no Einladen for a Member, neither as button nor as icon', async () => {
       const { slug } = serveState({ sessions: [SESSION(1, FIRST)], missing: 0, phase: 'date_set' })
       const page = await mount(slug)
 
-      expect(page.get('header').findAll('button').some(button => button.text() === 'Einladen')).toBe(false)
+      expect(page.get('header').findAll('button').some(button => button.text() === 'Einladen' || button.attributes('aria-label') === 'Einladen')).toBe(false)
+    })
+
+    it('keeps the hub nav in the header with Events current, the Event and its pill under it, and the phone’s tabs below (#426)', async () => {
+      const { slug } = serveState({ sessions: [SESSION(1, FIRST, { startedAt: STARTED }), SESSION(2, SECOND)], missing: 0, phase: 'running', running: 0 })
+      const page = await mount(slug)
+
+      expect(page.findAll('nav[aria-label="Hauptnavigation"]')).toHaveLength(1)
+      const nav = page.get('header nav[aria-label="Hauptnavigation"]')
+      expect(nav.findAll('[aria-current]')).toHaveLength(1)
+      const events = nav.get('[aria-current="page"]')
+      expect(events.text()).toContain('Events')
+      const line = events.findAll('[aria-hidden="true"]').find(element => element.text() !== '')!
+      expect(line.text()).toContain('Läuft · Session 1 von 2')
+      expect(nav.get(`#${events.attributes('aria-describedby')}`).text()).toBe(`Event: ${page.get('header p').text()}, Phase: Läuft · Session 1 von 2`)
+      // The phone's title and tabs stay (the header hides the title from md up).
+      expect(page.get('header p').element.parentElement!.className).toContain('md:hidden')
+      expect(page.get('nav[aria-label="Event"]').text()).toContain('Aktivität')
     })
 
     it('names the Session in the Phase pill while one runs in an Event with several, and the Phase otherwise', async () => {

@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import type { EventContext } from '~/utils/event-page'
+
 // Layout frame. hub = header + HubNav (bottom tab bar below md); event = header with a title area; bare = header only
 // (errors, sign-in). Every page ends with the PageFooter: signed in from md up (the user menu holds its links below md),
 // signed out at every width.
@@ -14,7 +16,9 @@ withDefaults(defineProps<{
   noTabs?: boolean
   /** The head's party hat (#38): the Event page passes it for a Player in a Leading Party; every other page passes none. */
   accessory?: 'partyhat'
-}>(), { kind: 'hub', flush: false, noTabs: false, accessory: undefined })
+  /** The Event of an Event page (#426): the header's nav names it under Events. */
+  event?: EventContext
+}>(), { kind: 'hub', flush: false, noTabs: false, accessory: undefined, event: undefined })
 
 const { t } = useI18n()
 const user = useAuthUser()
@@ -31,6 +35,7 @@ const user = useAuthUser()
       :kind="kind"
       :flush="flush"
       :accessory="accessory"
+      :event="event"
     >
       <template #title>
         <slot name="title" />

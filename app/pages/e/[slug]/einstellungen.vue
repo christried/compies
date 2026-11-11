@@ -65,6 +65,7 @@ async function save(sent: EventDraft) {
   <AppShell
     v-else
     kind="event"
+    :event="{ name: view.event.name, phase: view.event.phase, label: undefined }"
   >
     <template #title>
       <span class="min-w-0 truncate text-[22px] leading-none font-bold">{{ view.event.name }}</span>
