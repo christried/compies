@@ -52,6 +52,8 @@ A ticket that changes a page isn't done on tests alone: look at the page on `pnp
 - every decision the user made in chat, first posted as a comment on its issue, then pointed to;
 - the friction worth a `/retro`: what cost time, what a check, a doc or a brief should have caught.
 
+**`/handoff` while subagents run.** When the operator calls `/handoff` while subagents still run, the orchestrator pulls them back first, without being asked (0.11: the operator had to ask twice, and both handoffs were rewritten). It messages each running subagent (SendMessage): stop; commit and push what you have to your branch (a work-in-progress commit is fine, CI may be red); reply with the branch, the head commit, what is done and what is left. It waits for every reply. A subagent still silent after ten minutes is recorded as silent, with its worktree path. Then it writes the handoff once, with one row per subagent (ticket, branch, head, what is done, what is left), in place of the subagent bullet above, so the next session can start a fresh implementer on each pushed branch. The operator's `/handoff` arguments override this: „let them finish“ means waiting for their reports instead. The automatic path at 300k stays as it is: let running agents report, review and merge them, then hand off.
+
 End by telling the user the handoff's path, to start the next session with `/implement-spec` and that path. A `/retro` followed by an `/implement-spec` in one session starts the run near the limit (session 1 of the 0.10 follow-ups began at 239k), so run `/clear` between them.
 
 The orchestrator does every merge into `staging` and `main` (`docs/agents/delivery.md`).
