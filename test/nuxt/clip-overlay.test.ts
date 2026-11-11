@@ -496,11 +496,97 @@ describe('the overlay\'s own elements cover nothing (#546)', () => {
     const inStage = new Set(stageOf().querySelectorAll('*'))
     const own = [section, ...section.querySelectorAll('*')].filter(element => !inStage.has(element))
     // The section is placed by design (under the header, in front of the page); anything else on it still fails.
-    const PLACED = (token: string) => ['fixed', 'inset-x-0', 'layer-clip'].includes(token) || token.startsWith('top-[calc(')
+    const PLACED = (token: string) => ['fixed', 'inset-x-0', 'layer-clip'].includes(token) || token === 'top-(--clip-top)'
     const classesOf = (element: Element) => (element.getAttribute('class') ?? '').split(/\s+/).filter(token => element !== section || !PLACED(token)).join(' ')
 
     expect(own.flatMap(element => coversPlayer(classesOf(element), element.getAttribute('style') ?? ''))).toEqual([])
     expect(own.some(element => element.tagName === 'BUTTON')).toBe(false)
+  })
+})
+
+describe('a low viewport (#549)', () => {
+  // happy-dom has no layout: these pin the classes that make the browser do the work, the browser check pins the numbers.
+  const classesOf = (element: Element) => (element.getAttribute('class') ?? '').split(/\s+/).filter(Boolean)
+  const sectionOf = () => page!.element.querySelector('section') as HTMLElement
+  const wrapperOf = () => sectionOf().querySelector('.aspect-video') as HTMLElement
+  const sidesOf = () => wrapperOf().parentElement as HTMLElement
+
+  it.each([
+    ['a game with a video', clipOf()],
+    ['a game without a video', clipOf(kart)],
+  ])('caps the width of the 16:9 box by the height that is left below the header and above the bar: %s', async (_what, clip) => {
+    await mount(clip)
+    const classes = classesOf(wrapperOf())
+
+    // The box is 16:9 from aspect-video, so a width taken from the height that is left never stretches or crops the video.
+    expect(classes).toContain('aspect-video')
+    expect(classes).toContain('mx-auto')
+    const width = classes.find(token => token.startsWith('w-['))
+    expect(width, 'a width on the 16:9 box').toBeDefined()
+    expect(width).toContain('var(--clip-video-h)')
+    expect(width).toContain('*16/9')
+    // At most as wide as the bar, and never lower than YouTube's 200 px (200 × 16 / 9 wide).
+    expect(width).toContain('min(100%')
+    expect(width).toContain('max(calc(200px*16/9)')
+  })
+
+  it('works the height that is left out of the viewport, the section\'s top offset, the bar and a 10 px gap', async () => {
+    await mount(clipOf())
+    const classes = classesOf(sectionOf())
+
+    expect(classes).toContain('[--clip-video-h:calc(100dvh-var(--clip-top)-var(--clip-bar-h)-2*var(--cp-bw)-10px)]')
+    expect(classes.find(token => token.startsWith('[--clip-bar-h:'))).toBeDefined()
+    expect(classes.find(token => token.startsWith('[--clip-top:'))).toContain('var(--cp-header-h)')
+    expect(classes).toContain('top-(--clip-top)')
+  })
+
+  it.each([
+    ['a game with a video', clipOf()],
+    ['a game without a video', clipOf(kart)],
+  ])('scrolls inside itself when it does not fit, with the corners still clipped: %s', async (_what, clip) => {
+    await mount(clip)
+    const classes = classesOf(sectionOf())
+
+    expect(classes).toContain('overflow-y-auto')
+    expect(classes).toContain('overflow-x-hidden')
+    expect(classes).not.toContain('overflow-hidden')
+    expect(classes).toContain('max-h-[calc(100dvh-var(--clip-top)-10px)]')
+    expect(classes).toContain('rounded-[14px]')
+  })
+
+  it('keeps the video box and the bar at their size, so the scroll is what gives', async () => {
+    await mount(clipOf(), { isHost: true })
+    const bar = sectionOf().querySelector('[role="progressbar"]')!
+
+    expect(classesOf(sidesOf())).toContain('shrink-0')
+    expect(classesOf(bar)).toContain('shrink-0')
+    expect(classesOf(bar.nextElementSibling!)).toContain('shrink-0')
+  })
+
+  it.each([
+    ['a game with a video', clipOf(), 'bg-ink'],
+    ['a game without a video', clipOf(kart), 'bg-paper-2'],
+  ])('fills the sides of the capped box with the box\'s own background: %s', async (_what, clip, background) => {
+    await mount(clip)
+
+    expect(classesOf(sidesOf())).toContain(background)
+    expect(sidesOf().parentElement).toBe(sectionOf())
+  })
+
+  it.each([
+    ['a game with a video', clipOf()],
+    ['a game without a video', clipOf(kart)],
+  ])('puts nothing over, under or around the player with what it adds: %s', async (_what, clip) => {
+    await mount(clip, { isHost: true })
+    const section = sectionOf()
+    // The section's own placement is the #546 test's business; what this ticket adds is the box around the 16:9 box, the 16:9 box
+    // and the section's max-height, custom properties and overflow.
+    const added = classesOf(section).filter(token => token.startsWith('max-h-') || token.startsWith('[--clip-') || token.startsWith('overflow-'))
+
+    expect(added.length).toBeGreaterThan(0)
+    expect(coversPlayer(added.join(' '))).toEqual([])
+    expect(coversPlayer(classesOf(sidesOf()).join(' '), sidesOf().getAttribute('style') ?? '')).toEqual([])
+    expect(coversPlayer(classesOf(wrapperOf()).join(' '), wrapperOf().getAttribute('style') ?? '')).toEqual([])
   })
 })
 
