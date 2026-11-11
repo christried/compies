@@ -21,19 +21,18 @@ export function shareImageCopy(t: Translate): ShareImageCopy {
   return {
     share: {
       image: {
-        winsOne: t('share.image.winsOne'),
-        winsMany: t('share.image.winsMany'),
+        winner: t('share.image.winner'),
+        standings: t('share.image.standings'),
+        parties: keep('share.image.parties', 'n'),
         points: forms(t, 'share.image.points'),
-        pts: forms(t, 'share.image.pts'),
-        people: keep('share.image.people', 'n'),
-        person: t('share.image.person'),
+        pointsLabel: forms(t, 'share.image.pointsLabel'),
         games: forms(t, 'share.image.games'),
         moreGames: keep('share.image.moreGames', 'n'),
-        moreParty: t('share.image.moreParty'),
         moreParties: keep('share.image.moreParties', 'n'),
+        datesMany: keep('share.image.datesMany', 'first', 'last', 'n'),
         brand: t('share.image.brand'),
         alt: keep('share.image.alt', 'winner', 'event', 'points'),
-        altPlace: keep('share.image.altPlace', 'rank', 'name', 'points'),
+        altPlace: keep('share.image.altPlace', 'rank', 'name'),
         gameTied: keep('share.image.gameTied', 'n'),
         tie: {
           label: keep('share.image.tie.label', 'k'),
