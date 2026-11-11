@@ -305,4 +305,22 @@ describe('saving while the crop is being made (#457)', () => {
     expect(uploads).toHaveBeenCalledWith({ type: 'image/webp', size: 555 })
     expect(page.emitted('saved')).toBeUndefined()
   })
+
+  it('waits for the WebP of a zoom step made with the slider, then uploads that one and not the one of the pick (#516)', async () => {
+    const zoomed = new Blob([new Uint8Array(888)], { type: 'image/webp' })
+    toCardWebp.mockResolvedValueOnce({ blob: zoomed, width: 2000, height: 1000 })
+    const page = await mountSuspended(GameForm)
+    await pickAndSizeTile(page)
+    const slider = page.get('input[type="range"]')
+    const range = slider.element as HTMLInputElement
+    range.value = '2'
+    await slider.trigger('input')
+
+    await save(page)
+
+    await vi.waitFor(() => expect(page.emitted('saved')).toEqual([[withImage]]))
+    expect(toCardWebp).toHaveBeenLastCalledWith(expect.any(File), { x: 0, y: 0, zoom: 2 })
+    expect(uploads).toHaveBeenCalledOnce()
+    expect(uploads).toHaveBeenCalledWith({ type: 'image/webp', size: 888 })
+  })
 })

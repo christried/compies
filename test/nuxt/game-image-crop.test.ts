@@ -535,3 +535,155 @@ describe('the WebP follows the crop (#457)', () => {
     expect(CENTRE_CROP).toEqual({ x: 0, y: 0 })
   })
 })
+
+// Zooming the picture with the slider below the tile (#516): the tile moves at once on `input`, the WebP is made after
+// the slider's `change` settles, and a drag or an arrow key keeps the zoom.
+describe('zooming the picture with the slider (#516)', () => {
+  const zoomSlider = () => page.get('input[type="range"]')
+  const zoomText = () => zoomSlider().attributes('aria-valuetext')
+  const wait = (ms: number) => new Promise(done => setTimeout(done, ms))
+
+  /** The slider's native input: the thumb moved (`input`), the way a browser reports it. */
+  async function setZoom(zoom: number) {
+    const slider = zoomSlider()
+    const range = slider.element as HTMLInputElement
+    range.value = String(zoom)
+    await slider.trigger('input')
+  }
+
+  it('has no slider without a picked file, nor for a game that has only its image', async () => {
+    await mount()
+    expect(page.find('input[type="range"]').exists()).toBe(false)
+
+    await mount({ imageUrl: '/api/images/b1-abc.webp' })
+    expect(page.find('input[type="range"]').exists()).toBe(false)
+  })
+
+  it('shows a slider named Zoom from 1 to 3 in steps of 0.1, at fits, after the pick', async () => {
+    await picked()
+
+    const slider = zoomSlider()
+    expect(slider.attributes('min')).toBe('1')
+    expect(slider.attributes('max')).toBe('3')
+    expect(slider.attributes('step')).toBe('0.1')
+    expect((slider.element as HTMLInputElement).value).toBe('1')
+    expect(zoomText()).toBe('Passt')
+    expect(page.findAll('label').some(el => el.text() === 'Zoom' && el.attributes('for') === slider.attributes('id'))).toBe(true)
+    expect(tile().dataset.cropZoom).toBe('1.000')
+  })
+
+  it('moves the tile at once on input and makes the WebP only 300 ms after the change', async () => {
+    await picked()
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+
+    await setZoom(2)
+    expect(tile().dataset.cropZoom).toBe('2.000')
+    expect(zoomText()).toBe('2,0×')
+    expect(calls()).toHaveLength(1)
+
+    await zoomSlider().trigger('change')
+    await vi.advanceTimersByTimeAsync(299)
+    expect(calls()).toHaveLength(1)
+
+    await vi.advanceTimersByTimeAsync(1)
+    expect(calls()).toHaveLength(2)
+    expect(lastCrop()).toEqual({ x: 0, y: 0, zoom: 2 })
+  })
+
+  it('keeps an offset on an axis that still has room, and zeroes an axis that lost its room when the zoom goes back', async () => {
+    await picked(WIDE)
+    await setZoom(2)
+    for (let press = 0; press < 5; press++) await key('ArrowDown')
+    expect(tile().dataset.cropY).toBe('0.500')
+
+    await setZoom(1)
+    expect(tile().dataset.cropY).toBe('0.000')
+  })
+
+  it('keeps the zoom through a drag and through an arrow key', async () => {
+    await picked()
+    await setZoom(2)
+
+    await drag(40)
+    expect(calls()).toHaveLength(2)
+    expect(lastCrop().zoom).toBe(2)
+    expect(lastCrop().x).toBeCloseTo(0.444, 2)
+
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    await key('ArrowRight')
+    await vi.advanceTimersByTimeAsync(300)
+    expect(calls()).toHaveLength(3)
+    expect(lastCrop().zoom).toBe(2)
+    expect(lastCrop().x).toBeCloseTo(0.544, 2)
+  })
+
+  it('makes the tile take the touch for both axes above zoom 1, and only the axis with room at zoom 1', async () => {
+    await picked(WIDE)
+    expect(tile().className).toContain('touch-pan-y')
+
+    await setZoom(2)
+    expect(tile().className).toContain('touch-none')
+    expect(tile().className).not.toContain('touch-pan-y')
+  })
+
+  it('shows the zoomed picture in the tile: 250 % wide, 200 % high, offset to the centre', async () => {
+    await picked(WIDE)
+    await setZoom(2)
+
+    expect(img().style.width).toBe('250%')
+    expect(img().style.height).toBe('200%')
+    expect(img().style.left).toBe('-75%')
+    expect(img().style.top).toBe('-50%')
+    expect(shownRect(WIDE)).toEqual({
+      x: expect.closeTo(600, 1),
+      y: expect.closeTo(250, 1),
+      width: expect.closeTo(800, 1),
+      height: expect.closeTo(500, 1),
+    })
+  })
+
+  it('puts the tile and the slider back to the held zoom when the WebP of a zoom cannot be made', async () => {
+    await picked()
+    toCardWebp.mockRejectedValue(new ImageConversionError())
+
+    await setZoom(2)
+    await zoomSlider().trigger('change')
+    await wait(350)
+    await flushPromises()
+
+    expect(tile().dataset.cropZoom).toBe('1.000')
+    expect((zoomSlider().element as HTMLInputElement).value).toBe('1')
+    expect(zoomText()).toBe('Passt')
+    expect(page.text()).toContain('Dein Browser kann das Bild nicht umwandeln')
+    expect(page.emitted('update:modelValue')).toHaveLength(1)
+  })
+
+  it('starts a second pick at fits, and the drag after it stays at the zoom of 1', async () => {
+    await picked()
+    await setZoom(2)
+    const second = new File(['y'], 'second.png', { type: 'image/png' })
+
+    toCardWebp.mockResolvedValue({ blob: blobOf(200), ...WIDE })
+    await pick(second)
+    expect(tile().dataset.cropZoom).toBe('1.000')
+    expect(zoomText()).toBe('Passt')
+    expect(calls().at(-1)).toEqual([second])
+
+    await drag(6)
+    // CENTRE_CROP has no zoom key: the crop after a pick is the centre crop at zoom 1.
+    expect(lastCrop()).toEqual({ x: expect.closeTo(0.4, 6), y: 0 })
+    expect(CENTRE_CROP).not.toHaveProperty('zoom')
+  })
+
+  it.each([
+    [1, 'Passt'],
+    [1.5, '1,5×'],
+    [3, '3,0×'],
+  ])('says %s as „%s“', async (zoom, text) => {
+    await picked()
+
+    await setZoom(zoom)
+
+    expect(zoomText()).toBe(text)
+  })
+})

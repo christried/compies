@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { Upload } from '@lucide/vue'
 import { toCardWebp } from '~/utils/image-resize'
-import { CENTRE_CROP, cropRoom, nudgeCrop, panCrop, tilePlacement, type Crop } from '~~/shared/image'
+import { CENTRE_CROP, CROP_ZOOM_MAX, CROP_ZOOM_MIN, cropRoom, nudgeCrop, panCrop, tilePlacement, zoomCrop, zoomOf, type Crop } from '~~/shared/image'
 
 // The image of a game in its form (#143, screen 24): a 16:10 tile and „Bild wählen“. The picked file is cropped
 // and shrunk to a WebP in the browser right away; the form uploads the blob (v-model) once the game is saved.
-// The Host moves the picture inside the tile (drag, or arrow keys, #457), the WebP is made again when the crop comes
-// to rest, and the tile shows the same rectangle the canvas draws. `imageUrl` is the image the game already has.
+// The Host moves the picture inside the tile (drag, or arrow keys, #457) and zooms it with the slider below (#516);
+// the WebP is made again when the crop comes to rest, and the tile shows the same rectangle the canvas draws.
+// `imageUrl` is the image the game already has.
 const props = defineProps<{
   /** The cropped WebP waiting for the upload. */
   modelValue: Blob | null
@@ -49,11 +50,20 @@ const status = computed(() => {
   return converting.value ? t('gameEdit.imageConverting') : null
 })
 
-const sameCrop = (a: Crop, b: Crop) => a.x === b.x && a.y === b.y
+const sameCrop = (a: Crop, b: Crop) => a.x === b.x && a.y === b.y && zoomOf(a) === zoomOf(b)
 
 function clearSettleTimer() {
   if (settleTimer) clearTimeout(settleTimer)
   settleTimer = null
+}
+
+/** The crop is at rest once the Host has paused for CROP_SETTLE_MS: the arrow keys and the slider's change both wait so. */
+function restSoon() {
+  clearSettleTimer()
+  settleTimer = setTimeout(() => {
+    settleTimer = null
+    rest()
+  }, CROP_SETTLE_MS)
 }
 
 function dropPicture() {
@@ -217,15 +227,23 @@ function onKeydown(event: KeyboardEvent) {
   const next = nudgeCrop(current, crop.value, direction)
   if (sameCrop(next, crop.value)) return
   crop.value = next
-  clearSettleTimer()
-  settleTimer = setTimeout(() => {
-    settleTimer = null
-    rest()
-  }, CROP_SETTLE_MS)
+  restSoon()
 }
 
-const room = computed(() => picture.value ? cropRoom(picture.value.width, picture.value.height) : { x: false, y: false })
-// Full class strings, so Tailwind sees them: a swipe along the axis without room still scrolls the page.
+// The zoom (#516): the slider moves the tile at once (`input`); its WebP is made when the slider's change settles.
+const zoom = computed({
+  get: () => zoomOf(crop.value),
+  set: (value: number) => {
+    if (picture.value) crop.value = zoomCrop(picture.value, crop.value, value)
+  },
+})
+const zoomText = computed(() => zoom.value <= CROP_ZOOM_MIN
+  ? t('gameEdit.imageZoomFits')
+  : t('gameEdit.imageZoomValue', { factor: zoom.value.toFixed(1).replace('.', ',') }))
+
+const room = computed(() => picture.value ? cropRoom(picture.value.width, picture.value.height, zoom.value) : { x: false, y: false })
+// Full class strings, so Tailwind sees them: a swipe along the axis without room still scrolls the page. Above zoom 1
+// both axes have room, so every picture zoomed in takes `touch-none`: the drag moves the picture, not the page (#516).
 const TOUCH_ACTION = { x: 'touch-pan-y', y: 'touch-pan-x', both: 'touch-none', none: 'touch-auto' }
 const tileClass = computed(() => {
   if (!picture.value) return ''
@@ -266,6 +284,7 @@ const placementStyle = computed(() => {
         :aria-describedby="picture ? helpId : undefined"
         :data-crop-x="picture ? crop.x.toFixed(3) : undefined"
         :data-crop-y="picture ? crop.y.toFixed(3) : undefined"
+        :data-crop-zoom="picture ? zoomOf(crop).toFixed(3) : undefined"
         @dragstart.prevent
         @pointerdown="onPointerDown"
         @pointermove="onPointerMove"
@@ -314,6 +333,19 @@ const placementStyle = computed(() => {
         </AppButton>
       </div>
     </div>
+    <!-- A sibling of the tile row, not inside the tile: its keys are the slider's own, not the tile's (#516). -->
+    <RangeSlider
+      v-if="picture"
+      v-model="zoom"
+      class="w-full max-w-[240px]"
+      :min="CROP_ZOOM_MIN"
+      :max="CROP_ZOOM_MAX"
+      :step="0.1"
+      :label="t('gameEdit.imageZoom')"
+      :value-text="zoomText"
+      :disabled="uploading"
+      @change="restSoon"
+    />
     <!-- Below the row, so the button stays centred on the preview while the image is being converted or sent (#176). -->
     <span
       v-if="status"
