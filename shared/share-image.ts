@@ -9,7 +9,7 @@ import { joinNames } from './list'
 import { berlinDay } from './time'
 import { SURFACE, teamColor } from './team-colors'
 import { teamDisplayName } from './team-name'
-import { characterCount } from './text'
+import { characterCount, graphemesOf } from './text'
 
 export const SHARE_FORMATS = ['wide', 'square'] as const
 export type ShareFormat = (typeof SHARE_FORMATS)[number]
@@ -41,7 +41,7 @@ export interface ShareImageCopy {
       points: string
       pointsLabel: string
       games: string
-      moreGames: string
+      more: string
       moreParties: string
       datesMany: string
       brand: string
@@ -175,11 +175,9 @@ function drawable(text: string): string {
   return text.replace(PICTOGRAPHS, '').replace(/\s+/g, ' ').trim()
 }
 
-const graphemes = new Intl.Segmenter('de', { granularity: 'grapheme' })
-
 /** The name broken at the space nearest the middle (the earlier of two equally near), or on one line when it has no space. */
 function breakAtMiddle(name: string): [string] | [string, string] {
-  const parts = [...graphemes.segment(name)].map(part => part.segment)
+  const parts = graphemesOf(name)
   const middle = parts.length / 2
   let best = -1
   parts.forEach((part, index) => {
@@ -299,7 +297,7 @@ export function shareImageModel(source: ShareImageSource, format: ShareFormat, c
   const tieBands = (winners: number[]): ShareTieBand[] => {
     const party = (team: number): ShareTieBand => ({ kind: 'party', team, name: nameOf(team, false), ...teamColor(team) })
     if (winners.length <= TIE_BANDS_MAX) return winners.map(party)
-    return [...winners.slice(0, TIE_BANDS_SHOWN_WHEN_FOLDED).map(party), { kind: 'more', text: fillCopy(text.moreGames, { n: winners.length - TIE_BANDS_SHOWN_WHEN_FOLDED }), fill: SURFACE, ink: MORE_BAND_INK }]
+    return [...winners.slice(0, TIE_BANDS_SHOWN_WHEN_FOLDED).map(party), { kind: 'more', text: fillCopy(text.more, { n: winners.length - TIE_BANDS_SHOWN_WHEN_FOLDED }), fill: SURFACE, ink: MORE_BAND_INK }]
   }
 
   const panel: ShareImageModel['panel'] = leaders.length === 1
@@ -324,10 +322,11 @@ export function shareImageModel(source: ShareImageSource, format: ShareFormat, c
 
   const results = [...source.results].sort((a, b) => a.number - b.number)
   // The legend shows when any played game has two or more Parties on place 1, whichever row it ends up in (it may be folded into „+n weitere“).
-  let legend: ShareLegend | null = null
+  const winnersOf = (result: (typeof results)[number]) => result.places.filter(place => place.place === 1).map(place => place.team).sort((a, b) => a - b)
+  const firstTied = results.map(winnersOf).find(teams => teams.length >= 2)
+  const legend: ShareLegend | null = firstTied ? { stripe: firstTied.slice(0, 2).map(team => teamColor(team).fill), text: text.tiedLegend } : null
   const gameRows: ShareGameRow[] = results.map((result) => {
-    const teams = result.places.filter(place => place.place === 1).map(place => place.team).sort((a, b) => a - b)
-    if (teams.length >= 2 && legend === null) legend = { stripe: teams.slice(0, 2).map(team => teamColor(team).fill), text: text.tiedLegend }
+    const teams = winnersOf(result)
     const name = drawable(result.game.name)
     return {
       kind: 'game',
@@ -338,7 +337,7 @@ export function shareImageModel(source: ShareImageSource, format: ShareFormat, c
   const gameSlots = GAME_SLOTS[format]
   const shownGames: ShareGameRow[] = gameRows.length <= gameSlots
     ? gameRows
-    : [...gameRows.slice(0, gameSlots - 1), { kind: 'more', text: fillCopy(text.moreGames, { n: gameRows.length - gameSlots + 1 }) }]
+    : [...gameRows.slice(0, gameSlots - 1), { kind: 'more', text: fillCopy(text.more, { n: gameRows.length - gameSlots + 1 }) }]
 
   // The alt text names the Winner and place 2 (the note); a Tie names its Winners and no place. Names are the Team's own, not stripped.
   const event = source.event.name.trim()

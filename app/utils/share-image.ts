@@ -27,7 +27,7 @@ export function shareImageCopy(t: Translate): ShareImageCopy {
         points: forms(t, 'share.image.points'),
         pointsLabel: forms(t, 'share.image.pointsLabel'),
         games: forms(t, 'share.image.games'),
-        moreGames: keep('share.image.moreGames', 'n'),
+        more: keep('share.image.more', 'n'),
         moreParties: keep('share.image.moreParties', 'n'),
         datesMany: keep('share.image.datesMany', 'first', 'last', 'n'),
         brand: t('share.image.brand'),
