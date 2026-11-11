@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { finalAngle, removalEase, revealStage, scramble, sliceSpans, wheelAngle, type WheelTiming } from '../../app/utils/wheel'
+import { finalAngle, removalEase, revealStage, scramble, sliceSpans, spinTurns, wheelAngle, type WheelTiming } from '../../app/utils/wheel'
 import { SPIN_REDUCED_MS } from '../../shared/rounds'
 
 // The Lucky Wheel's angle toward a fixed stop instant (#229, 04-motion § Lucky Wheel, § Synchronised moments): a function of
@@ -121,5 +121,61 @@ describe('sliceSpans', () => {
     expect(spans[0]!.start).toBe(0)
     expect(spans[6]!.end).toBeCloseTo(360, 6)
     for (let i = 1; i < spans.length; i++) expect(spans[i]!.start).toBeCloseTo(spans[i - 1]!.end, 6)
+  })
+})
+
+// #520: a spin lasts 6 to 10 s, and the turns follow the length (0.8 turns a second, rounded), worked out from the two instants
+// every client already has. A spin stored before this (6 s) reads five turns, as it did.
+describe('the spin\'s length', () => {
+  const lasting = (ms: number, slices = 5): WheelTiming => ({ spinStartAt: START, stopAt: START + ms, slices, resultIndex: 3 % slices, resultOffset: 0.25 })
+
+  it.each([
+    { ms: 6000, turns: 5 },
+    { ms: 7000, turns: 6 },
+    { ms: 8500, turns: 7 },
+    { ms: 10_000, turns: 8 },
+    { ms: 6874, turns: 5 },
+    { ms: 6875, turns: 6 },
+  ])('makes $turns turns in $ms ms', ({ ms, turns }) => {
+    expect(spinTurns(lasting(ms))).toBe(turns)
+  })
+
+  it.each([1, 2, 5])('lands in the result slice at its offset after 6 s and after 10 s, 3 turns further for the longer, with %i slices', (slices) => {
+    const short = lasting(6000, slices)
+    const long = lasting(10_000, slices)
+
+    expect(finalAngle(short) - finalAngle(long)).toBeCloseTo(1080, 6)
+    for (const timing of [short, long]) {
+      expect(pointedAt(finalAngle(timing), slices)).toBeCloseTo(timing.resultIndex + timing.resultOffset, 6)
+      expect(wheelAngle(timing, timing.stopAt, false)).toBeCloseTo(finalAngle(timing), 6)
+      expect(wheelAngle(timing, timing.stopAt + 30_000, false)).toBeCloseTo(finalAngle(timing), 6)
+    }
+  })
+
+  it('stands at 0 until the start and is the same share of the way at the same share of the spin, whatever its length', () => {
+    const short = lasting(6000)
+    const long = lasting(10_000)
+
+    expect(wheelAngle(long, START, false)).toBe(0)
+    for (const share of [0.1, 0.5, 0.9]) {
+      expect(wheelAngle(long, START + 10_000 * share, false) / finalAngle(long)).toBeCloseTo(wheelAngle(short, START + 6000 * share, false) / finalAngle(short), 9)
+    }
+  })
+
+  it('is still turning at 6.5 s of a 10 s spin', () => {
+    const long = lasting(10_000)
+
+    expect(Math.abs(wheelAngle(long, START + 6500, false) - finalAngle(long))).toBeGreaterThan(1)
+    expect(wheelAngle(long, START + 6500, false)).not.toBe(wheelAngle(long, START + 6600, false))
+  })
+
+  it('keeps its calm last 1.2 s under reduced motion, whatever the length, ending at the same stop', () => {
+    const long = lasting(10_000)
+    const stop = long.stopAt
+
+    expect(wheelAngle(long, stop - SPIN_REDUCED_MS - 1, true)).toBe(0)
+    expect(wheelAngle(long, stop - SPIN_REDUCED_MS / 2, true)).toBeLessThan(0)
+    expect(wheelAngle(long, stop, true)).toBeCloseTo(finalAngle(long), 6)
+    expect(wheelAngle(long, stop + 5000, true)).toBeCloseTo(finalAngle(long), 6)
   })
 })

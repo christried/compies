@@ -21,8 +21,6 @@ const SNAP_EASE = [0.2, 0, 0, 1] as const
 /** `EASE.io`, the ease of the slices closing the gap. */
 const IO_EASE = [0.65, 0, 0.35, 1] as const
 
-/** Full turns past the target, so the spin is a spin. */
-const EXTRA_TURNS = 5
 /** The drawn slice leaves this long after the stop, a Hidden wheel a little later: its reveal comes first (04-motion). */
 const REMOVE_AFTER_MS = 2200
 const REMOVE_AFTER_HIDDEN_MS = 2800
@@ -56,9 +54,19 @@ function bezier([x1, y1, x2, y2]: readonly [number, number, number, number], x: 
   return coordinate(y1, y2, t)
 }
 
-/** The angle (degrees, clockwise positive) the wheel rests at when the spin has stopped: the pointer at the top is in the result slice, at its offset, and five turns lie behind. */
-export function finalAngle({ slices, resultIndex, resultOffset }: WheelTiming): number {
-  return -(resultIndex + resultOffset) * (360 / slices) - 360 * EXTRA_TURNS
+/**
+ * Full turns past the target (#520): 0.8 a second of the spin's length, rounded to whole turns, so 6 s make 5 and 10 s make 8. Worked out
+ * from the two instants every client has, so no new datum travels; written as a division by 1250 so the half-turn edge is exact
+ * (6 875 ms is 5.5 turns and rounds up). A spin stored before the length varied (6 s) reads 5, as it showed.
+ */
+export function spinTurns({ spinStartAt, stopAt }: Pick<WheelTiming, 'spinStartAt' | 'stopAt'>): number {
+  return Math.round((stopAt - spinStartAt) / 1250)
+}
+
+/** The angle (degrees, clockwise positive) the wheel rests at when the spin has stopped: the pointer at the top is in the result slice, at its offset, and `spinTurns` lie behind. */
+export function finalAngle(spin: WheelTiming): number {
+  const { slices, resultIndex, resultOffset } = spin
+  return -(resultIndex + resultOffset) * (360 / slices) - 360 * spinTurns(spin)
 }
 
 /**

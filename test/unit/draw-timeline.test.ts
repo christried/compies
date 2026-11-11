@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { clipEnded, clipLengthOf, clipRunning, clipWindow, drawGameKnown, drawInstants, isDue, settleAt, spinCommitAt, stopReached, vetoEndAfterSkip, vetoEndCap, vetoesSealed, windowEnded, windowFraction, windowOpen, type DrawInstants } from '../../shared/draw-timeline'
+import { SPIN_MAX_MS, SPIN_MIN_MS, clipEnded, clipLengthOf, clipRunning, clipWindow, drawGameKnown, drawInstants, isDue, settleAt, spinCommitAt, stopReached, vetoEndAfterSkip, vetoEndCap, vetoesSealed, windowEnded, windowFraction, windowOpen, type DrawInstants } from '../../shared/draw-timeline'
 
 // The Draw's timeline (#414, ADR 0013 amendment 2026-10-31): a Draw's instants and what each decides at `now`. Every comparison
 // keeps its edge, pinned here at the four boundary milliseconds (stop - 1, stop, end - 1, end); nothing may move them silently.
@@ -9,8 +9,27 @@ const C = Date.parse('2090-10-30T10:00:00.000Z')
 const ms = (date: Date | null) => date!.getTime()
 
 describe('drawInstants', () => {
+  // #520: a spin lasts what its caller draws, 6 to 10 s; the writer adds it to the start and does not clamp it.
+  it.each([SPIN_MIN_MS, 8500, SPIN_MAX_MS])('a spin of %i ms stops that long after its start, the window ends the clip length plus 30 s after the stop', (spinLengthMs) => {
+    const instants = drawInstants({ kind: 'spin', spinLengthMs, commitAt: C, windowOpens: true, clipLength: 30 })
+    expect(ms(instants.spinStartAt)).toBe(C + 1500)
+    expect(ms(instants.stopAt)).toBe(C + 1500 + spinLengthMs)
+    expect(ms(instants.vetoEndsAt)).toBe(C + 1500 + spinLengthMs + 60_000)
+    expect(spinCommitAt({ spinStartAt: instants.spinStartAt! })).toBe(C)
+  })
+
+  it('a set draw ignores the length', () => {
+    const instants = drawInstants({ kind: 'set', spinLengthMs: SPIN_MAX_MS, commitAt: C, windowOpens: true, clipLength: 30 })
+    expect(instants.spinStartAt).toBeNull()
+    expect(ms(instants.stopAt)).toBe(C)
+  })
+
+  it('a spin without a length is a bug: it throws instead of stopping at the start', () => {
+    expect(() => drawInstants({ kind: 'spin', spinLengthMs: null, commitAt: C, windowOpens: true, clipLength: 30 })).toThrow()
+  })
+
   it('a spin with a window: starts a lead after the commit, stops 6 s later, the window ends the clip length plus 30 s after the stop', () => {
-    const instants = drawInstants({ kind: 'spin', commitAt: C, windowOpens: true, clipLength: 30 })
+    const instants = drawInstants({ kind: 'spin', spinLengthMs: SPIN_MIN_MS, commitAt: C, windowOpens: true, clipLength: 30 })
     expect(ms(instants.spinStartAt)).toBe(C + 1500)
     expect(ms(instants.stopAt)).toBe(C + 7500)
     expect(ms(instants.vetoEndsAt)).toBe(C + 7500 + 60_000)
@@ -18,7 +37,7 @@ describe('drawInstants', () => {
 
   it('a spin without a window has no end, whatever the clip length', () => {
     for (const clipLength of [null, 10, 30, 120]) {
-      const instants = drawInstants({ kind: 'spin', commitAt: C, windowOpens: false, clipLength })
+      const instants = drawInstants({ kind: 'spin', spinLengthMs: SPIN_MIN_MS, commitAt: C, windowOpens: false, clipLength })
       expect(ms(instants.spinStartAt)).toBe(C + 1500)
       expect(ms(instants.stopAt)).toBe(C + 7500)
       expect(instants.vetoEndsAt).toBeNull()
@@ -26,7 +45,7 @@ describe('drawInstants', () => {
   })
 
   it('a set draw with a window stops at the commit and has no spin start', () => {
-    const instants = drawInstants({ kind: 'set', commitAt: C, windowOpens: true, clipLength: 30 })
+    const instants = drawInstants({ kind: 'set', spinLengthMs: null, commitAt: C, windowOpens: true, clipLength: 30 })
     expect(instants.spinStartAt).toBeNull()
     expect(ms(instants.stopAt)).toBe(C)
     expect(ms(instants.vetoEndsAt)).toBe(C + 60_000)
@@ -34,7 +53,7 @@ describe('drawInstants', () => {
 
   it('a set draw without a window has no end, whatever the clip length', () => {
     for (const clipLength of [null, 10, 30, 120]) {
-      const instants = drawInstants({ kind: 'set', commitAt: C, windowOpens: false, clipLength })
+      const instants = drawInstants({ kind: 'set', spinLengthMs: null, commitAt: C, windowOpens: false, clipLength })
       expect(instants.spinStartAt).toBeNull()
       expect(ms(instants.stopAt)).toBe(C)
       expect(instants.vetoEndsAt).toBeNull()
@@ -42,9 +61,9 @@ describe('drawInstants', () => {
   })
 
   it('takes the commit as a number, a Date or an ISO string', () => {
-    const expected = drawInstants({ kind: 'spin', commitAt: C, windowOpens: true, clipLength: 30 })
-    expect(drawInstants({ kind: 'spin', commitAt: new Date(C), windowOpens: true, clipLength: 30 })).toEqual(expected)
-    expect(drawInstants({ kind: 'spin', commitAt: new Date(C).toISOString(), windowOpens: true, clipLength: 30 })).toEqual(expected)
+    const expected = drawInstants({ kind: 'spin', spinLengthMs: SPIN_MIN_MS, commitAt: C, windowOpens: true, clipLength: 30 })
+    expect(drawInstants({ kind: 'spin', spinLengthMs: SPIN_MIN_MS, commitAt: new Date(C), windowOpens: true, clipLength: 30 })).toEqual(expected)
+    expect(drawInstants({ kind: 'spin', spinLengthMs: SPIN_MIN_MS, commitAt: new Date(C).toISOString(), windowOpens: true, clipLength: 30 })).toEqual(expected)
   })
 
   // #505: the Veto window lasts the drawn game's clip length plus 30 s, 30 s for a game without a video.
@@ -54,10 +73,10 @@ describe('drawInstants', () => {
     { clipLength: 120, window: 150_000 },
     { clipLength: null, window: 30_000 },
   ])('a window for a clip of $clipLength s lasts $window ms after the stop, for a set draw and a spin', ({ clipLength, window }) => {
-    const set = drawInstants({ kind: 'set', commitAt: C, windowOpens: true, clipLength })
+    const set = drawInstants({ kind: 'set', spinLengthMs: null, commitAt: C, windowOpens: true, clipLength })
     expect(ms(set.vetoEndsAt) - ms(set.stopAt)).toBe(window)
     expect(ms(set.vetoEndsAt)).toBe(C + window)
-    const spin = drawInstants({ kind: 'spin', commitAt: C, windowOpens: true, clipLength })
+    const spin = drawInstants({ kind: 'spin', spinLengthMs: SPIN_MIN_MS, commitAt: C, windowOpens: true, clipLength })
     expect(ms(spin.vetoEndsAt) - ms(spin.stopAt)).toBe(window)
     expect(ms(spin.vetoEndsAt)).toBe(C + 7500 + window)
   })
@@ -66,10 +85,12 @@ describe('drawInstants', () => {
 const KINDS = ['spin', 'set'] as const
 // A window of 40 s (10 s clip), one minute (30 s clip), 150 s (the longest clip) and 30 s (no video): every edge holds for each.
 const CLIPS = [{ clipLength: 10, windowMs: 40_000 }, { clipLength: 30, windowMs: 60_000 }, { clipLength: 120, windowMs: 150_000 }, { clipLength: null, windowMs: 30_000 }]
-const CASES = KINDS.flatMap(kind => CLIPS.map(clip => ({ kind, ...clip })))
+// A spin at both ends of its range (#520): the edges hold for the longest too, since the stop moves with the length.
+const SHAPES = [{ kind: 'spin', spinLengthMs: SPIN_MIN_MS }, { kind: 'spin', spinLengthMs: SPIN_MAX_MS }, { kind: 'set', spinLengthMs: null }] as const
+const CASES = SHAPES.flatMap(shape => CLIPS.map(clip => ({ ...shape, ...clip })))
 
-describe.each(CASES)('a $kind draw with a Veto window and a clip of $clipLength s', ({ kind, clipLength, windowMs }) => {
-  const draw = drawInstants({ kind, commitAt: C, windowOpens: true, clipLength })
+describe.each(CASES)('a $kind draw of $spinLengthMs ms with a Veto window and a clip of $clipLength s', ({ kind, spinLengthMs, clipLength, windowMs }) => {
+  const draw = drawInstants({ kind, spinLengthMs, commitAt: C, windowOpens: true, clipLength })
   const S = ms(draw.stopAt)
   const E = ms(draw.vetoEndsAt)
   const probes = [S - 1, S, E - 1, E]
@@ -119,7 +140,7 @@ describe.each(CASES)('a $kind draw with a Veto window and a clip of $clipLength 
 })
 
 describe.each(KINDS)('a %s draw without a Veto window', (kind) => {
-  const draw = drawInstants({ kind, commitAt: C, windowOpens: false, clipLength: null })
+  const draw = drawInstants({ kind, spinLengthMs: kind === 'spin' ? SPIN_MIN_MS : null, commitAt: C, windowOpens: false, clipLength: null })
   const S = ms(draw.stopAt)
   const probes = [S - 1, S, S + 1]
   const row = { stopAt: draw.stopAt, vetoEndsAt: null }
@@ -151,7 +172,7 @@ describe.each(KINDS)('a %s draw without a Veto window', (kind) => {
 
 describe('spinCommitAt', () => {
   it('is the commit a spin was written with: the inverse of drawInstants, for the stage that lifts at the commit (#441)', () => {
-    const instants = drawInstants({ kind: 'spin', commitAt: C, windowOpens: true, clipLength: 30 })
+    const instants = drawInstants({ kind: 'spin', spinLengthMs: SPIN_MIN_MS, commitAt: C, windowOpens: true, clipLength: 30 })
     expect(spinCommitAt({ spinStartAt: instants.spinStartAt! })).toBe(C)
     expect(spinCommitAt({ spinStartAt: instants.spinStartAt!.toISOString() })).toBe(C)
     expect(spinCommitAt({ spinStartAt: C + 1500 })).toBe(C)
@@ -216,7 +237,7 @@ describe('a game without a video (#546)', () => {
   for (const kind of ['spin', 'set'] as const) {
     it.each(rows)(`a ${kind} of $youtubeId / $clipLength s: card $card ms, window $window ms`, ({ youtubeId, clipLength, card, window }) => {
       const game = { youtubeId, clipLength }
-      const draw = drawInstants({ kind, commitAt: C, windowOpens: true, clipLength: clipLengthOf(game) })
+      const draw = drawInstants({ kind, spinLengthMs: kind === 'spin' ? SPIN_MIN_MS : null, commitAt: C, windowOpens: true, clipLength: clipLengthOf(game) })
       const clip = clipWindow(draw, game)
       expect(clip.startAt).toBe(ms(draw.stopAt))
       expect(clip.endsAt - clip.startAt).toBe(card)
@@ -232,7 +253,7 @@ describe('a game without a video (#546)', () => {
 
 // #506: a skip of the Clip ends the window 30 s after it when that is sooner; it never moves the end later.
 describe('vetoEndAfterSkip (#506)', () => {
-  const windowOf = (clipLength: number | null) => drawInstants({ kind: 'set', commitAt: C, windowOpens: true, clipLength })
+  const windowOf = (clipLength: number | null) => drawInstants({ kind: 'set', spinLengthMs: null, commitAt: C, windowOpens: true, clipLength })
   const after = (clipLength: number | null, skipAt: number) => {
     const moved = vetoEndAfterSkip(windowOf(clipLength), skipAt)
     return moved === null ? null : ms(moved)
@@ -273,7 +294,7 @@ describe('vetoEndAfterSkip (#506)', () => {
   })
 
   it('works for a spin, from its stop', () => {
-    const spin = drawInstants({ kind: 'spin', commitAt: C, windowOpens: true, clipLength: 120 })
+    const spin = drawInstants({ kind: 'spin', spinLengthMs: SPIN_MIN_MS, commitAt: C, windowOpens: true, clipLength: 120 })
     const stop = ms(spin.stopAt)
     expect(stop).toBe(C + 7500)
     expect(ms(vetoEndAfterSkip(spin, stop + 10_000))).toBe(stop + 40_000)
@@ -289,7 +310,7 @@ describe('vetoEndAfterSkip (#506)', () => {
   })
 
   it.each(CASES)('never moves the end later, in a $kind draw with a clip of $clipLength s', ({ kind, clipLength }) => {
-    const draw = drawInstants({ kind, commitAt: C, windowOpens: true, clipLength })
+    const draw = drawInstants({ kind, spinLengthMs: kind === 'spin' ? SPIN_MIN_MS : null, commitAt: C, windowOpens: true, clipLength })
     const stop = ms(draw.stopAt)
     const end = ms(draw.vetoEndsAt)
     const skips = [stop, stop + 1, end - 30_001, end - 30_000, end - 29_999, end - 1, end, end + 1]
