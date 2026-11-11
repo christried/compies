@@ -9,8 +9,9 @@ import { msOf, type Instant } from './instant'
 
 /** The spin starts this long after the commit, so every client has the message and starts together (#229, spec #218 § Drawing). */
 const SPIN_LEAD_MS = 1500
-/** How long the wheel spins (04-motion § Lucky Wheel: 3 to 10 s); there is no setting for it. The stop is the start plus this. */
-const SPIN_DURATION_MS = 6000
+/** A spin lasts between SPIN_MIN_MS and SPIN_MAX_MS, both included (#520, spec #503 § The spin's length); there is no setting for it. `drawSpin` draws the length, the stop is the start plus it. */
+export const SPIN_MIN_MS = 6000
+export const SPIN_MAX_MS = 10_000
 /** The Veto window lasts the drawn game's clip length plus this long: every Party with a Veto left may reject the game until then (#231, #505, spec #501). */
 const VETO_AFTER_CLIP_MS = 30_000
 
@@ -27,17 +28,20 @@ export interface NewDraw {
   windowOpens: boolean
   /** The drawn game's clip length in seconds, null for a game without a video; ignored without a window. Required, so a writer cannot forget it (#505). Not stored: only the resulting end is. */
   clipLength: number | null
+  /** The spin's length in ms, null for a set draw (ignored). Required, so a writer cannot forget it (#520). The range is the draw's rule (`drawSpin`), not the timeline's: it is not clamped here. Not stored: the stop carries it. */
+  spinLengthMs: number | null
 }
 
 /**
- * WRITER. A spin starts SPIN_LEAD_MS after the commit and stops SPIN_DURATION_MS later; a set draw stops at the commit
+ * WRITER. A spin starts SPIN_LEAD_MS after the commit and stops `spinLengthMs` later; a set draw stops at the commit
  * (`spinStartAt` null). With `windowOpens` the Veto window ends the clip length plus VETO_AFTER_CLIP_MS after the stop (a game
  * without a video: VETO_AFTER_CLIP_MS), else `vetoEndsAt` is null.
  */
-export function drawInstants({ kind, commitAt, windowOpens, clipLength }: NewDraw): DrawInstants {
+export function drawInstants({ kind, commitAt, windowOpens, clipLength, spinLengthMs }: NewDraw): DrawInstants {
+  if (kind === 'spin' && spinLengthMs === null) throw new Error('A spin needs its length (#520)')
   const commit = msOf(commitAt)
   const spinStart = kind === 'spin' ? commit + SPIN_LEAD_MS : null
-  const stop = spinStart === null ? commit : spinStart + SPIN_DURATION_MS
+  const stop = spinStart === null ? commit : spinStart + spinLengthMs!
   // The Veto window's length is decided here and only here (#505): the readers, `windowFraction` included, work from the stored end.
   const end = windowOpens ? stop + (clipLength ?? 0) * 1000 + VETO_AFTER_CLIP_MS : null
   return { spinStartAt: spinStart === null ? null : new Date(spinStart), stopAt: new Date(stop), vetoEndsAt: end === null ? null : new Date(end) }

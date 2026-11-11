@@ -5,7 +5,7 @@ import type { Db } from '../../server/utils/db'
 import type { ActivityPage } from '../../shared/activity'
 import type { EventView } from '../../shared/event'
 import de from '../../i18n/locales/de.json'
-import { settleAt } from '../../shared/draw-timeline'
+import { SPIN_MAX_MS, SPIN_MIN_MS, settleAt } from '../../shared/draw-timeline'
 import { mountedRoutes } from './app'
 import { bodiesOf, EXPECTED_STATUS, expectStatuses, getRoutes, HOST, hiddenWheelWorld, NOT_SWEPT, OTHER_PARTY, OUTSIDER, PLAYER, vetoRead, type SweptRoute } from './hidden-wheel-world'
 import { clockToEnd, clockToStop, hostPutsBack, hostSets, hostSpins, playerVetoes, readFeed, type Signed } from './scenario'
@@ -21,6 +21,9 @@ vi.mock('node:crypto', async (importOriginal) => {
 
 // What a Player learns from a game the Host sets, from a spin and from a Veto under a Hidden wheel (#228, #229, #231), and the
 // sweep of every GET route over the same states (#418). Split out of hidden-wheel.test.ts in #418.
+
+// The one call that draws a spin's length (#520): a one-argument randomInt(n) with the number of milliseconds in the range.
+const LENGTH_CALL = SPIN_MAX_MS - SPIN_MIN_MS + 1
 
 describe('Hidden wheel secrecy (#148)', () => {
   const world = hiddenWheelWorld()
@@ -387,22 +390,76 @@ describe('Hidden wheel secrecy (#148)', () => {
       expectNoGameFacts(got.event, got.feed, got.room)
     })
 
+    // The spin's length (#520) comes from the source alone: it tells a Member nothing about the game, and the stop edge stays where it was.
+    describe('the spin\'s length (#520)', () => {
+      /** A spin of a fresh Event whose source answers the result call `resultAnswer`, the length call `lengthMs`, and every other call 0. */
+      async function spunLasting(resultAnswer: number, lengthMs: number) {
+        const running = await runningEvent(NO_WINDOW)
+        let calls = 0
+        source.override = n => n === LENGTH_CALL ? lengthMs - SPIN_MIN_MS : (calls++ === 0 ? resultAnswer : 0)
+        const { drawId } = await hostSpins(rig(), { slug: running.slug, host: hostSigned })
+        const [row] = await db.select().from(draws).where(eq(draws.id, drawId))
+        return { row: row!, length: row!.stopAt.getTime() - row!.spinStartAt!.getTime() }
+      }
+
+      it('is independent of the drawn game: the same length for another result, another length for the same result', async () => {
+        const first = await spunLasting(0, 8000)
+        const other = await spunLasting(1, 8000)
+        // The result differs (the games are another Event's: their positions on the wheel are what compares), the length does not.
+        expect(other.row.resultIndex).not.toBe(first.row.resultIndex)
+        expect(other.row.sliceGameIds![other.row.resultIndex!]).toBe(other.row.gameId)
+        expect(other.length).toBe(8000)
+        expect(first.length).toBe(8000)
+
+        const short = await spunLasting(0, SPIN_MIN_MS)
+        const long = await spunLasting(0, SPIN_MAX_MS)
+        for (const key of ['resultIndex', 'resultOffset', 'sliceLabels'] as const) expect(long.row[key]).toEqual(short.row[key])
+        expect(long.row.sliceGameIds!.indexOf(long.row.gameId!)).toBe(short.row.sliceGameIds!.indexOf(short.row.gameId!))
+        expect(long.length - short.length).toBe(4000)
+      })
+
+      // The edge of the stop holds for both ends of the range, on every surface a Player reads: the Event read, the feed and the room.
+      it.each([SPIN_MIN_MS, SPIN_MAX_MS])('names no game to a Player a millisecond before the stop of a %i ms spin and exactly the drawn one at it', async (length) => {
+        source.override = n => n === LENGTH_CALL ? length - SPIN_MIN_MS : 0
+        const { slug, eventId, drawn, undrawn, c, epsilon, row, stopAt } = await spun()
+        expect(stopAt - row.spinStartAt!.getTime()).toBe(length)
+
+        clock.set(new Date(stopAt - 1))
+        const before = await whatThePlayerGets(slug, eventId)
+        expectNone(before, [drawn, undrawn, c, epsilon])
+        const spinBefore = (JSON.parse(before.event) as EventView).wheel?.spin
+        expect(spinBefore?.game).toBeNull()
+        // The same fields as before this ticket: the length is in the two instants, no new field before the stop.
+        expect(Object.keys(spinBefore!).sort()).toEqual(['current', 'drawId', 'game', 'labels', 'resultIndex', 'resultOffset', 'roundId', 'slices', 'spinStartAt', 'stopAt'])
+        expect((JSON.parse(before.feed) as ActivityPage).entries.map(entry => entry.type)).not.toContain('game_drawn')
+
+        clock.set(new Date(stopAt))
+        const at = await whatThePlayerGets(slug, eventId)
+        expect((JSON.parse(at.event) as EventView).wheel?.spin?.game).toMatchObject({ id: drawn.id })
+        expect((JSON.parse(at.feed) as ActivityPage).entries.filter(entry => entry.type === 'game_drawn')).toMatchObject([{ games: { [drawn.id]: drawn.name } }])
+        expectNone(at, [undrawn, c, epsilon])
+      })
+    })
+
     // The Veto window's end is the drawn game's clip length plus 30 s (#505): sent before the stop it would tell a Member which game was drawn.
     describe('the drawn game\'s clip length (#505)', () => {
       const FIXED = Date.parse('2030-01-01T20:00:00.000Z')
       const CLIPS = [20, 50] as const
+      const LENGTH_ANSWER = 2500
       type Snapshot = { before: string[], vetoEndsAtBeforeStop: unknown, vetoEndsAtAtStop: string | null, stopAt: number }
 
       /** A spin of a world whose games all have this clip length, read as the Player at the commit, mid-spin and a millisecond before the stop, then at the stop. */
       async function spunWith(clipLength: number): Promise<Snapshot> {
         // Both worlds draw the same slice and shuffle the labels the same way, so the reads differ in nothing but the clip.
-        source.override = () => 0
+        // The spin's length is drawn too (#520): not 0, so the test proves that it does not depend on the drawn game's clip.
+        source.override = n => n === LENGTH_CALL ? LENGTH_ANSWER : 0
         clock.set(new Date(FIXED))
         const running = await runningEvent(world.LOBBY, 0, clipLength)
         clock.set(new Date(FIXED))
         const { drawId } = await hostSpins(rig(), { slug: running.slug, host: hostSigned })
         const [row] = await db.select().from(draws).where(eq(draws.id, drawId))
         const stopAt = row!.stopAt.getTime()
+        expect(stopAt - row!.spinStartAt!.getTime()).toBe(SPIN_MIN_MS + LENGTH_ANSWER)
         // Every id, the slug, the Invite token and the image keys differ between two Events by construction: each becomes its order of first appearance.
         const seen = new Map<string, number>()
         const known = [running.slug, running.inviteToken, ...[running.a, running.b, running.c, running.epsilon].flatMap(secret => [secret.imageKey, secret.id])]

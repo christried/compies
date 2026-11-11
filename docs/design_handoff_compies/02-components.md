@@ -140,7 +140,7 @@ A small round „?“ that opens a popover with a short hint. Used first by the 
 - **States:** closed · open (popover in the Notes popover's look: `rounded-[18px]`, line border, `bg-surface`, `shadow-modal`, on `layer-popover`, so above a Sheet). A click toggles; Esc, a press outside, a scroll outside the popover and a window resize close it.
 - **Slots:** default (replaces `text` for a richer hint)
 - **Desktop / mobile:** A popover at every width, no sheet. As wide as its content up to 288 px; placed by `placeNotePopover`: above the button with a 12 px gap, below when there is no room, 12 px inside the window's edges, and capped to the roomier side with its own scroll when it fits on neither (#494). The component does no media query and takes its place in the page from its caller's class.
-- **Accessibility:** the button carries `aria-expanded` at all times and `aria-controls` while open; the popover is `role="note"` and holds no control, so the focus stays on the button and returns to it on every close. Esc stops at the hint: it does not close a Sheet around it, the next Esc does.
+- **Accessibility:** the button carries `aria-expanded` at all times and `aria-controls` while open; the popover is `role="note"` and holds no control, so the focus stays on the button. Esc and a press outside close it and return the focus to the button; a scroll or a window resize close it and leave the focus where it was. Esc stops at the hint: it does not close a Sheet around it, the next Esc does.
 - **Motion:** the popover enters with `animate-enter` (04-motion § UI enters; reduced motion handled there). Nothing else moves.
 
 ## HoldToConfirmButton
@@ -238,7 +238,7 @@ Teams, team size, number of games, points per place.
 A value between a minimum and a maximum, with a label and a value text. First used by the game form's image crop: the zoom from „Passt“ to 3× under the tile (#516). Built so another form could use it.
 
 - **Props / variants:** `v-model` (a number), `min`, `max`, `step=1`, `label` (visible, and the accessible name), `valueText` (visible, and `aria-valuetext`), `disabled?`. Emits `change` with the number, forwarding the native change.
-- **States:** default · focus (the 3 px focus ring on the input) · disabled (the native attribute, muted to 60 % opacity; the caller says why)
+- **States:** default · focus (the 3 px focus ring on the input) · disabled (the native attribute, muted to 60 % opacity; the caller says why): a deviation from the common rule „Disabled = `aria-disabled`“ (line 10), since `aria-disabled` would still let the thumb move
 - **Slots:** —
 - **Desktop / mobile:** The same at every width; the caller sets the width (the game form: `w-full`, at most 240 px). The input is 44 px high.
 - **Accessibility:** a native `input[type=range]` named by its `<label>`, with no `tabindex`: the arrow keys, Home and End are the browser's. The value text is its `aria-valuetext`.

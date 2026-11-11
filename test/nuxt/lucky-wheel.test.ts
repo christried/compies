@@ -426,6 +426,7 @@ describe('the drawn game\'s tile and its dialog (#443, #444)', () => {
 
     expect(dialog()!.querySelector('h2')?.textContent).toBe('Halo')
     expect(dialog()!.textContent).toContain('bis 4')
+    expect(dialog()!.textContent).not.toContain('2 bis')
     expect(dialog()!.textContent).toContain('Teams')
     expect(dialog()!.textContent).toContain('Stand')
     for (const hidden of ['Koop', 'Retro', 'Hausregel: keine Raketen', 'Notizen']) expect(dialog()!.textContent).not.toContain(hidden)
