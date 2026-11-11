@@ -2,6 +2,8 @@
 // A range slider (#516, 02-components § RangeSlider): a native input[type=range] with a visible label and a value text,
 // in the app's tokens. Built so another form could use it. The arrow keys, Home and End are the browser's: no key
 // handler here. `change` forwards the native change (the thumb released, or a key step) with the same number.
+// The thumb carries its on-colour text class only for test/unit/on-colour.ts (rule b: a state fill needs a text partner); the thumb has
+// no text, so do not remove it.
 withDefaults(defineProps<{
   min: number
   max: number

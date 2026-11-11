@@ -445,6 +445,8 @@ describe('the pool steps', () => {
       await vi.waitFor(() => expect(dialog()).not.toBeNull())
       expect(dialog()!.querySelector('h2')!.textContent).toBe('Neues Spiel anlegen')
       expect(dialog()!.querySelector('form')).not.toBeNull()
+      // The sheet's form is not asked for „Speichern und noch eins“ (the stepper puts one game in the pool).
+      expect([...dialog()!.querySelectorAll('button')].some(button => button.textContent?.trim() === 'Speichern und noch eins')).toBe(false)
     })
 
     it('has Start, Ende and Länge in the sheet, and Ende gives Länge (#508)', async () => {
@@ -508,6 +510,26 @@ describe('the pool steps', () => {
       await vi.waitFor(() => expect(dialog()).toBeNull())
       expect(postedGame).toHaveBeenCalledWith(expect.objectContaining({ name: 'Frisch Angelegt' }))
       expect(inPool(page)!.findAll('li').map(row => row.get('b').text())).toEqual(['Frisch Angelegt'])
+    })
+
+    // Guard (#573): the form stays locked after a success, so the next sheet must mount a new one, not reuse the locked one.
+    it('opens a new form after the sheet was used: the name is empty and the button usable', async () => {
+      const page = await mountCreate()
+      await toPoolStep(page)
+      await createInSheet(page)
+      await vi.waitFor(() => expect(dialog()).toBeNull())
+
+      await newGameButton(page).trigger('click')
+
+      await vi.waitFor(() => expect(dialog()).not.toBeNull())
+      const label = [...dialog()!.querySelectorAll('label')].find(element => element.textContent === 'Name')!
+      const input = dialog()!.querySelector<HTMLInputElement>(`[id="${label.getAttribute('for')}"]`)!
+      expect(input.value).toBe('')
+      input.value = 'Noch eins'
+      input.dispatchEvent(new Event('input'))
+      const submit = dialog()!.querySelector('button[type="submit"]')!
+      await vi.waitFor(() => expect(submit.getAttribute('aria-disabled')).not.toBe('true'))
+      expect(submit.textContent).not.toContain('Speichert')
     })
 
     it('offers a Tag in use in the sheet\'s form (#335, #365)', async () => {

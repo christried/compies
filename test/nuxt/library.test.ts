@@ -817,6 +817,7 @@ describe('the game page for its editors (#142)', () => {
     await vi.waitFor(() => expect(page.find('h1').exists()).toBe(true))
 
     expect(page.text()).toContain('bis 10')
+    expect(page.text()).not.toContain('2 bis')
     expect(page.text()).toContain('Teams, Jeder gegen jeden')
   })
 })

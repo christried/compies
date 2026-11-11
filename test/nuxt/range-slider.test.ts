@@ -72,6 +72,25 @@ describe('RangeSlider (#516)', () => {
     expect(input(page).attributes('tabindex')).toBeUndefined()
   })
 
+  it('leaves ArrowRight, ArrowLeft, Home and End to the browser, and reports the step the browser makes after the key', async () => {
+    const page = await mountSlider()
+    const range = input(page).element as HTMLInputElement
+
+    for (const name of ['ArrowRight', 'ArrowLeft', 'Home', 'End']) {
+      const event = new KeyboardEvent('keydown', { key: name, bubbles: true, cancelable: true })
+      range.dispatchEvent(event)
+      expect(event.defaultPrevented, name).toBe(false)
+    }
+
+    // What a browser does after the key: the value steps, then `input` and `change` follow.
+    range.value = '1.1'
+    await input(page).trigger('input')
+    await input(page).trigger('change')
+    await flushPromises()
+    expect(page.emitted('update:modelValue')).toEqual([[1.1]])
+    expect(page.emitted('change')).toEqual([[1.1]])
+  })
+
   it('is disabled as a native input when asked', async () => {
     const page = await mountSlider({ disabled: true })
 
