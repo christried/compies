@@ -12,6 +12,7 @@
 ### Behoben
 
 - **Clip im Querformat:** Hältst du das Handy quer, passt der Clip jetzt in den Bildschirm. Die Knöpfe unter dem Video, „Ton aus“, „Clip überspringen“ und „Für mich schließen“, bleiben erreichbar; bisher lagen sie unter dem Bildschirmrand. ([#549](https://github.com/christried/compies/issues/549))
+- **Clip ohne Video:** Hat das gezogene Spiel kein Video, steht seine Karte auf dem Handy jetzt ganz im Clip. Bisher war sie oben abgeschnitten und lag unten über den Knöpfen. ([#555](https://github.com/christried/compies/issues/555))
 
 ## [0.12.0] - 2026-11-11 – Eventseite
 
