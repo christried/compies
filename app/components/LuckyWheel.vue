@@ -2,6 +2,7 @@
 import { GAME_GRID } from '~/utils/game-grid'
 import { reducedMotion } from '~/utils/motion'
 import { SCRAMBLE_FRAME_MS, finalAngle, removalEase, removalEnd, revealStage, scramble, sliceSpans, wheelAngle, type WheelTiming } from '~/utils/wheel'
+import { BULB_RADIUS, FLAPPER_HINGE, FLAPPER_PLACEMENT, PIN_RADIUS, PIN_RING_RADIUS, WHEEL_COLOURS, WHEEL_FILLS, bulbPoints, pinAngles, restBulbs, wheelPoint } from '~/utils/wheel-look'
 import { stopReached } from '~~/shared/draw-timeline'
 import type { HostGameFacts } from '~~/shared/game'
 import type { WheelView } from '~~/shared/stage'
@@ -15,7 +16,9 @@ import { characterCount, cutToCharacters } from '~~/shared/text'
 // At the stop the drawn slice gets its outline and the result card comes. Under a Hidden wheel a Member sees placeholders; the
 // drawn label turns into the real game half a second after the stop (a scramble, under reduced motion a crossfade), and the
 // drawn slice leaves at stop + 2.8 s instead of 2.2 s. The drawn slice shrinks and the others close the gap (0.6 s), or fade and
-// jump under reduced motion. Left out of 0.7: the bulbs, the flapper, Compibert and the sounds (the Release has no sound).
+// jump under reduced motion. Since 0.13.2 (#519, spec #503) the wheel is drawn as the Show-Rad: a red band with a rim of 24 bulbs, a pin
+// at every slice edge, a flapper at the top, in fixed colours (a stage piece, the same in Hell and Dunkel: utils/wheel-look.ts). The
+// bulbs and the flapper are still for now; their motion comes with 0.13.2 (#521, #522), Compibert and the sounds with 0.13.3.
 // The wheel is 340 px at most on a phone and 420 px from md up, and never changes size during a spin.
 const props = withDefaults(defineProps<{
   wheel: WheelView
@@ -30,8 +33,6 @@ const props = withDefaults(defineProps<{
 
 const { t } = useI18n()
 
-/** The slices' fills (reference GameWheel). */
-const FILLS = ['var(--cp-primary)', 'var(--cp-mint)', 'var(--cp-pop)', 'var(--cp-cobalt)']
 /** How long past the stop the loop keeps running: the removal ends at 2.8 s + 0.6 s on a Hidden wheel. */
 const TAIL_MS = 100
 const RADIUS = 180
@@ -40,6 +41,11 @@ const LABEL_MAX = 22
 /** The run a label has from its end (RADIUS - 12) to the hub's rim plus 4 units (#263), and the width of a glyph at weight 800 in em (an estimate). */
 const LABEL_RUN = RADIUS - 12 - HUB_RADIUS - 4
 const GLYPH_EM = 0.66
+/** The Show-Rad's fixed colours, the bulbs' places and the rim's sizes (#519): utils/wheel-look.ts. */
+const COLOURS = WHEEL_COLOURS
+const BULBS = bulbPoints()
+/** The flapper's shape in its local box (the reference's `pFlap`): a blade and its round head, drawn twice, once as the hard shadow. */
+const FLAP_BLADE = 'M15 10 22 54 29 10Z'
 
 const reduced = ref(false)
 
@@ -107,14 +113,25 @@ const fontSize = computed(() => Math.max(10, Math.min(19, 230 / Math.max(count.v
 const labelSize = (text: string) => Math.max(9, Math.min(fontSize.value, Math.floor(LABEL_RUN / (characterCount(text) * GLYPH_EM))))
 
 /** A point on the wheel `degrees` clockwise from the top. */
-const point = (degrees: number, radius: number) => `${(200 + radius * Math.sin((degrees * Math.PI) / 180)).toFixed(2)},${(200 - radius * Math.cos((degrees * Math.PI) / 180)).toFixed(2)}`
+function point(degrees: number, radius: number): string {
+  const { x, y } = wheelPoint(degrees, radius)
+  return `${x.toFixed(2)},${y.toFixed(2)}`
+}
 function pathOf({ start, end }: { start: number, end: number }): string {
   if (end - start < 0.01) return ''
   if (end - start >= 359.99) return `M200,${200 - RADIUS}A${RADIUS},${RADIUS} 0 1 1 200,${200 + RADIUS}A${RADIUS},${RADIUS} 0 1 1 200,${200 - RADIUS}Z`
   return `M200,200L${point(start, RADIUS)}A${RADIUS},${RADIUS} 0 ${end - start > 180 ? 1 : 0} 1 ${point(end, RADIUS)}Z`
 }
-// The last slice takes the surface colour when it would otherwise share the first one's fill (#263): a single slice has no neighbour, so it keeps FILLS[0].
-const fillOf = (index: number) => (count.value > 1 && index === count.value - 1 && count.value % FILLS.length === 1 ? 'var(--cp-surface-2)' : FILLS[index % FILLS.length])
+// The last slice takes the surface colour when it would otherwise share the first one's fill (#263): a single slice has no neighbour, so it keeps the first fill.
+const fillOf = (index: number) => (count.value > 1 && index === count.value - 1 && count.value % WHEEL_FILLS.length === 1 ? COLOURS.paper : WHEEL_FILLS[index % WHEEL_FILLS.length])
+
+// The Show-Rad's still defaults (#519); each is a function of the server's clock once its ticket fills it, and the template reads only these.
+/** A pin at every slice edge, drawn in the rotor from the one place that works the positions out (utils/wheel-look.ts). */
+const pins = computed(() => pinAngles(spans.value).map(degrees => wheelPoint(degrees, PIN_RING_RADIUS)))
+/** Which of the 24 bulbs are lit: the even ones at rest, in reduced motion too. #521 replaces the body (timing, clock, reduced): chase, blink and the stop's flash. */
+const litBulbs = computed((): boolean[] => restBulbs())
+/** The flapper's angle in degrees about its hinge, SVG sense (positive turns clockwise): down. #522 replaces the body: a kick at every pin that passes. */
+const flapperAngle = computed((): number => 0)
 
 /** The drawn slice has its outline from the stop on, until it leaves. */
 const winner = computed(() => (running.value && stopped.value && timing.value ? timing.value.resultIndex : -1))
@@ -156,25 +173,53 @@ const headingId = useId()
       </p>
     </div>
 
-    <div class="relative aspect-square w-full max-w-[340px] md:max-w-[420px]">
+    <!-- The disc is the Show-Rad (#519): a stage piece in fixed colours, hooked for the Dunkel-Check (scripts/browser/dark-read.mjs). The top margin
+         clears the flapper, which hangs past the box's top edge; the shadow reaches past its right and bottom edge, inside the card's padding. -->
+    <div
+      data-testid="wheel-disc"
+      class="relative mt-4 aspect-square w-full max-w-[340px] md:max-w-[420px]"
+    >
       <svg
         viewBox="0 0 400 400"
         role="img"
         :aria-label="t('wheel.aria', { n: count }, count)"
         class="size-full overflow-visible"
       >
+        <g aria-hidden="true">
+          <!-- The wheel's hard shadow, the backing disc (what an empty wheel and the last slice's surface fill show) and the red band with its outline. -->
+          <circle
+            cx="207"
+            cy="208"
+            r="204"
+            :fill="COLOURS.ink"
+          />
+          <circle
+            cx="200"
+            cy="200"
+            :r="RADIUS"
+            :fill="COLOURS.paper"
+          />
+          <circle
+            cx="200"
+            cy="200"
+            r="190"
+            fill="none"
+            :stroke="COLOURS.red"
+            stroke-width="22"
+          />
+          <circle
+            cx="200"
+            cy="200"
+            r="201"
+            fill="none"
+            :stroke="COLOURS.ink"
+            stroke-width="3.5"
+          />
+        </g>
         <g
           data-testid="wheel-rotor"
           :style="{ transform: `rotate(${angle}deg)`, transformOrigin: '200px 200px' }"
         >
-          <circle
-            cx="200"
-            cy="200"
-            :r="RADIUS + 10"
-            fill="var(--cp-surface-2)"
-            stroke="var(--cp-line)"
-            stroke-width="4"
-          />
           <template
             v-for="(span, index) in spans"
             :key="index"
@@ -184,7 +229,7 @@ const headingId = useId()
               data-testid="wheel-slice"
               :d="pathOf(span)"
               :fill="fillOf(index)"
-              stroke="var(--cp-line)"
+              :stroke="COLOURS.ink"
               :stroke-width="winner === index ? 7 : 3"
               stroke-linejoin="round"
               :opacity="winner === index ? drawnOpacity : 1"
@@ -199,27 +244,124 @@ const headingId = useId()
               dominant-baseline="central"
               :font-size="labelSize(shortened(labelOf(index).text))"
               font-weight="800"
-              fill="var(--cp-on-primary)"
+              :fill="COLOURS.ink"
               :opacity="labelOf(index).opacity"
             >{{ shortened(labelOf(index).text) }}</text>
           </template>
+          <!-- The pins sit on the slice edges, last in the rotor so they turn with it and lie over the outlines. -->
+          <g
+            data-testid="wheel-pins"
+            aria-hidden="true"
+          >
+            <circle
+              v-for="(pin, index) in pins"
+              :key="index"
+              data-testid="wheel-pin"
+              :cx="pin.x.toFixed(2)"
+              :cy="pin.y.toFixed(2)"
+              :r="PIN_RADIUS"
+              :fill="COLOURS.cream"
+              :stroke="COLOURS.ink"
+              stroke-width="2.5"
+            />
+          </g>
         </g>
-        <circle
-          cx="200"
-          cy="200"
-          :r="HUB_RADIUS"
-          fill="var(--cp-surface)"
-          stroke="var(--cp-line)"
-          stroke-width="4"
-        />
-        <!-- The pointer: it stays where it is while the wheel turns. -->
-        <path
-          d="M182,-6 L218,-6 L200,34 Z"
-          fill="var(--cp-hot)"
-          stroke="var(--cp-line)"
-          stroke-width="4"
-          stroke-linejoin="round"
-        />
+        <g aria-hidden="true">
+          <!-- What stands still over the rotor: the rim ring and the hub with its hard shadow. -->
+          <circle
+            cx="200"
+            cy="200"
+            :r="RADIUS"
+            fill="none"
+            :stroke="COLOURS.ink"
+            stroke-width="5"
+          />
+          <circle
+            cx="204"
+            cy="204"
+            :r="HUB_RADIUS"
+            :fill="COLOURS.ink"
+          />
+          <circle
+            cx="200"
+            cy="200"
+            :r="HUB_RADIUS"
+            :fill="COLOURS.red"
+            :stroke="COLOURS.ink"
+            stroke-width="4"
+          />
+        </g>
+        <!-- The 24 bulbs on the band (#521 lights them by server time). They stand still. -->
+        <g
+          data-testid="wheel-bulbs"
+          aria-hidden="true"
+        >
+          <circle
+            v-for="(bulb, index) in BULBS"
+            :key="index"
+            data-testid="wheel-bulb"
+            :data-lit="litBulbs[index] ? 'true' : 'false'"
+            :cx="bulb.x.toFixed(2)"
+            :cy="bulb.y.toFixed(2)"
+            :r="BULB_RADIUS"
+            :fill="litBulbs[index] ? COLOURS.bulbLit : COLOURS.bulbUnlit"
+            :stroke="COLOURS.ink"
+            stroke-width="2"
+          />
+        </g>
+        <!-- The flapper at the top, in place of the pointer: it stays where it is while the wheel turns, and only its arm will move (#522). -->
+        <g
+          data-testid="wheel-flapper"
+          aria-hidden="true"
+          :transform="FLAPPER_PLACEMENT"
+        >
+          <g
+            data-testid="wheel-flapper-arm"
+            :transform="`rotate(${flapperAngle} ${FLAPPER_HINGE.x} ${FLAPPER_HINGE.y})`"
+          >
+            <!-- Its hard shadow, the same shape offset by (3, 3), drawn as shapes: a CSS filter on an inner SVG element draws badly in Safari. -->
+            <g transform="translate(3 3)">
+              <path
+                :d="FLAP_BLADE"
+                :fill="COLOURS.ink"
+                :stroke="COLOURS.ink"
+                stroke-width="3.5"
+                stroke-linejoin="round"
+              />
+              <circle
+                :cx="FLAPPER_HINGE.x"
+                :cy="FLAPPER_HINGE.y"
+                r="10"
+                :fill="COLOURS.ink"
+                :stroke="COLOURS.ink"
+                stroke-width="3.5"
+                stroke-linejoin="round"
+              />
+            </g>
+            <path
+              :d="FLAP_BLADE"
+              :fill="COLOURS.flapper"
+              :stroke="COLOURS.ink"
+              stroke-width="3.5"
+              stroke-linejoin="round"
+            />
+            <circle
+              :cx="FLAPPER_HINGE.x"
+              :cy="FLAPPER_HINGE.y"
+              r="10"
+              :fill="COLOURS.flapper"
+              :stroke="COLOURS.ink"
+              stroke-width="3.5"
+              stroke-linejoin="round"
+            />
+            <circle
+              :cx="FLAPPER_HINGE.x"
+              :cy="FLAPPER_HINGE.y"
+              r="3.5"
+              :fill="COLOURS.ink"
+            />
+          </g>
+        </g>
       </svg>
     </div>
 

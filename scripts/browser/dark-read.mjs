@@ -20,6 +20,9 @@ export const EXCLUDED = [
   { selector: '[aria-hidden="true"]:has(.fence-mesh)', why: 'the construction ground' },
   // The Coin flip's coin, a fixed-colour piece of the stage (`CoinFlip.vue`).
   { selector: '[data-testid="coin-spin"]', why: 'the coin of the Coin flip' },
+  // The Lucky Wheel's disc, the Show-Rad (#519, spec #503): fixed colours in both Appearances, a stage piece like the coin. The card,
+  // the heading, the status line and the result card around it are measured (`LuckyWheel.vue`: the hook is the wheel's box only).
+  { selector: '[data-testid="wheel-disc"]', why: 'the Lucky Wheel' },
   // The Award ceremony's scene, the stage of Compibert's run (`AwardCeremony.vue`): the trophy he carries (fixed colours,
   // „a physical sticker in both themes“) and the box he runs in. The winner card and the rows are measured.
   { selector: '[data-part="compibert"], [data-part="trophy"]', why: 'the Award ceremony scene' },
