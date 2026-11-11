@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+## [0.12.0] - 2026-11-11 – Eventseite
+
+Die Eventseite, gründlich überarbeitet: Spiele zeigen sich als Kacheln mit eigenem Dialog, die Bühne rückt nach oben, was gerade passiert ist, und dein Teamwort änderst du jetzt das ganze Event über. Aus Bench und Tribüne ist eine Tribüne geworden, und ein beendetes Event verrät den Sieger erst mit der Siegerehrung.
+
 ### Neu
 
 - **Notizen im Spiele-Picker:** Beim Füllen des Spielepools und bei „Nächstes Spiel setzen“ hat ein Spiel mit Notizen jetzt einen Knopf „Notizen ansehen“. Er zeigt die Notizen, ohne dass du die Auswahl verlässt: am Desktop neben dem Spiel, auf dem Handy als Sheet von unten. ([#436](https://github.com/christried/compies/issues/436))
