@@ -5,7 +5,8 @@
 //   node scripts/worktree-clean.mjs [<agent id> …]    (run it in the background: a worktree with node_modules takes minutes)
 //
 // Done means: named on the command line (`agent-a1b2…` or `a1b2…`, the agents of this session that have reported), or
-// locked by a Claude process that no longer runs (a session that has ended). Nothing else is done: an unlocked worktree
+// locked by a Claude process that no longer runs (a session that has ended). A lock without a pid, set by hand, is kept:
+// „locked by hand (<reason>); the cleaner leaves it“. Nothing else is done: an unlocked worktree
 // nobody named, such as another live session's merge worktree or a finished agent of a session that still runs, is kept
 // with „not named; name it if it is yours“ (#477; before, every unlocked worktree counted as done and a call with two
 // names removed a running session's worktrees). A done worktree is kept, with the reason, while it has uncommitted
@@ -75,7 +76,12 @@ for (const tree of worktrees()) {
       console.log(`kept ${name}: not named; name it if it is yours`)
       continue
     }
-    if (!isNamed && !(pid > 0 && !running(pid))) {
+    if (!isNamed && !(pid > 0)) {
+      // A lock without a pid was set by hand: no session to ask, so the cleaner leaves it (#477).
+      console.log(`kept ${name}: locked by hand${tree.lock ? ` (${tree.lock})` : ''}; the cleaner leaves it`)
+      continue
+    }
+    if (!isNamed && running(pid)) {
       console.log(`kept ${name}: its session runs (${tree.lock}); name it once its agent has reported`)
       continue
     }

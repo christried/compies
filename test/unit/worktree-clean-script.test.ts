@@ -65,6 +65,10 @@ describe('scripts/worktree-clean.mjs', () => {
     lock('agent-c3c3c3', deadPid)
     add('agent-d4d4d4')
     lock('agent-d4d4d4', livePid)
+    add('agent-g8g8g8')
+    git(work, 'worktree', 'lock', '--reason', 'kept for the operator', folder('agent-g8g8g8'))
+    add('agent-h9h9h9')
+    git(work, 'worktree', 'lock', folder('agent-h9h9h9'))
     add('merge-398', 'merge-398')
     add('agent-e5e5e5')
     writeFileSync(join(folder('agent-e5e5e5'), 'unsaved.txt'), 'work in progress')
@@ -124,6 +128,18 @@ describe('scripts/worktree-clean.mjs', () => {
     expect(listed('agent-d4d4d4')).toBe(true)
     expect(locked('agent-d4d4d4')).toBe(true)
     expect(lines().some(line => line.startsWith('kept agent-d4d4d4: its session runs'))).toBe(true)
+  })
+
+  it('keeps an unnamed worktree locked by hand and says so, not that a session runs', () => {
+    expect(listed('agent-g8g8g8')).toBe(true)
+    expect(locked('agent-g8g8g8')).toBe(true)
+    expect(lines()).toContain('kept agent-g8g8g8: locked by hand (kept for the operator); the cleaner leaves it')
+  })
+
+  it('keeps an unnamed worktree locked by hand without a reason', () => {
+    expect(listed('agent-h9h9h9')).toBe(true)
+    expect(locked('agent-h9h9h9')).toBe(true)
+    expect(lines()).toContain('kept agent-h9h9h9: locked by hand; the cleaner leaves it')
   })
 
   it('keeps a named worktree with an uncommitted change', () => {
