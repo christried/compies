@@ -9,7 +9,7 @@ COMPIES keeps its version history in `CHANGELOG.md` at the repo root (Keep a Cha
 - Groups are `### Neu`, `### Geändert`, `### Behoben`, `### Entfernt`, `### Sicherheit`, only these five, in this order when present.
 - Bullets with at most one nested level. Bold, inline code and links are fine.
 - A PR with no change Users can notice (refactors, tests, docs) adds no line.
-- **On an integration branch** (one spec, many tickets), ticket branches add no line. The implementer gives its line in its report, and the orchestrator adds it under `## [Unreleased]` right after merging the ticket, so one writer touches the file. In 0.7 every ticket branch appended to the same hunk, which caused most of the sync merges (review 0.7, Q4). The integration PR carries the lines into `staging`. Right after adding a line, the orchestrator runs `pnpm vitest run test/unit/changelog-file.test.ts` before the push.
+- **On an integration branch** (one spec, many tickets), ticket branches add no line. The implementer gives its line in its report, and the orchestrator adds it under `## [Unreleased]` right after merging the ticket, so one writer touches the file. It makes that commit in its own worktree, never in the main checkout (`docs/agents/delivery.md` § Several sessions in one checkout): `git worktree add --detach .claude/worktrees/<name> origin/<integration branch>` once, then for each line `git fetch origin` and `git checkout --detach origin/<integration branch>` (`scripts/merge-into.mjs` moves the branch on `origin` only), the commit, and `git push origin HEAD:<integration branch>`. In 0.7 every ticket branch appended to the same hunk, which caused most of the sync merges (review 0.7, Q4). The integration PR carries the lines into `staging`. Right after adding a line, the orchestrator runs `pnpm vitest run test/unit/changelog-file.test.ts` before the push.
 
 ## Review, walk-through, retro
 
@@ -31,7 +31,7 @@ When a Release is ready, a PR into `staging` does three things:
 2. Leaves `## [Unreleased]` empty above it.
 3. Sets `version` in `package.json` to `x.y.z`.
 
-The cut lands on `staging` through its own PR first, before the Release PR to `main`. Plan the merge into `main` for a day without a Session (§ Release PR to `main`, No game days).
+The cut lands on `staging` through its own PR first, before the Release PR to `main`. Plan the merge into `main` for a day without a Session (§ Release PR to `main`, No game days). The orchestrator makes the cut in its own worktree on a branch from `origin/staging` (`git worktree add .claude/worktrees/<name> -b chore/cut-x.y.z origin/staging`), never in the main checkout (`docs/agents/delivery.md` § Several sessions in one checkout).
 
 ## Release PR to `main`
 
