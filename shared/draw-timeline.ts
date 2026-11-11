@@ -131,10 +131,19 @@ export function windowFraction(draw: DrawWindow, now: Instant): number {
   return Math.min(1, Math.max(0, (end - msOf(now)) / length))
 }
 
-/** CLIP (GLOSSARY: Clip; spec #218 § Clip, #230). The clip's two instants, in epoch ms: it starts at the draw's stop and ends the game's clip length (seconds) later. */
-export function clipWindow(draw: { stopAt: Instant }, game: { clipLength: number }): { startAt: number, endsAt: number } {
+/** A game's clip length in seconds, null without a video: no Clip to play, so its Veto window is the 30 s alone (#505, #546). Decided here only: both writers of a Draw and `clipWindow` call it. */
+export function clipLengthOf(game: { youtubeId: string | null, clipLength: number }): number | null {
+  return game.youtubeId === null ? null : game.clipLength
+}
+
+/**
+ * CLIP (GLOSSARY: Clip; spec #218 § Clip, #230). The clip's two instants, in epoch ms: it starts at the draw's stop and ends the game's clip length (seconds) later.
+ * A game without a video has its card there instead: a card has no player, so it shows for its stored length but at most as long as its window (#546).
+ */
+export function clipWindow(draw: { stopAt: Instant }, game: { youtubeId: string | null, clipLength: number }): { startAt: number, endsAt: number } {
   const startAt = msOf(draw.stopAt)
-  return { startAt, endsAt: startAt + game.clipLength * 1000 }
+  const seconds = clipLengthOf(game) ?? Math.min(game.clipLength, VETO_AFTER_CLIP_MS / 1000)
+  return { startAt, endsAt: startAt + seconds * 1000 }
 }
 
 /** CLIP. The clip runs from its start (inclusive) to its end (exclusive). */

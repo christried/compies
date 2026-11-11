@@ -5,7 +5,7 @@ import type { Db } from '../../server/utils/db'
 import type { ActivityPage } from '../../shared/activity'
 import type { EventView } from '../../shared/event'
 import de from '../../i18n/locales/de.json'
-import { WINDOW_MS } from '../draw-offsets'
+import { settleAt } from '../../shared/draw-timeline'
 import { mountedRoutes } from './app'
 import { bodiesOf, EXPECTED_STATUS, expectStatuses, getRoutes, HOST, hiddenWheelWorld, NOT_SWEPT, OTHER_PARTY, OUTSIDER, PLAYER, vetoRead, type SweptRoute } from './hidden-wheel-world'
 import { clockToEnd, clockToStop, hostPutsBack, hostSets, hostSpins, playerVetoes, readFeed, type Signed } from './scenario'
@@ -322,8 +322,10 @@ describe('Hidden wheel secrecy (#148)', () => {
     })
 
     it('keeps the undrawn game off the wheel for a Player after the removal too: the wheel has the count and nothing more', async () => {
-      const { slug, undrawn, stopAt } = await spun()
-      clock.set(new Date(stopAt + WINDOW_MS))
+      const { slug, undrawn, row } = await spun()
+      // NO_WINDOW opens none (`vetoAllowance: 0`): the draw settles at its stop, which is what settleAt reads (#546).
+      expect(row.vetoEndsAt).toBeNull()
+      clock.set(settleAt(row))
 
       const raw = await rawRead(playerCookie, slug)
 
@@ -390,7 +392,6 @@ describe('Hidden wheel secrecy (#148)', () => {
       const FIXED = Date.parse('2030-01-01T20:00:00.000Z')
       const CLIPS = [20, 50] as const
       type Snapshot = { before: string[], vetoEndsAtBeforeStop: unknown, vetoEndsAtAtStop: string | null, stopAt: number }
-      const snapshots = new Map<number, Snapshot>()
 
       /** A spin of a world whose games all have this clip length, read as the Player at the commit, mid-spin and a millisecond before the stop, then at the stop. */
       async function spunWith(clipLength: number): Promise<Snapshot> {
@@ -399,8 +400,8 @@ describe('Hidden wheel secrecy (#148)', () => {
         clock.set(new Date(FIXED))
         const running = await runningEvent(world.LOBBY, 0, clipLength)
         clock.set(new Date(FIXED))
-        await hostSpins(rig(), { slug: running.slug, host: hostSigned })
-        const [row] = await db.select().from(draws)
+        const { drawId } = await hostSpins(rig(), { slug: running.slug, host: hostSigned })
+        const [row] = await db.select().from(draws).where(eq(draws.id, drawId))
         const stopAt = row!.stopAt.getTime()
         // Every id, the slug, the Invite token and the image keys differ between two Events by construction: each becomes its order of first appearance.
         const seen = new Map<string, number>()
@@ -429,7 +430,6 @@ describe('Hidden wheel secrecy (#148)', () => {
 
       it.each(CLIPS)('sends the Player no end of the window before the stop, and the end from the stop on: %i s clip', async (clipLength) => {
         const got = await spunWith(clipLength)
-        snapshots.set(clipLength, got)
 
         expect(got.vetoEndsAtBeforeStop).toBeNull()
         expect(got.vetoEndsAtAtStop).toBe(new Date(got.stopAt + (clipLength + 30) * 1000).toISOString())
@@ -437,10 +437,10 @@ describe('Hidden wheel secrecy (#148)', () => {
         for (const read of got.before) expect(read).not.toContain('clipLength')
       })
 
-      it('shows a Player two Draws whose games differ only in clip length the same reads before the stop, field for field', () => {
-        const [short, long] = [snapshots.get(20), snapshots.get(50)]
-        // Runs after the two cases above (they fill `snapshots`); a lone run of this case says so instead of passing.
-        if (!short || !long) throw new Error('run the two clip cases above first: this case compares what they read')
+      it('shows a Player two Draws whose games differ only in clip length the same reads before the stop, field for field', async () => {
+        const short = await spunWith(20)
+        const long = await spunWith(50)
+
         expect(long.before).toEqual(short.before)
       })
     })

@@ -1021,7 +1021,7 @@
       "points": "Punkt | Punkten",
       "pointsLabel": "Punkt | Punkte",
       "games": "{n} Spiel | {n} Spiele",
-      "moreGames": "+{n} weitere",
+      "more": "+{n} weitere",
       "moreParties": "+{n} weitere Parteien",
       "datesMany": "{first} – {last} · {n} Termine",
       "brand": "Compies",
