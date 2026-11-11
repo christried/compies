@@ -6,7 +6,7 @@ They're committed because cloud sessions load a repo's `.claude/skills/` but no 
 
 ## COMPIES patches
 
-Each patch is a paragraph starting with `**COMPIES:**` that points at the rules in `docs/agents/`. The rules live there; a patch stays a pointer. `grep -rn "COMPIES:" .claude/skills` lists them:
+Each patch is a paragraph starting with `**COMPIES:**`. Where a rule lives depends on who uses it: a rule only one skill uses stays in that skill's patch, where it loads with the skill; a rule several documents use lives in `docs/agents/`, and the patch points to it. Patches are committed, so cloud sessions read them too (`CLAUDE.md` § Standing rules). `grep -rn "COMPIES:" .claude/skills` lists them:
 
 - `code-review`: both sub-agents on `sonnet` at high effort, each in its own worktree
 - `implement-spec`: subagent rules, frontier tickets only, integration branch from and into `staging` (where `Closes #n` closes nothing), clean merges by the orchestrator, delivery, the 300k context limit with its handoff, the Release review in place of `code-review`, the worktree cleanup
