@@ -310,7 +310,7 @@
       },
       "wheel": {
         "name": "Glücksrad",
-        "desc": "Das Glücksrad entscheidet, danach 60 s für Vetos."
+        "desc": "Das Glücksrad entscheidet, danach ist Zeit für Vetos."
       },
       "pickBan": {
         "name": "Pick & Ban",
@@ -387,7 +387,7 @@
       },
       "wheel": {
         "title": "Glücksrad",
-        "how": "Du legst Spiele auf das Glücksrad und drehst es. Alle sehen live, wie es dreht und wo es stehen bleibt. Das Spiel fliegt vom Rad, der 30-Sekunden-Clip startet. Danach hat jede Partei 60 Sekunden für ein Veto. Jede Partei hat gleich viele Vetos für das ganze Event, die Zahl legst du fest. Im Team darf jedes Mitglied sie einsetzen. Pro Spiel kann eine Partei höchstens 1 Veto einlegen. Welche Partei ein Veto eingelegt hat, siehst du erst, wenn die Zeit abläuft. Dann werden alle gleichzeitig aufgedeckt. Gibt es ein Veto, wird neu gedreht.",
+        "how": "Du legst Spiele auf das Glücksrad und drehst es. Alle sehen live, wie es dreht und wo es stehen bleibt. Das Spiel fliegt vom Rad, der Clip startet. Während des Clips und noch 30 Sekunden danach kann jede Partei ein Veto einlegen. Jede Partei hat gleich viele Vetos für das ganze Event, die Zahl legst du fest. Im Team darf jedes Mitglied sie einsetzen. Pro Spiel kann eine Partei höchstens 1 Veto einlegen. Welche Partei ein Veto eingelegt hat, siehst du erst, wenn die Zeit abläuft. Dann werden alle gleichzeitig aufgedeckt. Gibt es ein Veto, wird neu gedreht.",
         "hideWheel": "Die Spieler sehen statt der echten Spiele nur Platzhalter oder erfundene Namen. Erst wenn das Rad stoppt, zeigt sich, was es wirklich ist. So spart niemand seine Vetos taktisch auf.",
         "hostSees": "Du als Host siehst die Spiele auf dem verdeckten Rad trotzdem, auch wenn du mitspielst.",
         "good": "Maximale Spannung und Chaos.",
@@ -406,13 +406,13 @@
       },
       "loserPick": {
         "title": "Loser's Pick",
-        "how": "Das erste Spiel bestimmt das Glücksrad. Danach darf immer die Partei auf dem letzten Platz das nächste Spiel aussuchen. Die anderen können innerhalb von 60 Sekunden ein Veto einlegen, dann muss neu gewählt werden. Teilen sich mehrere den letzten Platz, entscheidet das Glücksrad.",
+        "how": "Das erste Spiel bestimmt das Glücksrad. Danach darf immer die Partei auf dem letzten Platz das nächste Spiel aussuchen. Die anderen können im Veto-Fenster ein Veto einlegen, dann muss neu gewählt werden. Teilen sich mehrere den letzten Platz, entscheidet das Glücksrad.",
         "good": "Aufholjagden. Wer hinten liegt, spielt sein Lieblingsspiel.",
         "warn": "Vetos funktionieren wie beim Glücksrad."
       },
       "loserAdv": {
         "title": "Glücksrad – Loser's Advantage",
-        "how": "Wie Glücksrad, mit einem Bonus für die Letzten: Vor jedem Dreh (außer dem ersten) darf die Partei auf dem letzten Platz ein Spiel vom Rad bannen. Dann wird gedreht, und es gibt wie gewohnt 60 Sekunden für Vetos.",
+        "how": "Wie Glücksrad, mit einem Bonus für die Letzten: Vor jedem Dreh (außer dem ersten) darf die Partei auf dem letzten Platz ein Spiel vom Rad bannen. Dann wird gedreht, und danach läuft wie gewohnt das Veto-Fenster.",
         "good": "Zufall mit einem kleinen Vorteil für die, die hinten liegen.",
         "warn": "Das Rad kann hier nicht verdeckt werden, sonst wüsste niemand, was er bannt."
       }
@@ -463,7 +463,7 @@
     "left": "Keine Vetos mehr | Noch 1 Veto | Noch {n} Vetos",
     "partyLeft": "Euer Team: kein Veto mehr | Euer Team: 1 Veto übrig | Euer Team: {n} Vetos übrig",
     "soloLeft": "Du hast kein Veto mehr | Du hast noch 1 Veto | Du hast noch {n} Vetos",
-    "timeLeft": "Noch 1 Sekunde | Noch {n} Sekunden",
+    "timeLeft": "Noch {time}",
     "timeLabel": "Veto-Zeit",
     "holding": "Halten …",
     "cast": "Veto eingelegt",
@@ -707,7 +707,7 @@
     },
     "drawn": {
       "title": "Das Glücksrad sagt: {game}",
-      "body": "60 Sekunden für euer Veto. {session}, Spiel {n}."
+      "body": "Jetzt ist Zeit für euer Veto. {session}, Spiel {n}."
     },
     "result": {
       "title": "{team} gewinnt Spiel {n}",
@@ -1668,7 +1668,7 @@
     "choose": "Such dir ein Spiel aus.",
     "chosen": "Alle sehen es sofort.",
     "vetoAllowed": "Veto erlauben",
-    "vetoAllowedHelp": "Die Parteien haben dann 60 Sekunden, das Spiel abzulehnen.",
+    "vetoAllowedHelp": "Die Parteien können das Spiel dann im Veto-Fenster ablehnen.",
     "confirm": "Setzen"
   },
   "error": {

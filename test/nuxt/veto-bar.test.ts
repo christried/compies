@@ -5,14 +5,15 @@ import VetoBar from '~/components/VetoBar.vue'
 import { clockTick, revealTile, sealStamp, vetoStamp } from '~/utils/motion'
 import type { BoardTeam } from '~~/shared/event'
 import type { OwnVetoView, SpinView, VetoDrawView, VetoView, WheelView } from '~~/shared/stage'
-import { WINDOW_MS } from '../draw-offsets'
+import { windowMsFor } from '../draw-offsets'
 
 // The Veto bar (review 0.7, F4; reference App Spielrunde „Clip + Veto-Fenster“, „Eigenes Veto versiegelt“): the Veto window's hold
 // button in a fixed layer, for a Player of a Party while the window is open. And the window's motion (04-motion § Veto window), whose
 // easings and durations the standard asks every animation to pin (CODING_STANDARDS § Motion).
 
 const STOP = Date.parse('2090-10-30T20:00:10.000Z')
-const END = STOP + WINDOW_MS
+// A game with the default 30 s clip: its window lasts a minute (#505).
+const END = STOP + windowMsFor(30)
 const iso = (ms: number) => new Date(ms).toISOString()
 const halo = { id: 'g1', name: 'Halo', imageUrl: null, youtubeId: null, clipStart: 0, clipLength: 30, playersMin: 2, playersMax: 4, suitabilities: [], price: null }
 const teams: BoardTeam[] = [{ position: 1, name: null }, { position: 2, name: null }]
@@ -177,6 +178,13 @@ describe('who gets the bar and when', () => {
 
     await mount(wheelOf({ left: [0, 2], own: own({ rejection: 'no_vetoes_left' }) }), { solo: true })
     expect(text()).toContain('Du hast kein Veto mehr')
+  })
+
+  it('shows the clock of a window of 150 s as 2:30 at the stop (#505)', async () => {
+    serverMs = STOP
+    await mount(wheelOf({ draw: windowOf({ vetoEndsAt: iso(STOP + 150_000) }) }))
+
+    expect(page!.get('[role="timer"]').text()).toBe('2:30')
   })
 
   it('turns the last ten seconds red', async () => {

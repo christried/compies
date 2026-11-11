@@ -13,7 +13,8 @@ import type { VetoDrawView } from '~~/shared/stage'
 export function useVetoClock(draw: () => VetoDrawView | null, serverNow: () => number) {
   const endsAt = computed(() => {
     const current = draw()
-    return current ? Date.parse(current.vetoEndsAt) : null
+    // No end before the stop for a Member (#505): the window is neither open nor ended then.
+    return current?.vetoEndsAt ? Date.parse(current.vetoEndsAt) : null
   })
   const ticker = useServerTicker(serverNow, { until: () => endsAt.value })
   const mounted = computed(() => ticker.value !== null)
