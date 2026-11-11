@@ -35,7 +35,7 @@ class Component extends DCLogic {
   }
   look() {
     const d = this.el.current, dark = !!d.closest('[data-theme="dark"]'), v = this.props.variant || 'head';
-    CBO.treat(this.r, (d.clientWidth < 40 || v === 'emote' || v === 'head' || v === 'tail') ? 'Pur' : dark ? 'Sticker' : 'Harter Schatten');
+    CBO.treat(this.r, ((this.props.size || 120) < 40 || v === 'emote' || v === 'head' || v === 'tail') ? 'Pur' : dark ? 'Sticker' : 'Harter Schatten');
   }
   componentDidUpdate(pp) {
     if (!this.r) return;
