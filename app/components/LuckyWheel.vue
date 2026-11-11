@@ -2,7 +2,8 @@
 import { GAME_GRID } from '~/utils/game-grid'
 import { reducedMotion } from '~/utils/motion'
 import { SCRAMBLE_FRAME_MS, finalAngle, removalEase, removalEnd, revealStage, scramble, sliceSpans, wheelAngle, type WheelTiming } from '~/utils/wheel'
-import { BULB_RADIUS, FLAPPER_HINGE, FLAPPER_PLACEMENT, PIN_RADIUS, PIN_RING_RADIUS, WHEEL_COLOURS, WHEEL_FILLS, bulbPoints, pinAngles, restBulbs, wheelPoint } from '~/utils/wheel-look'
+import { BULB_RADIUS, FLAPPER_HINGE, FLAPPER_PLACEMENT, PIN_RADIUS, PIN_RING_RADIUS, WHEEL_COLOURS, WHEEL_FILLS, bulbPoints, pinAngles, wheelPoint } from '~/utils/wheel-look'
+import { bulbsLit } from '~/utils/wheel-bulbs'
 import { stopReached } from '~~/shared/draw-timeline'
 import type { HostGameFacts } from '~~/shared/game'
 import type { WheelView } from '~~/shared/stage'
@@ -55,9 +56,10 @@ const timing = computed((): WheelTiming | null => {
   return current && { spinStartAt: Date.parse(current.spinStartAt), stopAt: Date.parse(current.stopAt), slices: current.slices, resultIndex: current.resultIndex, resultOffset: current.resultOffset }
 })
 /** The server time of this frame; null before the page has mounted, so the server's render and the first client render agree. */
+const rootEl = useTemplateRef('root')
 const clock = useServerTicker(() => props.serverNow(), {
   until: () => (timing.value ? removalEnd(timing.value, props.hidden) + TAIL_MS : null),
-  target: useTemplateRef('root'),
+  target: rootEl,
 })
 /** Whether the spin's own layout is on screen: from the commit until the drawn slice has left. */
 const running = computed(() => timing.value !== null && clock.value !== null && clock.value < removalEnd(timing.value, props.hidden))
@@ -66,6 +68,15 @@ const stopped = computed(() => timing.value !== null && clock.value !== null && 
 // Whether the User prefers reduced motion is read at mount and for each new spin.
 onMounted(() => void (reduced.value = reducedMotion()))
 watch(() => spin.value?.drawId, () => void (reduced.value = reducedMotion()))
+
+/**
+ * The bulbs' own clock (#521): it runs at rest too, for as long as the wheel is in view and motion is not reduced, since the bulbs blink
+ * at rest. `clock` above stays as it is, so a finished moment (the removal, the pops, the flapper) never flips back on a resync.
+ */
+const lampClock = useServerTicker(() => props.serverNow(), {
+  until: () => (reduced.value ? null : Number.POSITIVE_INFINITY),
+  target: rootEl,
+})
 
 // The wheel as drawn: the spin's slices while it runs, else the games left on the wheel (a Member under a Hidden wheel sees ???).
 const count = computed(() => (running.value ? spin.value!.slices : props.wheel.count))
@@ -128,8 +139,14 @@ const fillOf = (index: number) => (count.value > 1 && index === count.value - 1 
 // The Show-Rad's still defaults (#519); each is a function of the server's clock once its ticket fills it, and the template reads only these.
 /** A pin at every slice edge, drawn in the rotor from the one place that works the positions out (utils/wheel-look.ts). */
 const pins = computed(() => pinAngles(spans.value).map(degrees => wheelPoint(degrees, PIN_RING_RADIUS)))
-/** Which of the 24 bulbs are lit: the even ones at rest, in reduced motion too. #521 replaces the body (timing, clock, reduced): chase, blink and the stop's flash. */
-const litBulbs = computed((): boolean[] => restBulbs())
+/**
+ * Which of the 24 bulbs are lit (#521): a function of the server time alone (utils/wheel-bulbs.ts). The lamp clock ticks every frame, so the
+ * same array comes back while the lit set is unchanged and the wheel renders only when a bulb switches (every 0.6 s at rest).
+ */
+const litBulbs = computed((previous?: boolean[]): boolean[] => {
+  const next = bulbsLit(timing.value, lampClock.value, reduced.value)
+  return previous && previous.every((lit, index) => lit === next[index]) ? previous : next
+})
 /** The flapper's angle in degrees about its hinge, SVG sense (positive turns clockwise): down. #522 replaces the body: a kick at every pin that passes. */
 const flapperAngle = computed((): number => 0)
 

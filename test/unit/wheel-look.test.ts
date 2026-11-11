@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { sliceSpans } from '../../app/utils/wheel'
-import { BULB_COUNT, bulbPoints, pinAngles, restBulbs, wheelPoint } from '../../app/utils/wheel-look'
+import { BULB_COUNT, bulbPoints, pinAngles, wheelPoint } from '../../app/utils/wheel-look'
 
-// The Show-Rad's look as pure functions (#519, spec #503): where the pins and bulbs stand, and which bulbs are lit at rest. The pin
+// The Show-Rad's look as pure functions (#519, spec #503): where the pins and bulbs stand (which bulbs are lit: wheel-bulbs.test.ts). The pin
 // positions are worked out here once: the flapper's kicks (#522) and the pin ticks of 0.13.3 read them from the same function.
 
 describe('pinAngles', () => {
@@ -32,13 +32,8 @@ describe('pinAngles', () => {
 })
 
 describe('the bulbs', () => {
-  it('has 24 bulbs at rest, every second one lit, the top one included', () => {
-    const lit = restBulbs()
+  it('has 24 bulbs', () => {
     expect(BULB_COUNT).toBe(24)
-    expect(lit).toHaveLength(24)
-    expect(lit.filter(Boolean)).toHaveLength(12)
-    expect(lit[0]).toBe(true)
-    lit.forEach((on, index) => expect(on).toBe(index % 2 === 0))
   })
 
   it('stands them on a ring of 190 around the centre, the first at the top and clockwise', () => {
