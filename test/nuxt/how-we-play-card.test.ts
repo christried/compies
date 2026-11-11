@@ -88,12 +88,12 @@ describe('HowWePlayCard (#148)', () => {
     const games = Array.from({ length: 30 }, (_, n) => poolGame(`Spiel ${n + 1}`))
     const host = await mountCard({ settings: wheel, isHost: true, pool: games })
     const hostList = host.findAll('ul')[0]!
-    expect(hostList.classes()).toEqual(expect.arrayContaining(['grid', 'grid-cols-[repeat(auto-fill,minmax(170px,1fr))]', 'gap-3']))
+    expect(hostList.classes()).toEqual(expect.arrayContaining(['grid', 'grid-cols-[repeat(auto-fill,minmax(142px,1fr))]', 'gap-3']))
     expect(hostList.findAll('li')).toHaveLength(30)
     host.unmount()
 
     const member = await mountCard({ settings: wheel, pool: games.map(faceOf) })
-    expect(member.findAll('ul')[0]!.classes()).toContain('grid-cols-[repeat(auto-fill,minmax(170px,1fr))]')
+    expect(member.findAll('ul')[0]!.classes()).toContain('grid-cols-[repeat(auto-fill,minmax(142px,1fr))]')
     expect(member.findAll('ul')[0]!.findAll('li')).toHaveLength(30)
   })
 
