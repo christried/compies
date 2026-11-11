@@ -228,6 +228,37 @@ describe('the Veto window', () => {
     expect(serverNow).not.toHaveBeenCalled()
   })
 
+  // #506: the Host's skip of the Clip moves the window's end earlier; the page gets it with the refetch and nothing remembers the old one.
+  it('follows a read whose end moved: the clock and the bar start over from the new end, and the reveal comes at it', async () => {
+    serverMs = STOP + 10_000
+    await mount(wheelOf({ left: [2, 1], own: null, revealed: null }, { vetoEndsAt: iso(STOP + 150_000) }))
+    expect(page!.get('[role="timer"]').text()).toBe('Noch 2:20')
+    expect(page!.get('.origin-left.bg-hot').attributes('style')).toContain('scaleX(0.93')
+
+    await page!.setProps({ wheel: wheelOf({ left: [2, 1], own: null, revealed: null }, { vetoEndsAt: iso(STOP + 40_000) }) })
+    await vi.advanceTimersByTimeAsync(16)
+    expect(page!.get('[role="timer"]').text()).toBe('Noch 0:30')
+    expect(page!.get('.origin-left.bg-hot').attributes('style')).toContain('scaleX(0.75)')
+
+    serverMs = STOP + 39_000
+    await vi.advanceTimersByTimeAsync(16)
+    expect(page!.get('[role="timer"]').text()).toBe('Noch 0:01')
+    serverMs = STOP + 40_000
+    await vi.advanceTimersByTimeAsync(16)
+    expect(page!.get('[role="timer"]').text()).toBe('Aufdecken …')
+  })
+
+  it('waits for the reveal at once when the moved end is already past', async () => {
+    serverMs = STOP + 50_000
+    await mount(wheelOf({ left: [2, 1], own: null, revealed: null }, { vetoEndsAt: iso(STOP + 150_000) }))
+    expect(page!.get('[role="timer"]').text()).toBe('Noch 1:40')
+
+    await page!.setProps({ wheel: wheelOf({ left: [2, 1], own: null, revealed: null }, { vetoEndsAt: iso(STOP + 40_000) }) })
+    await vi.advanceTimersByTimeAsync(16)
+
+    expect(page!.get('[role="timer"]').text()).toBe('Aufdecken …')
+  })
+
   it('waits for the reveal after the end: the numbers stay hidden until the page has read again', async () => {
     serverMs = END + 100
     await mount(wheelOf({ left: [2, 2], own: null, revealed: null }))

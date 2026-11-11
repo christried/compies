@@ -87,6 +87,27 @@ export function vetoesSealed(draw: { vetoEndsAt: Instant | null }, now: Instant)
   return draw.vetoEndsAt !== null && msOf(now) < msOf(draw.vetoEndsAt)
 }
 
+/**
+ * The latest end a Veto window may have after the Host skipped the Clip at `skippedAt`: 30 s later (#506). The one place the 30 s
+ * lives for the skip; `vetoEndAfterSkip` and its SQL twin `movedVetoEnd` both use it.
+ */
+export function vetoEndCap(skippedAt: Instant): Date {
+  return new Date(msOf(skippedAt) + VETO_AFTER_CLIP_MS)
+}
+
+/**
+ * @public WRITER, no production caller (the route uses the SQL twin `movedVetoEnd`; the parity test checks them against each other;
+ * knip: same wording as `isDue`). The window's end after a skip at `skippedAt` (#506): `vetoEndCap` when that is earlier than the
+ * stored end, else null for "no change" (a draw without a window, a skip in the last 30 s, a skip after the end). It never moves the
+ * end later. Precondition: a skip is at or after the Draw's stop (the Clip runs from it), so the result is >= the stop, which
+ * `draws_instants_check` needs; the function does not clamp. The twin returns the whole new value (the old one when nothing moves).
+ */
+export function vetoEndAfterSkip(draw: { vetoEndsAt: Instant | null }, skippedAt: Instant): Date | null {
+  if (draw.vetoEndsAt === null) return null
+  const cap = vetoEndCap(skippedAt)
+  return msOf(draw.vetoEndsAt) > cap.getTime() ? cap : null
+}
+
 /** READER. The instant the draw settles at: the end of its window, or the stop for a draw without one. */
 export function settleAt(draw: DrawWindow): Date {
   return new Date(msOf(draw.vetoEndsAt ?? draw.stopAt))
@@ -99,7 +120,8 @@ export function isDue(draw: DrawWindow & { outcome: string | null }, now: Instan
 
 /**
  * READER. How much of the window is left, from the Draw's own two instants: 1 at the stop, 0 at the end, clamped to 0..1 (before the
- * stop, and before the page has mounted and its clock is 0: 1). 0 for no window and for a zero-length one.
+ * stop, and before the page has mounted and its clock is 0: 1). 0 for no window and for a zero-length one. A skip of the Clip shortens
+ * the stored end (#506), so the fraction steps down once, at the refetch that carries the new end.
  */
 export function windowFraction(draw: DrawWindow, now: Instant): number {
   if (draw.vetoEndsAt === null) return 0
