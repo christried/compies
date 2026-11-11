@@ -11,7 +11,8 @@ const script = fileURLToPath(new URL('../../scripts/session-start-note.mjs', imp
 const settingsFile = fileURLToPath(new URL('../../.claude/settings.json', import.meta.url))
 
 // A hook-inherited GIT_DIR would point the temporary repos at the real checkout.
-const { GIT_DIR: _dir, GIT_WORK_TREE: _tree, GIT_INDEX_FILE: _index, ...inherited } = process.env
+// CLAUDE_CODE_REMOTE is stripped too: a cloud session would otherwise turn every fast-forward case into a not-moved one (#557).
+const { GIT_DIR: _dir, GIT_WORK_TREE: _tree, GIT_INDEX_FILE: _index, CLAUDE_CODE_REMOTE: _remote, ...inherited } = process.env
 const gitEnv = { ...inherited, GIT_TERMINAL_PROMPT: '0' }
 
 function git(cwd: string, ...args: string[]) {
@@ -33,9 +34,17 @@ function commitFile(cwd: string, path: string, content: string, message: string)
   git(cwd, 'commit', '-m', message)
 }
 
-function runScript(cwd: string) {
-  const result = spawnSync(process.execPath, [script], { cwd, encoding: 'utf8', env: gitEnv })
+function runScript(cwd: string, extraEnv: Record<string, string> = {}) {
+  const result = spawnSync(process.execPath, [script], { cwd, encoding: 'utf8', env: { ...gitEnv, ...extraEnv } })
   return { code: result.status, stdout: result.stdout, stderr: result.stderr }
+}
+
+function onStaging(cwd: string) {
+  git(cwd, 'checkout', '-b', 'staging', 'origin/staging')
+}
+
+function lines(stdout: string) {
+  return stdout.split('\n').filter(Boolean)
 }
 
 describe('scripts/session-start-note.mjs', { timeout: 30_000 }, () => {
@@ -145,6 +154,173 @@ describe('scripts/session-start-note.mjs', { timeout: 30_000 }, () => {
     git(dev, 'push', 'origin', '--delete', 'staging')
 
     expect(runScript(work)).toMatchObject({ code: 0, stdout: '' })
+  })
+
+  describe('fast-forward (#557)', () => {
+    const pushStaging = () => git(dev, 'push', 'origin', 'staging')
+
+    function expectMoved(old: string, result: { code: number | null, stdout: string }) {
+      const head = git(dev, 'rev-parse', 'HEAD')
+      expect(result.code).toBe(0)
+      expect(git(work, 'rev-parse', 'HEAD')).toBe(head)
+      expect(git(work, 'rev-list', '--merges', '--count', 'HEAD')).toBe('0')
+      expect(git(work, 'rev-list', '--merges', `${old}..HEAD`)).toBe('')
+      expect(git(work, 'rev-parse', '--abbrev-ref', 'HEAD')).toBe('staging')
+      expect(lines(result.stdout)).toHaveLength(1)
+    }
+
+    function expectNotMoved(before: string, result: { code: number | null, stdout: string }) {
+      expect(result.code).toBe(0)
+      expect(git(work, 'rev-parse', 'HEAD')).toBe(before)
+      expect(result.stdout).not.toContain('fast-forwarded')
+    }
+
+    it('moves a clean checkout on staging forward and names both commits', () => {
+      onStaging(work)
+      const old = git(work, 'rev-parse', 'HEAD')
+      commitFile(dev, 'app/pages/index.vue', '<template />\n', 'feat: page')
+      commitFile(dev, 'README.md', 'changed\n', 'docs: readme')
+      pushStaging()
+
+      const result = runScript(work)
+
+      expectMoved(old, result)
+      expect(result.stdout).toMatch(/^This checkout was fast-forwarded to origin\/staging: [0-9a-f]{8} to [0-9a-f]{8} \(2 commits\)\.$/m)
+      expect(result.stdout).toContain(old.slice(0, 8))
+      expect(result.stdout).toContain(git(dev, 'rev-parse', 'HEAD').slice(0, 8))
+      expect(result.stdout).not.toContain('pnpm install')
+      expect(git(work, 'status', '--porcelain')).toBe('')
+    })
+
+    it('adds the install hint when the lockfile changed', () => {
+      onStaging(work)
+      const old = git(work, 'rev-parse', 'HEAD')
+      commitFile(dev, 'pnpm-lock.yaml', 'lock\n', 'chore: lockfile')
+      commitFile(dev, 'app/pages/index.vue', '<template />\n', 'feat: page')
+      pushStaging()
+
+      const result = runScript(work)
+
+      expectMoved(old, result)
+      expect(result.stdout.trim().endsWith('pnpm-lock.yaml changed: run pnpm install.')).toBe(true)
+    })
+
+    it.each([
+      ['an unstaged edit', () => writeFileSync(join(work, 'README.md'), 'local edit\n'), () => {
+        expect(readFileSync(join(work, 'README.md'), 'utf8')).toBe('local edit\n')
+      }],
+      ['a staged file', () => {
+        writeFileSync(join(work, 'staged.txt'), 'staged\n')
+        git(work, 'add', 'staged.txt')
+      }, () => {
+        expect(git(work, 'diff', '--cached', '--name-only')).toBe('staged.txt')
+      }],
+    ])('leaves %s alone and prints the note', (_name, change, check) => {
+      onStaging(work)
+      const before = git(work, 'rev-parse', 'HEAD')
+      commitFile(dev, 'README.md', 'staging edit\n', 'docs: readme')
+      commitFile(dev, '.claude/skills/tdd/SKILL.md', 'new rule\n', 'docs: skill')
+      pushStaging()
+      change()
+
+      const result = runScript(work)
+
+      expectNotMoved(before, result)
+      check()
+      expect(result.stdout).toMatch(/^This checkout is 2 commits behind origin\/staging\./)
+      expect(result.stdout).toContain('.claude/skills/tdd/SKILL.md')
+    })
+
+    it.each([
+      ['a ticket branch', () => {
+        git(work, 'branch', 'staging', 'origin/staging')
+        git(work, 'checkout', '-b', 'chore/ticket')
+      }, {}, 'chore/ticket'],
+      ['a detached HEAD', () => git(work, 'checkout', '--detach'), {}, 'HEAD'],
+      ['a cloud clone', () => onStaging(work), { CLAUDE_CODE_REMOTE: 'true' }, 'staging'],
+    ])('does not move %s and prints the note', (_name, setup, extraEnv, branch) => {
+      setup()
+      const before = git(work, 'rev-parse', 'HEAD')
+      const localStaging = (() => {
+        try {
+          return git(work, 'rev-parse', 'staging')
+        }
+        catch {
+          return null
+        }
+      })()
+      commitFile(dev, '.claude/skills/tdd/SKILL.md', 'new rule\n', 'docs: skill')
+      pushStaging()
+
+      const result = runScript(work, extraEnv)
+
+      expectNotMoved(before, result)
+      expect(git(work, 'rev-parse', '--abbrev-ref', 'HEAD')).toBe(branch)
+      if (localStaging) expect(git(work, 'rev-parse', 'staging')).toBe(localStaging)
+      expect(result.stdout).toMatch(/^This checkout is 1 commit behind/)
+    })
+
+    it('does not move a diverged staging, and writes no merge commit', () => {
+      onStaging(work)
+      commitFile(work, 'docs/agents/local-only.md', 'z\n', 'docs: local')
+      const before = git(work, 'rev-parse', 'HEAD')
+      commitFile(dev, '.claude/skills/tdd/SKILL.md', 'new rule\n', 'docs: skill')
+      pushStaging()
+
+      const result = runScript(work)
+
+      expectNotMoved(before, result)
+      expect(git(work, 'rev-list', '--merges', '--count', 'HEAD')).toBe('0')
+      expect(result.stdout).toContain('.claude/skills/tdd/SKILL.md')
+      expect(result.stdout).not.toContain('local-only.md')
+    })
+
+    it('moves forward and leaves untracked files untouched', () => {
+      onStaging(work)
+      const old = git(work, 'rev-parse', 'HEAD')
+      mkdirSync(join(work, 'scratch'), { recursive: true })
+      writeFileSync(join(work, 'scratch/notes.txt'), 'mine\n')
+      writeFileSync(join(work, 'todo.txt'), 'later\n')
+      commitFile(dev, 'app/pages/index.vue', '<template />\n', 'feat: page')
+      pushStaging()
+
+      const result = runScript(work)
+
+      expectMoved(old, result)
+      expect(readFileSync(join(work, 'scratch/notes.txt'), 'utf8')).toBe('mine\n')
+      expect(readFileSync(join(work, 'todo.txt'), 'utf8')).toBe('later\n')
+      expect(git(work, 'status', '--porcelain').split('\n').sort()).toEqual(['?? scratch/', '?? todo.txt'])
+    })
+
+    it('does not move when an untracked file is in the way, and keeps the file', () => {
+      onStaging(work)
+      const before = git(work, 'rev-parse', 'HEAD')
+      mkdirSync(join(work, 'docs/agents'), { recursive: true })
+      writeFileSync(join(work, 'docs/agents/new.md'), 'mine\n')
+      commitFile(dev, 'docs/agents/new.md', 'theirs\n', 'docs: new')
+      pushStaging()
+
+      const result = runScript(work)
+
+      expectNotMoved(before, result)
+      expect(readFileSync(join(work, 'docs/agents/new.md'), 'utf8')).toBe('mine\n')
+      expect(result.stdout).toContain('docs/agents/new.md')
+    })
+
+    it('stays silent and does not move on a stale origin/staging when origin cannot be reached', () => {
+      onStaging(work)
+      const before = git(work, 'rev-parse', 'HEAD')
+      commitFile(dev, 'app/pages/index.vue', '<template />\n', 'feat: page')
+      pushStaging()
+      git(work, 'fetch', 'origin')
+      renameSync(origin, join(root, 'moved.git'))
+
+      const result = runScript(work)
+
+      expect(result).toMatchObject({ code: 0, stdout: '' })
+      expect(git(work, 'rev-parse', 'HEAD')).toBe(before)
+      expect(git(work, 'status', '--porcelain')).toBe('')
+    })
   })
 
   it('is registered as a SessionStart hook that also covers /clear', () => {
