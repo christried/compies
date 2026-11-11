@@ -868,4 +868,15 @@ describe('the edit page (#142)', () => {
     expect(patched).toHaveBeenCalledWith(expect.objectContaining({ name: 'Counter-Strike 2 HD' }))
     expect(useState<{ text: string }[]>('toasts').value.map(toast => toast.text)).toEqual(['Gespeichert.'])
   })
+
+  it('Strg + Enter in the name saves the changes too and goes back to the game (#465)', async () => {
+    const page = await mountSuspended(EditPage, { route: `/bibliothek/${withClip.id}/bearbeiten` })
+    await vi.waitFor(() => expect(page.find('h1').exists()).toBe(true))
+    await field(page, 'Name').setValue('Counter-Strike 2 HD')
+
+    field(page, 'Name').element.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', ctrlKey: true, bubbles: true, cancelable: true }))
+
+    await vi.waitFor(() => expect(useRouter().currentRoute.value.path).toBe(`/bibliothek/${withClip.id}`))
+    expect(patched).toHaveBeenCalledWith(expect.objectContaining({ name: 'Counter-Strike 2 HD' }))
+  })
 })

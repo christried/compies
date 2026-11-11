@@ -493,6 +493,23 @@ describe('the pool steps', () => {
       expect((page.get('input[type="text"]').element as HTMLInputElement).value).toBe('Freitags-Zocken')
     })
 
+    it('Strg + Enter in the sheet\'s name saves the game and closes the sheet (#465)', async () => {
+      const page = await mountCreate()
+      await toPoolStep(page)
+      await newGameButton(page).trigger('click')
+      await vi.waitFor(() => expect(dialog()).not.toBeNull())
+      const label = [...dialog()!.querySelectorAll('label')].find(element => element.textContent === 'Name')!
+      const input = dialog()!.querySelector<HTMLInputElement>(`[id="${label.getAttribute('for')}"]`)!
+      input.value = 'Frisch Angelegt'
+      input.dispatchEvent(new Event('input'))
+
+      input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', ctrlKey: true, bubbles: true, cancelable: true }))
+
+      await vi.waitFor(() => expect(dialog()).toBeNull())
+      expect(postedGame).toHaveBeenCalledWith(expect.objectContaining({ name: 'Frisch Angelegt' }))
+      expect(inPool(page)!.findAll('li').map(row => row.get('b').text())).toEqual(['Frisch Angelegt'])
+    })
+
     it('offers a Tag in use in the sheet\'s form (#335, #365)', async () => {
       const page = await mountCreate()
       await toPoolStep(page)

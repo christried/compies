@@ -1,8 +1,9 @@
 import { mountSuspended, registerEndpoint } from '@nuxt/test-utils/runtime'
 import { flushPromises, type VueWrapper } from '@vue/test-utils'
 import { createError, readBody } from 'h3'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import GameForm from '~/components/GameForm.vue'
+import { FINE_POINTER_QUERY } from '~/composables/useMediaQuery'
 import type { GameTag, GameView } from '~~/shared/game'
 import { kitty, signInAs } from './auth'
 
@@ -1331,6 +1332,180 @@ describe('the game form', () => {
 
       expect(document.activeElement).not.toBe(field(page, 'Name').element)
       page.unmount()
+    })
+  })
+
+  describe('Strg + Enter (#465)', () => {
+    afterEach(() => {
+      holdPost = null
+    })
+
+    /** A keydown Enter with the given modifiers on the element; the event tells whether the form prevented it. */
+    function enter(el: Element, init: KeyboardEventInit = { ctrlKey: true }) {
+      const event = new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true, ...init })
+      el.dispatchEvent(event)
+      return event
+    }
+
+    it('saves from the name with Ctrl + Enter', async () => {
+      const page = await mountSuspended(GameForm, { props: { saveAndNext: true } })
+      await field(page, 'Name').setValue('Mario Kart')
+
+      enter(field(page, 'Name').element)
+
+      await vi.waitFor(() => expect(page.emitted('saved')).toEqual([[saved]]))
+      expect(posted).toHaveBeenCalledWith(expect.objectContaining({ name: 'Mario Kart' }))
+      expect(page.emitted('savedAndNext')).toBeUndefined()
+    })
+
+    it('saves from the name with Meta + Enter', async () => {
+      const page = await mountSuspended(GameForm)
+      await field(page, 'Name').setValue('Mario Kart')
+
+      enter(field(page, 'Name').element, { metaKey: true })
+
+      await vi.waitFor(() => expect(page.emitted('saved')).toEqual([[saved]]))
+    })
+
+    it('saves from Notizen with Ctrl + Enter and types no line break, while a bare Enter there is left alone', async () => {
+      const page = await mountSuspended(GameForm)
+      await field(page, 'Name').setValue('Mario Kart')
+      const notes = field(page, 'Notizen').element
+
+      expect(enter(notes, {}).defaultPrevented).toBe(false)
+      await flushPromises()
+      expect(posted).not.toHaveBeenCalled()
+
+      expect(enter(notes).defaultPrevented).toBe(true)
+      await vi.waitFor(() => expect(page.emitted('saved')).toEqual([[saved]]))
+    })
+
+    it('saves from the number field „von“', async () => {
+      const page = await mountSuspended(GameForm)
+      await field(page, 'Name').setValue('Mario Kart')
+      await field(page, 'von').setValue('2')
+
+      enter(field(page, 'von').element)
+
+      await vi.waitFor(() => expect(posted).toHaveBeenCalledWith(expect.objectContaining({ playersMin: 2 })))
+    })
+
+    it('saves from the Tag field with a typed Tag, once', async () => {
+      const page = await mountSuspended(GameForm)
+      await field(page, 'Name').setValue('Mario Kart')
+      await field(page, 'Tags').setValue('Party')
+
+      const event = enter(field(page, 'Tags').element)
+
+      expect(event.defaultPrevented).toBe(true)
+      await vi.waitFor(() => expect(posted).toHaveBeenCalledTimes(1))
+      expect(posted).toHaveBeenCalledWith(expect.objectContaining({ tags: ['Party'] }))
+    })
+
+    it('saves nothing while blocked: shows the name error and posts nothing', async () => {
+      const page = await mountSuspended(GameForm, { props: { saveAndNext: true } })
+
+      enter(field(page, 'Name').element)
+
+      await vi.waitFor(() => expect(page.text()).toContain('Gib dem Spiel einen Namen.'))
+      expect(posted).not.toHaveBeenCalled()
+      expect(page.emitted('saved')).toBeUndefined()
+    })
+
+    it('saves nothing while a save runs: two presses, one POST', async () => {
+      let release = () => {}
+      holdPost = new Promise<void>((resolve) => {
+        release = resolve
+      })
+      const page = await mountSuspended(GameForm)
+      await field(page, 'Name').setValue('Mario Kart')
+
+      enter(field(page, 'Name').element)
+      enter(field(page, 'Name').element)
+
+      await vi.waitFor(() => expect(posted).toHaveBeenCalledTimes(1))
+      release()
+      await vi.waitFor(() => expect(page.emitted('saved')).toEqual([[saved]]))
+      expect(posted).toHaveBeenCalledTimes(1)
+    })
+
+    it('leaves Shift + Ctrl + Enter, Alt + Ctrl + Enter and an IME composition alone', async () => {
+      const page = await mountSuspended(GameForm)
+      await field(page, 'Name').setValue('Mario Kart')
+      const name = field(page, 'Name').element
+
+      const events = [
+        enter(name, { ctrlKey: true, shiftKey: true }),
+        enter(name, { ctrlKey: true, altKey: true }),
+        enter(name, { ctrlKey: true, isComposing: true }),
+      ]
+
+      expect(events.map(event => event.defaultPrevented)).toEqual([false, false, false])
+      await flushPromises()
+      expect(posted).not.toHaveBeenCalled()
+    })
+
+    describe('the hint (#465)', () => {
+      const PC_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0 Safari/537.36'
+      const MAC_UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15'
+
+      function userAgent(ua: string) {
+        Object.defineProperty(window.navigator, 'userAgent', { configurable: true, get: () => ua })
+      }
+
+      /** A fine pointer (a mouse) or none (a phone): what the page's media query answers. */
+      function finePointer(isFine: boolean) {
+        vi.spyOn(window, 'matchMedia').mockImplementation((query: string) => ({
+          matches: isFine && query === FINE_POINTER_QUERY,
+          media: query,
+          addEventListener() {},
+          removeEventListener() {},
+        }) as unknown as MediaQueryList)
+      }
+
+      function hintButton(page: Page) {
+        return page.findAll('button').find(button => button.attributes('aria-label') === 'Hinweis anzeigen')
+      }
+
+      afterEach(() => {
+        vi.restoreAllMocks()
+        delete (window.navigator as unknown as Record<string, unknown>).userAgent
+      })
+
+      it('shows the hint with a fine pointer, and it says „Strg + Enter speichert“ on a PC', async () => {
+        userAgent(PC_UA)
+        finePointer(true)
+        const page = await mountSuspended(GameForm)
+        await flushPromises()
+
+        await hintButton(page)!.trigger('click')
+
+        expect(document.querySelector('[role="note"]')?.textContent).toContain('Strg + Enter speichert')
+        expect(posted).not.toHaveBeenCalled()
+        page.unmount()
+      })
+
+      it('says „⌘ + Enter speichert“ on a Mac', async () => {
+        userAgent(MAC_UA)
+        finePointer(true)
+        const page = await mountSuspended(GameForm)
+        await flushPromises()
+
+        await hintButton(page)!.trigger('click')
+
+        expect(document.querySelector('[role="note"]')?.textContent).toContain('⌘ + Enter speichert')
+        page.unmount()
+      })
+
+      it('shows no hint without a fine pointer', async () => {
+        userAgent(PC_UA)
+        finePointer(false)
+        const page = await mountSuspended(GameForm)
+        await flushPromises()
+
+        expect(hintButton(page)).toBeUndefined()
+        page.unmount()
+      })
     })
   })
 })

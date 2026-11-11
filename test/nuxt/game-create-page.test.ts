@@ -171,6 +171,18 @@ describe('the create page', () => {
     page.unmount()
   })
 
+  it('Strg + Enter in the name does what „Spiel anlegen“ does: it saves and leads to the game\'s page (#465)', async () => {
+    const page = await mount()
+    await field(page, 'Name').setValue('Mario Kart')
+    await field(page, 'YouTube-Link').setValue(LINK)
+
+    field(page, 'Name').element.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', ctrlKey: true, bubbles: true, cancelable: true }))
+
+    await vi.waitFor(() => expect(useRoute().path).toBe(`/bibliothek/${created.id}`))
+    expect(shownToasts().map(toast => toast.text)).toContain('Mario Kart ist in der Bibliothek.')
+    page.unmount()
+  })
+
   it('a failed save keeps the form and the route', async () => {
     createFails = true
     const page = await mount()
