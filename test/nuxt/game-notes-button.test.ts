@@ -155,4 +155,28 @@ describe('the Notes button of a game (#436)', () => {
       window.innerHeight = realHeight
     }
   })
+
+  it('caps a popover that fits on neither side, so it scrolls inside the window (#494)', async () => {
+    const realHeight = window.innerHeight
+    window.innerHeight = 900
+    const measure = vi.spyOn(Element.prototype, 'getBoundingClientRect').mockImplementation(function (this: Element) {
+      const at = (top: number, left: number, width: number, height: number) => ({ top, left, width, height, bottom: top + height, right: left + width, x: left, y: top, toJSON: () => ({}) }) as DOMRect
+      if (this.getAttribute('aria-label') === 'Notizen ansehen') return at(430, 400, 40, 36)
+      if (this.getAttribute('role') === 'dialog') return at(0, 0, 288, 420)
+      return at(0, 0, 0, 0)
+    })
+    try {
+      await mount({ notes: NOTES })
+
+      await open()
+
+      // Below the button there are 900 − 466 = 434 px, above it 430 px: below is the roomier side, capped at 434 − 12 − 12.
+      expect(Number.parseFloat(popover()!.style.top)).toBe(478)
+      expect(popover()!.style.maxHeight).toBe('410px')
+    }
+    finally {
+      measure.mockRestore()
+      window.innerHeight = realHeight
+    }
+  })
 })
