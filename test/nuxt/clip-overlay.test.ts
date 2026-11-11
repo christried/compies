@@ -399,7 +399,6 @@ describe('the motion of the running clip', () => {
 })
 
 describe('no input (#509)', () => {
-
   it('shuts the player\'s container to pointer input and focus, whatever iframe the API puts in it', async () => {
     await mount(clipOf())
     await ready()
