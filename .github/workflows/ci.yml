@@ -1,11 +1,12 @@
 name: CI
 
+# One run per head: the push run. A PR starts no run of its own. Both protected branches require an up-to-date head
+# (`strict`), so the head contains the base and the merge result's tree is the head's tree. The push run on the head
+# already reports the required check `check`, so one run is enough.
+# Every pushed branch runs, not only staging and main: an implementer's branch has no PR, and its first full run used
+# to come after the merge into the integration branch, which went red four times in 0.7 (retro 0.7). Actions minutes
+# are free on a public repo.
 on:
-  pull_request:
-    branches: [staging, main]
-  # Every pushed branch, not only staging and main: an implementer's branch has no PR, and its first full run used to
-  # come after the merge into the integration branch, which went red four times in 0.7 (retro 0.7). A branch with a
-  # PR runs twice per push (the push and the PR's merge commit); Actions minutes are free on a public repo.
   push:
     branches: ['**']
 
