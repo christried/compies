@@ -36,6 +36,16 @@
             "timeout": 600
           }
         ]
+      },
+      {
+        "matcher": "startup|resume|clear",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR\"/scripts/session-start-note.mjs",
+            "timeout": 15
+          }
+        ]
       }
     ]
   }

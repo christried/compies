@@ -152,6 +152,6 @@ describe('scripts/bash-guard.mjs', () => {
     const entry = settings.hooks.PreToolUse.find((candidate: { matcher: string }) => candidate.matcher === 'Bash')
     expect(entry.hooks[0].type).toBe('command')
     expect(entry.hooks[0].command).toContain('scripts/bash-guard.mjs')
-    expect(settings.hooks.SessionStart).toHaveLength(1)
+    expect(settings.hooks.SessionStart).toHaveLength(2)
   })
 })
