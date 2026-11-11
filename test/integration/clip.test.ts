@@ -274,6 +274,18 @@ describe('the synced clip', () => {
       for (const cookie of [game.hostCookie, game.cookies.one, game.cookies.two]) expect((await read(game, cookie)).clip).toBeNull()
     })
 
+    // #506: the skip's UPDATE also moves the Veto window's end; a draw without a window must not get one from it (Postgres' LEAST would give it one).
+    it('leaves a draw without a Veto window without one', async () => {
+      const game = await running()
+      await set(game, game.halo.id)
+      expect((await testDb.db.select().from(draws))[0]!.vetoEndsAt).toBeNull()
+      clock.advance(4000)
+
+      expect((await skip(game)).status).toBe(200)
+
+      expect((await testDb.db.select().from(draws))[0]).toMatchObject({ vetoEndsAt: null, clipSkippedAt: new Date(iso(4000)) })
+    })
+
     it('tells the room the Event changed, so every client refetches and closes the clip', async () => {
       const game = await running()
       await set(game, game.halo.id)

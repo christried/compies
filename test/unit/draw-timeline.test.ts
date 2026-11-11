@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { clipEnded, clipRunning, clipWindow, drawGameKnown, drawInstants, isDue, settleAt, spinCommitAt, stopReached, vetoesSealed, windowEnded, windowFraction, windowOpen, type DrawInstants } from '../../shared/draw-timeline'
+import { clipEnded, clipRunning, clipWindow, drawGameKnown, drawInstants, isDue, settleAt, spinCommitAt, stopReached, vetoEndAfterSkip, vetoEndCap, vetoesSealed, windowEnded, windowFraction, windowOpen, type DrawInstants } from '../../shared/draw-timeline'
 
 // The Draw's timeline (#414, ADR 0013 amendment 2026-10-31): a Draw's instants and what each decides at `now`. Every comparison
 // keeps its edge, pinned here at the four boundary milliseconds (stop - 1, stop, end - 1, end); nothing may move them silently.
@@ -199,5 +199,79 @@ describe('the Clip window', () => {
     const clip = clipWindow({ stopAt: S }, { clipLength: 30 })
     const E = S + 30_000
     expect([S - 1, S, E - 1, E].map(now => clipEnded(clip, now))).toEqual([false, false, false, true])
+  })
+})
+
+// #506: a skip of the Clip ends the window 30 s after it when that is sooner; it never moves the end later.
+describe('vetoEndAfterSkip (#506)', () => {
+  const windowOf = (clipLength: number | null) => drawInstants({ kind: 'set', commitAt: C, windowOpens: true, clipLength })
+  const after = (clipLength: number | null, skipAt: number) => {
+    const moved = vetoEndAfterSkip(windowOf(clipLength), skipAt)
+    return moved === null ? null : ms(moved)
+  }
+
+  it('the cap is 30 s after the skip', () => {
+    expect(ms(vetoEndCap(C))).toBe(C + 30_000)
+    expect(ms(vetoEndCap(new Date(C + 5)))).toBe(C + 30_005)
+  })
+
+  it('a skip early in a 150 s window ends it 30 s later', () => {
+    expect(after(120, C + 10_000)).toBe(C + 40_000)
+    expect(after(120, C)).toBe(C + 30_000)
+  })
+
+  it('moves the end while more than 30 s are left, and not from exactly 30 s on', () => {
+    expect(after(120, C + 119_999)).toBe(C + 149_999)
+    expect(after(120, C + 120_000)).toBeNull()
+    expect(after(120, C + 120_001)).toBeNull()
+    expect(after(120, C + 130_000)).toBeNull()
+  })
+
+  it('changes nothing at the end of the window or after it', () => {
+    for (const skipAt of [C + 149_999, C + 150_000, C + 200_000]) expect(after(120, skipAt)).toBeNull()
+  })
+
+  it('works for the other clip lengths', () => {
+    expect(after(30, C + 10_000)).toBe(C + 40_000)
+    expect(after(10, C + 9_999)).toBe(C + 39_999)
+  })
+
+  it('never shortens the 30 s window of a game without a video', () => {
+    for (const skipAt of [C, C + 1, C + 29_999]) expect(after(null, skipAt)).toBeNull()
+  })
+
+  it('has nothing to move for a draw without a window', () => {
+    expect(vetoEndAfterSkip({ vetoEndsAt: null }, C)).toBeNull()
+  })
+
+  it('works for a spin, from its stop', () => {
+    const spin = drawInstants({ kind: 'spin', commitAt: C, windowOpens: true, clipLength: 120 })
+    const stop = ms(spin.stopAt)
+    expect(stop).toBe(C + 7500)
+    expect(ms(vetoEndAfterSkip(spin, stop + 10_000))).toBe(stop + 40_000)
+  })
+
+  it('takes the skip and the end as a number, a Date or an ISO string', () => {
+    const end = C + 150_000
+    for (const vetoEndsAt of [end, new Date(end), new Date(end).toISOString()]) {
+      for (const skipAt of [C + 10_000, new Date(C + 10_000), new Date(C + 10_000).toISOString()]) {
+        expect(ms(vetoEndAfterSkip({ vetoEndsAt }, skipAt))).toBe(C + 40_000)
+      }
+    }
+  })
+
+  it.each(CASES)('never moves the end later, in a $kind draw with a clip of $clipLength s', ({ kind, clipLength }) => {
+    const draw = drawInstants({ kind, commitAt: C, windowOpens: true, clipLength })
+    const stop = ms(draw.stopAt)
+    const end = ms(draw.vetoEndsAt)
+    const skips = [stop, stop + 1, end - 30_001, end - 30_000, end - 29_999, end - 1, end, end + 1]
+    for (let s = stop; s <= end + 60_000; s += 1000) skips.push(s)
+    for (const skipAt of skips) {
+      const moved = vetoEndAfterSkip(draw, skipAt)
+      if (moved === null) continue
+      expect(ms(moved), `skip at stop + ${skipAt - stop}`).toBe(skipAt + 30_000)
+      expect(ms(moved)).toBeGreaterThanOrEqual(stop)
+      expect(ms(moved)).toBeLessThan(end)
+    }
   })
 })

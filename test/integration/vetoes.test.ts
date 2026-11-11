@@ -253,6 +253,133 @@ describe('Vetoes', () => {
     })
   })
 
+  // The Host's skip of the Clip ends the window 30 s after it when that is sooner (#506, spec #501): the skip's one UPDATE moves the stored
+  // end, so every reader (settle, cast check, sealed Vetoes, the feed) follows it without a timer or a code path of its own.
+  describe('after the Host skips the clip (#506)', () => {
+    const video = (clipLength: number) => ({ youtubeId: 'aaaaaaaaaaa', clipStart: 0, clipLength })
+    const skip = (party: Party) => send('POST', `/api/e/${party.slug}/clip/skip`, party.hostCookie)
+    const vetoView = async (party: Party, cookie: string) => (await read(party, cookie)).wheel!.vetoes
+
+    /** A spin of a game with a 120 s clip (window 150 s), or a set game with „Veto erlauben“: its Draw's id and the offset of its stop. */
+    async function drawn(kind: 'spin' | 'set', clip = video(120)) {
+      const party = await running({ clip })
+      if (kind === 'spin') {
+        const { drawId } = await spun(party)
+        return { party, drawId, stop: SPIN.stop }
+      }
+      expect((await set(party, party.games[0]!.id, true)).status).toBe(200)
+      return { party, drawId: (await drawRows())[0]!.id, stop: 0 }
+    }
+
+    it.each(['spin', 'set'] as const)('carries the moved end in every read of a %s draw: 30 s after an early skip, announced by event.changed alone', async (kind) => {
+      const { party, stop } = await drawn(kind)
+      const parties = [party.hostCookie, party.cookies.one, party.cookies.three]
+      clock.set(iso(stop + 10_000))
+      for (const cookie of parties) expect((await vetoView(party, cookie)).draw?.vetoEndsAt).toBe(iso(stop + windowMsFor(120)))
+
+      notifier.clear()
+      expect((await skip(party)).status).toBe(200)
+
+      expect(await drawRows()).toMatchObject([{ vetoEndsAt: new Date(iso(stop + 40_000)), clipSkippedAt: new Date(iso(stop + 10_000)) }])
+      for (const cookie of parties) expect((await vetoView(party, cookie)).draw?.vetoEndsAt).toBe(iso(stop + 40_000))
+      expect(notifier.messages(party.eventId).map(message => message.type)).toEqual(['event.changed'])
+    })
+
+    it('keeps a cast sealed to the other Party until the moved end and reveals it at that instant, in the feed too', async () => {
+      const { party, drawId, stop } = await drawn('spin')
+      const [row] = await drawRows()
+      clock.set(iso(stop + 5_000))
+      expect((await cast(party, drawId, party.cookies.one)).status).toBe(200)
+      clock.set(iso(stop + 10_000))
+      expect((await skip(party)).status).toBe(200)
+
+      clock.set(iso(stop + 39_999))
+      const sealed = await vetoView(party, party.cookies.three)
+      expect(sealed.revealed).toBeNull()
+      expect(sealed.left).toEqual([2, 2])
+      expect((await vetoView(party, party.cookies.one)).own).toMatchObject({ cast: true })
+      expect((await feedOf(party, party.cookies.three)).filter(entry => entry.type === 'vetoes_revealed')).toEqual([])
+      expect(await drawRows()).toMatchObject([{ outcome: null, settledAt: null }])
+
+      clock.set(iso(stop + 40_000))
+      expect((await vetoView(party, party.cookies.three)).revealed).toEqual([{ team: 1 }])
+      expect(await drawRows()).toMatchObject([{ outcome: 'vetoed', settledAt: new Date(iso(stop + 40_000)) }])
+      expect((await feedOf(party, party.cookies.three)).filter(entry => entry.type === 'vetoes_revealed')).toMatchObject([
+        { at: iso(stop + 40_000), type: 'vetoes_revealed', params: { drawId, gameId: row!.gameId, vetoes: [{ team: 1 }] } },
+      ])
+    })
+
+    it('accepts a cast just before the moved end and refuses one from it on', async () => {
+      const { party, drawId, stop } = await drawn('spin')
+      clock.set(iso(stop + 10_000))
+      await skip(party)
+
+      clock.set(iso(stop + 39_999))
+      expect((await cast(party, drawId, party.cookies.three)).status).toBe(200)
+      clock.set(iso(stop + 40_000))
+      expect(await errorOf(await cast(party, drawId, party.cookies.two))).toEqual({ status: 409, code: 'veto_window_closed' })
+    })
+
+    it('settles a draw nobody vetoed at the moved end: the Round has its game stamped with that instant', async () => {
+      const { party, stop } = await drawn('spin')
+      const [row] = await drawRows()
+      clock.set(iso(stop + 10_000))
+      await skip(party)
+
+      clock.set(iso(stop + 39_999))
+      await read(party)
+      expect(await drawRows()).toMatchObject([{ outcome: null }])
+      expect(await roundRows(party)).toMatchObject([{ gameId: null, setAt: null }])
+
+      clock.set(iso(stop + 40_000))
+      await read(party)
+      expect(await drawRows()).toMatchObject([{ outcome: 'set', settledAt: new Date(iso(stop + 40_000)) }])
+      expect(await roundRows(party)).toMatchObject([{ gameId: row!.gameId, setAt: new Date(iso(stop + 40_000)) }])
+    })
+
+    describe('never moves the end later', () => {
+      it('leaves the 30 s window of a game without a video as it is', async () => {
+        const party = await running()
+        await set(party, party.games[0]!.id, true)
+
+        clock.set(iso(5_000))
+        expect((await skip(party)).status).toBe(200)
+
+        expect(await drawRows()).toMatchObject([{ clipSkippedAt: new Date(iso(5_000)), vetoEndsAt: new Date(iso(WINDOW_MS)) }])
+      })
+
+      // The Clip reads the game live, so a clip length raised after the Draw makes the Clip outlast the stored window (#505).
+      it.each([
+        { what: 'with less than 30 s left', at: 50_000 },
+        { what: 'after the end, when the settle has run first', at: 70_000 },
+      ])('answers 200 and stores only the skip for a skip $what', async ({ at }) => {
+        const { party } = await drawn('set', video(30))
+        await testDb.db.update(games).set({ clipLength: 120 })
+        expect(windowMsFor(30)).toBe(60_000)
+
+        clock.set(iso(at))
+        expect((await skip(party)).status).toBe(200)
+
+        const [row] = await drawRows()
+        expect(row).toMatchObject({ clipSkippedAt: new Date(iso(at)), vetoEndsAt: new Date(iso(60_000)) })
+        if (at >= 60_000) expect(row).toMatchObject({ outcome: 'set', settledAt: new Date(iso(60_000)) })
+      })
+    })
+
+    it('moves nothing for a second skip or a skip during the spin', async () => {
+      const { party, stop } = await drawn('spin')
+      clock.set(iso(stop - 1))
+      expect(await errorOf(await skip(party))).toEqual({ status: 409, code: 'no_clip' })
+      expect(await drawRows()).toMatchObject([{ vetoEndsAt: new Date(iso(stop + 150_000)), clipSkippedAt: null }])
+
+      clock.set(iso(stop + 10_000))
+      expect((await skip(party)).status).toBe(200)
+      clock.set(iso(stop + 20_000))
+      expect(await errorOf(await skip(party))).toEqual({ status: 409, code: 'no_clip' })
+      expect(await drawRows()).toMatchObject([{ vetoEndsAt: new Date(iso(stop + 40_000)), clipSkippedAt: new Date(iso(stop + 10_000)) }])
+    })
+  })
+
   describe('a game the Host sets with „Veto erlauben“ (#232)', () => {
     /** Sets the first game with the switch on and answers the Round and the draw. */
     async function setWithVeto(party: Party, gameId = party.games[0]!.id) {

@@ -97,6 +97,19 @@ describe('who gets the bar and when', () => {
     expect(page!.find('button').exists()).toBe(false)
   })
 
+  // #506: a skip of the Clip moves the end earlier. The clock decides, not the stale `own.rejection` of a read taken just before.
+  it('leaves at the moved end, and does not invite a cast the server would refuse', async () => {
+    serverMs = STOP + 50_000
+    await mount(wheelOf({ draw: windowOf({ vetoEndsAt: iso(STOP + 150_000) }) }))
+    expect(bar().exists()).toBe(true)
+    expect(page!.get('[role="timer"]').text()).toBe('1:40')
+
+    await page!.setProps({ wheel: wheelOf({ draw: windowOf({ vetoEndsAt: iso(STOP + 40_000) }), own: own({ rejection: null }) }) })
+    await vi.advanceTimersByTimeAsync(16)
+
+    expect(bar().exists()).toBe(false)
+  })
+
   it('shows no bar before the stop, nor from the end of the window on', async () => {
     serverMs = STOP - 1000
     await mount(wheelOf({ own: own({ rejection: 'veto_window_closed' }) }))
