@@ -13,7 +13,7 @@ Each patch is a paragraph starting with `**COMPIES:**`. Where a rule lives depen
 - `implement`: its own worktree on the ticket's branch from `origin/staging` before the first edit, removed by name once the issue is closed; delivery
 - `implement-spec-max`: a copy of the patched `implement-spec` whose extra paragraph, `**COMPIES (max):**`, and closing section, `## Model tiers`, put every subagent on `fable`, or on `opus` or `sonnet` at `effort: "high"`, by how hard its task is. A change to `implement-spec` is mirrored here: `diff .claude/skills/implement-spec/SKILL.md .claude/skills/implement-spec-max/SKILL.md` shows only the name, the description, that paragraph and that section.
 - `grill-with-docs`, `to-spec`, `to-tickets`: design hand-off flags and tickets; migration numbers, ADR citations, changelog groups and site counts come from the repo (retro 0.10); `to-tickets` also cuts finer tickets and writes a human sweep as a joint session
-- `handoff`: names the subagents still running
+- `handoff`: names the subagents still running; called while they run, it pulls them back first (each commits, pushes and reports) and writes the handoff once
 - `retro`: the two kinds of finding the user declined in the 0.10 retro
 
 ## Updating to a new release
