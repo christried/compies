@@ -37,7 +37,9 @@ export async function launch(account) {
   const profile = join(OUT, `profile-${account}`)
   mkdirSync(profile, { recursive: true })
   const port = PORTS[account]
-  const chrome = spawn(CHROME, ['--headless=new', `--remote-debugging-port=${port}`, `--user-data-dir=${profile}`, '--no-first-run', '--no-default-browser-check', '--hide-scrollbars', 'about:blank'], { stdio: 'ignore' })
+  // Headless Chrome plays sound on the machine's speakers: a Clip check played its YouTube video out loud. Muted, the
+  // video still plays and reports its time and state.
+  const chrome = spawn(CHROME, ['--headless=new', '--mute-audio', `--remote-debugging-port=${port}`, `--user-data-dir=${profile}`, '--no-first-run', '--no-default-browser-check', '--hide-scrollbars', 'about:blank'], { stdio: 'ignore' })
   for (let i = 0; i < 50; i++) {
     try {
       const targets = await (await fetch(`http://127.0.0.1:${port}/json/list`)).json()
