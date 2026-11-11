@@ -7,7 +7,8 @@ import { placeNotePopover } from '~/utils/note-popover'
 // line breaks kept. From md up a popover beside the button, below it a sheet from the bottom (the pattern of the Sessions card's „Mehr“,
 // #349). It is not a menu: MoveToMenu holds menu targets, so it stays out. Esc, a press outside and a scroll that would move the popover
 // away from its button close it; the focus goes back to the button. No notes, no button. The popover sits where placeNotePopover puts it
-// (above or below the button, inside the window), measured once it is drawn (#488).
+// (above or below the button, inside the window), measured once it is drawn (#488). When it fits on neither side it is capped to the
+// roomier one and scrolls (#494).
 withDefaults(defineProps<{
   name: string
   notes: string | null
@@ -20,7 +21,7 @@ const wide = useMediaQuery(MD_QUERY)
 const narrow = computed(() => wide.value === false)
 const titleId = useId()
 const open = ref(false)
-const position = ref({ top: 0, left: 0 })
+const position = ref<{ top: number, left: number, maxHeight?: number }>({ top: 0, left: 0 })
 const trigger = useTemplateRef<{ $el: HTMLElement }>('trigger')
 const popover = useTemplateRef<HTMLElement>('popover')
 const closeButton = useTemplateRef<{ $el: HTMLElement }>('close')
@@ -34,12 +35,12 @@ function place() {
   const cell = trigger.value?.$el.getBoundingClientRect()
   const box = popover.value?.getBoundingClientRect()
   if (!cell || !box) return
-  const { top, left } = placeNotePopover({
+  const { top, left, maxHeight } = placeNotePopover({
     cell,
     size: { width: box.width, height: box.height },
     viewport: { width: window.innerWidth, height: window.innerHeight },
   })
-  position.value = { top, left }
+  position.value = { top, left, maxHeight }
 }
 
 function close() {
@@ -116,7 +117,7 @@ onBeforeUnmount(() => {
         role="dialog"
         :aria-labelledby="titleId"
         class="animate-enter layer-popover fixed flex max-h-[min(60vh,420px)] w-72 flex-col gap-2 overflow-y-auto rounded-[18px] border-(length:--cp-bw) border-line bg-surface p-3 text-ink shadow-modal"
-        :style="{ top: `${position.top}px`, left: `${position.left}px` }"
+        :style="{ top: `${position.top}px`, left: `${position.left}px`, maxHeight: position.maxHeight === undefined ? undefined : `${position.maxHeight}px` }"
         @keydown.esc.stop="close"
       >
         <header class="flex items-start gap-2">
