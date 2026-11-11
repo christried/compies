@@ -116,6 +116,7 @@ const { news } = useStandingsNews(data, slug)
   <AppShell
     kind="event"
     :accessory="accessory"
+    :event="data ? { name: data.event.name, ...pill } : undefined"
   >
     <template
       v-if="data"
@@ -134,9 +135,10 @@ const { news } = useStandingsNews(data, slug)
       v-if="data?.inviteUrl"
       #actions
     >
+      <!-- Einladen is the button from 1024 px and an icon from md (980) to 1023, where the header holds the nav (#426); a phone has it elsewhere. -->
       <AppButton
         variant="secondary"
-        class="max-md:hidden"
+        class="max-[63.99rem]:hidden"
         aria-haspopup="dialog"
         @click="inviteOpen = true"
       >
@@ -146,6 +148,13 @@ const { news } = useStandingsNews(data, slug)
         />
         {{ t('common.invite') }}
       </AppButton>
+      <IconButton
+        :icon="LinkIcon"
+        :label="t('common.invite')"
+        aria-haspopup="dialog"
+        class="max-md:hidden min-[64rem]:hidden"
+        @click="inviteOpen = true"
+      />
     </template>
 
     <template

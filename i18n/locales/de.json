@@ -39,6 +39,7 @@
     "library": "Bibliothek",
     "profile": "Profil",
     "admin": "Admin",
+    "eventContext": "Event: {name}, Phase: {phase}",
     "createEvent": "Event erstellen",
     "tabs": {
       "board": "Spielbrett",

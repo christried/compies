@@ -88,11 +88,14 @@ describe('construction page route guard', () => {
     expect(page.findAll('nav[aria-label="Hauptnavigation"] a').some(a => a.text() === 'Bibliothek')).toBe(true)
   })
 
-  it('renders the generic state in the event shell for an Event sub-route, without the hub navigation', async () => {
+  it('renders the generic state in the event shell for an Event sub-route, with the hub navigation and Events current, without a context line (#426)', async () => {
     const page = await visit('/e/freitags-zocken-k7q2/tabelle')
 
     expect(page.get('h1').text()).toBe('Hier wird noch gebaut.')
-    expect(page.find('nav[aria-label="Hauptnavigation"]').exists()).toBe(false)
+    const nav = page.get('header nav[aria-label="Hauptnavigation"]')
+    expect(nav.findAll('[aria-current]')).toHaveLength(1)
+    expect(nav.get('[aria-current="page"]').text()).toBe('Events')
+    expect(nav.findAll('[aria-hidden="true"]').filter(element => element.text() !== '')).toHaveLength(0)
   })
 
   it('shows the chip „Kommt in einer der nächsten Versionen“ on the generic Construction page (#196)', async () => {

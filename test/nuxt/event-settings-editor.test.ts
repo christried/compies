@@ -144,6 +144,20 @@ describe('the settings editor', () => {
     expect(page.get('h1').text()).toContain('Wer gegen wen?')
   })
 
+  it('keeps the hub nav in its header, with Events current and the Event’s name and Phase under it (#426)', async () => {
+    const { slug } = setUp()
+
+    const page = await mountEditor(slug)
+
+    const nav = page.get('header nav[aria-label="Hauptnavigation"]')
+    expect(nav.get('[aria-current="page"]').text()).toContain('Events')
+    const events = nav.get('a')
+    const line = events.findAll('[aria-hidden="true"]').find(element => element.text() !== '')!
+    expect(line.text()).toContain('Freitags-Zocken')
+    expect(line.text()).toContain('Terminumfrage')
+    expect(nav.get(`#${events.attributes('aria-describedby')}`).text()).toBe('Event: Freitags-Zocken, Phase: Terminumfrage')
+  })
+
   it('calls itself Event einrichten while the Event has no settings, and starts from the defaults', async () => {
     const { slug } = setUp({ settings: null })
 
