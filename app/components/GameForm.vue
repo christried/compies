@@ -267,6 +267,7 @@ function onShortcut(event: KeyboardEvent) {
           v-model="image"
           :image-url="game?.imageUrl"
           :uploading="uploadingImage"
+          :locked="saving"
         />
         <TextField
           v-model="link"

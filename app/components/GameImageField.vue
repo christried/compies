@@ -14,6 +14,8 @@ const props = defineProps<{
   imageUrl?: string | null
   /** The form is sending the image. */
   uploading?: boolean
+  /** The form is saving: nothing in the field changes (#573). */
+  locked?: boolean
 }>()
 
 const emit = defineEmits<{ 'update:modelValue': [value: Blob | null] }>()
@@ -23,7 +25,6 @@ const CROP_SETTLE_MS = 300
 
 const { t } = useI18n()
 const input = useTemplateRef<HTMLInputElement>('input')
-const tile = useTemplateRef<HTMLElement>('tile')
 const converting = ref(false)
 const failure = ref<string | null>(null)
 const labelId = useId()
@@ -42,9 +43,15 @@ let generation = 0
 const pending = new Set<Promise<void>>()
 let settleTimer: ReturnType<typeof setTimeout> | null = null
 let unmounted = false
+// Dragging: pointer events on the tile, with the pointer captured so a drag that leaves the tile keeps going.
+// `captured` is false when the browser refused the capture (see onPointerDown).
+let drag: { pointerId: number, startX: number, startY: number, from: Crop, tile: { width: number, height: number }, captured: boolean } | null = null
+const dragging = ref(false)
 
 const shown = computed(() => picture.value?.url ?? props.imageUrl ?? null)
-const busy = computed(() => converting.value || Boolean(props.uploading))
+/** Nothing in the field changes while the form saves or sends the image: the WebP the form holds must stay the tile's (#573). */
+const frozen = computed(() => Boolean(props.locked || props.uploading))
+const busy = computed(() => converting.value || frozen.value)
 const status = computed(() => {
   if (props.uploading) return t('gameEdit.imageUploading')
   return converting.value ? t('gameEdit.imageConverting') : null
@@ -66,28 +73,10 @@ function restSoon() {
   }, CROP_SETTLE_MS)
 }
 
-function dropPicture() {
-  if (picture.value) URL.revokeObjectURL(picture.value.url)
-  picture.value = null
-  crop.value = CENTRE_CROP
-  lastMade = CENTRE_CROP
-  requested = CENTRE_CROP
-  drag = null
-  dragging.value = false
-  clearSettleTimer()
-  generation++
-}
-
 onBeforeUnmount(() => {
   unmounted = true
   clearSettleTimer()
   if (picture.value) URL.revokeObjectURL(picture.value.url)
-})
-
-// The parent removing the image (a `null` while a picture is held) empties the field. The field's own failed
-// makes never emit `null`, so this is only ever a real reset.
-watch(() => props.modelValue, (blob) => {
-  if (blob === null && picture.value) dropPicture()
 })
 
 function pickJob(file: File): Promise<void> {
@@ -143,6 +132,8 @@ function makeNow(): Promise<void> {
     try {
       const made = await toCardWebp(current.file, snapshot)
       if (run !== generation || unmounted) return
+      // A make that worked answers an earlier failed one: the banner goes (#573).
+      failure.value = null
       lastMade = snapshot
       emit('update:modelValue', made.blob)
     }
@@ -178,30 +169,37 @@ async function settle(): Promise<void> {
 }
 defineExpose({ settle })
 
-// Dragging: pointer events on the tile, with the pointer captured so a drag that leaves the tile keeps going.
-let drag: { pointerId: number, startX: number, startY: number, from: Crop, tile: { width: number, height: number } } | null = null
-const dragging = ref(false)
-
 function onPointerDown(event: PointerEvent) {
   const current = picture.value
   const element = event.currentTarget as HTMLElement
-  if (!current || props.uploading || event.button !== 0 || drag) return
+  if (!current || frozen.value || event.button !== 0 || drag) return
   // The content box: the same box the picture's percentages refer to.
   const size = { width: element.clientWidth, height: element.clientHeight }
   if (size.width <= 0 || size.height <= 0) return
-  drag = { pointerId: event.pointerId, startX: event.clientX, startY: event.clientY, from: crop.value, tile: size }
-  dragging.value = true
+  let captured = true
   try {
     element.setPointerCapture(event.pointerId)
   }
   catch {
-    // A pointer that is no longer active cannot be captured; the drag still works inside the tile.
+    // A pointer that is no longer active cannot be captured; the drag still works inside the tile. Without the capture a
+    // release outside the tile sends no pointerup here, so onPointerMove ends the drag at the first move without a button (#573).
+    captured = false
   }
+  drag = { pointerId: event.pointerId, startX: event.clientX, startY: event.clientY, from: crop.value, tile: size, captured }
+  dragging.value = true
 }
 
 function onPointerMove(event: PointerEvent) {
   const current = picture.value
   if (!drag || !current || event.pointerId !== drag.pointerId) return
+  if (!drag.captured && event.buttons === 0) {
+    drag = null
+    dragging.value = false
+    rest()
+    return
+  }
+  // The form is saving: the crop the WebP was made from stays the tile's (#573).
+  if (frozen.value) return
   crop.value = panCrop(current, drag.tile, drag.from, { dx: event.clientX - drag.startX, dy: event.clientY - drag.startY })
 }
 
@@ -221,7 +219,7 @@ function onKeydown(event: KeyboardEvent) {
   const current = picture.value
   const direction = ARROWS[event.key as keyof typeof ARROWS]
   // Ctrl, Meta and Alt combinations (Strg + Enter, #465) and every other key belong to the page.
-  if (!current || !direction || props.uploading || event.ctrlKey || event.metaKey || event.altKey) return
+  if (!current || !direction || frozen.value || event.ctrlKey || event.metaKey || event.altKey) return
   // The tile has focus: an arrow key moves the picture, not the page.
   event.preventDefault()
   const next = nudgeCrop(current, crop.value, direction)
@@ -273,9 +271,9 @@ const placementStyle = computed(() => {
     >{{ t('gameEdit.image') }}</b>
     <div class="flex items-center gap-3">
       <!-- The content box is exactly 16:10 (the border is the overlay below), so the picture's percentages and the canvas agree (#457). -->
+      <!-- The data-crop-* attributes are test hooks, also read in the browser check (#517); nothing styles on them. -->
       <!-- eslint-disable-next-line vuejs-accessibility/no-static-element-interactions -- a named group for dragging and arrow keys: the rule only accepts widget roles such as slider, which would need a value (#457) -->
       <div
-        ref="tile"
         class="relative aspect-[16/10] w-[120px] flex-none overflow-hidden rounded-[10px] bg-paper-2"
         :class="tileClass"
         :tabindex="picture ? 0 : undefined"
@@ -343,7 +341,7 @@ const placementStyle = computed(() => {
       :step="0.1"
       :label="t('gameEdit.imageZoom')"
       :value-text="zoomText"
-      :disabled="uploading"
+      :disabled="frozen"
       @change="restSoon"
     />
     <!-- Below the row, so the button stays centred on the preview while the image is being converted or sent (#176). -->

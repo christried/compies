@@ -6,7 +6,7 @@ import AppSheet from '~/components/AppSheet.vue'
 import HintElement from '~/components/HintElement.vue'
 
 // The hint element (#515, 02-components § HintElement): a „?“ button with a popover for a short text or a slot. Click toggles it; Esc, a
-// press outside and a scroll outside close it, and the focus returns to the button. It is placed nowhere yet (#465 puts it on the game form).
+// press outside and a scroll outside close it; Esc and a press outside return the focus to the button, a scroll and a resize leave it.
 
 const TEXT = 'Strg + Enter speichert'
 
@@ -245,6 +245,24 @@ describe('the hint element (#515)', () => {
     await flushPromises()
 
     expect(popover()).toBeNull()
+  })
+
+  // The focus returns to the button for Esc and a press outside only; a scroll or a resize leaves it in the field the Host is using (#573).
+  it.each([
+    ['a scroll', () => document.dispatchEvent(new Event('scroll'))],
+    ['a resize', () => window.dispatchEvent(new Event('resize'))],
+  ])('closes on %s and leaves the focus where it was', async (_name, fire) => {
+    await mount()
+    const field = document.createElement('input')
+    document.body.append(field)
+    await click(trigger())
+    field.focus()
+
+    fire()
+    await flushPromises()
+
+    expect(popover()).toBeNull()
+    expect(document.activeElement).toBe(field)
   })
 
   it('removes its popover when it unmounts while open', async () => {

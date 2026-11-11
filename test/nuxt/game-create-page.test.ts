@@ -213,7 +213,9 @@ describe('the create page', () => {
     /** A promise the test settles by hand, to hold the page handler. */
     function deferred() {
       let release!: () => void
-      const promise = new Promise<void>((resolve) => { release = resolve })
+      const promise = new Promise<void>((resolve) => {
+        release = resolve
+      })
       return { promise, release }
     }
 
