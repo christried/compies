@@ -117,6 +117,7 @@ Server sends `{startAt, durationMs (3–10 s host setting; reduced clients still
   - `remove` @stop + 2.2 (hidden: +2.8): drawn slice `scale 1→0` toward centre 0.3; remaining slices redistribute (tween each slice's start/end angle) 0.6 `EASE.io`; `wheel-slice-out`. Compibert sinks `y 0→180` 0.4 `power2.in`.
 - **Put back / refill:** slices redistribute 0.6 `EASE.io`, new slice `scale 0→1` 0.3 pop.
 - **Reduced:** spin = calm 1.2 s `EASE.snap` placed so it **ends at the same stopAt** (start at stopAt − 1.2 s); no bulbs chase, no flapper; reveal = crossfade 0.2; remove = fade 0.2 then redistribute instantly.
+- **Deviation (0.13):** `durationMs` is no Host setting: the server draws it evenly between 6 and 10 s for each spin, and the wheel makes more turns the longer it spins (5 at 6 s up to 8 at 10 s), not a fixed 1800°. Compibert's part and his cues wait for his hand-off; the wheel's five cues come with 0.13.3, scheduled ahead on the audio clock from the spin's data, so a hidden tab plays them too where the browser lets it.
 
 ### Clip overlay [1.0]
 - Open at `clip.startAt`: `scale .96→1, opacity`, 0.36 `EASE.out`. Auto-close at startAt + 30 s: 0.22 `EASE.in` + `veto-clip-close`.
@@ -130,6 +131,7 @@ Times from `round.determined`: `determinedAt`, `vetoEndsAt = determinedAt + 60 s
 - From vetoEndsAt − 1.2: `veto-drumroll`.
 - **Reveal** @vetoEndsAt (`veto.revealed`): per party tile `rotationY 90→0` (perspective 600), 0.42 `EASE.out`, stagger 0.08; stamps „VETO“ `scale 2.2→.9→1, rotation −8`, 0.52, delay 0.3; `veto-reveal`; if any veto: Compibert `angry`, feed entry; outcome `respin` → wheel removes the game, host can spin again.
 - Reduced: tiles and stamps appear with 0.2 fade at the same time; timer pulse off.
+- **Deviation (0.13):** `vetoEndsAt` is `determinedAt` plus the game's clip length plus 30 s (30 s without a Clip), and a skipped Clip moves it to 30 s after the skip if that is sooner. The Clip overlay closes at the Clip's own end, not at 30 s. No Compibert `angry` at the reveal.
 
 ### Coin flip „Zeitlupe“ (Pick & Ban) [1.0]
 - Server: `{startAt, durationMs: 3600, result}`. Coin = 13 stacked edge discs + 2 faces (CSS 3D, `preserve-3d`), camera wrapper, ground shadow. Final face: `rotateX = (result === 'tail' ? −90 : 90) + 1440`, `rotateZ = tail ? 0 : 180`.
