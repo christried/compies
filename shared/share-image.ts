@@ -101,9 +101,10 @@ export interface ShareTiePanel {
   size: number
 }
 
-export type ShareStandingsRow =
-  | { kind: 'party', rank: number, team: number, name: string, points: number, fill: string, ink: string }
-  | { kind: 'more', text: string }
+/** A Party's row, or the „+n weitere Parteien“ line between the first rows and the last place. */
+export type ShareStandingsRow
+  = | { kind: 'party', rank: number, team: number, name: string, points: number, fill: string, ink: string }
+    | { kind: 'more', text: string }
 
 export interface ShareStandings {
   /** „Endstand“. */
@@ -114,10 +115,10 @@ export interface ShareStandings {
   rows: ShareStandingsRow[]
 }
 
-export type ShareGameRow =
-  /** `stripe`: one hex per Party on place 1, ascending team, at most 4; `[SURFACE]` when nobody. */
-  | { kind: 'game', name: string, stripe: string[] }
-  | { kind: 'more', text: string }
+/** A game row: `stripe` is one hex per Party on place 1, ascending team, at most 4; `[SURFACE]` when nobody. */
+export type ShareGameRow
+  = | { kind: 'game', name: string, stripe: string[] }
+    | { kind: 'more', text: string }
 
 export interface ShareGames {
   /** The played games: „12 Spiele“, „1 Spiel“, „0 Spiele“. */

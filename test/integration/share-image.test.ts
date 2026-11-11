@@ -6,7 +6,7 @@ import { memoryRoomNotifier } from '../../server/utils/room-notifier'
 import { fileShareAssets } from '../../server/utils/share-assets'
 import type { EventView } from '../../shared/event'
 import type { Phase } from '../../shared/phase'
-import type { ShareImageModel } from '../../shared/share-image'
+import type { ShareImageModel, ShareTiePanel } from '../../shared/share-image'
 import { createTestApp, errorOf, sendVia, type TestRequest } from './app'
 import { createTestDb, resetDatabase } from './harness'
 import { hostEntersResult, hostFinishes, hostSets, hostStartsCeremony, readEventText, readFeedText, startRunningEvent, type Rig } from './scenario'
@@ -242,14 +242,17 @@ describe('the Share image route', () => {
 
       expect(drawn.models).toHaveLength(1)
       const model = drawn.models[0]!
-      expect(model.winner).toMatchObject({ name: 'Team Rot', points: '1' })
-      expect(model.chips.map(chip => chip.name)).toEqual(['Halo'])
-      expect(model.gamesLabel).toBe('1 Spiel')
-      expect(model.people).toBe('4 Leute')
-      expect(model.pill.event).toBe('Freitags-Zocken')
+      expect(model).toMatchObject({
+        panel: { kind: 'winner', label: 'Sieger', points: { value: '1', label: 'Punkt' }, name: { lines: ['Team Rot'], size: 96 } },
+        games: { label: '1 Spiel', rows: [{ kind: 'game', name: 'Halo' }] },
+        header: { event: { lines: ['Freitags-Zocken'] } },
+        standings: { count: '2 Parteien', rows: [{ kind: 'party', rank: 2, name: 'Team Orange', points: 0 }] },
+      })
+      expect(model.standings!.rows).toHaveLength(1)
+      expect(model.games.rows).toHaveLength(1)
     }, 30_000)
 
-    // #315: the picture of a Tie, both Parties on rank 1 and the game's two Parties on its first place (the capsule).
+    // #315: the picture of a Tie, both Parties on rank 1 and the game's two Parties on its first place (the split stripe).
     it.each([['wide', 1200, 630], ['square', 1080, 1080]])('gives a PNG of the %s format, %i x %i, for a Tie and draws both Winners', async (format, width, height) => {
       const { slug, cookies } = await event({ tie: true })
 
@@ -258,11 +261,11 @@ describe('the Share image route', () => {
       expect(response.status).toBe(200)
       expect(sizeOf(new Uint8Array(await response.arrayBuffer()))).toEqual({ signature: PNG_SIGNATURE, width, height })
       const model = drawn.models[0]!
-      expect(model.winner).toBeNull()
-      expect(model.tie).toMatchObject({ mode: 'names', label: 'Unentschieden · beide gleichauf' })
-      expect(model.tie!.entries.map(entry => entry.name)).toEqual(['Team Rot', 'Team Orange'])
-      expect(model.chips[0]!.stripes).toHaveLength(2)
-      expect(model.rows).toEqual([])
+      expect(model.panel).toMatchObject({ kind: 'tie', label: 'Unentschieden · beide gleichauf' })
+      expect((model.panel as ShareTiePanel).bands.map(band => band.name)).toEqual(['Team Rot', 'Team Orange'])
+      expect(model.standings).toBeNull()
+      expect(model.games.rows[0]).toMatchObject({ kind: 'game', name: 'Halo' })
+      expect((model.games.rows[0] as { stripe: string[] }).stripe).toHaveLength(2)
     }, 30_000)
 
     it('names no Player in what it draws', async () => {
