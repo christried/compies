@@ -1,5 +1,5 @@
 import { mountSuspended, registerEndpoint } from '@nuxt/test-utils/runtime'
-import type { VueWrapper } from '@vue/test-utils'
+import { flushPromises, type VueWrapper } from '@vue/test-utils'
 import { createError, getHeader, readRawBody } from 'h3'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import GameForm from '~/components/GameForm.vue'
@@ -74,7 +74,7 @@ describe('the image in the game form (#143)', () => {
     creates.mockClear()
     uploads.mockClear()
     toCardWebp.mockReset()
-    toCardWebp.mockResolvedValue(cardWebp)
+    toCardWebp.mockResolvedValue({ blob: cardWebp, width: 2000, height: 1000 })
     uploadFailsWith = null
     // The test environment's Blob is not the one Node's object URLs know.
     vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:http://localhost/preview')
@@ -91,7 +91,7 @@ describe('the image in the game form (#143)', () => {
     expect(page.findAll('button').some(button => button.text() === 'Bild wählen')).toBe(true)
   })
 
-  it('shows the cropped result right after choosing', async () => {
+  it('shows the picked picture right after choosing', async () => {
     const page = await mountSuspended(GameForm)
 
     await pick(page)
@@ -175,7 +175,7 @@ describe('an image picked while editing the game (#142, #143)', () => {
     patches.mockClear()
     uploads.mockClear()
     toCardWebp.mockReset()
-    toCardWebp.mockResolvedValue(cardWebp)
+    toCardWebp.mockResolvedValue({ blob: cardWebp, width: 2000, height: 1000 })
     uploadFailsWith = null
     vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:http://localhost/preview')
     vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {})
@@ -203,5 +203,106 @@ describe('an image picked while editing the game (#142, #143)', () => {
     await vi.waitFor(() => expect(page.emitted('saved')).toEqual([[created]]))
     expect(patches).toHaveBeenCalledOnce()
     expect(uploads).not.toHaveBeenCalled()
+  })
+})
+
+// A save waits for the WebP that matches the tile (#457): the field settles before the game is sent.
+describe('saving while the crop is being made (#457)', () => {
+  const moved = new Blob([new Uint8Array(777)], { type: 'image/webp' })
+  const nudged = new Blob([new Uint8Array(555)], { type: 'image/webp' })
+  const tile = (page: VueWrapper) => page.get('[aria-label="Bildausschnitt wählen"]')
+
+  function deferred<T>() {
+    let resolve!: (value: T) => void
+    const promise = new Promise<T>((done) => {
+      resolve = done
+    })
+    return { promise, resolve }
+  }
+
+  beforeEach(() => {
+    signInAs({ ...kitty, canHost: true })
+    creates.mockClear()
+    uploads.mockClear()
+    toCardWebp.mockReset()
+    toCardWebp.mockResolvedValueOnce({ blob: cardWebp, width: 2000, height: 1000 })
+    uploadFailsWith = null
+    vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:http://localhost/preview')
+    vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {})
+  })
+
+  async function pickAndSizeTile(page: VueWrapper) {
+    await pick(page)
+    await vi.waitFor(() => expect(page.find('[aria-label="Bildausschnitt wählen"]').exists()).toBe(true))
+    Object.defineProperty(tile(page).element, 'clientWidth', { value: 120, configurable: true })
+    Object.defineProperty(tile(page).element, 'clientHeight', { value: 75, configurable: true })
+  }
+
+  const pointer = (page: VueWrapper, type: string, x: number) =>
+    tile(page).element.dispatchEvent(new PointerEvent(type, { bubbles: true, pointerId: 1, button: 0, clientX: x, clientY: 40 }))
+
+  it('waits for the WebP of a drag, then uploads that one and not the one of the pick', async () => {
+    const remake = deferred<{ blob: Blob, width: number, height: number }>()
+    toCardWebp.mockReturnValueOnce(remake.promise)
+    const page = await mountSuspended(GameForm)
+    await pickAndSizeTile(page)
+    pointer(page, 'pointerdown', 50)
+    pointer(page, 'pointermove', 56)
+    pointer(page, 'pointerup', 56)
+
+    await save(page)
+    await flushPromises()
+    expect(creates).not.toHaveBeenCalled()
+    expect(uploads).not.toHaveBeenCalled()
+
+    remake.resolve({ blob: moved, width: 2000, height: 1000 })
+    await vi.waitFor(() => expect(page.emitted('saved')).toEqual([[withImage]]))
+    expect(creates).toHaveBeenCalledOnce()
+    expect(uploads).toHaveBeenCalledOnce()
+    expect(uploads).toHaveBeenCalledWith({ type: 'image/webp', size: 777 })
+  })
+
+  it('flushes the arrow-key wait when the save comes before it is over', async () => {
+    toCardWebp.mockResolvedValueOnce({ blob: nudged, width: 2000, height: 1000 })
+    const page = await mountSuspended(GameForm)
+    await pickAndSizeTile(page)
+    await tile(page).trigger('keydown', { key: 'ArrowRight' })
+
+    await save(page)
+
+    await vi.waitFor(() => expect(page.emitted('saved')).toEqual([[withImage]]))
+    expect(toCardWebp).toHaveBeenLastCalledWith(expect.any(File), { x: 0.1, y: 0 })
+    expect(uploads).toHaveBeenCalledWith({ type: 'image/webp', size: 555 })
+  })
+
+  it('waits for the conversion of the pick itself', async () => {
+    toCardWebp.mockReset()
+    const conversion = deferred<{ blob: Blob, width: number, height: number }>()
+    toCardWebp.mockReturnValueOnce(conversion.promise)
+    const page = await mountSuspended(GameForm)
+    await pick(page)
+
+    await save(page)
+    await flushPromises()
+    expect(creates).not.toHaveBeenCalled()
+
+    conversion.resolve({ blob: cardWebp, width: 2000, height: 1000 })
+    await vi.waitFor(() => expect(page.emitted('saved')).toEqual([[withImage]]))
+    expect(uploads).toHaveBeenCalledWith({ type: 'image/webp', size: 1234 })
+  })
+
+  it('settles before „Speichern und noch eins“ too, and reports it once the image is up', async () => {
+    toCardWebp.mockResolvedValueOnce({ blob: nudged, width: 2000, height: 1000 })
+    const page = await mountSuspended(GameForm, { props: { saveAndNext: true } })
+    await pickAndSizeTile(page)
+    await tile(page).trigger('keydown', { key: 'ArrowRight' })
+    await field(page, 'Name').setValue('Mario Kart')
+
+    await page.findAll('button').find(button => button.text() === 'Speichern und noch eins')!.trigger('click')
+
+    await vi.waitFor(() => expect(page.emitted('savedAndNext')).toEqual([[withImage]]))
+    expect(uploads).toHaveBeenCalledOnce()
+    expect(uploads).toHaveBeenCalledWith({ type: 'image/webp', size: 555 })
+    expect(page.emitted('saved')).toBeUndefined()
   })
 })
