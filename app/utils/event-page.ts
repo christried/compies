@@ -181,6 +181,23 @@ export function headerPill(state: EventPageState | null, phase: Phase | undefine
   return { phase: shown.phase, label: several ? t('event.pill.running', { n: state.running?.number, total: state.total }) : undefined }
 }
 
+/** The Event the header names under „Events“ (#426): its name and the pill of the page (`headerPill`), the same on the phone's title and in the nav. */
+export type EventContext = { name: string } & ReturnType<typeof headerPill>
+
+const PHASE_WORD_KEY: Record<Phase, string> = {
+  draft: 'draft',
+  poll: 'poll',
+  date_set: 'dateSet',
+  running: 'running',
+  finished: 'finished',
+  archived: 'archived',
+}
+
+/** The word a Phase is shown with: the page's `label` where it knows more (headerPill), else the Phase's own word. One home for the pill and the nav's description (#426). */
+export function phaseWord(phase: Phase, label: string | undefined, t: Translate): string {
+  return label ?? t(`phase.${PHASE_WORD_KEY[phase]}`)
+}
+
 export function pageFacts({ settings, sessions, missingDates, event }: Pick<EventView, 'settings' | 'sessions' | 'missingDates'> & { event: Pick<EventView['event'], 'phase'> }): PageFacts {
   const waiting = nextSession(sessions)
   const runningSession = runningOf(sessions)
