@@ -148,7 +148,8 @@ describe('the Game library API (#141)', () => {
 
     it.each([
       [{ name: '' }, 'invalid_game_name'],
-      [{ name: 'Mario Kart', clipLength: 4 }, 'invalid_clip'],
+      [{ name: 'Mario Kart', clipLength: 9 }, 'invalid_clip'],
+      [{ name: 'Mario Kart', clipLength: 121 }, 'invalid_clip'],
     ])('refuses %j with %s', async (body, code) => {
       const cookie = await cookieOf(host)
 
