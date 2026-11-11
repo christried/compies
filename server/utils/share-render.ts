@@ -1,6 +1,6 @@
 import { initWasm, Resvg } from '@resvg/resvg-wasm'
 import satori from 'satori'
-import type { ShareBand, ShareGameRow, ShareGames, ShareImageModel, ShareName, SharePoints, ShareStandings, ShareStandingsRow, ShareTiePanel, ShareWinnerPanel } from '../../shared/share-image'
+import type { ShareGameRow, ShareGames, ShareImageModel, ShareName, SharePoints, ShareStandings, ShareStandingsRow, ShareTieBand, ShareTiePanel, ShareWinnerPanel } from '../../shared/share-image'
 import { SURFACE } from '../../shared/team-colors'
 import { teamSymbol } from '../../shared/team-marks'
 import { SHARE_FONTS, type ShareAssets } from './share-assets'
@@ -37,7 +37,7 @@ const LAYOUT = {
     },
     tie: { bar: { height: 52, padding: '0 28px', font: 17, spacing: '0.12em', value: 22, gap: 7 }, band: { border: 3, padding: '0 28px', gap: 16, mark: { size: 34, symbol: 18, border: 2.5 } } },
     right: { padding: '26px 30px' },
-    head: { font: 15, padding: 8, spacing: '0.12em' },
+    head: { font: 15, padding: 8, spacing: '0.12em', legend: { stripe: { width: 10, height: 20 }, gap: 7, font: 15 } },
     row: { height: 44, gap: 12, rank: { width: 30, font: 20 }, mark: { size: 26, symbol: 14, border: 2.5 }, name: 21, points: 20, more: { font: 17, left: 42 } },
     games: { top: 6, cell: { width: '50%', height: 36, right: 16, gap: 10 }, stripe: { width: 10, height: 24 }, name: 18, more: { font: 17, left: 20 } },
     spacerMin: 20,
@@ -52,7 +52,7 @@ const LAYOUT = {
     },
     tie: { bar: { height: 64, padding: '0 44px', font: 22, spacing: '0.12em', value: 28, gap: 9 }, band: { border: 3.5, padding: '0 44px', gap: 20, mark: { size: 44, symbol: 24, border: 3 } } },
     bottom: { padding: '32px 44px', gap: 44 },
-    head: { font: 18, padding: 10, spacing: '0.12em' },
+    head: { font: 18, padding: 10, spacing: '0.12em', legend: { stripe: { width: 12, height: 24 }, gap: 8, font: 18 } },
     row: { height: 52, gap: 14, rank: { width: 38, font: 24 }, mark: { size: 32, symbol: 18, border: 2.5 }, name: 25, points: 24, more: { font: 20, left: 52 } },
     games: { width: 380, gap: 12, row: 40, stripe: { width: 12, height: 28 }, name: 22, more: { font: 20, left: 24 } },
   },
@@ -189,20 +189,20 @@ function winnerPanel(panel: ShareWinnerPanel, format: ImageFormat, pictures: Pic
   ])
 }
 
-/**
- * A Tie, meanwhile (#510): the note's k >= 2 structure, the tie bar and one band per Winner, all at one size. #511 replaces the constant size
- * with the tiers of the note's table and adds the „+n weitere“ band and „je“; no Compibert or sunburst on a Tie panel.
- */
+/** A Tie (k >= 2): the tie bar with „je“, the points and the unit, then the bands, all at the model's size; no Compibert or sunburst on a Tie panel. */
 function tiePanel(panel: ShareTiePanel, format: ImageFormat): Node {
   const layout = LAYOUT[format].tie
   const bar = layout.bar
-  const band = (entry: ShareBand): Node => el('div', {
+  // „+n weitere“ is the same box with no mark, its text at the band's left padding.
+  const band = (entry: ShareTieBand): Node => el('div', {
     display: 'flex', flex: 1, minHeight: 0, alignItems: 'center', boxSizing: 'border-box', gap: layout.band.gap, padding: layout.band.padding,
     borderTop: `${layout.band.border}px solid ${INK}`, background: entry.fill, color: entry.ink,
-  }, [
-    markOnColour(layout.band.mark, entry.team),
-    line({ flex: 1, fontFamily: LILITA, fontSize: panel.size, lineHeight: 1.1 }, entry.name),
-  ])
+  }, entry.kind === 'more'
+    ? line({ flex: 1, fontFamily: LILITA, fontSize: panel.size, lineHeight: 1.1 }, entry.text)
+    : [
+        markOnColour(layout.band.mark, entry.team),
+        line({ flex: 1, fontFamily: LILITA, fontSize: panel.size, lineHeight: 1.1 }, entry.name),
+      ])
   const frame: Style = format === 'wide'
     ? { flexShrink: 0, width: LAYOUT.wide.panel.width, borderRight: `${LAYOUT.wide.panel.border}px solid ${INK}` }
     : { flexShrink: 0, height: LAYOUT.square.panel.height, borderBottom: `${LAYOUT.square.panel.border}px solid ${INK}` }
@@ -213,6 +213,7 @@ function tiePanel(panel: ShareTiePanel, format: ImageFormat): Node {
     }, [
       line({}, panel.label),
       el('span', { display: 'flex', alignItems: 'baseline', flexShrink: 0, whiteSpace: 'nowrap', gap: bar.gap }, [
+        el('span', {}, panel.each),
         el('span', { fontFamily: BUNGEE, fontWeight: 400, fontSize: bar.value, letterSpacing: 0 }, panel.points.value),
         el('span', {}, panel.points.label),
       ]),
@@ -223,13 +224,13 @@ function tiePanel(panel: ShareTiePanel, format: ImageFormat): Node {
 
 // --- the Standings and the games ---
 
-/** The head of a block: a title and its count, ruled below. */
-function blockHead(format: ImageFormat, left: string, right?: string): Node {
+/** The head of a block: a title and its count (a string, muted) or the games' legend (a node), ruled below. */
+function blockHead(format: ImageFormat, left: string, right?: string | Node): Node {
   const layout = LAYOUT[format].head
   return el('div', {
     display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0, whiteSpace: 'nowrap', paddingBottom: layout.padding, borderBottom: `3px solid ${INK}`,
     fontWeight: 800, fontSize: layout.font, lineHeight: 1, letterSpacing: layout.spacing, textTransform: 'uppercase',
-  }, [el('span', {}, left), right ? el('span', { color: MUTED }, right) : null])
+  }, [el('span', {}, left), typeof right === 'string' ? el('span', { color: MUTED }, right) : right ?? null])
 }
 
 function standingsRow(entry: ShareStandingsRow, format: ImageFormat): Node {
@@ -261,14 +262,24 @@ function gameRow(entry: ShareGameRow, format: ImageFormat): Node {
   return el('div', cell, [gameStripe(layout.stripe.width, layout.stripe.height, entry.stripe), line({ flex: 1, fontWeight: 700, fontSize: layout.name, lineHeight: 1.2 }, entry.name)])
 }
 
+/** The games head's legend: the stripe of the first tied game's first two Parties and its text, as the muted count's neighbour at the right end. */
+function legendNode(legend: NonNullable<ShareGames['legend']>, format: ImageFormat): Node {
+  const layout = LAYOUT[format].head.legend
+  return el('div', { display: 'flex', alignItems: 'center', gap: layout.gap, color: MUTED, fontWeight: 700, fontSize: layout.font, letterSpacing: 0, textTransform: 'none' }, [
+    gameStripe(layout.stripe.width, layout.stripe.height, legend.stripe),
+    el('span', {}, legend.text),
+  ])
+}
+
 function gamesBlock(games: ShareGames, format: ImageFormat): Node {
   const rows = games.rows.map(row => gameRow(row, format))
+  const head = blockHead(format, games.label, games.legend ? legendNode(games.legend, format) : undefined)
   return format === 'wide'
     ? el('div', { display: 'flex', flexDirection: 'column', flexShrink: 0 }, [
-        blockHead(format, games.label),
+        head,
         el('div', { display: 'flex', flexWrap: 'wrap', flexShrink: 0, paddingTop: LAYOUT.wide.games.top }, rows),
       ])
-    : el('div', { display: 'flex', flexDirection: 'column', flexShrink: 0, width: LAYOUT.square.games.width }, [blockHead(format, games.label), ...rows])
+    : el('div', { display: 'flex', flexDirection: 'column', flexShrink: 0, width: LAYOUT.square.games.width }, [head, ...rows])
 }
 
 // --- the picture ---

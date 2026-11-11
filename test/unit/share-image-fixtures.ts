@@ -51,7 +51,7 @@ export const worstGame = (number: number) => `Ultimatives Überlebensturnier der
 
 const kurzNames = ['Wilde Gurken', 'Nacht Eulen', 'Team Orange', 'Käse Turbo']
 
-/** The Events of the reference (`ShareImage.dc.html`, ?st=…), and the worst case the renderer must survive (#511 adds the larger Ties). */
+/** The Events of the reference (`ShareImage.dc.html`, ?st=…), the Ties of 3, 5 and 8 (#511), and the worst case the renderer must survive. */
 export const SHARE_CASES: Record<string, ShareImageSource> = {
   kurz: source({
     points: [17, 15, 9, 5],
@@ -75,6 +75,30 @@ export const SHARE_CASES: Record<string, ShareImageSource> = {
     names: named(...kurzNames),
     sessions: [day('2026-11-07')],
     games: games([['Rocket League', [1]], ['Mario Kart 8', [2]], ['Codenames', [1, 2]], ['Overcooked 2', [3]], ['Gang Beasts', [2]], ['Tetris 99', [1]]]),
+  }),
+  tie3: source({
+    event: 'Zocken im Keller',
+    points: [14, 14, 14, 9, 7],
+    names: named('Grüne Welle', 'Pinke Panther', 'Team Orange', 'Nacht Eulen', 'Käse Turbo'),
+    sessions: [day('2026-10-31'), day('2026-11-01')],
+    games: games([['Rocket League', [1]], ['Mario Kart 8', [2, 3]], ['Codenames', [3]], ['Overcooked 2', [1, 2, 3]], ['Gang Beasts', [4]], ['Tetris 99', [2]], ['Fall Guys', [1]]]),
+  }),
+  tie5: source({
+    event: 'Silvester-Spieleturnier',
+    points: [12, 12, 12, 12, 12, 8, 5],
+    names: named('Wilde Gurken', 'Team Orange', 'Käse Turbo', 'Pinke Panther', 'Nacht Eulen', 'Gelbe Gefahr', 'Grüne Welle'),
+    sessions: [day('2026-12-31')],
+    games: games([
+      ['Werwölfe', [1, 2, 3, 4, 5]], ['Rocket League', [3]], ['Mario Kart 8', [1, 4]], ['Codenames', [2]], ['Overcooked 2', [5]],
+      ['Gang Beasts', [4]], ['Tetris 99', [1, 2]], ['Jackbox Party Pack 9', [3]], ['Fall Guys', [5]],
+    ]),
+  }),
+  tie8: source({
+    event: 'Das große Finale',
+    points: Array(8).fill(10),
+    names: named('Rote Rüben', 'Team Orange', 'Gelbe Gefahr', 'Käse Turbo', 'Grüne Welle', 'Blaue Bohnen', 'Pinke Panther', 'Nachteulen aus dem dritten Stock'),
+    sessions: [day('2026-12-12')],
+    games: games([['Werwölfe', [1, 2, 3, 4, 5, 6, 7, 8]], ['Codenames', [1, 2]], ['Tetris 99', [7]]]),
   }),
   worst: source({
     event: WORST_EVENT,

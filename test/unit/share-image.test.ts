@@ -351,7 +351,7 @@ describe('shareImageModel', () => {
 
     it('says „1 Spiel“ for one and „0 Spiele“ with no rows for none', () => {
       expect(model({ games: games(1) }).games).toMatchObject({ label: '1 Spiel', rows: [{ kind: 'game', name: 'Spiel 1' }] })
-      expect(model({ games: [] }).games).toEqual({ label: '0 Spiele', rows: [] })
+      expect(model({ games: [] }).games).toEqual({ label: '0 Spiele', legend: null, rows: [] })
     })
 
     it('takes the games in the order of their Rounds, whatever the order of the read', () => {
@@ -367,7 +367,7 @@ describe('shareImageModel', () => {
 
     it('draws the first four colours of five tied Parties', () => {
       const five = model({ points: [1, 1, 1, 1, 1, 0], games: [{ name: 'Werwölfe', firsts: [5, 3, 1, 2, 4] }] })
-      expect(five.games.rows[0]).toMatchObject({ stripe: ['#e4572e', '#f0a202', '#f3e04a', '#56b4e9'] })
+      expect(five.games.rows[0]).toMatchObject({ name: 'Werwölfe · 5 gleichauf', stripe: ['#e4572e', '#f0a202', '#f3e04a', '#56b4e9'] })
     })
 
     it('draws a surface-coloured stripe for a game nobody won', () => {
@@ -436,49 +436,188 @@ describe('shareImageModel', () => {
     })
   })
 
-  // The Tie, meanwhile (#510; #511 adds the font tiers, „+n weitere“ and the legend): the bar, one band per Winner, one size.
+  // The Tie (#510 the bar and the bands, #511 the font tiers, „+n weitere“, „je“ and the legend).
   describe('a Tie', () => {
-    it('is a tie panel with one band per Winner, ascending, at one size per format', () => {
-      for (const [format, size] of [['wide', 28], ['square', 32]] as const) {
-        const panel = tieOf(model(SHARE_CASES.tie2!, format))
-        expect(panel).toMatchObject({ kind: 'tie', label: 'Unentschieden · 2 Sieger', size, points: { value: '15', label: 'Punkte' } })
-        expect(panel.bands.map(band => band.name)).toEqual(['Wilde Gurken', 'Nacht Eulen'])
-        expect(panel.bands[0]).toEqual({ team: 1, name: 'Wilde Gurken', fill: '#e4572e', ink: '#151515' })
-      }
+    const partyBands = (panel: ShareTiePanel) => panel.bands.flatMap(band => band.kind === 'party' ? [band] : [])
+    /** `k` Winners on 5 points; the longest name (`length` letters) is on the last one, so a folded Party can carry it. */
+    const tieWith = (k: number, length: number, format: ShareFormat) => tieOf(model({ points: Array(k).fill(5), names: { [k]: letters(length) } }, format))
+
+    describe('the band font', () => {
+      const tiers: [number, [number, number, number, number], [number, number, number, number]][] = [
+        [2, [72, 52, 52, 38], [88, 68, 68, 52]],
+        [3, [56, 44, 44, 34], [68, 56, 56, 44]],
+        ...[4, 5, 6, 7, 8].map(k => [k, [36, 32, 32, 28], [40, 36, 36, 32]] as [number, [number, number, number, number], [number, number, number, number]]),
+      ]
+      it.each(tiers)('of %i Winners follows the longest name (14 / 15 / 22 / 23 characters)', (k, wideSizes, squareSizes) => {
+        const lengths = [14, 15, 22, 23]
+        expect(lengths.map(length => tieWith(k, length, 'wide').size)).toEqual(wideSizes)
+        expect(lengths.map(length => tieWith(k, length, 'square').size)).toEqual(squareSizes)
+      })
+
+      it('counts the drawn name: a pictograph does not make 14 characters a longer name', () => {
+        expect(tieOf(model({ points: [5, 5], names: { 2: `${letters(14)} 🎮` } })).size).toBe(72)
+      })
+
+      it('is 28 wide and 32 square for the 32-character name of the Tie of 8', () => {
+        expect(tieOf(model(SHARE_CASES.tie8!, 'wide')).size).toBe(28)
+        expect(tieOf(model(SHARE_CASES.tie8!, 'square')).size).toBe(32)
+      })
     })
 
-    it('lists the Parties below the Winners with their shared rank: 3 and 4 after two Winners', () => {
-      expect(model(SHARE_CASES.tie2!).standings).toMatchObject({ count: '4 Parteien', rows: [{ rank: 3, team: 3 }, { rank: 4, team: 4 }] })
+    describe('the bands', () => {
+      it.each([2, 3, 4, 6])('has one party band for each of %i Winners and no „+n weitere“', (k) => {
+        const panel = tieOf(model({ points: Array(k).fill(5) }))
+        expect(panel.bands).toHaveLength(k)
+        expect(partyBands(panel).map(band => band.team)).toEqual(Array.from({ length: k }, (_, index) => index + 1))
+      })
+
+      it('is a party band with the Team name and colours, ascending, and strips pictographs', () => {
+        for (const format of ['wide', 'square'] as const) {
+          const panel = tieOf(model(SHARE_CASES.tie2!, format))
+          expect(panel.bands.map(band => band.kind === 'party' ? band.name : band.text)).toEqual(['Wilde Gurken', 'Nacht Eulen'])
+          expect(panel.bands[0]).toEqual({ kind: 'party', team: 1, name: 'Wilde Gurken', fill: '#e4572e', ink: '#151515' })
+        }
+        expect(partyBands(tieOf(model({ points: [5, 5], names: { 1: 'Gurken 🥒' } })))[0]!.name).toBe('Gurken')
+      })
+
+      it('shows five bands and „+2 weitere“ for 7 Winners, „+3 weitere“ for 8', () => {
+        const seven = tieOf(model({ points: Array(7).fill(5) }))
+        expect(partyBands(seven).map(band => band.team)).toEqual([1, 2, 3, 4, 5])
+        expect(seven.bands).toHaveLength(6)
+        expect(seven.bands[5]).toEqual({ kind: 'more', text: '+2 weitere', fill: '#fffdf8', ink: '#151515' })
+        expect(seven.label).toBe('Unentschieden · alle 7 gleichauf')
+        const eight = tieOf(model({ points: Array(8).fill(5) }))
+        expect(partyBands(eight)).toHaveLength(5)
+        expect(eight.bands[5]).toMatchObject({ kind: 'more', text: '+3 weitere' })
+        expect(eight.label).toBe('Unentschieden · alle 8 gleichauf')
+      })
+
+      it('says „7 Sieger“ and folds two Winners when 7 of 8 Parties won', () => {
+        const built = model({ points: [5, 5, 5, 5, 5, 5, 5, 1] })
+        const panel = tieOf(built)
+        expect(panel.label).toBe('Unentschieden · 7 Sieger')
+        expect(partyBands(panel)).toHaveLength(5)
+        expect(panel.bands[5]).toMatchObject({ kind: 'more', text: '+2 weitere' })
+        expect(built.standings).toMatchObject({ count: '8 Parteien', rows: [{ kind: 'party', rank: 8, team: 8 }] })
+      })
     })
 
-    it('says „beide gleichauf“ when both of 2 Parties won, with no Standings', () => {
-      const built = model({ points: [5, 5] })
-      expect(tieOf(built).label).toBe('Unentschieden · beide gleichauf')
-      expect(built.standings).toBeNull()
+    describe('the bar', () => {
+      it('says „je“, the points and the Winners', () => {
+        expect(tieOf(model(SHARE_CASES.tie2!))).toMatchObject({ kind: 'tie', label: 'Unentschieden · 2 Sieger', each: 'je', points: { value: '15', label: 'Punkte' } })
+        expect(tieOf(model(SHARE_CASES.tie5!))).toMatchObject({ label: 'Unentschieden · 5 Sieger', each: 'je', points: { value: '12', label: 'Punkte' } })
+      })
+
+      it('says „beide gleichauf“ when both of 2 Parties won, „alle k gleichauf“ from 3', () => {
+        expect(tieOf(model({ points: [5, 5] })).label).toBe('Unentschieden · beide gleichauf')
+        expect(tieOf(model({ points: Array(5).fill(5) })).label).toBe('Unentschieden · alle 5 gleichauf')
+      })
+
+      it('says „Punkt“ at one shared point and names a Winner without a Team name by its colour', () => {
+        const panel = tieOf(model({ points: [1, 1, 0] }))
+        expect(panel.points).toEqual({ value: '1', label: 'Punkt' })
+        expect(partyBands(panel).map(band => band.name)).toEqual(['Team Rot', 'Team Orange'])
+      })
     })
 
-    it('says „alle 3 gleichauf“ for 3 of 3', () => {
-      expect(tieOf(model({ points: [5, 5, 5] })).label).toBe('Unentschieden · alle 3 gleichauf')
+    describe('the Standings', () => {
+      it('lists the Parties after the Winners with their shared rank', () => {
+        expect(model(SHARE_CASES.tie2!).standings).toMatchObject({ count: '4 Parteien', rows: [{ rank: 3, team: 3 }, { rank: 4, team: 4 }] })
+        expect(model(SHARE_CASES.tie3!).standings).toMatchObject({
+          count: '5 Parteien',
+          rows: [{ kind: 'party', rank: 4, team: 4, name: 'Nacht Eulen', points: 9 }, { kind: 'party', rank: 5, team: 5, name: 'Käse Turbo', points: 7 }],
+        })
+        expect(model(SHARE_CASES.tie5!).standings).toMatchObject({
+          count: '7 Parteien',
+          rows: [{ rank: 6, team: 6, points: 8 }, { rank: 7, team: 7, points: 5 }],
+        })
+      })
+
+      it('is hidden when every Party is on rank 1', () => {
+        expect(model(SHARE_CASES.tie8!).standings).toBeNull()
+        expect(model({ points: [5, 5] }).standings).toBeNull()
+      })
+
+      it('counts the slots over the Parties after the Winners', () => {
+        const points = [9, 9, 9, 5, 4, 3, 2, 1]
+        const ranks = (format: ShareFormat) => model({ points }, format).standings!.rows.map(row => row.kind === 'more' ? row.text : row.rank)
+        expect(ranks('wide')).toEqual([4, 5, '+2 weitere Parteien', 8])
+        expect(ranks('square')).toEqual([4, 5, 6, 7, 8])
+      })
     })
 
-    it('has a band for each of 8 Winners', () => {
-      const panel = tieOf(model({ points: Array(8).fill(4) }))
-      expect(panel.bands).toHaveLength(8)
-      expect(panel.label).toBe('Unentschieden · alle 8 gleichauf')
-    })
+    describe('the games', () => {
+      const gameRowsOf = (input: Parameters<typeof model>[0], format: ShareFormat = 'wide') => model(input, format).games.rows
 
-    it('says „Punkt“ at one shared point and names a Winner without a Team name by its colour', () => {
-      const panel = tieOf(model({ points: [1, 1, 0] }))
-      expect(panel.points).toEqual({ value: '1', label: 'Punkt' })
-      expect(panel.bands.map(band => band.name)).toEqual(['Team Rot', 'Team Orange'])
-    })
+      it('has no legend when no game tied', () => {
+        expect(model(SHARE_CASES.kurz!).games.legend).toBeNull()
+      })
 
-    it('strips pictographs from the band names', () => {
-      expect(tieOf(model({ points: [5, 5], names: { 1: 'Gurken 🥒' } })).bands[0]!.name).toBe('Gurken')
+      it('has the legend with the first two winning Parties of the first tied game', () => {
+        expect(model(SHARE_CASES.tie2!).games.legend).toEqual({ stripe: ['#e4572e', '#f0a202'], text: 'gleichauf' })
+        expect(model(SHARE_CASES.tie3!).games.legend).toEqual({ stripe: ['#f0a202', '#f3e04a'], text: 'gleichauf' })
+        expect(model(SHARE_CASES.tie5!).games.legend).toEqual({ stripe: ['#e4572e', '#f0a202'], text: 'gleichauf' })
+        expect(model(SHARE_CASES.tie8!).games.legend).toEqual({ stripe: ['#e4572e', '#f0a202'], text: 'gleichauf' })
+      })
+
+      it('has the legend for a single Winner whose game tied', () => {
+        const built = model({ points: [17, 9], games: [{ name: 'Codenames', firsts: [1, 2] }] })
+        expect(built.panel.kind).toBe('winner')
+        expect(built.games.legend).toEqual({ stripe: ['#e4572e', '#f0a202'], text: 'gleichauf' })
+      })
+
+      it('has the legend when the tied game sits behind „+n weitere“', () => {
+        const games = Array.from({ length: 12 }, (_, index) => ({ name: `Spiel ${index + 1}`, firsts: index === 10 ? [2, 3] : [1] }))
+        const built = model({ points: [5, 5, 5], games })
+        expect(built.games.rows).toHaveLength(6)
+        expect(built.games.rows.at(-1)).toEqual({ kind: 'more', text: '+7 weitere' })
+        expect(built.games.legend).toEqual({ stripe: ['#f0a202', '#f3e04a'], text: 'gleichauf' })
+      })
+
+      it('has no legend for a game nobody won', () => {
+        const base = source({ games: [{ name: 'Leer', firsts: [1] }] })
+        const nobody = { ...base, results: base.results.map(result => ({ ...result, places: result.places.map(place => ({ ...place, place: 2 })) })) }
+        expect(model(nobody).games.legend).toBeNull()
+      })
+
+      it('splits the stripe of a game of 2, 3 and 4 Parties and adds no suffix', () => {
+        expect(model(SHARE_CASES.tie2!).games.rows[2]).toEqual({ kind: 'game', name: 'Codenames', stripe: ['#e4572e', '#f0a202'] })
+        expect(model(SHARE_CASES.tie3!).games.rows[3]).toEqual({ kind: 'game', name: 'Overcooked 2', stripe: ['#e4572e', '#f0a202', '#f3e04a'] })
+        expect(gameRowsOf({ points: [1, 1, 1, 1, 0], games: [{ name: 'Werwölfe', firsts: [1, 2, 3, 4] }] })[0])
+          .toEqual({ kind: 'game', name: 'Werwölfe', stripe: ['#e4572e', '#f0a202', '#f3e04a', '#56b4e9'] })
+      })
+
+      it('adds „· n gleichauf“ from 5 Parties on place 1, with n all of them, and keeps four colours', () => {
+        expect(model(SHARE_CASES.tie5!).games.rows[0]).toEqual({ kind: 'game', name: 'Werwölfe · 5 gleichauf', stripe: ['#e4572e', '#f0a202', '#f3e04a', '#56b4e9'] })
+        expect(model(SHARE_CASES.tie8!).games.rows[0]).toEqual({ kind: 'game', name: 'Werwölfe · 8 gleichauf', stripe: ['#e4572e', '#f0a202', '#f3e04a', '#56b4e9'] })
+      })
+
+      it('cuts the games to the slots: tie3 5 + „+2 weitere“ wide, 7 square; tie5 5 + „+4 weitere“ wide, 7 + „+2 weitere“ square', () => {
+        const texts = (name: string, format: ShareFormat) => model(SHARE_CASES[name]!, format).games.rows.map(row => row.kind === 'more' ? row.text : row.name)
+        expect(texts('tie3', 'wide')).toHaveLength(6)
+        expect(texts('tie3', 'wide').at(-1)).toBe('+2 weitere')
+        expect(texts('tie3', 'square')).toHaveLength(7)
+        expect(texts('tie3', 'square')).not.toContain('+2 weitere')
+        expect(texts('tie5', 'wide').at(-1)).toBe('+4 weitere')
+        expect(texts('tie5', 'wide')).toHaveLength(6)
+        expect(texts('tie5', 'square').at(-1)).toBe('+2 weitere')
+        expect(texts('tie5', 'square')).toHaveLength(8)
+      })
     })
 
     it('says the Tie in the alt text, with no places', () => {
-      expect(model(SHARE_CASES.tie2!).alt).toBe('Unentschieden bei Spieleabend bei Jonas: Wilde Gurken und Nacht Eulen gewinnen mit je 15 Punkten.')
+      for (const format of ['wide', 'square'] as const) {
+        expect(model(SHARE_CASES.tie2!, format).alt).toBe('Unentschieden bei Spieleabend bei Jonas: Wilde Gurken und Nacht Eulen gewinnen mit je 15 Punkten.')
+        expect(model(SHARE_CASES.tie3!, format).alt).toBe('Unentschieden bei Zocken im Keller: Grüne Welle, Pinke Panther und Team Orange gewinnen mit je 14 Punkten.')
+        expect(model(SHARE_CASES.tie5!, format).alt).toBe('Unentschieden bei Silvester-Spieleturnier: Wilde Gurken, Team Orange, Käse Turbo, Pinke Panther und Nacht Eulen gewinnen mit je 12 Punkten.')
+      }
+      expect(model({ points: [1, 1, 0] }).alt).toBe('Unentschieden bei Freitags-Zocken: Team Rot und Team Orange gewinnen mit je 1 Punkt.')
+    })
+
+    it('names all 8 Winners in the alt text, the folded ones included', () => {
+      for (const format of ['wide', 'square'] as const) {
+        expect(model(SHARE_CASES.tie8!, format).alt).toBe('Unentschieden bei Das große Finale: Alle 8 Parteien gewinnen mit je 10 Punkten: Rote Rüben, Team Orange, Gelbe Gefahr, Käse Turbo, Grüne Welle, Blaue Bohnen, Pinke Panther und Nachteulen aus dem dritten Stock.')
+      }
     })
 
     it('says „Beide Parteien“ when both won, and „Alle 3 Parteien“ for 3 of 3', () => {

@@ -1028,7 +1028,9 @@
       "alt": "{winner} gewinnt {event} mit {points}.",
       "altPlace": "Platz {rank}: {name}.",
       "gameTied": "· {n} gleichauf",
+      "tiedLegend": "gleichauf",
       "tie": {
+        "each": "je",
         "label": "Unentschieden · {k} Sieger",
         "labelBoth": "Unentschieden · beide gleichauf",
         "labelAll": "Unentschieden · alle {k} gleichauf",
