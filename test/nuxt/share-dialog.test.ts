@@ -131,7 +131,7 @@ describe('the share sheet', () => {
     release()
     await flush()
     expect(picture()!.getAttribute('src')).toBe('blob:share-1')
-    expect(picture()!.getAttribute('alt')).toBe('Wilde Gurken gewinnt Freitags-Zocken mit 9 Punkten. Platz 2: Nacht Eulen, 3 Punkte.')
+    expect(picture()!.getAttribute('alt')).toBe('Wilde Gurken gewinnt Freitags-Zocken mit 9 Punkten. Platz 2: Nacht Eulen.')
     expect(route.asked).toEqual(['wide'])
   })
 

@@ -156,15 +156,15 @@ describe('the game form', () => {
     expect(posted).not.toHaveBeenCalled()
   })
 
-  it('does not accept a length outside 5 to 60 seconds', async () => {
+  it('does not accept a length outside 10 to 120 seconds', async () => {
     const page = await mountSuspended(GameForm)
     await field(page, 'Name').setValue('Mario Kart')
 
-    await field(page, 'Länge').setValue('4')
+    await field(page, 'Länge').setValue('9')
     expect(field(page, 'Länge').attributes('aria-invalid')).toBe('true')
-    await field(page, 'Länge').setValue('61')
+    await field(page, 'Länge').setValue('121')
     expect(field(page, 'Länge').attributes('aria-invalid')).toBe('true')
-    await field(page, 'Länge').setValue('60')
+    await field(page, 'Länge').setValue('120')
     expect(field(page, 'Länge').attributes('aria-invalid')).toBeUndefined()
 
     await page.get('form').trigger('submit')
@@ -181,22 +181,206 @@ describe('the game form', () => {
     expect(posted).not.toHaveBeenCalled()
   })
 
-  it('drops the hints of the link, the start and the length, and says the length is at most 60 seconds', async () => {
+  it('drops the hints of the link, the start and the length, and says the length is at most 120 seconds', async () => {
     const page = await mountSuspended(GameForm)
 
     expect(page.text()).not.toContain('Watch-, youtu.be-, Shorts- oder Embed-Link')
     expect(page.text()).not.toContain('Minuten:Sekunden, zum Beispiel 1:12.')
     expect(page.text()).not.toContain('In Sekunden, 5 bis 60.')
-    expect(page.text()).toContain('Maximal 60 Sekunden')
+    expect(page.text()).toContain('Maximal 120 Sekunden')
   })
 
   it('shows the length error instead of the maximum while the length is invalid', async () => {
     const page = await mountSuspended(GameForm)
 
-    await field(page, 'Länge').setValue('61')
+    await field(page, 'Länge').setValue('121')
 
-    expect(page.text()).toContain('Die Länge liegt zwischen 5 und 60 Sekunden.')
-    expect(page.text()).not.toContain('Maximal 60 Sekunden')
+    expect(page.text()).toContain('Die Länge liegt zwischen 10 und 120 Sekunden.')
+    expect(page.text()).not.toContain('Maximal 120 Sekunden')
+  })
+
+  // Start, Ende and Länge (#508): the two edited last hold, the third follows; only start and length are sent.
+  describe('clip fields (#508)', () => {
+    const valueOf = (page: Page, label: string) => (field(page, label).element as HTMLInputElement).value
+    const errorOf = (page: Page, label: string) => page.get(`[id="${field(page, label).attributes('id')}-error"]`).text()
+    const invalid = (page: Page, label: string) => field(page, label).attributes('aria-invalid')
+
+    it('opens a new game with 0:00, 0:30 and 30 and the help of Ende and Länge', async () => {
+      const page = await mountSuspended(GameForm)
+
+      expect(valueOf(page, 'Start ab')).toBe('0:00')
+      expect(valueOf(page, 'Ende')).toBe('0:30')
+      expect(valueOf(page, 'Länge')).toBe('30')
+      expect(page.text()).toContain('Zwei der drei Felder reichen.')
+      expect(page.text()).toContain('Maximal 120 Sekunden')
+    })
+
+    it('opens an existing game as stored, with Ende worked out and no error', async () => {
+      const page = await mountSuspended(GameForm, { props: { game: saved } })
+
+      expect(valueOf(page, 'Start ab')).toBe('1:12')
+      expect(valueOf(page, 'Ende')).toBe('1:42')
+      expect(valueOf(page, 'Länge')).toBe('30')
+      for (const label of ['Start ab', 'Ende', 'Länge']) expect(invalid(page, label)).toBeUndefined()
+    })
+
+    it('moves Start when Ende and then Länge are typed, and the preview follows', async () => {
+      const page = await mountSuspended(GameForm)
+      await field(page, 'YouTube-Link').setValue(LINK)
+
+      await field(page, 'Ende').setValue('2:00')
+      expect(valueOf(page, 'Länge')).toBe('120')
+      await field(page, 'Länge').setValue('60')
+
+      expect(valueOf(page, 'Start ab')).toBe('1:00')
+      expect(valueOf(page, 'Ende')).toBe('2:00')
+      expect(page.text()).toContain('Ausschnitt 1:00 – 2:00')
+      expect(page.text()).toContain('Genau so läuft der Clip in der Session: 60 s, für alle gleichzeitig, mit Ton.')
+    })
+
+    it('sets Länge when Start and then Ende are typed', async () => {
+      const page = await mountSuspended(GameForm)
+      await field(page, 'YouTube-Link').setValue(LINK)
+
+      await field(page, 'Start ab').setValue('1:00')
+      await field(page, 'Ende').setValue('1:45')
+
+      expect(valueOf(page, 'Länge')).toBe('45')
+      expect(page.text()).toContain('Ausschnitt 1:00 – 1:45')
+      expect(page.text()).toContain('45 s, für alle gleichzeitig')
+    })
+
+    describe('the error sits on the field that followed', () => {
+      it('Ende before Start: Länge', async () => {
+        const page = await mountSuspended(GameForm)
+
+        await field(page, 'Start ab').setValue('1:00')
+        await field(page, 'Ende').setValue('0:30')
+
+        expect(invalid(page, 'Länge')).toBe('true')
+        expect(valueOf(page, 'Länge')).toBe('')
+        expect(errorOf(page, 'Länge')).toBe('Das Ende liegt vor dem Start.')
+        expect(page.text()).not.toContain('Maximal 120 Sekunden')
+        expect(invalid(page, 'Start ab')).toBeUndefined()
+        expect(invalid(page, 'Ende')).toBeUndefined()
+      })
+
+      it('a length over 120 s: Länge', async () => {
+        const page = await mountSuspended(GameForm)
+
+        await field(page, 'Ende').setValue('5:00')
+
+        expect(valueOf(page, 'Länge')).toBe('300')
+        expect(errorOf(page, 'Länge')).toBe('Die Länge liegt zwischen 10 und 120 Sekunden.')
+        expect(invalid(page, 'Start ab')).toBeUndefined()
+        expect(invalid(page, 'Ende')).toBeUndefined()
+      })
+
+      it('a Start before 0:00: Start', async () => {
+        const page = await mountSuspended(GameForm)
+
+        await field(page, 'Ende').setValue('0:20')
+        await field(page, 'Länge').setValue('60')
+
+        expect(invalid(page, 'Start ab')).toBe('true')
+        expect(valueOf(page, 'Start ab')).toBe('')
+        expect(errorOf(page, 'Start ab')).toBe('Der Start läge vor 0:00.')
+        expect(invalid(page, 'Ende')).toBeUndefined()
+        expect(invalid(page, 'Länge')).toBeUndefined()
+      })
+
+      it('a Start that is no time: Start itself, and Ende stays', async () => {
+        const page = await mountSuspended(GameForm)
+
+        await field(page, 'Start ab').setValue('bald')
+
+        expect(errorOf(page, 'Start ab')).toBe('Das ist keine Zeit. Schreib zum Beispiel 1:12 oder 72.')
+        expect(valueOf(page, 'Ende')).toBe('0:30')
+        expect(invalid(page, 'Ende')).toBeUndefined()
+      })
+
+      it('an emptied Ende: Ende itself, and Länge stays', async () => {
+        const page = await mountSuspended(GameForm)
+
+        await field(page, 'Ende').setValue('')
+
+        expect(errorOf(page, 'Ende')).toBe('Das ist keine Zeit. Schreib zum Beispiel 1:12 oder 72.')
+        expect(valueOf(page, 'Länge')).toBe('30')
+        expect(invalid(page, 'Länge')).toBeUndefined()
+      })
+    })
+
+    it('takes the error away when the Host fixes it', async () => {
+      const page = await mountSuspended(GameForm)
+      await field(page, 'Start ab').setValue('1:00')
+      await field(page, 'Ende').setValue('0:30')
+      expect(invalid(page, 'Länge')).toBe('true')
+
+      await field(page, 'Ende').setValue('1:45')
+
+      expect(valueOf(page, 'Länge')).toBe('45')
+      for (const label of ['Start ab', 'Ende', 'Länge']) expect(invalid(page, label)).toBeUndefined()
+    })
+
+    it('sends the start and the length only, never Ende', async () => {
+      const page = await mountSuspended(GameForm)
+      await field(page, 'Name').setValue('Mario Kart')
+      await field(page, 'Ende').setValue('2:00')
+      await field(page, 'Länge').setValue('60')
+
+      await page.get('form').trigger('submit')
+
+      await vi.waitFor(() => expect(posted).toHaveBeenCalledWith({
+        name: 'Mario Kart', youtubeUrl: '', clipStart: 60, clipLength: 60, playersMin: null, playersMax: null, suitabilities: [], tags: [], notes: '', price: null,
+      }))
+    })
+
+    it('sends the length that Start and Ende give', async () => {
+      const page = await mountSuspended(GameForm)
+      await field(page, 'Name').setValue('Mario Kart')
+      await field(page, 'Start ab').setValue('1:00')
+      await field(page, 'Ende').setValue('1:45')
+
+      await page.get('form').trigger('submit')
+
+      await vi.waitFor(() => expect(posted).toHaveBeenCalledWith(expect.objectContaining({ clipStart: 60, clipLength: 45 })))
+    })
+
+    it('sends nothing while a field shows an error', async () => {
+      const page = await mountSuspended(GameForm)
+      await field(page, 'Name').setValue('Mario Kart')
+      await field(page, 'Start ab').setValue('1:00')
+      await field(page, 'Ende').setValue('0:30')
+
+      await page.get('form').trigger('submit')
+
+      expect(posted).not.toHaveBeenCalled()
+      expect(cta(page).attributes('aria-disabled')).toBe('true')
+      expect(page.get('#game-blocker').text()).toBe('Das Ende liegt vor dem Start.')
+    })
+
+    it('saves an existing game unchanged, and with the Länge Ende gives', async () => {
+      patchedWith.mockClear()
+      const page = await mountSuspended(GameForm, { props: { game: saved } })
+
+      await page.get('form').trigger('submit')
+      await vi.waitFor(() => expect(patchedWith).toHaveBeenCalledWith(expect.objectContaining({ clipStart: 72, clipLength: 30 })))
+
+      patchedWith.mockClear()
+      await field(page, 'Ende').setValue('2:00')
+      expect(valueOf(page, 'Länge')).toBe('48')
+      await page.get('form').trigger('submit')
+      await vi.waitFor(() => expect(patchedWith).toHaveBeenCalledWith(expect.objectContaining({ clipStart: 72, clipLength: 48 })))
+    })
+
+    it('opens an old 5 s row with Länge in error and does not save it', async () => {
+      const page = await mountSuspended(GameForm, { props: { game: { ...saved, clipLength: 5 } } })
+
+      expect(invalid(page, 'Länge')).toBe('true')
+      expect(errorOf(page, 'Länge')).toBe('Die Länge liegt zwischen 10 und 120 Sekunden.')
+      expect(valueOf(page, 'Ende')).toBe('1:17')
+      expect(cta(page).attributes('aria-disabled')).toBe('true')
+    })
   })
 
   it('says why the game cannot be saved in the error colour', async () => {
@@ -1011,7 +1195,7 @@ describe('the game form', () => {
 
     await page.get('form').trigger('submit')
 
-    await vi.waitFor(() => expect(page.get('[role="alert"]').text()).toBe('Der Clip passt nicht: Die Länge liegt zwischen 5 und 60 Sekunden.'))
+    await vi.waitFor(() => expect(page.get('[role="alert"]').text()).toBe('Der Clip passt nicht: Die Länge liegt zwischen 10 und 120 Sekunden.'))
     expect(page.emitted('saved')).toBeUndefined()
   })
 })

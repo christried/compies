@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { ChevronRight } from '@lucide/vue'
 import { apiErrorKey } from '~/utils/api-error'
+import { editClipField, openClipFields, type ClipField } from '~/utils/clip-fields'
 import type { PriceDraft } from '~/utils/price'
 import {
   CLIP_LENGTH_DEFAULT, CLIP_LENGTH_MAX, GAME_NAME_MAX, GAME_NOTES_MAX, SUITABILITIES, clipTime, gameNameProblem,
-  gameNotesProblem, parseClipLength, parseClipTime, parseGameInput, parsePlayerCount, type GameTag,
+  gameNotesProblem, parseGameInput, parsePlayerCount, type GameTag,
   type GameView, type Suitability,
 } from '~~/shared/game'
 import { parseYouTubeId } from '~~/shared/youtube'
@@ -34,8 +35,11 @@ const uploadingImage = ref(false)
 
 const name = ref(props.game?.name ?? '')
 const link = ref(props.game?.youtubeId ? `https://youtu.be/${props.game.youtubeId}` : '')
-const startText = ref(clipTime(props.game?.clipStart ?? 0))
-const lengthText = ref(String(props.game?.clipLength ?? CLIP_LENGTH_DEFAULT))
+// Start, Ende and Länge (#508): the two edited last hold, the third follows. Ende is never stored or sent.
+const clip = ref(openClipFields(props.game))
+function editClip(field: ClipField, text: string) {
+  clip.value = editClipField(clip.value, field, text)
+}
 const playersFromText = ref(props.game?.playersMin == null ? '' : String(props.game.playersMin))
 const playersToText = ref(props.game?.playersMax == null ? '' : String(props.game.playersMax))
 const suitabilities = ref<Suitability[]>([...(props.game?.suitabilities ?? [])])
@@ -78,10 +82,20 @@ watch(link, () => {
   playerFailed.value = false
 })
 
-const start = computed(() => parseClipTime(startText.value))
-const startError = computed(() => (start.value === null ? t('gameEdit.startInvalid') : undefined))
-const length = computed(() => parseClipLength(lengthText.value))
-const lengthError = computed(() => (length.value === null ? t('gameEdit.lengthInvalid') : undefined))
+const start = computed(() => clip.value.start.seconds)
+const length = computed(() => clip.value.length.seconds)
+// The error sits on the field that followed (#508); a held field the Host typed wrong shows its own.
+const startError = computed(() => {
+  const { error } = clip.value.start
+  if (error === 'start_before_zero') return t('gameEdit.startBeforeZero')
+  return error ? t('gameEdit.startInvalid') : undefined
+})
+const endError = computed(() => (clip.value.end.error ? t('gameEdit.startInvalid') : undefined))
+const lengthError = computed(() => {
+  const { error } = clip.value.length
+  if (error === 'end_before_start') return t('gameEdit.endBeforeStart')
+  return error ? t('gameEdit.lengthInvalid') : undefined
+})
 
 // The player count: both bounds optional; an empty field is open, anything that is no whole number from 1 to 99,
 // or a minimum above the maximum, is invalid (#142). The server checks the same rule.
@@ -106,7 +120,7 @@ const blocker = computed<string | null>(() => {
   if (fromError.value || toError.value) return t('error.playersInvalid')
   if (notesError.value) return notesError.value
   if (priceError.value) return priceError.value
-  return startError.value ?? lengthError.value ?? null
+  return startError.value ?? endError.value ?? lengthError.value ?? null
 })
 
 /** A player count field as the shared rules read it: its number, nothing, or the text itself when that is no count, so the rules refuse it too. */
@@ -119,8 +133,8 @@ function countOf(text: string): number | string | null {
 const draft = computed(() => ({
   name: name.value.trim(),
   youtubeUrl: link.value.trim(),
-  clipStart: start.value ?? startText.value,
-  clipLength: length.value ?? lengthText.value,
+  clipStart: clip.value.start.seconds ?? clip.value.start.text,
+  clipLength: clip.value.length.seconds ?? clip.value.length.text,
   playersMin: countOf(playersFromText.value),
   playersMax: countOf(playersToText.value),
   suitabilities: SUITABILITIES.filter(suitability => suitabilities.value.includes(suitability)),
@@ -215,20 +229,33 @@ async function submit() {
           inputmode="url"
           autocomplete="off"
         />
-        <div class="grid grid-cols-2 gap-2.5">
+        <div class="grid grid-cols-3 gap-2.5">
           <TextField
-            v-model="startText"
+            class="min-w-0"
+            :model-value="clip.start.text"
             :label="t('gameEdit.start')"
             :error="startError"
             autocomplete="off"
+            @update:model-value="editClip('start', $event)"
           />
           <TextField
-            v-model="lengthText"
+            class="min-w-0"
+            :model-value="clip.end.text"
+            :label="t('gameEdit.end')"
+            :help="endError ? undefined : t('gameEdit.endHelp')"
+            :error="endError"
+            autocomplete="off"
+            @update:model-value="editClip('end', $event)"
+          />
+          <TextField
+            class="min-w-0"
+            :model-value="clip.length.text"
             :label="t('gameEdit.length')"
             :help="lengthError ? undefined : t('gameEdit.lengthMax', { max: CLIP_LENGTH_MAX })"
             :error="lengthError"
             inputmode="numeric"
             autocomplete="off"
+            @update:model-value="editClip('length', $event)"
           />
         </div>
 

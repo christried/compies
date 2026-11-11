@@ -42,7 +42,7 @@ describe('the Veto switch of the picker', () => {
     const toggle = vetoSwitch()!
     expect(toggle.getAttribute('aria-checked')).toBe('false')
     expect(toggle.textContent).toContain('Veto erlauben')
-    expect(toggle.textContent).toContain('Die Parteien haben dann 60 Sekunden, das Spiel abzulehnen.')
+    expect(toggle.textContent).toContain('Die Parteien können das Spiel dann im Veto-Fenster ablehnen.')
   })
 
   it('is absent without the switch prop, as under Host pick', async () => {

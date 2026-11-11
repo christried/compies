@@ -6,10 +6,14 @@ import { ACTIVITY_TYPES, type ActivityEntry, type ActivityPage } from '../../sha
 import type { Place } from '../../shared/board'
 import type { CreatedEvent, EventView } from '../../shared/event'
 import type { RoomMessageType } from '../../shared/realtime'
-import { SPIN, WINDOW_MS } from '../draw-offsets'
+import { CLIP_LENGTH_DEFAULT } from '../../shared/game'
+import { SPIN, windowMsFor } from '../draw-offsets'
 import { sendVia } from './app'
 import { hiddenWheelWorld } from './hidden-wheel-world'
 import { hostPutsBack, hostSets, hostSpins, hostTossesCoin, playerVetoes, signInAs, type Signed } from './scenario'
+
+// The world's games all have a video with the default clip, so a Veto window here lasts that clip plus 30 s (#505).
+const WINDOW_MS = windowMsFor(CLIP_LENGTH_DEFAULT)
 
 // The room and the Activity feed under a Hidden wheel (#165): every message type and Activity type the lobby flow writes, and
 // no pool game in any of them. Split out of hidden-wheel.test.ts in #418.
