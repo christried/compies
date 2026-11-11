@@ -1,6 +1,6 @@
 import { eq } from 'drizzle-orm'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
-import { draws, rounds, vetoes } from '../../server/db/schema'
+import { draws, games, rounds, vetoes } from '../../server/db/schema'
 import { testClock } from '../../server/utils/clock'
 import { memoryRoomNotifier } from '../../server/utils/room-notifier'
 import de from '../../i18n/locales/de.json'
@@ -133,6 +133,21 @@ describe('the synced clip', () => {
       await set(game, game.kart.id)
 
       expect((await read(game, game.cookies.two)).clip?.game).toMatchObject({ id: game.kart.id, name: 'Kart Racer', youtubeId: null })
+    })
+
+    it('shows the card of a game without a video for 30 s however long its stored clip length is (#546)', async () => {
+      const game = await running()
+      await testDb.db.update(games).set({ clipLength: 120 }).where(eq(games.id, game.kart.id))
+
+      await set(game, game.kart.id)
+
+      const clip = (await read(game, game.cookies.one)).clip
+      expect(clip?.endsAt).toBe(iso(CLIP_MS))
+      expect(clip?.game.youtubeId).toBeNull()
+      clock.advance(CLIP_MS - 1)
+      expect((await read(game, game.cookies.one)).clip).not.toBeNull()
+      clock.advance(1)
+      expect((await read(game, game.cookies.one)).clip).toBeNull()
     })
 
     it('is the latest draw\'s: a game set during a clip takes over', async () => {

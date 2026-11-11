@@ -2,7 +2,7 @@ import { eq } from 'drizzle-orm'
 import { draws, events, games, rounds, vetoes } from '../db/schema'
 import { WHEEL_PLACEHOLDERS, drawSpin } from '../domain/wheel'
 import type { RoundSpun, VetoCast } from '../../shared/stage'
-import { drawInstants, settleAt } from '../../shared/draw-timeline'
+import { clipLengthOf, drawInstants, settleAt } from '../../shared/draw-timeline'
 import { gameTaken, opensWindow, roundState, waitsForRespin } from '../../shared/rounds'
 import { hasWheel } from '../../shared/settings'
 import { recordActivity } from './activity'
@@ -77,7 +77,7 @@ export async function setNextGame({ tx, eventRow, user, publish, now }: ChangeCo
   const source = gamesLeftOf(state).includes(game.id) ? 'pool' : 'library'
   // With a window the Round takes its game when the draw settles, so it stays without one (and without `setAt`) until then.
   const roundId = await roundForDraw(tx, eventRow.id, roundRows, state.draws, now, windowOpens ? {} : { gameId: game.id, setAt: now })
-  const instants = drawInstants({ kind: 'set', commitAt: now, windowOpens, clipLength: game.youtubeId === null ? null : game.clipLength })
+  const instants = drawInstants({ kind: 'set', commitAt: now, windowOpens, clipLength: clipLengthOf(game) })
   const timing = windowOpens
     ? { stopAt: instants.stopAt, vetoEndsAt: instants.vetoEndsAt }
     : { stopAt: instants.stopAt, outcome: 'set' as const, settledAt: settleAt(instants) }
@@ -110,7 +110,7 @@ export async function spinWheel({ tx, eventRow, user, publish, now }: ChangeCore
   // The window's end depends on the drawn game's clip (#505): read only when a window opens, the budget under the lock (#416) lets no route read more than it needs.
   const windowOpens = opensWindow(vetoesLeft)
   const [drawn] = windowOpens ? await tx.select({ youtubeId: games.youtubeId, clipLength: games.clipLength }).from(games).where(eq(games.id, gameId)) : []
-  const instants = drawInstants({ kind: 'spin', commitAt: now, windowOpens, clipLength: drawn && drawn.youtubeId !== null ? drawn.clipLength : null })
+  const instants = drawInstants({ kind: 'spin', commitAt: now, windowOpens, clipLength: drawn ? clipLengthOf(drawn) : null })
   const roundId = await roundForDraw(tx, eventRow.id, roundRowsOf(state), state.draws, now, {})
   const drawId = await insertDraw(tx, roundId, now, {
     gameId,

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { clipEnded, clipRunning, clipWindow, drawGameKnown, drawInstants, isDue, settleAt, spinCommitAt, stopReached, vetoEndAfterSkip, vetoEndCap, vetoesSealed, windowEnded, windowFraction, windowOpen, type DrawInstants } from '../../shared/draw-timeline'
+import { clipEnded, clipLengthOf, clipRunning, clipWindow, drawGameKnown, drawInstants, isDue, settleAt, spinCommitAt, stopReached, vetoEndAfterSkip, vetoEndCap, vetoesSealed, windowEnded, windowFraction, windowOpen, type DrawInstants } from '../../shared/draw-timeline'
 
 // The Draw's timeline (#414, ADR 0013 amendment 2026-10-31): a Draw's instants and what each decides at `now`. Every comparison
 // keeps its edge, pinned here at the four boundary milliseconds (stop - 1, stop, end - 1, end); nothing may move them silently.
@@ -181,24 +181,52 @@ describe('the Clip window', () => {
   const S = C + 7500
 
   it('starts at the stop and ends the clip length later', () => {
-    expect(clipWindow({ stopAt: S }, { clipLength: 30 })).toEqual({ startAt: S, endsAt: S + 30_000 })
+    expect(clipWindow({ stopAt: S }, { youtubeId: 'aaaaaaaaaaa', clipLength: 30 })).toEqual({ startAt: S, endsAt: S + 30_000 })
   })
 
   it('takes the stop as a Date or an ISO string too', () => {
-    expect(clipWindow({ stopAt: new Date(S) }, { clipLength: 5 })).toEqual({ startAt: S, endsAt: S + 5_000 })
-    expect(clipWindow({ stopAt: new Date(S).toISOString() }, { clipLength: 60 })).toEqual({ startAt: S, endsAt: S + 60_000 })
+    expect(clipWindow({ stopAt: new Date(S) }, { youtubeId: 'aaaaaaaaaaa', clipLength: 5 })).toEqual({ startAt: S, endsAt: S + 5_000 })
+    expect(clipWindow({ stopAt: new Date(S).toISOString() }, { youtubeId: 'aaaaaaaaaaa', clipLength: 60 })).toEqual({ startAt: S, endsAt: S + 60_000 })
   })
 
   it('runs from the start (inclusive) to the end (exclusive)', () => {
-    const clip = clipWindow({ stopAt: S }, { clipLength: 30 })
+    const clip = clipWindow({ stopAt: S }, { youtubeId: 'aaaaaaaaaaa', clipLength: 30 })
     const E = S + 30_000
     expect([S - 1, S, E - 1, E].map(now => clipRunning(clip, now))).toEqual([false, true, true, false])
   })
 
   it('has ended from its end on, end inclusive', () => {
-    const clip = clipWindow({ stopAt: S }, { clipLength: 30 })
+    const clip = clipWindow({ stopAt: S }, { youtubeId: 'aaaaaaaaaaa', clipLength: 30 })
     const E = S + 30_000
     expect([S - 1, S, E - 1, E].map(now => clipEnded(clip, now))).toEqual([false, false, false, true])
+  })
+})
+
+// #505, #546: a game without a video has no Clip, so its Veto window is the 30 s alone and its card shows for its stored length, at most as long as the window.
+describe('a game without a video (#546)', () => {
+  const rows = [
+    { youtubeId: null, clipLength: 10, card: 10_000, window: 30_000 },
+    { youtubeId: null, clipLength: 30, card: 30_000, window: 30_000 },
+    { youtubeId: null, clipLength: 120, card: 30_000, window: 30_000 },
+    { youtubeId: 'aaaaaaaaaaa', clipLength: 10, card: 10_000, window: 40_000 },
+    { youtubeId: 'aaaaaaaaaaa', clipLength: 30, card: 30_000, window: 60_000 },
+    { youtubeId: 'aaaaaaaaaaa', clipLength: 120, card: 120_000, window: 150_000 },
+  ]
+
+  for (const kind of ['spin', 'set'] as const) {
+    it.each(rows)(`a ${kind} of $youtubeId / $clipLength s: card $card ms, window $window ms`, ({ youtubeId, clipLength, card, window }) => {
+      const game = { youtubeId, clipLength }
+      const draw = drawInstants({ kind, commitAt: C, windowOpens: true, clipLength: clipLengthOf(game) })
+      const clip = clipWindow(draw, game)
+      expect(clip.startAt).toBe(ms(draw.stopAt))
+      expect(clip.endsAt - clip.startAt).toBe(card)
+      expect(ms(draw.vetoEndsAt) - ms(draw.stopAt)).toBe(window)
+    })
+  }
+
+  it('has no clip length without a video, the stored one with a video', () => {
+    expect(clipLengthOf({ youtubeId: null, clipLength: 120 })).toBeNull()
+    expect(clipLengthOf({ youtubeId: 'aaaaaaaaaaa', clipLength: 120 })).toBe(120)
   })
 })
 
