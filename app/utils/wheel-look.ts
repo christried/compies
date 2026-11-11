@@ -46,11 +46,6 @@ export function bulbPoints(): { x: number, y: number }[] {
   return Array.from({ length: BULB_COUNT }, (_, index) => wheelPoint((index * 360) / BULB_COUNT, BULB_RING_RADIUS))
 }
 
-/** Which bulbs are lit at rest: every second one, the top one included (the reference's phase 0). #521 lights them by server time. */
-export function restBulbs(): boolean[] {
-  return Array.from({ length: BULB_COUNT }, (_, index) => index % 2 === 0)
-}
-
 /**
  * The degrees from the top, in the wheel's own frame (before the rotor turns), of every pin: the start of each slice that is wider
  * than 5 % of the even share, the reference's `w > .05` rule, so the drawn slice's pin goes once its slice has closed. This is the

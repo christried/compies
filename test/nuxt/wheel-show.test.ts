@@ -144,7 +144,6 @@ describe('the pins during a spin and its removal', () => {
     await mount(wheelOf(spinOf()))
 
     await at(START + 3000)
-    expect(all('[data-testid="wheel-bulb"][data-lit="true"]')).toHaveLength(12)
     expect(one('wheel-flapper-arm').attributes('transform')).toBe('rotate(0 22 10)')
   })
 

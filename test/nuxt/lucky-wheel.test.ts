@@ -60,6 +60,7 @@ beforeEach(() => {
 afterEach(() => {
   page?.unmount()
   page = undefined
+  document.documentElement.style.removeProperty('--cp-motion')
   vi.useRealTimers()
   vi.unstubAllGlobals()
 })
@@ -222,7 +223,10 @@ describe('the spin toward its stop', () => {
 })
 
 describe('the clock it runs on (#257)', () => {
-  it('reads the clock only at mount while at rest', async () => {
+  // The bulbs blink at rest since #521, so a wheel at rest runs a loop; under reduced motion they are steady and nothing runs (the
+  // non-reduced counterpart is in wheel-bulbs.test.ts).
+  it('reads the clock only at mount while at rest under reduced motion', async () => {
+    document.documentElement.style.setProperty('--cp-motion', 'reduced')
     await mount(wheelOf(null))
     serverNow.mockClear()
 
@@ -231,7 +235,8 @@ describe('the clock it runs on (#257)', () => {
     expect(serverNow).not.toHaveBeenCalled()
   })
 
-  it('stands at the final angle for a Member who opens the page after the spin has ended, without running a loop', async () => {
+  it('stands at the final angle for a Member who opens the page after the spin has ended, without running a loop under reduced motion', async () => {
+    document.documentElement.style.setProperty('--cp-motion', 'reduced')
     serverMs = STOP + 10_000
     await mount(wheelOf(spinOf()))
     serverNow.mockClear()
