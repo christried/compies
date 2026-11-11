@@ -157,8 +157,11 @@ export interface EventView {
     phase: Phase
     isHost: boolean
   }
-  /** The Event's settings (#144); null for an Event from before 1.3 that was never set up. Not secret: Members get them too. */
+  /** The Event's settings (#144); null for an Event from before 1.3 that was never set up. Members get them too, but the Veto allowance is the Host's until the first Session starts (#453): then it is null here. */
   settings: EventSettings | null
+  /** Whether the Veto allowance is kept from this viewer (#453): true for every Member but the Host of a Lucky Wheel Event until its first
+   *  Session starts. Then `settings.vetoAllowance` is null and no other field carries the number. False under Host pick (there is no allowance). */
+  vetoAllowanceHidden: boolean
   /** The lowest Team size and Veto allowance the settings editor offers (#147). Only the Host gets them; null for every other Member. */
   settingsFloors: SettingsFloors | null
   /**

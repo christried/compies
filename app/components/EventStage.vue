@@ -270,6 +270,7 @@ watch(() => props.pageState.blocks, (after, before) => {
           />
           <HowWePlayCard
             :settings="view.settings"
+            :veto-hidden="view.vetoAllowanceHidden"
             :pool="view.pool"
             :is-host="view.event.isHost"
             :edit-to="canEditSettings && view.settings !== null ? settingsPath(slug) : null"

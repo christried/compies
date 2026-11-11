@@ -13,9 +13,12 @@ import { hasWheel, lockedWhenRunning, type EventSettings } from '~~/shared/setti
 // whole. Both show as tiles of picture and name (#435) that open the game dialog: the Host's with its Tags and Notes from `hostGames` (#443), a Member's without them (#444). The pool shows
 // what the game carries, so no second check of who looks. The Host can edit the settings for
 // as long as the Event allows (`editTo` is the settings page, null when they cannot). From the first Session on, the rows
-// of the settings that stay fixed (LOCKED_WHEN_RUNNING) carry a lock, for Members too.
+// of the settings that stay fixed (LOCKED_WHEN_RUNNING) carry a lock, for Members too. Until the first Session starts a Member's Vetos
+// row reads „Anzahl erst zum Start“: the server keeps the number from them and says so with `vetoHidden` (#453).
 const props = withDefaults(defineProps<{
   settings: EventSettings | null
+  /** The Veto allowance is kept from this viewer until the first Session starts (#453): the Vetos row says so instead of a number. */
+  vetoHidden?: boolean
   pool: (PoolGame | PoolGameFace)[] | null
   isHost: boolean
   /** The settings page, while the Host can still change the settings; null otherwise. */
@@ -26,7 +29,7 @@ const props = withDefaults(defineProps<{
   hostName?: string
   /** The Tags and Notes of the games, for the Host's game dialog (#443); null for every other Member. */
   hostGames?: Record<string, HostGameFacts> | null
-}>(), { editTo: null, locked: false, hostName: '', hostGames: null })
+}>(), { vetoHidden: false, editTo: null, locked: false, hostName: '', hostGames: null })
 
 const { t } = useI18n()
 const headingId = useId()
@@ -34,7 +37,7 @@ const headingId = useId()
 // The rows are the ones „Fertig“ shows (summaryRows, #225); a row is fixed once the Event runs when any of its settings is.
 const rows = computed(() => (props.settings === null
   ? []
-  : summaryRows(props.settings, t).map(row => ({ ...row, locked: props.locked && lockedWhenRunning(row.settings) }))))
+  : summaryRows(props.settings, t, { vetoHidden: props.vetoHidden }).map(row => ({ ...row, locked: props.locked && lockedWhenRunning(row.settings) }))))
 </script>
 
 <template>
