@@ -23,6 +23,7 @@
 ### Behoben
 
 - **Ziehen auf ein Team:** Ziehst du jemanden über ein Team oder über die Tribüne, zeigt deren Rand jetzt die Fokusfarbe, wie gedacht. Bisher blieb er in der Linienfarbe. ([#496](https://github.com/christried/compies/issues/496))
+- **Das Spielbrett bleibt stehen:** Hast du die Eventseite bis zum Spielbrett gescrollt, springt es nicht mehr weg, wenn der Host ein Spiel mit Veto-Fenster setzt und unten die Veto-Leiste erscheint. ([#541](https://github.com/christried/compies/issues/541))
 
 ## [0.11.0] - 2026-11-10 – Profil
 
