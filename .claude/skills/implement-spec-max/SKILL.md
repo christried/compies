@@ -43,7 +43,7 @@ Communication to and from subagents should be sparse. Communicate primarily thro
 
 6. If this changes the **frontier** of available tickets, kick off more **implementer subagents** to work on the new tickets. This allows for maximum concurrency.
 
-   **COMPIES:** before every new implementer (steps 4, 6 and 7) check the context limit (`docs/agents/subagents.md` § Supervision); at the limit, hand off instead.
+   **COMPIES:** before every new implementer (steps 4, 6 and 7) check the context limit, passing your session id (`docs/agents/subagents.md` § Supervision); at the limit, hand off instead.
 
 7. Once all tickets are complete, call the Skill tool with `code-review` on the integration branch. Fix all issues raised by the code review in a single **implementer subagent**.
 
