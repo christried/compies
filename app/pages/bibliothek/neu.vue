@@ -13,6 +13,16 @@ async function onSaved(game: GameView) {
   await refreshGameLibrary()
   await navigateTo(`/bibliothek/${game.id}`)
 }
+
+const formRound = ref(0)
+
+// „Speichern und noch eins“ (#456): the form starts over with a new key, so every field, the image and the preview
+// are empty. No navigation.
+async function onSavedAndNext(game: GameView) {
+  formRound.value++
+  toast({ tone: 'success', text: t('library.saved', { name: game.name }) })
+  await refreshGameLibrary()
+}
 </script>
 
 <template>
@@ -39,7 +49,13 @@ async function onSaved(game: GameView) {
           {{ t('gameEdit.title') }}
         </h1>
       </div>
-      <GameForm @saved="onSaved" />
+      <GameForm
+        :key="formRound"
+        :focus-name="formRound > 0"
+        save-and-next
+        @saved="onSaved"
+        @saved-and-next="onSavedAndNext"
+      />
     </div>
   </AppShell>
 </template>

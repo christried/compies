@@ -20,9 +20,13 @@ import { parseYouTubeId } from '~~/shared/youtube'
 const props = defineProps<{
   /** The game to edit (#142); without it the form creates one. */
   game?: GameView
+  /** „Speichern und noch eins“ (#456) is shown. The create page passes it; edit and the stepper's sheet do not. */
+  saveAndNext?: boolean
+  /** The name takes the focus on mount (#456): the page passes it for the fresh form after „noch eins“. */
+  focusName?: boolean
 }>()
 
-const emit = defineEmits<{ saved: [game: GameView] }>()
+const emit = defineEmits<{ saved: [game: GameView], savedAndNext: [game: GameView] }>()
 
 const { t } = useI18n()
 const { toast } = useToast()
@@ -45,6 +49,7 @@ const playersToText = ref(props.game?.playersMax == null ? '' : String(props.gam
 const suitabilities = ref<Suitability[]>([...(props.game?.suitabilities ?? [])])
 const tags = ref<GameTag[]>([...(props.game?.tags ?? [])])
 const tagInput = useTemplateRef('tagInput')
+const nameField = useTemplateRef('nameField')
 const notes = ref(props.game?.notes ?? '')
 // The Price (#337, #361): the Price the field writes as the User types, and the one blocker the field reports.
 const price = ref<PriceDraft>(props.game?.price ? { cents: props.game.price.cents, source: props.game.price.source } : null)
@@ -177,7 +182,11 @@ async function uploadImage(game: GameView): Promise<GameView> {
   }
 }
 
-async function submit() {
+/**
+ * Saves the game. `next` is „Speichern und noch eins“ (#456): it reports `savedAndNext`, every other save reports `saved`.
+ * Strg + Enter (#465) goes through `save(false)` too.
+ */
+async function save(next: boolean) {
   attempted.value = true
   // A Tag typed and not confirmed counts (#335); one that cannot be added blocks the save and shows why.
   if (tagInput.value && !tagInput.value.commit()) return
@@ -190,7 +199,9 @@ async function submit() {
     const game = props.game
       ? await $fetch<GameView>(`/api/games/${props.game.id}`, { method: 'PATCH', body })
       : await $fetch<GameView>('/api/games', { method: 'POST', body })
-    emit('saved', await uploadImage(game))
+    const saved = await uploadImage(game)
+    if (next) emit('savedAndNext', saved)
+    else emit('saved', saved)
   }
   catch (error) {
     failure.value = t(apiErrorKey(error))
@@ -199,17 +210,23 @@ async function submit() {
     saving.value = false
   }
 }
+
+// After „Speichern und noch eins“ (#456) the page mounts a fresh form: the cursor goes to the name.
+onMounted(() => {
+  if (props.focusName) nameField.value?.focus()
+})
 </script>
 
 <template>
   <form
     novalidate
     class="@container"
-    @submit.prevent="submit"
+    @submit.prevent="save(false)"
   >
     <div class="grid grid-cols-1 items-start gap-[18px] @[640px]:grid-cols-2">
       <div class="flex min-w-0 flex-col gap-3.5">
         <TextField
+          ref="nameField"
           v-model="name"
           :label="t('gameEdit.name')"
           :error="nameError"
@@ -368,6 +385,16 @@ async function submit() {
               :icon="ChevronRight"
               :size="18"
             />
+          </AppButton>
+          <AppButton
+            v-if="saveAndNext && !game"
+            size="lg"
+            variant="secondary"
+            :aria-disabled="blocked || saving"
+            :aria-describedby="blocker ? 'game-blocker' : undefined"
+            @click="save(true)"
+          >
+            {{ t('gameEdit.saveAndNext') }}
           </AppButton>
           <span
             v-if="blocker"
