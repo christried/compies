@@ -214,8 +214,8 @@ async function save(next: boolean) {
   }
   catch (error) {
     failure.value = t(apiErrorKey(error))
-  }
-  finally {
+    // Only a failed save frees the form. After a success it stays locked until the page has left or the form is replaced:
+    // the emit does not wait for the page, and a second save in that moment would create the game twice (#573).
     saving.value = false
   }
 }
@@ -226,12 +226,15 @@ onMounted(() => {
 })
 
 // Strg + Enter, and ⌘ + Enter on a Mac, saves from any field (#465). The capture listener on the form runs before a field's own Enter
-// (the Tag field adds its chip there) and before the browser's default (a line break in Notizen, an implicit submit). It is a click on
-// the form's save button: `save` itself saves nothing while the form is blocked or a save runs.
+// (the Tag field adds its chip there) and before the browser's default (a line break in Notizen, an implicit submit). It calls
+// `save(false)`, the path of „Spiel anlegen“: `save` itself saves nothing while the form is blocked or a save runs or has succeeded,
+// and a held key is swallowed without saving.
 function onShortcut(event: KeyboardEvent) {
   if (event.key !== 'Enter' || !(event.ctrlKey || event.metaKey) || event.altKey || event.shiftKey || event.isComposing) return
   event.preventDefault()
   event.stopPropagation()
+  // A held key repeats about thirty times a second; it is swallowed like the first press and saves nothing (#573).
+  if (event.repeat) return
   void save(false)
 }
 </script>

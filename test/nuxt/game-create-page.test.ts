@@ -1,5 +1,5 @@
-import { mountSuspended, registerEndpoint } from '@nuxt/test-utils/runtime'
-import type { VueWrapper } from '@vue/test-utils'
+import { mockNuxtImport, mountSuspended, registerEndpoint } from '@nuxt/test-utils/runtime'
+import { flushPromises, type VueWrapper } from '@vue/test-utils'
 import { createError, getHeader, readBody, readRawBody } from 'h3'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import CreatePage from '~/pages/bibliothek/neu.vue'
@@ -13,6 +13,10 @@ import { shownToasts } from './event-page'
 // The image conversion needs a browser canvas; the page only sees a Blob.
 const toCardWebp = vi.hoisted(() => vi.fn())
 vi.mock('~/utils/image-resize', async importOriginal => ({ ...await importOriginal<object>(), toCardWebp }))
+
+// The page handler reloads the Game library before it leaves; a test holds that reload to look at the form meanwhile (#573).
+const refreshGameLibrary = vi.hoisted(() => vi.fn())
+mockNuxtImport('refreshGameLibrary', () => refreshGameLibrary)
 
 const created: GameView = {
   id: '00000000-0000-4000-8000-0000000000c1',
@@ -113,7 +117,9 @@ describe('the create page', () => {
     uploads.mockClear()
     createFails = false
     toCardWebp.mockReset()
-    toCardWebp.mockResolvedValue(cardWebp)
+    toCardWebp.mockResolvedValue({ blob: cardWebp, width: 2000, height: 1000 })
+    refreshGameLibrary.mockReset()
+    refreshGameLibrary.mockResolvedValue(undefined)
     vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:http://localhost/preview')
     vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {})
   })
@@ -126,6 +132,8 @@ describe('the create page', () => {
     await button(page, 'Speichern und noch eins').trigger('click')
 
     await vi.waitFor(() => expect(shownToasts().map(toast => toast.text)).toContain('Mario Kart ist in der Bibliothek.'))
+    expect(uploads).toHaveBeenCalledTimes(1)
+    expect(uploads).toHaveBeenCalledWith({ type: 'image/webp', size: 1234 })
     expect(field(page, 'Name').element).toBe(document.activeElement)
     expect(valueOf(page, 'Name')).toBe('')
     expect(valueOf(page, 'YouTube-Link')).toBe('')
@@ -146,6 +154,7 @@ describe('the create page', () => {
     await fillEverything(page)
     await button(page, 'Speichern und noch eins').trigger('click')
     await vi.waitFor(() => expect(valueOf(page, 'Name')).toBe(''))
+    expect(uploads).toHaveBeenCalledWith({ type: 'image/webp', size: 1234 })
     uploads.mockClear()
     posted.mockClear()
 
@@ -198,5 +207,85 @@ describe('the create page', () => {
     expect(useRoute().path).toBe('/bibliothek/neu')
     expect(shownToasts().map(toast => toast.text)).not.toContain('Mario Kart ist in der Bibliothek.')
     page.unmount()
+  })
+
+  describe('one save creates one game (#573)', () => {
+    /** A promise the test settles by hand, to hold the page handler. */
+    function deferred() {
+      let release!: () => void
+      const promise = new Promise<void>((resolve) => { release = resolve })
+      return { promise, release }
+    }
+
+    function pressCtrlEnter(page: VueWrapper) {
+      field(page, 'Name').element.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', ctrlKey: true, bubbles: true, cancelable: true }))
+    }
+
+    async function fillValid(page: VueWrapper) {
+      await field(page, 'Name').setValue('Mario Kart')
+      await field(page, 'YouTube-Link').setValue(LINK)
+    }
+
+    it('two Strg + Enter while the page still reloads the library post one game', async () => {
+      const gate = deferred()
+      refreshGameLibrary.mockReturnValueOnce(gate.promise)
+      const page = await mount()
+      await fillValid(page)
+
+      pressCtrlEnter(page)
+      await vi.waitFor(() => expect(shownToasts().map(toast => toast.text)).toContain('Mario Kart ist in der Bibliothek.'))
+      await vi.waitFor(() => expect(refreshGameLibrary).toHaveBeenCalled())
+      pressCtrlEnter(page)
+      await flushPromises()
+      expect(posted).toHaveBeenCalledTimes(1)
+
+      gate.release()
+      await vi.waitFor(() => expect(useRoute().path).toBe(`/bibliothek/${created.id}`))
+      expect(posted).toHaveBeenCalledTimes(1)
+      page.unmount()
+    })
+
+    it.each([
+      ['submits the form, then presses Strg + Enter', async (page: VueWrapper) => {
+        await page.get('form').trigger('submit')
+        await vi.waitFor(() => expect(refreshGameLibrary).toHaveBeenCalled())
+        pressCtrlEnter(page)
+      }],
+      ['presses Strg + Enter, then submits the form', async (page: VueWrapper) => {
+        pressCtrlEnter(page)
+        await vi.waitFor(() => expect(refreshGameLibrary).toHaveBeenCalled())
+        await page.get('form').trigger('submit')
+      }],
+    ])('one POST when the Host %s', async (_name, act) => {
+      const gate = deferred()
+      refreshGameLibrary.mockReturnValueOnce(gate.promise)
+      const page = await mount()
+      await fillValid(page)
+
+      await act(page)
+      await flushPromises()
+      expect(posted).toHaveBeenCalledTimes(1)
+
+      gate.release()
+      await vi.waitFor(() => expect(useRoute().path).toBe(`/bibliothek/${created.id}`))
+      expect(posted).toHaveBeenCalledTimes(1)
+      page.unmount()
+    })
+
+    // Guard: passes before the fix; it pins that a failure does not lock the form.
+    it('a failed save can be repeated', async () => {
+      createFails = true
+      const page = await mount()
+      await fillValid(page)
+
+      pressCtrlEnter(page)
+      await vi.waitFor(() => expect(page.get('[role="alert"]').text()).toBe('Der Clip passt nicht: Die Länge liegt zwischen 10 und 120 Sekunden.'))
+      createFails = false
+      pressCtrlEnter(page)
+
+      await vi.waitFor(() => expect(useRoute().path).toBe(`/bibliothek/${created.id}`))
+      expect(posted).toHaveBeenCalledTimes(2)
+      page.unmount()
+    })
   })
 })
