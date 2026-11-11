@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
-  CLIP_LENGTH_MAX, CLIP_LENGTH_MIN, CLIP_START_MAX, GAME_NAME_MAX, NO_FILTERS, SUITABILITIES, canEditGame, canSeeLibrary, clipTime, filterGames, gameNameProblem,
+  CLIP_END_MAX, CLIP_LENGTH_MAX, CLIP_LENGTH_MIN, CLIP_START_MAX, GAME_NAME_MAX, NO_FILTERS, SUITABILITIES, canEditGame, canSeeLibrary, clipTime, filterGames, gameNameProblem,
   isClipLength, normaliseTag, parseClipLength, parseClipTime, parseGameInput, parsePlayerCount, parseTags, tagProblem,
   formatPriceAmount, isPriceCheckOnly, parsePrice, parsePriceAmount, priceTakesAmount,
   FREE_TO_PLAY_TAG, tagsWithFreeToPlay,
@@ -43,6 +43,12 @@ describe('parseClipTime', () => {
 
   it.each([[''], ['   '], ['bald'], ['1:60'], ['1:12:60'], ['1:60:00'], ['-5'], ['1.5'], ['1:'], [':30'], ['1:2:3:4'], ['12:00:00'], ['43200']])('refuses %j', (text) => {
     expect(parseClipTime(text)).toBeNull()
+  })
+
+  it('takes a later second when the caller raises the cap (Ende, #508)', () => {
+    expect(parseClipTime('12:01:59', CLIP_END_MAX)).toBe(43_319)
+    expect(parseClipTime('12:02:00', CLIP_END_MAX)).toBeNull()
+    expect(parseClipTime('12:00:00')).toBeNull()
   })
 })
 
