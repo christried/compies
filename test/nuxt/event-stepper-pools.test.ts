@@ -447,6 +447,26 @@ describe('the pool steps', () => {
       expect(dialog()!.querySelector('form')).not.toBeNull()
     })
 
+    it('has Start, Ende and Länge in the sheet, and Ende gives Länge (#508)', async () => {
+      const page = await mountCreate()
+      await toPoolStep(page)
+
+      await newGameButton(page).trigger('click')
+
+      await vi.waitFor(() => expect(dialog()).not.toBeNull())
+      const input = (label: string) => {
+        const element = [...dialog()!.querySelectorAll('label')].find(el => el.textContent === label)
+        expect(element, `no field "${label}"`).toBeDefined()
+        return dialog()!.querySelector<HTMLInputElement>(`[id="${element!.getAttribute('for')}"]`)!
+      }
+      expect(input('Start ab')).not.toBeNull()
+      expect(input('Länge')).not.toBeNull()
+      expect(input('Ende').value).toBe('0:30')
+      input('Ende').value = '2:00'
+      input('Ende').dispatchEvent(new Event('input'))
+      await vi.waitFor(() => expect(input('Länge').value).toBe('120'))
+    })
+
     it('shows the Free-to-play hint of the game form in the sheet (#423)', async () => {
       const page = await mountCreate()
       await toPoolStep(page)
