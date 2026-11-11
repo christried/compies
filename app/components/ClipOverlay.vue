@@ -222,14 +222,17 @@ onBeforeUnmount(() => {
     >
       <!-- Phone held sideways (#549): the video is as wide as the height left under the header allows, 16:9 kept and never lower than
            YouTube's 200 px, so the bar below it stays on screen. --clip-bar-h is that bar: the 10 px progress line and a row of
-           44 px buttons with py-2.5. What does not fit scrolls inside the section. The sides of the narrower box are its own colour. -->
+           44 px buttons with py-2.5. What does not fit scrolls inside the section. The sides of the narrower box are its own colour.
+           Without a video (#555) there is no 16:9 box and no cap: the card is taller than that box on a phone, so the box takes the
+           card's height with its padding, and a viewport too low for it scrolls the section as above. -->
       <div
         class="shrink-0"
         :class="showsPlayer ? 'bg-ink' : 'bg-paper-2'"
       >
         <div
-          class="relative mx-auto aspect-video w-[min(100%,max(calc(200px*16/9),calc(var(--clip-video-h)*16/9)))] bg-ink"
-          :class="{ 'grid place-items-center bg-paper-2 p-4': !showsPlayer }"
+          :class="showsPlayer
+            ? 'relative mx-auto aspect-video w-[min(100%,max(calc(200px*16/9),calc(var(--clip-video-h)*16/9)))] bg-ink'
+            : 'grid place-items-center bg-paper-2 p-4'"
         >
           <div
             v-if="showsPlayer"

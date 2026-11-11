@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<template id="__bundler_thumbnail"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="#ffd23f"/><circle cx="50" cy="50" r="22" fill="#ff4f4f" stroke="#151515" stroke-width="4"/><text x="50" y="58" text-anchor="middle" font-family="sans-serif" font-weight="900" font-size="22" fill="#151515">1b</text></svg></template>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&amp;family=Lilita+One&amp;family=Bungee&amp;family=JetBrains+Mono:wght@500;700&amp;display=swap">
+<link rel="stylesheet" href="./tokens/compies-tokens.css">
+<style>body{margin:0;background:#f3ead9}a{color:#1f5fe0;text-decoration-thickness:2px;text-underline-offset:3px}a:hover{color:#151515}</style>
+</helmet>
+<div lang="de" data-theme="light" style="padding:72px 80px 160px;display:flex;flex-direction:column;gap:120px;font-family:var(--cp-font-sans);font-weight:500;font-size:16px;line-height:1.45;color:#151515;background:#f3ead9;width:max-content;min-width:100%;box-sizing:border-box">
+
+  <header style="display:flex;flex-direction:column;gap:18px;max-width:1100px">
+    <span style="font-family:var(--cp-font-mono);font-size:14px;font-weight:700;color:#5d5650">LuckyWheel · Compibert · [1.0]</span>
+    <h1 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:88px;line-height:.92">Compibert am Glücksrad</h1>
+    <p style="margin:0;font-size:22px;line-height:1.4;max-width:980px;text-wrap:pretty">Hand-off for option 1b „Hinterm Rad“: Compibert peeks out from behind the wheel. Poses, the full spin at 1440 and 390 px in light and dark, reduced motion, and 2 / 30 slices. Wheel: GameWheel skin „show“, 420 px from md up, 332 px on a 390 phone, never resized. Rig: CompibertRig. No new tokens, no new rig state.</p>
+    <div style="display:flex;flex-wrap:wrap;gap:12px;margin-top:6px">
+      <span style="display:inline-flex;align-items:center;gap:8px;height:40px;padding:0 16px;border-radius:999px;border:3px solid #151515;background:#ffd23f;font-weight:800;box-shadow:3px 3px 0 #151515">Option 1b „Hinterm Rad“</span>
+      <span style="display:inline-flex;align-items:center;height:40px;padding:0 16px;border-radius:999px;border:2px solid #151515;background:#fffdf8;font-weight:700">Rest: absent</span>
+      <span style="display:inline-flex;align-items:center;height:40px;padding:0 16px;border-radius:999px;border:2px solid #151515;background:#fffdf8;font-weight:700">„excited“ exists in the rig</span>
+      <span style="display:inline-flex;align-items:center;height:40px;padding:0 16px;border-radius:999px;border:2px solid #151515;background:#fffdf8;font-weight:700">Reduced: still pose, 0.22 s fades</span>
+      <a href="#handoff" style="display:inline-flex;align-items:center;height:40px;padding:0 16px;border-radius:999px;border:2px solid #151515;background:#fffdf8;font-weight:700;color:#151515;text-decoration:none">Hand-off note ↓</a>
+    </div>
+  </header>
+
+  <section data-screen-label="Poses" style="display:flex;flex-direction:column;gap:28px">
+    <div style="display:flex;flex-direction:column;gap:8px;max-width:1180px">
+      <span style="font-family:var(--cp-font-mono);font-size:15px;font-weight:700;color:#5d5650">Poses · spin · brake · stop</span>
+      <h2 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:56px;line-height:1">excited → suspense → cheer</h2>
+      <p style="margin:0;font-size:20px;max-width:1120px;text-wrap:pretty"><b>„excited“ needs no new rig state: it is already in the reference rig</b> (<span style="font-family:var(--cp-font-mono);font-size:17px">STATES.excited</span> in compibert-options.js, and 04-motion § „Mitfiebern“): arms pump in turns (−130 / −60, 0.42 s cycle), hops 12 px, lids wide open, grin, tail at 2.6× speed. The Vue port has to ship it as specified. Live rig below, all three crops; outline as the rig documents it (full/bust: hard shadow in light, sticker in dark; head: none).</p>
+    </div>
+    <div style="display:flex;gap:40px;align-items:flex-start">
+      <sc-for list="{{ poseThemes }}" as="pt" hint-placeholder-count="2">
+        <div data-theme="{{ pt.theme }}" style="display:flex;flex-direction:column;gap:18px;padding:28px;border:3px solid #151515;border-radius:20px;background:var(--cp-surface);color:var(--cp-ink)">
+          <span style="font-family:var(--cp-font-mono);font-size:14px;font-weight:700;color:var(--cp-ink-2)">{{ pt.label }}</span>
+          <div style="display:grid;grid-template-columns:repeat(3,220px);gap:18px 22px">
+            <sc-for list="{{ poseCols }}" as="c" hint-placeholder-count="3">
+              <div style="display:flex;flex-direction:column;gap:2px"><b style="font-family:var(--cp-font-display);font-weight:400;font-size:26px">{{ c.st }}</b><span style="font-size:14px;color:var(--cp-ink-2)">{{ c.when }}</span></div>
+            </sc-for>
+            <sc-for list="{{ poses }}" as="p" hint-placeholder-count="9">
+              <div style="height:{{ p.h }}px;display:grid;place-items:end center;border-radius:14px;background:var(--cp-paper-2);padding:10px 0;box-sizing:content-box"><dc-import name="CompibertRig" variant="{{ p.v }}" size="{{ p.s }}" state="{{ p.st }}" hint-size="160px,140px"></dc-import></div>
+            </sc-for>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+  </section>
+
+  <section data-screen-label="3 Recommended 1b" style="display:flex;flex-direction:column;gap:36px">
+    <div style="display:flex;flex-direction:column;gap:8px;max-width:1200px">
+      <span style="font-family:var(--cp-font-mono);font-size:15px;font-weight:700;color:#5d5650">3 · Recommended 1b „Hinterm Rad“ · whole spin</span>
+      <h2 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:56px;line-height:1">He peeks out from behind the wheel</h2>
+      <p style="margin:0;font-size:20px;max-width:1160px;text-wrap:pretty">Why 1b: he sits <b>under</b> the wheel in the stacking order, so band, bulbs, pins, flapper and every label are painted over him by construction, at any slice count. Same idea at both widths, no reserved space, card height never changes. Entering along the radius from behind the rim needs no clip mask: at time 0 he is completely hidden by the disc. Absent at rest (the header head-logo is the calm presence), so his entrance means „it's happening“.</p>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <span style="font-family:var(--cp-font-mono);font-size:15px;font-weight:700">Live · 1440 · light · open wheel, 7 s spin (Tweaks: reduced motion, hidden wheel)</span>
+      <div style="display:flex;gap:64px;align-items:flex-start">
+        <dc-import name="WheelStage" w="{{ 1440 }}" theme="light" opt="B" live="{{ true }}" reduced="{{ liveReduced }}" hidden="{{ liveHidden }}" spin-sec="{{ 7 }}" hint-size="1440px,860px"></dc-import>
+        <dc-import name="WheelStage" w="{{ 390 }}" theme="dark" opt="B" live="{{ true }}" reduced="{{ liveReduced }}" hidden="{{ liveHidden }}" spin-sec="{{ 7 }}" hint-size="390px,780px"></dc-import>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(6,max-content);gap:14px 56px;align-items:end">
+      <sc-for list="{{ phases }}" as="f" hint-placeholder-count="6">
+        <div style="display:flex;flex-direction:column;gap:4px;width:1440px"><b style="font-family:var(--cp-font-display);font-weight:400;font-size:40px;line-height:1">{{ f.t }}</b><span style="font-family:var(--cp-font-mono);font-size:17px;font-weight:700;color:#5d5650">{{ f.at }}</span><span style="font-size:19px;text-wrap:pretty">{{ f.d }}</span></div>
+      </sc-for>
+      <sc-for list="{{ phases }}" as="f" hint-placeholder-count="6"><dc-import name="WheelStage" w="{{ 1440 }}" theme="light" opt="B" phase="{{ f.k }}" zones="{{ zones }}" hint-size="1440px,820px"></dc-import></sc-for>
+      <sc-for list="{{ phases }}" as="f" hint-placeholder-count="6"><dc-import name="WheelStage" w="{{ 1440 }}" theme="dark" opt="B" phase="{{ f.k }}" zones="{{ zones }}" hint-size="1440px,820px"></dc-import></sc-for>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(6,390px);gap:14px 64px;align-items:start">
+      <sc-for list="{{ phases }}" as="f" hint-placeholder-count="6">
+        <div style="display:flex;flex-direction:column;gap:4px"><b style="font-family:var(--cp-font-display);font-weight:400;font-size:30px;line-height:1">{{ f.t }}</b><span style="font-family:var(--cp-font-mono);font-size:14px;font-weight:700;color:#5d5650">{{ f.at }}</span></div>
+      </sc-for>
+      <sc-for list="{{ phases }}" as="f" hint-placeholder-count="6"><dc-import name="WheelStage" w="{{ 390 }}" theme="light" opt="B" phase="{{ f.k }}" zones="{{ zones }}" hint-size="390px,700px"></dc-import></sc-for>
+      <sc-for list="{{ phases }}" as="f" hint-placeholder-count="6"><dc-import name="WheelStage" w="{{ 390 }}" theme="dark" opt="B" phase="{{ f.k }}" zones="{{ zones }}" hint-size="390px,700px"></dc-import></sc-for>
+    </div>
+  </section>
+
+  <section data-screen-label="4 Reduced + rest" style="display:flex;flex-direction:column;gap:28px">
+    <div style="display:flex;flex-direction:column;gap:8px;max-width:1200px">
+      <span style="font-family:var(--cp-font-mono);font-size:15px;font-weight:700;color:#5d5650">4 · Reduced motion at the stop · and the rest state</span>
+      <h2 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:56px;line-height:1">Still pose, short fades</h2>
+      <p style="margin:0;font-size:20px;max-width:1160px;text-wrap:pretty">No rise, no sink, no travel. He fades in place (0.22 s, dur-base) at the same server time as in full motion, holds a still pose per phase (loops paused), crossfades at brake and stop (0.2 s), and fades out with the slice. At the stop: the still „cheer“ frame, arms up, on the ground.</p>
+    </div>
+    <div style="display:flex;gap:72px;align-items:flex-start">
+      <div style="display:flex;flex-direction:column;gap:12px"><span style="font-family:var(--cp-font-mono);font-size:15px;font-weight:700">1440 · light · reduced · stop</span><dc-import name="WheelStage" w="{{ 1440 }}" theme="light" opt="B" phase="stop" reduced="{{ true }}" zones="{{ zones }}" hint-size="1440px,820px"></dc-import></div>
+      <div style="display:flex;flex-direction:column;gap:12px"><span style="font-family:var(--cp-font-mono);font-size:15px;font-weight:700">390 · light · reduced · stop</span><dc-import name="WheelStage" w="{{ 390 }}" theme="light" opt="B" phase="stop" reduced="{{ true }}" zones="{{ zones }}" hint-size="390px,700px"></dc-import></div>
+      <div style="display:flex;flex-direction:column;gap:12px;width:390px"><span style="font-family:var(--cp-font-mono);font-size:15px;font-weight:700">Rest · absent (recommended)</span><dc-import name="WheelStage" w="{{ 390 }}" theme="light" opt="B" phase="rest" hint-size="390px,600px"></dc-import></div>
+      <div style="display:flex;flex-direction:column;gap:12px;width:390px"><span style="font-family:var(--cp-font-mono);font-size:15px;font-weight:700;color:#5d5650">Rest · calm idle (not recommended)</span><dc-import name="WheelStage" w="{{ 390 }}" theme="light" opt="B" phase="rest" calm="{{ true }}" hint-size="390px,600px"></dc-import><span style="font-size:17px;color:#5d5650;text-wrap:pretty">Reads as decoration, competes with the head-logo in the header, and takes the surprise out of the entrance.</span></div>
+    </div>
+  </section>
+
+  <section data-screen-label="5 Slice counts" style="display:flex;flex-direction:column;gap:28px">
+    <div style="display:flex;flex-direction:column;gap:8px;max-width:1200px">
+      <span style="font-family:var(--cp-font-mono);font-size:15px;font-weight:700;color:#5d5650">5 · 2 and 30 slices · stop (cheer = widest pose) · protected zones dashed</span>
+      <h2 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:56px;line-height:1">Nothing is covered</h2>
+      <p style="margin:0;font-size:20px;max-width:1160px;text-wrap:pretty">Blue dashes: label disc (82 % of the wheel), flapper (48 × 62 px), result card. Compibert is under the wheel, right of the flapper and above the wheel's centre line, so the slice count changes nothing.</p>
+    </div>
+    <div style="display:flex;gap:72px;align-items:flex-start">
+      <div style="display:flex;flex-direction:column;gap:12px"><span style="font-family:var(--cp-font-mono);font-size:15px;font-weight:700">1440 · 2 slices</span><dc-import name="WheelStage" w="{{ 1440 }}" theme="light" opt="B" phase="stop" n="{{ 2 }}" zones="{{ true }}" hint-size="1440px,820px"></dc-import></div>
+      <div style="display:flex;flex-direction:column;gap:12px"><span style="font-family:var(--cp-font-mono);font-size:15px;font-weight:700">1440 · 30 slices</span><dc-import name="WheelStage" w="{{ 1440 }}" theme="light" opt="B" phase="stop" n="{{ 30 }}" zones="{{ true }}" hint-size="1440px,820px"></dc-import></div>
+      <div style="display:flex;flex-direction:column;gap:12px"><span style="font-family:var(--cp-font-mono);font-size:15px;font-weight:700">390 · 2 slices</span><dc-import name="WheelStage" w="{{ 390 }}" theme="light" opt="B" phase="stop" n="{{ 2 }}" zones="{{ true }}" hint-size="390px,700px"></dc-import></div>
+      <div style="display:flex;flex-direction:column;gap:12px"><span style="font-family:var(--cp-font-mono);font-size:15px;font-weight:700">390 · 30 slices</span><dc-import name="WheelStage" w="{{ 390 }}" theme="light" opt="B" phase="stop" n="{{ 30 }}" zones="{{ true }}" hint-size="390px,700px"></dc-import></div>
+    </div>
+  </section>
+
+  <section id="handoff" data-screen-label="Hand-off" style="display:flex;flex-direction:column;gap:20px;max-width:1200px">
+    <span style="font-family:var(--cp-font-mono);font-size:15px;font-weight:700;color:#5d5650">Hand-off · design_handoff_compies/16-compibert-gluecksrad.md</span>
+    <div style="padding:36px 40px;border:3px solid #151515;border-radius:20px;background:#fffdf8;box-shadow:6px 6px 0 #151515;font-family:var(--cp-font-mono);font-size:16px;line-height:1.6;white-space:pre-wrap;text-wrap:pretty">{{ doc }}</div>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;zones&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Proof&quot;},&quot;liveMotion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;reduced&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;'full'|'reduced'&quot;,&quot;section&quot;:&quot;Live demo&quot;},&quot;liveHidden&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Live demo&quot;}}">
+class Component extends DCLogic {
+  state={doc:'Loading 16-compibert-gluecksrad.md …'};
+  componentDidMount(){ fetch('./design_handoff_compies/16-compibert-gluecksrad.md').then(r=>r.text()).then(doc=>this.setState({doc})).catch(()=>this.setState({doc:'See design_handoff_compies/16-compibert-gluecksrad.md'})); }
+  renderVals(){
+    const p=this.props;
+    const opts=[
+      {k:'A',id:'1a',mid:'1a-390',badge:'#fffdf8',name:'„Eigener Platz“',short:'his own slot, never touches the wheel',rec:false,
+       pd:'Full body 190 px, standing right of the wheel inside the card, feet on the wheel\u2019s bottom line. The slot (190 × 210) clips him.',
+       mo:'Rises from the slot floor y 100 % → 0, 0.45 back.out(1.8); sinks y 0 → 100 %, 0.4 power2.in. The original note, as written.',
+       tr:'Best read of the full poses on desktop. On the phone the idea has to switch to a header slot, so the two widths feel like two different mascots, and the header must reserve 70 px.',
+       pm:'Bust 92 px in a 70 px slot at the right end of the card header, cut at the header divider. He rises out of the divider; the header always reserves the slot so the wheel never moves.'},
+      {k:'B',id:'1b',mid:'1b-390',badge:'#ffd23f',name:'„Hinterm Rad“',short:'peeks out from behind the rim',rec:true,
+       pd:'Bust 232 px behind the wheel at its upper right (box 300–532 × 18–250 of the 420 wheel). The wheel paints over him; his head shows past the rim, and the cheer jump lifts him further out.',
+       mo:'Slides out along the radius from behind the disc: x −130 → 0, y 100 → 0, 0.45 back.out(1.8), opacity over the first 0.14. Leaves the same way, 0.4 power2.in.',
+       tr:'Cannot cover anything by construction and works the same at both widths. Part of his body is always hidden by the wheel, which is the joke: he is watching from behind it.',
+       pm:'Bust 150 px behind the top-right of the wheel, overhanging the square by 8 px into the card padding, right of the flapper. Same entrance, offsets −100 / 80.'},
+      {k:'C',id:'1c',mid:'1c-390',badge:'#fffdf8',name:'„Eckplatz“',short:'small head in front, at the corner',rec:false,
+       pd:'Head 92 px in front of the wheel in its free top-right corner (outside the bulb ring), no outline as the rig says for heads.',
+       mo:'Pops in from the corner: scale .3 → 1, rotation −20 → 0, 0.42 ease-pop. Out: scale → 0, 0.22 ease-in.',
+       tr:'Smallest and calmest, fits any layout. But a head alone loses the pumping arms of excited and the jump of cheer, and on desktop it looks lost next to 420 px of wheel.',
+       pm:'Head 56 px in the free top-right corner, outside the rim, inside the card padding.'}];
+    const poseCols=[{st:'excited',when:'spin start → brake'},{st:'suspense',when:'brake (60 %) → stop'},{st:'cheer',when:'stop, 1.6 s'}];
+    const crops=[{v:'full',s:190,h:170},{v:'bust',s:150,h:150},{v:'head',s:96,h:100}];
+    const poses=[]; crops.forEach(c=>poseCols.forEach(pc=>poses.push({v:c.v,s:c.s,h:c.h,st:pc.st})));
+    const phases=[
+      {k:'rest',t:'Rest',at:'before spin start',d:'Absent. Bulbs blink, hub reads „Drehen“. The header head-logo stays as the calm presence.'},
+      {k:'enter',t:'Spin start · entering',at:'@0 → 0.45 s',d:'→ excited. Slides out from behind the rim along the radius, back.out(1.8); opacity over the first 0.14 s.'},
+      {k:'spin',t:'Mid-spin',at:'0.45 s → brake',d:'excited: arms pump in turns, hops, grin. Eye follow on.'},
+      {k:'brake',t:'Brake',at:'@0.6 · D',d:'→ suspense: hands up, mouth o, eye fixed on the wheel, trembling, one bead of sweat.'},
+      {k:'stop',t:'Stop · result card',at:'@D (hidden wheel: @D + 0.5)',d:'→ cheer for 1.6 s, then idle. Result card „Das Rad sagt“ under the wheel, untouched.'},
+      {k:'exit',t:'Slice leaving · exiting',at:'@D + 2.2 (hidden + 2.8) → + 0.4',d:'Leaves with the slice the way he came, 0.4 power2.in, opacity over the last 0.14 s. Then unmounted.'}];
+    return {opts,poseCols,poses,phases,poseThemes:[{theme:'light',label:'LIGHT · hard shadow (full, bust) · none (head)'},{theme:'dark',label:'DARK · sticker (full, bust) · none (head)'}],
+      zones:!!p.zones,liveReduced:p.liveMotion==='reduced',liveHidden:!!p.liveHidden,doc:this.state.doc};
+  }
+}
+</script>
+</body>
+</html>
