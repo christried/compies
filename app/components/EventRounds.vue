@@ -88,7 +88,7 @@ watch(resultFor, async (id, was) => {
       leave-active-class="transition-opacity dur-fast ease-in"
       leave-to-class="opacity-0"
       :move-class="unwatched() ? undefined : CARD_REFLOW_CLASS"
-      class="relative m-0 grid list-none grid-cols-1 gap-3 p-0 md:grid-cols-2"
+      class="relative m-0 grid list-none grid-cols-2 gap-3 p-0"
       @before-leave="leaveInPlace"
     >
       <li
