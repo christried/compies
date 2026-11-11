@@ -8,8 +8,8 @@ import { parseYouTubeId } from './youtube'
 /** Game name: 1 to this many characters after trimming (characterCount, like Event names). */
 export const GAME_NAME_MAX = 60
 export const CLIP_LENGTH_DEFAULT = 30
-export const CLIP_LENGTH_MIN = 5
-export const CLIP_LENGTH_MAX = 60
+export const CLIP_LENGTH_MIN = 10
+export const CLIP_LENGTH_MAX = 120
 /** Latest clip start: 11:59:59. */
 export const CLIP_START_MAX = 43_199
 /** The most players a recommended count can name (#142). */

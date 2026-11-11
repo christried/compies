@@ -83,19 +83,19 @@ describe('parsePlayerCount', () => {
 })
 
 describe('clip length', () => {
-  it.each([[CLIP_LENGTH_MIN], [30], [CLIP_LENGTH_MAX]])('accepts %i seconds', (seconds) => {
+  it.each([[10], [30], [120]])('accepts %i seconds', (seconds) => {
     expect(isClipLength(seconds)).toBe(true)
   })
 
-  it.each([[CLIP_LENGTH_MIN - 1], [CLIP_LENGTH_MAX + 1], [30.5], ['30'], [null], [undefined]])('refuses %j', (seconds) => {
+  it.each([[9], [121], [30.5], ['30'], [null], [undefined]])('refuses %j', (seconds) => {
     expect(isClipLength(seconds)).toBe(false)
   })
 
-  it.each([['5', 5], [' 60 ', 60], ['030', 30]])('reads %j as %i seconds', (text, seconds) => {
+  it.each([['10', 10], [' 120 ', 120], ['030', 30]])('reads %j as %i seconds', (text, seconds) => {
     expect(parseClipLength(text)).toBe(seconds)
   })
 
-  it.each([[''], ['4'], ['61'], ['30.5'], ['1e1'], ['bald']])('refuses %j', (text) => {
+  it.each([[''], ['9'], ['121'], ['30.5'], ['1e1'], ['bald']])('refuses %j', (text) => {
     expect(parseClipLength(text)).toBeNull()
   })
 })
@@ -178,14 +178,19 @@ describe('parseGameInput', () => {
       expect(parseGameInput({ ...valid, clipStart: CLIP_START_MAX, clipLength: CLIP_LENGTH_MAX })).toMatchObject({ ok: true })
     })
 
+    it('takes 10 and 120 seconds', () => {
+      expect(parseGameInput({ ...valid, clipLength: 10 })).toMatchObject({ ok: true })
+      expect(parseGameInput({ ...valid, clipLength: 120 })).toMatchObject({ ok: true })
+    })
+
     it.each([
       [{ clipStart: -1 }],
       [{ clipStart: CLIP_START_MAX + 1 }],
       [{ clipStart: 1.5 }],
       [{ clipStart: '72' }],
       [{ clipStart: null }],
-      [{ clipLength: CLIP_LENGTH_MIN - 1 }],
-      [{ clipLength: CLIP_LENGTH_MAX + 1 }],
+      [{ clipLength: 9 }],
+      [{ clipLength: 121 }],
       [{ clipLength: 30.5 }],
       [{ clipLength: '30' }],
     ])('refuses %j', (clip) => {
