@@ -59,9 +59,11 @@ function stubYouTube() {
   window.YT = { Player, PlayerState: { PLAYING: 1, PAUSED: 2 } } as unknown as typeof window.YT
 }
 
-async function mount(clip: ClipView, { isHost = false, desktop = true }: { isHost?: boolean, desktop?: boolean } = {}) {
+/** `stubChildren`: the child components keep the tag and classes the overlay writes on them and drop their own output (#546). */
+async function mount(clip: ClipView, { isHost = false, desktop = true, stubChildren = false }: { isHost?: boolean, desktop?: boolean, stubChildren?: boolean } = {}) {
   stubScreen(desktop)
-  page = await mountSuspended(ClipOverlay, { props: { clip, isHost, serverNow: () => serverMs, skip } })
+  const global = stubChildren ? { stubs: { AppButton: true, IconButton: true, GameCard: true } } : {}
+  page = await mountSuspended(ClipOverlay, { props: { clip, isHost, serverNow: () => serverMs, skip }, global })
   await flushPromises()
   return page
 }
@@ -78,6 +80,8 @@ async function passTime(ms: number) {
   vi.advanceTimersByTime(ms)
   await flushPromises()
 }
+
+const stageOf = () => page!.element.querySelector('[role="group"]') as HTMLElement
 
 /** The overlay's buttons: the name a User hears (the icon buttons' aria-label, else the text). */
 const buttons = () => [...(page?.element.querySelectorAll('button') ?? [])].map(element => ({ element, name: element.getAttribute('aria-label') ?? element.textContent?.replace(/\s+/g, ' ').trim() ?? '' }))
@@ -395,7 +399,6 @@ describe('the motion of the running clip', () => {
 })
 
 describe('no input (#509)', () => {
-  const stageOf = () => page!.element.querySelector('[role="group"]') as HTMLElement
 
   it('shuts the player\'s container to pointer input and focus, whatever iframe the API puts in it', async () => {
     await mount(clipOf())
@@ -451,12 +454,54 @@ describe('no input (#509)', () => {
     expect(stage.children).toHaveLength(1)
     expect(stage.children[0]).toBe(players[0]!.iframe)
     expect(stage.querySelectorAll('*')).toHaveLength(1)
-    const covering = /(^|\s)(absolute|fixed|sticky|inset-\S+|z-\S+|layer-\S+|translate\S*|scale\S*|-m\S*)(\s|$)/
-    const offenders = [...section.querySelectorAll('*')].filter(element => covering.test(element.getAttribute('class') ?? ''))
-    expect(offenders.map(element => element.getAttribute('class'))).toEqual([])
     const bar = section.querySelector('[role="progressbar"]')!
     expect(wrapper.compareDocumentPosition(bar) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
     for (const button of buttons()) expect(wrapper.compareDocumentPosition(button.element) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  })
+})
+
+/** Class tokens and style properties that could put an element over the player. Variants (md:, hover:, [&_x]:) are looked through. */
+function coversPlayer(classes: string, style = ''): string[] {
+  const tokens = classes.split(/\s+/).filter(Boolean).filter((token) => {
+    const bare = token.slice(token.lastIndexOf(':') + 1).replace(/^!/, '')
+    return /^(absolute|fixed|sticky)$/.test(bare) || /^-?(inset|top|right|bottom|left|translate|scale|rotate)(-|$)/.test(bare) || /^(z|layer)-/.test(bare) || /^-m/.test(bare)
+  })
+  const properties = /(^|;)\s*(position|top|right|bottom|left|inset[\w-]*|z-index|transform|translate|scale|rotate|margin[\w-]*)\s*:/.test(style) ? [`style="${style}"`] : []
+  return [...tokens, ...properties]
+}
+
+describe('the overlay\'s own elements cover nothing (#546)', () => {
+  it.each([
+    'absolute', 'md:absolute', 'top-0', '-top-1', 'left-[3px]', 'right-2', 'bottom-0', 'inset-0', 'z-10', 'layer-clip', '-mt-2', 'hover:-translate-y-1', 'scale-110',
+  ])('flags the class %s', (classes) => {
+    expect(coversPlayer(classes)).not.toEqual([])
+  })
+
+  it.each(['position: absolute', 'top: 0', 'z-index: 5', 'transform: scale(2)'])('flags the style %s', (style) => {
+    expect(coversPlayer('', style)).not.toEqual([])
+  })
+
+  it.each([
+    ['relative size-full grid place-items-center', ''],
+    ['mx-auto flex w-[min(720px,calc(100%-1.75rem))]', ''],
+    ['bg-hot transition-[width] ease-linear', 'width: 50%; transition-duration: 250ms'],
+  ])('lets %s with style "%s" through', (classes, style) => {
+    expect(coversPlayer(classes, style)).toEqual([])
+  })
+
+  it('finds no element of the overlay with a position, an inset, a layer or a transform of its own, and no button inside it', async () => {
+    await mount(clipOf(), { isHost: true, stubChildren: true })
+    await ready()
+    const section = page!.element.querySelector('section')!
+    // The iframe is YouTube's, not the overlay's.
+    const inStage = new Set(stageOf().querySelectorAll('*'))
+    const own = [section, ...section.querySelectorAll('*')].filter(element => !inStage.has(element))
+    // The section is placed by design (under the header, in front of the page); anything else on it still fails.
+    const PLACED = (token: string) => ['fixed', 'inset-x-0', 'layer-clip'].includes(token) || token.startsWith('top-[calc(')
+    const classesOf = (element: Element) => (element.getAttribute('class') ?? '').split(/\s+/).filter(token => element !== section || !PLACED(token)).join(' ')
+
+    expect(own.flatMap(element => coversPlayer(classesOf(element), element.getAttribute('style') ?? ''))).toEqual([])
+    expect(own.some(element => element.tagName === 'BUTTON')).toBe(false)
   })
 })
 
