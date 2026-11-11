@@ -6,6 +6,8 @@
 // (the `home` state of `dark-states-app.mjs`) lists the Dev Host's Events and must look the same in both passes.
 // What changes with time or by being used (the Veto window, the Clip) is made fresh in every `open`; the rest is made once per
 // pass and read by both viewers. Nothing is hovered or pressed beyond what opens a sheet (#406).
+// 0.12's states (#448): the board with a Team word (`teamwahl-wort`), the feed with a named team and a Tie (`aktivitaet`), the game tiles
+// and their dialog (`spiel-rad`, `spiel-pool`), the picker's Notes (`picker-notizen`) and the finished page before its ceremony (`fertig-offen`).
 import { appendFileSync, readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -102,6 +104,25 @@ function games(ctx) {
   return library
 }
 
+let featured
+/**
+ * The two games of the dialog states (#443, #444), found by name or made once: both with Notes (line breaks) and Tags, A with a Price (Steam, 19,99 €) and 8 Tags,
+ * B without a Price and with 5 Tags. A game with no Price gets the Tag „Free-to-play“ from the server (#423), so B has room for it.
+ */
+function dialogGames(ctx) {
+  featured ??= (async () => {
+    const host = ctx.tabs.host
+    const known = (await ok(api(host, 'GET', '/api/games'), 'GET /api/games')).games
+    const fields = { playersMin: 2, playersMax: 6, clipLength: 60, suitabilities: ['teams', 'one_v_one'] }
+    const specs = [
+      { name: `${PREFIX}Spiel Dialog A`, notes: 'R011 Dunkel-Check Notiz A\nZweite Zeile der Notiz', tags: ['Koop', 'Schnell', 'Chaos', 'Party', 'Geschicklichkeit', 'Rätsel', 'Rennen', 'Strategie'], price: { cents: 1999, source: 'steam' } },
+      { name: `${PREFIX}Spiel Dialog B`, notes: 'R011 Dunkel-Check Notiz B', tags: ['Koop', 'Schnell', 'Chaos', 'Party', 'Rätsel'] },
+    ]
+    return Promise.all(specs.map(async spec => known.find(game => game.name === spec.name) ?? createGame(host, { ...fields, ...spec })))
+  })()
+  return featured
+}
+
 /** A pool of `n` games in a fixed order, so both Appearances draw the same DOM; `long` swaps the second for the 60-character game. */
 async function pool(ctx, n, { long = false } = {}) {
   const list = (await games(ctx)).slice(0, n)
@@ -195,9 +216,56 @@ const BUILDS = {
     await joinEvent(member(ctx), slug, host(ctx))
     await joinEvent(admin(ctx), slug, host(ctx))
     const place = async (tab, to) => ok(api(tab, 'POST', `/api/e/${slug}/move`, { userId: (await eventView(tab, slug)).viewerId, to }), 'move')
+    // The Member and the Admin stay on the Stands: a joiner lands there (#437), and a move to the place one is at answers 409 already_there.
     await place(host(ctx), { zone: 'team', team: 1 })
-    await place(admin(ctx), { zone: 'stands' })
     return { slug }
+  },
+  // The board with a Team word (#437, #439): the Host and the Member in team 1, the Member's word names it (the Member's band is folded to the name
+  // with its pencil, the Host's has the reset), the Admin on the Stands, team 2 empty.
+  async 'teamwahl-wort'(ctx) {
+    await signIn(ctx, 'member')
+    await signIn(ctx, 'admin')
+    const given = await pool(ctx, 3)
+    const { slug } = await createEvent(host(ctx), { name: `${PREFIX}Teamwort`, settings: { teamCount: 2, teamSize: 3 }, pool: given.map(game => game.id) })
+    await joinEvent(member(ctx), slug, host(ctx))
+    await joinEvent(admin(ctx), slug, host(ctx))
+    for (const tab of [host(ctx), member(ctx)]) await ok(api(tab, 'POST', `/api/e/${slug}/move`, { userId: (await eventView(tab, slug)).viewerId, to: { zone: 'team', team: 1 } }), 'move')
+    await ok(api(member(ctx), 'POST', `/api/e/${slug}/team-word`, { word: 'Gurkensalat' }), 'give a Team word')
+    return { slug }
+  },
+  // Three Parties of one Player (the Host, the Member, the Admin): the Member's and the Admin's words name teams 2 and 3 (the Host never writes a word, so team 1
+  // keeps its colour), three Games in turn win, a Tie as the Finish, the ceremony over. The feed has a named team's TeamMark in its entries and the Tie
+  // entry (#440, #445). The words come before the Finish: a word after it is refused (#438).
+  async aktivitaet(ctx) {
+    await signIn(ctx, 'member')
+    await signIn(ctx, 'admin')
+    const tabs = [host(ctx), member(ctx), admin(ctx)]
+    const event = await runningEvent(tabs, { name: `${PREFIX}Aktivitaet`, pool: await pool(ctx, 3), settings: { gameCount: 3 }, set: 3 })
+    await ok(api(member(ctx), 'POST', `/api/e/${event.slug}/team-word`, { word: 'Gurkensalat' }), 'give a Team word')
+    await ok(api(admin(ctx), 'POST', `/api/e/${event.slug}/team-word`, { word: 'Spaghettieis' }), 'give a Team word')
+    for (const [index, roundId] of event.roundIds.entries()) await enterResult(host(ctx), event.slug, roundId, placesOf([1, 2, 3].map((_, i) => [1, 2, 3][(i + index) % 3])))
+    await ok(api(host(ctx), 'POST', `/api/e/${event.slug}/finish`, { outcome: 'tie', winners: [1, 2, 3] }), 'finish the Event')
+    await ceremonyOver(ctx, event.slug)
+    return event
+  },
+  // A set game (A, the Round „Gerade dran“) and the one the Wheel then draws (B, „Zuletzt gezogen“): both with Tags and Notes, A with a Price and B without (#435, #443, #444).
+  async 'spiel-rad'(ctx) {
+    const [a, b] = await dialogGames(ctx)
+    const event = await running(ctx, 'Spiel Rad', { list: [a, b], settings: { ...WHEEL, vetoAllowance: 0, gameCount: 2 }, set: 1 })
+    await spun(ctx, event.slug)
+    return event
+  },
+  // The pool's tiles with a third game left over, nothing drawn yet.
+  async 'spiel-pool'(ctx) {
+    const [a, b] = await dialogGames(ctx)
+    return running(ctx, 'Spiel Pool', { list: [a, b, (await pool(ctx, 3))[2]], settings: { ...WHEEL, vetoAllowance: 0, gameCount: 3 } })
+  },
+  // The Host's „Nächstes Spiel setzen“ with Spiel 2 (a game with Notes) in the pool.
+  'picker': ctx => running(ctx, 'Picker', { n: 3, settings: { gameCount: 3 } }),
+  // The finished page before the Award ceremony: no `ceremonyOver`, so the Host's dock offers „Siegerehrung starten“ and a Member has the card (#445).
+  async 'fertig-offen'(ctx) {
+    await signIn(ctx, 'member')
+    return finishedEvent([host(ctx), member(ctx)], { name: `${PREFIX}Fertig offen`, outcome: 'winner', pool: await pool(ctx, 3) })
   },
   // The Lucky Wheel before a Draw (8 games, one of them the 60-character name), with 1 game, and after a Draw with 1 and with 0 games left.
   'rad-vorher': ctx => running(ctx, 'Rad vorher', { n: 8, long: true, settings: { ...WHEEL, vetoAllowance: 1 } }),
@@ -323,6 +391,26 @@ const keepToasts = tab => tab.evaluate(`(() => {
 
 const toastShown = (tab, text) => until(tab, `[...document.querySelectorAll('[role=status], [role=alert]')].some(el => el.textContent.includes(${JSON.stringify(text)}))`, `the toast „${text}“`).then(() => sleep(300))
 
+/**
+ * The name button of the game tile named \`game\` in the block under the heading or label \`anchor\` („Gerade dran“, „Zuletzt gezogen“, „Spielepool“),
+ * pressed: the nearest ancestor of the anchor that holds such a button. The same game's tile is on the page in more than one block (#435).
+ */
+async function openTile(tab, anchor, game) {
+  const pressed = await tab.evaluate(`(() => {
+    const seen = el => el.getBoundingClientRect().width > 0
+    const label = [...document.querySelectorAll('h2, h3, p')].find(el => seen(el) && el.textContent.trim() === ${JSON.stringify(anchor)})
+    for (let block = label?.parentElement; block; block = block.parentElement) {
+      const button = [...block.querySelectorAll('button')].find(el => seen(el) && el.textContent.includes(${JSON.stringify(game)}))
+      if (!button) continue
+      button.scrollIntoView({ block: 'center', behavior: 'instant' })
+      button.click()
+      return true
+    }
+    return false
+  })()`)
+  if (!pressed) throw new Error(`no tile „${game}“ under „${anchor}“`)
+}
+
 /** The library in a picker has a sentinel that loads the next 40 cards while the reader scrolls: it goes, so only the first batch of the 1598 games is read. */
 const noAutoLoad = tab => tab.evaluate(`document.querySelectorAll('div[aria-hidden="true"].h-px').forEach(el => el.remove())`)
 
@@ -335,19 +423,19 @@ const clipboard = (tab, outcome) => tab.evaluate(`Object.defineProperty(navigato
 /**
  * One page state as the two viewers: `<name>-host` (the Dev Host, 1440 px) and `<name>-spieler` (the Dev Member, 390 px).
  * `key` and `build` make the Event once per pass; `fresh: true` makes it again in every `open` (a window or a clip that ends).
- * `hostStops` and `spielerStops` are the stops of each viewer, `only` leaves one of them out, `prepare(ctx)` runs after the page
+ * `hostStops` and `spielerStops` are the stops of each viewer, `hostWidths` the Host's widths (default 1440 only), `only` leaves one of them out, `prepare(ctx)` runs after the page
  * is quiet, `after(ctx)` after the Spieler's read, the last of the pair.
  */
-function pair({ name, group, key = name, fresh = false, waitFor = 'h1', hostStops = [], spielerStops = [], only, viewport, differs, stillHolds, prepare, after }) {
+function pair({ name, group, key = name, fresh = false, waitFor = 'h1', hostStops = [], spielerStops = [], hostWidths = [1440], only, viewport, differs, stillHolds, prepare, after }) {
   const sides = [
-    { suffix: 'host', account: 'host', width: 1440, stops: hostStops },
-    { suffix: 'spieler', account: 'member', width: 390, stops: spielerStops },
+    { suffix: 'host', account: 'host', widths: hostWidths, stops: hostStops },
+    { suffix: 'spieler', account: 'member', widths: [390], stops: spielerStops },
   ]
   return sides.filter(side => !only || only === side.suffix).map(side => ({
     name: `${name}-${side.suffix}`,
     group,
     account: side.account,
-    widths: [side.width],
+    widths: side.widths,
     ...(viewport ? { viewport } : {}),
     ...(differs ? { differs } : {}),
     async open(ctx) {
@@ -576,12 +664,119 @@ export const STATES = [
 
   // event-finished -----------------------------------------------------------------------------------------------------------------
   ...pair({ name: 'fertig', group: 'event-finished', hostStops: finishedStops('fertig'), spielerStops: finishedStops('fertig') }),
-  // The last state of the file: the Events of the pass are deleted after it, so Home looks the same in the next pass.
+  ...pair({ name: 'fertig-gleichstand', group: 'event-finished', hostStops: finishedStops('fertig-gleichstand'), spielerStops: finishedStops('fertig-gleichstand') }),
+
+  // 0.12 (#448) ---------------------------------------------------------------------------------------------------------------------
+  // The board with a Team word (#437, #439): the Member's folded band, the pencil that opens the field again, the Host's reset and its question.
   ...pair({
-    name: 'fertig-gleichstand',
+    name: 'teamwahl-wort',
+    group: 'event-board',
+    hostStops: [
+      stop('zuruecksetzen', async (tab) => {
+        await press(tab, 'button', COPY.team.word.reset)
+        await layerOpen(tab, 'the reset question')
+      }),
+    ],
+    spielerStops: [
+      stop('wort-aendern', async (tab) => {
+        await press(tab, 'button', COPY.team.word.change)
+        await until(tab, `!!document.querySelector('input[aria-describedby$="-help"]')`, 'the Team word field')
+        await sleep(300)
+      }),
+    ],
+  }),
+  // The feed (#440): a named team's TeamMark in its entries and the Tie entry; the side panel's tab and the phone's Aktivität view.
+  ...pair({
+    name: 'aktivitaet',
     group: 'event-finished',
-    hostStops: finishedStops('fertig-gleichstand'),
-    spielerStops: finishedStops('fertig-gleichstand'),
+    hostStops: [stop('panel-aktivitaet', tab => press(tab, '[role=tab]', COPY.nav.tabs.activity))],
+    spielerStops: [stop('tab-aktivitaet', tab => press(tab, `nav[aria-label=${JSON.stringify(COPY.event.tabs.label)}] button`, COPY.nav.tabs.activity))],
+  }),
+  // The game tiles of the Round and of the Wheel's card, and their dialog as the Host (Tags, Notes, library link) and as a Member (picture, facts, Price) (#435, #443, #444).
+  ...pair({
+    name: 'spiel-rad',
+    group: 'event-live',
+    hostStops: [
+      stop('dialog-gerade-dran', async (tab, ctx) => {
+        await openTile(tab, COPY.rounds.title, (await dialogGames(ctx))[0].name)
+        await layerOpen(tab, 'the game dialog of the Round')
+      }),
+      stop('dialog-zuletzt-gezogen', async (tab, ctx) => {
+        await openTile(tab, COPY.wheel.last, (await dialogGames(ctx))[1].name)
+        await layerOpen(tab, 'the game dialog of the Wheel')
+      }),
+    ],
+    spielerStops: [
+      stop('dialog-gerade-dran', async (tab, ctx) => {
+        await openTile(tab, COPY.rounds.title, (await dialogGames(ctx))[0].name)
+        await layerOpen(tab, 'the game dialog of the Round')
+      }),
+      stop('dialog-zuletzt-gezogen', async (tab, ctx) => {
+        await openTile(tab, COPY.wheel.last, (await dialogGames(ctx))[1].name)
+        await layerOpen(tab, 'the game dialog of the Wheel')
+      }),
+    ],
+  }),
+  ...pair({
+    name: 'spiel-pool',
+    group: 'event-live',
+    hostStops: [
+      stop('dialog-pool', async (tab, ctx) => {
+        await openTile(tab, COPY.howWePlay.mainPool, (await dialogGames(ctx))[0].name)
+        await layerOpen(tab, 'the game dialog of the pool')
+      }),
+    ],
+    spielerStops: [
+      stop('dialog-pool', async (tab, ctx) => {
+        await openTile(tab, COPY.howWePlay.mainPool, (await dialogGames(ctx))[0].name)
+        await layerOpen(tab, 'the game dialog of the pool')
+      }),
+    ],
+  }),
+  // The Notes of Spiel 2 in the picker: a popover beside the button at 1440, a sheet over the picker at 390 (#436, #488). Reading scrolls the page, which closes a popover:
+  // the scroll is switched off for this stop, and the reading says whether the popover is still there.
+  ...pair({
+    name: 'picker-notizen',
+    group: 'event-live',
+    key: 'picker',
+    only: 'host',
+    hostWidths: [390, 1440],
+    hostStops: [
+      stop('notizen', async (tab) => {
+        // On a phone the crown button opens the actions in a sheet (no „Mehr“ step, HostDock), and the action closes it.
+        if (await tab.evaluate('innerWidth < 768')) {
+          await press(tab, 'button[aria-haspopup=dialog]', COPY.dock.label)
+          await layerOpen(tab, 'the Host sheet')
+          await press(tab, '[role=dialog] button', COPY.dock.setGame)
+          await until(tab, `document.querySelectorAll('[role=dialog]').length === 1 && !!document.querySelector('[role=dialog] li')`, 'the picker replacing the Host sheet')
+        }
+        else await moreEntry(tab, COPY.dock.setGame)
+        await layerOpen(tab, 'the game picker')
+        await noAutoLoad(tab)
+        await until(tab, `document.querySelectorAll('[role=dialog] li').length > 10`, 'the library in the picker', 30_000)
+        await press(tab, '[role=dialog] button', COPY.gameNotes.open)
+        await until(tab, `document.querySelectorAll('[role=dialog]').length > 1`, 'the Notes')
+        // The popover closes on a scroll that is not its own (`GameNotesButton`'s `onScroll` asks `popover.contains(target)`), and the reading scrolls the page: it
+        // takes the popover for the target's container, so that it stays open for the reading and the screenshot.
+        await tab.evaluate(`(() => {
+          window.scrollTo = () => {}
+          const contains = Node.prototype.contains
+          Node.prototype.contains = function (node) { return contains.call(this, node) || (this instanceof Element && this.matches('.layer-popover')) }
+        })()`)
+        await sleep(500)
+      }, { viewport: true }),
+    ],
+  }),
+  // The finished page before the ceremony, as the Host (the dock's „Siegerehrung starten“) and as a Member (#445); the Tabelle tab shows the same card.
+  ...pair({
+    name: 'fertig-offen',
+    group: 'event-finished',
+    hostStops: [stop('panel-tabelle', tab => press(tab, '[role=tab]', COPY.nav.tabs.table))],
+    spielerStops: [
+      stop('tab-tabelle', tab => press(tab, `nav[aria-label=${JSON.stringify(COPY.event.tabs.label)}] button`, COPY.nav.tabs.table)),
+      stop('tab-aktivitaet', tab => press(tab, `nav[aria-label=${JSON.stringify(COPY.event.tabs.label)}] button`, COPY.nav.tabs.activity)),
+    ],
+    // The last state of the file: the Events of the pass are deleted after it, so Home looks the same in the next pass.
     after: ({ tabs }) => purge(tabs.host),
   }),
 ]
