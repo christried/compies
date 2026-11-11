@@ -147,7 +147,7 @@ describe('scripts/session-start-note.mjs', { timeout: 30_000 }, () => {
     expect(runScript(work)).toMatchObject({ code: 0, stdout: '' })
   })
 
-  it('is registered as a second SessionStart hook that also covers /clear', () => {
+  it('is registered as a SessionStart hook that also covers /clear', () => {
     const settings = JSON.parse(readFileSync(settingsFile, 'utf8'))
     const entry = settings.hooks.SessionStart.find((candidate: { hooks: { command: string }[] }) =>
       candidate.hooks.some(hook => hook.command.includes('scripts/session-start-note.mjs')))

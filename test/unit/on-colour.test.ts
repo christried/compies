@@ -131,14 +131,17 @@ describe('the class strings of a file', () => {
 })
 
 describe('the app', () => {
+  const VUE_FLOOR = 3077
+  const TS_FLOOR = 652
   const files = appFiles()
   const stringsOf = (file: string) => classStrings(file, readFileSync(join(root, 'app', file), 'utf8'))
 
   it('finds what it checks', () => {
+    const strings = (extension: string) => files.filter(file => file.endsWith(extension)).flatMap(stringsOf)
     expect(files.length).toBeGreaterThan(100)
-    expect(stringsOf(join('utils', 'notice.ts'))).toContain('bg-info text-on-info')
-    expect(stringsOf(join('components', 'ReleaseCard.vue')).map(collapse))
-      .toContain('hover:bg-primary hover:text-on-primary focus-visible:bg-primary focus-visible:text-on-primary')
+    expect(strings('.vue').length).toBeGreaterThan(VUE_FLOOR)
+    expect(strings('.ts').length).toBeGreaterThan(TS_FLOOR)
+    expect([...strings('.vue'), ...strings('.ts')].some(s => /\bbg-\S+/.test(s) && /\btext-on-\S+/.test(s))).toBe(true)
   })
 
   it('finds no dark text on a coloured fill', () => {

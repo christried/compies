@@ -162,6 +162,15 @@ describe('scripts/context-usage.mjs', { timeout: 20_000 }, () => {
     expect(argument.stdout).toContain('310k tokens (310000)')
   })
 
+  it('takes the id from the environment when its own transcript is idle and another one is newer', async () => {
+    stage([mine(30), other(0)])
+
+    const result = await run([], { sessionId: MINE })
+
+    expect(result.code).toBe(0)
+    expect(result.stdout).toContain('120k tokens (120000)')
+  })
+
   it('ignores an environment id that has no transcript', async () => {
     stage([mine(0)])
     const alone = await run([], { sessionId: UNKNOWN })
