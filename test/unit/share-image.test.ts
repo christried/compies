@@ -485,11 +485,11 @@ describe('shareImageModel', () => {
         expect(partyBands(seven).map(band => band.team)).toEqual([1, 2, 3, 4, 5])
         expect(seven.bands).toHaveLength(6)
         expect(seven.bands[5]).toEqual({ kind: 'more', text: '+2 weitere', fill: '#fffdf8', ink: '#151515' })
-        expect(seven.label).toBe('Unentschieden · alle 7 gleichauf')
+        expect(seven.label).toBe('Alle 7 gleichauf')
         const eight = tieOf(model({ points: Array(8).fill(5) }))
         expect(partyBands(eight)).toHaveLength(5)
         expect(eight.bands[5]).toMatchObject({ kind: 'more', text: '+3 weitere' })
-        expect(eight.label).toBe('Unentschieden · alle 8 gleichauf')
+        expect(eight.label).toBe('Alle 8 gleichauf')
       })
 
       it('says „7 Sieger“ and folds two Winners when 7 of 8 Parties won', () => {
@@ -508,9 +508,9 @@ describe('shareImageModel', () => {
         expect(tieOf(model(SHARE_CASES.tie5!))).toMatchObject({ label: 'Unentschieden · 5 Sieger', each: 'je', points: { value: '12', label: 'Punkte' } })
       })
 
-      it('says „beide gleichauf“ when both of 2 Parties won, „alle k gleichauf“ from 3', () => {
+      it('says „beide gleichauf“ when both of 2 Parties won, „Alle k gleichauf“ from 3', () => {
         expect(tieOf(model({ points: [5, 5] })).label).toBe('Unentschieden · beide gleichauf')
-        expect(tieOf(model({ points: Array(5).fill(5) })).label).toBe('Unentschieden · alle 5 gleichauf')
+        expect(tieOf(model({ points: Array(5).fill(5) })).label).toBe('Alle 5 gleichauf')
       })
 
       it('says „Punkt“ at one shared point and names a Winner without a Team name by its colour', () => {
