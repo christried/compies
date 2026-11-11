@@ -13,8 +13,8 @@ const { t } = useI18n()
 
 <template>
   <section
-    class="flex min-w-0 flex-col gap-2 rounded-[18px] border-line bg-surface p-3 text-ink transition-[box-shadow,border-color] dur-fast"
-    :class="dropTarget ? 'border-[3px] border-focus shadow-card' : 'border-(length:--cp-bw)'"
+    class="flex min-w-0 flex-col gap-2 rounded-[18px] bg-surface p-3 text-ink transition-[box-shadow,border-color] dur-fast"
+    :class="dropTarget ? 'border-[3px] border-focus shadow-card' : 'border-(length:--cp-bw) border-line'"
     role="group"
     :aria-label="t('board.stands')"
     data-drop-zone="stands"
