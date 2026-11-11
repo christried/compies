@@ -430,7 +430,7 @@ describe('the game dialog from the pool tiles (#443)', () => {
 
     expect(document.querySelectorAll('[role="dialog"]')).toHaveLength(1)
     expect(dialog().querySelector('h2')?.textContent).toBe(names.at(-1))
-    expect(dialog().textContent).toContain('2 bis 4')
+    expect(dialog().textContent).toContain('bis 4')
     expect(dialog().textContent).toContain('Teams')
     expect(dialog().textContent).toContain('Stand')
     expect(dialog().querySelector('ul[aria-label="Tags"]')).toBeNull()

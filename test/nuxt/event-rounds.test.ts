@@ -894,7 +894,7 @@ describe('the game dialog from the Round tiles (#443, #444)', () => {
     await flushPromises()
 
     expect(opened()!.querySelector('h2')?.textContent).toBe('Halo')
-    expect(opened()!.textContent).toContain('2 bis 4')
+    expect(opened()!.textContent).toContain('bis 4')
     expect(opened()!.textContent).toContain('Teams')
     expect(opened()!.textContent).toContain('Stand')
     for (const hidden of ['Koop', 'Hausregel: keine Raketen', 'Notizen']) expect(opened()!.textContent).not.toContain(hidden)

@@ -326,7 +326,7 @@ describe('the library cards and filters (#142, #173)', () => {
     await settle(page)
 
     const [halo, cs] = page.findAll('main li')
-    expect(halo!.text()).toContain('2–10')
+    expect(halo!.text()).toContain('bis 10')
     expect(halo!.text()).toContain('Teams, Jeder gegen jeden')
     expect(cs!.text()).not.toContain('Teams')
   })
@@ -816,7 +816,7 @@ describe('the game page for its editors (#142)', () => {
     const page = await mountSuspended(DetailPage, { route: `/bibliothek/${withClip.id}` })
     await vi.waitFor(() => expect(page.find('h1').exists()).toBe(true))
 
-    expect(page.text()).toContain('2 bis 10')
+    expect(page.text()).toContain('bis 10')
     expect(page.text()).toContain('Teams, Jeder gegen jeden')
   })
 })

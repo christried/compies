@@ -436,6 +436,12 @@ describe('the game form', () => {
       expect(posted).toHaveBeenCalledWith(expect.objectContaining({ playersMin: 2, playersMax: 10, suitabilities: ['teams'] }))
     })
 
+    it('labels the player count as optional (#458)', async () => {
+      const page = await mountSuspended(GameForm)
+
+      expect(page.findAll('legend').map(item => item.text())).toContain('Empfohlene Spielerzahl (optional)')
+    })
+
     it('takes one bound alone and leaves both empty as no count', async () => {
       const page = await mountSuspended(GameForm)
       await field(page, 'Name').setValue('Mario Kart')
