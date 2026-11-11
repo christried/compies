@@ -935,6 +935,9 @@
   "gameNotes": {
     "open": "Notizen ansehen"
   },
+  "hint": {
+    "open": "Hinweis anzeigen"
+  },
   "gameEdit": {
     "kicker": "Bibliothek",
     "title": "Spiel anlegen",
