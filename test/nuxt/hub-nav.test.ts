@@ -1,6 +1,7 @@
 import { mountSuspended } from '@nuxt/test-utils/runtime'
-import type { DOMWrapper, VueWrapper } from '@vue/test-utils'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { flushPromises, type DOMWrapper, type VueWrapper } from '@vue/test-utils'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { defineComponent, h } from 'vue'
 import HubNav from '~/components/HubNav.vue'
 import type { EventContext } from '~/utils/event-page'
 import { kitty, signInAs } from './auth'
@@ -237,6 +238,29 @@ describe('HubNav on an Event page', () => {
     }
     finally {
       nuxtApp.isHydrating = was
+    }
+  })
+
+  // The Event page awaits its data in `setup`, so on a client-side switch the whole header is built inside the router's pending Suspense,
+  // and Vue calls no Transition hook for anything mounted there (#498). The page here awaits the same way; `requestAnimationFrame` never
+  // fires, so the enter's first frame (the classes the hooks put on) stays on the element for the test to read.
+  it('plays the enter when the header is built while the page is still loading, as on a client-side switch (#498)', async () => {
+    vi.stubGlobal('requestAnimationFrame', () => 0)
+    try {
+      const Page = defineComponent({
+        async setup() {
+          await new Promise(resolve => setTimeout(resolve, 10))
+          return () => h(HubNav, { layout: 'header', context: context() })
+        },
+      })
+      const page = await mountSuspended(Page, { route: EVENT, global: { stubs: { Transition: false } } })
+      await flushPromises()
+      const second = page.findAll('a')[0]!.findAll('[aria-hidden="true"]').find(element => element.text() !== '')!
+
+      expect(second.classes()).toEqual(expect.arrayContaining(['opacity-0', 'translate-y-1', 'dur-base', 'ease-out']))
+    }
+    finally {
+      vi.unstubAllGlobals()
     }
   })
 
