@@ -218,25 +218,33 @@ onBeforeUnmount(() => {
     <section
       v-if="open"
       :aria-label="t('clip.label', { name: clip.game.name })"
-      class="fixed inset-x-0 top-[calc(var(--cp-header-h)+var(--cp-bw)+10px)] layer-clip mx-auto flex w-[min(720px,calc(100%-1.75rem))] flex-col overflow-hidden rounded-[14px] border-(length:--cp-bw) border-line bg-surface shadow-card"
+      class="fixed inset-x-0 top-(--clip-top) layer-clip mx-auto flex max-h-[calc(100dvh-var(--clip-top)-10px)] w-[min(720px,calc(100%-1.75rem))] flex-col overflow-x-hidden overflow-y-auto rounded-[14px] border-(length:--cp-bw) border-line bg-surface shadow-card [--clip-bar-h:74px] [--clip-top:calc(var(--cp-header-h)_+_var(--cp-bw)_+_10px)] [--clip-video-h:calc(100dvh-var(--clip-top)-var(--clip-bar-h)-2*var(--cp-bw)-10px)]"
     >
+      <!-- Phone held sideways (#549): the video is as wide as the height left under the header allows, 16:9 kept and never lower than
+           YouTube's 200 px, so the bar below it stays on screen. --clip-bar-h is that bar: the 10 px progress line and a row of
+           44 px buttons with py-2.5. What does not fit scrolls inside the section. The sides of the narrower box are its own colour. -->
       <div
-        class="relative aspect-video bg-ink"
-        :class="{ 'grid place-items-center bg-paper-2 p-4': !showsPlayer }"
+        class="shrink-0"
+        :class="showsPlayer ? 'bg-ink' : 'bg-paper-2'"
       >
         <div
-          v-if="showsPlayer"
-          ref="stage"
-          inert
-          role="group"
-          :aria-label="t('gameEdit.playerLabel')"
-          class="pointer-events-none size-full [&_iframe]:size-full"
-        />
-        <GameCard
-          v-else
-          :game="clip.game"
-          class="w-full max-w-[420px]"
-        />
+          class="relative mx-auto aspect-video w-[min(100%,max(calc(200px*16/9),calc(var(--clip-video-h)*16/9)))] bg-ink"
+          :class="{ 'grid place-items-center bg-paper-2 p-4': !showsPlayer }"
+        >
+          <div
+            v-if="showsPlayer"
+            ref="stage"
+            inert
+            role="group"
+            :aria-label="t('gameEdit.playerLabel')"
+            class="pointer-events-none size-full [&_iframe]:size-full"
+          />
+          <GameCard
+            v-else
+            :game="clip.game"
+            class="w-full max-w-[420px]"
+          />
+        </div>
       </div>
       <div
         role="progressbar"
@@ -244,14 +252,14 @@ onBeforeUnmount(() => {
         aria-valuemin="0"
         aria-valuemax="100"
         :aria-valuenow="Math.round(progress * 100)"
-        class="h-2.5 border-y-2 border-line bg-surface"
+        class="h-2.5 shrink-0 border-y-2 border-line bg-surface"
       >
         <span
           class="block h-full bg-hot transition-[width] ease-linear"
           :style="{ width: `${progress * 100}%`, transitionDuration: `${TICK_MS}ms` }"
         />
       </div>
-      <div class="flex flex-wrap items-center gap-2 px-3 py-2.5">
+      <div class="flex shrink-0 flex-wrap items-center gap-2 px-3 py-2.5">
         <AppButton
           v-if="offersSound"
           variant="primary"
