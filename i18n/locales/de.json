@@ -969,7 +969,7 @@
     "excerpt": "Ausschnitt {from} – {to}",
     "excerptNote": "Genau so läuft der Clip in der Session: {n} s, für alle gleichzeitig, mit Ton.",
     "playerLabel": "YouTube-Vorschau des Clips",
-    "players": "Empfohlene Spielerzahl",
+    "players": "Empfohlene Spielerzahl (optional)",
     "suitabilities": "Passt zu",
     "playersFrom": "von",
     "playersTo": "bis",
