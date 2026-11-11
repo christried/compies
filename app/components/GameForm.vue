@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { ChevronRight } from '@lucide/vue'
+import { FINE_POINTER_QUERY } from '~/composables/useMediaQuery'
 import { apiErrorKey } from '~/utils/api-error'
 import { editClipField, openClipFields, type ClipField } from '~/utils/clip-fields'
 import type { PriceDraft } from '~/utils/price'
+import { isApplePlatform } from '~/utils/platform'
 import {
   CLIP_LENGTH_DEFAULT, CLIP_LENGTH_MAX, GAME_NAME_MAX, GAME_NOTES_MAX, SUITABILITIES, clipTime, gameNameProblem,
   gameNotesProblem, parseGameInput, parsePlayerCount, type GameTag,
@@ -60,6 +62,10 @@ const failure = ref<string | null>(null)
 /** What the player reported about the current link. */
 const duration = ref<number | null>(null)
 const playerFailed = ref(false)
+// The hint for Strg + Enter (#465): shown with a fine pointer only (`null` until the browser has answered, so the server render has none),
+// in the words of the platform's key.
+const finePointer = useMediaQuery(FINE_POINTER_QUERY)
+const shortcutHint = t(isApplePlatform(typeof navigator === 'undefined' ? '' : navigator.userAgent) ? 'gameEdit.saveShortcutApple' : 'gameEdit.saveShortcut')
 
 // The name rule is the shared one (gameNameProblem); the form only words it.
 const nameProblem = computed(() => gameNameProblem(name.value))
@@ -215,14 +221,32 @@ async function save(next: boolean) {
 onMounted(() => {
   if (props.focusName) nameField.value?.focus()
 })
+
+// Strg + Enter, and ⌘ + Enter on a Mac, saves from any field (#465). The capture listener on the form runs before a field's own Enter
+// (the Tag field adds its chip there) and before the browser's default (a line break in Notizen, an implicit submit). It is a click on
+// the form's save button: `save` itself saves nothing while the form is blocked or a save runs.
+function onShortcut(event: KeyboardEvent) {
+  if (event.key !== 'Enter' || !(event.ctrlKey || event.metaKey) || event.altKey || event.shiftKey || event.isComposing) return
+  event.preventDefault()
+  event.stopPropagation()
+  void save(false)
+}
 </script>
 
 <template>
+  <!-- eslint-disable-next-line vuejs-accessibility/no-static-element-interactions -- Strg + Enter saves from any field (#465) -->
   <form
     novalidate
     class="@container"
     @submit.prevent="save(false)"
+    @keydown.capture="onShortcut"
   >
+    <div
+      v-if="finePointer === true"
+      class="mb-2 flex justify-end"
+    >
+      <HintElement :text="shortcutHint" />
+    </div>
     <div class="grid grid-cols-1 items-start gap-[18px] @[640px]:grid-cols-2">
       <div class="flex min-w-0 flex-col gap-3.5">
         <TextField
