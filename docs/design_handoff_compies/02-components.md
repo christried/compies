@@ -705,7 +705,7 @@ The Note of a matrix cell on mouse hover or keyboard focus (#125).
 - **Props / variants:** `open`, `anchor: HTMLElement | null`, `name`, `image`, `value: yes | maybe | no`, `note`
 - **States:** closed · open (hover) · open (focus)
 - **Slots:** —
-- **Desktop / mobile:** `<Teleport to="body">`, `position: fixed`, `layer-sheet`: above the sticky column and the HostDock, below modals. Width `min(280px, 100vw − 24px)`. Prefers above the cell (12 px gap), flips below when there is no room; centred on the cell and clamped 12 px from the viewport edges, the arrow stays 20 px inside the box and points at the cell (`placeNotePopover`, `app/utils/note-popover.ts`). The vote chip uses the cell's fill (Nein stays `error`).
+- **Desktop / mobile:** `<Teleport to="body">`, `position: fixed`, `layer-sheet`: above the sticky column and the HostDock, below modals. Width `min(280px, 100vw − 24px)`. Prefers above the cell (12 px gap), flips below when there is no room (an 80-character Note always fits on one side, so it ignores the `maxHeight` that `placeNotePopover` returns when a box fits neither, which the game Notes popover applies, #494); centred on the cell and clamped 12 px from the viewport edges, the arrow stays 20 px inside the box and points at the cell (`placeNotePopover`, `app/utils/note-popover.ts`). The vote chip uses the cell's fill (Nein stays `error`).
 - **Accessibility:** `aria-hidden`, no role, not linked: the cell's sr-only text already says it. Pointer can move onto it (close delay 120 ms).
 - **Motion:** enter `opacity 0→1` + `y 4→0` (from below `−4→0`), `dur-fast`, `ease-out`. Reduced: fade only.
 
