@@ -48,7 +48,8 @@ export interface ShareImageCopy {
       alt: string
       altPlace: string
       gameTied: string
-      tie: { label: string, labelBoth: string, labelAll: string, alt: string, altAll: string, whoBoth: string, whoAll: string }
+      tiedLegend: string
+      tie: { each: string, label: string, labelBoth: string, labelAll: string, alt: string, altAll: string, whoBoth: string, whoAll: string }
     }
   }
   team: { defaultName: string, colors: Record<string, string> }
@@ -88,16 +89,21 @@ export interface ShareWinnerPanel {
   points: SharePoints
 }
 
-export interface ShareBand { team: number, name: string, fill: string, ink: string }
+/** A Tie's band: one Winner in its Team colour, or „+n weitere“ for the Winners beyond the fifth (surface background, no mark). */
+export type ShareTieBand
+  = | { kind: 'party', team: number, name: string, fill: string, ink: string }
+    | { kind: 'more', text: string, fill: string, ink: string }
 
 export interface ShareTiePanel {
   kind: 'tie'
   /** The tie bar's label. */
   label: string
+  /** „je“, left of the points in the bar. */
+  each: string
   points: SharePoints
-  /** Every Winner, ascending team. */
-  bands: ShareBand[]
-  /** Lilita px of every band: one constant per format for now (#511 makes it a tier by the number of Winners and the longest name). */
+  /** Up to 6 Winners one band each, ascending team; 7 or 8 the first five and „+n weitere“. */
+  bands: ShareTieBand[]
+  /** Lilita px of every band, the „+n weitere“ band included: the tier of the number of Winners and the longest Winner name (the note's table). */
   size: number
 }
 
@@ -120,9 +126,14 @@ export type ShareGameRow
   = | { kind: 'game', name: string, stripe: string[] }
     | { kind: 'more', text: string }
 
+/** The games head's legend: the stripe of the first tied game's first two Parties and „gleichauf“. */
+export interface ShareLegend { stripe: string[], text: string }
+
 export interface ShareGames {
   /** The played games: „12 Spiele“, „1 Spiel“, „0 Spiele“. */
   label: string
+  /** Null when no played game has two or more Parties on place 1; set whatever the Winner panel is, and also when that game is folded into „+n weitere“. */
+  legend: ShareLegend | null
   rows: ShareGameRow[]
 }
 
@@ -236,8 +247,28 @@ const STANDINGS_SLOTS: Record<ShareFormat, number> = { wide: 4, square: 6 }
 const GAME_SLOTS: Record<ShareFormat, number> = { wide: 6, square: 8 }
 /** A game's stripe has at most 4 colours. */
 const STRIPE_MAX = 4
-/** Lilita px of every band of a Tie panel (#511 replaces this constant with the tiers of the note's table). */
-const TIE_BAND_SIZE: Record<ShareFormat, number> = { wide: 28, square: 32 }
+/** A game with this many Parties on place 1 or more says „· n gleichauf“ after its name. */
+const GAME_TIED_SUFFIX_MIN = 5
+/** A Tie shows this many bands of Winners; 7 or 8 Winners fold the rest into „+n weitere“. */
+const TIE_BANDS_MAX = 6
+const TIE_BANDS_SHOWN_WHEN_FOLDED = 5
+/** The ink on the „+n weitere“ band (the note: #151515 on #fffdf8). */
+const MORE_BAND_INK = '#151515'
+
+/** The tier of a Tie's band font by the characters of the longest Winner name: <= 14 the first, <= 22 the second, longer the third. */
+const TIE_NAME_TIER_1_MAX = 14
+const TIE_NAME_TIER_2_MAX = 22
+/** Lilita px of the bands by the number of Winners (4 to 8 share a row) and format, tier 1 / 2 / 3. */
+const TIE_BAND_SIZES: Record<'2' | '3' | 'many', Record<ShareFormat, [number, number, number]>> = {
+  2: { wide: [72, 52, 38], square: [88, 68, 52] },
+  3: { wide: [56, 44, 34], square: [68, 56, 44] },
+  many: { wide: [36, 32, 28], square: [40, 36, 32] },
+}
+
+function tieBandSize(winners: number, longestName: number, format: ShareFormat): number {
+  const sizes = TIE_BAND_SIZES[winners === 2 ? '2' : winners === 3 ? '3' : 'many'][format]
+  return longestName <= TIE_NAME_TIER_1_MAX ? sizes[0] : longestName <= TIE_NAME_TIER_2_MAX ? sizes[1] : sizes[2]
+}
 
 // --- the model ---
 
@@ -265,6 +296,12 @@ export function shareImageModel(source: ShareImageSource, format: ShareFormat, c
   const pointsOf = { value: String(points), label: pluralCopy(text.pointsLabel, points) }
   const below = standings.filter(row => row.rank >= 2)
 
+  const tieBands = (winners: number[]): ShareTieBand[] => {
+    const party = (team: number): ShareTieBand => ({ kind: 'party', team, name: nameOf(team, false), ...teamColor(team) })
+    if (winners.length <= TIE_BANDS_MAX) return winners.map(party)
+    return [...winners.slice(0, TIE_BANDS_SHOWN_WHEN_FOLDED).map(party), { kind: 'more', text: fillCopy(text.moreGames, { n: winners.length - TIE_BANDS_SHOWN_WHEN_FOLDED }), fill: SURFACE, ink: MORE_BAND_INK }]
+  }
+
   const panel: ShareImageModel['panel'] = leaders.length === 1
     ? { kind: 'winner', label: text.winner, team: first, ...teamColor(first), name: winnerName(nameOf(first, false), format), points: pointsOf }
     : {
@@ -272,9 +309,11 @@ export function shareImageModel(source: ShareImageSource, format: ShareFormat, c
         label: below.length > 0
           ? fillCopy(text.tie.label, { k: leaders.length })
           : leaders.length === 2 ? text.tie.labelBoth : fillCopy(text.tie.labelAll, { k: leaders.length }),
+        each: text.tie.each,
         points: pointsOf,
-        bands: leaders.map(team => ({ team, name: nameOf(team, false), ...teamColor(team) })),
-        size: TIE_BAND_SIZE[format],
+        bands: tieBands(leaders),
+        // The longest drawn name of all Winners counts, also of those folded into „+n weitere“.
+        size: tieBandSize(leaders.length, Math.max(...leaders.map(team => characterCount(nameOf(team, false)))), format),
       }
 
   const partyRows: ShareStandingsRow[] = below.map(row => ({ kind: 'party', rank: row.rank, team: row.team, name: nameOf(row.team, false), points: row.points, ...teamColor(row.team) }))
@@ -284,9 +323,17 @@ export function shareImageModel(source: ShareImageSource, format: ShareFormat, c
     : [...partyRows.slice(0, slots - 2), { kind: 'more', text: fillCopy(text.moreParties, { n: partyRows.length - slots + 1 }) }, partyRows.at(-1)!]
 
   const results = [...source.results].sort((a, b) => a.number - b.number)
+  // The legend shows when any played game has two or more Parties on place 1, whichever row it ends up in (it may be folded into „+n weitere“).
+  let legend: ShareLegend | null = null
   const gameRows: ShareGameRow[] = results.map((result) => {
     const teams = result.places.filter(place => place.place === 1).map(place => place.team).sort((a, b) => a - b)
-    return { kind: 'game', name: drawable(result.game.name), stripe: teams.length === 0 ? [SURFACE] : teams.slice(0, STRIPE_MAX).map(team => teamColor(team).fill) }
+    if (teams.length >= 2 && legend === null) legend = { stripe: teams.slice(0, 2).map(team => teamColor(team).fill), text: text.tiedLegend }
+    const name = drawable(result.game.name)
+    return {
+      kind: 'game',
+      name: teams.length >= GAME_TIED_SUFFIX_MIN ? `${name} ${fillCopy(text.gameTied, { n: teams.length })}` : name,
+      stripe: teams.length === 0 ? [SURFACE] : teams.slice(0, STRIPE_MAX).map(team => teamColor(team).fill),
+    }
   })
   const gameSlots = GAME_SLOTS[format]
   const shownGames: ShareGameRow[] = gameRows.length <= gameSlots
@@ -313,7 +360,7 @@ export function shareImageModel(source: ShareImageSource, format: ShareFormat, c
     header: { brand: text.brand, event: eventName(drawable(source.event.name), format), dates: dateText(source.sessions, text) },
     panel,
     standings: below.length === 0 ? null : { title: text.standings, count: fillCopy(text.parties, { n: standings.length }), rows: shownRows },
-    games: { label: fillCopy(pluralCopy(text.games, results.length), { n: results.length }), rows: shownGames },
+    games: { label: fillCopy(pluralCopy(text.games, results.length), { n: results.length }), legend, rows: shownGames },
     alt,
   }
 }

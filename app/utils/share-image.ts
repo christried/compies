@@ -34,7 +34,9 @@ export function shareImageCopy(t: Translate): ShareImageCopy {
         alt: keep('share.image.alt', 'winner', 'event', 'points'),
         altPlace: keep('share.image.altPlace', 'rank', 'name'),
         gameTied: keep('share.image.gameTied', 'n'),
+        tiedLegend: t('share.image.tiedLegend'),
         tie: {
+          each: t('share.image.tie.each'),
           label: keep('share.image.tie.label', 'k'),
           labelBoth: t('share.image.tie.labelBoth'),
           labelAll: keep('share.image.tie.labelAll', 'k'),
