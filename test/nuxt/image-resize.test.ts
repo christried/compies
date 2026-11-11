@@ -42,6 +42,14 @@ describe('toCardWebp with a crop (#457)', () => {
     expect(drawImage).toHaveBeenCalledWith(expect.anything(), 200, 0, 1600, 1000, 0, 0, 512, 320)
   })
 
+  it('draws the zoomed window: at zoom 2 the centre quarter-size rectangle of a wide picture (#516)', async () => {
+    const { drawImage } = stubBrowser()
+
+    await toCardWebp(file, { x: 0, y: 0, zoom: 2 })
+
+    expect(drawImage).toHaveBeenCalledWith(expect.anything(), 600, 250, 800, 500, 0, 0, 512, 320)
+  })
+
   it('refuses a browser that answers with something other than WebP', async () => {
     stubBrowser('image/png')
 

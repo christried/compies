@@ -15,6 +15,7 @@ Common rules for every component:
 - [`AppButton`](#appbutton) [MVP]
 - [`IconButton`](#iconbutton) [MVP]
 - [`HintElement`](#hintelement) [0.13.1]
+- [`RangeSlider`](#rangeslider) [0.13.1]
 - [`HoldToConfirmButton`](#holdtoconfirmbutton) [MVP]
 - [`TextField`](#textfield) [MVP]
 - [`DateTimeField`](#datetimefield) [MVP]
@@ -230,6 +231,19 @@ Teams, team size, number of games, points per place.
 - **Desktop / mobile:** Same; buttons 44 px.
 - **Accessibility:** Value in `<output>` + `role="spinbutton"` semantics (arrow up/down).
 - **Motion:** value tick `animate-tick`.
+
+## RangeSlider
+**Scope:** [0.13.1] · **Ref:** none, own build on the native range input (#516)
+
+A value between a minimum and a maximum, with a label and a value text. First used by the game form's image crop: the zoom from „Passt“ to 3× under the tile (#516). Built so another form could use it.
+
+- **Props / variants:** `v-model` (a number), `min`, `max`, `step=1`, `label` (visible, and the accessible name), `valueText` (visible, and `aria-valuetext`), `disabled?`. Emits `change` with the number, forwarding the native change.
+- **States:** default · focus (the 3 px focus ring on the input) · disabled (the native attribute, muted to 60 % opacity; the caller says why)
+- **Slots:** —
+- **Desktop / mobile:** The same at every width; the caller sets the width (the game form: `w-full`, at most 240 px). The input is 44 px high.
+- **Accessibility:** a native `input[type=range]` named by its `<label>`, with no `tabindex`: the arrow keys, Home and End are the browser's. The value text is its `aria-valuetext`.
+- **Tokens:** the track is `paper-2` on a 2 px `line` border, 10 px high; the thumb is `primary` on a 3 px `line` border, 18 px. Both switch with the Appearance (Hell and Dunkel) through the tokens, no colour literal.
+- **Motion:** none.
 
 ## TabBar
 **Scope:** [1.0] · **Ref:** DS Frame, AppFrame
