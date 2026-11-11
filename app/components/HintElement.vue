@@ -3,8 +3,9 @@ import { CircleHelp } from '@lucide/vue'
 import { placeNotePopover } from '~/utils/note-popover'
 
 // The hint element (#515, 02-components § HintElement): a small round „?“ that opens a popover with a short text or its slot. A click
-// toggles it; Esc, a press outside, a scroll that would move the popover away from its button and a resize close it, and the focus goes
-// back to the button. A popover at every width (no sheet: the text is short), in the look and on the layer of the Notes popover
+// toggles it; Esc, a press outside, a scroll that would move the popover away from its button and a resize close it. Esc and a press
+// outside return the focus to the button; a scroll or a resize leave it where it was, so the field the Host types in keeps it and the
+// page does not jump to the „?“ (#573). A popover at every width (no sheet: the text is short), in the look and on the layer of the Notes popover
 // (GameNotesButton), placed by placeNotePopover so it stays inside the window (#494). One root element, so the caller's class (where it
 // sits, on which pointers it shows: #465) lands on it.
 const props = withDefaults(defineProps<{
@@ -36,9 +37,9 @@ function place() {
   placed.value = { top, left, maxHeight }
 }
 
-function close() {
+function close(returnFocus = true) {
   open.value = false
-  trigger.value?.$el.focus()
+  if (returnFocus) trigger.value?.$el.focus()
 }
 
 // The focus stays on the button: the popover holds no control.
@@ -71,11 +72,11 @@ function onDocumentPointerDown(event: PointerEvent) {
 function onScroll(event: Event) {
   if (!open.value) return
   if (popover.value?.contains(event.target as Node)) return
-  close()
+  close(false)
 }
 
 function onResize() {
-  if (open.value) close()
+  if (open.value) close(false)
 }
 
 onMounted(() => {

@@ -213,7 +213,7 @@ describe('zoom (#516)', () => {
     expect(crop).toEqual({ x: 1, y: 0, zoom: 2 })
   })
 
-  // The orchestrator's rule (brief § 8.1): a zoom change goes through zoomCrop, so an axis without room at the new zoom reads 0.
+  // A zoom change goes through `zoomCrop`, so an axis without room at the new zoom reads 0.
   it('keeps an offset on an axis that still has room when the zoom changes, and zeroes one that has lost its room', () => {
     expect(zoomCrop(WIDE, { x: 0.3, y: 0.5, zoom: 2 }, 1)).toEqual({ x: 0.3, y: 0, zoom: 1 })
     expect(zoomCrop(WIDE, { x: 0.3, y: 0 }, 2.04)).toEqual({ x: 0.3, y: 0, zoom: 2 })

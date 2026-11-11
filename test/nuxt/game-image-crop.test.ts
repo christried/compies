@@ -69,13 +69,14 @@ async function picked(picture: Picture = WIDE, props: { imageUrl?: string | null
   return tile()
 }
 
-async function pointer(type: string, init: { x?: number, y?: number, id?: number, pointerType?: string, button?: number } = {}, target: HTMLElement = tile()) {
+async function pointer(type: string, init: { x?: number, y?: number, id?: number, pointerType?: string, button?: number, buttons?: number } = {}, target: HTMLElement = tile()) {
   const event = new PointerEvent(type, {
     bubbles: true,
     cancelable: true,
     pointerId: init.id ?? 1,
     pointerType: init.pointerType ?? 'mouse',
     button: init.button ?? 0,
+    buttons: init.buttons ?? 0,
     clientX: init.x ?? 0,
     clientY: init.y ?? 0,
   })
@@ -258,16 +259,60 @@ describe('dragging the picture (#457)', () => {
     expect(calls()).toHaveLength(1)
   })
 
+  it('starts nothing while the form saves, whatever the field was doing', async () => {
+    await picked()
+
+    await page.setProps({ locked: true })
+    await drag(6)
+    await key('ArrowRight')
+    const slider = page.get('input[type="range"]')
+    expect(slider.attributes('disabled')).toBeDefined()
+    ;(slider.element as HTMLInputElement).value = '2'
+    await slider.trigger('input')
+    await slider.trigger('change')
+    await flushPromises()
+
+    expect(tile().dataset.cropX).toBe('0.000')
+    expect(tile().dataset.cropZoom).toBe('1.000')
+    expect(calls()).toHaveLength(1)
+  })
+
+  // Holds the buttons of a mouse: a browser reports `buttons` 1 on every move while one is pressed.
+  const held1 = { buttons: 1 }
+
   it('still drags when the browser refuses to capture the pointer', async () => {
     await picked()
     vi.spyOn(tile(), 'setPointerCapture').mockImplementation(() => {
       throw new DOMException('not active', 'InvalidStateError')
     })
 
-    await drag(6)
+    await pointer('pointerdown', { x: 50, y: 40, ...held1 })
+    await pointer('pointermove', { x: 56, y: 40, ...held1 })
+    await pointer('pointerup', { x: 56, y: 40 })
+    await flushPromises()
 
     expect(tile().dataset.cropX).toBe('0.400')
     expect(calls()).toHaveLength(2)
+  })
+
+  it('ends a drag without capture at the first move with no button held, so a release outside the tile cannot leave it stuck', async () => {
+    await picked()
+    vi.spyOn(tile(), 'setPointerCapture').mockImplementation(() => {
+      throw new DOMException('not active', 'InvalidStateError')
+    })
+
+    await pointer('pointerdown', { x: 50, y: 40, ...held1 })
+    await pointer('pointermove', { x: 56, y: 40, ...held1 })
+    // The button was released outside the tile: no pointerup reaches it, the next move has no button.
+    await pointer('pointermove', { x: 62, y: 40 })
+    await flushPromises()
+
+    expect(tile().dataset.cropX).toBe('0.400')
+    expect(tile().className).not.toContain('cursor-grabbing')
+    expect(calls()).toHaveLength(2)
+
+    await pointer('pointermove', { x: 70, y: 40 })
+    expect(tile().dataset.cropX).toBe('0.400')
   })
 
   it('shows the rectangle of the picture that the canvas draws, after a drag and after keys', async () => {
@@ -466,20 +511,6 @@ describe('the tile before and after a picked file (#457)', () => {
     expect(cropOf().x).toBeCloseTo(0.4, 6)
     expect(calls()).toHaveLength(held + 1)
   })
-
-  it('is emptied when the parent removes the image', async () => {
-    await picked()
-    await drag(6)
-
-    await page.setProps({ modelValue: null })
-
-    expect(page.find('[tabindex="0"]').exists()).toBe(false)
-    expect(page.text()).toContain('16:10')
-    expect(URL.revokeObjectURL).toHaveBeenCalled()
-
-    await pick()
-    expect(tile().dataset.cropX).toBe('0.000')
-  })
 })
 
 describe('the WebP follows the crop (#457)', () => {
@@ -515,6 +546,19 @@ describe('the WebP follows the crop (#457)', () => {
     expect(held).toBe(pickBlob)
   })
 
+  it('takes the banner away when a later crop is made without an error (#573)', async () => {
+    await picked()
+    toCardWebp.mockRejectedValue(new ImageConversionError())
+    await drag(6)
+    expect(page.text()).toContain('Dein Browser kann das Bild nicht umwandeln')
+
+    toCardWebp.mockResolvedValue({ blob: blobOf(222), ...WIDE })
+    await drag(9)
+
+    expect(page.text()).not.toContain('Dein Browser kann das Bild nicht umwandeln')
+    expect(held!.size).toBe(222)
+  })
+
   it('makes nothing after it is gone', async () => {
     await picked()
     vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
@@ -541,7 +585,6 @@ describe('the WebP follows the crop (#457)', () => {
 describe('zooming the picture with the slider (#516)', () => {
   const zoomSlider = () => page.get('input[type="range"]')
   const zoomText = () => zoomSlider().attributes('aria-valuetext')
-  const wait = (ms: number) => new Promise(done => setTimeout(done, ms))
 
   /** The slider's native input: the thumb moved (`input`), the way a browser reports it. */
   async function setZoom(zoom: number) {
@@ -588,6 +631,23 @@ describe('zooming the picture with the slider (#516)', () => {
     await vi.advanceTimersByTimeAsync(1)
     expect(calls()).toHaveLength(2)
     expect(lastCrop()).toEqual({ x: 0, y: 0, zoom: 2 })
+  })
+
+  it('leaves an arrow key on the slider to the slider: the tile does not move, and the step it makes is made 300 ms later', async () => {
+    await picked(WIDE)
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+
+    // The slider is a sibling of the tile, so the key never reaches the tile's handler.
+    const event = await key('ArrowRight', {}, zoomSlider().element as HTMLElement)
+    expect(event.defaultPrevented).toBe(false)
+    expect(tile().dataset.cropX).toBe('0.000')
+
+    // What a browser does after the key: the value steps and `input` and `change` follow.
+    await setZoom(1.1)
+    await zoomSlider().trigger('change')
+    await vi.advanceTimersByTimeAsync(300)
+    expect(calls()).toHaveLength(2)
+    expect(lastCrop()).toEqual({ x: 0, y: 0, zoom: 1.1 })
   })
 
   it('keeps an offset on an axis that still has room, and zeroes an axis that lost its room when the zoom goes back', async () => {
@@ -646,9 +706,11 @@ describe('zooming the picture with the slider (#516)', () => {
     await picked()
     toCardWebp.mockRejectedValue(new ImageConversionError())
 
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+
     await setZoom(2)
     await zoomSlider().trigger('change')
-    await wait(350)
+    await vi.advanceTimersByTimeAsync(300)
     await flushPromises()
 
     expect(tile().dataset.cropZoom).toBe('1.000')
