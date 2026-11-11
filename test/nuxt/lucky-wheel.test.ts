@@ -109,7 +109,7 @@ describe('the wheel at rest', () => {
     expect(page!.get('[role="img"]').attributes('aria-label')).toBe('Glücksrad mit 1 Spiel')
     expect(text()).not.toContain('1 Spiel auf dem Rad')
     expect(text()).not.toContain('1 Spiele')
-    expect(page!.get('[data-testid="wheel-slice"]').attributes('fill')).toBe('var(--cp-primary)')
+    expect(page!.get('[data-testid="wheel-slice"]').attributes('fill')).toBe('#ffd23f')
   })
 
   it('names two games in the plural, with no count line (#263, #354)', async () => {
@@ -142,7 +142,7 @@ describe('the wheel at rest', () => {
 
     const fills = page!.findAll('[data-testid="wheel-slice"]').map((slice: DOMWrapper<Element>) => slice.attributes('fill'))
     expect(fills).toHaveLength(5)
-    expect(fills[4]).toBe('var(--cp-surface-2)')
+    expect(fills[4]).toBe('#fff9ef')
   })
 
   it('cuts a long name at 22 characters as the User sees them, so an emoji is never torn in two (F19)', async () => {
