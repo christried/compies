@@ -4,13 +4,14 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import VetoWindow from '~/components/VetoWindow.vue'
 import type { BoardTeam } from '~~/shared/event'
 import type { SpinView, VetoDrawView, VetoView, WheelView } from '~~/shared/stage'
-import { WINDOW_MS } from '../draw-offsets'
+import { windowMsFor } from '../draw-offsets'
 
 // The Veto window on the stage (#231, 02-components § VetoWindow): the time left from the server's clock, every Party's Vetoes left
 // before the end, and at the end the tiles with the Parties that vetoed (never the Player, #355), then what happens to the game.
 
 const STOP = Date.parse('2090-10-30T20:00:10.000Z')
-const END = STOP + WINDOW_MS
+// A game with the default 30 s clip: its window lasts a minute (#505).
+const END = STOP + windowMsFor(30)
 const iso = (ms: number) => new Date(ms).toISOString()
 const halo = { id: 'g1', name: 'Halo', imageUrl: null, youtubeId: null, clipStart: 0, clipLength: 30, playersMin: 2, playersMax: 4, suitabilities: [], price: null }
 const teams = [{ position: 1, name: null }, { position: 2, name: null }]
@@ -54,7 +55,7 @@ describe('the Veto window', () => {
     await mount(wheelOf({ left: [2, 1], own: { team: 1, cast: false, rejection: null }, revealed: null }))
 
     expect(text()).toContain('Veto-Fenster')
-    expect(page!.get('[role="timer"]').text()).toBe('Noch 45 Sekunden')
+    expect(page!.get('[role="timer"]').text()).toBe('Noch 0:45')
     const tiles = page!.findAll('[data-testid="veto-tile"]').map((tile: { text: () => string }) => tile.text().replace(/\s+/g, ' '))
     expect(tiles).toHaveLength(2)
     expect(tiles[0]).toContain('Noch 2 Vetos')
@@ -67,15 +68,61 @@ describe('the Veto window', () => {
     serverMs = STOP + 90_000
     await mount(wheelOf({ left: [2, 1], own: null, revealed: null }, { vetoEndsAt: iso(STOP + 150_000) }))
 
-    expect(page!.get('[role="timer"]').text()).toBe('Noch 60 Sekunden')
+    expect(page!.get('[role="timer"]').text()).toBe('Noch 1:00')
     expect(page!.get('.origin-left.bg-hot').attributes('style')).toContain('scaleX(0.4)')
   })
 
-  it('says "Noch 1 Sekunde" for the last second (F9)', async () => {
+  // #505: the window lasts the clip plus 30 s, up to 150 s, and the clock counts in m:ss.
+  it('shows a window of 150 s as "Noch 2:30" and counts down in m:ss', async () => {
+    const long = { vetoEndsAt: iso(STOP + 150_000) }
+    const wheel = wheelOf({ left: [2, 1], own: null, revealed: null }, long)
+    serverMs = STOP
+    await mount(wheel)
+    expect(page!.get('[role="timer"]').text()).toBe('Noch 2:30')
+    page!.unmount()
+
+    serverMs = STOP + 90_000
+    await mount(wheel)
+    expect(page!.get('[role="timer"]').text()).toBe('Noch 1:00')
+    page!.unmount()
+
+    serverMs = STOP + 91_000
+    await mount(wheel)
+    expect(page!.get('[role="timer"]').text()).toBe('Noch 0:59')
+    page!.unmount()
+
+    serverMs = STOP + 149_000
+    await mount(wheel)
+    expect(page!.get('[role="timer"]').text()).toBe('Noch 0:01')
+  })
+
+  it('turns the clock red from 0:10 on, and not at 0:11', async () => {
+    const wheel = wheelOf({ left: [2, 1], own: null, revealed: null })
+    serverMs = END - 11_000
+    await mount(wheel)
+    expect(page!.get('[role="timer"]').text()).toBe('Noch 0:11')
+    expect(page!.get('[role="timer"]').classes()).not.toContain('text-error-fg')
+    page!.unmount()
+
+    serverMs = END - 10_000
+    await mount(wheel)
+    expect(page!.get('[role="timer"]').text()).toBe('Noch 0:10')
+    expect(page!.get('[role="timer"]').classes()).toContain('text-error-fg')
+  })
+
+  it('shows no window to a Member before the stop, when the read carries no end yet (#505)', async () => {
+    serverMs = STOP - 3000
+    await mount(wheelOf({ left: [2, 1], own: null, revealed: null }, { vetoEndsAt: null, game: null }))
+
+    expect(page!.find('[role="timer"]').exists()).toBe(false)
+    expect(page!.find('section').exists()).toBe(false)
+  })
+
+  it('reads "Noch 0:01" for the last second (F9)', async () => {
     serverMs = END - 1000
     await mount(wheelOf({ left: [2, 1], own: null, revealed: null }))
 
-    expect(page!.get('[role="timer"]').text()).toBe('Noch 1 Sekunde')
+    expect(page!.get('[role="timer"]').text()).toBe('Noch 0:01')
   })
 
   it('names its game with a card, for a spin and for a game the Host set (F6)', async () => {
@@ -160,7 +207,7 @@ describe('the Veto window', () => {
     const wheel: WheelView = { ...wheelOf({ left: [2, 2], own: { team: 1, cast: false, rejection: null }, revealed: null }, { kind: 'set' }), spin: null }
     await mount(wheel)
 
-    expect(page!.get('[role="timer"]').text()).toBe('Noch 40 Sekunden')
+    expect(page!.get('[role="timer"]').text()).toBe('Noch 0:40')
     // The set game has no card on the wheel, so the window names it (F6).
     expect(page!.text()).toContain('Halo')
   })

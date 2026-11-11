@@ -82,14 +82,16 @@ export interface VetoView {
 
 /**
  * The draw a Veto window belongs to (#232). `stopAt` is where the window opens (the wheel's stop for a `spin`, the set instant for a
- * `set`, so everybody sees a set game at once) and `vetoEndsAt` where it ends (ISO). `game` is the drawn or set game's card: the
- * Host's always, everybody else's from `stopAt` on; a set draw reveals only that game (Hidden wheel, story 54).
+ * `set`, so everybody sees a set game at once) and `vetoEndsAt` where it ends (ISO): the drawn game's clip length plus 30 s after the
+ * stop (#505), so first sent with the read that follows the stop, as the game is (null for a Member before it; the Host's always).
+ * `game` is the drawn or set game's card: the Host's always, everybody else's from `stopAt` on; a set draw reveals only that game
+ * (Hidden wheel, story 54).
  */
 export interface VetoDrawView {
   drawId: string
   kind: 'spin' | 'set'
   stopAt: string
-  vetoEndsAt: string
+  vetoEndsAt: string | null
   game: RoundGame | null
 }
 
