@@ -15,4 +15,4 @@ Redact any sensitive information, such as API keys, passwords, or personally ide
 
 If the user passed arguments, treat them as a description of what the next session will focus on and tailor the doc accordingly.
 
-**COMPIES:** a handoff written while subagents run names each of them, as `docs/agents/subagents.md` § Supervision says.
+**COMPIES:** when `/handoff` is called while subagents run, the orchestrator pulls them back first: each one stops, commits and pushes what it has to its branch, and replies with the branch, the head commit, what is done and what is left. The handoff is written once, after every reply, with one row per subagent; a silent one is recorded as silent, with its worktree path. The rules and the operator's override are in `docs/agents/subagents.md` § Supervision.
