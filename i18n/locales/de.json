@@ -945,6 +945,8 @@
     "imageChange": "Anderes Bild wählen",
     "imageRatio": "16:10",
     "imagePreviewAlt": "Vorschau des Bildes",
+    "imageCrop": "Bildausschnitt wählen",
+    "imageCropHelp": "Zieh das Bild, um den Ausschnitt zu wählen, oder verschieb es mit den Pfeiltasten.",
     "imageConverting": "Wird zugeschnitten …",
     "imageUploading": "Lädt hoch …",
     "imageConvertFailed": "Dein Browser kann das Bild nicht umwandeln. Probier’s mit Chrome oder Firefox.",

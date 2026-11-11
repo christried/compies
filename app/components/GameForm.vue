@@ -35,6 +35,7 @@ const { tagsInUse } = useTagsInUse()
 
 /** The cropped WebP waiting to be uploaded after the game is saved (#143). */
 const image = ref<Blob | null>(null)
+const imageField = useTemplateRef('imageField')
 const uploadingImage = ref(false)
 
 const name = ref(props.game?.name ?? '')
@@ -195,6 +196,8 @@ async function save(next: boolean) {
   failure.value = null
   const body = draft.value
   try {
+    // The WebP of a crop still being made is waited for, so the upload matches the tile (#457).
+    await imageField.value?.settle()
     // An image picked while editing is uploaded too, once the game has been saved (#143).
     const game = props.game
       ? await $fetch<GameView>(`/api/games/${props.game.id}`, { method: 'PATCH', body })
@@ -233,6 +236,7 @@ onMounted(() => {
           :maxlength="GAME_NAME_MAX"
         />
         <GameImageField
+          ref="imageField"
           v-model="image"
           :image-url="game?.imageUrl"
           :uploading="uploadingImage"
