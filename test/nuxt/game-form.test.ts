@@ -49,10 +49,13 @@ registerEndpoint('/api/games', {
 const posted = vi.fn()
 const patchedWith = vi.fn()
 let failWith: string | null = null
+// A test that holds a save (#456) sets this: the POST waits for it before it answers.
+let holdPost: Promise<void> | null = null
 registerEndpoint('/api/games', {
   method: 'POST',
   handler: async (event) => {
     posted(await readBody(event))
+    if (holdPost) await holdPost
     if (failWith) throw createError({ statusCode: 400, statusMessage: failWith })
     return saved
   },
@@ -1197,5 +1200,131 @@ describe('the game form', () => {
 
     await vi.waitFor(() => expect(page.get('[role="alert"]').text()).toBe('Der Clip passt nicht: Die Länge liegt zwischen 10 und 120 Sekunden.'))
     expect(page.emitted('saved')).toBeUndefined()
+  })
+
+  describe('Speichern und noch eins (#456)', () => {
+    beforeEach(() => {
+      holdPost = null
+    })
+
+    function saveAndNextButton(page: Page) {
+      return page.findAll('button').find(button => button.text().trim() === 'Speichern und noch eins')
+    }
+
+    it('shows „Speichern und noch eins“ after the create button, as a button that does not submit', async () => {
+      const page = await mountSuspended(GameForm, { props: { saveAndNext: true } })
+
+      const buttons = page.findAll('button')
+      const next = buttons.findIndex(button => button.text().trim() === 'Speichern und noch eins')
+      const primary = buttons.findIndex(button => button.attributes('type') === 'submit')
+      expect(buttons[next]!.attributes('type')).toBe('button')
+      expect(next).toBe(primary + 1)
+    })
+
+    it('is absent on edit, even when the form is asked for it', async () => {
+      const page = await mountSuspended(GameForm, { props: { game: saved, saveAndNext: true } })
+
+      expect(saveAndNextButton(page)).toBeUndefined()
+    })
+
+    it('is absent where the form is not asked for it, as in the stepper\'s sheet', async () => {
+      const page = await mountSuspended(GameForm)
+
+      expect(saveAndNextButton(page)).toBeUndefined()
+    })
+
+    it('saves with it and emits savedAndNext with the game, never saved', async () => {
+      const page = await mountSuspended(GameForm, { props: { saveAndNext: true } })
+      await field(page, 'Name').setValue('Mario Kart')
+
+      await saveAndNextButton(page)!.trigger('click')
+
+      await vi.waitFor(() => expect(page.emitted('savedAndNext')).toEqual([[saved]]))
+      expect(page.emitted('saved')).toBeUndefined()
+      expect(posted).toHaveBeenCalledTimes(1)
+      expect(posted).toHaveBeenCalledWith(expect.objectContaining({ name: 'Mario Kart' }))
+    })
+
+    it('emits saved with the game for „Spiel anlegen“, never savedAndNext', async () => {
+      const page = await mountSuspended(GameForm, { props: { saveAndNext: true } })
+      await field(page, 'Name').setValue('Mario Kart')
+
+      expect(cta(page).text()).toContain('Spiel anlegen')
+      // „Spiel anlegen“ is the form's submit button; the form is submitted as the other form tests do.
+      await page.get('form').trigger('submit')
+
+      await vi.waitFor(() => expect(page.emitted('saved')).toEqual([[saved]]))
+      expect(page.emitted('savedAndNext')).toBeUndefined()
+    })
+
+    it('saves as „Spiel anlegen“ on Enter in a field, not as the new button', async () => {
+      const page = await mountSuspended(GameForm, { props: { saveAndNext: true } })
+      await field(page, 'Name').setValue('Mario Kart')
+
+      await page.get('form').trigger('submit')
+
+      await vi.waitFor(() => expect(page.emitted('saved')).toEqual([[saved]]))
+      expect(page.emitted('savedAndNext')).toBeUndefined()
+    })
+
+    it('keeps every field and shows the server\'s reason when the save fails', async () => {
+      failWith = 'invalid_clip'
+      const page = await mountSuspended(GameForm, { props: { saveAndNext: true } })
+      await field(page, 'Name').setValue('Mario Kart')
+      await field(page, 'YouTube-Link').setValue(LINK)
+
+      await saveAndNextButton(page)!.trigger('click')
+
+      await vi.waitFor(() => expect(page.get('[role="alert"]').text()).toBe('Der Clip passt nicht: Die Länge liegt zwischen 10 und 120 Sekunden.'))
+      expect((field(page, 'Name').element as HTMLInputElement).value).toBe('Mario Kart')
+      expect((field(page, 'YouTube-Link').element as HTMLInputElement).value).toBe(LINK)
+      expect(page.emitted('savedAndNext')).toBeUndefined()
+    })
+
+    it('blocks with the name message and sends nothing while the name is empty, both buttons aria-disabled', async () => {
+      const page = await mountSuspended(GameForm, { props: { saveAndNext: true } })
+
+      await saveAndNextButton(page)!.trigger('click')
+
+      expect(posted).not.toHaveBeenCalled()
+      expect(page.text()).toContain('Gib dem Spiel einen Namen.')
+      expect(saveAndNextButton(page)!.attributes('aria-disabled')).toBe('true')
+      expect(cta(page).attributes('aria-disabled')).toBe('true')
+    })
+
+    it('does not send twice while a save runs, and shows both buttons as disabled meanwhile', async () => {
+      let release = () => {}
+      holdPost = new Promise<void>((resolve) => {
+        release = resolve
+      })
+      const page = await mountSuspended(GameForm, { props: { saveAndNext: true } })
+      await field(page, 'Name').setValue('Mario Kart')
+
+      await saveAndNextButton(page)!.trigger('click')
+      await saveAndNextButton(page)!.trigger('click')
+
+      await vi.waitFor(() => expect(posted).toHaveBeenCalledTimes(1))
+      expect(saveAndNextButton(page)!.attributes('aria-disabled')).toBe('true')
+      expect(cta(page).attributes('aria-disabled')).toBe('true')
+      expect(cta(page).text()).toContain('Speichert …')
+
+      release()
+      await vi.waitFor(() => expect(page.emitted('savedAndNext')).toEqual([[saved]]))
+      expect(posted).toHaveBeenCalledTimes(1)
+    })
+
+    it('takes the focus on the name when it mounts with focusName', async () => {
+      const page = await mountSuspended(GameForm, { props: { saveAndNext: true, focusName: true }, attachTo: document.body })
+
+      expect(document.activeElement).toBe(field(page, 'Name').element)
+      page.unmount()
+    })
+
+    it('does not take the focus on the name without focusName', async () => {
+      const page = await mountSuspended(GameForm, { props: { saveAndNext: true }, attachTo: document.body })
+
+      expect(document.activeElement).not.toBe(field(page, 'Name').element)
+      page.unmount()
+    })
   })
 })
