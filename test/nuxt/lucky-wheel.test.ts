@@ -3,8 +3,9 @@ import { flushPromises } from '@vue/test-utils'
 import type { DOMWrapper } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import LuckyWheel from '~/components/LuckyWheel.vue'
-import { GAME_NAME_MAX, type RoundGame } from '~~/shared/game'
+import { GAME_NAME_MAX, type HostGameFacts, type RoundGame } from '~~/shared/game'
 import type { SpinView, WheelView } from '~~/shared/stage'
+import { kitty, signInAs } from './auth'
 import { stubInView } from './in-view'
 
 // The Lucky Wheel (#229, 02-components § LuckyWheel, 04-motion § Lucky Wheel): its rotation toward a fixed stop instant at a given
@@ -34,7 +35,7 @@ let serverMs = START - 1000
 const serverNow = vi.fn(() => serverMs)
 let page: Awaited<ReturnType<typeof mountSuspended>> | undefined
 
-async function mount(wheel: WheelView, props: { hidden?: boolean, isHost?: boolean } = {}) {
+async function mount(wheel: WheelView, props: { hidden?: boolean, isHost?: boolean, hostGames?: Record<string, HostGameFacts> | null } = {}) {
   page = await mountSuspended(LuckyWheel, { props: { wheel, hidden: false, isHost: false, serverNow, ...props } })
   await flushPromises()
   return page
@@ -289,14 +290,17 @@ describe('the result', () => {
     expect(page!.get('[role="status"]').text()).toBe('')
   })
 
-  it('shows the Price line of the drawn game on its result card, and none for a game without a Price (#338)', async () => {
-    // The card reads the year of „Stand“ once, at mount: the clock is pinned to 2026 so the line has no year (the spin itself is in 2090).
+  it('shows the drawn game on its result card as a tile, cover and name, and no Price line (#435, was #338)', async () => {
+    // The clock is pinned so that a Price line would carry „Stand 3. Nov.“: the tile must not show it (the spin itself is in 2090).
     vi.setSystemTime(new Date('2026-11-09T12:00:00.000Z'))
     const priced: RoundGame = { ...halo, price: { cents: 1999, source: 'steam', checkedAt: '2026-11-03T10:00:00.000Z' } }
     await mount(wheelOf(spinOf({ game: priced })))
     await at(STOP)
     expect(text()).toContain('Das Glücksrad sagt')
-    expect(text()).toContain('19,99 € bei Steam · Stand 3. Nov.')
+    expect(page!.get('[data-cover]').attributes('data-cover')).toBe('placeholder')
+    expect(text()).toContain('Halo')
+    expect(text()).not.toContain('19,99 €')
+    expect(text()).not.toContain('Stand')
     page!.unmount()
 
     await mount(wheelOf(spinOf({ game: halo })))
@@ -363,5 +367,64 @@ describe('a Hidden wheel', () => {
     await at(START + 3000)
 
     for (const name of ['Halo', 'Kart', 'Pong', 'Schach']) expect(text()).toContain(name)
+  })
+})
+
+// The game dialog from the drawn game's tile (#443, #444): the Host's has the Tags and Notes from `hostGames`; a Member's has the facts and never those.
+describe('the drawn game\'s tile and its dialog (#443, #444)', () => {
+  const hostGames = { 'g-halo': { tags: [{ key: 'koop', label: 'Koop' }, { key: 'retro', label: 'Retro' }], notes: 'Hausregel: keine Raketen' } }
+  const dialog = () => document.querySelector('[role="dialog"]') as HTMLElement | null
+
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    // The link to the library entry is for a Host who may see the library.
+    signInAs({ ...kitty, canHost: true })
+  })
+
+  it('opens the dialog of „Zuletzt gezogen“ for the Host with the game\'s Tags and Notes', async () => {
+    await mount(wheelOf(spinOf({ game: halo })), { isHost: true, hostGames })
+    await at(STOP + 100)
+
+    const tile = page!.get('button[aria-haspopup="dialog"]')
+    expect(tile.text()).toBe('Halo')
+    await tile.trigger('click')
+    await flushPromises()
+
+    expect(dialog()!.querySelector('h2')?.textContent).toBe('Halo')
+    expect(dialog()!.textContent).toContain('Koop')
+    expect(dialog()!.textContent).toContain('Retro')
+    expect(dialog()!.textContent).toContain('Hausregel: keine Raketen')
+    expect(dialog()!.querySelector('a')?.getAttribute('href')).toBe('/bibliothek/g-halo')
+  })
+
+  it('opens the dialog of a game whose facts are missing, without Tags and Notes', async () => {
+    await mount(wheelOf(spinOf({ game: halo })), { isHost: true })
+    await at(STOP + 100)
+
+    await page!.get('button[aria-haspopup="dialog"]').trigger('click')
+    await flushPromises()
+
+    expect(dialog()!.querySelector('h2')?.textContent).toBe('Halo')
+    expect(dialog()!.textContent).not.toContain('Notizen')
+  })
+
+  it('opens a Member\'s „Zuletzt gezogen“ tile as a dialog with the facts and without Tags and Notes, though hostGames were handed in (#444)', async () => {
+    const drawn: RoundGame = { ...halo, suitabilities: ['teams'], price: { cents: 1999, source: 'steam', checkedAt: '2026-11-03T10:00:00.000Z' } }
+    await mount(wheelOf(spinOf({ game: drawn })), { hostGames })
+    await at(STOP + 100)
+
+    const tile = page!.get('button[aria-haspopup="dialog"]')
+    expect(tile.text()).toBe('Halo')
+    expect(dialog()).toBeNull()
+    await tile.trigger('click')
+    await flushPromises()
+
+    expect(dialog()!.querySelector('h2')?.textContent).toBe('Halo')
+    expect(dialog()!.textContent).toContain('2 bis 4')
+    expect(dialog()!.textContent).toContain('Teams')
+    expect(dialog()!.textContent).toContain('Stand')
+    for (const hidden of ['Koop', 'Retro', 'Hausregel: keine Raketen', 'Notizen']) expect(dialog()!.textContent).not.toContain(hidden)
+    expect(dialog()!.querySelector('a')).toBeNull()
+    expect(dialog()!.querySelector('footer')).toBeNull()
   })
 })

@@ -28,7 +28,7 @@ export interface StepLocks {
   library?: boolean
   /** The Host's live pool warning of a running Event (#234): null when the pool covers it, and absent (undefined) elsewhere, where the setup hint (poolHint) shows instead. */
   poolWarning?: PoolWarning | null
-  /** The Players per team of the Event as it is saved, index 0 = team 1, one entry per saved team (#163). The Format step counts the Bench hint from it. */
+  /** The Players per team of the Event as it is saved, index 0 = team 1, one entry per saved team (#163). The Format step counts the Stands hint from it. */
   teamPlayers?: number[]
 }
 

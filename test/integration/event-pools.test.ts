@@ -152,7 +152,7 @@ describe('the pool of an Event (#146, #286)', () => {
       ])
     })
 
-    it('gives the Host and a joined Member the Price of each pool game as the library has it, and a Member only the face keys (#338)', async () => {
+    it('gives the Host and a joined Member the Price of each pool game as the library has it, and a Member only the face keys (#338, #444)', async () => {
       const kart = await newGame('Mario Kart', { price: { cents: 1999, source: 'steam' } })
       const tetris = await newGame('Tetris', { price: { cents: null, source: 'free_to_play' } })
       const { slug, inviteUrl } = await createdEvent({ pool: [kart.id, tetris.id] })
@@ -169,11 +169,11 @@ describe('the pool of an Event (#146, #286)', () => {
         expect(hostPool.find(item => item.id === game.id)).toMatchObject({ price: game.price })
         expect(memberPool.find(item => item.id === game.id)).toMatchObject({ price: game.price })
       }
-      for (const face of memberPool) expect(Object.keys(face).sort()).toEqual(['id', 'imageUrl', 'name', 'price', 'youtubeId'])
+      for (const face of memberPool) expect(Object.keys(face).sort()).toEqual(['id', 'imageUrl', 'name', 'playersMax', 'playersMin', 'price', 'suitabilities', 'youtubeId'])
     })
 
-    it('gives a Member who may see the pool only the picture and name of each game, even when it has notes (#224)', async () => {
-      const kart = await newGame('Mario Kart', { notes: 'Settings: 3 Runden\nWarmup: Lobby', playersMin: 2, suitabilities: ['teams'] })
+    it('gives a Member who may see the pool only the picture, name, players, Suitabilities and Price of each game, even when it has notes (#224, #444)', async () => {
+      const kart = await newGame('Mario Kart', { notes: 'Settings: 3 Runden\nWarmup: Lobby', playersMin: 2, playersMax: 4, suitabilities: ['teams'] })
       const pong = await newGame('Pong')
       const { slug, inviteUrl } = await createdEvent({ pool: [kart.id, pong.id] })
       const { cookie } = await signIn(testDb.db, member)
@@ -183,8 +183,8 @@ describe('the pool of an Event (#146, #286)', () => {
       const pool = (await read(cookie, slug)).pool!
 
       expect(pool).toEqual([
-        { id: kart.id, name: 'Mario Kart', imageUrl: null, youtubeId: null, price: null },
-        { id: pong.id, name: 'Pong', imageUrl: null, youtubeId: null, price: null },
+        { id: kart.id, name: 'Mario Kart', imageUrl: null, youtubeId: null, price: null, playersMin: 2, playersMax: 4, suitabilities: ['teams'] },
+        { id: pong.id, name: 'Pong', imageUrl: null, youtubeId: null, price: null, playersMin: null, playersMax: null, suitabilities: [] },
       ])
     })
 

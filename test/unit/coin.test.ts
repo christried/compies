@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { COIN_DURATION_MS, COIN_LEAD_MS, coinLanded, coinRejection, type CoinToss } from '../../shared/coin'
+import { COIN_DURATION_MS, COIN_LEAD_MS, coinLanded, coinRejection, tossCommitAt, type CoinToss } from '../../shared/coin'
 import type { SessionTimes } from '../../shared/session-state'
 
 // The Coin flip's rules (#235, spec #218 § Coin flip, 04-motion § Coin): when a toss lands, and why the Host cannot toss now.
@@ -16,6 +16,13 @@ describe('the timing (spec #218 § Coin flip, 04-motion § Coin)', () => {
   it('starts the flight 1.5 s after the commit and lasts 3.6 s', () => {
     expect(COIN_LEAD_MS).toBe(1500)
     expect(COIN_DURATION_MS).toBe(3600)
+  })
+})
+
+describe('tossCommitAt', () => {
+  it('is the commit of a toss: the flight starts 1.5 s after it, so the stage can lift its block before the coin flies (#441)', () => {
+    expect(tossCommitAt(TOSS)).toBe(STARTED - COIN_LEAD_MS)
+    expect(tossCommitAt({ startedAt: new Date(STARTED).toISOString() })).toBe(STARTED - COIN_LEAD_MS)
   })
 })
 

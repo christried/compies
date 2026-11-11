@@ -121,12 +121,16 @@ const RETIRED: Record<string, string> = {
   'Passende Formate': 'Passt zu',
   'Tiebreaker': 'Unentschieden',
   'Lobby': 'Event',
+  'Bench': 'Tribüne',
+  'Zuschauer': 'Tribüne',
 }
 
 // The changelog lines that announce a removal name the removed feature by its old word, so they are the one place a retired word may stay: the
-// lines of the issues that removed it, found by the link they end with (#279 took out the Tiebreaker pool, #280 its mention in the privacy text).
+// lines of the issues that removed it, found by the link they end with (#279 took out the Tiebreaker pool, #280 its mention in the privacy text,
+// #437 the Bench).
 const REMOVAL_ISSUES: Record<string, string[]> = {
   Tiebreaker: ['279', '280'],
+  Bench: ['437'],
 }
 
 describe('glossary words in the copy', () => {

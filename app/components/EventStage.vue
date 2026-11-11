@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { Lock } from '@lucide/vue'
-import { gamesToStart, seatNote, teamsStay, type EventPageState } from '~/utils/event-page'
+import { seatNote, teamsStay, waitsForCeremony, type EventPageState } from '~/utils/event-page'
+import { gamesToStart, risen } from '~/utils/event-stage'
 import type { OptimisticVotes } from '~/composables/useOptimisticVotes'
 import type { StandingsNews } from '~/utils/standings-news'
-import { REFLOW_CLASS, unwatched } from '~/utils/motion'
+import { REFLOW_CLASS, reducedMotion, riseFade, unwatched } from '~/utils/motion'
 import { hasStarted } from '~~/shared/session-state'
 import type { EventView } from '~~/shared/event'
 import { settingsPath } from '~~/shared/links'
@@ -11,16 +12,19 @@ import { leadersOf } from '~~/shared/finish'
 import { settingsEditable } from '~~/shared/settings'
 
 // The stage of the Event page (#166, A4, #283): the group of blocks `eventPageState(...).blocks` lists, in its order, and the switch that
-// turns each block into its component. The page keeps the shell, the dock, the tabs and the Host's dialogs; what a block asks the dialogs for
-// goes up as an event. A block is listed only when its data is there (eventPageState, #256, #274), and the Tie banner only for who reads it
-// (#283), so nothing here checks the data again except `sessionNeeded`, which is the Host's notice. The group's enter, leave and move
-// motion is the page's one (04-motion): keep it on this TransitionGroup.
+// turns each block into its component. The Stage module (event-stage.ts, #415) is the one that lists: a block is there only when its data is, for
+// who sees it (the Tie banner for Members, the Host's notices for the Host), so nothing here checks the data, the viewer or the order again. The page keeps the
+// shell, the dock, the tabs and the Host's dialogs; what a block asks the dialogs for goes up as an event. The group's enter, leave and move
+// motion is the page's one (04-motion): keep it on this TransitionGroup. A block that rises to the top because something just happened (#441) glides like any
+// other that moves; under reduced motion it fades in instead. The page never scrolls by itself: no scroll API is called here.
 const props = defineProps<{
   slug: string
   view: EventView
   pageState: EventPageState
   /** What is new on the Standings (#276): the stage block celebrates it. */
   news: StandingsNews | null
+  /** The Standings' block has not arrived on top yet (#442): the stage's table keeps the Standings from before the Result until it has. The panel's tab never waits. */
+  standingsHeld: boolean
   actions: ReturnType<typeof useStageActions>
   votes: OptimisticVotes
   /** The open Slots with their day and time in Berlin, for the poll. */
@@ -64,16 +68,28 @@ const hostName = computed(() => props.view.members.find(member => member.isHost)
 // The settings editor (#147): the Host opens it from the dock, and from a notice while the Event is not set up.
 const canEditSettings = computed(() => props.view.event.isHost && settingsEditable(props.view.event.phase))
 const needsSetup = computed(() => canEditSettings.value && props.view.settings === null)
-/** The first Session has started: the teams and their names are locked for Players. */
+/** The first Session has started: the settings rows of „So spielen wir“ lock (HowWePlayCard). Team names stay open to Players (#438). */
 const started = computed(() => hasStarted(props.view.sessions))
 
 // The Host's seat note (teams only): where the Host sits does not change the dock, and the note says so. Closed for this visit.
 const seat = computed(() => seatNote(props.view, t))
 const stay = computed(() => teamsStay(props.pageState.next, props.view.event.isHost, t))
+
+// Reduced motion (04-motion § UI enters, #441): the glide has nothing then (`REFLOW_CLASS`), so a block that moved up past another fades in at its new place. A hidden tab plays no
+// animation at all. After the render: the wrappers stand in their new order.
+const group = useTemplateRef<{ $el: HTMLElement }>('group')
+watch(() => props.pageState.blocks, (after, before) => {
+  if (!reducedMotion() || unwatched()) return
+  for (const block of risen(before, after)) {
+    const wrapper = group.value?.$el.querySelector(`:scope > [data-block="${block}"]`)
+    if (wrapper) riseFade(wrapper)
+  }
+}, { flush: 'post' })
 </script>
 
 <template>
   <TransitionGroup
+    ref="group"
     tag="div"
     :move-class="unwatched() ? undefined : REFLOW_CLASS"
     class="mx-auto flex w-full max-w-[1100px] flex-col gap-[18px] px-3.5 pt-4 md:gap-[22px] md:px-6 md:pt-6"
@@ -82,13 +98,14 @@ const stay = computed(() => teamsStay(props.pageState.next, props.view.event.isH
     <div
       v-for="block in pageState.blocks"
       :key="block"
+      :data-block="block"
       class="min-w-0 empty:hidden"
     >
       <EventPageHead
         v-if="block === 'head'"
         :state="pageState"
         :is-host="view.event.isHost"
-        :winners="leadersOf(view.standings ?? [])"
+        :winners="waitsForCeremony(pageState) ? [] : leadersOf(view.standings ?? [])"
         :teams="view.teams"
       />
 
@@ -104,7 +121,13 @@ const stay = computed(() => teamsStay(props.pageState.next, props.view.event.isH
         @replay="emit('replay')"
       />
 
-      <!-- A block is listed only when its data is there (eventPageState, #256, #274): the data props of the five below are not optional. -->
+      <!-- The finished stage while the Award ceremony is still to come (#445): the card has no button, the Host's action is the dock's. -->
+      <CeremonyPendingCard
+        v-else-if="block === 'pending'"
+        :is-host="view.event.isHost"
+      />
+
+      <!-- A block is listed only when its data is there (event-stage.ts, #256, #274): the data props of the five below are not optional. -->
       <PoolWarning
         v-else-if="block === 'pool'"
         :warning="view.setGame!.poolWarning!"
@@ -150,6 +173,7 @@ const stay = computed(() => teamsStay(props.pageState.next, props.view.event.isH
         :points-table="view.settings?.pointsTable ?? null"
         :enter-result="actions.enterResult"
         :end="view.end"
+        :host-games="view.hostGames"
       />
 
       <Leaderboard
@@ -160,6 +184,7 @@ const stay = computed(() => teamsStay(props.pageState.next, props.view.event.isH
         :end="view.end!"
         :teams="view.teams"
         :news="news"
+        :hold="standingsHeld"
       />
 
       <!-- The history of the finished stage is read-only for everyone: no `corrections` (#275), not even for the Host (#277). -->
@@ -204,7 +229,7 @@ const stay = computed(() => teamsStay(props.pageState.next, props.view.event.isH
         :online="online"
       />
 
-      <!-- A Tie (#278): listed for everybody but the Host, who decides (pageBlocks, #283). -->
+      <!-- A Tie (#278): listed for everybody but the Host, who decides (event-stage.ts, #283). -->
       <NoticeBanner
         v-else-if="block === 'tie'"
         tone="info"
@@ -212,9 +237,9 @@ const stay = computed(() => teamsStay(props.pageState.next, props.view.event.isH
         {{ t('event.notice.tie') }}
       </NoticeBanner>
 
-      <!-- The last game needs a Session (#278): the Host only, for a Member the wrapper hides itself. The sheet is the Sessions card's (`openAdd`). `end` is there whenever the block is. -->
+      <!-- The last game needs a Session (#278): the Host's piece, so only the Host's list has it (#415). The sheet is the Sessions card's (`openAdd`). `end` is there whenever the block is. -->
       <EventSessionNotice
-        v-else-if="block === 'sessionNeeded' && view.event.isHost"
+        v-else-if="block === 'sessionNeeded'"
         :left="gamesToStart(view.end!, view.rounds.length)"
         @add="emit('add')"
       />
@@ -250,6 +275,7 @@ const stay = computed(() => teamsStay(props.pageState.next, props.view.event.isH
           :edit-to="canEditSettings && view.settings !== null ? settingsPath(slug) : null"
           :locked="started"
           :host-name="hostName"
+          :host-games="view.hostGames"
         />
       </div>
     </div>

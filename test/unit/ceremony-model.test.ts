@@ -20,7 +20,7 @@ const t: Translate = (key, named = {}, plural) => {
 }
 
 const CEREMONY: CeremonyView = { startsAt: '2090-10-30T20:00:01.500Z', endsAt: '2090-10-30T20:00:06.550Z', gag: 'trip' }
-const team = (position: number, name: string | null = null): BoardTeam => ({ position, name, frozen: true })
+const team = (position: number, name: string | null = null): BoardTeam => ({ position, name })
 const player = (id: string, teamPosition: number, overrides: Partial<MemberView> = {}): MemberView => ({
   id, name: `Spieler ${id}`, image: `https://example.com/${id}.png`, isHost: false, zone: 'team', team: teamPosition, teamWord: null, ...overrides,
 })
@@ -99,14 +99,14 @@ describe('ceremonyModel', () => {
       expect(peopleOf([player('a', 1)])).toEqual([{ kind: 'player', id: 'a', name: 'Spieler a', image: 'https://example.com/a.png', team: 1 }])
     })
 
-    it('shows all 6 Players, and never a Player of another Party, the Bench or the Stands', () => {
-      const members = [...people(6, 1), ...people(3, 2), player('bench', 1, { zone: 'bench', team: null }), player('stands', 1, { zone: 'stands', team: null })]
+    it('shows all 6 Players, and never a Player of another Party or the Stands', () => {
+      const members = [...people(6, 1), ...people(3, 2), player('watcher', 1, { zone: 'stands', team: null }), player('stands', 1, { zone: 'stands', team: null })]
 
       const shown = peopleOf(members)
 
       expect(shown).toHaveLength(6)
       expect(shown.every(entry => entry.kind === 'player' && entry.team === 1)).toBe(true)
-      expect(shown.map(entry => entry.kind === 'player' && entry.id)).not.toContain('bench')
+      expect(shown.map(entry => entry.kind === 'player' && entry.id)).not.toContain('watcher')
     })
 
     it('shows 5 Players and „+2“ for 7', () => {

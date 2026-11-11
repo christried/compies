@@ -1,5 +1,6 @@
 import { mountSuspended } from '@nuxt/test-utils/runtime'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { flushPromises } from '@vue/test-utils'
+import { beforeEach, describe, expect, it } from 'vitest'
 import HowWePlayCard from '~/components/HowWePlayCard.vue'
 import EventPage from '~/pages/e/[slug]/index.vue'
 import type { EventView } from '~~/shared/event'
@@ -18,9 +19,9 @@ function poolGame(name: string, overrides: Partial<PoolGame> = {}): PoolGame {
   }
 }
 
-// What the server gives a Member who may see the pools (#224, #338): picture, name and Price, no more.
+// What the server gives a Member who may see the pools (#224, #338, #444): picture, name, players, Suitabilities and Price, no more.
 function faceOf(game: PoolGame): PoolGameFace {
-  return { id: game.id, name: game.name, imageUrl: game.imageUrl, youtubeId: game.youtubeId, price: game.price }
+  return { id: game.id, name: game.name, imageUrl: game.imageUrl, youtubeId: game.youtubeId, price: game.price, playersMin: game.playersMin, playersMax: game.playersMax, suitabilities: game.suitabilities }
 }
 
 const wheel: EventSettings = { ...defaultSettings(), selectionMode: 'lucky_wheel', vetoAllowance: 3, gameCount: 6, teamCount: 4, teamSize: 2, pointsTable: { preset: 'linear', values: [3, 2, 1, 0] } }
@@ -28,7 +29,7 @@ const hiddenWheel: EventSettings = { ...wheel, hiddenWheel: true }
 
 const visiblePool: EventView['pool'] = [poolGame('Mario Kart'), poolGame('Pong')]
 
-type Props = { settings: EventSettings | null, pool: EventView['pool'], isHost?: boolean, editTo?: string | null, locked?: boolean, hostName?: string }
+type Props = { settings: EventSettings | null, pool: EventView['pool'], isHost?: boolean, editTo?: string | null, locked?: boolean, hostName?: string, hostGames?: EventView['hostGames'] }
 function mountCard({ isHost = false, ...props }: Props) {
   return mountSuspended(HowWePlayCard, { props: { isHost, ...props } })
 }
@@ -67,7 +68,7 @@ describe('HowWePlayCard (#148)', () => {
     expect(card.text()).not.toContain('verrät das Rad')
   })
 
-  it('gives the Host a pool game with notes one Notizen disclosure below its card, and none without notes (#224)', async () => {
+  it('shows the Host the pool as tiles of picture and name, and no Notizen under a game with notes (#435)', async () => {
     const card = await mountCard({
       settings: wheel,
       isHost: true,
@@ -75,20 +76,25 @@ describe('HowWePlayCard (#148)', () => {
     })
 
     const [withNotes, withoutNotes] = card.findAll('ul')[0]!.findAll('li')
-    expect(withNotes!.findAll('button').map(button => button.text())).toEqual(['Notizen'])
-    expect(withoutNotes!.find('button').exists()).toBe(false)
-    expect(withoutNotes!.text()).not.toContain('Notizen')
+    expect(withNotes!.text()).toBe('Mario Kart')
+    expect(withoutNotes!.text()).toBe('Pong')
+    // The Host's tile is the button that opens the game dialog (#443); the Notes are in the dialog, not on the page.
+    expect(card.findAll('button').map(button => button.text())).toEqual(['Mario Kart', 'Pong'])
+    expect(card.text()).not.toContain('Notizen')
+    expect(card.text()).not.toContain('Settings: 3 Runden')
   })
 
-  it('gives the Host one Notizen disclosure for the game with notes, in the one list there is (#224, #279)', async () => {
-    const kart = poolGame('Mario Kart', { notes: 'Settings: 3 Runden' })
-    const card = await mountCard({ settings: wheel, isHost: true, pool: [kart] })
+  it('lays the pool out as a grid of tiles, side by side as the container allows, for the Host and a Member (#435)', async () => {
+    const games = Array.from({ length: 30 }, (_, n) => poolGame(`Spiel ${n + 1}`))
+    const host = await mountCard({ settings: wheel, isHost: true, pool: games })
+    const hostList = host.findAll('ul')[0]!
+    expect(hostList.classes()).toEqual(expect.arrayContaining(['grid', 'grid-cols-[repeat(auto-fill,minmax(170px,1fr))]', 'gap-3']))
+    expect(hostList.findAll('li')).toHaveLength(30)
+    host.unmount()
 
-    const buttons = card.findAll('button').filter(button => button.text() === 'Notizen')
-    expect(buttons).toHaveLength(1)
-    await buttons[0]!.trigger('click')
-    expect(buttons[0]!.attributes('aria-controls')).toBeTruthy()
-    expect(card.text()).not.toContain('Tiebreaker')
+    const member = await mountCard({ settings: wheel, pool: games.map(faceOf) })
+    expect(member.findAll('ul')[0]!.classes()).toContain('grid-cols-[repeat(auto-fill,minmax(170px,1fr))]')
+    expect(member.findAll('ul')[0]!.findAll('li')).toHaveLength(30)
   })
 
   it('shows a Member of a visible pool picture and name of each game, and no player count, Suitabilities or Notizen (#224)', async () => {
@@ -102,16 +108,15 @@ describe('HowWePlayCard (#148)', () => {
     expect(second!.text()).toBe('Pong')
     expect(second!.get('img').attributes('src')).toContain('dQw4w9WgXcQ')
     expect(card.findAll('ul').map(list => list.text()).join(' ')).not.toMatch(/Notizen|2–4|Teams/)
-    expect(card.findAll('button')).toHaveLength(0)
+    // The tiles are buttons that open the dialog (#444); the facts are in the dialog, not on the tile.
+    expect(card.findAll('button').map(button => button.text())).toEqual(['Mario Kart', 'Pong'])
   })
 
-  it('shows the Host the player count and Suitabilities of a pool game next to its Notizen (#224)', async () => {
+  it('shows the Host a pool game as a tile: no player count and no Suitabilities, as for a Member (#435)', async () => {
     const kart = poolGame('Mario Kart', { playersMin: 2, playersMax: 4, suitabilities: ['teams'], notes: 'Settings: 3 Runden' })
     const card = await mountCard({ settings: wheel, isHost: true, pool: [kart] })
 
-    expect(card.get('li').text()).toContain('2–4')
-    expect(card.get('li').text()).toContain('Teams')
-    expect(card.get('li').text()).toContain('Notizen')
+    expect(card.get('li').text()).toBe('Mario Kart')
   })
 
   it('says „Noch keine Spiele.“ for an empty pool', async () => {
@@ -293,83 +298,144 @@ describe('the card on the Event page (#148)', () => {
   })
 })
 
-describe('the Price under a pool game (#338)', () => {
-  // The Price line counts the year from today (Berlin), so the clock is pinned: „Stand 3. Nov.“ in 2026.
-  beforeEach(() => {
-    vi.useFakeTimers({ toFake: ['Date'] })
-    vi.setSystemTime(new Date('2026-11-09T12:00:00.000Z'))
-  })
-  afterEach(() => {
-    vi.useRealTimers()
-  })
-
+describe('the pool tile carries no Price (#435)', () => {
   const steam = { cents: 1999, source: 'steam' as const, checkedAt: '2026-11-03T10:00:00.000Z' }
 
-  it('shows the Host the Price line under the name of a game with a Price, and none under a game without one', async () => {
+  it('shows the Host no Price line under a pool tile, though the game has a Price', async () => {
     const card = await mountCard({ settings: wheel, isHost: true, pool: [poolGame('Mario Kart', { price: steam }), poolGame('Pong')] })
 
     const [withPrice, withoutPrice] = card.findAll('ul')[0]!.findAll('li')
-    expect(withPrice!.text()).toContain('19,99 € bei Steam · Stand 3. Nov.')
-    expect(withPrice!.text().indexOf('Mario Kart')).toBeLessThan(withPrice!.text().indexOf('19,99 €'))
-    expect(withoutPrice!.text()).not.toContain('Stand')
-    expect(withoutPrice!.text()).not.toContain('€')
+    expect(withPrice!.text()).toBe('Mario Kart')
+    expect(withoutPrice!.text()).toBe('Pong')
+    expect(card.text()).not.toContain('€')
+    expect(card.text()).not.toContain('Stand')
   })
 
-  it('shows a Member of a visible pool the Price line of a game, and none under a game without one; no count or Notizen come with it', async () => {
+  it('shows a Member no Price line under a pool tile, and no count or Notizen with it', async () => {
     const kart = poolGame('Mario Kart', { price: steam, playersMin: 2, playersMax: 4, suitabilities: ['teams'], notes: 'Settings: 3 Runden' })
     const card = await mountCard({ settings: wheel, pool: [faceOf(kart), faceOf(poolGame('Pong'))] })
 
-    const [withPrice, withoutPrice] = card.findAll('ul')[0]!.findAll('li')
-    expect(withPrice!.text()).toContain('19,99 € bei Steam · Stand 3. Nov.')
-    expect(withPrice!.text()).not.toMatch(/Notizen|2–4|Teams/)
-    expect(withoutPrice!.text()).not.toContain('Stand')
+    const [first, second] = card.findAll('ul')[0]!.findAll('li')
+    expect(first!.text()).toBe('Mario Kart')
+    expect(second!.text()).toBe('Pong')
+    expect(card.text()).not.toContain('€')
+    expect(card.text()).not.toContain('Stand')
   })
 
-  it('reads a game without an amount as its source and „Stand“, with no „€“: Free-to-play and Abo', async () => {
+  it('shows no Free-to-play or Abo line under a tile for a game with no amount', async () => {
     const free = poolGame('Tetris', { price: { cents: null, source: 'free_to_play', checkedAt: steam.checkedAt } })
     const abo = poolGame('Plattformer', { price: { cents: null, source: 'subscription', checkedAt: steam.checkedAt } })
     const card = await mountCard({ settings: wheel, pool: [faceOf(free), faceOf(abo)] })
 
     const [tetris, plattformer] = card.findAll('ul')[0]!.findAll('li')
-    expect(tetris!.text()).toContain('Free-to-play · Stand 3. Nov.')
-    expect(plattformer!.text()).toContain('Abo · Stand 3. Nov.')
-    expect(tetris!.text()).not.toContain('€')
-    expect(plattformer!.text()).not.toContain('€')
-  })
-
-  it('names the year of a Price checked in an earlier year: „Stand 3. Nov. 2025“', async () => {
-    const card = await mountCard({ settings: wheel, isHost: true, pool: [poolGame('Mario Kart', { price: { ...steam, checkedAt: '2025-11-03T10:00:00.000Z' } })] })
-
-    expect(card.get('li').text()).toContain('19,99 € bei Steam · Stand 3. Nov. 2025')
-  })
-
-  it('shows no Price and no „Stand“ anywhere in the card when the Member has no pool (preview off or Hidden wheel)', async () => {
-    const card = await mountCard({ settings: wheel, pool: null })
-
+    expect(tetris!.text()).toBe('Tetris')
+    expect(plattformer!.text()).toBe('Plattformer')
+    expect(card.text()).not.toContain('Free-to-play')
+    expect(card.text()).not.toContain('Abo')
     expect(card.text()).not.toContain('Stand')
-    expect(card.text()).not.toContain('€')
   })
 
-  it('keeps a game with the longest name and the longest Price line on one row: both texts in its li, and both truncate', async () => {
+  it('shows the tile of a game with the longest name and the longest Price as the name alone, the name wrapping at two lines', async () => {
     const longName = 'M'.repeat(GAME_NAME_MAX)
     const longPrice = { cents: 99999, source: 'epic' as const, checkedAt: '2025-11-03T10:00:00.000Z' }
     const card = await mountCard({ settings: wheel, pool: [faceOf(poolGame(longName, { price: longPrice }))] })
 
     const item = card.get('li')
-    expect(item.text()).toContain(longName)
-    expect(item.text()).toContain('999,99 € bei Epic Games Store · Stand 3. Nov. 2025')
-    expect(item.get('b').classes()).toContain('truncate')
-    const priceSpan = item.findAll('span').find(span => span.text().includes('€'))!
-    expect(priceSpan.classes()).toContain('truncate')
+    expect(item.text()).toBe(longName)
+    expect(item.get('button').classes()).toContain('break-words')
+    expect(item.get('button').classes()).toContain('line-clamp-2')
+    expect(card.text()).not.toContain('€')
   })
 
-  it('shows the line on a pool of exactly one game, and the empty pool says „Noch keine Spiele.“ with no line', async () => {
+  it('shows one tile for a pool of exactly one game, with no Price line; the empty pool says „Noch keine Spiele.“', async () => {
     const single = await mountCard({ settings: wheel, pool: [faceOf(poolGame('Mario Kart', { price: steam }))] })
     expect(single.findAll('li')).toHaveLength(1)
-    expect(single.get('li').text()).toContain('19,99 € bei Steam · Stand 3. Nov.')
+    expect(single.get('li').text()).toBe('Mario Kart')
 
     const empty = await mountCard({ settings: wheel, pool: [] })
     expect(empty.text()).toContain('Noch keine Spiele.')
     expect(empty.text()).not.toContain('Stand')
+  })
+})
+
+// The Host's game dialog from the pool (#443): a tap on a tile opens the dialog with the Tags and Notes of that game from `hostGames`; a Member's dialog (#444) has the facts and never those.
+describe('the game dialog from the pool tiles (#443)', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    signInAs({ ...kitty, canHost: true })
+  })
+
+  const hostGames = {
+    'id-Mario Kart': { tags: [{ key: 'retro', label: 'Retro' }, { key: 'koop', label: 'Koop' }], notes: 'Settings: 3 Runden' },
+    'id-Pong': { tags: [{ key: 'klassiker', label: 'Klassiker' }], notes: null },
+  }
+  const dialog = () => document.querySelector('[role="dialog"]') as HTMLElement
+
+  it('opens the dialog of the tapped game with its Tags and Notes, for a pool of one game and for a pool of two', async () => {
+    const one = await mountCard({ settings: wheel, isHost: true, pool: [poolGame('Mario Kart', { playersMin: 2, playersMax: 4 })], hostGames })
+    expect(one.findAll('button')).toHaveLength(1)
+    await one.get('button').trigger('click')
+    await flushPromises()
+    expect(dialog().querySelector('h2')?.textContent).toBe('Mario Kart')
+    expect(dialog().textContent).toContain('Retro')
+    expect(dialog().textContent).toContain('Koop')
+    expect(dialog().textContent).toContain('Settings: 3 Runden')
+    one.unmount()
+    document.body.innerHTML = ''
+
+    const two = await mountCard({ settings: wheel, isHost: true, pool: [poolGame('Mario Kart'), poolGame('Pong')], hostGames })
+    const [, pong] = two.findAll('button')
+    await pong!.trigger('click')
+    await flushPromises()
+    expect(document.querySelectorAll('[role="dialog"]')).toHaveLength(1)
+    expect(dialog().querySelector('h2')?.textContent).toBe('Pong')
+    expect(dialog().textContent).toContain('Klassiker')
+    expect(dialog().textContent).not.toContain('Retro')
+    expect(dialog().textContent).not.toContain('Notizen')
+    expect(dialog().querySelector('a[href="/bibliothek/id-Pong"]')?.textContent?.trim()).toBe('In der Bibliothek öffnen')
+  })
+
+  it('has no tile to tap in an empty pool', async () => {
+    const empty = await mountCard({ settings: wheel, isHost: true, pool: [], hostGames: {} })
+
+    expect(empty.findAll('button')).toHaveLength(0)
+    expect(empty.text()).toContain('Noch keine Spiele.')
+  })
+
+  it('opens the dialog without Tags and Notes when the Host\'s read has none for the game', async () => {
+    const card = await mountCard({ settings: wheel, isHost: true, pool: [poolGame('Mario Kart')], hostGames: {} })
+
+    await card.get('button').trigger('click')
+    await flushPromises()
+
+    expect(dialog().querySelector('h2')?.textContent).toBe('Mario Kart')
+    expect(dialog().querySelector('ul[aria-label="Tags"]')).toBeNull()
+    expect(dialog().textContent).not.toContain('Notizen')
+  })
+
+  it.each([
+    ['no game', []],
+    ['one game', ['Mario Kart']],
+    ['two games', ['Mario Kart', 'Pong']],
+  ])('opens a Member\'s pool tile as a dialog with the facts and without Tags and Notes, though hostGames were handed in: a pool of %s (#444)', async (_size, names) => {
+    const games = names.map(name => poolGame(name, { playersMin: 2, playersMax: 4, suitabilities: ['teams'], price: { cents: 1999, source: 'steam', checkedAt: '2026-11-03T10:00:00.000Z' }, notes: 'Settings: 3 Runden' }))
+    const card = await mountCard({ settings: wheel, pool: games.map(faceOf), hostGames })
+
+    expect(card.findAll('button').map(button => button.text())).toEqual(names)
+    expect(card.findAll('button').every(button => button.attributes('aria-haspopup') === 'dialog')).toBe(true)
+    expect(dialog()).toBeNull()
+    if (names.length === 0) return
+    await card.findAll('button').at(-1)!.trigger('click')
+    await flushPromises()
+
+    expect(document.querySelectorAll('[role="dialog"]')).toHaveLength(1)
+    expect(dialog().querySelector('h2')?.textContent).toBe(names.at(-1))
+    expect(dialog().textContent).toContain('2 bis 4')
+    expect(dialog().textContent).toContain('Teams')
+    expect(dialog().textContent).toContain('Stand')
+    expect(dialog().querySelector('ul[aria-label="Tags"]')).toBeNull()
+    for (const hidden of ['Retro', 'Koop', 'Klassiker', 'Settings: 3 Runden', 'Notizen']) expect(dialog().textContent).not.toContain(hidden)
+    expect(dialog().querySelector('a[href^="/bibliothek/"]')).toBeNull()
+    expect(dialog().querySelector('footer')).toBeNull()
   })
 })

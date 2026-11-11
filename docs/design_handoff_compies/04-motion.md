@@ -92,6 +92,7 @@ Each entry: trigger · targets · timeline · reduced twin. Durations in seconds
 - Modal: `scale .96→1, opacity 0→1`, 0.22 `EASE.out`.
 - Toast: `y 20→0, opacity`, 0.22; out 0.14.
 - Reduced: opacity only, 0.14.
+- **Deviation (0.12, #425, #439):** the Team name in the TeamNameBuilder (02-components § TeamNameBuilder) folds and unfolds with the field in `dur-fast` on `ease-out` (opacity); a new or changed word pops in `dur-slow` on `ease-pop`. Reduced: no motion.
 
 ### Hold to confirm [MVP]
 - Fill `scaleX 0→1` (origin left), 1.0 `none`. Release early: `scaleX → 0`, 0.2 `power2.out`. Confirm: button `scale 1→.96→1`, 0.18; icon swap.
@@ -148,6 +149,7 @@ Times from `round.determined`: `determinedAt`, `vetoEndsAt = determinedAt + 60 s
 
 ### Leaderboard [1.0]
 - Trigger: `result.saved` / `result.corrected`.
+- **Deviation (0.12, #425):** on the stage the Standings first rise to the top (11-event-seite § EventPage, 0.12 deviation), and the sequence below starts once the block has arrived; when it is already on top, after the same 0.5 s pause. The side panel's and the phone's Tabelle tab play it as before. Until then the stage's table shows the Standings the page saw before the Result; two Results inside the wait play as one sequence.
 - Rows: Flip reorder, 0.62 `EASE.spring`, stagger 0.04 (`lb-swap`). Points: CpNum count-up 0.6 `power2.out` (`lb-count`, max 15 ticks/s). Delta pill `scale .3→1.15→1` 0.42 pop, delay 0.3. Winner stamp `scale 2→.9→1, rotation 8` 0.48, delay 0.52. Mini celebration: 18 sticker confetti from the winner row + Compibert bust `cheer` beside it (4 s); last place → `sad`. `lb-winner`.
 - Reduced: rows reorder instantly with a 0.2 highlight; numbers jump; no confetti.
 

@@ -14,7 +14,7 @@ const props = defineProps<{
   isHost: boolean
   /** The viewer's own person: shown as „Du“. */
   you: boolean
-  /** The team they stand in, for the ring; null on the Bench and the Stands. */
+  /** The team they stand in, for the ring; null on the Stands. */
   team: number | null
   /** Where they stand, for the accessible name („Kitty, Team Rot“). */
   where: string

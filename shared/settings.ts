@@ -326,7 +326,7 @@ export function playersPerTeam(seats: Seats, teamCount: number): number[] {
 /**
  * The lowest Team size `teamCount` teams allow (#163, #197): the fullest of the teams that remain, never below
  * TEAM_SIZE_MIN. `playersPerTeam[i]` holds the Players seated in team i + 1. A lowered team count sends the Players of
- * the teams past it to the Bench, so those teams don't count. The settings editor and the server both ask here.
+ * the teams past it to the Stands, so those teams don't count. The settings editor and the server both ask here.
  */
 export function teamSizeFloor(playersPerTeam: readonly number[], teamCount: number): number {
   return Math.max(TEAM_SIZE_MIN, ...playersPerTeam.slice(0, teamCount))

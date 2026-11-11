@@ -7,6 +7,8 @@ import type { BoardTeam } from '~~/shared/event'
 defineProps<{
   /** The Event's teams, for a Result's sentence (#273). */
   teams?: BoardTeam[]
+  /** The finished page waits for the Award ceremony: the Event's end names nobody (#445). */
+  winnersHidden?: boolean
   slug: string
   room: Pick<ReturnType<typeof useEventRoom>, 'state' | 'on'>
   sessions: FeedSession[]
@@ -37,6 +39,7 @@ const { t } = useI18n()
         :next-number="nextNumber"
         :refresh-tick="refreshTick"
         :teams="teams"
+        :winners-hidden="winnersHidden"
       />
     </div>
   </section>

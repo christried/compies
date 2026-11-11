@@ -1,27 +1,15 @@
 import { and, desc, eq, sql } from 'drizzle-orm'
-import { eventMembers, eventTeams } from '../db/schema'
-import { numberedSessions } from '../domain/session'
-import { countSeats, placeOf, teamChoiceOpen, composeTeamName, type Place } from '../../shared/board'
-import { hasStarted, nextSession, startRejection, type StartRejection } from '../../shared/session-state'
-import { settingsFromRow } from '../../shared/settings'
-import { recordActivity } from './activity'
+import { eventMembers } from '../db/schema'
+import { activityTeams } from '../../shared/activity'
+import type { Place } from '../../shared/board'
+import { feedTeamNames, recordActivity } from './activity'
 import type { Db } from './db'
-import type { EventChange, EventRow } from './event-access'
-import type { SessionRow } from './sessions'
+import type { EventChange } from './event-access'
 
 // The seats of the Game board (#160, GLOSSARY: Game board). One home: every change of a seat goes through seatMember,
 // so a rule that follows a seat change (#161: a seat change clears the Team word; #163: removed teams send their Players
-// to the Bench) has one place to live. The Team word handlers write the word themselves (team-word.post.ts,
-// reset-name.post.ts).
-
-/** Every Member of the Event with the place they stand in. */
-export async function readSeats(tx: Db, eventId: string): Promise<{ userId: string, place: Place }[]> {
-  const rows = await tx
-    .select({ userId: eventMembers.userId, zone: eventMembers.zone, team: eventMembers.team })
-    .from(eventMembers)
-    .where(eq(eventMembers.eventId, eventId))
-  return rows.map(row => ({ userId: row.userId, place: placeOf(row) }))
-}
+// to the Stands) has one place to live. The seats are read, and the rules that ask them answered, by the Event state
+// (event-state.ts, #416). The Team word handlers write the word themselves (team-word.post.ts, reset-name.post.ts).
 
 /**
  * Puts the Member in `to`. Entering a team (or changing team) stamps `team_joined_at` with the moment of the write,
@@ -42,12 +30,16 @@ export async function seatMember(tx: Db, eventId: string, userId: string, to: Pl
 
 /**
  * One Member's seat change as the Game board makes it (#160, #163): the seat, its feed entry, and `member.moved` after the
- * commit. The move endpoint and the lowering of the team count (the removed teams' Players go to the Bench, in the Host's
+ * commit. The move endpoint and the lowering of the team count (the removed teams' Players go to the Stands, in the Host's
  * name) both end here, so a move reads the same wherever it came from. The rules that allow it are the caller's.
  */
 export async function moveMember(tx: Db, publish: EventChange['publish'], now: Date, eventId: string, actorId: string, userId: string, from: Place, to: Place): Promise<void> {
+  // The entry names the team the Player goes to (#440). Read before the seat changes: joining adds no word and seatMember clears the mover's own,
+  // so the name is the same before and after, but the entry says the name `to` had when the move was made. None for the Stands: no statement.
+  const params = { userId, from, to }
+  const teamNames = await feedTeamNames(tx, eventId, activityTeams('member_moved', params))
   await seatMember(tx, eventId, userId, to)
-  await recordActivity(tx, publish, eventId, { type: 'member_moved', actorId, params: { userId, from, to }, now: now })
+  await recordActivity(tx, publish, eventId, { type: 'member_moved', actorId, params: { ...params, teamNames }, now: now })
   publish({ type: 'member.moved', userId, from, to, by: actorId })
 }
 
@@ -60,41 +52,4 @@ export async function lastToJoin(tx: Db, eventId: string, team: number): Promise
     .orderBy(desc(eventMembers.teamJoinedAt))
     .limit(1)
   return row?.userId ?? null
-}
-
-/**
- * Whether Team choice is open for an Event and whether its first Session has started, from its settings and Sessions.
- * The move and the Event read both ask here. The first Session has started (#164) once any Session has `started_at`,
- * also one that has ended.
- */
-export function teamChoiceOf(eventRow: EventRow, sessions: readonly SessionRow[]) {
-  const settings = settingsFromRow(eventRow)
-  const started = hasStarted(sessions)
-  return { settings, started, open: teamChoiceOpen({ settings, hasDatedSession: sessions.some(row => row.startsAt !== null), started }) }
-}
-
-/**
- * The start rule for an Event (#164): the Session that would start next (the earliest dated one that has not started),
- * with the number it is shown with, and why it cannot start now, null when it can. The start endpoint and the Event read
- * both ask here, with the places the Members stand in.
- */
-export function startOf(eventRow: EventRow, sessions: readonly SessionRow[], places: readonly Place[]): { next: (SessionRow & { number: number | null }) | null, rejection: StartRejection | null } {
-  return {
-    next: nextSession(numberedSessions([...sessions])),
-    rejection: startRejection({ settings: settingsFromRow(eventRow), sessions, seats: countSeats(places) }),
-  }
-}
-
-/**
- * Freezes the Team names at the first Session start (#164): one `event_teams` row per team position 1..`teamCount`
- * with the name composed from the team's words (null without words: the Team colour's name). Called once, by the start
- * that finds no Session started; the rows are the names from then on, whatever happens to the words.
- */
-export async function freezeTeamNames(tx: Db, eventId: string, teamCount: number): Promise<void> {
-  const members = await tx
-    .select({ team: eventMembers.team, teamWord: eventMembers.teamWord, teamJoinedAt: eventMembers.teamJoinedAt })
-    .from(eventMembers)
-    .where(eq(eventMembers.eventId, eventId))
-  const rows = Array.from({ length: teamCount }, (_, index) => ({ eventId, position: index + 1, frozenName: composeTeamName(members, index + 1) }))
-  await tx.insert(eventTeams).values(rows)
 }

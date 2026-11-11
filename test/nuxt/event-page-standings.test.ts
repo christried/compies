@@ -306,8 +306,7 @@ describe('the finished Event page', () => {
       const SEATS: [string, boolean, Seat | undefined][] = [
         ['the Host', true, undefined],
         ['a Player', false, { zone: 'team', team: 1 }],
-        ['a Spectator', false, { zone: 'stands' }],
-        ['a Member on the Bench', false, { zone: 'bench' }],
+        ['a Member on the Tribüne', false, { zone: 'stands' }],
       ]
       for (const [who, host, seat] of SEATS) {
         it(`opens the layer at its first frame for ${who}, and sends nothing`, async () => {

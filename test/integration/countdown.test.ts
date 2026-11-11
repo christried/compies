@@ -85,11 +85,11 @@ describe('Countdown', () => {
 
       const short = await setSeconds(game, 5)
       expect(short.status).toBe(200)
-      expect(await short.json()).toEqual({ durationMs: 5 * SECOND, remainingMs: 5 * SECOND, startedAt: null })
+      expect(await short.json()).toEqual({ durationMs: 5 * SECOND, remainingMs: 5 * SECOND, startedAt: null, lastStartedAt: null })
 
       const long = await setSeconds(game, 5999)
       expect(long.status).toBe(200)
-      expect(await readCountdown(game)).toEqual({ durationMs: 5999 * SECOND, remainingMs: 5999 * SECOND, startedAt: null })
+      expect(await readCountdown(game)).toEqual({ durationMs: 5999 * SECOND, remainingMs: 5999 * SECOND, startedAt: null, lastStartedAt: null })
     })
 
     it('replaces a paused or ended Countdown, but not a running one', async () => {
@@ -100,7 +100,8 @@ describe('Countdown', () => {
 
       await act(game, 'pause')
       expect((await setSeconds(game, 30)).status).toBe(200)
-      expect(await readCountdown(game)).toEqual({ durationMs: 30 * SECOND, remainingMs: 30 * SECOND, startedAt: null })
+      // A `set` that replaces a paused Countdown leaves its last start where it was (#441): the stage block does not drop back.
+      expect(await readCountdown(game)).toEqual({ durationMs: 30 * SECOND, remainingMs: 30 * SECOND, startedAt: null, lastStartedAt: new Date(T0).toISOString() })
     })
   })
 
@@ -112,7 +113,7 @@ describe('Countdown', () => {
       const response = await act(game, 'start')
 
       expect(response.status).toBe(200)
-      expect(await response.json()).toEqual({ durationMs: 60 * SECOND, remainingMs: 60 * SECOND, startedAt: new Date(T0).toISOString() })
+      expect(await response.json()).toEqual({ durationMs: 60 * SECOND, remainingMs: 60 * SECOND, startedAt: new Date(T0).toISOString(), lastStartedAt: new Date(T0).toISOString() })
     })
 
     it('pauses with the time that is left at that moment, and resumes from it', async () => {
@@ -121,14 +122,14 @@ describe('Countdown', () => {
       await act(game, 'start')
 
       clock.advance(10 * SECOND)
-      expect(await (await act(game, 'pause')).json()).toEqual({ durationMs: 60 * SECOND, remainingMs: 50 * SECOND, startedAt: null })
+      expect(await (await act(game, 'pause')).json()).toEqual({ durationMs: 60 * SECOND, remainingMs: 50 * SECOND, startedAt: null, lastStartedAt: new Date(T0).toISOString() })
 
       const resumed = await act(game, 'start')
       const resumedAt = new Date(new Date(T0).getTime() + 10 * SECOND).toISOString()
-      expect(await resumed.json()).toEqual({ durationMs: 60 * SECOND, remainingMs: 50 * SECOND, startedAt: resumedAt })
+      expect(await resumed.json()).toEqual({ durationMs: 60 * SECOND, remainingMs: 50 * SECOND, startedAt: resumedAt, lastStartedAt: resumedAt })
 
       clock.advance(20 * SECOND)
-      expect(await (await act(game, 'pause')).json()).toEqual({ durationMs: 60 * SECOND, remainingMs: 30 * SECOND, startedAt: null })
+      expect(await (await act(game, 'pause')).json()).toEqual({ durationMs: 60 * SECOND, remainingMs: 30 * SECOND, startedAt: null, lastStartedAt: resumedAt })
     })
 
     it('runs out: past its end the read shows it at zero, and start is refused as ended', async () => {
@@ -140,7 +141,7 @@ describe('Countdown', () => {
 
       expect(await errorOf(await act(game, 'start'))).toEqual({ status: 409, code: 'countdown_ended' })
       const countdown = await readCountdown(game)
-      expect(countdown).toMatchObject({ durationMs: 30 * SECOND, startedAt: new Date(T0).toISOString() })
+      expect(countdown).toMatchObject({ durationMs: 30 * SECOND, startedAt: new Date(T0).toISOString(), lastStartedAt: new Date(T0).toISOString() })
       expect(countdown!.remainingMs).toBe(30 * SECOND)
       expect(new Date(countdown!.startedAt!).getTime() + countdown!.remainingMs).toBe(new Date(T0).getTime() + 30 * SECOND)
     })
@@ -155,7 +156,7 @@ describe('Countdown', () => {
       const response = await act(game, 'reset')
 
       expect(response.status).toBe(200)
-      expect(await response.json()).toEqual({ durationMs: 60 * SECOND, remainingMs: 60 * SECOND, startedAt: null })
+      expect(await response.json()).toEqual({ durationMs: 60 * SECOND, remainingMs: 60 * SECOND, startedAt: null, lastStartedAt: new Date(T0).toISOString() })
     })
 
     it('refuses pause while it does not run, and start while it runs', async () => {
@@ -211,7 +212,30 @@ describe('Countdown', () => {
       const asMember = await readCountdown(game, game.cookies.two)
 
       expect(asMember).toEqual(asHost)
-      expect(asHost).toEqual({ durationMs: 60 * SECOND, remainingMs: 60 * SECOND, startedAt: new Date(T0).toISOString() })
+      expect(asHost).toEqual({ durationMs: 60 * SECOND, remainingMs: 60 * SECOND, startedAt: new Date(T0).toISOString(), lastStartedAt: new Date(T0).toISOString() })
+    })
+
+    // The stage block of the Countdown rises at its latest start or resume (#441); a pause clears `startedAt`, so the moment needs its own column.
+    it('keeps the last start through a pause, a reset and the zero, and takes a resume as the new one', async () => {
+      const game = await event()
+      await setSeconds(game, 60)
+      expect(await countdownRow(game)).toMatchObject({ startedAt: null, lastStartedAt: null })
+
+      await act(game, 'start')
+      clock.advance(10 * SECOND)
+      await act(game, 'pause')
+      expect(await countdownRow(game)).toMatchObject({ startedAt: null, lastStartedAt: new Date(T0) })
+
+      clock.advance(5 * SECOND)
+      await act(game, 'start')
+      const resumedAt = new Date(new Date(T0).getTime() + 15 * SECOND)
+      expect(await countdownRow(game)).toMatchObject({ startedAt: resumedAt, lastStartedAt: resumedAt })
+
+      clock.advance(60 * SECOND)
+      expect(await readCountdown(game)).toMatchObject({ lastStartedAt: resumedAt.toISOString() })
+
+      await act(game, 'reset')
+      expect(await countdownRow(game)).toMatchObject({ startedAt: null, lastStartedAt: resumedAt })
     })
 
     it('shows none before a Countdown is set', async () => {

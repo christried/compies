@@ -8,8 +8,9 @@ import type { Db } from './db'
 import { stoppedDraws } from './draw-timeline'
 import { apiError } from './errors'
 import type { EventChange } from './event-access'
+import { readEventState } from './event-state'
 import { roundGameView } from './library'
-import { eventSessions, type SessionRow } from './sessions'
+import type { SessionRow } from './sessions'
 
 // The synced clip (GLOSSARY: Clip; spec #218 § Clip, #230). A clip is a read of a draw's instants, not a row: no timer runs, and
 // the only thing stored is the Host's skip (`draws.clip_skipped_at`), so it reaches Members who join later. The rule is
@@ -42,7 +43,7 @@ type Change = Pick<EventChange, 'tx' | 'eventRow' | 'now'>
  * is `no_clip`. `changeEvent` publishes `event.changed` after the commit, so every client refetches and closes its player.
  */
 export async function skipClip({ tx, eventRow, now }: Change): Promise<ClipSkipped> {
-  const clip = await readClip(tx, eventRow.id, await eventSessions(tx, eventRow.id), now)
+  const clip = await readClip(tx, eventRow.id, (await readEventState(tx, eventRow, now, ['sessions'])).sessions, now)
   if (!clip) throw apiError('no_clip')
   await tx.update(draws).set({ clipSkippedAt: now }).where(eq(draws.id, clip.drawId))
   return { drawId: clip.drawId }

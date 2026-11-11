@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Armchair, Eye, Hand, Hourglass, Lock, Users } from '@lucide/vue'
+import { Armchair, Hand, Hourglass, Lock, Users } from '@lucide/vue'
 import type { MoveTarget } from '~/components/MoveToMenuList.vue'
 import { reasonKey } from '~/utils/api-error'
 import { placeFromKey, placeKey, teamName, teamNameAt } from '~/utils/board'
@@ -9,13 +9,13 @@ import { countSeats, moveRejection, type Place } from '~~/shared/board'
 import type { BoardTeam, MemberView } from '~~/shared/event'
 import type { EventSettings } from '~~/shared/settings'
 
-// The Game board (#160, GLOSSARY: Game board, 02-components § GameBoard, 11-event-seite § GameBoard): the teams, the Bench
-// and the Stands, and where everybody sits. A Player moves themselves, the Host anyone: by dragging (pointer events,
+// The Game board (#160, GLOSSARY: Game board, 02-components § GameBoard, 11-event-seite § GameBoard): the teams and the
+// Stands (one zone, #437), and where everybody sits. A Player moves themselves, the Host anyone: by dragging (pointer events,
 // a long press on touch), or from the keyboard through the MoveToMenu. An own move shows at once and glides home with
 // a toast when the server refuses it; somebody else's move arrives through the room (`member.moved`) and glides in (#208).
 // Four phases: `setup` (an Event without settings has no teams), `poll` (no Session has a Date: Players cannot take a
-// team yet), `open` (Team choice is open) and `running` (the first Session has started, #164: teams and names are locked
-// for Players, Bench and Stands stay free, the Host moves anyone). Avatars are keyed by user id, so the refetch that follows a move keeps the
+// team yet), `open` (Team choice is open) and `running` (the first Session has started, #164: teams are locked for
+// Players, their Team word stays open (#438), the Stands stay free, the Host moves anyone). Avatars are keyed by user id, so the refetch that follows a move keeps the
 // glide going. The room comes from the Event page: one socket per page.
 const props = withDefaults(defineProps<{
   slug: string
@@ -55,7 +55,7 @@ const people = computed(() => props.members.map(member => ({ ...member, place: p
 const seats = computed(() => countSeats(people.value.map(person => person.place)))
 const currentPlace = (userId: string): Place => places.placeOf(userId)
 const inPlace = (place: Place) => people.value.filter(person => placeKey(person.place) === placeKey(place))
-const whereText = (place: Place) => (place.zone === 'team' ? nameOfTeam(place.team) : t(place.zone === 'bench' ? 'board.bench' : 'board.stands'))
+const whereText = (place: Place) => (place.zone === 'team' ? nameOfTeam(place.team) : t('board.stands'))
 
 /** Why the viewer cannot put this Member there (`moveRejection`, the server's rule), or null. */
 function rejectionFor(userId: string, to: Place) {
@@ -95,7 +95,7 @@ function personEl(userId: string): HTMLElement | null {
 async function requestMove(userId: string, to: Place) {
   if (rejectionFor(userId, to)) return
   const taken = places.move(userId, to)
-  if (await taken) announce(t(to.zone === 'team' ? 'board.movedTeam' : to.zone === 'bench' ? 'board.movedBench' : 'board.movedStands', { name: nameOf(userId), team: to.zone === 'team' ? nameOfTeam(to.team) : '' }))
+  if (await taken) announce(t(to.zone === 'team' ? 'board.movedTeam' : 'board.movedStands', { name: nameOf(userId), team: to.zone === 'team' ? nameOfTeam(to.team) : '' }))
 }
 
 const drag = useBoardDrag({
@@ -201,8 +201,7 @@ function targetFor(place: Place, label: string, extra: Partial<MoveTarget>): Mov
 
 const targets = computed((): MoveTarget[] => [
   ...props.teams.map(team => targetFor({ zone: 'team', team: team.position }, t('board.moveToTeam', { team: teamName(team, t) }), { team: team.position })),
-  targetFor({ zone: 'bench' }, t('board.moveToBench'), { icon: Armchair }),
-  targetFor({ zone: 'stands' }, t('board.moveToStands'), { icon: Eye }),
+  targetFor({ zone: 'stands' }, t('board.moveToStands'), { icon: Armchair }),
 ])
 
 function pick(key: string) {
@@ -314,7 +313,6 @@ const meta = computed(() => {
         :taken="inPlace({ zone: 'team', team: team.position }).length"
         :lock-reason="lockReason"
         :lock-label="phase === 'running' ? 'locked' : 'closed'"
-        :frozen="team.frozen"
         :drop-target="drag.overZone.value === `team-${team.position}`"
         :mine="placeKey(currentPlace(viewerId)) === `team-${team.position}`"
       >
@@ -330,7 +328,6 @@ const meta = computed(() => {
             :name="teamName(team, t)"
             :named="team.name !== null"
             :mine="placeKey(currentPlace(viewerId)) === `team-${team.position}`"
-            :frozen="team.frozen"
             :my-word="myWord"
             :is-host="isHost"
             :authors="authorsIn(team.position)"
@@ -339,21 +336,16 @@ const meta = computed(() => {
       </TeamZone>
     </div>
 
-    <div class="grid grid-cols-1 gap-2 @min-[560px]:grid-cols-2 @min-[560px]:gap-3">
-      <BenchZone
-        v-for="zone in (['bench', 'stands'] as const)"
-        :key="zone"
-        :zone="zone"
-        :count="inPlace({ zone }).length"
-        :drop-target="drag.overZone.value === zone"
-      >
-        <BoardPerson
-          v-for="person in inPlace({ zone })"
-          :key="person.id"
-          v-bind="personBindings(person)"
-        />
-      </BenchZone>
-    </div>
+    <StandsZone
+      :count="inPlace({ zone: 'stands' }).length"
+      :drop-target="drag.overZone.value === 'stands'"
+    >
+      <BoardPerson
+        v-for="person in inPlace({ zone: 'stands' })"
+        :key="person.id"
+        v-bind="personBindings(person)"
+      />
+    </StandsZone>
 
     <div
       class="sr-only"

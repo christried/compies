@@ -86,21 +86,21 @@ export interface PoolGame {
   playersMax: number | null
   /** The Suitabilities, in SUITABILITIES order; empty when none is set (#171). */
   suitabilities: Suitability[]
-  /** Game notes (#223); null = none. In a pool only the Host reads them (#224). */
+  /** Game notes (#223); null = none. In a pool only the Host reads them (#224); the Host's `hostGames` carries them for every game a tile shows (#443). */
   notes: string | null
   /** The game's Price (#337, #338); null when it has none. It travels with the name: wherever a Member may know the game's name they get it too. */
   price: GamePrice | null
 }
 
 /**
- * What a Member who may see a pool gets of its games: picture, name and Price, nothing else (#224, #338). The
- * Host's pool game is the whole PoolGame. `youtubeId` is the card's thumbnail for a game without an image of its own.
+ * What a Member who may see a pool gets of its games: picture, name, players, Suitabilities and Price, nothing else (#224, #338, #444).
+ * The Host's pool game is the whole PoolGame. `youtubeId` is the card's thumbnail for a game without an image of its own.
  */
-export type PoolGameFace = Pick<PoolGame, 'id' | 'name' | 'imageUrl' | 'youtubeId' | 'price'>
+export type PoolGameFace = Pick<PoolGame, 'id' | 'name' | 'imageUrl' | 'youtubeId' | 'price' | 'playersMin' | 'playersMax' | 'suitabilities'>
 
 /**
- * A set game as its Round shows it to every Member (#228): the whole PoolGame but the notes, which only the Host reads
- * (decided 2026-11-01, #217 comment). The player count, the clip and the Price are there because the Round card and the clip show them.
+ * A set game as its Round shows it to every Member (#228): the face plus the clip, the whole PoolGame but the notes, which only the Host reads
+ * (decided 2026-11-01, #217 comment). The clip is there because the Round card and the clip show it.
  */
 export type RoundGame = Omit<PoolGame, 'notes'>
 
@@ -115,11 +115,14 @@ export interface GameTag {
   label: string
 }
 
+/** What the Host's game dialog shows of a game beyond what its tile's game carries (#443). Only the Host's read has it. */
+export interface HostGameFacts { tags: GameTag[], notes: string | null }
+
 /** A game as the library shows it (GET /api/games, GET /api/games/:id, POST answers). Times are UTC ISO strings. */
 export interface GameView extends PoolGame {
   /**
-   * The game's Tags in the order the editor sent them (#335). Only the library carries them: PoolGame, PoolGameFace and
-   * RoundGame do not, so no Event read, feed entry or message can name one.
+   * The game's Tags in the order the editor sent them (#335). Only the library and the Host's `hostGames` (#443) carry them: PoolGame,
+   * PoolGameFace and RoundGame do not, so no Member's Event read, feed entry or message can name one.
    */
   tags: GameTag[]
   /** `name` is the display name if the User set one, like Event members. */
@@ -222,6 +225,23 @@ export function parseTags(raw: unknown): GameTag[] | undefined {
     tags.push(normaliseTag(item)!)
   }
   return new Set(tags.map(tag => tag.key)).size === tags.length ? tags : undefined
+}
+
+/** The Tag „Free-to-play“ (#423): the key the rule reads and the label it is stored under. */
+export const FREE_TO_PLAY_TAG: GameTag = { key: 'free-to-play', label: 'Free-to-play' }
+
+/**
+ * The Tags a game is stored with after a save (#423). Pure. `price` is the Price after the save (null for none).
+ * Free-to-play is present when there is no Price or its source is free_to_play; otherwise it is removed, also when typed.
+ * A missing one is appended after the others, unless eight other Tags already fill the game (the save still succeeds).
+ */
+export function tagsWithFreeToPlay(tags: GameTag[], price: GamePriceInput | null): GameTag[] {
+  const free = price === null || price.source === 'free_to_play'
+  const others = tags.filter(tag => tag.key !== FREE_TO_PLAY_TAG.key)
+  if (!free) return others
+  if (tags.some(tag => tag.key === FREE_TO_PLAY_TAG.key)) return tags
+  if (others.length >= TAGS_PER_GAME_MAX) return tags
+  return [...tags, FREE_TO_PLAY_TAG]
 }
 
 /** A Price as the form and the server read it (#337): `cents` is null exactly for Free-to-play and Abo. */

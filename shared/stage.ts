@@ -61,7 +61,7 @@ export interface VetoCastView { team: number }
  * The viewer's own Party in the Veto window (#231): its team, whether the Party has cast (the Party's Players learn it at once, nobody
  * else before the end of the window, and nobody ever learns which Player cast it, #355), and why the Party cannot cast on the window's
  * draw (VetoView.draw) now, or null when it may.
- * Only a Player of a Party gets it: the Bench, the Stands and a Host outside the teams get `own: null`.
+ * Only a Player of a Party gets it: the Stands and a Host outside the teams get `own: null`.
  */
 export interface OwnVetoView { team: number, cast: boolean, rejection: VetoRejection | null }
 
@@ -115,9 +115,10 @@ export interface ClipView { drawId: string, startAt: string, endsAt: string, gam
 
 /**
  * The Event's Countdown (#236, spec #218 § Countdown): its stored facts, the duration and either the remaining time (paused, ready)
- * or the start instant (running, ISO). The page computes the time left from them and the server clock (remainingMsAt).
+ * or the start instant (running, ISO). The page computes the time left from them and the server clock (remainingMsAt). `lastStartedAt` is the latest start or
+ * resume (ISO, null before the first): a pause clears `startedAt` and leaves it, so the stage block that rose at it stays up (#441).
  */
-export interface CountdownView { durationMs: number, remainingMs: number, startedAt: string | null }
+export interface CountdownView { durationMs: number, remainingMs: number, startedAt: string | null, lastStartedAt: string | null }
 
 /**
  * The Coin flip (#235, spec #218 § Coin flip): the Event's latest toss while a Session runs, for every Member, null otherwise. The

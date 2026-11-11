@@ -1,16 +1,14 @@
 <script setup lang="ts">
-import { Armchair, Eye } from '@lucide/vue'
+import { Armchair } from '@lucide/vue'
 
-// The Bench and the Stands of the Game board (#160, 02-components § BenchZone / StandsZone): unlimited zones, the
-// substitutes and the spectators. Both always take a drop, so they have no locked state. The people come in the default slot.
-const props = defineProps<{
-  zone: 'bench' | 'stands'
+// The Stands of the Game board (#160, #437, 02-components § BenchZone / StandsZone): the one unlimited zone outside the teams, for every
+// Member who sits in no team, whether they play later or only watch. It always takes a drop, so it has no locked state. The people come in the default slot.
+defineProps<{
   count: number
   dropTarget: boolean
 }>()
 
 const { t } = useI18n()
-const label = computed(() => t(props.zone === 'bench' ? 'board.bench' : 'board.stands'))
 </script>
 
 <template>
@@ -18,18 +16,18 @@ const label = computed(() => t(props.zone === 'bench' ? 'board.bench' : 'board.s
     class="flex min-w-0 flex-col gap-2 rounded-[18px] border-line bg-surface p-3 text-ink transition-[box-shadow,border-color] dur-fast"
     :class="dropTarget ? 'border-[3px] border-focus shadow-card' : 'border-(length:--cp-bw)'"
     role="group"
-    :aria-label="label"
-    :data-drop-zone="zone"
+    :aria-label="t('board.stands')"
+    data-drop-zone="stands"
   >
     <header class="flex items-center gap-2">
       <AppIcon
-        :icon="zone === 'bench' ? Armchair : Eye"
+        :icon="Armchair"
         :size="18"
       />
       <h3 class="m-0 font-display text-[19px] leading-none font-normal">
-        {{ label }}
+        {{ t('board.stands') }}
       </h3>
-      <span class="min-w-0 truncate text-[13px] text-ink-2">{{ t(zone === 'bench' ? 'board.benchSub' : 'board.standsSub') }}</span>
+      <span class="min-w-0 truncate text-[13px] text-ink-2">{{ t('board.standsSub') }}</span>
       <span class="num-ui ml-auto flex-none rounded-pill border-2 border-line px-2 text-[12px] font-extrabold">{{ count }}</span>
     </header>
     <div
@@ -43,7 +41,7 @@ const label = computed(() => t(props.zone === 'bench' ? 'board.bench' : 'board.s
       v-else
       class="m-0 rounded-md border-[2.5px] border-dashed border-ink-3 px-3 py-4 text-center text-[14px] text-ink-3 dark:text-ink-2"
     >
-      {{ t(zone === 'bench' ? 'board.benchEmpty' : 'board.standsEmpty') }}
+      {{ t('board.standsEmpty') }}
     </p>
   </section>
 </template>

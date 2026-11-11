@@ -16,7 +16,7 @@ import { hostPutsBack, hostSets, hostSpins, hostTossesCoin, playerVetoes, signIn
 
 describe('Hidden wheel secrecy (#148)', () => {
   const world = hiddenWheelWorld()
-  const { request, notifier, clock, newGame, rawRead, traces, second, rig, expectNone, LOBBY } = world
+  const { request, notifier, clock, newGame, rawRead, traces, second, rig, expectNone, expectNoGameFacts, LOBBY } = world
   let db: Db
   let hostSigned: Signed
   let hostCookie: string
@@ -110,10 +110,10 @@ describe('Hidden wheel secrecy (#148)', () => {
       expect((await send('POST', `/api/e/${slug}/sessions/${sessionId}/reopen`, hostCookie)).status).toBe(200)
       expect((await send('DELETE', `/api/e/${slug}/sessions/${sessionId}`, hostCookie)).status).toBe(200)
 
-      // 6. Player 1 moves into team 1, Player 2 into team 2; the Host moves Player 2 to the Bench and back.
+      // 6. Player 1 moves into team 1, Player 2 into team 2; the Host moves Player 2 to the Stands and back.
       expect((await send('POST', `/api/e/${slug}/move`, playerCookie, { userId: ids.player, to: team(1) })).status).toBe(200)
       expect((await send('POST', `/api/e/${slug}/move`, player2Cookie, { userId: ids.player2, to: team(2) })).status).toBe(200)
-      expect((await send('POST', `/api/e/${slug}/move`, hostCookie, { userId: ids.player2, to: { zone: 'bench' } })).status).toBe(200)
+      expect((await send('POST', `/api/e/${slug}/move`, hostCookie, { userId: ids.player2, to: { zone: 'stands' } })).status).toBe(200)
       expect((await send('POST', `/api/e/${slug}/move`, hostCookie, { userId: ids.player2, to: team(2) })).status).toBe(200)
 
       // 7. Both set a Team word; the Host resets team 2's name; Player 2 sets a word again.
@@ -187,6 +187,25 @@ describe('Hidden wheel secrecy (#148)', () => {
       // A Price is no part of the room or the feed, whoever reads them (#338).
       expect(room).not.toContain('"price"')
       expect(feed).not.toContain('"price"')
+      // Neither carries a game fact key: no player count, no Suitabilities (#444). The Event reads do, for the set game's Round, so they are not in this check.
+      expectNoGameFacts(room, feed)
+    })
+
+    it('carries the Team names of renamed teams in the room and the feed alike, and still no pool game (#440)', async () => {
+      const { slug, eventId, games } = await lobbyFlow()
+      const entries = (await activityOf(playerCookie, slug)).entries
+      const fromRoom = notifier.messages(eventId).flatMap(message => (message.type === 'activity.added' ? [message.entry] : []))
+
+      // The Team words of the flow („Wilde“, „Gurken“, then „Rote“) are Team names in the entries that name a team: team 2 had „Gurken“ when the Host reset it.
+      const names = (type: string) => entries.filter(entry => entry.type === type).map(entry => (entry.params as { teamNames?: unknown }).teamNames)
+      expect(names('team_name_reset')).toEqual([{ 2: 'Gurken' }])
+      expect(names('result_entered')).toEqual([{ 1: 'Wilde' }])
+      expect(names('member_moved')).toEqual([{ 2: null }, {}, { 2: null }, { 1: null }]) // newest first
+      // Every entry the room carried is the feed's entry, names included.
+      expect(fromRoom.length).toBeGreaterThan(0)
+      for (const sent of fromRoom) expect(entries.find(entry => entry.id === sent.id), sent.type).toEqual(sent)
+      // A Team name is made of Team words: no game's name is in it or anywhere else.
+      expectNone({ 'the room': JSON.stringify(fromRoom), 'the Activity feed of Player 1': JSON.stringify(entries) }, games)
     })
 
     it('names only the set game in the Result entry a Player reads, while the wheel\'s draw is still unstopped (#273)', async () => {
@@ -257,6 +276,9 @@ describe('Hidden wheel secrecy (#148)', () => {
         expect(open).not.toContain(game.tag)
       }
       expectNone({ 'the room': JSON.stringify(notifier.messages(eventId)) }, games)
+      expectNoGameFacts(JSON.stringify(notifier.messages(eventId)))
+      // The face carries players and Suitabilities now (#444), the notes still stay the Host's.
+      expect((JSON.parse(open) as EventView).pool).toMatchObject([{ playersMin: a.playersMin, playersMax: a.playersMax, suitabilities: ['teams'] }, { playersMin: d.playersMin, playersMax: d.playersMax, suitabilities: ['teams'] }])
 
       const hostRaw = await rawRead(hostCookie, slug)
       for (const game of [a, d]) expect(hostRaw).toContain(game.name)
