@@ -9,6 +9,7 @@ Each concern below has one home. New code calls it; a second copy is a finding e
 | Concern | Home |
 |---|---|
 | A change to an Event: user, body, transaction, locked Event load, publish after commit | `changeEvent` in `server/utils/event-access.ts` (#183; lint refuses `.transaction(` in `server/api/e/**`); Session changes through `changeSessions` in `server/utils/sessions.ts`, which calls it |
+| The facts a rule runs on (Sessions, seats, Rounds with draws and Places, Vetoes, Bonus Vetoes, Game pool, latest Coin flip) and each rule's reason for a User at `now` | `readEventState` and the `…Reason` functions in `server/utils/event-state.ts` (#416): the Event read and every write route under `changeEvent` take their facts from it, in the parts their rules need; `test/integration/lock-statements.test.ts` holds the statement budget under the lock |
 | A rule both sides enforce (name length, clip, player count, points table, settings) | a pure function in `shared/`, called by the form and by the server parser |
 | Request input | `unknown` until a domain parser has checked it; `asRecord`/`isRecord` from `shared/record.ts`, no casts (lint) |
 | A User's visible name | `shownName` in `shared/auth.ts` (lint) |
@@ -21,6 +22,7 @@ Each concern below has one home. New code calls it; a second copy is a finding e
 | What a viewer may know of a drawn game | `drawGameKnown` (pure) in `shared/draw-timeline.ts`, `stoppedDraws` (SQL) in `server/utils/draw-timeline.ts` (#258, #414) |
 | A Draw's instants and what each decides (due, game known, window open or ended, Vetoes sealed, the Clip's window) | `shared/draw-timeline.ts`; its SQL twins `stoppedDraws` and `dueDraws` in `server/utils/draw-timeline.ts`, and the Activity feed's own `lte(activity.at, now)` for `INSTANT_ACTIVITY_TYPES` in `server/utils/activity.ts`, kept in step by `test/integration/draw-timeline.test.ts` (#413, #414) |
 | A GET that must show a settled state (a draw whose instant has passed) | `settleBeforeRead` in `server/utils/rounds.ts` (#229): one cheap select when nothing is due, else a locked transaction that calls `settleDue`. A write goes through `changeEvent`, which settles by itself (#259); lint guards `server/api/e/**` only, so a new timed read calls `settleBeforeRead` instead of opening its own `for('update')` |
+| A stage piece: its block and place per page state, who sees it, the moment it rises at, the instants the page reads again at | `app/utils/event-stage.ts` (#415: one row per piece; a new piece is a row there and its component) |
 
 A second page, flow or component that does what an existing one does needs its reason in the PR description. Without one, the review asks for the existing module to grow instead.
 

@@ -2,8 +2,8 @@
 import { Link as LinkIcon } from '@lucide/vue'
 import { formatSlotDay, formatSlotTime } from '~/utils/berlin-time'
 import { feedSessions } from '~/utils/activity'
-import { viewInstants, waitsForSettle } from '~/utils/event-instants'
-import { dateBlockedKey, eventPageState, headerPill, wearsPartyhat } from '~/utils/event-page'
+import { stageInstants, stageUnsettled } from '~/utils/event-stage'
+import { dateBlockedKey, eventPageState, headerPill, waitsForCeremony, wearsPartyhat } from '~/utils/event-page'
 import { historyCorrections } from '~/utils/history-corrections'
 import { datePollOpen, sessionsEditable } from '~~/shared/event'
 
@@ -31,11 +31,11 @@ const votes = useOptimisticVotes(slug, data, refresh)
 // and the Activity feed again when an instant it knows passes (#229: the wheel's stop; #230: the end of the clip, which the
 // overlay closes at by itself and the read then drops; the next tickets add their own).
 const feedTick = ref(0)
-// The instants the page knows (viewInstants, #256). A read taken a hair before one can still miss what it decides: the page then reads again (F13, waitsForSettle).
-useInstantRefresh(() => (data.value ? viewInstants(data.value) : []), serverClock.now, () => {
+// The instants the page knows (stageInstants, #256, #415). A read taken a hair before one can still miss what it decides: the page then reads again (F13, stageUnsettled).
+useInstantRefresh(() => (data.value ? stageInstants(data.value) : []), serverClock.now, () => {
   void refresh()
   feedTick.value += 1
-}, () => (data.value ? waitsForSettle(data.value, serverClock.now()) : false))
+}, () => (data.value ? stageUnsettled(data.value, serverClock.now()) : false))
 
 /** The open Slots with their day and time in Berlin, for the poll and the confirm dialog. */
 const slots = computed(() => (data.value?.slots ?? []).map((slot) => {
@@ -83,11 +83,23 @@ const hostActions = useHostActions(
   { actions, dialogs, invite: () => (inviteOpen.value = true) },
 )
 
-// The state of the page for everybody (#166): its kind, and the blocks of the stage in the order that state wants (A4).
-const pageState = computed(() => (data.value ? eventPageState(data.value) : null))
+// The state of the page for everybody (#166): its kind, and the blocks of the stage in the order that state wants (A4) at the order clock's `now` (#441: a block that
+// something just happened in rises half a second after its moment). The clock lives here, not in the stage, so it survives a switch of the phone's tab; the stage
+// and the phone's Event tab read the same state.
+// A finished page waits for the Award ceremony (#445): until the Host has started it, and for a viewer who saw it waiting, until their run of the first start is over (useCeremonyHold).
+const { held, release } = useCeremonyHold(data)
+const { orderAt, counted, arrivals } = useStageOrder(() => data.value, serverClock.now, () => serverClock.ready.value)
+const pageState = computed(() => (data.value ? eventPageState({ ...data.value, ceremonyHeld: held.value }, orderAt.value, counted.value) : null))
+/** What waits for the ceremony asks the page state, which the Stage module decides (waitsForCeremony): the Winners, the party hat, the Tabelle tab and the feed. */
+const waits = computed(() => (pageState.value ? waitsForCeremony(pageState.value) : false))
+/** The Standings' sequence waits while their block has not arrived on top (#442): false for a null clock (server render, reload, hidden tab) and for a view without a Result moment, which have no arrival. */
+const standingsHeld = computed(() => {
+  const arrival = arrivals.value.standings
+  return orderAt.value !== null && arrival !== undefined && arrival > orderAt.value
+})
 
 // Compibert's header wears the party hat for a Player seated in a Leading Party (#38); no data (loading, error) is the plain head.
-const accessory = computed(() => (data.value && wearsPartyhat(data.value) ? 'partyhat' as const : undefined))
+const accessory = computed(() => (data.value && wearsPartyhat(data.value, waits.value) ? 'partyhat' as const : undefined))
 
 // The header pill follows the page state, not the Event's Phase, which is running from the first start on (headerPill, #166).
 const pill = computed(() => headerPill(pageState.value, data.value?.event.phase, t))
@@ -104,6 +116,7 @@ const { news } = useStandingsNews(data, slug)
   <AppShell
     kind="event"
     :accessory="accessory"
+    :event="data ? { name: data.event.name, ...pill } : undefined"
   >
     <template
       v-if="data"
@@ -122,9 +135,10 @@ const { news } = useStandingsNews(data, slug)
       v-if="data?.inviteUrl"
       #actions
     >
+      <!-- Einladen is the button from 1024 px and an icon from md (980) to 1023, where the header holds the nav (#426); a phone has it elsewhere. -->
       <AppButton
         variant="secondary"
-        class="max-md:hidden"
+        class="max-[63.99rem]:hidden"
         aria-haspopup="dialog"
         @click="inviteOpen = true"
       >
@@ -134,6 +148,13 @@ const { news } = useStandingsNews(data, slug)
         />
         {{ t('common.invite') }}
       </AppButton>
+      <IconButton
+        :icon="LinkIcon"
+        :label="t('common.invite')"
+        aria-haspopup="dialog"
+        class="max-md:hidden min-[64rem]:hidden"
+        @click="inviteOpen = true"
+      />
     </template>
 
     <template
@@ -166,6 +187,7 @@ const { news } = useStandingsNews(data, slug)
             :next-number="feed.nextNumber"
             :refresh-tick="feedTick"
             :teams="data.teams"
+            :winners-hidden="waits"
           />
         </template>
         <!-- The tab scrolls inside the panel (#274): the panel is as tall as the window, a long history is not. -->
@@ -178,6 +200,7 @@ const { news } = useStandingsNews(data, slug)
               :view="data"
               :corrections="corrections"
               :news="news"
+              :waiting="waits"
             />
           </div>
         </template>
@@ -212,6 +235,7 @@ const { news } = useStandingsNews(data, slug)
       :view="data"
       :page-state="pageState"
       :news="news"
+      :standings-held="standingsHeld"
       :actions="actions"
       :votes="votes"
       :slots="slots"
@@ -239,6 +263,7 @@ const { news } = useStandingsNews(data, slug)
         :view="data"
         :corrections="corrections"
         :news="news"
+        :waiting="waits"
       />
       <EventActivityView
         v-else
@@ -248,6 +273,7 @@ const { news } = useStandingsNews(data, slug)
         :next-number="feed.nextNumber"
         :refresh-tick="feedTick"
         :teams="data.teams"
+        :winners-hidden="waits"
       />
     </div>
 
@@ -298,6 +324,7 @@ const { news } = useStandingsNews(data, slug)
       :view="data"
       :server-now="serverClock.now"
       @share="shareOpen = true"
+      @over="release"
     />
 
     <EventHostDialogs

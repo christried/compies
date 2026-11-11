@@ -542,6 +542,7 @@ Each member adds one word (≤ 12 chars) to the team name.
 - **Desktop / mobile:** Inline in the TeamZone header; mobile in the team sheet.
 - **Accessibility:** TextField rules; live region for the composed name.
 - **Motion:** new word pops in `dur-slow ease-pop`.
+- **Deviation (0.12, #425):** there is no `frozen` state. A Player changes their word at any time until the Finish, a Player the Host moved in after the start included. Once the team has its first word, the builder collapses to the name with a pencil button that opens the field again. The Host's reset to the colour name stays at any time and clears the team's words; the Host never types a word. The TeamZone shows no lock for the name.
 
 ## GameBoard
 **Scope:** [1.0] · **Ref:** DS People, App Lobby 09
@@ -554,6 +555,7 @@ The lobby: teams, bench, stands; drag and drop.
 - **Desktop / mobile:** Desktop grid of TeamZones (2–4 columns by container width) + bench + stands rows. Mobile: teams stacked, bench/stands as rows; drag = long-press 300 ms.
 - **Accessibility:** Every avatar: focus + Enter opens MoveToMenu („Verschieben nach …“). Drop zones announce „Team Rot, 1 von 2 frei“. Players can only move themselves; host moves everyone.
 - **Motion:** GSAP Draggable or pointer events; drop = Flip from old slot; refused = bounce-back.
+- **Deviation (0.12, #425):** the board has the teams and one zone, the Tribüne (`stands[]`); there is no `bench[]`. See § BenchZone / StandsZone.
 
 ## TeamZone
 **Scope:** [1.0] · **Ref:** DS People
@@ -578,6 +580,7 @@ Unlimited zones: substitutes (Bench) and spectators (Tribüne).
 - **Desktop / mobile:** Horizontal wrap; mobile rows.
 - **Accessibility:** as TeamZone.
 - **Motion:** as TeamZone.
+- **Deviation (0.12, #425):** Bench and Tribüne are one zone, the Tribüne, for every Member not in a team, whether they will play later or only watch. Arrivals through the Invite link and the Players of a removed team land there; from there Players move into the teams. No sub-line „Zuschauer, spielen nicht mit“, and no copy says Bench anywhere („Von der Tribüne nachziehen“). The reference artboards still show two zones.
 
 ## MoveToMenu
 **Scope:** [1.0] · **Ref:** DS People
@@ -702,7 +705,7 @@ The Note of a matrix cell on mouse hover or keyboard focus (#125).
 - **Props / variants:** `open`, `anchor: HTMLElement | null`, `name`, `image`, `value: yes | maybe | no`, `note`
 - **States:** closed · open (hover) · open (focus)
 - **Slots:** —
-- **Desktop / mobile:** `<Teleport to="body">`, `position: fixed`, `layer-sheet`: above the sticky column and the HostDock, below modals. Width `min(280px, 100vw − 24px)`. Prefers above the cell (12 px gap), flips below when there is no room; centred on the cell and clamped 12 px from the viewport edges, the arrow stays 20 px inside the box and points at the cell (`placeNotePopover`, `app/utils/note-popover.ts`). The vote chip uses the cell's fill (Nein stays `error`).
+- **Desktop / mobile:** `<Teleport to="body">`, `position: fixed`, `layer-sheet`: above the sticky column and the HostDock, below modals. Width `min(280px, 100vw − 24px)`. Prefers above the cell (12 px gap), flips below when there is no room (an 80-character Note always fits on one side, so it ignores the `maxHeight` that `placeNotePopover` returns when a box fits neither, which the game Notes popover applies, #494); centred on the cell and clamped 12 px from the viewport edges, the arrow stays 20 px inside the box and points at the cell (`placeNotePopover`, `app/utils/note-popover.ts`). The vote chip uses the cell's fill (Nein stays `error`).
 - **Accessibility:** `aria-hidden`, no role, not linked: the cell's sr-only text already says it. Pointer can move onto it (close delay 120 ms).
 - **Motion:** enter `opacity 0→1` + `y 4→0` (from below `−4→0`), `dur-fast`, `ease-out`. Reduced: fade only.
 
@@ -825,6 +828,7 @@ A game in library, pool, wheel lists, pick & ban.
 - **Desktop / mobile:** —
 - **Accessibility:** Card is not a button unless selectable (then `aria-pressed`).
 - **Motion:** ban: stamp `scale 2.2→1, rotate −8°` 0.4 s; pick: slap into order strip (Flip).
+- **Deviation (0.12, #425):** on the Event page (Spielepool in „So wird gespielt“, „Zuletzt gezogen“ under the wheel, „Gerade dran“ on the open Rounds) a game is a tile with picture and name only, for the Host too; the pool's tiles sit side by side in a grid. A tap opens the game dialog (a sheet below md, a dialog from md up): the library entry, read-only. The Host sees players, Suitabilities, all Tags, the Price, the Notes and „In der Bibliothek öffnen“; a Member sees picture, name, players, Suitabilities and the Price, never Tags or Notes. No Clip in the dialog. On „Gerade dran“ the Host's Notes stay open under the tile. In the compact game browser (both pool pickers, „Nächstes Spiel setzen“) and on the chosen games of step „Spiele“, a game with Notes gets a Notes button that opens them in a popover from md up and a sheet below.
 
 ## LuckyWheel
 **Scope:** [1.0] · **Ref:** GameWheel, App Spielrunde 11
@@ -837,6 +841,7 @@ A game in library, pool, wheel lists, pick & ban.
 - **Desktop / mobile:** Desktop 420 px; mobile fits width (max 340). Never resizes during a spin.
 - **Accessibility:** `role="img"` with label „Glücksrad mit 9 Spielen“; live region announces result („Glücksrad: Counter-Strike 2“). Spin button for host only.
 - **Motion:** see 04-motion § Wheel.
+- **Deviation (0.13):** the look is the reference's skin `show` and keeps its colours in both Appearances; the card around it follows the Appearance. The spin has no Host setting: the server draws 6 to 10 s for each spin. Compibert beside the wheel waits for his own Claude Design hand-off (`docs/roadmap.md` § 0.13.2).
 
 ## ClipPlayer
 **Scope:** [1.0] · **Ref:** App Spielrunde 11, App Systemzustände 30
@@ -849,6 +854,7 @@ A game in library, pool, wheel lists, pick & ban.
 - **Desktop / mobile:** Desktop overlay over the stage (`layer-clip`), 16:9 max 720; mobile top, full width.
 - **Accessibility:** Controls labelled; closing is personal („Für mich schließen“).
 - **Motion:** open `scale .96→1, fade` `dur-slow`; close `dur-base`.
+- **Deviation (0.13):** `length` is 10 to 120 s (default 30). In a Session the player takes no pointer and no keyboard input from anyone; nothing is laid over it and nothing is cropped, so YouTube's title shows for the first seconds. A player that pauses for any other reason resumes at the synced second. Mute and „Für mich schließen“ stay with every Member, „Clip überspringen“ with the Host (`docs/roadmap.md` § 0.13.0).
 
 ## VetoWindow
 **Scope:** [1.0] · **Ref:** VetoWindow
@@ -861,6 +867,7 @@ A game in library, pool, wheel lists, pick & ban.
 - **Desktop / mobile:** Desktop bar at the bottom of the stage (`layer-veto`, above clip). Mobile action bar above the tab bar, thumb reach.
 - **Accessibility:** HoldToConfirmButton „Veto (1 s halten)“; timer announces 30/10/5 s; reveal announced via live region.
 - **Motion:** see 04-motion § Veto.
+- **Deviation (0.13):** the window is not 60 s: it lasts the game's clip length plus 30 s, 30 s without a Clip, and a skipped Clip ends it 30 s after the skip if that is sooner. The states „clip first 30 s“ and „clip closed (30 s left)“ read accordingly (`GLOSSARY.md` § Veto window).
 
 ## CoinFlip
 **Scope:** [1.0] · **Ref:** Coin3D, Game Options 1i
@@ -945,6 +952,7 @@ Live standings.
 - **Desktop / mobile:** Side panel tab „Tabelle“ + stage after each game; mobile tab.
 - **Accessibility:** Table semantics; rank changes announced politely.
 - **Motion:** see 04-motion § Leaderboard.
+- **Deviation (0.12, #425):** in a finished Event the Standings, the Spielverlauf and the Tabelle tab wait for the Award ceremony: until the Host first starts it, every Member, the Host included, sees a card saying the ceremony is pending in their place.
 
 ## GameHistory
 **Scope:** [1.0] · **Ref:** DS Scoring

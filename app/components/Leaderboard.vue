@@ -25,9 +25,11 @@ const props = withDefaults(defineProps<{
   /** The stage block only: the stamp and the confetti (the side panel's scroll container would clip the stamp). */
   celebrate?: boolean
   news?: StandingsNews | null
+  /** The stage block only (#442): the block has not arrived on top; the table keeps the Standings the news says the page saw before it, and the sequence starts in the render that turns `hold` off. */
+  hold?: boolean
   /** The id of a heading outside this table that names it (#274): the phone's „Tabelle“ view, whose page h1 is the title; then the Leaderboard shows no h2 of its own. */
   labelledBy?: string
-}>(), { framed: false, celebrate: false, news: null })
+}>(), { framed: false, celebrate: false, news: null, hold: false })
 
 const { t } = useI18n()
 const headingId = useId()
@@ -48,6 +50,8 @@ const MOVE_CLASS = 'transition-transform dur-slower ease-spring motion-reduce:tr
 
 /** The news this Leaderboard plays: its own copy, so a news it did not play (a stale one at mount) shows nothing. */
 const playing = shallowRef<StandingsNews | null>(null)
+/** The news that waits for the block to arrive on top (#442, `hold`): the table shows its `before` until then. Two Results inside one wait are one sequence, from the table the viewer saw to the latest Result. */
+const waiting = shallowRef<StandingsNews | null>(null)
 let playedKey = 0
 let burstTimer: ReturnType<typeof setTimeout> | undefined
 
@@ -55,14 +59,40 @@ let burstTimer: ReturnType<typeof setTimeout> | undefined
 watch(() => props.news, (news, previous) => {
   if (!news) {
     playing.value = null
+    waiting.value = null
     return
   }
   if (news.key === playedKey) return
   playedKey = news.key
-  // `previous` is undefined only on the first run, at mount.
+  // `previous` is undefined only on the first run, at mount. The rule does not run again when `hold` ends.
   if (previous === undefined && Date.now() - news.at >= FRESH_MS) return
-  playing.value = news
+  if (!props.hold) {
+    playing.value = news
+    waiting.value = null
+    return
+  }
+  // The pills of a news that still plays leave by their fade; its table is the one on screen, the `before` of the next.
+  playing.value = null
+  waiting.value = waiting.value ? { ...news, before: waiting.value.before } : news
 }, { immediate: true })
+
+// Declared after the news watcher: the news and the end of the hold may come in one update. The watcher of `playing` then starts the pills, the stamp and the confetti.
+watch(() => props.hold, (hold) => {
+  if (hold || !waiting.value) return
+  playing.value = waiting.value
+  waiting.value = null
+})
+
+/** The rows of a held table (#442): `before` in its order and with its points; a Party it lacks comes last with 0 points and its current rank, a Party the Standings lack is dropped. */
+function heldTable(before: StandingView[], standings: StandingView[]): StandingView[] {
+  const current = new Map(standings.map(standing => [standing.team, standing] as const))
+  const kept = before.filter(standing => current.has(standing.team))
+  const known = new Set(kept.map(standing => standing.team))
+  return [...kept, ...standings.filter(standing => !known.has(standing.team)).map(standing => ({ ...standing, points: 0 }))]
+}
+
+/** The Standings the table shows: the new ones, or the ones before the Result while the news waits for the block. */
+const shown = computed(() => (waiting.value ? heldTable(waiting.value.before, props.standings ?? []) : (props.standings ?? [])))
 
 const deltas = computed(() => (playing.value ? pointsDelta(playing.value.before, props.standings) : null))
 const moves = computed(() => new Map((playing.value ? rankMoves(playing.value.before, props.standings) : []).map(move => [move.team, move] as const)))
@@ -83,7 +113,7 @@ function pillOf(team: number) {
 }
 
 // Each row with its pill, computed once per change instead of three times per row (#288). The pill is set exactly while the news plays.
-const rows = computed(() => (props.standings ?? []).map(standing => ({ standing, pill: playing.value ? pillOf(standing.team) : null })))
+const rows = computed(() => shown.value.map(standing => ({ standing, pill: playing.value ? pillOf(standing.team) : null })))
 
 function burst(news: StandingsNews) {
   const card = root.value

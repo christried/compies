@@ -1,7 +1,8 @@
 import { and, desc, eq, inArray, lte, notInArray, or, sql } from 'drizzle-orm'
-import { activity, draws, games, rounds, users } from '../db/schema'
+import { activity, draws, eventMembers, games, rounds, users } from '../db/schema'
 import { shownName } from '../../shared/auth'
-import { INSTANT_ACTIVITY_TYPES, activityGames, activityPeople, type ActivityEntry, type ActivityPage, type ActivityParams, type ActivityType, type InstantActivityType } from '../../shared/activity'
+import { INSTANT_ACTIVITY_TYPES, activityGames, activityPeople, type ActivityEntry, type ActivityPage, type ActivityParams, type ActivityType, type InstantActivityType, type TeamNames, type TeamNamingType } from '../../shared/activity'
+import { composeTeamName } from '../../shared/board'
 import type { RoomMessage } from '../../shared/realtime'
 import type { Db } from './db'
 import { stoppedDraws } from './draw-timeline'
@@ -39,6 +40,29 @@ function stampOf(eventId: string, now: Date) {
 }
 
 /**
+ * What a writer must hand over besides the params' own fields (#440): the Team names of the teams the entry names, for the six
+ * kinds that name one (TEAM_NAMING_TYPES). A kind that forgets them does not compile.
+ */
+type NamedTeams<T extends ActivityType> = T extends TeamNamingType ? { teamNames: TeamNames } : unknown
+
+/**
+ * The Team names an entry stores for these team positions (#440, ADR 0016): the name each team has right now, which is the name
+ * it had right before the change the entry records, as long as the caller asks before that change. `null` is a team without
+ * words (the client shows its colour). Composed from the Team words with `composeTeamName`, never from `event_teams.frozen_name`: a
+ * finished Event refuses every write, and the Finish itself runs on the pre-finish row. One select, none for no positions (the
+ * Stands). It lives here, not in event-state.ts, which settle.ts must not import (its header names the cycle).
+ */
+export async function feedTeamNames(db: Db, eventId: string, positions: readonly number[]): Promise<TeamNames> {
+  const distinct = [...new Set(positions)]
+  if (distinct.length === 0) return {}
+  const members = await db
+    .select({ team: eventMembers.team, teamWord: eventMembers.teamWord, teamJoinedAt: eventMembers.teamJoinedAt })
+    .from(eventMembers)
+    .where(and(eq(eventMembers.eventId, eventId), inArray(eventMembers.team, distinct)))
+  return Object.fromEntries(distinct.map(position => [String(position), composeTeamName(members, position)]))
+}
+
+/**
  * Writes one entry in the caller's transaction and queues `activity.added` for after the commit (changeEvent's
  * `publish`), so a change that throws leaves neither the entry nor the message. The entry is never earlier than its request's `now`
  * (stampOf), and two entries of one change keep the order they were written in.
@@ -49,7 +73,7 @@ export async function recordActivity<T extends ActivityType>(
   tx: Db,
   publish: (...messages: RoomMessage[]) => void,
   eventId: string,
-  { type, actorId, params, at, now }: { type: T, actorId: string | null, params: ActivityParams[T] } & ActivityMoment<T>,
+  { type, actorId, params, at, now }: { type: T, actorId: string | null, params: ActivityParams[T] & NamedTeams<T> } & ActivityMoment<T>,
 ): Promise<void> {
   const [row] = await tx
     .insert(activity)

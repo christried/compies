@@ -3,6 +3,7 @@ import {
   CLIP_LENGTH_MAX, CLIP_LENGTH_MIN, CLIP_START_MAX, GAME_NAME_MAX, NO_FILTERS, SUITABILITIES, canEditGame, canSeeLibrary, clipTime, filterGames, gameNameProblem,
   isClipLength, normaliseTag, parseClipLength, parseClipTime, parseGameInput, parsePlayerCount, parseTags, tagProblem,
   formatPriceAmount, isPriceCheckOnly, parsePrice, parsePriceAmount, priceTakesAmount,
+  FREE_TO_PLAY_TAG, tagsWithFreeToPlay,
   type GameFilters, type GameView, type Suitability,
 } from '../../shared/game'
 
@@ -651,5 +652,51 @@ describe('isPriceCheckOnly (#360)', () => {
 
   it('leaves the parser as it was: the flag alone still has no name and is refused', () => {
     expect(parseGameInput({ priceChecked: true })).toEqual({ ok: false, error: 'invalid_game_name' })
+  })
+})
+
+describe('Free-to-play-Tag (#423)', () => {
+  const coOp = normaliseTag('Co-op')!
+  const retro = normaliseTag('Retro')!
+  const steam = { cents: 1999, source: 'steam' as const }
+  const freeToPlay = { cents: null, source: 'free_to_play' as const }
+  const typedFree = normaliseTag('free-to-play')!
+
+  function otherTags(count: number) {
+    return Array.from({ length: count }, (_, index) => normaliseTag(`Tag ${index + 1}`)!)
+  }
+
+  it('gives a game without a Price the Tag, alone', () => {
+    expect(tagsWithFreeToPlay([], null)).toEqual([FREE_TO_PLAY_TAG])
+  })
+
+  it('adds the Tag after the sent Tags when the source is Free-to-play', () => {
+    expect(tagsWithFreeToPlay([coOp, retro], freeToPlay)).toEqual([coOp, retro, FREE_TO_PLAY_TAG])
+  })
+
+  it('gives a game with another Price no Tag, and removes a typed one, the others keep their order', () => {
+    expect(tagsWithFreeToPlay([coOp, typedFree, retro], steam)).toEqual([coOp, retro])
+    expect(tagsWithFreeToPlay([typedFree], { cents: 500, source: 'publisher' })).toEqual([])
+  })
+
+  it('keeps a Free-to-play Tag that is already there once, at its position', () => {
+    const tags = [coOp, FREE_TO_PLAY_TAG, retro]
+    expect(tagsWithFreeToPlay(tags, null)).toEqual(tags)
+    expect(tagsWithFreeToPlay(tags, freeToPlay)).toEqual(tags)
+  })
+
+  it('appends the Tag as the eighth when seven other Tags fill the game less one', () => {
+    const others = otherTags(7)
+    expect(tagsWithFreeToPlay(others, null)).toEqual([...others, FREE_TO_PLAY_TAG])
+  })
+
+  it('does not add the Tag to eight other Tags, and does not drop any of them', () => {
+    const others = otherTags(8)
+    expect(tagsWithFreeToPlay(others, null)).toEqual(others)
+  })
+
+  it('removes the Tag from a game with another Price, which leaves seven', () => {
+    const tags = [...otherTags(7), FREE_TO_PLAY_TAG]
+    expect(tagsWithFreeToPlay(tags, steam)).toEqual(otherTags(7))
   })
 })

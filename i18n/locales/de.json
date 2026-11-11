@@ -39,6 +39,7 @@
     "library": "Bibliothek",
     "profile": "Profil",
     "admin": "Admin",
+    "eventContext": "Event: {name}, Phase: {phase}",
     "createEvent": "Event erstellen",
     "tabs": {
       "board": "Spielbrett",
@@ -70,7 +71,7 @@
     "proposeDate": "Termin vorschlagen",
     "start": "Session starten",
     "checkTeams": "Teams prüfen",
-    "fillFromBench": "Von der Bench nachziehen",
+    "fillFromStands": "Von der Tribüne nachziehen",
     "spin": "Rad drehen",
     "respin": "Neu drehen",
     "setGame": "Nächstes Spiel setzen",
@@ -108,9 +109,9 @@
     "shortcut": "Taste H: Host-Steuerung",
     "startDialog": {
       "title": "Los geht’s?",
-      "textFirst": "Mit dem Start werden Teams und Teamnamen gesperrt. Bench und Tribüne bleiben offen, nachziehen kannst du weiterhin.",
+      "textFirst": "Mit dem Start werden die Teams gesperrt. Die Tribüne bleibt offen, nachziehen kannst du weiterhin.",
       "textLater": "Die Teams bleiben, wie sie sind.",
-      "lock": "{teams} Teams à {size}, Namen werden eingefroren"
+      "lock": "{teams} Teams à {size}, danach gesperrt"
     },
     "more": "Mehr",
     "group": {
@@ -173,13 +174,13 @@
       "setupTitle": "Event einrichten",
       "setup": "Für dieses Event fehlt noch, wie gespielt wird. Leg Format, Spiele und Punkte fest, dann öffnet die Teamwahl.",
       "setupAction": "Jetzt einrichten",
-      "setupMember": "{host} richtet das Event noch ein. Bis dahin: Bench oder Tribüne.",
+      "setupMember": "{host} richtet das Event noch ein. Bis dahin bleibst du auf der Tribüne.",
       "seatTeam": "Du spielst mit, in {team}. Das Host-Dock bleibt genau gleich.",
-      "seatStands": "Du sitzt auf der Tribüne und spielst nicht mit. Das Host-Dock bleibt genau gleich.",
-      "teamsStay": "Die Teams bleiben fürs ganze Event. Wer bei Session {n} fehlt, ersetzt du von der Bench.",
-      "teamsStayNext": "Die Teams bleiben fürs ganze Event. Wer bei der nächsten Session fehlt, ersetzt du von der Bench.",
-      "teamsStayMember": "Die Teams bleiben fürs ganze Event. Wenn du bei Session {n} nicht kannst, setz dich auf die Bench.",
-      "teamsStayMemberNext": "Die Teams bleiben fürs ganze Event. Wenn du bei der nächsten Session nicht kannst, setz dich auf die Bench.",
+      "seatStands": "Du sitzt auf der Tribüne. Das Host-Dock bleibt genau gleich.",
+      "teamsStay": "Die Teams bleiben fürs ganze Event. Wer bei Session {n} fehlt, ersetzt du von der Tribüne.",
+      "teamsStayNext": "Die Teams bleiben fürs ganze Event. Wer bei der nächsten Session fehlt, ersetzt du von der Tribüne.",
+      "teamsStayMember": "Die Teams bleiben fürs ganze Event. Wenn du bei Session {n} nicht kannst, setz dich auf die Tribüne.",
+      "teamsStayMemberNext": "Die Teams bleiben fürs ganze Event. Wenn du bei der nächsten Session nicht kannst, setz dich auf die Tribüne.",
       "tie": "Gleichstand auf Platz 1. Der Host entscheidet.",
       "sessionNeededTitle": "Noch {n} Spiel offen | Noch {n} Spiele offen",
       "sessionNeeded": "Dafür braucht es eine neue Session. Leg sie an und starte sie, wenn ihr so weit seid."
@@ -203,11 +204,8 @@
   },
   "board": {
     "title": "Spielbrett",
-    "bench": "Bench",
-    "benchSub": "Noch ohne Team, unbegrenzt",
     "stands": "Tribüne",
-    "standsSub": "Zuschauer, spielen nicht mit",
-    "benchEmpty": "Niemand auf der Bench.",
+    "standsSub": "Noch ohne Team, unbegrenzt",
     "standsEmpty": "Die Tribüne ist leer.",
     "free": "Frei",
     "dropHere": "Hier rein",
@@ -223,10 +221,8 @@
     "moveTo": "Verschieben nach …",
     "whereTo": "Wohin, {name}?",
     "moveToTeam": "Nach {team}",
-    "moveToBench": "Auf die Bench",
     "moveToStands": "Auf die Tribüne",
     "movedTeam": "{name} ist jetzt in {team}.",
-    "movedBench": "{name} ist jetzt auf der Bench.",
     "movedStands": "{name} ist jetzt auf der Tribüne.",
     "dragHint": "Ziehen oder Enter zum Verschieben",
     "cancelled": "Abgebrochen.",
@@ -240,7 +236,7 @@
       "lostRace": "{name} war schneller. Der letzte Platz in {team} ist weg."
     },
     "note": {
-      "setup": "Teams gibt es, sobald das Event eingerichtet ist. Bis dahin: Bench oder Tribüne."
+      "setup": "Teams gibt es, sobald das Event eingerichtet ist. Bis dahin bleibst du auf der Tribüne."
     },
     "meta": {
       "setup": "{n} Person da | {n} Leute da",
@@ -252,11 +248,11 @@
     "notice": {
       "unevenTitle": "Teams sind ungleich",
       "unevenMember": "{team} sucht noch jemanden. Rück rein, dann kann’s losgehen.",
-      "poll": "Teamwahl öffnet, sobald der Termin steht. Bis dahin: Bench oder Tribüne.",
+      "poll": "Teamwahl öffnet, sobald der Termin steht. Bis dahin bleibst du auf der Tribüne.",
       "uneven": "{team} hat {small}, die anderen haben {big}. Die Session startet erst, wenn alle Teams gleich groß sind.",
-      "running": "Das Event läuft. Zwischen Bench und Tribüne kannst du frei wechseln.",
-      "runningHost": "Event läuft: nur du kannst noch tauschen. Name eingefroren.",
-      "runningPlayer": "Gesperrt seit dem Start. Name eingefroren."
+      "running": "Das Event läuft. Die Teams sind gesperrt, nur der Host setzt dich noch in ein Team.",
+      "runningHost": "Event läuft: nur du kannst noch tauschen.",
+      "runningPlayer": "Gesperrt seit dem Start. Dein Teamwort kannst du weiter ändern."
     },
     "conflict": "{name} war schneller."
   },
@@ -278,10 +274,10 @@
       "label": "Dein Wort für den Teamnamen",
       "help": "Ein Wort, bis zu 12 Zeichen.",
       "noSpaces": "Nur ein Wort, ohne Leerzeichen.",
-      "frozen": "Eingefroren seit dem Start.",
       "noTeam": "Du bist gerade in keinem Team. Dein Wort zählt, sobald du einem beitrittst.",
       "order": "Reihenfolge:",
       "reset": "Name zurücksetzen",
+      "change": "Teamwort ändern",
       "resetDone": "Name zurückgesetzt auf {name}.",
       "resetTitle": "Teamnamen zurücksetzen?",
       "resetText": "„{name}“ heißt dann wieder „{color}“.",
@@ -381,7 +377,7 @@
         "title": "Teams",
         "how": "Du legst fest, wie viele Teams es gibt (2 bis 8). Alle Teams müssen gleich groß sein (max. 6 pro Team). Sobald der Termin steht, ziehen sich die Spieler selbst in ein Team. Jedes Mitglied steuert ein Wort zum Teamnamen bei. Mit dem Start sind die Teams gesperrt.",
         "good": "1v1 bis 6v6, z. B. Counter-Strike 2 im 2v2.",
-        "warn": "Ein Spiel startet nur, wenn alle Teams gleich groß sind. Fehlt jemand, kannst du Leute von der Bench nachziehen."
+        "warn": "Ein Spiel startet nur, wenn alle Teams gleich groß sind. Fehlt jemand, kannst du Leute von der Tribüne nachziehen."
       },
       "admin": {
         "title": "Host-Wahl",
@@ -512,6 +508,11 @@
     "skip": "Überspringen",
     "watch": "Siegerehrung ansehen",
     "again": "Nochmal ansehen",
+    "pending": {
+      "title": "Siegerehrung",
+      "member": "Die Siegerehrung steht noch aus.",
+      "host": "Die Siegerehrung steht noch aus. Starte sie mit „{action}“ im Host-Dock, sobald ihr so weit seid."
+    },
     "place1": "Platz 1",
     "stamp": "SIEGER",
     "standings": "Endstand",
@@ -632,10 +633,8 @@
     "gameHeader": "Spiel {n}, {game}",
     "join": "{name} ist dem Event beigetreten",
     "moveTeam": "{name} ist jetzt in {team}",
-    "moveBench": "{name} ist jetzt auf der Bench",
     "moveStands": "{name} ist jetzt auf der Tribüne",
     "movedTeam": "{actor} hat {name} nach {team} verschoben",
-    "movedBench": "{actor} hat {name} auf die Bench verschoben",
     "movedStands": "{actor} hat {name} auf die Tribüne verschoben",
     "date": "Termin steht: {date}",
     "start": "{name} hat die Session gestartet",
@@ -650,7 +649,8 @@
     "resultEntered": "Spiel {n}: {game}, {list} gewinnt | Spiel {n}: {game}, {list} gewinnen",
     "resultCorrected": "{name} hat Spiel {n} ({game}) korrigiert",
     "eventFinished": "Event beendet: {list} gewinnt | Event beendet: {list} gewinnen",
-    "eventFinishedTie": "Unentschieden: {list}"
+    "eventFinishedTie": "Unentschieden: {list}",
+    "eventFinishedPlain": "Event beendet"
   },
   "emote": {
     "send": "Emote senden: {name}",
@@ -765,7 +765,7 @@
     "cancelled": "Anmelden hat nicht geklappt. Versuch’s nochmal.",
     "titleInvite": "Erst kurz anmelden",
     "intro": "Einfach nur mit dem Konto, mit dem du eh schon zockst, und das war’s.",
-    "inviteNotice": "{host} hat dich zu {event} eingeladen. Melde dich an, dann geht’s direkt auf die Bench.",
+    "inviteNotice": "{host} hat dich zu {event} eingeladen. Melde dich an, dann geht’s direkt auf die Tribüne.",
     "cancelledTitle": "Anmeldung abgebrochen.",
     "cancelledProvider": "{headline} {provider} hat uns nichts geschickt. Einfach nochmal versuchen.",
     "redirecting": "Weiter zu {provider} …",
@@ -809,11 +809,11 @@
     "openSignedOut": "Du bist zu {event} eingeladen",
     "invalidTitle": "Dieser Link gilt nicht mehr.",
     "deletedTitle": "Dieses Event gibt’s nicht mehr.",
-    "joinedToast": "Du bist drin! Du sitzt erstmal auf der Bench.",
+    "joinedToast": "Du bist drin! Du sitzt erstmal auf der Tribüne.",
     "copyFailed": "Kopieren hat nicht geklappt. Markier den Link und kopier ihn von Hand.",
     "kicker": "Einladung",
-    "joining": "Einen Moment, wir setzen dich auf die Bench …",
-    "sheetText": "Wer den Link hat und sich anmeldet, landet auf der Bench. Von dort ziehen sich alle selbst ins Team.",
+    "joining": "Einen Moment, wir setzen dich auf die Tribüne …",
+    "sheetText": "Wer den Link hat und sich anmeldet, landet auf der Tribüne. Von dort ziehen sich alle selbst ins Team.",
     "leakedTitle": "Link geleakt?",
     "renew": "Link erneuern",
     "renewTitle": "Einladungslink erneuern?",
@@ -931,6 +931,9 @@
     "loadMore": "Mehr laden",
     "shownOf": "{shown} von {total} Spielen"
   },
+  "gameNotes": {
+    "open": "Notizen ansehen"
+  },
   "gameEdit": {
     "kicker": "Bibliothek",
     "title": "Spiel anlegen",
@@ -971,6 +974,7 @@
     "notesTooLong": "Höchstens {max} Zeichen.",
     "tags": "Tags",
     "tagsHelp": "Enter oder Komma fügt einen Tag hinzu.",
+    "tagsFreeToPlayHint": "Ohne Preis bekommt das Spiel den Tag „Free-to-play“.",
     "tagTooLong": "Höchstens {max} Zeichen",
     "tagsTooMany": "Höchstens {max} Tags",
     "tagRemove": "Tag „{label}“ entfernen",
@@ -1238,7 +1242,7 @@
       },
       "events": {
         "heading": "11. Events, Terminvorschläge und Stimmen",
-        "text": "Ein Host legt ein Event mit Namen an und schlägt Termine vor oder legt direkt einen Termin fest. Zu jedem Event speichern wir, wer es angelegt hat, seinen Namen und seine Terminvorschläge. Ein Event besteht aus einer oder mehreren Sessions, jede mit eigenem Termin: zu jeder Session speichern wir ihren Termin sowie einen früheren, wieder aufgehobenen Termin. Zu deiner Mitgliedschaft speichern wir, wann du beigetreten bist; zu jeder deiner Stimmen (Ja, Meh, Nein), zu welchem Terminvorschlag sie gehört und wann du sie zuletzt geändert hast, sowie eine kurze Anmerkung dazu, wenn du eine schreibst.\n\nZu jedem Event gehört ein Spielbrett. Zu deiner Mitgliedschaft speichern wir deshalb auch, wo du sitzt (Bench, Tribüne oder ein Team), seit wann du in deinem Team bist und dein Teamwort, wenn du eins abgibst. Zu jeder Session speichern wir, wann der Host sie gestartet und beendet hat, und zu jedem Team den Namen, der beim Start der ersten Session eingefroren wurde. Zu jeder Runde eines Events speichern wir das gezogene oder gesetzte Spiel und, sobald der Host es einträgt, das Ergebnis: die Platzierung jedes Teams und, wenn angegeben, seinen Score. Zu jedem Veto speichern wir, welches Team es eingelegt hat und wer aus dem Team, zu jedem Bonus-Veto, welches Team es bekam, und zu jedem Münzwurf, wer geworfen hat. Zum Event selbst speichern wir, wann der Host es abgeschlossen hat und wann er zuletzt die Siegerehrung gestartet hat. Außerdem führt Compies zu jedem Event einen Aktivitäts-Feed. Er hält fest, wer wann beigetreten ist, wer den Platz gewechselt hat oder von wem verschoben wurde, wer Termine festgelegt, verschoben oder aufgehoben hat, wer Sessions hinzugefügt, entfernt, gestartet oder beendet hat, wer die Anzahl der Spiele oder die Teamgröße geändert hat und wer einen Teamnamen zurückgesetzt hat, welche Spiele gezogen, gesetzt oder zurückgelegt wurden, welches Team ein Veto eingelegt hat, welches Team ein Bonus-Veto bekam, wie ein Münzwurf ausging, welche Ergebnisse eingetragen oder korrigiert wurden und wie das Event endete.\n\nName, Terminvorschläge und die Termine der Sessions eines Events, das Spielbrett mit Plätzen, Teamwörtern und Teamnamen, die Runden mit ihren Ergebnissen, die Tabelle und der Aktivitäts-Feed sowie Anzeigename, Profilbild, Stimmen und Anmerkungen ihrer Mitglieder sind für alle Mitglieder dieses Events sichtbar. Dass ein Team ein Veto eingelegt hat, sieht bis zum Aufdecken nur dieses Team; welcher Spieler es war, erfährt niemand. Wer den Einladungslink eines Events erhält, kann ihm nach der Anmeldung beitreten; ohne Anmeldung zeigt der Link nur den Namen des Events sowie Anzeigename und Profilbild des Hosts. Teile Einladungslinks daher nur mit Personen, die mitmachen sollen. Der Host kann den Link jederzeit erneuern; der alte Link funktioniert dann nicht mehr. Der Host kann ein Event jederzeit löschen, nur nicht, solange eine Session läuft. Ein gelöschtes Event ist für alle Mitglieder sofort nicht mehr erreichbar: nicht auf der Startseite, nicht über den Link zum Event und nicht über den Einladungslink. Dort steht dann nur, dass das Event gelöscht wurde.\n\nIst ein Event abgeschlossen, kann jedes Mitglied ein Ergebnisbild herunterladen oder teilen. Es zeigt Namen und Datum des Events, wie viele Leute mitgespielt haben, die Tabelle mit Teamnamen und Punkten und die gespielten Spiele, aber keine Anzeigenamen und keine Profilbilder. Compies erzeugt das Bild bei jedem Abruf neu und speichert es nicht. Teilst du es über die Teilen-Funktion deines Geräts, gibt dein Gerät es an die App weiter, die du wählst; ab dann gelten deren Datenschutzbestimmungen.\n\nHosts füllen außerdem eine gemeinsame Spielebibliothek. Zu jedem Spiel speichern wir, wer es angelegt hat, seine Angaben und seine Notizen: freien Text, den der Host schreibt, etwa zu Einstellungen, Aufwärmen und Hausregeln. Notizen können deshalb auch andere Personen nennen. Lesen können sie Personen mit Host-Berechtigung und Admins, außerdem der Host eines Events, dessen Spielepool das Spiel enthält. Ändern oder löschen können sie nur, wer das Spiel angelegt hat, und Admins.\n\nRechtsgrundlage ist Art. 6 Abs. 1 lit. b DSGVO."
+        "text": "Ein Host legt ein Event mit Namen an und schlägt Termine vor oder legt direkt einen Termin fest. Zu jedem Event speichern wir, wer es angelegt hat, seinen Namen und seine Terminvorschläge. Ein Event besteht aus einer oder mehreren Sessions, jede mit eigenem Termin: zu jeder Session speichern wir ihren Termin sowie einen früheren, wieder aufgehobenen Termin. Zu deiner Mitgliedschaft speichern wir, wann du beigetreten bist; zu jeder deiner Stimmen (Ja, Meh, Nein), zu welchem Terminvorschlag sie gehört und wann du sie zuletzt geändert hast, sowie eine kurze Anmerkung dazu, wenn du eine schreibst.\n\nZu jedem Event gehört ein Spielbrett. Zu deiner Mitgliedschaft speichern wir deshalb auch, wo du sitzt (Tribüne oder ein Team), seit wann du in deinem Team bist und dein Teamwort, wenn du eins abgibst. Zu jeder Session speichern wir, wann der Host sie gestartet und beendet hat. Zu jeder Runde eines Events speichern wir das gezogene oder gesetzte Spiel und, sobald der Host es einträgt, das Ergebnis: die Platzierung jedes Teams und, wenn angegeben, seinen Score. Zu jedem Veto speichern wir, welches Team es eingelegt hat und wer aus dem Team, zu jedem Bonus-Veto, welches Team es bekam, und zu jedem Münzwurf, wer geworfen hat. Zum Event selbst speichern wir, wann der Host es abgeschlossen hat und wann er zuletzt die Siegerehrung gestartet hat. Außerdem führt Compies zu jedem Event einen Aktivitäts-Feed. Er hält fest, wer wann beigetreten ist, wer den Platz gewechselt hat oder von wem verschoben wurde, wer Termine festgelegt, verschoben oder aufgehoben hat, wer Sessions hinzugefügt, entfernt, gestartet oder beendet hat, wer die Anzahl der Spiele oder die Teamgröße geändert hat und wer einen Teamnamen zurückgesetzt hat, welche Spiele gezogen, gesetzt oder zurückgelegt wurden, welches Team ein Veto eingelegt hat, welches Team ein Bonus-Veto bekam, wie ein Münzwurf ausging, welche Ergebnisse eingetragen oder korrigiert wurden und wie das Event endete. Zu jedem Eintrag, der ein Team nennt, speichert der Feed den Namen, den das Team in diesem Moment hatte, und damit die Teamwörter darin. Dein Teamwort bleibt in diesen Einträgen deshalb stehen, solange das Event besteht, auch wenn du dein Team verlässt oder dein Teamwort änderst.\n\nName, Terminvorschläge und die Termine der Sessions eines Events, das Spielbrett mit Plätzen, Teamwörtern und Teamnamen, die Runden mit ihren Ergebnissen, die Tabelle und der Aktivitäts-Feed sowie Anzeigename, Profilbild, Stimmen und Anmerkungen ihrer Mitglieder sind für alle Mitglieder dieses Events sichtbar. Dass ein Team ein Veto eingelegt hat, sieht bis zum Aufdecken nur dieses Team; welcher Spieler es war, erfährt niemand. Wer den Einladungslink eines Events erhält, kann ihm nach der Anmeldung beitreten; ohne Anmeldung zeigt der Link nur den Namen des Events sowie Anzeigename und Profilbild des Hosts. Teile Einladungslinks daher nur mit Personen, die mitmachen sollen. Der Host kann den Link jederzeit erneuern; der alte Link funktioniert dann nicht mehr. Der Host kann ein Event jederzeit löschen, nur nicht, solange eine Session läuft. Ein gelöschtes Event ist für alle Mitglieder sofort nicht mehr erreichbar: nicht auf der Startseite, nicht über den Link zum Event und nicht über den Einladungslink. Dort steht dann nur, dass das Event gelöscht wurde.\n\nIst ein Event abgeschlossen und die Siegerehrung gestartet, kann jedes Mitglied ein Ergebnisbild herunterladen oder teilen. Es zeigt Namen und Datum des Events, wie viele Leute mitgespielt haben, die Tabelle mit Teamnamen und Punkten und die gespielten Spiele, aber keine Anzeigenamen und keine Profilbilder. Compies erzeugt das Bild bei jedem Abruf neu und speichert es nicht. Teilst du es über die Teilen-Funktion deines Geräts, gibt dein Gerät es an die App weiter, die du wählst; ab dann gelten deren Datenschutzbestimmungen.\n\nHosts füllen außerdem eine gemeinsame Spielebibliothek. Zu jedem Spiel speichern wir, wer es angelegt hat, seine Angaben und seine Notizen: freien Text, den der Host schreibt, etwa zu Einstellungen, Aufwärmen und Hausregeln. Notizen können deshalb auch andere Personen nennen. Lesen können sie Personen mit Host-Berechtigung und Admins, außerdem der Host eines Events, dessen Spielepool das Spiel enthält oder in dem es gespielt wird oder wurde. Ändern oder löschen können sie nur, wer das Spiel angelegt hat, und Admins.\n\nRechtsgrundlage ist Art. 6 Abs. 1 lit. b DSGVO."
       },
       "calendar": {
         "heading": "12. Kalenderdatei",
@@ -1258,7 +1262,7 @@
       },
       "retention": {
         "heading": "16. Speicherdauer",
-        "text": "Kontodaten, Events, Terminvorschläge, Stimmen und Anmerkungen werden gespeichert, solange dein Nutzerkonto besteht bzw. bis sie gelöscht werden. Plätze, Teamwörter, eingefrorene Teamnamen, Runden mit ihren Vetos und Ergebnissen, Münzwürfe und der Aktivitäts-Feed eines Events bleiben gespeichert, solange das Event besteht. Die Daten eines gelöschten Events bleiben zunächst gespeichert, als gelöscht markiert, aber in Compies für niemanden mehr abrufbar. Auf Anfrage an die unter Abschnitt 1 genannte Adresse entfernen wir sie aus der Datenbank. Eine automatische Löschung gibt es nicht. Ein Teamwort wird gelöscht, sobald du dein Team verlässt. Spielbilder bleiben gespeichert, solange das Spiel besteht und das Bild nicht ersetzt wird (Abschnitt 5). Entfernt ein Host einen Terminvorschlag, werden die Stimmen und Anmerkungen dazu mitgelöscht. Anmeldesitzungen werden mit ihrem Ablauf bzw. beim Abmelden gelöscht. Missbrauchszähler gelten nur für kurze Zeitfenster (Abschnitt 10). Server-Logs des Hosters werden nur für die zur Fehleranalyse und Sicherheit erforderliche Dauer vorgehalten und danach automatisch gelöscht. Möchtest du dein Nutzerkonto löschen lassen, genügt eine Nachricht an die unter Abschnitt 1 genannte Adresse."
+        "text": "Kontodaten, Events, Terminvorschläge, Stimmen und Anmerkungen werden gespeichert, solange dein Nutzerkonto besteht bzw. bis sie gelöscht werden. Plätze, Teamwörter, Runden mit ihren Vetos und Ergebnissen, Münzwürfe und der Aktivitäts-Feed eines Events bleiben gespeichert, solange das Event besteht. Die Daten eines gelöschten Events bleiben zunächst gespeichert, als gelöscht markiert, aber in Compies für niemanden mehr abrufbar. Auf Anfrage an die unter Abschnitt 1 genannte Adresse entfernen wir sie aus der Datenbank. Eine automatische Löschung gibt es nicht. Ein Teamwort wird gelöscht, sobald du dein Team verlässt; im aktuellen Namen des Teams steht es dann nicht mehr. Ausgenommen sind die Einträge des Aktivitäts-Feeds: Sie behalten den Teamnamen von damals, das Wort bleibt dort, solange das Event besteht (Abschnitt 11). In Events, die vor Version 0.12 abgeschlossen wurden, bleibt außerdem der Teamname gespeichert, der beim Start der ersten Session eingefroren wurde, mit den Teamwörtern darin, solange das Event besteht. Spielbilder bleiben gespeichert, solange das Spiel besteht und das Bild nicht ersetzt wird (Abschnitt 5). Entfernt ein Host einen Terminvorschlag, werden die Stimmen und Anmerkungen dazu mitgelöscht. Anmeldesitzungen werden mit ihrem Ablauf bzw. beim Abmelden gelöscht. Missbrauchszähler gelten nur für kurze Zeitfenster (Abschnitt 10). Server-Logs des Hosters werden nur für die zur Fehleranalyse und Sicherheit erforderliche Dauer vorgehalten und danach automatisch gelöscht. Möchtest du dein Nutzerkonto löschen lassen, genügt eine Nachricht an die unter Abschnitt 1 genannte Adresse."
       },
       "obligation": {
         "heading": "17. Pflicht zur Bereitstellung und automatisierte Entscheidungen",
@@ -1278,11 +1282,11 @@
       },
       "realtime": {
         "heading": "21. Live-Verbindung (Cloudflare Workers)",
-        "text": "Damit sich die Event-Seite von selbst aktualisiert, öffnet dein Browser, solange du ein Event offen hast, eine WebSocket-Verbindung zu einem Dienst von Cloudflare Workers. Anbieter ist die Cloudflare, Inc., 101 Townsend St, San Francisco, CA 94107, USA. Der Dienst läuft in der EU-Jurisdiktion von Cloudflare, also auf Servern in der Europäischen Union. Cloudflare verarbeitet die Daten in unserem Auftrag; mit Cloudflare besteht ein Auftragsverarbeitungsvertrag (Art. 28 DSGVO).\n\nAnders als bei den Spielbildern (Abschnitt 5) verbindet sich hier dein Browser selbst mit Cloudflare. Cloudflare erhält deshalb deine IP-Adresse und deine Browserangaben als Teil der Verbindung. Zum Verbindungsaufbau schickt dein Browser ein Zugangstoken mit, das Compies nur für Mitglieder des Events ausstellt. Es enthält deine Benutzerkennung, die Kennung des Events und ob du der Host bist, gilt eine Minute und wird nur beim Verbindungsaufbau geprüft.\n\nÜber die Verbindung schickt Compies den Mitgliedern des Events sofort, was sich gerade geändert hat. Dazu gehört, wer beigetreten ist, wer auf welchen Platz im Spielbrett gewechselt ist und wer ihn dorthin verschoben hat. Ebenso gehören dazu Teamwörter, das Zurücksetzen und Einfrieren von Teamnamen, Start und Ende einer Session und neue Einträge im Aktivitäts-Feed mit dem Anzeigenamen der handelnden Person. Außerdem sehen die Mitglieder, wer von ihnen die Event-Seite gerade geöffnet hat („online“). Dein Browser gleicht über die Verbindung zudem seine Uhr mit der des Dienstes ab. Diese Nachrichten erhalten nur Mitglieder des Events. Alles Weitere lädt dein Browser wie gewohnt bei Compies.\n\nDer Dienst speichert keine Inhalte deines Events, er reicht die Nachrichten nur weiter. Solange deine Verbindung besteht, merkt er sich deine Benutzerkennung und ob du der Host bist, damit die anderen sehen, wer online ist. Endet die Verbindung, ist beides weg. Ohne die Verbindung lädt sich die Seite alle 15 Sekunden neu.\n\nRechtsgrundlage ist Art. 6 Abs. 1 lit. b DSGVO (Bereitstellung der Event-Seite mit aktuellem Stand)."
+        "text": "Damit sich die Event-Seite von selbst aktualisiert, öffnet dein Browser, solange du ein Event offen hast, eine WebSocket-Verbindung zu einem Dienst von Cloudflare Workers. Anbieter ist die Cloudflare, Inc., 101 Townsend St, San Francisco, CA 94107, USA. Der Dienst läuft in der EU-Jurisdiktion von Cloudflare, also auf Servern in der Europäischen Union. Cloudflare verarbeitet die Daten in unserem Auftrag; mit Cloudflare besteht ein Auftragsverarbeitungsvertrag (Art. 28 DSGVO).\n\nAnders als bei den Spielbildern (Abschnitt 5) verbindet sich hier dein Browser selbst mit Cloudflare. Cloudflare erhält deshalb deine IP-Adresse und deine Browserangaben als Teil der Verbindung. Zum Verbindungsaufbau schickt dein Browser ein Zugangstoken mit, das Compies nur für Mitglieder des Events ausstellt. Es enthält deine Benutzerkennung, die Kennung des Events und ob du der Host bist, gilt eine Minute und wird nur beim Verbindungsaufbau geprüft.\n\nÜber die Verbindung schickt Compies den Mitgliedern des Events sofort, was sich gerade geändert hat. Dazu gehört, wer beigetreten ist, wer auf welchen Platz im Spielbrett gewechselt ist und wer ihn dorthin verschoben hat. Ebenso gehören dazu Teamwörter, das Zurücksetzen von Teamnamen, Start und Ende einer Session und neue Einträge im Aktivitäts-Feed mit dem Anzeigenamen der handelnden Person. Außerdem sehen die Mitglieder, wer von ihnen die Event-Seite gerade geöffnet hat („online“). Dein Browser gleicht über die Verbindung zudem seine Uhr mit der des Dienstes ab. Diese Nachrichten erhalten nur Mitglieder des Events. Alles Weitere lädt dein Browser wie gewohnt bei Compies.\n\nDer Dienst speichert keine Inhalte deines Events, er reicht die Nachrichten nur weiter. Solange deine Verbindung besteht, merkt er sich deine Benutzerkennung und ob du der Host bist, damit die anderen sehen, wer online ist. Endet die Verbindung, ist beides weg. Ohne die Verbindung lädt sich die Seite alle 15 Sekunden neu.\n\nRechtsgrundlage ist Art. 6 Abs. 1 lit. b DSGVO (Bereitstellung der Event-Seite mit aktuellem Stand)."
       },
       "changes": {
         "heading": "22. Änderungen und Stand",
-        "text": "Diese Datenschutzerklärung wird angepasst, wenn sich die Anwendung oder die Rechtslage ändert; es gilt die jeweils hier veröffentlichte Fassung. Stand: 9. November 2026."
+        "text": "Diese Datenschutzerklärung wird angepasst, wenn sich die Anwendung oder die Rechtslage ändert; es gilt die jeweils hier veröffentlichte Fassung. Stand: 10. November 2026."
       }
     }
   },
@@ -1503,7 +1507,7 @@
       "teamSizeMin": "Mindestens 1 pro Team.",
       "teamSizeFloor": "Im vollsten Team sind schon {n}.",
       "teamSizeMax": "Höchstens 6 pro Team.",
-      "toBench": "Beim Speichern geht {n} Person aus den entfernten Teams auf die Bench. | Beim Speichern gehen {n} Leute aus den entfernten Teams auf die Bench.",
+      "toStands": "Beim Speichern geht {n} Person aus den entfernten Teams auf die Tribüne. | Beim Speichern gehen {n} Leute aus den entfernten Teams auf die Tribüne.",
       "playersMax": "Höchstens 24 Leute in Teams.",
       "total": "{teams} Teams à {size} = {players} Leute in Teams (max. 24)"
     },
@@ -1573,6 +1577,9 @@
       "less": "{label}: weniger",
       "more": "{label}: mehr"
     }
+  },
+  "gameDialog": {
+    "openLibrary": "In der Bibliothek öffnen"
   },
   "howWePlay": {
     "title": "So wird gespielt",
@@ -1700,6 +1707,7 @@
     "countdownEnded": "Der Countdown ist abgelaufen. Setz ihn zurück.",
     "coinInAir": "Die Münze fliegt noch.",
     "ceremonyRunning": "Die Siegerehrung läuft noch.",
+    "ceremonyPending": "Das Bild gibt es erst, wenn die Siegerehrung gestartet ist.",
     "resultInvalid": "Das Ergebnis passt nicht. Lade die Seite neu und versuch es nochmal.",
     "roundNotOpen": "Zu diesem Spiel kann gerade kein Ergebnis eingetragen werden. Vielleicht hat es schon eins.",
     "wrongPhase": "Das geht nicht mehr. Die Seite zeigt den neuen Stand.",
@@ -1782,7 +1790,6 @@
       "title": "Noch nichts passiert.",
       "text": "Beitritte, Spiele und Vetos tauchen hier auf."
     },
-    "bench": "Niemand auf der Bench.",
     "stands": "Die Tribüne ist leer.",
     "pool": {
       "title": "Pool ist leer.",

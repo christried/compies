@@ -38,6 +38,15 @@ export function pop(element: Element): void {
   )
 }
 
+/** A Team name that arrived or changed (#439): the composed name pops in `dur-slow` on `ease-pop`, the scale of `pop` on the name's own element. Nothing under reduced motion. */
+export function namePop(element: Element): void {
+  if (reducedMotion() || typeof element.animate !== 'function') return
+  element.animate(
+    [{ transform: 'scale(.6)' }, { transform: 'scale(1.12)' }, { transform: 'scale(1)' }],
+    { duration: motionMs('--cp-dur-slow', '360ms'), easing: motionToken('--cp-ease-pop', 'cubic-bezier(.34,1.56,.64,1)') },
+  )
+}
+
 /**
  * Compibert's party hat appearing on an open page (04-motion § Compibert, #38): scale 0→1 and rotation −12°→0 from the brim (the art group's
  * origin is the hat base, 05-assets), `--cp-dur-base`, `--cp-ease-pop`. Nothing under reduced motion: the hat is simply there.
@@ -68,6 +77,15 @@ export function glide(element: Element, from: Pick<DOMRect, 'left' | 'top'>, to:
 export function fade(element: Element): void {
   if (!reducedMotion() || typeof element.animate !== 'function') return
   element.animate([{ opacity: 0 }, { opacity: 1 }], { duration: motionMs('--cp-dur-fast', '140ms'), easing: motionToken('--cp-ease-out', 'ease-out') })
+}
+
+/**
+ * What a stage block that rose gets under reduced motion instead of the glide (04-motion § UI enters: „Reduced: opacity only“, #441): a 0.14 s fade at its new place, held at 0
+ * until it starts. The caller decides whether it plays (reduced motion, a tab somebody watches): a hidden tab moves with no animation at all.
+ */
+export function riseFade(element: Element): void {
+  if (typeof element.animate !== 'function') return
+  element.animate([{ opacity: 0 }, { opacity: 1 }], { duration: motionMs('--cp-dur-fast', '140ms'), easing: motionToken('--cp-ease-out', 'ease-out'), fill: 'backwards' })
 }
 
 // The Veto window (04-motion § Veto window, #231). Under reduced motion each of these is a 0.2 s fade at the same moment: no stagger, no delay (F10).
@@ -193,6 +211,14 @@ export function highlightRow(row: Element): void {
 
 /** The page's blocks glide to their new place (the Round cards: `CARD_REFLOW_CLASS`): a transform over `dur-slow` on `ease-out`, and at once under reduced motion (04-motion § UI enters: „Reduced: opacity only“). */
 export const REFLOW_CLASS = 'transition-transform dur-slow ease-out motion-reduce:transition-none reduced:transition-none'
+
+/** One frame on top of the move, so what waits for a block's arrival starts after the last frame of its glide (or fade) and not on it (#442). */
+export const SETTLE_MS = 50
+
+/** How long a block that rose takes to be in place (#442): the glide (`REFLOW_CLASS`: `dur-slow`), under reduced motion the fade (`riseFade`: `dur-fast`), plus SETTLE_MS. */
+export function riseSettleMs(): number {
+  return (reducedMotion() ? motionMs('--cp-dur-fast', '140ms') : motionMs('--cp-dur-slow', '360ms')) + SETTLE_MS
+}
 
 /**
  * The cards of a list that can cross it (the Round cards in a two-column grid: the second Result sends Round 3 540 px to the other side) glide on the in-out curve

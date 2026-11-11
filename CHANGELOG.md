@@ -2,6 +2,33 @@
 
 ## [Unreleased]
 
+## [0.12.0] - 2026-11-11 – Eventseite
+
+Die Eventseite, gründlich überarbeitet: Spiele zeigen sich als Kacheln mit eigenem Dialog, die Bühne rückt nach oben, was gerade passiert ist, und dein Teamwort änderst du jetzt das ganze Event über. Aus Bench und Tribüne ist eine Tribüne geworden, und ein beendetes Event verrät den Sieger erst mit der Siegerehrung.
+
+### Neu
+
+- **Notizen im Spiele-Picker:** Beim Füllen des Spielepools und bei „Nächstes Spiel setzen“ hat ein Spiel mit Notizen jetzt einen Knopf „Notizen ansehen“. Er zeigt die Notizen, ohne dass du die Auswahl verlässt: am Desktop neben dem Spiel, auf dem Handy als Sheet von unten. ([#436](https://github.com/christried/compies/issues/436))
+- **Free-to-play-Tag:** Ein Spiel ohne Preis oder mit dem Preis Free-to-play trägt in der Bibliothek jetzt von selbst den Tag „Free-to-play“, bei jedem Speichern. Bekommt es einen anderen Preis, fällt der Tag weg. ([#423](https://github.com/christried/compies/issues/423))
+- **Spiel-Dialog für den Host:** Tippst du als Host auf ein Spiel auf der Eventseite, öffnet sich sein Dialog: Bild, Name, Spielerzahl, „Passt zu“, alle Tags, der Preis und deine Notizen, dazu „In der Bibliothek öffnen“. Das geht im Spielepool, bei „Zuletzt gezogen“ und bei „Gerade dran“, ohne dass du das Event verlässt. ([#443](https://github.com/christried/compies/issues/443))
+- **Spiel-Dialog für Mitglieder:** Tippst du als Mitglied auf ein Spiel auf der Eventseite, öffnet sich sein Dialog, auf dem Handy als Sheet von unten: Bild, Name, Spielerzahl, „Passt zu“ und der Preis mit seinem Stand. Das geht im Spielepool, sobald der Host ihn zeigt, bei „Zuletzt gezogen“ und bei „Gerade dran“, ohne dass du das Event verlässt. Tags und Notizen siehst du dort nicht, und ein Spiel zeigt sich dir nie früher als bisher. ([#444](https://github.com/christried/compies/issues/444))
+
+### Geändert
+
+- **Spiele auf der Eventseite als Kacheln:** Jedes Spiel zeigt sich dort mit Bild und Namen, im Spielepool, bei „Zuletzt gezogen“ und bei „Gerade dran“. ([#435](https://github.com/christried/compies/issues/435))
+- **Die Bühne folgt dem Spiel:** Wo gerade etwas passiert ist, rückt der Block eine halbe Sekunde später nach oben, bei allen zugleich: das Glücksrad beim Drehen, „Gerade dran“, wenn ein Spiel feststeht, die Tabelle bei einem neuen oder korrigierten Ergebnis, der Countdown beim Start und der Münzwurf beim Wurf. Das Neueste steht oben; das Spielbrett rückt nie hoch, und die Seite scrollt nie von allein. Die Tabelle spielt ihr Ergebnis erst, wenn sie oben angekommen ist. ([#441](https://github.com/christried/compies/issues/441), [#442](https://github.com/christried/compies/issues/442))
+- **Teamnamen bleiben offen:** Dein Teamwort kannst du jetzt das ganze Event über ändern, auch zwischen zwei Sessions und wenn der Host dich erst nach dem Start in ein Team gesetzt hat. Der Teamname friert beim Start nicht mehr ein; der Host kann ihn weiter jederzeit auf den Farbnamen zurücksetzen. ([#438](https://github.com/christried/compies/issues/438))
+- **Eine Tribüne statt Bench und Tribüne:** Wer in keinem Team sitzt, sitzt jetzt auf der Tribüne, ganz gleich, ob er später mitspielt oder nur zuschaut. Neue Mitglieder landen dort, wenn sie über den Einladungslink kommen, und ebenso die Spieler eines Teams, das der Host abschafft. Von der Tribüne ziehen sich die Spieler wie bisher in ein Team. Die Bench gibt es nicht mehr. ([#437](https://github.com/christried/compies/issues/437))
+- **Siegerehrung zuerst:** Ein beendetes Event verrät den Sieger erst, wenn der Host die Siegerehrung gestartet hat. Bis dahin steht auf der Seite eine Karte „Die Siegerehrung steht noch aus.“, und Tabelle, Spielverlauf, „Bild teilen“, der Partyhut und die Sieger in der Kopfzeile und in der Aktivität warten mit. Wer die Siegerehrung live schaut, sieht den Rest, sobald sie zu Ende ist oder er sie überspringt oder schließt; wer später dazukommt oder den Start verpasst hat, sieht gleich alles. Schon beendete Events bleiben, wie sie sind. ([#445](https://github.com/christried/compies/issues/445))
+- Die Datenschutzerklärung beschreibt jetzt die Tribüne und die offenen Teamnamen: Der Aktivitäts-Feed hält den Teamnamen fest, den ein Team bei jedem Eintrag hatte, ein Teamwort bleibt in diesen Einträgen also stehen, solange das Event besteht. Sie nennt außerdem, dass das Ergebnisbild erst nach dem Start der Siegerehrung bereitsteht und dass der Host eines Events die Notizen eines dort gespielten Spiels liest. ([#446](https://github.com/christried/compies/issues/446))
+- **Aktivität: Teams heißen, wie sie damals hießen:** Jeder Eintrag in der Aktivität nennt ein Team so, wie es in diesem Moment hieß, mit dem Zeichen seiner Teamfarbe daneben. Benennt sich ein Team später um, behalten die alten Einträge den alten Namen. Auch Verschiebungen, Zurücksetzungen und Bonus-Vetos nennen nicht mehr nur die Farbe. Tabelle, Spielverlauf und alles andere zeigen weiter den aktuellen Namen, und Einträge aus der Zeit davor bleiben, wie sie waren. ([#440](https://github.com/christried/compies/issues/440))
+- **Navigation auf der Eventseite:** Auf dem Computer und auf großen Tablets steht die Hauptnavigation jetzt auch auf der Eventseite oben im Kopf: Events, Archiv und Profil, für Hosts auch die Bibliothek. „Events“ ist als aktuelle Seite markiert, und darunter stehen der Name des Events und seine Phase. Auf dem Handy bleibt alles, wie es war. ([#426](https://github.com/christried/compies/issues/426))
+
+### Behoben
+
+- **Ziehen auf ein Team:** Ziehst du jemanden über ein Team oder über die Tribüne, zeigt deren Rand jetzt die Fokusfarbe, wie gedacht. Bisher blieb er in der Linienfarbe. ([#496](https://github.com/christried/compies/issues/496))
+- **Das Spielbrett bleibt stehen:** Hast du die Eventseite bis zum Spielbrett gescrollt, springt es nicht mehr weg, wenn der Host ein Spiel mit Veto-Fenster setzt und unten die Veto-Leiste erscheint. ([#541](https://github.com/christried/compies/issues/541))
+
 ## [0.11.0] - 2026-11-10 – Profil
 
 Deine eigene Profil-Seite: Dort änderst du deinen Anzeigenamen, schaltest den Ton und wählst die Darstellung, Hell, Dunkel oder System. Dazu tragen die Tags in der Bibliothek jetzt Farben.

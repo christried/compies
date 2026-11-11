@@ -277,6 +277,9 @@ async function submit() {
           :suggestions="tagsInUse"
           :label="t('gameEdit.tags')"
         />
+        <p class="text-small text-ink-2">
+          {{ t('gameEdit.tagsFreeToPlayHint') }}
+        </p>
 
         <PriceField
           v-model="price"

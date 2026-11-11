@@ -113,7 +113,7 @@ describe('a finished Event is read-only', () => {
       { file: 'slots/[slotId].patch.ts', name: 'move a Slot', as: 'host', method: 'PATCH', path: `/api/e/${slug}/slots/${slots[0]}`, body: { startsAt: '2090-11-04T19:00' } },
       { file: 'slots/[slotId].delete.ts', name: 'delete a Slot', as: 'host', method: 'DELETE', path: `/api/e/${slug}/slots/${slots[0]}` },
       { file: 'slots/[slotId]/vote.put.ts', name: 'vote on a Slot', as: 'player', method: 'PUT', path: `/api/e/${slug}/slots/${slots[0]}/vote`, body: { value: 'yes' } },
-      { file: 'move.post.ts', name: 'move a Member', as: 'player', method: 'POST', path: `/api/e/${slug}/move`, body: { userId: ids.three, to: { zone: 'bench' } } },
+      { file: 'move.post.ts', name: 'move a Member', as: 'player', method: 'POST', path: `/api/e/${slug}/move`, body: { userId: ids.three, to: { zone: 'stands' } } },
       { file: 'team-word.post.ts', name: 'set a Team word', as: 'player', method: 'POST', path: `/api/e/${slug}/team-word`, body: { word: 'Gurken' } },
       { file: 'teams/[position]/reset-name.post.ts', name: 'reset a Team name', as: 'host', method: 'POST', path: `/api/e/${slug}/teams/1/reset-name` },
       { file: 'bonus-vetoes.post.ts', name: 'grant a Bonus Veto', as: 'host', method: 'POST', path: `/api/e/${slug}/bonus-vetoes`, body: { team: 1 } },

@@ -2,7 +2,7 @@ import { and, asc, eq, isNull } from 'drizzle-orm'
 import { draws, rounds, vetoes } from '../db/schema'
 import { settleAt } from '../../shared/draw-timeline'
 import { drawOutcome } from '../../shared/rounds'
-import { recordActivity } from './activity'
+import { feedTeamNames, recordActivity } from './activity'
 import type { Db } from './db'
 import { dueDraws } from './draw-timeline'
 import type { EventRow } from './event-access'
@@ -27,6 +27,12 @@ export async function settleDue(tx: Db, eventRow: Pick<EventRow, 'id'>, now: Dat
     if (!settled) continue
     if (outcome === 'set') await tx.update(rounds).set({ gameId: draw.gameId, setAt: settledAt }).where(eq(rounds.id, draw.roundId))
     // The entry waits for the instant it carries (`at`), so nothing is published: the clients refetch the feed when it passes.
-    else await recordActivity(tx, () => {}, eventRow.id, { type: 'vetoes_revealed', actorId: null, params: { roundId: draw.roundId, drawId: draw.id, gameId: draw.gameId, vetoes: casts }, at: settledAt })
+    else {
+      // The Team names are read here, in the branch that writes the entry, and hold the casting Parties only (#440): the entry names them anyway,
+      // from this instant on, and a cast itself writes nothing. The entry is written by the first read or write after the window's end (no timer),
+      // so a rename between the end and that first read lands in the name: accepted, the name is the one the team has when the entry is written.
+      const teamNames = await feedTeamNames(tx, eventRow.id, casts.map(cast => cast.team))
+      await recordActivity(tx, () => {}, eventRow.id, { type: 'vetoes_revealed', actorId: null, params: { roundId: draw.roundId, drawId: draw.id, gameId: draw.gameId, vetoes: casts, teamNames }, at: settledAt })
+    }
   }
 }

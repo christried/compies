@@ -66,10 +66,6 @@ _Avoid_: Participant, attendee, guest
 A Member who is in a Party.
 _Avoid_: Competitor, participant
 
-**Spectator**:
-A Member in the Stands.
-_Avoid_: Viewer, audience
-
 ## Date poll
 
 **Date poll**:
@@ -115,15 +111,15 @@ One competing unit in an Event: a team in a team format, a single player in free
 _Avoid_: Side, group
 
 **Team size**:
-The number of slots per team in the Teams format, set by the Host and changeable while the Event runs, but never below the number of Players in the fullest team that remains (lowering the team count sends the Players of the removed teams to the Bench). A team may have fewer Players than its Team size; a game starts only when all teams have the same number of Players.
+The number of slots per team in the Teams format, set by the Host and changeable while the Event runs, but never below the number of Players in the fullest team that remains (lowering the team count sends the Players of the removed teams to the Stands). A team may have fewer Players than its Team size; a game starts only when all teams have the same number of Players.
 _Avoid_: Team capacity, players per team
 
 **Game board**:
-The view of an Event's teams, Bench and Stands, where Members take their place; Players move only themselves, the Host moves everyone (UI: Spielbrett).
+The view of an Event's teams and its Stands, where Members take their place; Players move only themselves, the Host moves everyone (UI: Spielbrett).
 _Avoid_: Lobby, board view, waiting room
 
 **Team choice**:
-The time in which Players may join and leave teams themselves: from when the Event has its settings and a Session has a Date until the first Session starts. After that only the Host moves people into or out of teams; Bench and Stands stay free for everyone.
+The time in which Players may join and leave teams themselves: from when the Event has its settings and a Session has a Date until the first Session starts. After that only the Host moves people into or out of teams.
 _Avoid_: Team selection, draft, lock-in
 
 **Team colour**:
@@ -131,24 +127,20 @@ The colour, symbol and pattern a team has by its position in the Event, never ch
 _Avoid_: Team theme
 
 **Team word**:
-The one word (at most 12 characters, no spaces) a Player adds to their team's name; it leaves the name when the Player leaves the team (UI: Teamwort).
+The one word (at most 12 characters, no spaces) a Player adds to their team's name and can change at any time until the Finish; it leaves the name when the Player leaves the team (UI: Teamwort).
 _Avoid_: Nickname, tag
 
 **Team name**:
-A team's Team words in the order their Players joined the team, or its Team colour's name while it has none. It freezes when the first Session starts; afterwards the Host can only reset it to the colour name.
+A team's Team words in the order their Players joined the team, or its Team colour's name while it has none. It never freezes: it changes with its words until the Finish, and the Host can reset it to the colour name at any time but never writes a word. Unlike a Display name, the Activity feed keeps the Team name a Party had at the moment of each entry; everything else shows the current one.
 _Avoid_: Team title, label
 
 **Online**:
 A Member is online while they have the Event open in at least one tab.
 _Avoid_: Present, active, connected
 
-**Bench**:
-The zone for members who are not in a Party but may be pulled in. Everyone arriving via the Invite link lands here.
-_Avoid_: Waiting room, reserve
-
 **Stands**:
-The zone for spectators who will not play (UI: Tribüne).
-_Avoid_: Audience, spectators
+The one zone for every Member who is not in a Party, whether they will play later or only watch: everyone arriving via the Invite link lands here, and from here Players move into the teams (UI: Tribüne).
+_Avoid_: Bench, Bank, waiting room, audience, Spectator (a Member on the Stands may still play)
 
 ## Game selection
 
@@ -189,15 +181,15 @@ One try at a Round's game: a spin of the Lucky Wheel or a game the Host sets. It
 _Avoid_: Spin (a spin is only one kind of Draw), pick, roll
 
 **Veto window**:
-The 60 seconds after a Draw's stop (or after the Host sets a game) in which every Party with a Veto left may reject the game. It opens only when some Party has a Veto left, ends for everyone at the same moment, and a Veto does not outlive its Running Session; until it ends, only a Party’s own Players see its casts, and a Host who moves into a Party during its window sees them too, a privilege of the Host, who may move anyone at any time (UI: Veto-Fenster). A Veto belongs to its Party: a Party's Players see that their Party has cast, never which of them did, and only the database keeps who cast it.
+The time after a Draw's stop (or after the Host sets a game) in which every Party with a Veto left may reject the game: the game's clip length plus 30 seconds, or 30 seconds for a game without a Clip. When the Host skips the Clip, it ends 30 seconds after the skip if that is sooner; it never gets longer. It opens only when some Party has a Veto left, ends for everyone at the same moment, and a Veto does not outlive its Running Session; until it ends, only a Party’s own Players see its casts, and a Host who moves into a Party during its window sees them too, a privilege of the Host, who may move anyone at any time (UI: Veto-Fenster). A Veto belongs to its Party: a Party's Players see that their Party has cast, never which of them did, and only the database keeps who cast it.
 _Avoid_: Veto round, voting time, grace period
 
 **Clip**:
-The game's YouTube excerpt that every device plays from the same second at a Draw's stop, for the game's clip length or until the Host skips it; a game without a video shows its card instead.
+The game's YouTube excerpt that every device plays from the same second at a Draw's stop, for the game's clip length or until the Host skips it; a game without a video shows its card instead. Nobody can pause the video or operate it; a Member can mute it or close it on their own device, and a Party can cast its Veto while it plays.
 _Avoid_: Trailer, preview, video
 
 **Veto allowance**:
-The number of Vetoes each Party has for the whole Event, the same for every Party and set by the Host. Bonus Vetoes come on top.
+The number of Vetoes each Party has for the whole Event, the same for every Party and set by the Host. Bonus Vetoes come on top. Until the Event's first Session starts only the Host knows the number; the other Members learn only that there are Vetoes.
 _Avoid_: Vetoes per player, veto budget
 
 **Bonus Veto**:
@@ -221,11 +213,11 @@ What a game costs, as its editors last noted it: an amount in euros, where it is
 _Avoid_: Cost, fee
 
 **Activity feed**:
-The Event's automatic log of what happened, with times, readable by every Member; it never names a game before everyone may know it (UI: Aktivität).
+The Event's automatic log of what happened, with times, readable by every Member; it names each Party by the Team name the Party had at that moment, and never names a game before everyone may know it (UI: Aktivität).
 _Avoid_: History, log, timeline
 
 **Award ceremony**:
-The show of a finished Event's Winners. The Host starts it after the Finish, and every Member with the Event open sees it at the same moment, a late joiner from where it has got to; each viewer can skip or close it for themselves, any Member can watch it again alone, and the Host can start it again for everyone (UI: Siegerehrung).
+The show of a finished Event's Winners. The Host starts it after the Finish, and every Member with the Event open sees it at the same moment, a late joiner from where it has got to; each viewer can skip or close it for themselves, any Member can watch it again alone, and the Host can start it again for everyone. Until the Host first starts it, the finished Event shows that it is pending instead of its Standings and Winners (UI: Siegerehrung).
 _Avoid_: Ceremony screen, finale, results screen, podium
 
 ## During a Session
@@ -311,7 +303,7 @@ The platform-wide collection of games that Hosts fill their Events from; only Us
 _Avoid_: Game list, catalogue
 
 **Release**:
-A version of COMPIES that reaches Users, numbered by semantic versioning: a new feature raises the minor number, fixes alone raise the patch number. Releases count from 0.1 while COMPIES is being built; 1.0 is the Release the operator declares ready.
+A version of COMPIES that reaches Users, numbered by semantic versioning: a new feature raises the minor number; fixes, small additions and the further parts of a Release that was split raise the patch number. Releases count from 0.1 while COMPIES is being built; 1.0 is the Release the operator declares ready.
 _Avoid_: Deploy, update, build
 
 **Changelog**:

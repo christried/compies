@@ -29,7 +29,7 @@ const session = (startsAt: string | null, startedAt: string | null = startsAt, n
 const player = (id: string, teamPosition: number): MemberView => ({
   id, name: `Spieler ${id}`, image: null, isHost: false, zone: 'team', team: teamPosition, teamWord: null,
 })
-const bench = (id: string): MemberView => ({ id, name: `Spieler ${id}`, image: null, isHost: false, zone: 'bench', team: null, teamWord: null })
+const onStands = (id: string): MemberView => ({ id, name: `Spieler ${id}`, image: null, isHost: false, zone: 'stands', team: null, teamWord: null })
 
 const result = (number: number, name: string, firsts: number[], teamCount: number): ResultView => ({
   roundId: `r${number}`,
@@ -52,7 +52,7 @@ interface Options {
 }
 
 function source({ points = [17, 9], names = {}, event = 'Freitags-Zocken', sessions = [session('2026-10-24T18:00:00Z')], members = [], games = [{ name: 'Rocket League', firsts: [1] }] }: Options = {}): ShareImageSource {
-  const teams: BoardTeam[] = points.map((_, index) => ({ position: index + 1, name: names[index + 1] ?? null, frozen: true }))
+  const teams: BoardTeam[] = points.map((_, index) => ({ position: index + 1, name: names[index + 1] ?? null }))
   return {
     event: { slug: 'abc', name: event, phase: 'finished', isHost: false },
     sessions,
@@ -215,8 +215,8 @@ describe('shareImageModel', () => {
       expect(model.people).toBe(text)
     })
 
-    it('counts only the Players, not the Bench or the Stands', () => {
-      const model = wide({ members: [player('a', 1), player('b', 2), bench('c'), { ...bench('d'), zone: 'stands' }] })
+    it('counts only the Players, not those on the Stands', () => {
+      const model = wide({ members: [player('a', 1), player('b', 2), onStands('c'), onStands('d')] })
       expect(model.people).toBe('2 Leute')
     })
   })

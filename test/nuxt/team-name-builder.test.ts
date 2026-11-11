@@ -1,12 +1,13 @@
 import { mountSuspended, registerEndpoint } from '@nuxt/test-utils/runtime'
 import { createError, readBody } from 'h3'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import GameBoard from '~/components/GameBoard.vue'
 import type { Place } from '~~/shared/board'
 import type { BoardTeam, MemberView } from '~~/shared/event'
 import { defaultSettings, type EventSettings } from '~~/shared/settings'
 import { kitty } from './auth'
 import { LARSI, SANNE, clickButton, dialog, memberView, shownToasts } from './event-page'
+import { motion } from './motion'
 
 // Team names on the Game board (#161, 02-components § TeamNameBuilder, App Lobby 09 „Teamwahl offen + Teamwort“): the
 // Player's own field in their team's header area, the composed name, its live region, and the Host's reset.
@@ -18,8 +19,8 @@ function member(id: string, name: string, place: Place, teamWord: string | null 
 }
 
 const teamsNamed = (first: string | null, second: string | null = null): BoardTeam[] => [
-  { position: 1, name: first, frozen: false },
-  { position: 2, name: second, frozen: false },
+  { position: 1, name: first },
+  { position: 2, name: second },
 ]
 
 const noRoom = { on: () => () => undefined }
@@ -75,6 +76,7 @@ async function mountBoard(options: Options) {
       isHost: options.isHost ?? false,
       room: noRoom,
     },
+    attachTo: document.body,
   })
   return { page, words, resets }
 }
@@ -85,11 +87,13 @@ const settle = () => new Promise(resolve => setTimeout(resolve))
 const zone = (page: Board, label: string) => page.get(`[role="group"][aria-label^="${label}"]`)
 const field = (page: Board, label: string) => zone(page, label).find<HTMLInputElement>('input')
 const type = async (input: { setValue: (value: string) => Promise<void> }, value: string) => input.setValue(value)
-
-const frozenTeams = (first: string | null, second: string | null = null): BoardTeam[] => [
-  { position: 1, name: first, frozen: true },
-  { position: 2, name: second, frozen: true },
-]
+const pencil = (page: Board, label: string) => zone(page, label).find('button[aria-label="Teamwort ändern"]')
+/** Opens the field with the pencil of a named team, and lets the focus move into it (#439). */
+async function openWord(page: Board, label: string) {
+  await pencil(page, label).trigger('click')
+  await settle()
+}
+const FOURTH = '00000000-0000-4000-8000-000000000004'
 
 describe('Team names on the Game board', () => {
   afterEach(() => {
@@ -102,11 +106,11 @@ describe('Team names on the Game board', () => {
     expect(zone(page, 'Team Rot').text()).not.toContain('Wilde')
   })
 
-  it('keeps each team name a level 3 heading, like the Bench and the Stands, and the full name in its title', async () => {
+  it('keeps each team name a level 3 heading, like the Stands, and the full name in its title', async () => {
     const members = [member(kitty.id, 'Kitty', team(1), 'Wilde'), member(LARSI, 'Larsi', team(1), 'Gurken')]
     const { page } = await mountBoard({ members, teams: teamsNamed('Wilde Gurken') })
     const headings = page.findAll('h3').map(heading => heading.text())
-    expect(headings).toEqual(['Wilde Gurken', 'Team Orange', 'Bench', 'Tribüne'])
+    expect(headings).toEqual(['Wilde Gurken', 'Team Orange', 'Tribüne'])
     expect(page.get('h3 [title="Wilde Gurken"]').text()).toBe('Wilde Gurken')
   })
 
@@ -132,19 +136,20 @@ describe('Team names on the Game board', () => {
     expect(zone(page, 'Team Rot').text()).toContain('0/12')
   })
 
-  it('gives a Player no field in other teams, on the Bench or in the Stands', async () => {
+  it('gives a Player no field in other teams, or on the Tribüne', async () => {
     const members = [member(kitty.id, 'Kitty', team(2)), member(LARSI, 'Larsi', team(1))]
     const { page } = await mountBoard({ members })
     expect(zone(page, 'Team Rot').find('input').exists()).toBe(false)
     expect(zone(page, 'Team Orange').find('input').exists()).toBe(true)
 
-    const onBench = await mountBoard({ members: [member(kitty.id, 'Kitty', { zone: 'bench' })] })
-    expect(onBench.page.find('input').exists()).toBe(false)
+    const onStands = await mountBoard({ members: [member(kitty.id, 'Kitty', { zone: 'stands' })] })
+    expect(onStands.page.find('input').exists()).toBe(false)
   })
 
   it('gives the Host who is not in the team no field', async () => {
-    const { page } = await mountBoard({ members: [member(SANNE, 'Sanne', { zone: 'bench' }, null, true), member(kitty.id, 'Kitty', team(1))], viewerId: SANNE, isHost: true })
+    const { page } = await mountBoard({ members: [member(SANNE, 'Sanne', { zone: 'stands' }, null, true), member(kitty.id, 'Kitty', team(1))], viewerId: SANNE, isHost: true })
     expect(page.find('input').exists()).toBe(false)
+    expect(pencil(page, 'Team Rot').exists()).toBe(false)
   })
 
   it('counts while editing and strips spaces at once with the hint', async () => {
@@ -182,37 +187,42 @@ describe('Team names on the Game board', () => {
 
   it('puts the saved word back and says why when the server refuses the new one', async () => {
     const { page } = await mountBoard({ members: [member(kitty.id, 'Kitty', team(1), 'Wilde')], teams: teamsNamed('Wilde'), refuseWord: 'teams_locked' })
+    await openWord(page, 'Wilde')
     const input = field(page, 'Wilde')
 
     await type(input, 'Gurken')
     await input.trigger('keydown', { key: 'Enter' })
     await settle()
+    await openWord(page, 'Wilde')
 
-    expect(input.element.value).toBe('Wilde')
+    expect(field(page, 'Wilde').element.value).toBe('Wilde')
     expect(shownToasts().at(-1)).toMatchObject({ tone: 'error' })
   })
 
   it('posts the word on blur when it changed, and not when it did not', async () => {
     const { page, words } = await mountBoard({ members: [member(kitty.id, 'Kitty', team(1), 'Wilde')], teams: teamsNamed('Wilde') })
-    const input = field(page, 'Wilde')
-    expect(input.element.value).toBe('Wilde')
+    await openWord(page, 'Wilde')
+    expect(field(page, 'Wilde').element.value).toBe('Wilde')
 
-    await input.trigger('blur')
+    await field(page, 'Wilde').trigger('blur')
     await settle()
     expect(words).toEqual([])
+    expect(field(page, 'Wilde').exists()).toBe(false)
 
-    await type(input, 'Gurken')
-    await input.trigger('blur')
+    await openWord(page, 'Wilde')
+    await type(field(page, 'Wilde'), 'Gurken')
+    await field(page, 'Wilde').trigger('blur')
     await settle()
     expect(words).toEqual(['Gurken'])
+    expect(field(page, 'Wilde').exists()).toBe(false)
   })
 
   it('removes the word with an empty save', async () => {
     const { page, words } = await mountBoard({ members: [member(kitty.id, 'Kitty', team(1), 'Wilde')], teams: teamsNamed('Wilde') })
-    const input = field(page, 'Wilde')
+    await openWord(page, 'Wilde')
 
-    await type(input, '')
-    await input.trigger('keydown', { key: 'Enter' })
+    await type(field(page, 'Wilde'), '')
+    await field(page, 'Wilde').trigger('keydown', { key: 'Enter' })
     await settle()
 
     expect(words).toEqual([''])
@@ -230,7 +240,7 @@ describe('Team names on the Game board', () => {
   })
 
   describe('the Host resets a Team name', () => {
-    const named = [member(kitty.id, 'Kitty', team(1), 'Wilde'), member(LARSI, 'Larsi', team(1), 'Gurken'), member(SANNE, 'Sanne', { zone: 'bench' }, null, true)]
+    const named = [member(kitty.id, 'Kitty', team(1), 'Wilde'), member(LARSI, 'Larsi', team(1), 'Gurken'), member(SANNE, 'Sanne', { zone: 'stands' }, null, true)]
 
     it('offers the reset to the Host only, and only for a team with a name from words', async () => {
       const host = await mountBoard({ members: named, teams: teamsNamed('Wilde Gurken'), viewerId: SANNE, isHost: true })
@@ -278,34 +288,267 @@ describe('Team names on the Game board', () => {
     })
   })
 
-  describe('after the first Session started (#164)', () => {
-    const named = [member(kitty.id, 'Kitty', team(1), 'Wilde'), member(LARSI, 'Larsi', team(1), 'Gurken'), member(SANNE, 'Sanne', { zone: 'bench' }, null, true)]
+  describe('after the first Session started (#438)', () => {
+    const named = [member(kitty.id, 'Kitty', team(1), 'Wilde'), member(LARSI, 'Larsi', team(1), 'Gurken'), member(SANNE, 'Sanne', { zone: 'stands' }, null, true)]
 
-    it('gives a Player in a team no word field any more, and shows the frozen name', async () => {
-      const { page } = await mountBoard({ members: named, teams: frozenTeams('Wilde Gurken'), started: true })
+    it('keeps the word field of a Player in a team, and saving posts the word', async () => {
+      const { page, words } = await mountBoard({ members: named, teams: teamsNamed('Wilde Gurken'), started: true })
+      await openWord(page, 'Wilde Gurken')
+      const input = field(page, 'Wilde Gurken')
 
-      expect(zone(page, 'Wilde Gurken').find('input').exists()).toBe(false)
-      expect(zone(page, 'Wilde Gurken').text()).not.toContain('Dein Wort für den Teamnamen')
-      expect(zone(page, 'Wilde Gurken').text()).toContain('Wilde Gurken')
+      expect(zone(page, 'Wilde Gurken').text()).toContain('Dein Wort für den Teamnamen')
+      expect(input.element.value).toBe('Wilde')
+      await type(input, 'Wilder')
+      await input.trigger('keydown', { key: 'Enter' })
+      await settle()
+
+      expect(words).toEqual(['Wilder'])
     })
 
-    it('keeps the Host\'s reset while the frozen name is not the colour name, and does not promise to delete words', async () => {
-      const { page, resets } = await mountBoard({ members: named, teams: frozenTeams('Wilde Gurken'), started: true, viewerId: SANNE, isHost: true })
+    it('offers the Host the reset while the team has a name, and its dialog says the words are deleted', async () => {
+      const { page, resets } = await mountBoard({ members: named, teams: teamsNamed('Wilde Gurken'), started: true, viewerId: SANNE, isHost: true })
       expect(zone(page, 'Wilde Gurken').text()).toContain('Name zurücksetzen')
 
       await clickButton(zone(page, 'Wilde Gurken').element, 'Name zurücksetzen')
       expect(dialog()?.textContent).toContain('Team Rot')
-      expect(dialog()?.textContent).not.toContain('Wörter')
+      expect(dialog()?.textContent).toContain('Wörter')
       await clickButton(dialog(), 'Zurücksetzen')
       await settle()
 
       expect(resets).toEqual([1])
     })
 
-    it('offers no reset once the frozen name is the colour name', async () => {
-      const { page } = await mountBoard({ members: named, teams: frozenTeams(null), started: true, viewerId: SANNE, isHost: true })
+    it('offers no reset for a team without a name', async () => {
+      const { page } = await mountBoard({ members: named, teams: teamsNamed(null), started: true, viewerId: SANNE, isHost: true })
 
       expect(page.text()).not.toContain('Name zurücksetzen')
     })
+  })
+})
+
+// The folded name (#439, 02-components § TeamNameBuilder deviation 0.12, 04-motion): once the team has a word the band shows the name with a
+// pencil that opens the viewer's own field; Enter and Escape fold it again. The Host and everyone else see the name, never a field.
+describe('the folded team name (#439)', () => {
+  let realAnimate: typeof Element.prototype.animate
+
+  beforeEach(() => {
+    realAnimate = Element.prototype.animate
+  })
+
+  afterEach(() => {
+    Element.prototype.animate = realAnimate
+    vi.restoreAllMocks()
+    document.body.innerHTML = ''
+  })
+
+  const wilde = [member(kitty.id, 'Kitty', team(1), 'Wilde'), member(LARSI, 'Larsi', team(1), 'Gurken')]
+
+  it('folds a named team to its composed name and a pencil, with no field in the DOM', async () => {
+    const { page } = await mountBoard({ members: wilde, teams: teamsNamed('Wilde Gurken') })
+
+    expect(zone(page, 'Wilde Gurken').text()).toContain('Wilde Gurken')
+    expect(pencil(page, 'Wilde Gurken').exists()).toBe(true)
+    expect(field(page, 'Wilde Gurken').exists()).toBe(false)
+  })
+
+  it('opens the field with the pencil on the viewer\'s own word, counted, and focuses it', async () => {
+    const { page } = await mountBoard({ members: wilde, teams: teamsNamed('Wilde Gurken') })
+
+    await openWord(page, 'Wilde Gurken')
+
+    expect(field(page, 'Wilde Gurken').element.value).toBe('Wilde')
+    expect(zone(page, 'Wilde Gurken').text()).toContain('5/12')
+    expect(zone(page, 'Wilde Gurken').text()).toContain('Dein Wort für den Teamnamen')
+    expect(document.activeElement).toBe(field(page, 'Wilde Gurken').element)
+  })
+
+  it('posts on Enter, folds again and returns the focus to the pencil', async () => {
+    const { page, words } = await mountBoard({ members: wilde, teams: teamsNamed('Wilde Gurken') })
+    await openWord(page, 'Wilde Gurken')
+
+    await type(field(page, 'Wilde Gurken'), 'Wilder')
+    await field(page, 'Wilde Gurken').trigger('keydown', { key: 'Enter' })
+    await settle()
+
+    expect(words).toEqual(['Wilder'])
+    expect(field(page, 'Wilde Gurken').exists()).toBe(false)
+    expect(document.activeElement).toBe(pencil(page, 'Wilde Gurken').element)
+  })
+
+  it('discards the draft on Escape: no request, folds again, focus on the pencil', async () => {
+    const { page, words } = await mountBoard({ members: wilde, teams: teamsNamed('Wilde Gurken') })
+    await openWord(page, 'Wilde Gurken')
+
+    await type(field(page, 'Wilde Gurken'), 'Gurken')
+    await field(page, 'Wilde Gurken').trigger('keydown', { key: 'Escape' })
+    await settle()
+
+    expect(words).toEqual([])
+    expect(field(page, 'Wilde Gurken').exists()).toBe(false)
+    expect(document.activeElement).toBe(pencil(page, 'Wilde Gurken').element)
+
+    await openWord(page, 'Wilde Gurken')
+    expect(field(page, 'Wilde Gurken').element.value).toBe('Wilde')
+  })
+
+  it('folds on blur after a change, posts it, and leaves the focus where the Player moved it', async () => {
+    const { page, words } = await mountBoard({ members: wilde, teams: teamsNamed('Wilde Gurken') })
+    await openWord(page, 'Wilde Gurken')
+
+    await type(field(page, 'Wilde Gurken'), 'Gurkens')
+    await field(page, 'Wilde Gurken').trigger('blur')
+    await settle()
+
+    expect(words).toEqual(['Gurkens'])
+    expect(field(page, 'Wilde Gurken').exists()).toBe(false)
+    expect(document.activeElement).not.toBe(pencil(page, 'Wilde Gurken').element)
+  })
+
+  it('keeps the field, the draft and the focus when another Player\'s word names the team meanwhile (#488)', async () => {
+    const { page, words } = await mountBoard({ members: [member(kitty.id, 'Kitty', team(1)), member(LARSI, 'Larsi', team(1))] })
+    field(page, 'Team Rot').element.focus()
+    await type(field(page, 'Team Rot'), 'Wil')
+
+    await page.setProps({ teams: teamsNamed('Gurken'), members: [member(kitty.id, 'Kitty', team(1)), member(LARSI, 'Larsi', team(1), 'Gurken')] })
+    await settle()
+
+    expect(field(page, 'Gurken').exists()).toBe(true)
+    expect(field(page, 'Gurken').element.value).toBe('Wil')
+    expect(document.activeElement).toBe(field(page, 'Gurken').element)
+    expect(pencil(page, 'Gurken').exists()).toBe(false)
+    expect(words).toEqual([])
+
+    await field(page, 'Gurken').trigger('keydown', { key: 'Enter' })
+    await settle()
+
+    expect(words).toEqual(['Wil'])
+    expect(field(page, 'Gurken').exists()).toBe(false)
+    expect(document.activeElement).toBe(pencil(page, 'Gurken').element)
+  })
+
+  it('folds a field that is not in use when another Player\'s word names the team (#488)', async () => {
+    const { page } = await mountBoard({ members: [member(kitty.id, 'Kitty', team(1)), member(LARSI, 'Larsi', team(1))] })
+
+    await page.setProps({ teams: teamsNamed('Gurken'), members: [member(kitty.id, 'Kitty', team(1)), member(LARSI, 'Larsi', team(1), 'Gurken')] })
+    await settle()
+
+    expect(field(page, 'Gurken').exists()).toBe(false)
+    expect(pencil(page, 'Gurken').exists()).toBe(true)
+  })
+
+  it('folds after the Player\'s own first word is saved with Enter (#488)', async () => {
+    const { page, words } = await mountBoard({ members: [member(kitty.id, 'Kitty', team(1)), member(LARSI, 'Larsi', team(1))] })
+    field(page, 'Team Rot').element.focus()
+    await type(field(page, 'Team Rot'), 'Wilde')
+    await field(page, 'Team Rot').trigger('keydown', { key: 'Enter' })
+    await settle()
+    expect(words).toEqual(['Wilde'])
+
+    await page.setProps({ teams: teamsNamed('Wilde'), members: [member(kitty.id, 'Kitty', team(1), 'Wilde'), member(LARSI, 'Larsi', team(1))] })
+    await settle()
+
+    expect(field(page, 'Wilde').exists()).toBe(false)
+    expect(document.activeElement).toBe(pencil(page, 'Wilde').element)
+  })
+
+  it('shows the field and no pencil for a team without words, counted at 0/12', async () => {
+    const { page } = await mountBoard({ members: [member(kitty.id, 'Kitty', team(1))] })
+
+    expect(field(page, 'Team Rot').exists()).toBe(true)
+    expect(pencil(page, 'Team Rot').exists()).toBe(false)
+    expect(zone(page, 'Team Rot').text()).toContain('0/12')
+  })
+
+  it('gives a Player with no word of their own in a named team the pencil, and an empty field when opened', async () => {
+    const members = [member(kitty.id, 'Kitty', team(1)), member(LARSI, 'Larsi', team(1), 'Gurken')]
+    const { page } = await mountBoard({ members, teams: teamsNamed('Gurken') })
+    expect(pencil(page, 'Gurken').exists()).toBe(true)
+
+    await openWord(page, 'Gurken')
+
+    expect(field(page, 'Gurken').element.value).toBe('')
+    expect(zone(page, 'Gurken').text()).toContain('0/12')
+  })
+
+  it('shows a Player of another team or on the Tribüne the name only, with no pencil and no field', async () => {
+    const otherTeam = await mountBoard({ members: [member(kitty.id, 'Kitty', team(2)), member(LARSI, 'Larsi', team(1), 'Wilde')], teams: teamsNamed('Wilde') })
+    expect(zone(otherTeam.page, 'Wilde').text()).toContain('Wilde')
+    expect(pencil(otherTeam.page, 'Wilde').exists()).toBe(false)
+    expect(zone(otherTeam.page, 'Wilde').find('input').exists()).toBe(false)
+
+    const inStands = await mountBoard({ members: [member(kitty.id, 'Kitty', { zone: 'stands' }), member(LARSI, 'Larsi', team(1), 'Wilde')], teams: teamsNamed('Wilde') })
+    expect(zone(inStands.page, 'Wilde').text()).toContain('Wilde')
+    expect(pencil(inStands.page, 'Wilde').exists()).toBe(false)
+    expect(zone(inStands.page, 'Wilde').find('input').exists()).toBe(false)
+  })
+
+  it('shows the Host who is not in a team the name and the reset, never a field or the pencil', async () => {
+    const members = [member(SANNE, 'Sanne', { zone: 'stands' }, null, true), ...wilde]
+    const { page } = await mountBoard({ members, teams: teamsNamed('Wilde Gurken'), viewerId: SANNE, isHost: true })
+
+    expect(zone(page, 'Wilde Gurken').text()).toContain('Wilde Gurken')
+    expect(zone(page, 'Wilde Gurken').text()).toContain('Name zurücksetzen')
+    expect(pencil(page, 'Wilde Gurken').exists()).toBe(false)
+    expect(field(page, 'Wilde Gurken').exists()).toBe(false)
+  })
+
+  it('shows the Host seated in a team the name and the reset, never a field or the pencil', async () => {
+    const members = [member(SANNE, 'Sanne', team(1), null, true), ...wilde]
+    const { page } = await mountBoard({ members, teams: teamsNamed('Wilde Gurken'), viewerId: SANNE, isHost: true })
+
+    expect(zone(page, 'Wilde Gurken').text()).toContain('Name zurücksetzen')
+    expect(pencil(page, 'Wilde Gurken').exists()).toBe(false)
+    expect(field(page, 'Wilde Gurken').exists()).toBe(false)
+  })
+
+  it('shows four 12-character words in full when folded, and one word folds too', async () => {
+    const four = ['Aaaaaaaaaaaa', 'Bbbbbbbbbbbb', 'Cccccccccccc', 'Dddddddddddd']
+    const members = [kitty.id, LARSI, SANNE, FOURTH].map((id, index) => member(id, `Player ${index}`, team(1), four[index]))
+    const composed = four.join(' ')
+    const { page } = await mountBoard({ members, teams: teamsNamed(composed) })
+
+    for (const word of four) expect(zone(page, composed).text()).toContain(word)
+    expect(pencil(page, composed).exists()).toBe(true)
+
+    const single = await mountBoard({ members: [member(kitty.id, 'Kitty', team(1), 'Wilde')], teams: teamsNamed('Wilde') })
+    expect(pencil(single.page, 'Wilde').exists()).toBe(true)
+  })
+
+  it('counts a 12-character own word at 12/12 when opened', async () => {
+    const { page } = await mountBoard({ members: [member(kitty.id, 'Kitty', team(1), 'Aaaaaaaaaaaa'), member(LARSI, 'Larsi', team(1))], teams: teamsNamed('Aaaaaaaaaaaa') })
+
+    await openWord(page, 'Aaaaaaaaaaaa')
+
+    expect(zone(page, 'Aaaaaaaaaaaa').text()).toContain('12/12')
+  })
+
+  it('pops the composed name in dur-slow on ease-pop when a word arrives while it is folded', async () => {
+    const animate = vi.fn((_frames: Keyframe[], _options?: KeyframeAnimationOptions) => ({ finished: Promise.resolve() }))
+    Element.prototype.animate = animate as unknown as typeof Element.prototype.animate
+    const { page } = await mountBoard({ members: [member(kitty.id, 'Kitty', team(1), 'Wilde')], teams: teamsNamed('Wilde') })
+    animate.mockClear()
+
+    await page.setProps({ teams: teamsNamed('Wilde Gurken'), members: wilde })
+
+    expect(animate).toHaveBeenCalledTimes(1)
+    expect(animate.mock.calls[0]?.[1]).toMatchObject({ duration: 360, easing: 'cubic-bezier(.34,1.56,.64,1)' })
+  })
+
+  it('pops nothing under reduced motion', async () => {
+    const animate = vi.fn(() => ({ finished: Promise.resolve() }))
+    Element.prototype.animate = animate as unknown as typeof Element.prototype.animate
+    motion('reduced')
+    const { page } = await mountBoard({ members: [member(kitty.id, 'Kitty', team(1), 'Wilde')], teams: teamsNamed('Wilde') })
+    animate.mockClear()
+
+    await page.setProps({ teams: teamsNamed('Wilde Gurken'), members: wilde })
+
+    expect(animate).not.toHaveBeenCalled()
+  })
+
+  it('folds and unfolds in dur-fast, with the transition off under reduced motion', async () => {
+    const { page } = await mountBoard({ members: wilde, teams: teamsNamed('Wilde Gurken') })
+
+    expect(zone(page, 'Wilde Gurken').find('.dur-fast').classes()).toEqual(expect.arrayContaining(['transition-opacity', 'ease-out', 'motion-reduce:transition-none', 'reduced:transition-none']))
   })
 })

@@ -2,7 +2,7 @@ import { mountSuspended } from '@nuxt/test-utils/runtime'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import EventPage from '~/pages/e/[slug]/index.vue'
 import { kitty, signInAs } from './auth'
-import { clickButton, regionHeadings, stubScreen } from './event-page'
+import { clickButton, clickIconButton, regionHeadings, stubScreen } from './event-page'
 import { ENDED, FIRST, members, mount, SECOND, SESSION, serveState, STARTED, unmountPage, type Setup, type SessionSpec } from './event-page-states'
 
 // The composition of the Event page (#166, 11-event-seite § EventPage): what has to happen now goes on top. The order of
@@ -140,14 +140,13 @@ describe('the stage of the Event page', () => {
     const notices = (page: Awaited<ReturnType<typeof mount>>) => page.findAll('[role="status"]').map(element => element.text())
     const has = (page: Awaited<ReturnType<typeof mount>>, text: string) => notices(page).some(notice => notice.includes(text))
 
-    it('tells the Host in a team that the dock stays the same, and the Host on the Tribüne too, and nothing on the Bench', async () => {
+    it('tells the Host in a team that the dock stays the same, and the Host on the Tribüne too, without „spielst nicht mit“', async () => {
       const inTeam = serveState({ sessions: [SESSION(1, FIRST)], missing: 0, host: true, phase: 'date_set', teamChoiceOpen: true, overrides: { members: members({ kitty: { zone: 'team', team: 2 } }) } })
       const onStands = serveState({ sessions: [SESSION(1, FIRST)], missing: 0, host: true, phase: 'date_set', teamChoiceOpen: true, overrides: { members: members({ kitty: { zone: 'stands' } }) } })
-      const onBench = serveState({ sessions: [SESSION(1, FIRST)], missing: 0, host: true, phase: 'date_set', teamChoiceOpen: true })
 
       expect(has(await mount(inTeam.slug), 'Du spielst mit, in Team Orange. Das Host-Dock bleibt genau gleich.')).toBe(true)
-      expect(has(await mount(onStands.slug), 'Du sitzt auf der Tribüne und spielst nicht mit. Das Host-Dock bleibt genau gleich.')).toBe(true)
-      expect(has(await mount(onBench.slug), 'Das Host-Dock bleibt genau gleich')).toBe(false)
+      expect(has(await mount(onStands.slug), 'Du sitzt auf der Tribüne. Das Host-Dock bleibt genau gleich.')).toBe(true)
+      expect(has(await mount(onStands.slug), 'spielst nicht mit')).toBe(false)
     })
 
     it('shows the seat note only to the Host, with their role badge, and lets them close it', async () => {
@@ -186,15 +185,15 @@ describe('the stage of the Event page', () => {
 
       const betweenPage = await mount(between.slug)
       expect(has(betweenPage, 'Das Event läuft.')).toBe(false)
-      expect(has(betweenPage, 'Die Teams bleiben fürs ganze Event. Wenn du bei Session 2 nicht kannst, setz dich auf die Bench.')).toBe(true)
+      expect(has(betweenPage, 'Die Teams bleiben fürs ganze Event. Wenn du bei Session 2 nicht kannst, setz dich auf die Tribüne.')).toBe(true)
     })
 
     it('tells the Host who replaces whom between two Sessions, and says „der nächsten“ while that Session has no Date', async () => {
       const dated = serveState({ sessions: [SESSION(1, FIRST, { startedAt: STARTED, endedAt: ENDED }), SESSION(2, SECOND)], missing: 0, host: true, phase: 'running' })
       const waiting = serveState({ sessions: [SESSION(1, FIRST, { startedAt: STARTED, endedAt: ENDED }), SESSION(2, null)], missing: 1, host: true, phase: 'running' })
 
-      expect(has(await mount(dated.slug), 'Die Teams bleiben fürs ganze Event. Wer bei Session 2 fehlt, ersetzt du von der Bench.')).toBe(true)
-      expect(has(await mount(waiting.slug), 'Wer bei der nächsten Session fehlt, ersetzt du von der Bench.')).toBe(true)
+      expect(has(await mount(dated.slug), 'Die Teams bleiben fürs ganze Event. Wer bei Session 2 fehlt, ersetzt du von der Tribüne.')).toBe(true)
+      expect(has(await mount(waiting.slug), 'Wer bei der nächsten Session fehlt, ersetzt du von der Tribüne.')).toBe(true)
     })
 
     it('keeps telling the Host about uneven teams between two Sessions, because the next start is blocked again', async () => {
@@ -225,27 +224,61 @@ describe('the stage of the Event page', () => {
     it('tells a Member the Host sets the Event up, by the Host\'s name', async () => {
       const { slug } = serveState({ sessions: [SESSION(1, null)], missing: 1, settings: false })
 
-      expect(has(await mount(slug), 'Sanne richtet das Event noch ein. Bis dahin: Bench oder Tribüne.')).toBe(true)
+      expect(has(await mount(slug), 'Sanne richtet das Event noch ein. Bis dahin bleibst du auf der Tribüne.')).toBe(true)
     })
   })
 
   describe('the header', () => {
-    it('shows the Host an Einladen button that opens the invite sheet', async () => {
+    it('shows the Host an Einladen button that opens the invite sheet, as an icon from md to 1023 px and as the button from 1024 px (#426)', async () => {
       const { slug } = serveState({ sessions: [SESSION(1, FIRST)], missing: 0, host: true, phase: 'date_set', overrides: { inviteUrl: 'https://compies.test/e/x-abc' } })
       const page = await mount(slug)
 
-      const invite = page.get('header').findAll('button').find(button => button.text() === 'Einladen')!
-      expect(invite.classes()).toContain('max-md:hidden')
-      await clickButton(invite.element.parentElement, 'Einladen')
+      const header = page.get('header')
+      const invite = header.findAll('button').find(button => button.text() === 'Einladen')!
+      expect(invite.classes()).toContain('max-[63.99rem]:hidden')
+      expect(invite.classes()).not.toContain('max-md:hidden')
+      const icon = header.get('button[aria-label="Einladen"]')
+      expect(icon.classes()).toEqual(expect.arrayContaining(['max-md:hidden', 'min-[64rem]:hidden']))
+      expect(icon.text()).toBe('')
+      expect(header.findAll('button').filter(button => button.text() === 'Einladen' || button.attributes('aria-label') === 'Einladen')).toHaveLength(2)
+
+      for (const button of [invite, icon]) {
+        await clickButton(button.element.parentElement, 'Einladen')
+      }
+      await vi.waitFor(() => expect([...document.querySelectorAll<HTMLInputElement>('[role="dialog"] input[readonly]')].some(input => input.value === 'https://compies.test/e/x-abc')).toBe(true))
+    })
+
+    it('opens the invite sheet from the icon button, too', async () => {
+      const { slug } = serveState({ sessions: [SESSION(1, FIRST)], missing: 0, host: true, phase: 'date_set', overrides: { inviteUrl: 'https://compies.test/e/x-abc' } })
+      const page = await mount(slug)
+
+      await clickIconButton(page.get('header').element, 'Einladen')
 
       await vi.waitFor(() => expect([...document.querySelectorAll<HTMLInputElement>('[role="dialog"] input[readonly]')].some(input => input.value === 'https://compies.test/e/x-abc')).toBe(true))
     })
 
-    it('has no Einladen for a Member', async () => {
+    it('has no Einladen for a Member, neither as button nor as icon', async () => {
       const { slug } = serveState({ sessions: [SESSION(1, FIRST)], missing: 0, phase: 'date_set' })
       const page = await mount(slug)
 
-      expect(page.get('header').findAll('button').some(button => button.text() === 'Einladen')).toBe(false)
+      expect(page.get('header').findAll('button').some(button => button.text() === 'Einladen' || button.attributes('aria-label') === 'Einladen')).toBe(false)
+    })
+
+    it('keeps the hub nav in the header with Events current, the Event and its pill under it, and the phone’s tabs below (#426)', async () => {
+      const { slug } = serveState({ sessions: [SESSION(1, FIRST, { startedAt: STARTED }), SESSION(2, SECOND)], missing: 0, phase: 'running', running: 0 })
+      const page = await mount(slug)
+
+      expect(page.findAll('nav[aria-label="Hauptnavigation"]')).toHaveLength(1)
+      const nav = page.get('header nav[aria-label="Hauptnavigation"]')
+      expect(nav.findAll('[aria-current]')).toHaveLength(1)
+      const events = nav.get('[aria-current="page"]')
+      expect(events.text()).toContain('Events')
+      const line = events.findAll('[aria-hidden="true"]').find(element => element.text() !== '')!
+      expect(line.text()).toContain('Läuft · Session 1 von 2')
+      expect(nav.get(`#${events.attributes('aria-describedby')}`).text()).toBe(`Event: ${page.get('header p').text()}, Phase: Läuft · Session 1 von 2`)
+      // The phone's title and tabs stay (the header hides the title from md up).
+      expect(page.get('header p').element.parentElement!.className).toContain('md:hidden')
+      expect(page.get('nav[aria-label="Event"]').text()).toContain('Aktivität')
     })
 
     it('names the Session in the Phase pill while one runs in an Event with several, and the Phase otherwise', async () => {

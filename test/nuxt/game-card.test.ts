@@ -8,8 +8,8 @@ import { GAME_NAME_MAX, type GameView } from '~~/shared/game'
 // The card's structure (#351): the actions sit in the card's last child, and the body grows, so in a stretched grid row the
 // buttons of every card share one bottom edge, whatever the length of the name, the player count, Suitabilities, Price and Tags.
 
-type Props = Partial<Pick<GameView, 'playersMin' | 'playersMax' | 'suitabilities' | 'tags' | 'price'>> & { name: string }
-type Layout = 'card' | 'row' | 'responsive'
+type Props = Partial<Pick<GameView, 'playersMin' | 'playersMax' | 'suitabilities' | 'tags' | 'price' | 'imageUrl' | 'youtubeId'>> & { name: string }
+type Layout = 'card' | 'row' | 'responsive' | 'tile'
 
 let page: VueWrapper | undefined
 
@@ -111,5 +111,103 @@ describe('the Tag chips on a game card (#427)', () => {
 
     expect(chips()[0]!.getAttribute('style')).toContain('var(--cp-team-7)')
     expect(chips()[1]!.getAttribute('style')).toContain('var(--cp-team-8)')
+  })
+})
+
+// The tile (#435): on the Event page a game is its picture and its name, nothing else. The tile is a plain element: no link, no
+// button, and no actions slot, so the Spielepool, „Zuletzt gezogen“ and „Gerade dran“ show the same thing for the Host and a Member.
+describe('the tile layout (#435)', () => {
+  const FULL_TILE = { name: 'Mario Kart', ...FULL, imageUrl: '/api/images/kart.webp' }
+
+  it('shows the cover and the name only, even given players, Suitabilities, Tags and a Price', async () => {
+    await mount(FULL_TILE, 'tile')
+
+    expect(root().querySelector('img')?.getAttribute('src')).toBe('/api/images/kart.webp')
+    expect(root().textContent).toContain('Mario Kart')
+    expect(root().textContent).not.toContain('2–6')
+    expect(root().textContent).not.toContain('Teams')
+    expect(root().textContent).not.toContain('Retro')
+    expect(root().textContent).not.toContain('Party')
+    expect(root().textContent).not.toContain('€')
+    expect(root().querySelector('[role="group"]')).toBeNull()
+    expect(root().querySelector('svg')).toBeNull()
+  })
+
+  it('has no actions wrapper: the body is the last child, as no consumer gives the tile an actions slot', async () => {
+    await mount({ name: 'Mario Kart', ...FULL }, 'tile', false)
+
+    expect(lastChild()).toBe(body())
+  })
+
+  it('is no link and no button: the name is a plain element and the card holds no interactive control', async () => {
+    await mount({ name: 'Mario Kart', ...FULL }, 'tile', false)
+
+    expect(root().querySelector('a')).toBeNull()
+    expect(root().querySelector('button')).toBeNull()
+    expect(root().querySelector('b')?.textContent).toBe('Mario Kart')
+  })
+
+  it('takes its cover from the image, else the Clip’s YouTube thumbnail, else the placeholder', async () => {
+    await mount({ name: 'Mario Kart', imageUrl: '/api/images/kart.webp', youtubeId: 'dQw4w9WgXcQ' }, 'tile', false)
+    expect(root().querySelector('[data-cover]')?.getAttribute('data-cover')).toBe('image')
+    expect(root().querySelector('img')?.getAttribute('src')).toBe('/api/images/kart.webp')
+    page!.unmount()
+
+    await mount({ name: 'Mario Kart', imageUrl: null, youtubeId: 'dQw4w9WgXcQ' }, 'tile', false)
+    expect(root().querySelector('[data-cover]')?.getAttribute('data-cover')).toBe('image')
+    expect(root().querySelector('img')?.getAttribute('src')).toContain('dQw4w9WgXcQ')
+    page!.unmount()
+
+    await mount({ name: 'Mario Kart', imageUrl: null, youtubeId: null }, 'tile', false)
+    expect(root().querySelector('[data-cover]')?.getAttribute('data-cover')).toBe('placeholder')
+    expect(root().querySelector('img')).toBeNull()
+  })
+
+  it('wraps a name of GAME_NAME_MAX characters without spaces inside the tile, at most two lines', async () => {
+    await mount({ name: LONG_NAME }, 'tile', false)
+
+    const name = root().querySelector('b')!
+    expect(name.className).toContain('break-words')
+    expect(name.className).toContain('line-clamp-2')
+  })
+})
+
+// A tile that opens a dialog (#443, #444): a tile with `opens` is a button, one without it stays plain.
+describe('the tile that opens (#443)', () => {
+  async function mountOpening(props: { opens?: boolean, to?: string }) {
+    page = await mountSuspended(GameCard, {
+      props: { game: { id: 'g-1', name: 'Mario Kart', imageUrl: null, youtubeId: null, price: null, playersMin: null, playersMax: null, suitabilities: [] }, layout: 'tile', ...props },
+    })
+    return page
+  }
+
+  it('makes the name a button that names the game, says it opens a dialog, and emits open on a click', async () => {
+    const card = await mountOpening({ opens: true })
+
+    const button = card.get('button')
+    expect(button.text()).toBe('Mario Kart')
+    expect(button.attributes('type')).toBe('button')
+    expect(button.attributes('aria-haspopup')).toBe('dialog')
+    expect(button.classes()).toEqual(expect.arrayContaining(['focus-visible:focus-ring', 'after:absolute', 'after:inset-0']))
+    expect(card.find('b').exists()).toBe(false)
+
+    await button.trigger('click')
+
+    expect(card.emitted('open')).toHaveLength(1)
+  })
+
+  it('has no button without opens, and no aria-haspopup', async () => {
+    const card = await mountOpening({})
+
+    expect(card.find('button').exists()).toBe(false)
+    expect(card.find('[aria-haspopup]').exists()).toBe(false)
+    expect(card.get('b').text()).toBe('Mario Kart')
+  })
+
+  it('lets a link win over opens: with `to` the name is the link and no button', async () => {
+    const card = await mountOpening({ opens: true, to: '/bibliothek/g-1' })
+
+    expect(card.find('button').exists()).toBe(false)
+    expect(card.get('a').attributes('href')).toBe('/bibliothek/g-1')
   })
 })

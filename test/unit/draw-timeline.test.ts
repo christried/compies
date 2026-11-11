@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { clipEnded, clipRunning, clipWindow, drawGameKnown, drawInstants, isDue, settleAt, stopReached, vetoesSealed, windowEnded, windowFraction, windowOpen, type DrawInstants } from '../../shared/draw-timeline'
+import { clipEnded, clipRunning, clipWindow, drawGameKnown, drawInstants, isDue, settleAt, spinCommitAt, stopReached, vetoesSealed, windowEnded, windowFraction, windowOpen, type DrawInstants } from '../../shared/draw-timeline'
 
 // The Draw's timeline (#414, ADR 0013 amendment 2026-10-31): a Draw's instants and what each decides at `now`. Every comparison
 // keeps its edge, pinned here at the four boundary milliseconds (stop - 1, stop, end - 1, end); nothing may move them silently.
@@ -124,6 +124,15 @@ describe.each(KINDS)('a %s draw without a Veto window', (kind) => {
 
   it('has an empty bar', () => {
     expect(at(now => windowFraction(row, now))).toEqual([0, 0, 0])
+  })
+})
+
+describe('spinCommitAt', () => {
+  it('is the commit a spin was written with: the inverse of drawInstants, for the stage that lifts at the commit (#441)', () => {
+    const instants = drawInstants({ kind: 'spin', commitAt: C, windowOpens: true })
+    expect(spinCommitAt({ spinStartAt: instants.spinStartAt! })).toBe(C)
+    expect(spinCommitAt({ spinStartAt: instants.spinStartAt!.toISOString() })).toBe(C)
+    expect(spinCommitAt({ spinStartAt: C + 1500 })).toBe(C)
   })
 })
 

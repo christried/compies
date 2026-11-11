@@ -5,7 +5,7 @@ import { X } from '@lucide/vue'
 // (02-components § Sheet). Esc, the overlay and the close button close it; focus returns to the
 // trigger. It slides in from its side and out again (#348, `sheetEnter` / `sheetLeave`); the exit holds the dialog, `inert`, in the DOM until it is
 // done, while focus is already back on the trigger. Under reduced motion it only fades. A parent that removes the whole sheet with a `v-if` skips the
-// exit. `full` (#273, the result sheet) fills the screen on a phone: no handle bar, no rounded corners, the whole height; from md up it is the same side sheet.
+// exit. The title wraps anywhere, so a game's name of 60 characters without spaces never widens the sheet (#443). `full` (#273, the result sheet) fills the screen on a phone: no handle bar, no rounded corners, the whole height; from md up it is the same side sheet.
 const props = defineProps<{
   open: boolean
   title: string
@@ -77,7 +77,7 @@ function onLeave(el: Element, done: () => void) {
           <header class="flex items-center gap-3">
             <h2
               :id="titleId"
-              class="m-0 flex-1 font-display text-[26px] leading-none font-normal"
+              class="m-0 min-w-0 flex-1 font-display text-[26px] leading-none font-normal [overflow-wrap:anywhere]"
             >
               {{ title }}
             </h2>

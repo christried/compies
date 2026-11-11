@@ -3,7 +3,7 @@ import type { PGlite } from '@electric-sql/pglite'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { createTestDbBefore, migrateTo } from './harness'
 
-// The migration that gives Members a team seat (#160). Members of Events from before it stay on the Bench.
+// The migration that gives Members a team seat (#160). Members of Events from before it stay in no team: on the Bench then, and since 0.12 (#437, migration 0032, which `migrateTo` runs too) on the Stands.
 
 const MIGRATION = '0010_team_seats'
 
@@ -32,11 +32,11 @@ describe('migration: team seats', () => {
     rmSync(folder, { recursive: true, force: true })
   })
 
-  it('leaves every existing Member on the Bench, in no team', async () => {
+  it('leaves every existing Member in no team, on the Stands since 0.12 (#437)', async () => {
     const { rows } = await client.query<{ zone: string, team: number | null, team_joined_at: Date | null }>(`SELECT zone, team, team_joined_at FROM event_members`)
     expect(rows).toEqual([
-      { zone: 'bench', team: null, team_joined_at: null },
-      { zone: 'bench', team: null, team_joined_at: null },
+      { zone: 'stands', team: null, team_joined_at: null },
+      { zone: 'stands', team: null, team_joined_at: null },
     ])
   })
 

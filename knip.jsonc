@@ -25,12 +25,18 @@
         "scripts/browser/serve.mjs!",
         "scripts/browser/shots.mjs!",
         "scripts/browser/standings.mjs!",
+        // Run by the PreToolUse hook on Bash in .claude/settings.json (the heredoc guard, #483), not imported.
+        "scripts/bash-guard.mjs!",
+        // Run by the SessionStart hook in .claude/settings.json (the session-start note, #484), not imported.
+        "scripts/session-start-note.mjs!",
         // Run with node by /implement-spec before each new implementer (.claude/skills/implement-spec/SKILL.md).
         "scripts/context-usage.mjs!",
         // Run with node by implementers and the orchestrator to wait for CI on a pushed commit (docs/agents/implementer-frame.md).
         "scripts/ci-wait.mjs!",
         // Run with node by the orchestrator to remove finished agents' worktrees (docs/agents/delivery.md § Branch hygiene).
         "scripts/worktree-clean.mjs!",
+        // Run with node by the orchestrator to merge a reviewed ticket branch into the integration branch without a working tree (docs/agents/subagents.md § Supervision, #478).
+        "scripts/merge-into.mjs!",
         // Run by hand with node after a change to the rig; its output (server/assets/compibert/*.svg) is committed, `--check` guards it (#311).
         "scripts/bake-compibert.mjs!"
       ],

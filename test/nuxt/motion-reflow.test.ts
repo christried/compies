@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { CARD_REFLOW_CLASS, leaveInPlace, REFLOW_CLASS, unwatched } from '~/utils/motion'
+import { CARD_REFLOW_CLASS, leaveInPlace, REFLOW_CLASS, riseFade, unwatched } from '~/utils/motion'
 
 // What the page's reflow asks for (#276, F4 of the s5 check): the curve and duration of a block or a card that moves because something above it left,
 // and the leaver that goes out of the layout in the flush that starts its fade. jsdom has no layout and no transitions: this proves what the helpers
@@ -115,5 +115,46 @@ describe('leaveInPlace', () => {
     leaveInPlace(second)
 
     expect(second.style.left).toBe('332px')
+  })
+})
+
+describe('riseFade', () => {
+  /** An element whose `animate` the test watches. */
+  function animating() {
+    const element = document.createElement('div')
+    const animate = vi.fn()
+    Object.defineProperty(element, 'animate', { configurable: true, value: animate })
+    return { element, animate }
+  }
+  /** The page's tokens: `--cp-dur-fast` and `--cp-ease-out` as the stylesheet resolves them (the minified CSS writes 140ms as .14s, #370). */
+  function tokens(values: Record<string, string>) {
+    vi.spyOn(window, 'getComputedStyle').mockReturnValue({ getPropertyValue: (name: string) => values[name] ?? '' } as CSSStyleDeclaration)
+  }
+
+  it('fades the block in over --cp-dur-fast on --cp-ease-out, held at 0 until it starts (the stage block that rose under reduced motion, #441)', () => {
+    tokens({ '--cp-dur-fast': '.14s', '--cp-ease-out': 'cubic-bezier(.16,1,.3,1)' })
+    const { element, animate } = animating()
+
+    riseFade(element)
+
+    expect(animate).toHaveBeenCalledTimes(1)
+    expect(animate).toHaveBeenCalledWith([{ opacity: 0 }, { opacity: 1 }], { duration: 140, easing: 'cubic-bezier(.16,1,.3,1)', fill: 'backwards' })
+  })
+
+  it('has the fallbacks of the tokens when the stylesheet has none: 140 ms on ease-out', () => {
+    tokens({})
+    const { element, animate } = animating()
+
+    riseFade(element)
+
+    expect(animate).toHaveBeenCalledWith([{ opacity: 0 }, { opacity: 1 }], { duration: 140, easing: 'ease-out', fill: 'backwards' })
+  })
+
+  it('does nothing for an element without the Web Animations API', () => {
+    tokens({})
+    const element = document.createElement('div')
+    Object.defineProperty(element, 'animate', { configurable: true, value: undefined })
+
+    expect(() => riseFade(element)).not.toThrow()
   })
 })

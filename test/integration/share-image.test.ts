@@ -9,7 +9,7 @@ import type { Phase } from '../../shared/phase'
 import type { ShareImageModel } from '../../shared/share-image'
 import { createTestApp, errorOf, sendVia, type TestRequest } from './app'
 import { createTestDb, resetDatabase } from './harness'
-import { hostEntersResult, hostFinishes, hostSets, readEventText, readFeedText, startRunningEvent, type Rig } from './scenario'
+import { hostEntersResult, hostFinishes, hostSets, hostStartsCeremony, readEventText, readFeedText, startRunningEvent, type Rig } from './scenario'
 import { stubAuthEnv } from './sign-in'
 
 // What the renderer was asked to draw, so a test can read the model the route built (it is the model that says what the picture holds).
@@ -35,9 +35,9 @@ const players = {
   two: { provider: 'discord', id: '3', name: 'Zwei', email: 'two@example.com', image: undefined },
   three: { provider: 'twitch', id: '4', name: 'Drei', email: 'three@example.com', image: undefined },
   four: { provider: 'twitch', id: '5', name: 'Vier', email: 'four@example.com', image: undefined },
-  // Not on a team: one Member on the Stands (a Spectator), one on the Bench.
+  // Not on a team: one Member who moved to the Stands, one who took no seat (both on the Stands).
   spectator: { provider: 'twitch', id: '6', name: 'Zuschauer', email: 'spectator@example.com', image: undefined },
-  bench: { provider: 'twitch', id: '7', name: 'Bank', email: 'bench@example.com', image: undefined },
+  unseated: { provider: 'twitch', id: '7', name: 'Bank', email: 'unseated@example.com', image: undefined },
 } as const
 const outsider = { provider: 'twitch', id: '8', name: 'Fremd', email: 'outsider@example.com', image: undefined } as const
 
@@ -76,10 +76,10 @@ describe('the Share image route', () => {
   const send = sendVia(() => request)
 
   /**
-   * An Event with one Session, two Parties of two Players, a Spectator and a Bench Member, and a pool of two games of which only Halo is
+   * An Event with one Session, two Parties of two Players, a Member on the Stands and one who took no seat, and a pool of two games of which only Halo is
    * played (Kart stays in the pool). `finish: false` leaves it running with its result in; the Host's cookie, the Members' and an outsider's come back.
    */
-  async function event({ finish = true, tie = false }: { finish?: boolean, tie?: boolean } = {}) {
+  async function event({ finish = true, tie = false, ceremony = true }: { finish?: boolean, tie?: boolean, ceremony?: boolean } = {}) {
     const game = await startRunningEvent(rig, {
       host, players, outsiders: { outsider }, sessions: 1,
       seats: [['one', 1], ['two', 1], ['three', 2], ['four', 2], ['spectator', 'stands']] as const,
@@ -89,10 +89,12 @@ describe('the Share image route', () => {
     const roundId = await hostSets(rig, game, game.games.halo.id)
     await hostEntersResult(rig, game, roundId, [{ team: 1, place: 1 }, { team: 2, place: tie ? 1 : 2 }])
     if (finish) await hostFinishes(rig, game, tie ? { outcome: 'tie', winners: [1, 2] } : { outcome: 'winner', winners: [1] })
+    // The picture waits for the Award ceremony (#445); the Event is started unless a test wants the pending page.
+    if (finish && ceremony) await hostStartsCeremony(rig, game)
     notifier.clear()
     const cookies = {
       one: game.players.one.cookie, two: game.players.two.cookie, three: game.players.three.cookie, four: game.players.four.cookie,
-      spectator: game.players.spectator.cookie, bench: game.players.bench.cookie, outsider: game.outsiders.outsider.cookie,
+      spectator: game.players.spectator.cookie, unseated: game.players.unseated.cookie, outsider: game.outsiders.outsider.cookie,
     }
     return { slug: game.slug, eventId: game.eventId, hostCookie: game.host.cookie, cookies }
   }
@@ -116,10 +118,10 @@ describe('the Share image route', () => {
       expect(sizeOf(new Uint8Array(await response.arrayBuffer()))).toEqual({ signature: PNG_SIGNATURE, width, height })
     }, 30_000)
 
-    it('gives one to every kind of Member: a Player, the Host, a Spectator and a Bench Member', async () => {
+    it('gives one to every kind of Member: a Player, the Host and a Member on the Stands', async () => {
       const { slug, cookies, hostCookie } = await event()
 
-      for (const cookie of [cookies.one, cookies.three, hostCookie, cookies.spectator, cookies.bench]) {
+      for (const cookie of [cookies.one, cookies.three, hostCookie, cookies.spectator, cookies.unseated]) {
         const response = await image(slug, cookie)
         expect(response.status).toBe(200)
         expect(sizeOf(new Uint8Array(await response.arrayBuffer())).signature).toEqual(PNG_SIGNATURE)
@@ -172,7 +174,7 @@ describe('the Share image route', () => {
   describe('when and what', () => {
     it.each<Phase>(['draft', 'poll', 'date_set', 'running'])('answers wrong_phase in the Phase %s', async (phase) => {
       const { slug, eventId, cookies } = await event()
-      await testDb.db.update(events).set({ phase, finishedAt: null }).where(eq(events.id, eventId))
+      await testDb.db.update(events).set({ phase, finishedAt: null, ceremonyStartsAt: null, ceremonyGag: null }).where(eq(events.id, eventId))
 
       expect(await errorOf(await image(slug, cookies.one))).toEqual({ status: 409, code: 'wrong_phase' })
     })
@@ -181,6 +183,41 @@ describe('the Share image route', () => {
       const { slug, cookies } = await event({ finish: false })
 
       expect(await errorOf(await image(slug, cookies.one, '?format=png'))).toEqual({ status: 409, code: 'wrong_phase' })
+    })
+
+    describe('before the Award ceremony has been started (#445)', () => {
+      it.each([['a Player', 'one'], ['the Host', 'host'], ['a Member on the Stands', 'spectator']] as const)('refuses %s with ceremony_pending, also with another format', async (_who, who) => {
+        const { slug, cookies, hostCookie } = await event({ ceremony: false })
+        const cookie = who === 'host' ? hostCookie : cookies[who]
+
+        expect(await errorOf(await image(slug, cookie))).toEqual({ status: 409, code: 'ceremony_pending' })
+        expect(await errorOf(await image(slug, cookie, '?format=png'))).toEqual({ status: 409, code: 'ceremony_pending' })
+        expect(drawn.models).toEqual([])
+      })
+
+      it('still gives a non-Member the 404 and a visitor the 401', async () => {
+        const { slug, cookies } = await event({ ceremony: false })
+
+        expect((await image(slug, cookies.outsider)).status).toBe(404)
+        expect((await image(slug, undefined)).status).toBe(401)
+      })
+
+      it('gives the PNG once the Host has started the ceremony, while the run still plays', async () => {
+        const { slug, cookies, hostCookie } = await event({ ceremony: false })
+        expect((await send('POST', `/api/e/${slug}/ceremony`, hostCookie)).status).toBe(200)
+
+        const response = await image(slug, cookies.one)
+
+        expect(response.status).toBe(200)
+        expect(sizeOf(new Uint8Array(await response.arrayBuffer())).signature).toEqual(PNG_SIGNATURE)
+      }, 30_000)
+
+      it('gives the PNG for a stored start whose flag is still false, as the previous deployment leaves it', async () => {
+        const { slug, eventId, cookies } = await event({ ceremony: false })
+        await testDb.db.update(events).set({ ceremonyStartsAt: new Date(T0), ceremonyGag: 'trip', ceremonyShown: false }).where(eq(events.id, eventId))
+
+        expect((await image(slug, cookies.one)).status).toBe(200)
+      }, 30_000)
     })
 
     it.each([['', 'missing'], ['?format=', 'empty'], ['?format=Wide', 'in capitals'], ['?format=wide&format=square', 'twice'], ['?format=png', 'another format']])('refuses %j (%s) with invalid_value', async (query) => {

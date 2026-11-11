@@ -1,22 +1,16 @@
 <script setup lang="ts">
 import type { Phase } from '~~/shared/event'
+import { phaseWord } from '~/utils/event-page'
 
 // Phase chip in the Event header and on cards (02-components § PhasePill). The text carries the
 // meaning; the dot only adds colour. Phases beyond the MVP (running, finished, archived) are styled
 // too, so 1.0 needs no change here.
 // `label` replaces the Phase's word where the page knows more (the running Event: „Läuft · Session 1 von 2“, #166).
-defineProps<{ phase: Phase, label?: string }>()
+// `sm` is the chip under „Events“ in the header of the Event page (#426, 15-header-eventseite): the same fills and dots, smaller.
+withDefaults(defineProps<{ phase: Phase, label?: string, size?: 'md' | 'sm' }>(), { label: undefined, size: 'md' })
 
 const { t } = useI18n()
 
-const LABEL: Record<Phase, string> = {
-  draft: 'draft',
-  poll: 'poll',
-  date_set: 'dateSet',
-  running: 'running',
-  finished: 'finished',
-  archived: 'archived',
-}
 const DOT: Record<Phase, string> = {
   draft: 'bg-surface-2',
   poll: 'bg-info',
@@ -28,12 +22,15 @@ const DOT: Record<Phase, string> = {
 </script>
 
 <template>
-  <span class="inline-flex h-7 flex-none items-center gap-1.5 rounded-pill border-2 border-line bg-surface px-2.5 text-[12px] font-bold whitespace-nowrap text-ink">
+  <span
+    class="inline-flex flex-none items-center rounded-pill border-2 border-line bg-surface whitespace-nowrap text-ink"
+    :class="size === 'sm' ? 'h-[18px] gap-[5px] px-[7px] text-[11px] font-extrabold' : 'h-7 gap-1.5 px-2.5 text-[12px] font-bold'"
+  >
     <span
-      class="size-2.5 rounded-full border border-line"
-      :class="DOT[phase]"
+      class="rounded-full"
+      :class="[DOT[phase], size === 'sm' ? 'size-1.5 border-[1.5px] border-line' : 'size-2.5 border border-line']"
       aria-hidden="true"
     />
-    {{ label ?? t(`phase.${LABEL[phase]}`) }}
+    {{ phaseWord(phase, label, t) }}
   </span>
 </template>
