@@ -935,6 +935,9 @@
   "gameNotes": {
     "open": "Notizen ansehen"
   },
+  "hint": {
+    "open": "Hinweis anzeigen"
+  },
   "gameEdit": {
     "kicker": "Bibliothek",
     "title": "Spiel anlegen",
@@ -998,6 +1001,8 @@
     "priceRemove": "Preis entfernen",
     "saveChanges": "Änderungen speichern",
     "saveAndNext": "Speichern und noch eins",
+    "saveShortcut": "Strg + Enter speichert",
+    "saveShortcutApple": "⌘ + Enter speichert",
     "editKicker": "Bearbeiten",
     "duplicate": "Gibt’s vielleicht schon: „{name}“.",
     "useExisting": "Das nehmen",
