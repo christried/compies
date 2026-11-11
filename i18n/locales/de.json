@@ -388,6 +388,7 @@
       "wheel": {
         "title": "Glücksrad",
         "how": "Du legst Spiele auf das Glücksrad und drehst es. Alle sehen live, wie es dreht und wo es stehen bleibt. Das Spiel fliegt vom Rad, der Clip startet. Während des Clips und noch 30 Sekunden danach kann jede Partei ein Veto einlegen. Jede Partei hat gleich viele Vetos für das ganze Event, die Zahl legst du fest. Im Team darf jedes Mitglied sie einsetzen. Pro Spiel kann eine Partei höchstens 1 Veto einlegen. Welche Partei ein Veto eingelegt hat, siehst du erst, wenn die Zeit abläuft. Dann werden alle gleichzeitig aufgedeckt. Gibt es ein Veto, wird neu gedreht.",
+        "vetoHidden": "Die anderen sehen die Zahl der Vetos erst, wenn die erste Session startet.",
         "hideWheel": "Die Spieler sehen statt der echten Spiele nur Platzhalter oder erfundene Namen. Erst wenn das Rad stoppt, zeigt sich, was es wirklich ist. So spart niemand seine Vetos taktisch auf.",
         "hostSees": "Du als Host siehst die Spiele auf dem verdeckten Rad trotzdem, auch wenn du mitspielst.",
         "good": "Maximale Spannung und Chaos.",
@@ -1573,6 +1574,7 @@
       "mode": "Auswahl",
       "vetoes": "Vetos",
       "vetoValue": "{n} pro Partei",
+      "vetoHidden": "Anzahl erst zum Start",
       "pool": "Pool",
       "poolValue": "{n} Spiel | {n} Spiele",
       "pointsValue": "{preset} {values}",

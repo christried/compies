@@ -57,6 +57,7 @@ Orders existing cards per state. Rule: what has to happen now goes on top.
 ## HowWePlayCard (change)
 - `<dl>` rows Format · Spiele · Auswahl · Punkte. Host sees „Bearbeiten“ until the first Session starts; afterwards a lock + „Fest seit dem Start“.
 - **Empty state** (`setup`): dashed `line-soft` box, host „Noch nicht festgelegt. Format, Spiele und Punkte legst du beim Einrichten fest.“, member „… Sanne legt gleich fest, wie gespielt wird.“
+- **Deviation (0.13.1, #453):** on a Lucky Wheel Event the Vetos row reads „Anzahl erst zum Start“ for every Member but the Host until the first Session starts.
 
 ## EventPoll (change)
 - New prop `compact: boolean` (true when another Session already has a Date). Compact: same Slot cards, „Wer kann wann?“ collapsed behind a 44 px pill button „Wer kann wann? · 5 von 11“ (`aria-expanded`). Title „Termin für Session n“ + meta „x von 11 haben abgestimmt“.
