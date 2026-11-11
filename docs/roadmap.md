@@ -18,7 +18,7 @@ Each release is one spec and usable on its own. A release is grilled, specced an
 | 0.10 | Feinschliff | released on 2026-11-09: [#332](https://github.com/christried/compies/issues/332); the list that waited for the first Event, plus the production check. 0.10.1 „Partyhut“ released on 2026-11-09: the review follow-ups, the Partyhut ([#38](https://github.com/christried/compies/issues/38)) and the Countdown fix ([#379](https://github.com/christried/compies/issues/379)) |
 | 0.11 | Profil | released on 2026-11-10: [#398](https://github.com/christried/compies/issues/398); the Profil page, Darstellung (Hell, Dunkel, System) and the dark check |
 | 0.12 | Eventseite | next; grilled on 2026-11-10: [#425](https://github.com/christried/compies/issues/425), built in a cloud session |
-| 0.13 | Glücksrad & Clip | the wheel, the clip and the Share image findings of the production check; grilled on 2026-11-11 and split into four Releases: 0.13.0 „Clip“, 0.13.1 „Kleinkram“, 0.13.2 „Show-Rad“, 0.13.3 „Ton“ |
+| 0.13 | Glücksrad & Clip | the wheel, the clip and the Share image findings of the production check; grilled on 2026-11-11 and split into four Releases: 0.13.0 „Clip“ ([#501](https://github.com/christried/compies/issues/501)), 0.13.1 „Kleinkram“ ([#502](https://github.com/christried/compies/issues/502)), 0.13.2 „Show-Rad“ ([#503](https://github.com/christried/compies/issues/503)), 0.13.3 „Ton“ ([#504](https://github.com/christried/compies/issues/504)) |
 | 1.0 | | when the user declares COMPIES ready |
 
 ## 0.4 Spielvorbereitung (was 1.3)
@@ -287,7 +287,7 @@ The wheel, the clip and the Share image findings of the first production check, 
 
 ### 0.13.0 Clip
 
-Nothing in it waits for the user.
+Spec: [#501](https://github.com/christried/compies/issues/501); tickets #505–#514. Nothing in it waits for the user.
 
 - **The clip raw:** in a Session the YouTube player takes no pointer and no keyboard input from anyone, so nobody pauses it, opens the „More videos“ shelf or follows a link. Nothing is laid over the player and nothing is cropped: YouTube's title shows for the first seconds, since no player parameter hides it and YouTube's developer policies forbid obscuring or blocking parts of the player. A player that pauses for any other reason resumes at the synced second. The Host keeps „Clip überspringen“; every Member keeps their own mute and „Für mich schließen“ (WCAG 1.4.2) and the remaining time. The clip preview in the game form stays operable: the Host seeks there.
 - **A Veto during the clip** works as today (the Veto bar sits above the clip); a test pins it.
@@ -298,7 +298,7 @@ Nothing in it waits for the user.
 
 ### 0.13.1 Kleinkram
 
-The Idea issues that touch the same areas.
+Spec: [#502](https://github.com/christried/compies/issues/502); tickets #453, #456, #457, #458, #465 (the Idea issues, rewritten) and #515–#518. The Idea issues that touch the same areas.
 
 - **The Veto allowance stays hidden** ([#453](https://github.com/christried/compies/issues/453)): always, without a setting. Until the Event's first Session starts, no Member but the Host gets the number from any API, and „So wird gespielt“ says „Vetos: Anzahl erst zum Start“. From the start on it stays visible, between Sessions too. A test calls the API as a Player.
 - **„Speichern und noch eins“** ([#456](https://github.com/christried/compies/issues/456)): a second button on the create page only; it saves, shows the toast and empties the form with the cursor in the name. Nothing carries over.
@@ -309,6 +309,8 @@ The Idea issues that touch the same areas.
 
 ### 0.13.2 Show-Rad
 
+Spec: [#503](https://github.com/christried/compies/issues/503); tickets #519–#529, the Compibert hand-off is [#525](https://github.com/christried/compies/issues/525).
+
 - **The wheel's look:** the „Show-Rad“ (`reference/GameWheel.dc.html`, skin `show`; `Spec Changes.md` § Wheel look): bulb rim, pins at every slice edge, a hinged flapper. It keeps its colours in both Appearances, like the Coin flip; the card around it follows the Appearance.
 - **Its motion** as `04-motion.md` § Lucky Wheel has it: bulbs blink at rest, chase during the spin and flash at the stop, the flapper kicks per pin, the winner slice and the result card pop, put back and refill redistribute the slices. The Hidden wheel's reveal and the removal stay as built.
 - **The spin lasts 6 to 10 s**, drawn evenly by the server for each spin; there is no setting. The wheel makes more turns the longer it spins (5 at 6 s up to 8 at 10 s). Reduced motion keeps its calm last 1.2 s.
@@ -316,6 +318,8 @@ The Idea issues that touch the same areas.
 - All other UI _own build_.
 
 ### 0.13.3 Ton
+
+Spec: [#504](https://github.com/christried/compies/issues/504); tickets #530–#538, the listening session is [#535](https://github.com/christried/compies/issues/535).
 
 - **Eleven cues:** the wheel's five (`wheel-windup`, `wheel-tick`, `wheel-stop`, `wheel-morph`, `wheel-slice-out`) and the Veto window's six (`veto-open`, `veto-clock`, `veto-clip-close`, `veto-seal`, `veto-drumroll`, `veto-reveal`), from `reference/docs/compibert-sound.md`. The coin, the Standings, the ceremony, drag, UI and Compibert's voice come later; so does ducking.
 - **Where the sounds come from:** real files, CC0 or generated by us, chosen by ear in a joint session (`ready-for-human`): the agent prepares candidates per cue and a dev-only page that plays each one in its moment, the user listens and picks. One credits file in the repo names each cue's source; nothing needs a credit in the app.
