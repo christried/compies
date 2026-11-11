@@ -1,6 +1,6 @@
 import { eq } from 'drizzle-orm'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
-import { draws, rounds } from '../../server/db/schema'
+import { draws, rounds, vetoes } from '../../server/db/schema'
 import { testClock } from '../../server/utils/clock'
 import { memoryRoomNotifier } from '../../server/utils/room-notifier'
 import de from '../../i18n/locales/de.json'
@@ -61,8 +61,8 @@ describe('the synced clip', () => {
    * video (clip from second 90, 30 s long) and Kart without one. With `wheel` the Selection mode is the Lucky Wheel, `hidden`
    * makes it a Hidden wheel.
    */
-  async function running({ wheel = false, hidden = false }: { wheel?: boolean, hidden?: boolean } = {}) {
-    const selection = wheel ? { selectionMode: 'lucky_wheel', ...(hidden ? { hiddenWheel: true, vetoAllowance: 3 } : {}) } : {}
+  async function running({ wheel = false, hidden = false, vetoAllowance }: { wheel?: boolean, hidden?: boolean, vetoAllowance?: number } = {}) {
+    const selection = wheel ? { selectionMode: 'lucky_wheel', ...(hidden ? { hiddenWheel: true, vetoAllowance: 3 } : vetoAllowance === undefined ? {} : { vetoAllowance }) } : {}
     const event = await startRunningEvent(rig, {
       host, players, seats: [['one', 1], ['two', 2]] as const, settings: { teamSize: 1, ...selection },
       games: [
@@ -199,6 +199,54 @@ describe('the synced clip', () => {
       clock.advance(STOP)
 
       expect((await read(game, game.cookies.one)).clip?.game).toMatchObject({ id: game.halo.id, youtubeId: 'aaaaaaaaaaa' })
+    })
+  })
+
+  // The clip is nothing a Veto waits for or is refused by: the player takes no input (#509), so the Veto bar is how a Party reacts, and
+  // it works while the clip runs. No window length is pinned here: only the stop and the clip's own instants.
+  describe('a Veto during the clip (#509)', () => {
+    const cast = (game: Game, drawId: string, cookie: string) => send('POST', `/api/e/${game.slug}/draws/${drawId}/veto`, cookie)
+
+    it('is accepted a second into the clip of a spin, is sealed from the other Party, and does not end the clip', async () => {
+      const game = await running({ wheel: true, vetoAllowance: 2 })
+      const row = await spunHalo(game)
+      clock.advance(STOP + 1000)
+      const clip = (await read(game, game.cookies.one)).clip
+      expect(clip).toMatchObject({ drawId: row.id })
+
+      const response = await cast(game, row.id, game.cookies.one)
+
+      expect(response.status).toBe(200)
+      expect(await response.json()).toMatchObject({ drawId: row.id, team: 1 })
+      expect(await testDb.db.select().from(vetoes)).toMatchObject([{ drawId: row.id, team: 1, castAt: new Date(iso(STOP + 1000)) }])
+      const own = await read(game, game.cookies.one)
+      expect(own.clip).toEqual(clip)
+      expect(own.wheel!.vetoes.own).toMatchObject({ team: 1, cast: true })
+      expect((await read(game, game.cookies.two)).wheel!.vetoes.own).toMatchObject({ team: 2, cast: false })
+    })
+
+    it('is accepted in the clip\'s last millisecond', async () => {
+      const game = await running({ wheel: true, vetoAllowance: 2 })
+      const row = await spunHalo(game)
+      clock.advance(STOP)
+      const endsAt = new Date((await read(game, game.cookies.one)).clip!.endsAt).getTime()
+      clock.set(new Date(endsAt - 1).toISOString())
+      expect((await read(game, game.cookies.one)).clip).not.toBeNull()
+
+      expect((await cast(game, row.id, game.cookies.one)).status).toBe(200)
+    })
+
+    it('is accepted during the clip of a set game with „Veto erlauben“', async () => {
+      const game = await running({ wheel: true, vetoAllowance: 2 })
+      expect((await send('POST', `/api/e/${game.slug}/rounds`, game.hostCookie, { gameId: game.halo.id, vetoAllowed: true })).status).toBe(200)
+      const [row] = await testDb.db.select().from(draws)
+      clock.advance(1000)
+      expect((await read(game, game.cookies.two)).clip).toMatchObject({ drawId: row!.id })
+
+      const response = await cast(game, row!.id, game.cookies.two)
+
+      expect(response.status).toBe(200)
+      expect(await response.json()).toMatchObject({ drawId: row!.id, team: 2 })
     })
   })
 

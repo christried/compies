@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { SkipForward, Volume2, VolumeX, X } from '@lucide/vue'
 import { MD_QUERY } from '~/composables/useMediaQuery'
-import { YOUTUBE_HOST, YOUTUBE_PLAYING, loadYouTubeApi, type YouTubeApi, type YouTubePlayer } from '~/utils/youtube'
+import { YOUTUBE_HOST, YOUTUBE_PAUSED, YOUTUBE_PLAYING, loadYouTubeApi, type YouTubeApi, type YouTubePlayer } from '~/utils/youtube'
 import { clipPosition } from '~~/shared/clip'
 import { clipEnded } from '~~/shared/draw-timeline'
 import type { ClipView } from '~~/shared/stage'
@@ -10,7 +10,9 @@ import type { ClipView } from '~~/shared/stage'
 // over the stage, playing the same second on every device. It opens when the Event read carries the clip (the server clock is at
 // the draw's stop) and closes by itself at `endsAt` without waiting for a refetch. A late joiner lands on the right second
 // (`clipPosition`), and when the player has drifted by more than a second after 3 s of playback it seeks once. A game without
-// a video shows its card for the clip's length. Mute and close are this device's alone; the Host's „Clip überspringen“ is the
+// a video shows its card for the clip's length. The player takes no input (#509): its container is `inert` and `pointer-events-none`,
+// and nothing is placed over it, because YouTube forbids covering an embedded player; a player that pauses anyway (headset button, the
+// system) is resumed at the synced second. Mute and close are this device's alone; the Host's „Clip überspringen“ is the
 // only thing sent (the page POSTs it, the server stores it, and every client's refetch ends the clip).
 // Sound: a desktop starts with sound unless the User's own setting is off; a phone starts muted. When the browser blocks the
 // unmuted start (the player says so, or is not PLAYING after a second) the clip plays muted and „Ton aktivieren“ asks for the
@@ -31,6 +33,10 @@ const DRIFT_CHECK_MS = 3000
 const DRIFT_LIMIT_S = 1
 /** The progress bar and the end of the clip follow the server clock at this pace; also the bar's transition length: one tick eases into the next. */
 const TICK_MS = 250
+/** At most one resume per this long: a player that pauses again at once is asked again after it, never in a tight loop (#509). */
+const RESUME_GAP_MS = 1000
+/** No resume in the last second before `endsAt`: the video stops by itself at its end second, and a resume there would only start it to stop it again. */
+const END_MARGIN_MS = 1000
 
 const { t } = useI18n()
 const sound = useSound()
@@ -67,6 +73,11 @@ let player: YouTubePlayer | null = null
 let started = false
 let driftTimer: ReturnType<typeof setTimeout> | undefined
 let autoplayTimer: ReturnType<typeof setTimeout> | undefined
+let resumeTimer: ReturnType<typeof setTimeout> | undefined
+/** Server ms of the last resume. */
+let resumedAt = Number.NEGATIVE_INFINITY
+/** `PlayerState.PAUSED`, set in createPlayer from the API. */
+let pausedState = YOUTUBE_PAUSED
 
 /** The second of the video that every device is at now; the start second when this device's estimate is a hair early. */
 const secondNow = () => clipPosition(props.clip, props.serverNow()) ?? props.clip.game.clipStart
@@ -95,6 +106,27 @@ function onPlaying() {
   }, DRIFT_CHECK_MS)
 }
 
+/** The player paused although nobody could ask it to (#509): play on at the second everybody else is at. */
+function resumeIfPaused() {
+  clearTimeout(resumeTimer)
+  // Only a clip that has played before (the unmuted-start fallback owns the start), is open, and is not about to end.
+  if (!player || !started || !open.value) return
+  const at = props.serverNow()
+  if (endsAt - at <= END_MARGIN_MS) return
+  const wait = resumedAt + RESUME_GAP_MS - at
+  if (wait > 0) {
+    // Paused again within the gap: look again when it is over, and resume only if it is still paused.
+    resumeTimer = setTimeout(() => {
+      if (player?.getPlayerState() === pausedState) resumeIfPaused()
+    }, wait)
+    return
+  }
+  resumedAt = at
+  // Play first: a seek on a paused player keeps it paused. A null position is a hair before the start.
+  player.playVideo()
+  player.seekTo(clipPosition(props.clip, at) ?? props.clip.game.clipStart, true)
+}
+
 async function createPlayer() {
   let api: YouTubeApi
   try {
@@ -106,12 +138,13 @@ async function createPlayer() {
   }
   // The clip may have closed, or the overlay gone, while the script loaded.
   if (!stage.value || !open.value || player) return
+  pausedState = api.PlayerState?.PAUSED ?? YOUTUBE_PAUSED
   const host = document.createElement('div')
   stage.value.replaceChildren(host)
   player = new api.Player(host, {
     videoId: videoId.value!,
     host: YOUTUBE_HOST,
-    playerVars: { controls: 0, disablekb: 1, fs: 0, rel: 0, playsinline: 1, modestbranding: 1 },
+    playerVars: { controls: 0, disablekb: 1, fs: 0, rel: 0, playsinline: 1 },
     events: {
       onReady: () => {
         if (muted.value) player?.mute()
@@ -122,6 +155,7 @@ async function createPlayer() {
       },
       onStateChange: (change) => {
         if (change.data === (api.PlayerState?.PLAYING ?? YOUTUBE_PLAYING)) onPlaying()
+        else if (change.data === pausedState) resumeIfPaused()
       },
       onAutoplayBlocked: fallBackToMuted,
       onError: () => {
@@ -134,6 +168,7 @@ async function createPlayer() {
 function destroyPlayer() {
   clearTimeout(driftTimer)
   clearTimeout(autoplayTimer)
+  clearTimeout(resumeTimer)
   player?.destroy()
   player = null
 }
@@ -192,9 +227,10 @@ onBeforeUnmount(() => {
         <div
           v-if="showsPlayer"
           ref="stage"
+          inert
           role="group"
           :aria-label="t('gameEdit.playerLabel')"
-          class="size-full [&_iframe]:size-full"
+          class="pointer-events-none size-full [&_iframe]:size-full"
         />
         <GameCard
           v-else

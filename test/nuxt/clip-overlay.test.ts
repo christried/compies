@@ -26,6 +26,9 @@ interface PlayerStub {
   playVideo: ReturnType<typeof vi.fn>
   destroy: ReturnType<typeof vi.fn>
   getCurrentTime: ReturnType<typeof vi.fn>
+  getPlayerState: ReturnType<typeof vi.fn>
+  /** The iframe the API put in place of the host element, as in production. */
+  iframe: HTMLIFrameElement
 }
 let players: PlayerStub[]
 let serverMs: number
@@ -43,12 +46,17 @@ function stubYouTube() {
     playVideo = vi.fn()
     destroy = vi.fn()
     getCurrentTime = vi.fn(() => 0)
-    constructor(_element: HTMLElement, options: PlayerStub['options']) {
+    getPlayerState = vi.fn(() => 2)
+    iframe: HTMLIFrameElement
+    constructor(element: HTMLElement, options: PlayerStub['options']) {
       this.options = options
+      // The API replaces the element it is given by an iframe.
+      this.iframe = document.createElement('iframe')
+      element.replaceWith(this.iframe)
       players.push(this as unknown as PlayerStub)
     }
   }
-  window.YT = { Player, PlayerState: { PLAYING: 1 } } as unknown as typeof window.YT
+  window.YT = { Player, PlayerState: { PLAYING: 1, PAUSED: 2 } } as unknown as typeof window.YT
 }
 
 async function mount(clip: ClipView, { isHost = false, desktop = true }: { isHost?: boolean, desktop?: boolean } = {}) {
@@ -383,5 +391,183 @@ describe('the motion of the running clip', () => {
     expect(bar.style.transitionDuration).toBe('250ms')
     expect(bar.classList).not.toContain('duration-250')
     expect(page!.element.querySelector('.size-2.rounded-full')!.classList).toContain('animate-live')
+  })
+})
+
+describe('no input (#509)', () => {
+  const stageOf = () => page!.element.querySelector('[role="group"]') as HTMLElement
+
+  it('shuts the player\'s container to pointer input and focus, whatever iframe the API puts in it', async () => {
+    await mount(clipOf())
+    await ready()
+    const stage = stageOf()
+    const { iframe } = players[0]!
+
+    expect(stage.hasAttribute('inert')).toBe(true)
+    expect(stage.classList).toContain('pointer-events-none')
+    expect(stage.contains(iframe)).toBe(true)
+    expect(iframe.closest('[inert]')).toBe(stage)
+    expect(iframe.closest('.pointer-events-none')).toBe(stage)
+  })
+
+  it.each([
+    ['a Member', false, ['Ton aus', 'Für mich schließen']],
+    ['the Host', true, ['Ton aus', 'Clip überspringen', 'Für mich schließen']],
+  ])('leaves nothing to focus but the bar\'s buttons for %s, and those are outside the inert part', async (_who, isHost, expected) => {
+    await mount(clipOf(), { isHost })
+    await ready()
+
+    const focusable = [...page!.element.querySelectorAll('a[href], button, input, select, textarea, iframe, [tabindex]')].filter(element => !element.closest('[inert]'))
+    expect(focusable.every(element => element.tagName === 'BUTTON')).toBe(true)
+    expect(labels()).toEqual(expected)
+    expect(focusable).toHaveLength(expected.length)
+    expect(buttons().every(button => !button.element.closest('[inert], .pointer-events-none'))).toBe(true)
+  })
+
+  it('keeps „Ton aktivieren“ outside the inert part on a phone', async () => {
+    await mount(clipOf(), { desktop: false })
+    await ready()
+
+    const enable = buttons().find(button => button.name === 'Ton aktivieren')
+    expect(enable).toBeDefined()
+    expect(enable!.element.closest('[inert], .pointer-events-none')).toBeNull()
+  })
+
+  it('asks the player for no keyboard, fullscreen or related videos, and no longer for modestbranding', async () => {
+    await mount(clipOf())
+
+    expect(players[0]!.options.playerVars).toEqual({ controls: 0, disablekb: 1, fs: 0, rel: 0, playsinline: 1 })
+  })
+
+  it('puts nothing over, under or around the player: YouTube\'s rule against covering an embedded player', async () => {
+    await mount(clipOf(), { isHost: true })
+    await ready()
+    const section = page!.element.querySelector('section')!
+    const wrapper = section.querySelector('.aspect-video') as HTMLElement
+    const stage = stageOf()
+
+    expect(wrapper.children).toHaveLength(1)
+    expect(wrapper.children[0]).toBe(stage)
+    expect(stage.children).toHaveLength(1)
+    expect(stage.children[0]).toBe(players[0]!.iframe)
+    expect(stage.querySelectorAll('*')).toHaveLength(1)
+    const covering = /(^|\s)(absolute|fixed|sticky|inset-\S+|z-\S+|layer-\S+|translate\S*|scale\S*|-m\S*)(\s|$)/
+    const offenders = [...section.querySelectorAll('*')].filter(element => covering.test(element.getAttribute('class') ?? ''))
+    expect(offenders.map(element => element.getAttribute('class'))).toEqual([])
+    const bar = section.querySelector('[role="progressbar"]')!
+    expect(wrapper.compareDocumentPosition(bar) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    for (const button of buttons()) expect(wrapper.compareDocumentPosition(button.element) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  })
+})
+
+describe('a paused player is resumed (#509)', () => {
+  /** A player that has played, as after the start, and that is where the server says it should be. */
+  async function playing() {
+    await mount(clipOf())
+    await ready()
+    players[0]!.getCurrentTime.mockImplementation(() => 90 + (serverMs - START) / 1000)
+    players[0]!.options.events.onStateChange?.({ data: 1 })
+    return players[0]!
+  }
+  const pause = (player: PlayerStub) => player.options.events.onStateChange?.({ data: 2 })
+
+  it('plays again at the synced second, and sends nothing', async () => {
+    const player = await playing()
+    serverMs = START + 10_000
+
+    pause(player)
+
+    expect(player.playVideo).toHaveBeenCalledTimes(1)
+    expect(player.seekTo).toHaveBeenCalledTimes(1)
+    expect(player.seekTo).toHaveBeenCalledWith(100, true)
+    expect(player.playVideo.mock.invocationCallOrder[0]).toBeLessThan(player.seekTo.mock.invocationCallOrder[0]!)
+    expect(fetched).toEqual([])
+    expect(skip).not.toHaveBeenCalled()
+  })
+
+  it('leaves the start to the autoplay fallback: a pause before the first PLAYING is not resumed', async () => {
+    await mount(clipOf())
+    await ready()
+
+    pause(players[0]!)
+
+    expect(players[0]!.playVideo).not.toHaveBeenCalled()
+    expect(players[0]!.seekTo).not.toHaveBeenCalled()
+  })
+
+  it.each([[3, 'buffering'], [0, 'ended'], [5, 'cued']])('does nothing for state %i (%s)', async (data) => {
+    const player = await playing()
+    serverMs = START + 10_000
+
+    player.options.events.onStateChange?.({ data })
+
+    expect(player.playVideo).not.toHaveBeenCalled()
+    expect(player.seekTo).not.toHaveBeenCalled()
+  })
+
+  it('resumes at most once a second: a player that pauses again at once is asked again after the gap, only if it is still paused', async () => {
+    const player = await playing()
+    pause(player)
+    expect(player.playVideo).toHaveBeenCalledTimes(1)
+
+    await passTime(200)
+    pause(player)
+    expect(player.playVideo).toHaveBeenCalledTimes(1)
+
+    await passTime(800)
+    expect(player.playVideo).toHaveBeenCalledTimes(2)
+    expect(player.seekTo).toHaveBeenLastCalledWith(91, true)
+
+    // Paused again, but by the time the gap is over it plays: no second ask.
+    pause(player)
+    player.getPlayerState.mockReturnValue(1)
+    await passTime(1000)
+    expect(player.playVideo).toHaveBeenCalledTimes(2)
+
+    // After the gap a fresh pause resumes at once.
+    player.getPlayerState.mockReturnValue(2)
+    pause(player)
+    expect(player.playVideo).toHaveBeenCalledTimes(3)
+  })
+
+  it('does not resume in the clip\'s last second', async () => {
+    const player = await playing()
+    serverMs = START + 29_500
+
+    pause(player)
+
+    expect(player.playVideo).not.toHaveBeenCalled()
+  })
+
+  it('does not resume once this device closed the clip', async () => {
+    const player = await playing()
+
+    await press('Für mich schließen')
+    pause(player)
+
+    expect(player.playVideo).not.toHaveBeenCalled()
+  })
+
+  it('does not resume after the clip ended by itself', async () => {
+    const player = await playing()
+
+    await passTime(30_000)
+    pause(player)
+
+    expect(player.playVideo).not.toHaveBeenCalled()
+    expect(player.seekTo).not.toHaveBeenCalled()
+  })
+
+  it('does not check the drift again after a resume: the check stays one-shot', async () => {
+    const player = await playing()
+    serverMs = START + 1000
+    pause(player)
+    expect(player.seekTo).toHaveBeenCalledTimes(1)
+
+    // A PLAYING after the resume arms nothing; the first PLAYING's check finds the player in place.
+    player.options.events.onStateChange?.({ data: 1 })
+    await passTime(10_000)
+
+    expect(player.seekTo).toHaveBeenCalledTimes(1)
   })
 })
