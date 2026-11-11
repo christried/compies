@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+<template id="__bundler_thumbnail"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="#ffd23f"/><rect x="18" y="38" width="64" height="24" rx="4" fill="#fffdf8" stroke="#151515" stroke-width="3"/><rect x="30" y="58" width="18" height="4" fill="#ff4f4f"/></svg></template>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&amp;family=Lilita+One&amp;family=JetBrains+Mono:wght@500;700&amp;display=swap">
+<link rel="stylesheet" href="./tokens/compies-tokens.css">
+<script src="./tokens/lucide-subset.js"></script>
+<style>body{margin:0;background:#fff3df}a{color:var(--cp-ink)}a:hover{color:var(--cp-focus)}button{font:inherit;color:inherit}:focus-visible{outline:3px solid var(--cp-focus);outline-offset:3px}@media (prefers-reduced-motion: reduce){*{transition:none!important}}</style>
+</helmet>
+<div lang="de" data-theme="light" style="display:inline-flex;flex-direction:column;gap:120px;padding:96px;background-color:var(--cp-paper);background-image:var(--cp-tex-image);background-size:var(--cp-tex-size);color:var(--cp-ink);font-family:var(--cp-font-sans);font-weight:500;font-size:15px;line-height:1.45">
+
+  <header style="display:flex;flex-direction:column;gap:16px;max-width:1320px">
+    <span style="font-size:14px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--cp-ink-2)">COMPIES · AppHeader · ab md (768)</span>
+    <h1 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:88px;line-height:.95">Header auf der Eventseite</h1>
+    <p style="margin:0;max-width:64ch;font-size:22px;font-weight:600;line-height:1.4;color:var(--cp-ink-2);text-wrap:pretty">Die Eventseite bekommt die HubNav mit „Events“ als aktuellem Tab. Der Event bleibt als Unterzeile im Events-Tab sichtbar: Name und PhasePill, unter derselben Unterstreichung. Phones bleiben unverändert. Keine neuen Tokens. Übergabe: <code style="font-family:var(--cp-font-mono);font-size:.8em;font-weight:700">design_handoff_compies/15-header-eventseite.md</code></p>
+    <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:8px">
+      <sc-for list="{{ toc }}" as="s" hint-placeholder-count="6"><a href="{{ s.href }}" style="display:inline-flex;align-items:center;gap:8px;height:40px;padding:0 14px;border-radius:999px;border:var(--cp-bw) solid var(--cp-line);background:var(--cp-surface);box-shadow:var(--cp-shadow-sm);font-weight:700;font-size:14px;text-decoration:none"><b style="font-family:var(--cp-font-mono);font-size:12px">{{ s.no }}</b>{{ s.n }}</a></sc-for>
+    </div>
+  </header>
+
+  <sc-for list="{{ sections }}" as="s" hint-placeholder-count="2">
+    <section id="{{ s.id }}" data-screen-label="{{ s.label }}" style="display:flex;flex-direction:column;gap:28px">
+      <div style="display:flex;align-items:baseline;gap:18px;max-width:1440px">
+        <span style="flex:none;display:inline-grid;place-items:center;min-width:48px;height:48px;padding:0 10px;box-sizing:border-box;border-radius:999px;border:var(--cp-bw) solid var(--cp-line);background:{{ s.badgeBg }};font-family:var(--cp-font-mono);font-weight:700;font-size:16px">{{ s.no }}</span>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <h2 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:44px;line-height:1">{{ s.title }}</h2>
+          <p style="margin:0;max-width:80ch;font-size:17px;font-weight:600;color:var(--cp-ink-2);text-wrap:pretty">{{ s.note }}</p>
+        </div>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:40px 56px;align-items:flex-start">
+        <sc-for list="{{ s.cols }}" as="c" hint-placeholder-count="2">
+          <div data-theme="{{ c.theme }}" style="display:flex;flex-direction:column;gap:28px;padding:32px;border-radius:24px;border:var(--cp-bw) solid var(--cp-line);background-color:var(--cp-paper);background-image:var(--cp-tex-image);background-size:var(--cp-tex-size);color:var(--cp-ink)">
+            <span style="font-size:13px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--cp-ink-2)">{{ c.label }}</span>
+            <sc-for list="{{ c.frames }}" as="f" hint-placeholder-count="3">
+              <figure id="{{ f.anchor }}" style="margin:0;display:flex;flex-direction:column;gap:10px">
+                <figcaption style="display:flex;gap:10px;align-items:baseline;font-size:13px;font-weight:700;color:var(--cp-ink-2)"><b style="font-family:var(--cp-font-mono);color:var(--cp-ink)">{{ f.label }}</b>{{ f.sub }}</figcaption>
+                <div style="width:{{ f.w }};box-sizing:border-box;border:var(--cp-bw) solid var(--cp-line);border-radius:14px;overflow:hidden;background-color:var(--cp-paper);background-image:var(--cp-tex-image);background-size:var(--cp-tex-size)">
+
+                  <header style="position:relative;height:{{ f.hh }};box-sizing:border-box;display:flex;align-items:center;gap:12px;padding:0 {{ f.pad }};border-bottom:var(--cp-bw) solid var(--cp-line);background:var(--cp-surface);color:var(--cp-ink)">
+                    <a href="#" onClick="{{ noop }}" aria-label="COMPIES Startseite" style="flex:none;display:flex;align-items:center;gap:8px;min-height:44px;color:var(--cp-ink);text-decoration:none"><img src="./assets/compibert/compibert-head.svg" alt="" width="{{ f.logoS }}" height="{{ f.logoS }}" style="display:block"></img><sc-if value="{{ f.word }}"><span style="font-family:var(--cp-font-display);font-size:22px;text-transform:uppercase;line-height:1">Compies</span></sc-if></a>
+
+                    <sc-if value="{{ f.mob }}">
+                      <div style="flex:1;min-width:0;display:flex;align-items:center;gap:0 10px;flex-wrap:wrap"><b style="font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%">{{ f.name }}</b><span style="display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 9px;border-radius:999px;border:2px solid var(--cp-line);background:{{ f.pillBg }};color:var(--cp-ink);font-size:12px;font-weight:800;white-space:nowrap"><span aria-hidden="true" style="width:7px;height:7px;border-radius:50%;background:{{ f.pillDot }};border:1.5px solid var(--cp-line)"></span>{{ f.pill }}</span></div>
+                    </sc-if>
+
+                    <sc-if value="{{ f.hasNav }}">
+                      <nav aria-label="Hauptnavigation" style="flex:0 1 auto;min-width:0;display:flex;gap:2px;margin-left:{{ f.navMl }}">
+                        <sc-for list="{{ f.tabs }}" as="t" hint-placeholder-count="4">
+                          <sc-if value="{{ t.plain }}"><a href="#" onClick="{{ noop }}" aria-current="{{ t.cur }}" style="flex:none;display:flex;align-items:center;gap:6px;height:61px;padding:0 {{ f.tabPad }};box-sizing:border-box;border-bottom:3px solid {{ t.bar }};color:{{ t.c }};font-weight:{{ t.w }};font-size:14px;text-decoration:none;white-space:nowrap;outline:{{ t.ol }};outline-offset:3px;transition:color var(--cp-dur-fast) var(--cp-ease-out),border-color var(--cp-dur-fast) var(--cp-ease-out)" style-hover="color:var(--cp-ink);border-bottom-color:{{ t.hovBar }}"><dc-import name="Icon" icon="{{ t.icon }}" size="{{ 16 }}" offset="{{ t.off }}" hint-size="16px,16px"></dc-import>{{ t.n }}</a></sc-if>
+
+                          <sc-if value="{{ t.ctxA }}"><a href="#" onClick="{{ noop }}" aria-current="page" aria-describedby="{{ f.descId }}" style="flex:0 1 auto;min-width:{{ f.tabMin }};max-width:{{ f.tabMax }};display:flex;flex-direction:column;justify-content:center;align-items:flex-start;gap:3px;height:61px;padding:0 {{ f.tabPad }};box-sizing:border-box;border-bottom:3px solid var(--cp-hot);color:var(--cp-ink);text-decoration:none;outline:{{ t.ol }};outline-offset:3px">
+                            <span style="display:flex;align-items:center;gap:6px;font-weight:800;font-size:14px;line-height:16px;white-space:nowrap"><dc-import name="Icon" icon="{{ t.icon }}" size="{{ 16 }}" offset="var(--cp-hot)" hint-size="16px,16px"></dc-import>{{ t.n }}</span>
+                            <span aria-hidden="true" style="display:flex;align-items:center;gap:6px;max-width:100%;min-width:0">
+                              <span title="{{ f.name }}" style="flex:0 1 auto;min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font-size:12px;line-height:16px;font-weight:600;color:var(--cp-ink-2)">{{ f.name }}</span>
+                              <span style="flex:none;display:inline-flex;align-items:center;gap:5px;height:18px;padding:0 7px;box-sizing:border-box;border-radius:999px;border:2px solid var(--cp-line);background:{{ f.pillBg }};color:var(--cp-ink);font-size:11px;line-height:1;font-weight:800;white-space:nowrap"><span style="width:6px;height:6px;border-radius:50%;background:{{ f.pillDot }};border:1.5px solid var(--cp-line)"></span>{{ f.pill }}</span>
+                            </span>
+                          </a><span id="{{ f.descId }}" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap">{{ f.desc }}</span></sc-if>
+
+                          <sc-if value="{{ t.ctxB }}"><a href="#" onClick="{{ noop }}" aria-current="page" aria-describedby="{{ f.descId }}" style="flex:0 1 auto;min-width:{{ f.tabMin }};max-width:440px;display:flex;align-items:center;gap:6px;height:61px;padding:0 {{ f.tabPad }};box-sizing:border-box;border-bottom:3px solid var(--cp-hot);color:var(--cp-ink);text-decoration:none;white-space:nowrap">
+                            <dc-import name="Icon" icon="{{ t.icon }}" size="{{ 16 }}" offset="var(--cp-hot)" hint-size="16px,16px"></dc-import><span style="font-weight:800;font-size:14px">{{ t.n }}</span>
+                            <span aria-hidden="true" style="display:flex;align-items:center;gap:6px;min-width:0;color:var(--cp-ink-2)"><dc-import name="Icon" icon="chevron-right" size="{{ 14 }}" hint-size="14px,14px"></dc-import><span style="min-width:0;overflow:hidden;text-overflow:ellipsis;font-size:14px;font-weight:600">{{ f.name }}</span><span style="flex:none;display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 9px;border-radius:999px;border:2px solid var(--cp-line);background:{{ f.pillBg }};color:var(--cp-ink);font-size:12px;font-weight:800"><span style="width:7px;height:7px;border-radius:50%;background:{{ f.pillDot }};border:1.5px solid var(--cp-line)"></span>{{ f.pill }}</span></span>
+                          </a><span id="{{ f.descId }}" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap">{{ f.desc }}</span></sc-if>
+                        </sc-for>
+                      </nav>
+                    </sc-if>
+
+                    <sc-if value="{{ f.spacer }}"><span style="flex:1 1 0;min-width:8px"></span></sc-if>
+
+                    <sc-if value="{{ f.ctxC }}">
+                      <div aria-label="{{ f.desc }}" role="group" style="flex:0 1 auto;min-width:0;display:flex;align-items:center;gap:10px"><b title="{{ f.name }}" style="min-width:0;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:320px">{{ f.name }}</b><span style="flex:none;display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 9px;border-radius:999px;border:2px solid var(--cp-line);background:{{ f.pillBg }};color:var(--cp-ink);font-size:12px;font-weight:800;white-space:nowrap"><span aria-hidden="true" style="width:7px;height:7px;border-radius:50%;background:{{ f.pillDot }};border:1.5px solid var(--cp-line)"></span>{{ f.pill }}</span></div>
+                      <span aria-hidden="true" style="flex:none;width:2px;height:28px;background:var(--cp-line-soft)"></span>
+                    </sc-if>
+
+                    <sc-if value="{{ f.inviteFull }}"><button type="button" style="flex:none;display:inline-flex;align-items:center;gap:6px;height:44px;padding:0 14px;border-radius:999px;border:var(--cp-bw) solid var(--cp-line);background:var(--cp-surface);color:var(--cp-ink);box-shadow:var(--cp-shadow-sm);font-weight:700;font-size:13px;cursor:pointer"><dc-import name="Icon" icon="link" size="{{ 16 }}" hint-size="16px,16px"></dc-import>Einladen</button></sc-if>
+                    <sc-if value="{{ f.inviteIcon }}"><button type="button" aria-label="Einladen" title="Einladen" style="flex:none;display:grid;place-items:center;width:44px;height:44px;padding:0;border:0;background:transparent;color:var(--cp-ink);cursor:pointer"><span style="display:grid;place-items:center;width:40px;height:40px;box-sizing:border-box;border-radius:999px;border:var(--cp-bw) solid var(--cp-line);background:var(--cp-surface);box-shadow:var(--cp-shadow-sm)"><dc-import name="Icon" icon="link" size="{{ 18 }}" hint-size="18px,18px"></dc-import></span></button></sc-if>
+
+                    <button type="button" aria-label="Ton aus" style="flex:none;display:grid;place-items:center;width:44px;height:44px;padding:0;border:0;background:transparent;color:var(--cp-ink);cursor:pointer"><span style="display:grid;place-items:center;width:40px;height:40px;box-sizing:border-box;border-radius:999px;border:2px solid var(--cp-line);background:var(--cp-surface)"><dc-import name="Icon" icon="volume-2" size="{{ 18 }}" hint-size="18px,18px"></dc-import></span></button>
+                    <button type="button" aria-label="Konto von Kitty" aria-haspopup="menu" aria-expanded="false" style="flex:none;display:grid;place-items:center;width:44px;height:44px;padding:0;border:0;border-radius:50%;background:transparent;cursor:pointer"><dc-import name="Avatar" who="Kitty" size="{{ 32 }}" host="{{ f.crown }}" hint-size="32px,32px"></dc-import></button>
+                  </header>
+                  <div style="height:{{ f.below }};padding:14px {{ f.pad }};box-sizing:border-box;font-size:13px;font-weight:700;color:var(--cp-ink-2)">{{ f.belowText }}</div>
+                </div>
+              </figure>
+            </sc-for>
+          </div>
+        </sc-for>
+      </div>
+    </section>
+  </sc-for>
+
+  <section id="a11y" data-screen-label="Screenreader" style="display:flex;flex-direction:column;gap:20px;max-width:1100px">
+    <h2 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:44px;line-height:1">Was der Screenreader sagt</h2>
+    <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:20px">
+      <div style="display:flex;flex-direction:column;gap:10px;padding:24px;border-radius:18px;border:var(--cp-bw) solid var(--cp-line);background:var(--cp-surface);box-shadow:var(--cp-shadow-card)">
+        <b style="font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--cp-ink-2)">Tab-Taste auf „Events“ (NVDA / VoiceOver)</b>
+        <p style="margin:0;font-family:var(--cp-font-mono);font-size:15px;font-weight:700;line-height:1.6">„Hauptnavigation, Navigation. Events, aktuelle Seite, Link. Event: Großer Herbst-Spieleabend bei Sanne mit Pizza, Quiz und Co., Phase: Läuft.“</p>
+        <p style="margin:0;font-size:15px;font-weight:600;color:var(--cp-ink-2);text-wrap:pretty">Name des Links bleibt „Events“. Die sichtbare Unterzeile ist <code>aria-hidden</code>; ihr Inhalt kommt einmal, ungekürzt, als Beschreibung (<code>aria-describedby</code>). Kein zweiter Tabstopp, kein zweites <code>aria-current</code>.</p>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px;padding:24px;border-radius:18px;border:var(--cp-bw) solid var(--cp-line);background:var(--cp-surface);box-shadow:var(--cp-shadow-card)">
+        <b style="font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--cp-ink-2)">Landmark-Liste</b>
+        <p style="margin:0;font-family:var(--cp-font-mono);font-size:15px;font-weight:700;line-height:1.6">Banner · Navigation „Hauptnavigation“ · Hauptbereich</p>
+        <p style="margin:0;font-size:15px;font-weight:600;color:var(--cp-ink-2);text-wrap:pretty">Die Event-Tabs unten auf dem Phone (Event, Aktivität) bleiben eine eigene Tab-Leiste, kein zweites <code>nav</code> mit gleichem Namen. Phasenwechsel wird wie bisher über die Live-Region der Seite angesagt, nicht über den Header.</p>
+      </div>
+    </div>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+const PILL={poll:['Terminumfrage','var(--cp-surface)','var(--cp-info)'],live:['Läuft','var(--cp-primary)','var(--cp-hot)'],end:['Beendet','var(--cp-paper-2)','var(--cp-ink-3)']};
+const ALL=[['events','Events','house'],['archiv','Archiv','archive'],['bibliothek','Bibliothek','gamepad-2'],['profil','Profil','user'],['admin','Admin','shield']];
+const WCFG={768:{pad:'14px',tabMax:'200px'},1024:{pad:'24px',tabMax:'280px'},1440:{pad:'24px',tabMax:'340px'}};
+const LONG='Großer Herbst-Spieleabend bei Sanne mit Pizza, Quiz und Co.';
+let uid=0;
+function frame(o){
+  const w=o.w, c=WCFG[w]||WCFG[1440], mob=w===390, hub=o.kind==='hub', v=o.variant||'A';
+  const keys=o.role==='op'?['events','archiv','bibliothek','profil','admin']:['events','archiv','profil'];
+  const cur=hub?(o.cur||'bibliothek'):'events';
+  const pk=PILL[o.phase||'live'];
+  const id='d'+(++uid);
+  const tabs=ALL.filter(t=>keys.includes(t[0])).map(([k,n,icon])=>{
+    const a=k===cur, ctx=a&&!hub;
+    const hover=o.hover===k, focus=o.focus===k;
+    return {n,icon,plain:!ctx||v==='C',ctxA:ctx&&v==='A',ctxB:ctx&&v==='B',cur:a?'page':undefined,
+      bar:a?'var(--cp-hot)':(hover?'var(--cp-line-soft)':'transparent'),c:a||hover?'var(--cp-ink)':'var(--cp-ink-2)',w:a?800:600,off:a?'var(--cp-hot)':'',
+      hovBar:a?'var(--cp-hot)':'var(--cp-line-soft)',ol:focus?'3px solid var(--cp-focus)':'none'};
+  });
+  const invite=!hub&&!mob&&o.invite;
+  return {anchor:o.anchor||'',label:(mob?'390':w)+' · '+o.themeLabel,sub:o.sub||'',w:w+'px',hh:mob?'56px':'64px',pad:mob?'14px':c.pad,logoS:mob?30:34,
+    word:!mob&&(hub||w>=1024),mob,hasNav:!mob,navMl:'14px',tabs,tabMax:c.tabMax,tabPad:w<1024?'8px':'11px',tabMin:(v==='B'?200:(o.phase==='poll'?130:96))+'px',spacer:!mob,ctxC:!hub&&!mob&&v==='C',
+    inviteFull:invite&&w>=1024,inviteIcon:invite&&w<1024,crown:!hub&&o.role==='op',
+    name:o.name||'',pill:pk[0],pillBg:pk[1],pillDot:pk[2],descId:id,desc:'Event: '+(o.name||'')+', Phase: '+pk[0],
+    below:mob?'40px':'44px',belowText:hub?'/bibliothek':(mob?'Event · Aktivität (Bottom-Tabs) unverändert':'Seitenkopf mit h1 ist weggescrollt, Header bleibt sticky')};
+}
+const W=[1440,1024,768];
+const cols=(o,widths)=>['light','dark'].map(th=>({theme:th,label:th==='light'?'Hell':'Dunkel',frames:(widths||W).map(w=>frame({...o,w,themeLabel:th==='light'?'hell':'dunkel'}))}));
+class Component extends DCLogic {
+  renderVals(){
+    uid=0;
+    const sections=[
+      {id:'s1',no:'1',label:'01 Operator',badgeBg:'var(--cp-primary)',title:'Operator und Host · 5 Tabs · langer Name · Läuft',
+        note:'Empfehlung: Unterzeile im Events-Tab. Name (12/600 ink-2) und PhasePill sm stehen unter „Events“, beide unter derselben hot-Unterstreichung. Nur dieser Tab darf schrumpfen; der Name kürzt mit „…“, die Pill bleibt ganz. 768: Wortmarke aus, „Einladen“ als IconButton.',
+        cols:cols({kind:'event',role:'op',phase:'live',name:LONG,invite:true})},
+      {id:'s2',no:'2',label:'02 Member',badgeBg:'var(--cp-surface)',title:'Member · 3 Tabs · kurzer Name · Terminumfrage',
+        note:'Kein „Einladen“. Der Tab ist nur so breit wie sein Inhalt; die Lücke rechts wächst, nicht der Tab.',
+        cols:cols({kind:'event',role:'member',phase:'poll',name:'Zockrunde'})},
+      {id:'s3',no:'3',label:'03 Beendet',badgeBg:'var(--cp-paper-2)',title:'Beendeter Event · Beendet',
+        note:'Host-Sicht, Einladen bleibt (Rechte unverändert). Pill in paper-2 mit ink-3-Punkt, Text in ink.',
+        cols:cols({kind:'event',role:'op',phase:'end',name:'Freitags-Zocken',invite:true})},
+      {id:'s4',no:'4',label:'04 Hub Bibliothek',badgeBg:'var(--cp-surface)',title:'Zum Vergleich: Hub-Header auf /bibliothek (unverändert)',
+        note:'Gleiche Höhe (64), gleiche Tabs, gleiche Abstände. Einziger Unterschied auf der Eventseite: der aktuelle Tab trägt die Unterzeile.',
+        cols:cols({kind:'hub',role:'op',cur:'bibliothek'})},
+      {id:'s5',no:'5',label:'05 Phone',badgeBg:'var(--cp-surface)',title:'Phone 390 · Eventseite unverändert',
+        note:'Unter md keine HubNav im Header. Kopf 56, Compibert-Kopf ohne Wortmarke, Name + PhasePill, Ton, Konto. Bottom-Tabs Event / Aktivität wie bisher.',
+        cols:cols({kind:'event',role:'op',phase:'live',name:'Freitags-Zocken',invite:true},[390])},
+      {id:'s6',no:'6',label:'06 Zustände',badgeBg:'var(--cp-surface)',title:'Hover, Fokus, aktuell · 1024',
+        note:'Wie HubNav: Hover = ink + 3 px line-soft-Unterstreichung (dur-fast, ease-out). Fokus = globaler Ring 3 px focus, Offset 3 px, um den ganzen Tab inkl. Unterzeile. Hover auf dem aktuellen Tab ändert nichts. Die Unterzeile ist kein eigenes Ziel.',
+        cols:['light','dark'].map(th=>({theme:th,label:th==='light'?'Hell':'Dunkel',frames:[
+          frame({kind:'event',role:'op',phase:'live',name:LONG,invite:true,w:1024,hover:'archiv',themeLabel:th==='light'?'hell':'dunkel',sub:'Hover auf Archiv'}),
+          frame({kind:'event',role:'op',phase:'live',name:LONG,invite:true,w:1024,focus:'events',themeLabel:th==='light'?'hell':'dunkel',sub:'Tastaturfokus auf Events'})]}))},
+      {id:'s7',no:'7',label:'07 Alternativen',badgeBg:'var(--cp-paper-2)',title:'Alternativen · nur 1440',
+        note:'B „Brotkrumen“: Events › Name + Pill in einer Zeile. Liest sich klar, macht den aktuellen Tab aber sehr breit und schiebt Archiv & Co. nach rechts. C „Kontext rechts“: HubNav wie im Hub, Name + Pill vor „Einladen“. Ruhig, aber optisch vom Events-Tab gelöst.',
+        cols:['light','dark'].map(th=>({theme:th,label:th==='light'?'Hell':'Dunkel',frames:[
+          frame({kind:'event',role:'op',phase:'live',name:LONG,invite:true,w:1440,variant:'B',themeLabel:th==='light'?'hell':'dunkel',sub:'B · Brotkrumen im Tab',anchor:th==='light'?'7b':''}),
+          frame({kind:'event',role:'op',phase:'live',name:LONG,invite:true,w:1440,variant:'C',themeLabel:th==='light'?'hell':'dunkel',sub:'C · Kontext rechts',anchor:th==='light'?'7c':''})]}))}
+    ];
+    return {noop:e=>e&&e.preventDefault&&e.preventDefault(),sections,
+      toc:sections.map(s=>({href:'#'+s.id,no:s.no,n:['Operator','Member','Beendet','Hub','Phone','Zustände','Alternativen'][+s.no-1]})).concat([{href:'#a11y',no:'A',n:'Screenreader'}])};
+  }
+}
+</script>
+</body>
+</html>
