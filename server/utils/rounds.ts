@@ -77,7 +77,7 @@ export async function setNextGame({ tx, eventRow, user, publish, now }: ChangeCo
   const source = gamesLeftOf(state).includes(game.id) ? 'pool' : 'library'
   // With a window the Round takes its game when the draw settles, so it stays without one (and without `setAt`) until then.
   const roundId = await roundForDraw(tx, eventRow.id, roundRows, state.draws, now, windowOpens ? {} : { gameId: game.id, setAt: now })
-  const instants = drawInstants({ kind: 'set', commitAt: now, windowOpens, clipLength: clipLengthOf(game) })
+  const instants = drawInstants({ kind: 'set', commitAt: now, windowOpens, clipLength: clipLengthOf(game), spinLengthMs: null })
   const timing = windowOpens
     ? { stopAt: instants.stopAt, vetoEndsAt: instants.vetoEndsAt }
     : { stopAt: instants.stopAt, outcome: 'set' as const, settledAt: settleAt(instants) }
@@ -90,7 +90,7 @@ export async function setNextGame({ tx, eventRow, user, publish, now }: ChangeCo
  * The Host spins the Lucky Wheel (#229, spec #218 § Drawing): the server draws one of the games left, uniformly. The Round is
  * being drawn (no game yet) and its `spin` draw is stored with everything a reload replays. Its instants come from the Draw
  * timeline (drawInstants): the spin starts a lead after the commit, so every client has the message and starts together, and
- * stops after its duration. When some Party has a Veto left
+ * stops after its length, 6 to 10 s, drawn with the result (#520). When some Party has a Veto left
  * at the commit (opensWindow), the draw gets a Veto window that ends the drawn game's clip length plus 30 s after the stop (#231, #505), and settles at its
  * end; otherwise it settles at the stop (settleDue). A Round that waits for a respin takes the draw itself; otherwise a Round
  * starts. The feed's entry waits for the stop (`at`, not published). The room hears `event.changed` only; the clients refetch the
@@ -110,7 +110,7 @@ export async function spinWheel({ tx, eventRow, user, publish, now }: ChangeCore
   // The window's end depends on the drawn game's clip (#505): read only when a window opens, the budget under the lock (#416) lets no route read more than it needs.
   const windowOpens = opensWindow(vetoesLeft)
   const [drawn] = windowOpens ? await tx.select({ youtubeId: games.youtubeId, clipLength: games.clipLength }).from(games).where(eq(games.id, gameId)) : []
-  const instants = drawInstants({ kind: 'spin', commitAt: now, windowOpens, clipLength: drawn ? clipLengthOf(drawn) : null })
+  const instants = drawInstants({ kind: 'spin', commitAt: now, windowOpens, clipLength: drawn ? clipLengthOf(drawn) : null, spinLengthMs: spin.spinLengthMs })
   const roundId = await roundForDraw(tx, eventRow.id, roundRowsOf(state), state.draws, now, {})
   const drawId = await insertDraw(tx, roundId, now, {
     gameId,
