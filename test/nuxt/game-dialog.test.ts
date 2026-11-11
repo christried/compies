@@ -58,7 +58,7 @@ describe('the game dialog for the Host (#443)', () => {
     expect(dialog().getAttribute('aria-labelledby')).toBe(dialog().querySelector('h2')?.id)
     expect(dialog().querySelector('img')?.getAttribute('src')).toBe('/api/images/kart.webp')
     const facts = pills()
-    expect(facts[0]).toBe('2 bis 6')
+    expect(facts[0]).toBe('bis 6')
     expect(facts[1]).toBe('Teams, 1 gegen 1')
     expect(facts[2]).toMatch(/^19,99 € bei Steam · Stand 3\. Nov\./)
     expect(text()).toContain('Notizen')
@@ -108,7 +108,7 @@ describe('the game dialog for the Host (#443)', () => {
   it('shows no Price pill and no gap for a game without a Price', async () => {
     await open({ game: { ...FULL, price: null } })
 
-    expect(pills()).toEqual(['2 bis 6', 'Teams, 1 gegen 1'])
+    expect(pills()).toEqual(['bis 6', 'Teams, 1 gegen 1'])
     expect(text()).not.toContain('€')
     expect(text()).not.toContain('Stand')
   })
@@ -210,7 +210,7 @@ describe('the game dialog for a Member (#443, #444)', () => {
   it('shows the Price with its day, and plays no Clip', async () => {
     await open({ audience: 'member' })
 
-    expect(pills()).toEqual(['2 bis 6', 'Teams, 1 gegen 1', expect.stringMatching(/^19,99 € bei Steam · Stand 3\. Nov\./)])
+    expect(pills()).toEqual(['bis 6', 'Teams, 1 gegen 1', expect.stringMatching(/^19,99 € bei Steam · Stand 3\. Nov\./)])
     expect(dialog().querySelector('iframe')).toBeNull()
     expect(text()).not.toContain('Clip')
   })
@@ -218,7 +218,7 @@ describe('the game dialog for a Member (#443, #444)', () => {
   it('shows no Price pill and no gap for a game without a Price', async () => {
     await open({ audience: 'member', game: { ...FULL, price: null } })
 
-    expect(pills()).toEqual(['2 bis 6', 'Teams, 1 gegen 1'])
+    expect(pills()).toEqual(['bis 6', 'Teams, 1 gegen 1'])
     expect(text()).not.toContain('€')
     expect(text()).not.toContain('Stand')
   })
@@ -318,7 +318,7 @@ describe('the game tile with its dialog (#443, #444)', () => {
 
     expect(dialog().querySelector('h2')?.textContent).toBe('Mario Kart')
     expect(dialog().querySelector('img')?.getAttribute('src')).toBe('/api/images/kart.webp')
-    expect(pills()).toEqual(['2 bis 6', 'Teams, 1 gegen 1', expect.stringContaining('19,99 €')])
+    expect(pills()).toEqual(['bis 6', 'Teams, 1 gegen 1', expect.stringContaining('19,99 €')])
     expect(text()).toContain('Stand')
     expect(dialog().querySelector('ul[aria-label="Tags"]')).toBeNull()
     expect(text()).not.toContain('Notizen')
