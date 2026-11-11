@@ -27,17 +27,19 @@ beforeAll(async () => {
   eventId = event!.id
 
   const committedAt = new Date(COMMIT)
-  const shapes = [
+  // Each shape is stored for every clip length (#505): a window of 40, 60 and 150 s, and 30 s for a game without a video.
+  const clipLengths = [10, 30, 120, null] as const
+  const shapes = ([
     { kind: 'spin', windowOpens: true, settled: false },
     { kind: 'spin', windowOpens: false, settled: false },
     { kind: 'set', windowOpens: true, settled: false },
     { kind: 'set', windowOpens: false, settled: true },
     { kind: 'spin', windowOpens: true, settled: true },
     { kind: 'set', windowOpens: true, settled: true },
-  ] as const
+  ] as const).flatMap(shape => clipLengths.map(clipLength => ({ ...shape, clipLength })))
   stored = []
   for (const shape of shapes) {
-    const instants = drawInstants({ kind: shape.kind, commitAt: COMMIT, windowOpens: shape.windowOpens })
+    const instants = drawInstants({ kind: shape.kind, commitAt: COMMIT, windowOpens: shape.windowOpens, clipLength: shape.clipLength })
     // One Round per draw; each has its game set, so the one-drawn-Round-per-Event index does not apply.
     const [round] = await db.insert(rounds).values({ eventId, startedAt: committedAt, gameId: game!.id, setAt: committedAt }).returning({ id: rounds.id })
     const [row] = await db.insert(draws).values({
@@ -73,7 +75,7 @@ const ids = (rows: readonly { id: string }[]) => rows.map(row => row.id).sort()
 
 describe('the SQL twins agree with the JS predicates (#414)', () => {
   it('stores the instants the timeline gives, for every shape of Draw', () => {
-    expect(stored).toHaveLength(6)
+    expect(stored).toHaveLength(24)
     expect(new Set(probes().map(now => now.getTime())).size).toBeGreaterThan(8)
   })
 

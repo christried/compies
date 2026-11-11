@@ -21,6 +21,7 @@
 - **Navigation auf der Eventseite:** Auf dem Computer und auf großen Tablets steht die Hauptnavigation jetzt auch auf der Eventseite oben im Kopf: Events, Archiv und Profil, für Hosts auch die Bibliothek. „Events“ ist als aktuelle Seite markiert, und darunter stehen der Name des Events und seine Phase. Auf dem Handy bleibt alles, wie es war. ([#426](https://github.com/christried/compies/issues/426))
 - **Der Clip läuft für alle gleich:** Das Video im Clip nimmt in einer Session keinen Tipp, Klick und keine Taste mehr an. Niemand kann es anhalten, YouTubes „Weitere Videos“ erscheinen nicht, und kein Link führt aus dem Event heraus. Stoppt dein Gerät das Video von sich aus, etwa durch die Kopfhörer-Taste, springt es zur Sekunde der anderen und läuft weiter. Ton an und aus, „Für mich schließen“ und für den Host „Clip überspringen“ bleiben. Der Titel des Videos zeigt sich in den ersten Sekunden: YouTube erlaubt nicht, ihn zu verbergen. ([#509](https://github.com/christried/compies/issues/509))
 - **Clips von 10 bis 120 s:** Du kannst einem Spiel jetzt einen Clip von 10 bis 120 Sekunden geben, bisher 5 bis 60. Ein Clip, der kürzer als 10 Sekunden war, läuft jetzt 10 Sekunden ab derselben Stelle. ([#507](https://github.com/christried/compies/issues/507))
+- **Das Veto-Fenster passt zum Clip:** Es dauert jetzt so lange wie der Clip des gezogenen Spiels plus 30 Sekunden, bei einem Spiel ohne Video 30 Sekunden. Bisher waren es immer 60. Die Uhr zählt in Minuten und Sekunden. ([#505](https://github.com/christried/compies/issues/505))
 
 ### Behoben
 
