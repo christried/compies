@@ -166,9 +166,10 @@ export async function resultsSection({ state, viewer, now }: { state: EventState
  * The window's draw (#232) is the Event's latest draw of any kind, a spin or a game the Host set, and only while it has a window
  * (wheelView picks it): a later draw without one takes the panel away. `game` is its card, already cut to what the viewer may know.
  * `left` is counted from the casts the viewer may know. `own.rejection` is the state's vetoReason: it depends on the viewer's own Party only (its cast
- * on the draw, its Vetoes left), which the seal never changes.
+ * on the draw, its Vetoes left), which the seal never changes. `windowGameKnown` is `drawGameKnown` for the window's draw: the end of
+ * the window (the clip length of the drawn game plus 30 s) is sent only to a viewer who may know the game (#505).
  */
-function vetoView(state: ReadState & EventState<'vetoes' | 'bonus'>, viewer: Viewer, now: Date, windowDraw: DrawRow | undefined, game: RoundGame | null, left: number[]): VetoView {
+function vetoView(state: ReadState & EventState<'vetoes' | 'bonus'>, viewer: Viewer, now: Date, windowDraw: DrawRow | undefined, windowGameKnown: boolean, game: RoundGame | null, left: number[]): VetoView {
   const viewerTeam = partyOf(state, viewer.id)
   const castOnDraw = state.vetoes.filter(row => row.drawId === windowDraw?.id)
   const own = viewerTeam === null
@@ -180,7 +181,8 @@ function vetoView(state: ReadState & EventState<'vetoes' | 'bonus'>, viewer: Vie
         rejection: vetoReason(state, viewer.id, windowDraw ?? null),
       }
   const revealed = windowDraw && windowEnded(windowDraw, now) ? castOnDraw.map(({ team }) => ({ team })).sort((a, b) => a.team - b.team) : null
-  const draw = windowDraw ? { drawId: windowDraw.id, kind: windowDraw.kind, stopAt: windowDraw.stopAt.toISOString(), vetoEndsAt: windowDraw.vetoEndsAt!.toISOString(), game } : null
+  // The window's end is the drawn game's clip length plus 30 s (#505), a fact of the game: it goes out with the game, from the stop on (`drawGameKnown`, via `windowGameKnown`).
+  const draw = windowDraw ? { drawId: windowDraw.id, kind: windowDraw.kind, stopAt: windowDraw.stopAt.toISOString(), vetoEndsAt: windowGameKnown ? windowDraw.vetoEndsAt!.toISOString() : null, game } : null
   return { left, own, revealed, draw }
 }
 
@@ -250,7 +252,7 @@ async function wheelView(db: Db, state: ReadState & EventState<'vetoes' | 'bonus
           current: latestFirst[0]?.id === spin.id && spin.outcome !== 'vetoed' && state.rounds.some(({ round }) => round.id === spin.roundId && round.putBackAt === null),
         }
       : null,
-    vetoes: vetoView(state, viewer, now, windowDraw, windowGame ? roundGameView(windowGame) : null, vetoesLeft),
+    vetoes: vetoView(state, viewer, now, windowDraw, windowGameKnown, windowGame ? roundGameView(windowGame) : null, vetoesLeft),
   }
 }
 

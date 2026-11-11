@@ -11,8 +11,8 @@ import { msOf, type Instant } from './instant'
 const SPIN_LEAD_MS = 1500
 /** How long the wheel spins (04-motion § Lucky Wheel: 3 to 10 s); there is no setting for it. The stop is the start plus this. */
 const SPIN_DURATION_MS = 6000
-/** The Veto window: every Party with a Veto left has this long after the wheel's stop to reject the game (#231, spec #218 § Vetoes). */
-const VETO_WINDOW_MS = 60_000
+/** The Veto window lasts the drawn game's clip length plus this long: every Party with a Veto left may reject the game until then (#231, #505, spec #501). */
+const VETO_AFTER_CLIP_MS = 30_000
 
 /** The instants of a new Draw, as the columns store them (Dates). */
 export interface DrawInstants { spinStartAt: Date | null, stopAt: Date, vetoEndsAt: Date | null }
@@ -21,19 +21,25 @@ export interface DrawInstants { spinStartAt: Date | null, stopAt: Date, vetoEnds
 export interface DrawWindow { stopAt: Instant, vetoEndsAt: Instant | null }
 
 /** What a writer tells the timeline about a new Draw. */
-export interface NewDraw { kind: 'spin' | 'set', commitAt: Instant, windowOpens: boolean }
+export interface NewDraw {
+  kind: 'spin' | 'set'
+  commitAt: Instant
+  windowOpens: boolean
+  /** The drawn game's clip length in seconds, null for a game without a video; ignored without a window. Required, so a writer cannot forget it (#505). Not stored: only the resulting end is. */
+  clipLength: number | null
+}
 
 /**
  * WRITER. A spin starts SPIN_LEAD_MS after the commit and stops SPIN_DURATION_MS later; a set draw stops at the commit
- * (`spinStartAt` null). With `windowOpens` the Veto window ends VETO_WINDOW_MS after the stop, else `vetoEndsAt` is null.
+ * (`spinStartAt` null). With `windowOpens` the Veto window ends the clip length plus VETO_AFTER_CLIP_MS after the stop (a game
+ * without a video: VETO_AFTER_CLIP_MS), else `vetoEndsAt` is null.
  */
-export function drawInstants({ kind, commitAt, windowOpens }: NewDraw): DrawInstants {
+export function drawInstants({ kind, commitAt, windowOpens, clipLength }: NewDraw): DrawInstants {
   const commit = msOf(commitAt)
   const spinStart = kind === 'spin' ? commit + SPIN_LEAD_MS : null
   const stop = spinStart === null ? commit : spinStart + SPIN_DURATION_MS
-  // The Veto window's length is decided here and only here. Release 0.13 makes it the game's clip length plus 30 s: `NewDraw` then
-  // gains `clipLength` (the writers already know the game), and `windowFraction`, which reads the stored instants, needs no change.
-  const end = windowOpens ? stop + VETO_WINDOW_MS : null
+  // The Veto window's length is decided here and only here (#505): the readers, `windowFraction` included, work from the stored end.
+  const end = windowOpens ? stop + (clipLength ?? 0) * 1000 + VETO_AFTER_CLIP_MS : null
   return { spinStartAt: spinStart === null ? null : new Date(spinStart), stopAt: new Date(stop), vetoEndsAt: end === null ? null : new Date(end) }
 }
 
