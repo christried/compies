@@ -181,15 +181,15 @@ One try at a Round's game: a spin of the Lucky Wheel or a game the Host sets. It
 _Avoid_: Spin (a spin is only one kind of Draw), pick, roll
 
 **Veto window**:
-The 60 seconds after a Draw's stop (or after the Host sets a game) in which every Party with a Veto left may reject the game. It opens only when some Party has a Veto left, ends for everyone at the same moment, and a Veto does not outlive its Running Session; until it ends, only a Party’s own Players see its casts, and a Host who moves into a Party during its window sees them too, a privilege of the Host, who may move anyone at any time (UI: Veto-Fenster). A Veto belongs to its Party: a Party's Players see that their Party has cast, never which of them did, and only the database keeps who cast it.
+The time after a Draw's stop (or after the Host sets a game) in which every Party with a Veto left may reject the game: the game's clip length plus 30 seconds, or 30 seconds for a game without a Clip. When the Host skips the Clip, it ends 30 seconds after the skip if that is sooner; it never gets longer. It opens only when some Party has a Veto left, ends for everyone at the same moment, and a Veto does not outlive its Running Session; until it ends, only a Party’s own Players see its casts, and a Host who moves into a Party during its window sees them too, a privilege of the Host, who may move anyone at any time (UI: Veto-Fenster). A Veto belongs to its Party: a Party's Players see that their Party has cast, never which of them did, and only the database keeps who cast it.
 _Avoid_: Veto round, voting time, grace period
 
 **Clip**:
-The game's YouTube excerpt that every device plays from the same second at a Draw's stop, for the game's clip length or until the Host skips it; a game without a video shows its card instead.
+The game's YouTube excerpt that every device plays from the same second at a Draw's stop, for the game's clip length or until the Host skips it; a game without a video shows its card instead. Nobody can pause the video or operate it; a Member can mute it or close it on their own device, and a Party can cast its Veto while it plays.
 _Avoid_: Trailer, preview, video
 
 **Veto allowance**:
-The number of Vetoes each Party has for the whole Event, the same for every Party and set by the Host. Bonus Vetoes come on top.
+The number of Vetoes each Party has for the whole Event, the same for every Party and set by the Host. Bonus Vetoes come on top. Until the Event's first Session starts only the Host knows the number; the other Members learn only that there are Vetoes.
 _Avoid_: Vetoes per player, veto budget
 
 **Bonus Veto**:
@@ -303,7 +303,7 @@ The platform-wide collection of games that Hosts fill their Events from; only Us
 _Avoid_: Game list, catalogue
 
 **Release**:
-A version of COMPIES that reaches Users, numbered by semantic versioning: a new feature raises the minor number, fixes alone raise the patch number. Releases count from 0.1 while COMPIES is being built; 1.0 is the Release the operator declares ready.
+A version of COMPIES that reaches Users, numbered by semantic versioning: a new feature raises the minor number; fixes, small additions and the further parts of a Release that was split raise the patch number. Releases count from 0.1 while COMPIES is being built; 1.0 is the Release the operator declares ready.
 _Avoid_: Deploy, update, build
 
 **Changelog**:
