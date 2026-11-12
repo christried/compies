@@ -298,7 +298,7 @@ Released on 2026-11-12 (`v0.13.0`). Spec: [#501](https://github.com/christried/c
 
 ### 0.13.1 Kleinkram
 
-Released on 2026-11-12 (`v0.13.1`). Spec: [#502](https://github.com/christried/compies/issues/502); tickets #453, #456, #457, #458, #465 (the Idea issues, rewritten) and #515–#518, and #573, #578 from the review and the browser check. The Idea issues that touch the same areas. Not built: [#550](https://github.com/christried/compies/issues/550), the Veto bar over the Clip on a phone held sideways, stays open.
+Released on 2026-11-12 (`v0.13.1`). Spec: [#502](https://github.com/christried/compies/issues/502); tickets #453, #456, #457, #458, #465 (the Idea issues, rewritten) and #515–#518, and #573, #578 from the review and the browser check. The Idea issues that touch the same areas. Not built: [#550](https://github.com/christried/compies/issues/550), the Veto bar over the Clip on a phone held sideways, moved to 0.13.2.
 
 - **The Veto allowance stays hidden** ([#453](https://github.com/christried/compies/issues/453)): always, without a setting. Until the Event's first Session starts, no Member but the Host gets the number from any API, and „So wird gespielt“ says „Vetos: Anzahl erst zum Start“. From the start on it stays visible, between Sessions too. A test calls the API as a Player.
 - **„Speichern und noch eins“** ([#456](https://github.com/christried/compies/issues/456)): a second button on the create page only; it saves, shows the toast and empties the form with the cursor in the name. Nothing carries over.
@@ -314,6 +314,7 @@ Spec: [#503](https://github.com/christried/compies/issues/503); tickets #519–#
 - **The wheel's look:** the „Show-Rad“ (`reference/GameWheel.dc.html`, skin `show`; `Spec Changes.md` § Wheel look): bulb rim, pins at every slice edge, a hinged flapper. It keeps its colours in both Appearances, like the Coin flip; the card around it follows the Appearance.
 - **Its motion** as `04-motion.md` § Lucky Wheel has it: bulbs blink at rest, chase during the spin and flash at the stop, the flapper kicks per pin, the winner slice and the result card pop, put back and refill redistribute the slices. The Hidden wheel's reveal and the removal stay as built.
 - **The spin lasts 6 to 10 s**, drawn evenly by the server for each spin; there is no setting. The wheel makes more turns the longer it spins (5 at 6 s up to 8 at 10 s). Reduced motion keeps its calm last 1.2 s.
+- **The Veto bar beside the Clip on a phone held sideways** ([#550](https://github.com/christried/compies/issues/550), moved here from 0.13.1 on 2026-11-12): on a low, wide viewport the video sits at the left and the Veto bar at its right, so nothing lies in front of the player.
 - **Compibert beside the wheel** is a _Claude Design hand-off_ with options to choose from: where he stands at 1440 and 390 px, how he enters and leaves, his poses at spin, brake and stop. It covers the wheel only: no voice, no `angry` at the veto reveal. It does not hold the cut: without an approved design when the wheel is done, 0.13.2 ships without him and he follows in a later patch.
 - All other UI _own build_.
 
