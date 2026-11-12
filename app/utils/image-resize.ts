@@ -1,7 +1,7 @@
 import { GAME_IMAGE_HEIGHT, GAME_IMAGE_MAX_BYTES, GAME_IMAGE_WIDTH } from '~~/shared/game'
-import { coverCrop } from '~~/shared/image'
+import { CENTRE_CROP, coverCrop, type Crop } from '~~/shared/image'
 
-// Shrinks a picked picture to the card's cover in the browser (#143): center-cropped to 16:10, 512 × 320, one WebP.
+// Shrinks a picked picture to the card's cover in the browser (#143): cropped to 16:10 as the Host chose, the centre by default (#457), 512 × 320, one WebP.
 
 /** The browser cannot decode the file or cannot write WebP (older Safari answers PNG). */
 export class ImageConversionError extends Error {
@@ -18,8 +18,12 @@ function toBlob(canvas: HTMLCanvasElement, quality: number): Promise<Blob | null
   return new Promise(resolve => canvas.toBlob(resolve, 'image/webp', quality))
 }
 
-/** The picked file as a WebP of the card's cover, at most GAME_IMAGE_MAX_BYTES. Throws ImageConversionError if the browser cannot. */
-export async function toCardWebp(file: File): Promise<Blob> {
+/**
+ * The picked file as a WebP of the card's cover, cropped to the Host's crop (the centre by default), at most
+ * GAME_IMAGE_MAX_BYTES, with the decoded picture's size for the tile. It decodes on every call and keeps no bitmap.
+ * Throws ImageConversionError if the browser cannot.
+ */
+export async function toCardWebp(file: File, crop: Crop = CENTRE_CROP): Promise<{ blob: Blob, width: number, height: number }> {
   let bitmap: ImageBitmap
   try {
     bitmap = await createImageBitmap(file)
@@ -33,15 +37,16 @@ export async function toCardWebp(file: File): Promise<Blob> {
   canvas.height = GAME_IMAGE_HEIGHT
   const context = canvas.getContext('2d')
   if (!context) throw new ImageConversionError()
-  const crop = coverCrop(bitmap.width, bitmap.height)
-  context.drawImage(bitmap, crop.x, crop.y, crop.width, crop.height, 0, 0, GAME_IMAGE_WIDTH, GAME_IMAGE_HEIGHT)
+  const { width, height } = bitmap
+  const rect = coverCrop(width, height, crop)
+  context.drawImage(bitmap, rect.x, rect.y, rect.width, rect.height, 0, 0, GAME_IMAGE_WIDTH, GAME_IMAGE_HEIGHT)
   bitmap.close()
 
   for (const quality of QUALITIES) {
     const blob = await toBlob(canvas, quality)
     // A browser without WebP encoding answers with a PNG whatever was asked.
     if (!blob || blob.type !== 'image/webp') throw new ImageConversionError()
-    if (blob.size <= GAME_IMAGE_MAX_BYTES) return blob
+    if (blob.size <= GAME_IMAGE_MAX_BYTES) return { blob, width, height }
   }
   throw new ImageConversionError()
 }

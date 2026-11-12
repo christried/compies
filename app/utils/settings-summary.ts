@@ -60,16 +60,17 @@ export interface SummaryRow { key: string, label: string, value: string, setting
 export function summaryRows(
   settings: EventSettings,
   t: Translate,
-  extra: { pool?: number, dates?: string } = {},
+  extra: { pool?: number, dates?: string, vetoHidden?: boolean } = {},
 ): SummaryRow[] {
   const rows: SummaryRow[] = [
     { key: 'format', label: t('stepper.summary.format'), value: teamsText(settings, t), settings: ['format', 'teamCount', 'teamSize'] },
     { key: 'games', label: t('stepper.summary.gamesLabel'), value: t('stepper.summary.games', { n: settings.gameCount }, settings.gameCount), settings: ['gameCount'] },
     { key: 'mode', label: t('stepper.summary.mode'), value: modeText(settings, t), settings: ['selectionMode', 'hiddenWheel', 'poolPreview'] },
   ]
-  // Only the Lucky Wheel has vetoes (#145).
+  // Only the Lucky Wheel has vetoes (#145). A viewer who may not know the number yet reads that it comes at the start (#453).
   if (hasWheel(settings.selectionMode)) {
-    rows.push({ key: 'vetoes', label: t('stepper.summary.vetoes'), value: t('stepper.summary.vetoValue', { n: settings.vetoAllowance }), settings: ['vetoAllowance'] })
+    const value = extra.vetoHidden ? t('stepper.summary.vetoHidden') : t('stepper.summary.vetoValue', { n: settings.vetoAllowance })
+    rows.push({ key: 'vetoes', label: t('stepper.summary.vetoes'), value, settings: ['vetoAllowance'] })
   }
   rows.push({ key: 'points', label: t('stepper.summary.points'), value: pointsText(settings.pointsTable, t), settings: ['pointsTable'] })
   if (extra.pool !== undefined) rows.push({ key: 'pool', label: t('stepper.summary.pool'), value: t('stepper.summary.poolValue', { n: extra.pool }, extra.pool), settings: [] })

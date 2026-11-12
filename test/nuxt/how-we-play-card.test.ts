@@ -29,7 +29,7 @@ const hiddenWheel: EventSettings = { ...wheel, hiddenWheel: true }
 
 const visiblePool: EventView['pool'] = [poolGame('Mario Kart'), poolGame('Pong')]
 
-type Props = { settings: EventSettings | null, pool: EventView['pool'], isHost?: boolean, editTo?: string | null, locked?: boolean, hostName?: string, hostGames?: EventView['hostGames'] }
+type Props = { settings: EventSettings | null, vetoHidden?: boolean, pool: EventView['pool'], isHost?: boolean, editTo?: string | null, locked?: boolean, hostName?: string, hostGames?: EventView['hostGames'] }
 function mountCard({ isHost = false, ...props }: Props) {
   return mountSuspended(HowWePlayCard, { props: { isHost, ...props } })
 }
@@ -47,6 +47,15 @@ describe('HowWePlayCard (#148)', () => {
       ['Vetos', '3 pro Partei'],
       ['Punkte', 'Linear 3 / 2 / 1 / 0'],
     ])
+  })
+
+  it('says „Anzahl erst zum Start“ in the Vetos row while the server keeps the number from the viewer (#453)', async () => {
+    const card = await mountCard({ settings: { ...wheel, vetoAllowance: null }, vetoHidden: true, pool: visiblePool })
+
+    const rows = card.findAll('dl > div').map(row => [row.get('dt').text(), row.get('dd').text()])
+    expect(rows).toContainEqual(['Vetos', 'Anzahl erst zum Start'])
+    expect(rows.map(([label]) => label)).toEqual(['Format', 'Spiele', 'Auswahl', 'Vetos', 'Punkte'])
+    expect(card.text()).not.toContain('pro Partei')
   })
 
   it('names no Vetos for a Selection mode without the wheel', async () => {
@@ -282,6 +291,21 @@ describe('the card on the Event page (#148)', () => {
     expect(text.indexOf('Sessions')).toBeLessThan(text.indexOf('So wird gespielt'))
   })
 
+  it('shows a Member „Anzahl erst zum Start“ for the Vetos when the Event read hides the allowance (#453)', async () => {
+    const { slug } = serve(s => ({
+      ...view(s, []),
+      settings: { ...wheel, vetoAllowance: null },
+      vetoAllowanceHidden: true,
+      pool: null,
+    }))
+
+    const page = await mountSuspended(EventPage, { route: `/e/${slug}` })
+
+    const section = page.findAll('section').find(candidate => candidate.find('h2').exists() && candidate.find('h2').text() === 'So wird gespielt')!
+    expect(section.findAll('dl > div').map(row => [row.get('dt').text(), row.get('dd').text()])).toContainEqual(['Vetos', 'Anzahl erst zum Start'])
+    expect(section.text()).not.toContain('pro Partei')
+  })
+
   it('keeps Bearbeiten for the Host after the first start, next to the locks (#166)', async () => {
     const { slug } = serve(s => viewWithSessions(
       s,
@@ -430,7 +454,8 @@ describe('the game dialog from the pool tiles (#443)', () => {
 
     expect(document.querySelectorAll('[role="dialog"]')).toHaveLength(1)
     expect(dialog().querySelector('h2')?.textContent).toBe(names.at(-1))
-    expect(dialog().textContent).toContain('2 bis 4')
+    expect(dialog().textContent).toContain('bis 4')
+    expect(dialog().textContent).not.toContain('2 bis')
     expect(dialog().textContent).toContain('Teams')
     expect(dialog().textContent).toContain('Stand')
     expect(dialog().querySelector('ul[aria-label="Tags"]')).toBeNull()

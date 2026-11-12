@@ -10,7 +10,7 @@ import { runningOf } from '../../shared/session-state'
 import type { EventView, SessionNote, SessionView } from '../../shared/event'
 import type { PoolGame, PoolGameFace } from '../../shared/game'
 import type { VoteRow } from '../../shared/poll'
-import { floorsAt, settingsFromRow } from '../../shared/settings'
+import { floorsAt, settingsForViewer, settingsFromRow } from '../../shared/settings'
 import type { Db } from './db'
 import type { EventRow } from './event-access'
 import { floorsOf, startOf, teamChoiceOf, teamNamesOf, type EventState } from './event-state'
@@ -130,10 +130,14 @@ export function poolGamesOf(db: Db, eventRow: EventRow, viewer: Viewer): Promise
   return canSeePoolGames(poolFactsOf({ isHost: viewer.isHost, settings: settingsFromRow(eventRow) })) ? eventPool(db, eventRow.id, viewer.isHost) : Promise.resolve(null)
 }
 
-/** The Event's settings and the Host's floors (#147): what the pools section adds to the pool's games. The Members, Rounds and Vetoes the floors need are the state's. */
-export function poolsSection(state: EventState<'members' | 'rounds' | 'vetoes'>, viewer: Viewer, pool: (PoolGame | PoolGameFace)[] | null): Pick<EventView, 'settings' | 'settingsFloors' | 'pool'> {
+/**
+ * The Event's settings and the Host's floors (#147): what the pools section adds to the pool's games. The Members, Rounds and Vetoes the
+ * floors need are the state's. The settings go through `settingsForViewer`: the Veto allowance is the Host's until the first Session
+ * starts (#453). This is the only place that masks it; the state and every rule keep the true number.
+ */
+export function poolsSection(state: EventState<'members' | 'rounds' | 'vetoes'>, viewer: Viewer, pool: (PoolGame | PoolGameFace)[] | null): Pick<EventView, 'settings' | 'vetoAllowanceHidden' | 'settingsFloors' | 'pool'> {
   return {
-    settings: state.settings,
+    ...settingsForViewer(state.settings, { isHost: viewer.isHost, phase: state.eventRow.phase }),
     // The floors at the saved team count; an Event that is not set up counts all teams (#197).
     settingsFloors: viewer.isHost ? floorsAt(floorsOf(state), state.settings?.teamCount) : null,
     // The Host sees the games of the Game pool; every other Member only while the Pool preview is on, else null: nothing

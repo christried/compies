@@ -85,6 +85,16 @@ describe('summaryRows', () => {
     expect(admin.map(row => row.key)).toEqual(['format', 'games', 'mode', 'points'])
   })
 
+  it('says in the Vetos row that the number comes at the start, where the viewer may not know it (#453)', () => {
+    const hidden = summaryRows(settings({ selectionMode: 'lucky_wheel', vetoAllowance: null }), t, { vetoHidden: true })
+    expect(hidden.map(row => row.key)).toEqual(['format', 'games', 'mode', 'vetoes', 'points'])
+    expect(hidden[3]).toEqual({ key: 'vetoes', label: 'Vetos', value: 'Anzahl erst zum Start', settings: ['vetoAllowance'] })
+    // Shown as before when nothing is hidden.
+    expect(summaryRows(settings({ selectionMode: 'lucky_wheel', vetoAllowance: 2 }), t, { vetoHidden: false })[3]).toMatchObject({ value: '2 pro Partei' })
+    // No Vetoes under Host pick, so no row, hidden marker or not.
+    expect(summaryRows(settings({ selectionMode: 'admin_pick', vetoAllowance: null }), t, { vetoHidden: true }).map(row => row.key)).toEqual(['format', 'games', 'mode', 'points'])
+  })
+
   it('tells in the Auswahl row when the Pool preview is off or the wheel is hidden', () => {
     const modeOf = (overrides: Partial<EventSettings>) => summaryRows(settings(overrides), t).find(row => row.key === 'mode')?.value
     expect(modeOf({ selectionMode: 'lucky_wheel', vetoAllowance: 3, poolPreview: false })).toBe('Glücksrad, Spiele erst am Rad')
