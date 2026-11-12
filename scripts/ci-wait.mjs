@@ -2,6 +2,7 @@
 // an implementer's head gets the full suite and the build without loading this machine (docs/agents/implementer-frame.md).
 //
 //   node scripts/ci-wait.mjs [sha] [--until-done]    (default: HEAD, which must be pushed)
+//   node scripts/ci-wait.mjs --pr <n>    (waits until the PR is merged; for run_in_background)
 //
 // Exit 0: every CI run of the commit passed. Exit 1: one failed or was cancelled (the failing step's output follows,
 // cut to its failures), or no run appeared within two minutes. Exit 2: CI is still running after 2.5 minutes, so run it
@@ -15,11 +16,16 @@
 // It prints one line while waiting, not a progress log.
 import { execFileSync } from 'node:child_process'
 import { rerunDecision } from './ci-verdict.mjs'
+import { prDecision } from './pr-verdict.mjs'
 
 const args = process.argv.slice(2)
 const untilDone = args.includes('--until-done')
+// `--pr <n>` or `--pr=<n>` starts the PR mode (#565); a commit SHA is never taken for a PR number.
+const prAt = args.findIndex(arg => arg === '--pr' || arg.startsWith('--pr='))
+const prValue = prAt === -1 ? null : (args[prAt].startsWith('--pr=') ? args[prAt].slice('--pr='.length) : args[prAt + 1] ?? '')
+const prNumber = prValue === null ? null : (/^\d+$/.test(prValue) ? Number(prValue) : prUsage())
 // `gh run list --commit` matches the full SHA only.
-const sha = execFileSync('git', ['rev-parse', args.find(arg => !arg.startsWith('--')) ?? 'HEAD'], { encoding: 'utf8' }).trim()
+const sha = prNumber === null ? execFileSync('git', ['rev-parse', args.find(arg => !arg.startsWith('--')) ?? 'HEAD'], { encoding: 'utf8' }).trim() : ''
 const POLL_MS = 15_000
 const APPEAR_MS = 120_000
 const RERUN_SETTLE_MS = 30_000
@@ -34,7 +40,7 @@ const fail = (what, error) => {
 }
 const jobCountOf = (run) => {
   try {
-    return Number(gh('api', `repos/{owner}/{repo}/actions/runs/${run.databaseId}/jobs`, '--jq', '.total_count'))
+    return Number(gh('api', `repos/${REPO}/actions/runs/${run.databaseId}/jobs`, '--jq', '.total_count'))
   }
   catch (error) {
     return fail(`jobs count failed for ${run.url}`, error)
@@ -51,6 +57,146 @@ function failures(id) {
   const start = lines.findIndex(line => /Failed Tests|Unhandled Error|error TS\d+|ERR_PNPM|✖ \d+ problems?|Unused (files|exports|dependencies)/.test(line))
   return (start === -1 ? lines.slice(-60) : lines.slice(start, start + 80)).join('\n')
 }
+
+// The PR mode (#565): `--pr <n>` polls PR <n> until it is merged, for a background run after `gh pr merge --auto`. Since
+// #556 a PR's required check is the push run of ci.yml on its head, so every poll reads the PR and, while it is open,
+// the runs of its current head. It calls only `gh api` with the slug as a constant: in a cloud session `gh pr` is refused
+// (GraphQL) and the git remote is a proxy that `{owner}/{repo}` does not resolve. The decision is `prDecision`; the
+// loop only turns the head's runs into one word (`check`). It ends the process itself, so the commit mode below never
+// runs in this mode. It always waits the long limit and ignores `--until-done`: a 2.5-minute call would end every wait.
+// Exit 0 merged; 1 closed unmerged, check red, start failure twice, blocked, no run or a failed gh call; 2 still open.
+const REPO = 'christried/compies'
+const PR_LIMIT_MS = 20 * 60_000
+
+function prUsage() {
+  console.log('--pr needs a PR number, for example: node scripts/ci-wait.mjs --pr 570')
+  return process.exit(1)
+}
+
+async function waitForPr(number) {
+  const prOf = () => {
+    try {
+      return JSON.parse(gh('api', `repos/${REPO}/pulls/${number}`, '--jq', '{state, merged, mergeCommit: .merge_commit_sha, draft, autoMerge: (.auto_merge != null), mergeableState: .mergeable_state, headSha: .head.sha, baseRef: .base.ref, url: .html_url}'))
+    }
+    catch (error) {
+      return fail(`PR lookup failed for #${number}`, error)
+    }
+  }
+  const runsOfHead = (pr) => {
+    try {
+      return JSON.parse(gh('api', `repos/${REPO}/actions/workflows/ci.yml/runs?head_sha=${pr.headSha}&per_page=20`, '--jq', '[.workflow_runs[] | {databaseId: .id, status, conclusion, event, url: .html_url, attempt: .run_attempt}]'))
+    }
+    catch (error) {
+      return fail(`runs lookup failed for ${pr.url}`, error)
+    }
+  }
+  // Run id → the time of its re-run after a start failure, as in the commit mode (its variables are defined below).
+  const rerunAt = new Map()
+  // The worst verdict wins; a word `rerunDecision` may return in future counts as red.
+  const rank = { green: 0, rerun: 1, twice: 2, red: 3 }
+  const checkOf = (runs) => {
+    if (runs.length === 0) return { check: 'none', verdicts: [] }
+    if (runs.some(run => run.status !== 'completed' || Date.now() - (rerunAt.get(run.databaseId) ?? -Infinity) < RERUN_SETTLE_MS)) return { check: 'running', verdicts: [] }
+    const verdicts = runs.map((run) => {
+      const word = rerunDecision(run, run.conclusion === 'success' ? 1 : jobCountOf(run), rerunAt.has(run.databaseId))
+      return { run, word: word in rank ? word : 'red' }
+    })
+    return { check: verdicts.reduce((worst, { word }) => rank[word] > rank[worst] ? word : worst, 'green'), verdicts }
+  }
+
+  const started = Date.now()
+  let pr = prOf()
+  let head = pr.headSha
+  let headSince = Date.now()
+  let blockedWhy = null
+  let blockedPolls = 0
+  let lastWhy = null
+  console.log(`waiting for PR #${number} (head ${head.slice(0, 7)}) …`)
+  while (Date.now() - started < PR_LIMIT_MS) {
+    if (pr.headSha !== head) {
+      console.log(`head of PR #${number} moved: ${head.slice(0, 7)} -> ${pr.headSha.slice(0, 7)}`)
+      head = pr.headSha
+      headSince = Date.now()
+      blockedWhy = null
+      blockedPolls = 0
+    }
+    // A merged or closed PR needs no run lookup.
+    const { check, verdicts } = pr.state === 'open' ? checkOf(runsOfHead(pr)) : { check: 'none', verdicts: [] }
+    const decision = prDecision(pr, check)
+    if (decision.kind === 'merged') {
+      console.log(decision.commit === null ? `merged: PR #${number} into ${pr.baseRef} (merge commit not reported)` : `merged: PR #${number} into ${pr.baseRef} as ${decision.commit}`)
+      process.exit(0)
+    }
+    if (decision.kind === 'closed') {
+      console.log(`closed without a merge: PR #${number} ${pr.url}`)
+      process.exit(1)
+    }
+    if (decision.kind === 'red' || decision.kind === 'twice') {
+      // A run cancelled because a newer push replaced it is no failure: when the head moved meanwhile, poll again.
+      const again = prOf()
+      if (again.headSha !== pr.headSha || again.state !== pr.state) {
+        pr = again
+        continue
+      }
+      for (const { run, word } of verdicts) {
+        if (word === 'green') continue
+        if (word === 'twice') {
+          console.log(`start failure (zero jobs) twice: ${run.event} ${run.url}`)
+          continue
+        }
+        console.log(`${run.conclusion}: ${run.event} ${run.url}`)
+        if (run.conclusion === 'failure') console.log(failures(run.databaseId))
+      }
+      process.exit(1)
+    }
+    if (decision.kind === 'rerun') {
+      for (const { run, word } of verdicts) {
+        if (word !== 'rerun') continue
+        console.log(`start failure (zero jobs): ${run.event} ${run.url} – re-running once`)
+        try {
+          gh('api', '-X', 'POST', `repos/${REPO}/actions/runs/${run.databaseId}/rerun`)
+        }
+        catch (error) {
+          fail(`re-run failed for ${run.url}`, error)
+        }
+        rerunAt.set(run.databaseId, Date.now())
+      }
+    }
+    // GitHub's mergeable_state lags a push by a few seconds, so a block counts after two polls in a row.
+    if (decision.kind === 'blocked') {
+      blockedPolls = decision.why === blockedWhy ? blockedPolls + 1 : 1
+      blockedWhy = decision.why
+      if (blockedPolls >= 2) {
+        console.log({
+          draft: `blocked: PR #${number} is a draft: mark it ready for review`,
+          behind: `blocked: PR #${number} is behind ${pr.baseRef}: gh api -X PUT repos/${REPO}/pulls/${number}/update-branch`,
+          conflict: `blocked: PR #${number} conflicts with ${pr.baseRef}: merge origin/${pr.baseRef} into its branch and push`,
+        }[decision.why])
+        process.exit(1)
+      }
+    }
+    else {
+      blockedWhy = null
+      blockedPolls = 0
+    }
+    if (decision.kind === 'waiting') {
+      if (decision.why !== lastWhy) {
+        if (decision.why === 'auto-merge') console.log(`check is green and auto-merge is not set: waiting for someone to merge PR #${number}`)
+        if (decision.why === 'merge') console.log('check is green and auto-merge is set: GitHub merges within a minute')
+      }
+      if (check === 'none' && Date.now() - headSince > APPEAR_MS) {
+        console.log(`No CI run appeared for the head ${head.slice(0, 7)} of PR #${number}.`)
+        process.exit(1)
+      }
+    }
+    lastWhy = decision.kind === 'waiting' ? decision.why : null
+    await sleep(POLL_MS)
+    pr = prOf()
+  }
+  console.log(`PR #${number} is still open after 20 minutes: run this again.`)
+  process.exit(2)
+}
+if (prNumber !== null) await waitForPr(prNumber)
 
 const started = Date.now()
 let runs = []
