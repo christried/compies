@@ -218,7 +218,7 @@ onBeforeUnmount(() => {
     <section
       v-if="open"
       :aria-label="t('clip.label', { name: clip.game.name })"
-      class="fixed inset-x-0 top-(--clip-top) layer-clip mx-auto flex max-h-[calc(100dvh-var(--clip-top)-10px)] w-[min(720px,calc(100%-1.75rem))] flex-col overflow-x-hidden overflow-y-auto rounded-[14px] border-(length:--cp-bw) border-line bg-surface shadow-card [--clip-bar-h:74px] [--clip-top:calc(var(--cp-header-h)_+_var(--cp-bw)_+_10px)] [--clip-video-h:calc(100dvh-var(--clip-top)-var(--clip-bar-h)-2*var(--cp-bw)-10px)]"
+      class="fixed inset-x-0 top-(--clip-top) layer-clip mx-auto flex max-h-[calc(100dvh-var(--clip-top)-10px)] w-[min(720px,calc(100%-1.75rem))] flex-col sideways:inset-x-auto sideways:left-2.5 sideways:mx-0 sideways:w-[calc(100%-30px-var(--cp-veto-side-w))] overflow-x-hidden overflow-y-auto rounded-[14px] border-(length:--cp-bw) border-line bg-surface shadow-card [--clip-bar-h:74px] [--clip-top:calc(var(--cp-header-h)_+_var(--cp-bw)_+_10px)] [--clip-video-h:calc(100dvh-var(--clip-top)-var(--clip-bar-h)-2*var(--cp-bw)-10px)]"
     >
       <!-- Phone held sideways (#549): the video is as wide as the height left under the header allows, 16:9 kept and never lower than
            YouTube's 200 px, so the bar below it stays on screen. --clip-bar-h is that bar: the 10 px progress line and a row of
@@ -273,7 +273,7 @@ onBeforeUnmount(() => {
             :icon="Volume2"
             :size="16"
           />
-          {{ t('sound.enable') }}
+          <span class="sideways:sr-only">{{ t('sound.enable') }}</span>
         </AppButton>
         <IconButton
           v-else-if="showsPlayer"
@@ -290,7 +290,7 @@ onBeforeUnmount(() => {
             class="size-2 flex-none rounded-full bg-hot animate-live"
             aria-hidden="true"
           />
-          {{ t('clip.live') }}
+          <span class="sideways:sr-only">{{ t('clip.live') }}</span>
         </span>
         <AppButton
           v-if="isHost"

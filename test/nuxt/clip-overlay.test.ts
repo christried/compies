@@ -524,7 +524,8 @@ describe('the overlay\'s own elements cover nothing (#546)', () => {
     const inStage = new Set(stageOf()?.querySelectorAll('*') ?? [])
     const own = [section, ...section.querySelectorAll('*')].filter(element => !inStage.has(element))
     // The section is placed by design (under the header, in front of the page); anything else on it still fails.
-    const PLACED = (token: string) => ['fixed', 'inset-x-0', 'layer-clip'].includes(token) || token === 'top-(--clip-top)'
+    // Held sideways (#550) it moves to the left column: three more placement tokens, nothing else.
+    const PLACED = (token: string) => ['fixed', 'inset-x-0', 'layer-clip', 'sideways:inset-x-auto', 'sideways:left-2.5', 'sideways:mx-0'].includes(token) || token === 'top-(--clip-top)'
     const classesOf = (element: Element) => (element.getAttribute('class') ?? '').split(/\s+/).filter(token => element !== section || !PLACED(token)).join(' ')
 
     expect(own.flatMap(element => coversPlayer(classesOf(element), element.getAttribute('style') ?? ''))).toEqual([])
@@ -556,6 +557,28 @@ describe('a low viewport (#549)', () => {
     expect(width).toContain('max(calc(200px*16/9)')
     // The whole list, as it was before #555: the video's box stays the same element with the same classes (#509, #549).
     expect(classes).toEqual(['relative', 'mx-auto', 'aspect-video', 'w-[min(100%,max(calc(200px*16/9),calc(var(--clip-video-h)*16/9)))]', 'bg-ink'])
+  })
+
+  it('becomes the left column beside the Veto bar on a phone held sideways, and the video box keeps its classes (#550)', async () => {
+    await mount(clipOf())
+    const classes = classesOf(sectionOf())
+
+    expect(classes).toEqual(expect.arrayContaining(['sideways:inset-x-auto', 'sideways:left-2.5', 'sideways:mx-0', 'sideways:w-[calc(100%-30px-var(--cp-veto-side-w))]']))
+    // The upright and desktop placement stays as it was.
+    expect(classes).toEqual(expect.arrayContaining(['inset-x-0', 'mx-auto', 'w-[min(720px,calc(100%-1.75rem))]']))
+    expect(classesOf(wrapperOf())).toEqual(['relative', 'mx-auto', 'aspect-video', 'w-[min(100%,max(calc(200px*16/9),calc(var(--clip-video-h)*16/9)))]', 'bg-ink'])
+  })
+
+  it('keeps the Host\'s bar in one row beside the Veto bar by showing the sound button and the live state as icons only, with their names kept (#550)', async () => {
+    await mount(clipOf(), { isHost: true, desktop: false })
+    await ready()
+
+    // The innermost span with that text: the live state's wrapper has the same text.
+    const named = (text: string) => [...sectionOf().querySelectorAll('span')].filter(span => span.textContent?.trim() === text).at(-1)!
+    // The text stays in the page (accessible names, and the upright and desktop looks), only out of sight when held sideways.
+    expect(named('Ton aktivieren').classList.contains('sideways:sr-only')).toBe(true)
+    expect(named('läuft für alle').classList.contains('sideways:sr-only')).toBe(true)
+    expect(labels()).toEqual(['Ton aktivieren', 'Clip überspringen', 'Für mich schließen'])
   })
 
   it('works the height that is left out of the viewport, the section\'s top offset, the bar and a 10 px gap', async () => {
