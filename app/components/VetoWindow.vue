@@ -121,8 +121,8 @@ watch(revealed, (now, before) => {
         :key="tile.team"
         ref="tile"
         data-testid="veto-tile"
-        class="flex min-h-20 flex-col gap-1 rounded-[14px] border-(length:--cp-bw) bg-surface p-2.5"
-        :class="revealed !== null && !tile.cast ? 'bg-paper-2' : ''"
+        class="flex min-h-20 flex-col gap-1 rounded-[14px] border-(length:--cp-bw) p-2.5"
+        :class="revealed !== null && !tile.cast ? 'bg-paper-2' : 'bg-surface'"
         :style="{ borderColor: teamVar(tile.team) }"
       >
         <TeamChip

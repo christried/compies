@@ -326,6 +326,25 @@ describe('the app', () => {
     expect([...strings('.vue'), ...strings('.ts')].some(s => /\bbg-\S+/.test(s) && /\btext-on-\S+/.test(s))).toBe(true)
   })
 
+  const elementsOf = (file: string) => classElements(file, readFileSync(join(root, 'app', file), 'utf8'))
+
+  it('finds the elements it checks', () => {
+    const ELEMENT_FLOOR = 100
+    const elements = files.flatMap(elementsOf)
+    expect(elements.length).toBeGreaterThan(ELEMENT_FLOOR)
+    const hasColour = (classString: string) => /(?:^|\s)(?:bg|border|text)-(?:line|surface|ink|paper|primary)(?:\s|$)/.test(classString)
+    expect(elements.some(el => hasColour(el.static) && el.conditional.some(hasColour))).toBe(true)
+  })
+
+  it('finds no static colour beside a competing conditional one', () => {
+    const colours = themeColours(clean(theme))
+    const messages = files.flatMap((file) => {
+      const name = `app/${file.replace(/\\/g, '/')}`
+      return elementsOf(file).flatMap(el => checkCompeting(el.static, el.conditional, colours).map(finding => competingMessage(name, el.tag, finding)))
+    })
+    expect(messages).toEqual([])
+  })
+
   it('finds no dark text on a coloured fill', () => {
     const fills = onColourFills(clean(theme))
     const messages = files.flatMap((file) => {
