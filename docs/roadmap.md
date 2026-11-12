@@ -18,7 +18,7 @@ Each release is one spec and usable on its own. A release is grilled, specced an
 | 0.10 | Feinschliff | released on 2026-11-09: [#332](https://github.com/christried/compies/issues/332); the list that waited for the first Event, plus the production check. 0.10.1 „Partyhut“ released on 2026-11-09: the review follow-ups, the Partyhut ([#38](https://github.com/christried/compies/issues/38)) and the Countdown fix ([#379](https://github.com/christried/compies/issues/379)) |
 | 0.11 | Profil | released on 2026-11-10: [#398](https://github.com/christried/compies/issues/398); the Profil page, Darstellung (Hell, Dunkel, System) and the dark check |
 | 0.12 | Eventseite | released on 2026-11-11: [#425](https://github.com/christried/compies/issues/425); one Tribüne, open Team names, the stage that follows the game, game tiles with the game dialog, and the finished page that waits for the Award ceremony |
-| 0.13 | Glücksrad & Clip | the wheel, the clip and the Share image findings of the production check; grilled on 2026-11-11 and split into four Releases: 0.13.0 „Clip“ ([#501](https://github.com/christried/compies/issues/501)), 0.13.1 „Kleinkram“ ([#502](https://github.com/christried/compies/issues/502)), 0.13.2 „Show-Rad“ ([#503](https://github.com/christried/compies/issues/503)), 0.13.3 „Ton“ ([#504](https://github.com/christried/compies/issues/504)) |
+| 0.13 | Glücksrad & Clip | the wheel, the clip and the Share image findings of the production check; grilled on 2026-11-11 and split into four Releases: 0.13.0 „Clip“ ([#501](https://github.com/christried/compies/issues/501), released on 2026-11-12), 0.13.1 „Kleinkram“ ([#502](https://github.com/christried/compies/issues/502), released on 2026-11-12), 0.13.2 „Show-Rad“ ([#503](https://github.com/christried/compies/issues/503)), 0.13.3 „Ton“ ([#504](https://github.com/christried/compies/issues/504)) |
 | 1.0 | | when the user declares COMPIES ready |
 
 ## 0.4 Spielvorbereitung (was 1.3)
@@ -287,7 +287,7 @@ The wheel, the clip and the Share image findings of the first production check, 
 
 ### 0.13.0 Clip
 
-Spec: [#501](https://github.com/christried/compies/issues/501); tickets #505–#514. Nothing in it waits for the user.
+Released on 2026-11-12 (`v0.13.0`). Spec: [#501](https://github.com/christried/compies/issues/501); tickets #505–#514, and #546, #549, #551, #555 from the review and the browser checks.
 
 - **The clip raw:** in a Session the YouTube player takes no pointer and no keyboard input from anyone, so nobody pauses it, opens the „More videos“ shelf or follows a link. Nothing is laid over the player and nothing is cropped: YouTube's title shows for the first seconds, since no player parameter hides it and YouTube's developer policies forbid obscuring or blocking parts of the player. A player that pauses for any other reason resumes at the synced second. The Host keeps „Clip überspringen“; every Member keeps their own mute and „Für mich schließen“ (WCAG 1.4.2) and the remaining time. The clip preview in the game form stays operable: the Host seeks there.
 - **A Veto during the clip** works as today (the Veto bar sits above the clip); a test pins it.
@@ -298,13 +298,13 @@ Spec: [#501](https://github.com/christried/compies/issues/501); tickets #505–#
 
 ### 0.13.1 Kleinkram
 
-Spec: [#502](https://github.com/christried/compies/issues/502); tickets #453, #456, #457, #458, #465 (the Idea issues, rewritten) and #515–#518. The Idea issues that touch the same areas.
+Released on 2026-11-12 (`v0.13.1`). Spec: [#502](https://github.com/christried/compies/issues/502); tickets #453, #456, #457, #458, #465 (the Idea issues, rewritten) and #515–#518, and #573, #578 from the review and the browser check. The Idea issues that touch the same areas. Not built: [#550](https://github.com/christried/compies/issues/550), the Veto bar over the Clip on a phone held sideways, moved to 0.13.2.
 
 - **The Veto allowance stays hidden** ([#453](https://github.com/christried/compies/issues/453)): always, without a setting. Until the Event's first Session starts, no Member but the Host gets the number from any API, and „So wird gespielt“ says „Vetos: Anzahl erst zum Start“. From the start on it stays visible, between Sessions too. A test calls the API as a Player.
 - **„Speichern und noch eins“** ([#456](https://github.com/christried/compies/issues/456)): a second button on the create page only; it saves, shows the toast and empties the form with the cursor in the name. Nothing carries over.
 - **The image crop** ([#457](https://github.com/christried/compies/issues/457)): after picking a file the tile shows it with drag to move and a zoom slider from „fits“ to 3×; arrow keys move it; what the tile shows is what is uploaded. No original is stored, so an existing image is adjusted by picking the file again. The slider is a small new control.
 - **The player count** ([#458](https://github.com/christried/compies/issues/458)): the label says „(optional)“, and a minimum of 1 or 2 is not shown on cards and in the game dialog („2 bis 4“ reads „bis 4“, „ab 2“ shows nothing). Stored values and the player filter stay.
-- **Strg + Enter saves the game form** ([#465](https://github.com/christried/compies/issues/465)) wherever it appears (create, edit, the stepper's sheet), from any field, with ⌘ + Enter on a Mac; nothing happens while „Speichern“ is disabled. A new reusable **hint element** says so: a small „?“ in a circle at the form's top right that opens a popover (click or tap; Esc or a click outside closes it), shown only on devices with a fine pointer.
+- **Strg + Enter saves the game form** ([#465](https://github.com/christried/compies/issues/465)) wherever it appears (create, edit, the stepper's sheet), from any field, with ⌘ + Enter on a Mac; on a blocked form it saves nothing and shows the field errors, as a click on „Speichern“ does. A new reusable **hint element** says so: a small „?“ in a circle at the form's top right that opens a popover (click or tap; Esc or a click outside closes it), shown only on devices with a fine pointer.
 - All UI _own build_.
 
 ### 0.13.2 Show-Rad
@@ -314,6 +314,7 @@ Spec: [#503](https://github.com/christried/compies/issues/503); tickets #519–#
 - **The wheel's look:** the „Show-Rad“ (`reference/GameWheel.dc.html`, skin `show`; `Spec Changes.md` § Wheel look): bulb rim, pins at every slice edge, a hinged flapper. It keeps its colours in both Appearances, like the Coin flip; the card around it follows the Appearance.
 - **Its motion** as `04-motion.md` § Lucky Wheel has it: bulbs blink at rest, chase during the spin and flash at the stop, the flapper kicks per pin, the winner slice and the result card pop, put back and refill redistribute the slices. The Hidden wheel's reveal and the removal stay as built.
 - **The spin lasts 6 to 10 s**, drawn evenly by the server for each spin; there is no setting. The wheel makes more turns the longer it spins (5 at 6 s up to 8 at 10 s). Reduced motion keeps its calm last 1.2 s.
+- **The Veto bar beside the Clip on a phone held sideways** ([#550](https://github.com/christried/compies/issues/550), moved here from 0.13.1 on 2026-11-12): on a low, wide viewport the video sits at the left and the Veto bar at its right, so nothing lies in front of the player.
 - **Compibert beside the wheel** is a _Claude Design hand-off_ with options to choose from: where he stands at 1440 and 390 px, how he enters and leaves, his poses at spin, brake and stop. It covers the wheel only: no voice, no `angry` at the veto reveal. It does not hold the cut: without an approved design when the wheel is done, 0.13.2 ships without him and he follows in a later patch.
 - All other UI _own build_.
 

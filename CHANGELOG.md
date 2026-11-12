@@ -2,6 +2,15 @@
 
 ## [Unreleased]
 
+### Geändert
+
+- **Das Glücksrad als Show-Rad:** Das Rad sieht jetzt aus wie in einer Spielshow: ein roter Rand mit 24 Lampen, ein Stift an jeder Scheibenkante und oben eine Klappe statt des Dreiecks. Das Rad hat in Hell und Dunkel dieselben Farben; die Karte darum folgt weiter deiner Darstellung. Die Lampen blinken, solange das Rad ruht, laufen beim Dreh um den Rand und blitzen beim Stopp. ([#519](https://github.com/christried/compies/issues/519), [#521](https://github.com/christried/compies/issues/521))
+- **Jeder Dreh dauert anders:** Das Glücksrad dreht sich jetzt zwischen 6 und 10 Sekunden, bei jedem Dreh neu vom Server ausgelost und auf allen Geräten gleich. Je länger es dreht, desto mehr Umdrehungen macht es, und niemand kann mehr bis zum Stopp mitzählen. Bisher waren es immer 6 Sekunden; der Host stellt die Dauer nirgends ein. Veto-Fenster und Clip beginnen wie bisher mit dem Stopp. ([#520](https://github.com/christried/compies/issues/520))
+
+## [0.13.1] - 2026-11-12 – Kleinkram
+
+Lauter Kleinigkeiten rund ums Spielformular: Du wählst den Bildausschnitt selbst, legst mit „Speichern und noch eins“ mehrere Spiele hintereinander an und speicherst mit Strg + Enter. Außerdem bleibt die Zahl der Vetos verborgen, bis ein Event startet.
+
 ### Neu
 
 - **Speichern und noch eins:** Legst du mehrere Spiele hintereinander an, speichert „Speichern und noch eins“ das Spiel und leert das Formular für das nächste; der Cursor steht gleich im Namen. Nichts wird übernommen, auch das Bild nicht. „Spiel anlegen“ führt wie bisher auf die Seite des Spiels. ([#456](https://github.com/christried/compies/issues/456))
@@ -10,13 +19,22 @@
 
 ### Geändert
 
+- **Die Zahl der Vetos bleibt bis zum Start verborgen:** Bevor die erste Session eines Events startet, weiß nur der Host, wie viele Vetos jede Partei hat. Alle anderen lesen in „So wird gespielt“ „Vetos: Anzahl erst zum Start“ und erfahren die Zahl auch sonst nirgends. Mit dem Start der ersten Session sehen sie alle, auch zwischen den Sessions und wenn das Event beendet ist. Bei Host-Wahl bleibt alles, wie es war. ([#453](https://github.com/christried/compies/issues/453))
+
+### Behoben
+
+- **Veto-Fenster:** Nach dem Aufdecken ist die Kachel eines Teams, das kein Veto eingelegt hat, jetzt abgedunkelt, wie vorgesehen. Bisher sah sie aus wie die der anderen Teams. ([#562](https://github.com/christried/compies/issues/562))
+
+## [0.13.0] - 2026-11-12 – Clip
+
+Der Clip, neu gefasst: Er läuft für alle gleich und lässt sich nicht mehr anhalten, darf 10 bis 120 Sekunden lang sein, und das Veto-Fenster richtet sich nach seiner Länge. Dazu kommt ein neues Ergebnis-Bild zum Teilen, die „Anzeigetafel“.
+
+### Geändert
+
 - **Der Clip läuft für alle gleich:** Das Video im Clip nimmt in einer Session keinen Tipp, Klick und keine Taste mehr an. Niemand kann es anhalten, YouTubes „Weitere Videos“ erscheinen nicht, und kein Link führt aus dem Event heraus. Stoppt dein Gerät das Video von sich aus, etwa durch die Kopfhörer-Taste, springt es zur Sekunde der anderen und läuft weiter. Ton an und aus, „Für mich schließen“ und für den Host „Clip überspringen“ bleiben. Der Titel des Videos zeigt sich in den ersten Sekunden: YouTube erlaubt nicht, ihn zu verbergen. ([#509](https://github.com/christried/compies/issues/509))
 - **Clips von 10 bis 120 s:** Du kannst einem Spiel jetzt einen Clip von 10 bis 120 Sekunden geben, bisher 5 bis 60. Im Spielformular trägst du Start, Ende und Länge ein, zwei davon genügen: Die beiden Felder, die du zuletzt geändert hast, gelten, das dritte rechnet sich von selbst mit. Ein Clip, der kürzer als 10 Sekunden war, läuft jetzt 10 Sekunden ab derselben Stelle. ([#507](https://github.com/christried/compies/issues/507), [#508](https://github.com/christried/compies/issues/508))
 - **Das Veto-Fenster passt zum Clip:** Es dauert jetzt so lange wie der Clip des gezogenen Spiels plus 30 Sekunden, bei einem Spiel ohne Video 30 Sekunden. Bisher waren es immer 60. Die Karte eines Spiels ohne Video bleibt dabei höchstens 30 Sekunden stehen. Überspringt der Host den Clip, endet das Fenster 30 Sekunden nach dem Überspringen, wenn das früher ist; länger wird es dadurch nie. Die Uhr zählt in Minuten und Sekunden. ([#505](https://github.com/christried/compies/issues/505), [#506](https://github.com/christried/compies/issues/506))
 - **Neues Ergebnis-Bild:** Das Bild zum Teilen ist jetzt eine „Anzeigetafel“: oben der Name des Events mit den Terminen, groß in der Teamfarbe der Sieger mit seinen Punkten, dazu die Tabelle und die gespielten Spiele als schlichte Zeilen. Zu lange Namen werden mit „…“ gekürzt, lange Listen mit „+N weitere“. Endet ein Event unentschieden, steht jeder Sieger auf einem eigenen Band in seiner Teamfarbe, ab sieben Siegern die ersten fünf und „+N weitere“. Ein Spiel mit mehreren Erstplatzierten trägt einen geteilten Streifen. Das neue Bild gibt es auch für Events, die schon vorher zu Ende gingen. ([#510](https://github.com/christried/compies/issues/510), [#511](https://github.com/christried/compies/issues/511))
-- **Die Zahl der Vetos bleibt bis zum Start verborgen:** Bevor die erste Session eines Events startet, weiß nur der Host, wie viele Vetos jede Partei hat. Alle anderen lesen in „So wird gespielt“ „Vetos: Anzahl erst zum Start“ und erfahren die Zahl auch sonst nirgends. Mit dem Start der ersten Session sehen sie alle, auch zwischen den Sessions und wenn das Event beendet ist. Bei Host-Wahl bleibt alles, wie es war. ([#453](https://github.com/christried/compies/issues/453))
-- **Das Glücksrad als Show-Rad:** Das Rad sieht jetzt aus wie in einer Spielshow: ein roter Rand mit 24 Lampen, ein Stift an jeder Scheibenkante und oben eine Klappe statt des Dreiecks. Das Rad hat in Hell und Dunkel dieselben Farben; die Karte darum folgt weiter deiner Darstellung. Die Lampen blinken, solange das Rad ruht, laufen beim Dreh um den Rand und blitzen beim Stopp. ([#519](https://github.com/christried/compies/issues/519), [#521](https://github.com/christried/compies/issues/521))
-- **Jeder Dreh dauert anders:** Das Glücksrad dreht sich jetzt zwischen 6 und 10 Sekunden, bei jedem Dreh neu vom Server ausgelost und auf allen Geräten gleich. Je länger es dreht, desto mehr Umdrehungen macht es, und niemand kann mehr bis zum Stopp mitzählen. Bisher waren es immer 6 Sekunden; der Host stellt die Dauer nirgends ein. Veto-Fenster und Clip beginnen wie bisher mit dem Stopp. ([#520](https://github.com/christried/compies/issues/520))
 
 ### Behoben
 

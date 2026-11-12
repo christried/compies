@@ -10,6 +10,15 @@
   "env": {
     "CLAUDE_CODE_SUBAGENT_MODEL": "haiku"
   },
+  "permissions": {
+    "allow": [
+      "Bash(node scripts/worktree-clean.mjs *)",
+      "Bash(git push origin --delete *)"
+    ],
+    "deny": [
+      "Bash(git push origin --delete v*)"
+    ]
+  },
   "enabledPlugins": {
     "mattpocock-skills@claude-plugins-official": false
   },
