@@ -50,6 +50,8 @@ What a feature keeps from some Users (a sealed Veto, a Hidden wheel before its s
 - Inside the GSAP timelines (ADR 0015, the Award ceremony's Pokal-Lauf) the eases are GSAP's named eases as `04-motion.md` writes them (`back.out(2.2)`), not `--cp-ease-*`, and their test reads the tween vars (`ease`, `duration()`) off the built timeline.
 - An animation that lands on a result (the coin's face, the wheel's slice) also has a test that the landing shows that result. The coin landed on the wrong face in 0.7, and only the browser check saw it (#235).
 - A motion's static fallback (reduced motion, a failed chunk, a skip) has a test for its geometry, as `test/unit/ceremony-run.test.ts` pins where Compibert stops. In 0.9 a review fix put Compibert at left 0 under reduced motion, no test pinned the stop, and only a deviation note surfaced it.
+- A `<Transition>` that mounts inside a pending Suspense runs no Transition hooks, so its enter does not play. #498 found it in the Event page's header on a client-side switch, where `setup` awaits the data; the fix mounts row 2's Transition once the header is mounted.
+- A padding change on an ancestor, in the render that resizes a block above the scroll anchor, drops Chrome's scroll anchoring, and the anchored block jumps. #541 measured it on the stage group's `padding-bottom` for the Veto bar; the room is now a sibling element.
 
 ## Tests
 
