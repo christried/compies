@@ -11,6 +11,10 @@
 - **Das Glücksrad als Show-Rad:** Das Rad sieht jetzt aus wie in einer Spielshow: ein roter Rand mit 24 Lampen, ein Stift an jeder Scheibenkante und oben eine Klappe statt des Dreiecks. Das Rad hat in Hell und Dunkel dieselben Farben; die Karte darum folgt weiter deiner Darstellung. Die Lampen blinken, solange das Rad ruht, laufen beim Dreh um den Rand und blitzen beim Stopp. Die Klappe schnippt an jedem Stift, der vorbeikommt: erst ganz schnell, dann immer langsamer, bis das Rad steht. Beim Stopp springen der gezogene Name und die Ergebniskarte mit einem kleinen Hüpfer auf; wer später dazukommt, sieht beides schon fertig. Legt der Host ein Spiel zurück oder ändert sich der Spielepool, rücken die Scheiben sichtbar zusammen, und eine neue Scheibe springt auf. ([#519](https://github.com/christried/compies/issues/519), [#521](https://github.com/christried/compies/issues/521), [#522](https://github.com/christried/compies/issues/522), [#523](https://github.com/christried/compies/issues/523), [#524](https://github.com/christried/compies/issues/524))
 - **Jeder Dreh dauert anders:** Das Glücksrad dreht sich jetzt zwischen 6 und 10 Sekunden, bei jedem Dreh neu vom Server ausgelost und auf allen Geräten gleich. Je länger es dreht, desto mehr Umdrehungen macht es, und niemand kann mehr bis zum Stopp mitzählen. Bisher waren es immer 6 Sekunden; der Host stellt die Dauer nirgends ein. Veto-Fenster und Clip beginnen wie bisher mit dem Stopp. ([#520](https://github.com/christried/compies/issues/520))
 
+### Behoben
+
+- **Veto-Leiste im Querformat:** Hältst du das Handy quer, liegt die Veto-Leiste nicht mehr vor dem Video des Clips, sondern rechts daneben. Hochkant und am Computer bleibt alles, wie es war. ([#550](https://github.com/christried/compies/issues/550))
+
 ## [0.13.1] - 2026-11-12 – Kleinkram
 
 Lauter Kleinigkeiten rund ums Spielformular: Du wählst den Bildausschnitt selbst, legst mit „Speichern und noch eins“ mehrere Spiele hintereinander an und speicherst mit Strg + Enter. Außerdem bleibt die Zahl der Vetos verborgen, bis ein Event startet.
