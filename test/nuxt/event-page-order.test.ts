@@ -6,7 +6,7 @@ import { useStageOrder } from '~/composables/useStageOrder'
 import { RISE_DELAY_MS, stageBlocks, type StageInput } from '~/utils/event-stage'
 import { REFLOW_CLASS, riseSettleMs } from '~/utils/motion'
 import { defaultSettings } from '~~/shared/settings'
-import type { CountdownView, ResultView } from '~~/shared/stage'
+import type { CoinView, CountdownView, ResultView } from '~~/shared/stage'
 import { kitty, signInAs } from './auth'
 import { regionHeadings, stubScreen, viewWithSessions, type EventOverrides } from './event-page'
 import { afterResult, FIRST, members, mount, SESSION, serveState, STARTED, team, unmountPage } from './event-page-states'
@@ -52,6 +52,7 @@ describe('the order of the stage on the Event page', () => {
   /** What was animated inside the stage: other parts of the page animate too (the footer's „Neu“ chip). */
   const inStage = () => animated.filter(entry => entry.block !== undefined)
   let scrolls: ReturnType<typeof vi.fn>[]
+  let scrollTo: ReturnType<typeof vi.fn>
 
   beforeEach(() => {
     signInAs(kitty)
@@ -62,14 +63,12 @@ describe('the order of the stage on the Event page', () => {
       writable: true,
       value(this: HTMLElement, keyframes: Keyframe[], options: KeyframeAnimationOptions) {
         animated.push({ block: this.closest<HTMLElement>('[data-block]')?.dataset.block, keyframes, options })
-        return { cancel() {}, finish() {}, currentTime: 0 }
+        return { cancel() {}, finish() {}, pause() {}, currentTime: 0 }
       },
     })
-    // The page never scrolls by itself (#441): any call of a scroll API fails the test below.
-    scrolls = [
-      vi.spyOn(window, 'scrollBy').mockImplementation(() => {}),
-      vi.spyOn(window, 'scrollTo').mockImplementation(() => {}),
-    ]
+    // The stage scrolls the window to the top and nothing else (#586): `scrollBy` and `scrollIntoView` are never called, and `scrollTo` only for a block that takes the first place.
+    scrollTo = vi.spyOn(window, 'scrollTo').mockImplementation(() => {})
+    scrolls = [vi.spyOn(window, 'scrollBy').mockImplementation(() => {})]
     Object.defineProperty(Element.prototype, 'scrollIntoView', { configurable: true, writable: true, value: vi.fn() })
     scrolls.push(Element.prototype.scrollIntoView as ReturnType<typeof vi.fn>)
   })
@@ -89,6 +88,8 @@ describe('the order of the stage on the Event page', () => {
     await flushPromises()
     vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'Date'] })
     vi.setSystemTime(new Date(now))
+    // Mounting scrolls the window to the top (the router's own call): what the tests below count starts after it.
+    scrollTo.mockClear()
     /** The next read of the Event, as the room's `event.changed` makes the page take it. */
     const read = async (overrides: EventOverrides = {}) => {
       served.set(readOf(served.slug, overrides))
@@ -138,15 +139,162 @@ describe('the order of the stage on the Event page', () => {
     expect(headings()).toEqual(['Countdown', 'Tabelle', 'Gerade dran', 'Spielbrett', 'Sessions', 'So wird gespielt'])
   })
 
-  it('calls no scroll API when the stage reorders: the page never scrolls by itself', async () => {
-    const { read, headings } = await open()
+  // The page scrolls to the top when a block takes the first place (#586), so the viewer sees it. The decision is `scrollsToTop` (event-stage.test.ts); here the page's wiring of it.
+  describe('the page scrolls to the top when a block takes the first place (#586)', () => {
+    const tossAt = (commit: number): CoinView => ({ id: 'toss-2', side: 'heads', startedAt: iso(commit + 1500), landsAt: iso(commit + 5100) })
 
-    vi.setSystemTime(new Date(T + 100))
-    await read({ countdown: countdownAt(T) })
-    await vi.advanceTimersByTimeAsync(RISE_DELAY_MS)
+    it('glides there at the rise of a block, and not before it', async () => {
+      const { read, headings } = await open()
 
-    expect(headings()[0]).toBe('Countdown')
-    for (const scroll of scrolls) expect(scroll).not.toHaveBeenCalled()
+      vi.setSystemTime(new Date(T + 100))
+      await read({ countdown: countdownAt(T) })
+      await vi.advanceTimersByTimeAsync(RISE_DELAY_MS - 100 - 1)
+      expect(scrollTo).not.toHaveBeenCalled()
+
+      await vi.advanceTimersByTimeAsync(1)
+      expect(headings()[0]).toBe('Countdown')
+      expect(scrollTo).toHaveBeenCalledTimes(1)
+      expect(scrollTo).toHaveBeenCalledWith({ top: 0, behavior: 'smooth' })
+    })
+
+    it('jumps there under reduced motion, in-app setting and OS setting alike (both stand in `--cp-motion`)', async () => {
+      const { read } = await open()
+      motion('reduced')
+
+      vi.setSystemTime(new Date(T + 100))
+      await read({ countdown: countdownAt(T) })
+      await vi.advanceTimersByTimeAsync(RISE_DELAY_MS)
+
+      expect(scrollTo).toHaveBeenCalledTimes(1)
+      expect(scrollTo).toHaveBeenCalledWith({ top: 0, behavior: 'auto' })
+    })
+
+    it('scrolls for news that is older than half a second when the read arrives late: the block arrives lifted', async () => {
+      const { read } = await open()
+
+      vi.setSystemTime(new Date(T + 2000))
+      await read({ countdown: countdownAt(T) })
+
+      expect(scrollTo).toHaveBeenCalledTimes(1)
+    })
+
+    it('scrolls for a Result, which takes the first place from the open Rounds', async () => {
+      const { read, headings } = await open()
+
+      vi.setSystemTime(new Date(T + 2000))
+      await read({ results: [afterResult.results![0]!, resultAt(T)], standings: afterResult.standings, end: { played: 2, gameCount: 6, complete: false, tie: null, finish: null, lastGame: null } })
+
+      expect(headings()[0]).toBe('Tabelle')
+      expect(scrollTo).toHaveBeenCalledTimes(1)
+    })
+
+    it('scrolls for a second Result when the Standings are first already', async () => {
+      const { read } = await open()
+      const end = { played: 2, gameCount: 6, complete: false, tie: null, finish: null, lastGame: null }
+      vi.setSystemTime(new Date(T + 2000))
+      await read({ results: [afterResult.results![0]!, resultAt(T)], standings: afterResult.standings, end })
+      scrollTo.mockClear()
+
+      vi.setSystemTime(new Date(T + 4100))
+      await read({ results: [afterResult.results![0]!, resultAt(T + 4000)], standings: afterResult.standings, end })
+      expect(scrollTo).not.toHaveBeenCalled()
+      await vi.advanceTimersByTimeAsync(RISE_DELAY_MS)
+
+      expect(scrollTo).toHaveBeenCalledTimes(1)
+    })
+
+    it('does not scroll for a reload, whether the page opens before the half second ends or the first read follows it', async () => {
+      const { read, headings } = await open({ countdown: countdownAt(T) }, { now: T + 100 })
+      expect(headings()).toEqual(LIFTED)
+
+      vi.setSystemTime(new Date(T + 200))
+      await read({ countdown: countdownAt(T) })
+      await vi.advanceTimersByTimeAsync(RISE_DELAY_MS + 600)
+
+      expect(scrollTo).not.toHaveBeenCalled()
+    })
+
+    it('does not scroll for a Bonus Veto or a pause of the Countdown, which lift nothing', async () => {
+      const { read } = await open({ countdown: countdownAt(T) })
+
+      vi.setSystemTime(new Date(T + 3000))
+      await read({ countdown: { ...countdownAt(T), startedAt: null, remainingMs: 597_000 } })
+      await read({ countdown: countdownAt(T), bonusVetoes: { left: [1, 0], granted: [] } } as unknown as EventOverrides)
+
+      expect(scrollTo).not.toHaveBeenCalled()
+    })
+
+    it('does not scroll in a hidden tab', async () => {
+      const { read } = await open()
+      vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('hidden')
+
+      vi.setSystemTime(new Date(T + 100))
+      await read({ countdown: countdownAt(T) })
+      await vi.advanceTimersByTimeAsync(RISE_DELAY_MS)
+
+      expect(scrollTo).not.toHaveBeenCalled()
+    })
+
+    it('does not scroll while a dialog or sheet is open, and a sheet that is leaving (inert) does not hold it back', async () => {
+      const { read } = await open()
+      const dialog = document.body.appendChild(document.createElement('div'))
+      dialog.setAttribute('aria-modal', 'true')
+
+      vi.setSystemTime(new Date(T + 100))
+      await read({ countdown: countdownAt(T) })
+      await vi.advanceTimersByTimeAsync(RISE_DELAY_MS)
+      expect(scrollTo).not.toHaveBeenCalled()
+
+      // A sheet that is leaving is `inert` and does not count.
+      dialog.setAttribute('inert', '')
+      vi.setSystemTime(new Date(T + 2000))
+      await read({ countdown: countdownAt(T), coin: tossAt(T + 1500) })
+      await vi.advanceTimersByTimeAsync(RISE_DELAY_MS)
+      expect(scrollTo).toHaveBeenCalledTimes(1)
+      dialog.remove()
+    })
+
+    it('does not scroll for the next rise while the dialog stays open, and does for the one after it closes', async () => {
+      const { read } = await open()
+      const dialog = document.body.appendChild(document.createElement('div'))
+      dialog.setAttribute('aria-modal', 'true')
+
+      vi.setSystemTime(new Date(T + 100))
+      await read({ countdown: countdownAt(T) })
+      await vi.advanceTimersByTimeAsync(RISE_DELAY_MS)
+      expect(scrollTo).not.toHaveBeenCalled()
+
+      dialog.remove()
+      vi.setSystemTime(new Date(T + 2000))
+      await read({ countdown: countdownAt(T), coin: tossAt(T + 1500) })
+      await vi.advanceTimersByTimeAsync(RISE_DELAY_MS)
+
+      expect(scrollTo).toHaveBeenCalledTimes(1)
+    })
+
+    it('does not scroll while the phone shows the Tabelle tab: the stage is not mounted', async () => {
+      stubScreen(false)
+      const { page, read } = await open()
+      await page.findAll('nav[aria-label="Event"] button')[1]!.trigger('click')
+      await flushPromises()
+
+      vi.setSystemTime(new Date(T + 100))
+      await read({ countdown: countdownAt(T) })
+      await vi.advanceTimersByTimeAsync(RISE_DELAY_MS)
+
+      expect(scrollTo).not.toHaveBeenCalled()
+    })
+
+    it('calls no other scroll API: the browser\'s scroll anchoring holds what a Member reads', async () => {
+      const { read, headings } = await open()
+
+      vi.setSystemTime(new Date(T + 100))
+      await read({ countdown: countdownAt(T) })
+      await vi.advanceTimersByTimeAsync(RISE_DELAY_MS)
+
+      expect(headings()[0]).toBe('Countdown')
+      for (const scroll of scrolls) expect(scroll).not.toHaveBeenCalled()
+    })
   })
 
   it('fades the rising block in for 0.14 s under reduced motion, and animates nothing else', async () => {

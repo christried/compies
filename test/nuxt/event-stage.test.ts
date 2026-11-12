@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { eventPageState } from '~/utils/event-page'
-import { gamesToStart, RISE_DELAY_MS, risen, stageArrival, stageArrivals, stageBlocks, stageCounted, stageInstants, stageMoments, stageRises, stageUnsettled, type Block, type StageCounted, type StageInput } from '~/utils/event-stage'
+import { gamesToStart, RISE_DELAY_MS, risen, scrollsToTop, stageArrival, stageArrivals, stageBlocks, stageCounted, stageInstants, stageMoments, stageRises, stageUnsettled, type Block, type PageKind, type StageCounted, type StageInput, type StageShown } from '~/utils/event-stage'
 import type { EventView } from '~~/shared/event'
 import type { ResultView, RoundView, SpinView, VetoView } from '~~/shared/stage'
 import { defaultSettings } from '~~/shared/settings'
@@ -871,6 +871,130 @@ describe('what the page has counted (#442)', () => {
       expect(stageArrivals(view(moving), 'running', SETTLE)).toEqual({ standings: resultNow + RISE_DELAY_MS + SETTLE })
       expect(stageArrivals(view({ countdown: countdownAt(ago(100)) }), 'running', SETTLE)).toEqual({})
       expect(stageArrivals(viewOf([dated(1, SAT), undated()], { results: [resultAt(ago(100))] }), 'teams', SETTLE)).toEqual({})
+    })
+  })
+})
+
+// A block takes the top of the stage (#586): the page scrolls up to it. The decision is pure: two renders of the stage, what each showed (kind, blocks, what the page had counted).
+describe('a block takes the top of the stage (#586)', () => {
+  const shown = (kind: PageKind, blocks: Block[], counted: StageCounted = {}): StageShown => ({ kind, blocks, counted })
+  const WHEEL_FIRST: Block[] = ['head', 'reopen', 'wheel', 'rounds', 'standings', 'board']
+
+  describe('a moment counted just now', () => {
+    it('scrolls when the first block is first before and after: a spin with the wheel on top already', () => {
+      expect(scrollsToTop(shown('running', WHEEL_FIRST, { wheel: 100 }), shown('running', WHEEL_FIRST, { wheel: 200 }))).toBe(true)
+    })
+
+    it('scrolls for a second Result on a Standings block that is first already, and for a Correction', () => {
+      const standingsFirst: Block[] = ['head', 'reopen', 'standings', 'wheel', 'rounds', 'board']
+      expect(scrollsToTop(shown('running', standingsFirst, { standings: 100 }), shown('running', standingsFirst, { standings: 200 }))).toBe(true)
+      expect(scrollsToTop(shown('running', standingsFirst, { standings: 100 }), shown('running', standingsFirst, { standings: 300 }))).toBe(true)
+    })
+
+    it('scrolls for a first moment: the block had none counted before', () => {
+      expect(scrollsToTop(shown('running', WHEEL_FIRST), shown('running', WHEEL_FIRST, { wheel: 200 }))).toBe(true)
+    })
+
+    it('needs a newer moment: the same one, or a lower one (a put back lowers a moment), does not scroll', () => {
+      expect(scrollsToTop(shown('running', WHEEL_FIRST, { wheel: 200 }), shown('running', WHEEL_FIRST, { wheel: 200 }))).toBe(false)
+      expect(scrollsToTop(shown('running', WHEEL_FIRST, { wheel: 200 }), shown('running', WHEEL_FIRST, { wheel: 100 }))).toBe(false)
+    })
+
+    it('does not scroll for a newly counted moment of a block that is not first', () => {
+      expect(scrollsToTop(shown('running', WHEEL_FIRST, { wheel: 200 }), shown('running', WHEEL_FIRST, { wheel: 200, rounds: 100 }))).toBe(false)
+    })
+  })
+
+  describe('a block that took the first place without a newer moment', () => {
+    it('scrolls for a put back: the block above the wheel was lowered and the wheel takes the first place', () => {
+      const before: Block[] = ['head', 'reopen', 'rounds', 'wheel', 'standings', 'board']
+      expect(scrollsToTop(shown('running', before, { rounds: 300, wheel: 200 }), shown('running', WHEEL_FIRST, { rounds: 300, wheel: 200 }))).toBe(true)
+    })
+
+    it('scrolls for a block that arrives at the top: it was not in the list before', () => {
+      const before: Block[] = ['head', 'reopen', 'wheel', 'rounds', 'board']
+      expect(scrollsToTop(shown('running', before), shown('running', ['head', 'reopen', 'coin', 'wheel', 'rounds', 'board']))).toBe(true)
+    })
+
+    it('scrolls for a block that moved up from below to the first place', () => {
+      const before: Block[] = ['head', 'reopen', 'wheel', 'rounds', 'board']
+      const after: Block[] = ['head', 'reopen', 'rounds', 'wheel', 'board']
+      expect(risen(before, after)).toEqual(['rounds'])
+      expect(scrollsToTop(shown('running', before), shown('running', after))).toBe(true)
+    })
+  })
+
+  describe('no scroll', () => {
+    it('for equal lists, and for a block that only shifts down', () => {
+      expect(scrollsToTop(shown('running', WHEEL_FIRST), shown('running', WHEEL_FIRST))).toBe(false)
+      expect(scrollsToTop(shown('running', ['head', 'reopen', 'wheel', 'rounds']), shown('running', ['head', 'reopen', 'wheel', 'pool', 'rounds']))).toBe(false)
+    })
+
+    it('for a rise that is not to the first place: the wheel stays first', () => {
+      expect(scrollsToTop(shown('running', ['head', 'reopen', 'wheel', 'rounds', 'standings']), shown('running', ['head', 'reopen', 'wheel', 'standings', 'rounds']))).toBe(false)
+    })
+
+    it('when the first block leaves: the Countdown is removed', () => {
+      expect(scrollsToTop(shown('running', ['head', 'reopen', 'countdown', 'standings']), shown('running', ['head', 'reopen', 'standings']))).toBe(false)
+    })
+
+    it('when a pinned block appears and nothing else changes', () => {
+      expect(scrollsToTop(shown('running', ['head', 'reopen', 'wheel', 'rounds']), shown('running', ['head', 'reopen', 'tie', 'wheel', 'rounds']))).toBe(false)
+    })
+
+    it('without an earlier list, and when the kind changed', () => {
+      expect(scrollsToTop(shown('running', []), shown('running', WHEEL_FIRST))).toBe(false)
+      expect(scrollsToTop(shown('teams', ['head', 'reopen', 'seat', 'board']), shown('running', WHEEL_FIRST, { wheel: 200 }))).toBe(false)
+    })
+
+    it('in a finished Event, whatever the list does', () => {
+      expect(scrollsToTop(shown('finished', ['head', 'reopen', 'standings', 'history']), shown('finished', ['head', 'reopen', 'history', 'standings'], { standings: 9 }))).toBe(false)
+      expect(scrollsToTop(shown('finished', ['head', 'reopen', 'pending', 'cards']), shown('finished', ['head', 'reopen', 'actions', 'standings', 'history', 'cards']))).toBe(false)
+    })
+  })
+
+  // The real order and the real counting, for each trigger: the render just before the rise and the one at it, and the same two a tick later, and a reload.
+  describe('through the real order', () => {
+    const triggers: [string, (moment: number) => Fields][] = [
+      ['a wheel spin', moment => ({ wheel: wheelWith({ spun: moment }) })],
+      ['a set game', moment => ({ wheel: wheelWith({ set: moment }) })],
+      ['an open Round', moment => ({ rounds: [roundAt('o1', moment)] })],
+      ['a Result', moment => ({ results: [resultAt(moment)] })],
+      ['a Correction', moment => ({ results: [resultAt(ago(60_000), moment)] })],
+      ['a Countdown', moment => ({ countdown: countdownAt(moment, moment) })],
+      ['a Coin flip', moment => ({ coin: tossAt(moment) })],
+    ]
+    /** The render at `now`, given what the page counted before it. */
+    const renderAt = (fields: Fields, now: number | null, counted: StageCounted): StageShown => {
+      const view = viewOf(ONE_RUNNING, { ...LIVE, ...fields })
+      const next = stageCounted(view, 'running', now, counted)
+      return { kind: 'running', blocks: stageBlocks(view, 'running', now, next), counted: next }
+    }
+
+    for (const [name, fields] of triggers) {
+      it(`scrolls at the rise of ${name}, and not a tick after it`, () => {
+        const moment = ago(10_000)
+        const rise = moment + RISE_DELAY_MS
+        const before = renderAt(fields(moment), rise - 1, {})
+        const after = renderAt(fields(moment), rise, before.counted)
+
+        expect(scrollsToTop(before, after)).toBe(true)
+        expect(scrollsToTop(after, renderAt(fields(moment), rise + 1, after.counted))).toBe(false)
+      })
+
+      it(`does not scroll for ${name} on a reload: no clock, the order is settled at the first render`, () => {
+        const first = renderAt(fields(ago(100)), null, {})
+        expect(scrollsToTop(first, renderAt(fields(ago(100)), null, first.counted))).toBe(false)
+      })
+    }
+
+    it('does not scroll for a Bonus Veto or a Countdown pause: they have no moment', () => {
+      const moment = ago(10_000)
+      const settled = renderAt({ wheel: wheelWith({ spun: moment }) }, NOW, {})
+      expect(scrollsToTop(settled, renderAt({ wheel: wheelWith({ spun: moment, left: [0, 1] }) }, NOW, settled.counted))).toBe(false)
+
+      const counting = renderAt({ countdown: countdownAt(moment, moment) }, NOW, {})
+      expect(scrollsToTop(counting, renderAt({ countdown: { ...countdownAt(moment, moment), startedAt: null, remainingMs: 50_000 } }, NOW, counting.counted))).toBe(false)
     })
   })
 })

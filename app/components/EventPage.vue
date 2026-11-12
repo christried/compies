@@ -234,6 +234,7 @@ const { news } = useStandingsNews(data, slug)
       :slug="slug"
       :view="data"
       :page-state="pageState"
+      :counted="counted"
       :news="news"
       :standings-held="standingsHeld"
       :actions="actions"
