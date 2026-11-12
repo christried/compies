@@ -18,7 +18,7 @@ Each release is one spec and usable on its own. A release is grilled, specced an
 | 0.10 | Feinschliff | released on 2026-11-09: [#332](https://github.com/christried/compies/issues/332); the list that waited for the first Event, plus the production check. 0.10.1 „Partyhut“ released on 2026-11-09: the review follow-ups, the Partyhut ([#38](https://github.com/christried/compies/issues/38)) and the Countdown fix ([#379](https://github.com/christried/compies/issues/379)) |
 | 0.11 | Profil | released on 2026-11-10: [#398](https://github.com/christried/compies/issues/398); the Profil page, Darstellung (Hell, Dunkel, System) and the dark check |
 | 0.12 | Eventseite | released on 2026-11-11: [#425](https://github.com/christried/compies/issues/425); one Tribüne, open Team names, the stage that follows the game, game tiles with the game dialog, and the finished page that waits for the Award ceremony |
-| 0.13 | Glücksrad & Clip | the wheel, the clip and the Share image findings of the production check; grilled on 2026-11-11 and split into four Releases: 0.13.0 „Clip“ ([#501](https://github.com/christried/compies/issues/501), released on 2026-11-12), 0.13.1 „Kleinkram“ ([#502](https://github.com/christried/compies/issues/502), released on 2026-11-12), 0.13.2 „Show-Rad“ ([#503](https://github.com/christried/compies/issues/503)), 0.13.3 „Ton“ ([#504](https://github.com/christried/compies/issues/504)) |
+| 0.13 | Glücksrad & Clip | the wheel, the clip and the Share image findings of the production check; grilled on 2026-11-11 and split into four Releases: 0.13.0 „Clip“ ([#501](https://github.com/christried/compies/issues/501), released on 2026-11-12), 0.13.1 „Kleinkram“ ([#502](https://github.com/christried/compies/issues/502), released on 2026-11-12), 0.13.2 „Show-Rad“ ([#503](https://github.com/christried/compies/issues/503), released on 2026-11-12), 0.13.3 „Ton“ ([#504](https://github.com/christried/compies/issues/504)) |
 | 1.0 | | when the user declares COMPIES ready |
 
 ## 0.4 Spielvorbereitung (was 1.3)
@@ -309,7 +309,7 @@ Released on 2026-11-12 (`v0.13.1`). Spec: [#502](https://github.com/christried/c
 
 ### 0.13.2 Show-Rad
 
-Spec: [#503](https://github.com/christried/compies/issues/503); tickets #519–#529, the Compibert hand-off is [#525](https://github.com/christried/compies/issues/525).
+Released on 2026-11-12 (`v0.13.2`). Spec: [#503](https://github.com/christried/compies/issues/503); tickets #519–#529, and #550, #584 from the review and #585, #586 from the walk-through, the Compibert hand-off is [#525](https://github.com/christried/compies/issues/525).
 
 - **The wheel's look:** the „Show-Rad“ (`reference/GameWheel.dc.html`, skin `show`; `Spec Changes.md` § Wheel look): bulb rim, pins at every slice edge, a hinged flapper. It keeps its colours in both Appearances, like the Coin flip; the card around it follows the Appearance.
 - **Its motion** as `04-motion.md` § Lucky Wheel has it: bulbs blink at rest, chase during the spin and flash at the stop, the flapper kicks per pin, the winner slice and the result card pop, put back and refill redistribute the slices. The Hidden wheel's reveal and the removal stay as built.
