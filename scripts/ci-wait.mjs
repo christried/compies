@@ -6,7 +6,11 @@
 //
 // Exit 0: every CI run of the commit passed. Exit 1: one failed or was cancelled (the failing step's output follows,
 // cut to its failures), or no run appeared within two minutes. Exit 2: CI is still running after 2.5 minutes, so run it
-// again. One call stays under the 3 minutes after which Claude Code moves a command to the background: that ends the
+// again. A run that a newer push cancelled is no failure (#569): when its branch has a head other than the run's commit,
+// the script prints „superseded by <sha>“, waits on that head (the time limit of the call keeps running; the two minutes
+// for a run to appear count from the hop) and ends with that head's result. A run cancelled while its commit is still
+// the branch's head, or on a branch that no longer exists, was cancelled by hand and stays red.
+// One call stays under the 3 minutes after which Claude Code moves a command to the background: that ends the
 // agent's turn and wakes the orchestrator with an interim notice (three times in session 7 of 0.8, retro 0.8).
 // `--until-done` is for a call that already runs in the background (the orchestrator's): it waits up to 20 minutes, so a
 // 6-minute run ends in one notification instead of a failed one every 2.5 minutes (retro 0.10).
@@ -46,7 +50,7 @@ const jobCountOf = (run) => {
     return fail(`jobs count failed for ${run.url}`, error)
   }
 }
-const runsOf = () => JSON.parse(gh('run', 'list', '--workflow', 'ci.yml', '--commit', sha, '--json', 'databaseId,status,conclusion,event,url,attempt'))
+const runsOf = commit => JSON.parse(gh('run', 'list', '--workflow', 'ci.yml', '--commit', commit, '--json', 'databaseId,status,conclusion,event,url,attempt,headBranch,headSha'))
 
 /** The failing step's log from its first failure marker on, without the job/step/timestamp prefix and colour codes. */
 function failures(id) {
@@ -200,22 +204,61 @@ if (prNumber !== null) await waitForPr(prNumber)
 
 const started = Date.now()
 let runs = []
+// The commit whose runs are waited on. When a newer push cancelled every run of it, it moves to the branch's newer head
+// (#569, „superseded“); `hops` counts the moves, `branch` is the branch followed and `headSince` is when the wait on the
+// current head began, so the two-minute „no run appeared“ limit counts from there. `started` and the call's time limit
+// do not restart: one call stays under the limit it always had.
+let head = sha
+let hops = 0
+let branch = ''
+let headSince = started
 // Run id → the time of its re-run after a start failure. A re-run keeps the run id; for a moment the list may still
 // show the old completed state, which does not count as done.
 const rerunAt = new Map()
-// The jobs are counted for a failed run only.
-const decisionOf = run => rerunDecision(run, run.conclusion === 'success' ? 1 : jobCountOf(run), rerunAt.has(run.databaseId))
+// Run id → the head its branch has now, or null when the branch is gone: one lookup per cancelled run (#569).
+const newerHeads = new Map()
+const newerHeadOf = (run) => {
+  if (!run.headBranch) return null
+  if (!newerHeads.has(run.databaseId)) {
+    let found = null
+    try {
+      found = gh('api', `repos/${REPO}/git/ref/heads/${run.headBranch.split('/').map(encodeURIComponent).join('/')}`, '--jq', '.object.sha').trim()
+    }
+    catch (error) {
+      // A branch that does not exist answers 404: no newer head, the run stays red.
+      if (!/HTTP 404/.test(String(error.stderr))) fail(`branch lookup failed for ${run.url}`, error)
+    }
+    newerHeads.set(run.databaseId, found)
+  }
+  return newerHeads.get(run.databaseId)
+}
+// The jobs are counted for a failed run only; a cancelled run's verdict does not read them.
+const decisionOf = run => rerunDecision(run, run.conclusion === 'success' || run.conclusion === 'cancelled' ? 1 : jobCountOf(run), rerunAt.has(run.databaseId), run.conclusion === 'cancelled' ? newerHeadOf(run) : null)
 const done = run => run.status === 'completed' && !(Date.now() - (rerunAt.get(run.databaseId) ?? -Infinity) < RERUN_SETTLE_MS)
 console.log(`waiting for CI on ${sha.slice(0, 7)} …`)
 while (Date.now() - started < CALL_MS) {
-  runs = runsOf()
-  if (runs.length === 0 && Date.now() - started > APPEAR_MS) {
-    console.log('No CI run appeared for this commit. Is it pushed?')
+  runs = runsOf(head)
+  if (runs.length === 0 && Date.now() - headSince > APPEAR_MS) {
+    console.log(hops === 0 ? 'No CI run appeared for this commit. Is it pushed?' : `No CI run appeared for ${head.slice(0, 7)}, the newer head of ${branch}.`)
     process.exit(1)
   }
   if (runs.length > 0 && runs.every(done)) {
     const fresh = runs.filter(run => decisionOf(run) === 'rerun')
-    if (fresh.length === 0) break
+    if (fresh.length === 0) {
+      const superseded = runs.filter(run => decisionOf(run) === 'superseded')
+      // Only when every run of the commit was superseded does the wait move; otherwise the others decide below.
+      if (superseded.length < runs.length) break
+      const latest = superseded.reduce((a, b) => b.databaseId > a.databaseId ? b : a)
+      const newer = newerHeads.get(latest.databaseId)
+      console.log(`superseded by ${newer}: the run of ${head.slice(0, 7)} was cancelled by a newer push to ${latest.headBranch}`)
+      head = newer
+      branch = latest.headBranch
+      hops += 1
+      headSince = Date.now()
+      runs = []
+      console.log(`waiting for CI on ${head.slice(0, 7)} …`)
+      continue
+    }
     for (const run of fresh) {
       console.log(`start failure (zero jobs): ${run.event} ${run.url} – re-running once`)
       try {
@@ -231,16 +274,22 @@ while (Date.now() - started < CALL_MS) {
 }
 
 if (runs.length === 0) {
+  if (hops > 0) {
+    console.log(`No CI run yet for ${head.slice(0, 7)}, the newer head of ${branch}: run this again.`)
+    process.exit(2)
+  }
   console.log('No CI run appeared for this commit. Is it pushed?')
   process.exit(1)
 }
 if (!runs.every(done)) {
-  console.log(`CI is still running on ${sha.slice(0, 7)}: run this again.`)
+  console.log(hops === 0 ? `CI is still running on ${sha.slice(0, 7)}: run this again.` : `CI is still running on ${head.slice(0, 7)}, the newer head that superseded ${sha.slice(0, 7)}: run this again.`)
   process.exit(2)
 }
-const red = runs.filter(run => run.conclusion !== 'success')
+// A superseded run among others (a commit on several branches) is dropped, not reported as red.
+const counted = runs.filter(run => decisionOf(run) !== 'superseded')
+const red = counted.filter(run => run.conclusion !== 'success')
 if (red.length === 0) {
-  console.log(`green: ${runs.map(run => run.event).join(', ')}`)
+  console.log(`green: ${counted.map(run => run.event).join(', ')}${hops === 0 ? '' : ` (on ${head.slice(0, 7)}, which superseded ${sha.slice(0, 7)})`}`)
   process.exit(0)
 }
 for (const run of red) {
