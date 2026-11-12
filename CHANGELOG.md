@@ -14,6 +14,7 @@
 ### Behoben
 
 - **Veto-Leiste im Querformat:** Hältst du das Handy quer, liegt die Veto-Leiste nicht mehr vor dem Video des Clips, sondern rechts daneben. Hast du keine Veto-Leiste, steht das Video im Querformat in der Mitte. Hochkant und am Computer bleibt alles, wie es war. ([#550](https://github.com/christried/compies/issues/550), [#584](https://github.com/christried/compies/issues/584))
+- **Karte „Zuletzt gezogen“ mittig:** Die Karte mit dem zuletzt gezogenen Spiel steht jetzt mittig unter dem Glücksrad und ist nur so breit wie das Spiel. ([#585](https://github.com/christried/compies/issues/585))
 
 ## [0.13.1] - 2026-11-12 – Kleinkram
 
