@@ -2,7 +2,7 @@ import { mountSuspended } from '@nuxt/test-utils/runtime'
 import { flushPromises } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import EventPage from '~/pages/e/[slug]/index.vue'
-import { NOTICE_SETTLE_MS } from '~/composables/useSoundUnlock'
+import { NOTICE_RETURN_MS, NOTICE_SETTLE_MS } from '~/composables/useSoundUnlock'
 import { defaultSettings } from '~~/shared/settings'
 import { FakeAudioContext } from '../fake-audio'
 import { kitty, signInAs } from './auth'
@@ -21,6 +21,16 @@ const SENTENCE = 'Dein Browser spielt Ton erst nach einem Tipp oder Tastendruck 
 /** A browser that lets no sound through before a gesture: the context is made suspended. */
 class HeldContext extends FakeAudioContext {
   override state = 'suspended'
+}
+
+/** A browser that does not count the first gesture: its first `resume()` stays pending and the context stays suspended, the second runs it. */
+class StuckContext extends HeldContext {
+  override resume() {
+    this.resumeCalls += 1
+    if (this.resumeCalls === 1) return new Promise<void>(() => {})
+    this.setState('running')
+    return Promise.resolve()
+  }
 }
 
 function serveRunning() {
@@ -128,7 +138,7 @@ describe('the notice', () => {
     expect(context()!.resumeCalls).toBe(0)
   })
 
-  it('goes with a click on its button, which resumes once', async () => {
+  it('goes with a click on its button, which resumes the context', async () => {
     await mount(serveRunning())
     await shown()
 
@@ -136,7 +146,48 @@ describe('the notice', () => {
     await flushPromises()
 
     expect(notice()).toBeNull()
-    expect(context()!.resumeCalls).toBe(1)
+    expect(context()!.resumeCalls).toBeGreaterThanOrEqual(1)
+    expect(context()!.state).toBe('running')
+  })
+
+  describe('with a gesture the browser does not count', () => {
+    beforeEach(() => {
+      vi.stubGlobal('AudioContext', StuckContext)
+    })
+
+    it('resumes again on the next gesture, because the first resume never settled', async () => {
+      await mount(serveRunning())
+      await shown()
+
+      gesture.pointer()
+      await flushPromises()
+      expect(context()!.resumeCalls).toBe(1)
+      expect(context()!.state).toBe('suspended')
+
+      gesture.click()
+      await flushPromises()
+
+      expect(context()!.resumeCalls).toBe(2)
+      expect(context()!.state).toBe('running')
+    })
+
+    it('shows the notice again when the context is still held back after NOTICE_RETURN_MS, and goes for good once a gesture runs it', async () => {
+      await mount(serveRunning())
+      await shown()
+
+      gesture.pointer()
+      await flushPromises()
+      expect(notice()).toBeNull()
+
+      await vi.waitFor(() => expect(notice()).not.toBeNull(), { timeout: NOTICE_RETURN_MS + NOTICE_SETTLE_MS + 1500 })
+
+      gesture.pointer()
+      await flushPromises()
+      expect(context()!.state).toBe('running')
+      expect(notice()).toBeNull()
+      await wait(NOTICE_RETURN_MS + NOTICE_SETTLE_MS + 100)
+      expect(notice()).toBeNull()
+    })
   })
 
   it('does not take the focus, and a removal by a gesture moves it nowhere', async () => {

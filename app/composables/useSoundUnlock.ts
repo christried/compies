@@ -9,6 +9,8 @@ const LISTENER_OPTIONS = { capture: true, passive: true } as const
 
 /** A context a browser lets run may read `suspended` for a moment after it is made: the notice waits this long, so such a browser shows no flash. */
 export const NOTICE_SETTLE_MS = 300
+/** A gesture that left the context suspended this long ago did not start it: the notice comes back. */
+export const NOTICE_RETURN_MS = 1000
 
 /** „This document has had a gesture“ (a browser's user activation is per document and sticky): the Clip on a phone starts with sound after it. */
 export const useSoundGesture = () => readonly(useState<boolean>('sound-gestured', () => false))
@@ -32,8 +34,12 @@ export function useSoundUnlock(input: {
   })
   /** This gesture was taken: the notice goes at once, the context itself turns running a promise tick later. */
   const tapped = ref(false)
+  // A gesture the browser did not count leaves the context suspended: the notice returns, and the listener, still attached, takes the next one.
+  let returnTimer: ReturnType<typeof setTimeout> | undefined
   watch(input.suspended, (held) => {
-    if (!held) tapped.value = false
+    if (held) return
+    tapped.value = false
+    clearTimeout(returnTimer)
   })
 
   /** The listener's handler and the notice's button. Synchronous: iOS only starts a context from inside the gesture. */
@@ -42,14 +48,14 @@ export function useSoundUnlock(input: {
     // Ton off: there is no context to start, and the gesture is noted only. The Ton switch's own click comes back here with Ton on.
     if (!enabled.value) return
     tapped.value = true
-    // One resume per gesture: a click on the notice's button reaches the document's listener and the button's own handler.
-    if (resuming) return
-    resuming = true
-    void input.resume().finally(() => {
-      resuming = false
-    })
+    clearTimeout(returnTimer)
+    returnTimer = setTimeout(() => {
+      tapped.value = false
+    }, NOTICE_RETURN_MS)
+    // Every accepted gesture resumes, the button's too: a browser that does not count one event (iOS Safari and a `pointerup`) counts the next, and
+    // a resume called outside an activation may stay pending for good, so no latch here. A second resume for one tap is harmless.
+    void input.resume()
   }
-  let resuming = false
 
   function onGesture(event: Event) {
     if (event.type === 'keydown' && (event as KeyboardEvent).key === 'Escape') return
@@ -93,6 +99,7 @@ export function useSoundUnlock(input: {
 
   onScopeDispose(() => {
     clearTimeout(timer)
+    clearTimeout(returnTimer)
     detach()
   })
 
