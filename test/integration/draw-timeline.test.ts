@@ -3,7 +3,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { activity, draws, events, games, rounds, users } from '../../server/db/schema'
 import { readActivityPage } from '../../server/utils/activity'
 import { dueDraws, movedVetoEnd, stoppedDraws } from '../../server/utils/draw-timeline'
-import { drawGameKnown, drawInstants, isDue, settleAt, vetoEndAfterSkip } from '../../shared/draw-timeline'
+import { SPIN_MAX_MS, SPIN_MIN_MS, drawGameKnown, drawInstants, isDue, settleAt, vetoEndAfterSkip } from '../../shared/draw-timeline'
 import { createTestDb } from './harness'
 
 // The parity guard of the Draw's timeline (#414, ADR 0013 amendment 2026-10-31): the SQL twins (`stoppedDraws`, `dueDraws`) select
@@ -27,7 +27,8 @@ beforeAll(async () => {
   eventId = event!.id
 
   const committedAt = new Date(COMMIT)
-  // Each shape is stored for every clip length (#505): a window of 40, 60 and 150 s, and 30 s for a game without a video.
+  // Each shape is stored for every clip length (#505): a window of 40, 60 and 150 s, and 30 s for a game without a video. A spin is stored at both
+  // ends of its length (#520), so the probes include the stop of a 10 s spin: 3 spin shapes twice and 3 set shapes are 9 shapes of 4 clip lengths.
   const clipLengths = [10, 30, 120, null] as const
   const shapes = ([
     { kind: 'spin', windowOpens: true, settled: false },
@@ -36,10 +37,11 @@ beforeAll(async () => {
     { kind: 'set', windowOpens: false, settled: true },
     { kind: 'spin', windowOpens: true, settled: true },
     { kind: 'set', windowOpens: true, settled: true },
-  ] as const).flatMap(shape => clipLengths.map(clipLength => ({ ...shape, clipLength })))
+  ] as const).flatMap(shape => (shape.kind === 'spin' ? [SPIN_MIN_MS, SPIN_MAX_MS] : [null]).map(spinLengthMs => ({ ...shape, spinLengthMs })))
+    .flatMap(shape => clipLengths.map(clipLength => ({ ...shape, clipLength })))
   stored = []
   for (const shape of shapes) {
-    const instants = drawInstants({ kind: shape.kind, commitAt: COMMIT, windowOpens: shape.windowOpens, clipLength: shape.clipLength })
+    const instants = drawInstants({ kind: shape.kind, commitAt: COMMIT, windowOpens: shape.windowOpens, clipLength: shape.clipLength, spinLengthMs: shape.spinLengthMs })
     // One Round per draw; each has its game set, so the one-drawn-Round-per-Event index does not apply.
     const [round] = await db.insert(rounds).values({ eventId, startedAt: committedAt, gameId: game!.id, setAt: committedAt }).returning({ id: rounds.id })
     const [row] = await db.insert(draws).values({
@@ -75,7 +77,7 @@ const ids = (rows: readonly { id: string }[]) => rows.map(row => row.id).sort()
 
 describe('the SQL twins agree with the JS predicates (#414)', () => {
   it('stores the instants the timeline gives, for every shape of Draw', () => {
-    expect(stored).toHaveLength(24)
+    expect(stored).toHaveLength(36)
     expect(new Set(probes().map(now => now.getTime())).size).toBeGreaterThan(8)
   })
 

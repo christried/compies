@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { Lock } from '@lucide/vue'
 import { seatNote, teamsStay, waitsForCeremony, type EventPageState } from '~/utils/event-page'
-import { gamesToStart, risen } from '~/utils/event-stage'
+import { gamesToStart, risen, scrollsToTop, type StageCounted } from '~/utils/event-stage'
+import { modalOpen, scrollToTop } from '~/utils/jump'
 import type { OptimisticVotes } from '~/composables/useOptimisticVotes'
 import type { StandingsNews } from '~/utils/standings-news'
 import { REFLOW_CLASS, reducedMotion, riseFade, unwatched } from '~/utils/motion'
@@ -16,11 +17,13 @@ import { settingsEditable } from '~~/shared/settings'
 // who sees it (the Tie banner for Members, the Host's notices for the Host), so nothing here checks the data, the viewer or the order again. The page keeps the
 // shell, the dock, the tabs and the Host's dialogs; what a block asks the dialogs for goes up as an event. The group's enter, leave and move
 // motion is the page's one (04-motion): keep it on this TransitionGroup. A block that rises to the top because something just happened (#441) glides like any
-// other that moves; under reduced motion it fades in instead. The page never scrolls by itself: no scroll API is called here, the browser's scroll anchoring holds the block a Member reads, and nothing that changes on the group or above it may switch that off (#541: no `padding`, `margin`, `height`, `transform` or `position` of an ancestor of a block changes with a render; the room below the blocks is a sibling).
+// other that moves; under reduced motion it fades in instead. The page scrolls by itself in one place only (#586): the last watch below brings it to the top when a block takes the first place; no other scroll API is called here, the browser's scroll anchoring holds the block a Member reads, and nothing that changes on the group or above it may switch that off (#541: no `padding`, `margin`, `height`, `transform` or `position` of an ancestor of a block changes with a render; the room below the blocks is a sibling).
 const props = defineProps<{
   slug: string
   view: EventView
   pageState: EventPageState
+  /** What the page has counted per block (#442, #586): the stage scrolls to the top when a block takes the first place. Without it the stage never scrolls. */
+  counted?: StageCounted
   /** What is new on the Standings (#276): the stage block celebrates it. */
   news: StandingsNews | null
   /** The Standings' block has not arrived on top yet (#442): the stage's table keeps the Standings from before the Result until it has. The panel's tab never waits. */
@@ -84,6 +87,13 @@ watch(() => props.pageState.blocks, (after, before) => {
     const wrapper = group.value?.$el.querySelector(`:scope > [data-block="${block}"]`)
     if (wrapper) riseFade(wrapper)
   }
+}, { flush: 'post' })
+
+// The block that takes the first place brings the page to the top (#586), so the viewer sees it: the wheel's spin runs for nobody while it is out of view (#521). Not in a hidden tab, and not
+// while a dialog or sheet is open: the next rise scrolls. A reload and a late join have no earlier render here. After the render: the wrappers stand in their new order.
+watch(() => ({ kind: props.pageState.kind, blocks: props.pageState.blocks, counted: props.counted ?? {} }), (after, before) => {
+  if (unwatched() || modalOpen() || !scrollsToTop(before, after)) return
+  scrollToTop()
 }, { flush: 'post' })
 </script>
 

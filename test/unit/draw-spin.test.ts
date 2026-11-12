@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { SPIN_MAX_MS, SPIN_MIN_MS } from '../../shared/draw-timeline'
 import { drawSpin } from '../../server/domain/wheel'
 
 // The server's draw of a spin (#229, spec #218 § Drawing, Hidden wheel on the wire): uniform over the games left, an offset
@@ -46,8 +47,45 @@ describe('drawSpin', () => {
 
     drawSpin(left, ['A', 'B', 'C', 'D'], source.randomInt)
 
-    // result (4), offset (600), placeholders (4, 3, 2), then the slices (4, 3, 2).
-    expect(source.asked).toEqual([4, 600, 4, 3, 2, 4, 3, 2])
+    // result (4), offset (600), placeholders (4, 3, 2), then the slices (4, 3, 2), then the spin's length (every ms of 6 to 10 s, #520).
+    expect(source.asked).toEqual([4, 600, 4, 3, 2, 4, 3, 2, SPIN_MAX_MS - SPIN_MIN_MS + 1])
+  })
+
+  it('asks for the length last on a visible wheel too', () => {
+    const source = scripted(2, 0)
+
+    drawSpin(left, null, source.randomInt)
+
+    expect(source.asked).toEqual([4, 600, SPIN_MAX_MS - SPIN_MIN_MS + 1])
+  })
+
+  // #520: a spin lasts 6 to 10 s, every millisecond as likely as the source makes it.
+  describe.each([
+    { games: ['kart'], placeholders: null, name: '1 game, visible' },
+    { games: ['kart'], placeholders: ['A', 'B'], name: '1 game, Hidden' },
+    { games: ['kart', 'pong'], placeholders: null, name: '2 games, visible' },
+    { games: left, placeholders: ['A', 'B', 'C', 'D'], name: '4 games, Hidden' },
+  ])('the length of a spin of $name', ({ games, placeholders }) => {
+    // The last call is the length's; the other calls answer 0, or the length's call answers `lengthAnswer`.
+    const lengthSource = (lengthAnswer: (n: number) => number, others: (n: number) => number = () => 0) =>
+      (n: number) => n === SPIN_MAX_MS - SPIN_MIN_MS + 1 ? lengthAnswer(n) : others(n)
+
+    it('is 6 000 ms for the lowest answer and 10 000 ms for the highest, both ends included', () => {
+      expect(drawSpin(games, placeholders, () => 0).spinLengthMs).toBe(6000)
+      expect(drawSpin(games, placeholders, lengthSource(n => n - 1)).spinLengthMs).toBe(10_000)
+    })
+
+    it('is the minimum plus what the source answers', () => {
+      expect(drawSpin(games, placeholders, lengthSource(() => 2500)).spinLengthMs).toBe(8500)
+    })
+
+    it('does not change the result: the same answers but the length\'s give the same wheel', () => {
+      const short = drawSpin(games, placeholders, lengthSource(() => 0, n => n - 1))
+      const long = drawSpin(games, placeholders, lengthSource(n => n - 1, n => n - 1))
+
+      expect(long.spinLengthMs).not.toBe(short.spinLengthMs)
+      expect({ ...long, spinLengthMs: 0 }).toEqual({ ...short, spinLengthMs: 0 })
+    })
   })
 
   it('keeps the pointer inside the slice: the offset is from 0.2 up to, not including, 0.8', () => {

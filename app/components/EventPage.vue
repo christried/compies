@@ -67,7 +67,7 @@ const feed = computed(() => feedSessions(data.value?.sessions ?? []))
 // The cast reaches the casting Party's Users only (a named send, no `event.changed`): their pages read again to show the seal.
 room.on('veto.cast', () => void refresh())
 
-/** Whether the Veto bar covers the bottom of the page: the stage then gets room under its last block (F4). */
+/** Whether the Veto bar covers the bottom of the page: the stage then gets room under its last block (F4), and the Clip shares the width with it held sideways (#584). */
 const vetoBarShown = ref(false)
 
 /** Why "Termin festlegen" cannot set a Date right now, or null (#52): the dock's action says so. */
@@ -234,6 +234,7 @@ const { news } = useStandingsNews(data, slug)
       :slug="slug"
       :view="data"
       :page-state="pageState"
+      :counted="counted"
       :news="news"
       :standings-held="standingsHeld"
       :actions="actions"
@@ -295,6 +296,7 @@ const { news } = useStandingsNews(data, slug)
         :clip="data.clip"
         :server-now="serverClock.now"
         :is-host="data.event.isHost"
+        :veto-bar-shown="vetoBarShown"
         :skip="actions.skipClip"
       />
     </Transition>

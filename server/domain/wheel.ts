@@ -1,4 +1,5 @@
 import de from '../../i18n/locales/de.json'
+import { SPIN_MAX_MS, SPIN_MIN_MS } from '../../shared/draw-timeline'
 
 // The server's draw of a spin (#229, spec #218 § Drawing, Hidden wheel on the wire): pure, with the source of randomness
 // passed in (the handler passes `crypto.randomInt`), so the tests script it and the draw is as uniform as the source.
@@ -12,6 +13,8 @@ export interface Spin {
   resultOffset: number
   /** Placeholder names shuffled for this spin, one per slice; null on a visible wheel (the clients take the names from the Event read). */
   sliceLabels: string[] | null
+  /** How long the wheel spins, 6 000 to 10 000 ms (#520). Not stored as a column: the draw's stop instant carries it. */
+  spinLengthMs: number
 }
 
 /** The placeholder names of a Hidden wheel (brief §18): the copy's own list, so the names live in one place. */
@@ -44,7 +47,10 @@ export function drawSpin(left: readonly string[], placeholders: readonly string[
   const names = placeholders === null ? null : shuffled(placeholders, randomInt)
   // A Hidden wheel lays its slices out in a fresh order too: in the pool's order the result index would name the game for anyone who knows the pool (review 0.7, F2). Drawn last, so scripted sources keep their meaning.
   const slices = placeholders === null ? [...left] : shuffled(left, randomInt)
+  // The spin's length (#520), drawn after everything else for the same reason: the result does not depend on it, and it comes from the source alone, never from the pool or the result.
+  const spinLengthMs = SPIN_MIN_MS + randomInt(SPIN_MAX_MS - SPIN_MIN_MS + 1)
   return {
+    spinLengthMs,
     sliceGameIds: slices,
     resultIndex,
     resultOffset,

@@ -59,23 +59,23 @@ watch(secondsLeft, () => {
       v-if="shown && own"
       data-testid="veto-bar"
       :aria-label="t('veto.title')"
-      class="fixed right-2.5 left-2.5 layer-veto flex flex-wrap items-center gap-x-3 gap-y-2 rounded-[20px] border-(length:--cp-bw) border-line bg-surface py-2.5 pr-2.5 pl-4 shadow-card md:right-[calc(var(--cp-panel-w)+24px)] md:left-6 md:flex-nowrap md:rounded-pill"
+      class="fixed right-2.5 left-2.5 layer-veto flex flex-wrap items-center gap-x-3 gap-y-2 rounded-[20px] border-(length:--cp-bw) border-line bg-surface py-2.5 pr-2.5 pl-4 shadow-card sideways:right-2.5 sideways:left-auto sideways:w-(--cp-veto-side-w) sideways:gap-y-1.5 sideways:rounded-[16px] sideways:py-2 sideways:pl-3 md:right-[calc(var(--cp-panel-w)+24px)] md:left-6 md:flex-nowrap md:rounded-pill"
       :class="docked ? 'bottom-[162px] md:bottom-[100px]' : 'bottom-[90px] md:bottom-5'"
     >
       <span class="flex flex-none flex-col items-center leading-none">
         <span
           ref="clock"
           role="timer"
-          class="timer text-[34px] tabular-nums md:text-[40px]"
+          class="timer text-[34px] tabular-nums sideways:text-[28px] md:text-[40px]"
           :class="urgent ? 'text-error-fg' : 'text-ink'"
         >{{ clockText(secondsLeft) }}</span>
         <span class="text-[10px] font-extrabold tracking-[0.06em] text-ink-2 uppercase">{{ t('veto.timeLabel') }}</span>
       </span>
       <div class="flex min-w-[calc(100%-90px)] flex-1 flex-col leading-snug md:min-w-40">
-        <b class="text-[14px]">{{ title }}</b>
+        <b class="text-[14px] sideways:line-clamp-3 sideways:text-[13px] sideways:leading-tight">{{ title }}</b>
         <span
           v-if="sub"
-          class="text-[12px] text-ink-2"
+          class="text-[12px] text-ink-2 sideways:sr-only"
         >{{ sub }}</span>
       </div>
       <!-- The column takes the locked pill's width at md (#218): a fixed 260 px cut its label to „Vet…“ beside the stamp. The ready hold keeps its 260 px minimum. -->

@@ -189,7 +189,7 @@
   /* space · 4px base */
   --cp-space: 4px;
   --cp-gutter: 24px;  --cp-gutter-mobile: 16px;
-  --cp-header-h: 64px;  --cp-panel-w: 340px;  --cp-maxw: 1440px;
+  --cp-header-h: 64px;  --cp-panel-w: 340px;  --cp-veto-side-w: 16.5rem;  --cp-maxw: 1440px;
   --cp-touch: 44px;   /* minimum hit area, everywhere */
   --cp-control-sm: 36px;  --cp-control-md: 44px;  --cp-control-lg: 52px;
   /* radii */

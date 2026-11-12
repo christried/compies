@@ -81,6 +81,26 @@ describe('who gets the bar and when', () => {
     leave()
   })
 
+  it.each([
+    ['ready', {}, 0],
+    ['cast', { own: own({ cast: true, rejection: 'veto_already_cast' }) }, 1000],
+    ['no Veto left', { left: [0, 2] as [number, number], own: own({ rejection: 'no_vetoes_left' }) }, 1000],
+  ])('is the right column beside the Clip on a phone held sideways, %s (#550)', async (_state, vetoes, after) => {
+    serverMs = STOP + after
+    await mount(wheelOf(vetoes))
+
+    expect(bar().classes()).toEqual(expect.arrayContaining(['sideways:right-2.5', 'sideways:left-auto', 'sideways:w-(--cp-veto-side-w)']))
+    expect(bar().classes()).toEqual(expect.arrayContaining(['bottom-[90px]', 'md:bottom-5', 'left-2.5', 'right-2.5']))
+  })
+
+  it('keeps the hint in the page for assistive technology, only out of sight when held sideways (#550)', async () => {
+    await mount(wheelOf())
+
+    const hint = [...bar().element.querySelectorAll('span')].find(span => span.textContent?.startsWith('Gedrückt halten'))
+    expect(hint).toBeDefined()
+    expect(hint!.classList.contains('sideways:sr-only')).toBe(true)
+  })
+
   it('tells the page whether it covers the bottom', async () => {
     await mount(wheelOf())
     expect(page!.emitted('shown')?.at(-1)).toEqual([true])
