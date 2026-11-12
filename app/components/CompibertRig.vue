@@ -9,20 +9,21 @@ const props = withDefaults(defineProps<{
   state?: RigState
   /** Fixed for the instance's life: change it with `:key`. */
   variant?: RigVariant
-  /** Width in px; without it the rig fills its container's width. Full is 404 × 344, the head is square. */
+  /** Width in px; without it the rig fills its container's width. Full is 404 × 344, the head and the bust (#526) are square. */
   size?: number
 }>(), { state: 'idle', variant: 'full', size: undefined })
 
-// Cheap outline on weak devices (hand-off § Performance): the hard shadow's offset in the figure's own units, 7 and 8 of the 404-wide viewBox.
-const SHADOW_X = 7 / 404
-const SHADOW_Y = 8 / 404
+// Cheap outline on weak devices (hand-off § Performance): the hard shadow's offset in the figure's own units, 7 and 8 of the viewBox's width:
+// 404 for the full figure, 254 for the bust's crop of it (#526).
+const SHADOW_X = 7
+const SHADOW_Y = 8
 const WEAK_CORES = 4
 
 const root = useTemplateRef<HTMLElement>('root')
 const uid = useId()
 const prefix = `cb${uid.replace(/\W/g, '')}_`
 // Depends on the variant and the prefix only, never on `size` or `state`: Vue must never replace the DOM that GSAP is animating.
-const svg = computed(() => rigMarkup(props.variant === 'full' ? fullSvg : headSvg, props.variant, prefix))
+const svg = computed(() => rigMarkup(props.variant === 'head' ? headSvg : fullSvg, props.variant, prefix))
 
 const ready = ref(false)
 const onStage = ref(true)
@@ -54,13 +55,14 @@ watch(() => props.state, enter)
 onMounted(async () => {
   const element = root.value
   if (!element) return
-  // Head crops are cheap and exempt from the one-rig rule.
+  // Head crops are cheap and exempt from the one-rig rule; so is the bust (#526), which stands beside the wheel for a few seconds.
   if (props.variant === 'full') leaveStage = joinStage(allowed => (onStage.value = allowed))
   stopWatching = watchView(element, visible => (inView.value = visible))
   // Client only, after mount, so the server's markup and the first client render agree.
   if (navigator.hardwareConcurrency <= WEAK_CORES) {
     const width = props.size ?? element.clientWidth
-    shadow.value = { x: Math.round(width * SHADOW_X * 100) / 100, y: Math.round(width * SHADOW_Y * 100) / 100 }
+    const viewWidth = props.variant === 'bust' ? 254 : 404
+    shadow.value = { x: Math.round(width * SHADOW_X / viewWidth * 100) / 100, y: Math.round(width * SHADOW_Y / viewWidth * 100) / 100 }
     cheap.value = true
   }
   let gsap
@@ -92,7 +94,8 @@ onBeforeUnmount(() => {
     ref="root"
     class="compibert-rig block flex-none"
     :class="[
-      variant === 'full' ? 'overflow-visible' : 'compibert-rig--head overflow-hidden',
+      variant === 'full' ? 'overflow-visible' : 'overflow-hidden',
+      variant === 'head' ? 'compibert-rig--head' : '',
       cheap ? 'compibert-rig--cheap' : '',
     ]"
     :style="{

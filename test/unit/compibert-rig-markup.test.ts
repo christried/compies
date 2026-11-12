@@ -48,4 +48,12 @@ describe('rigMarkup', () => {
     expect(rigMarkup(FULL, 'full', 'cbA_')).toContain('viewBox="0 36 404 344" width="100%" height="100%"')
     expect(rigMarkup(HEAD, 'head', 'cbA_')).toContain('viewBox="212 40 192 192" width="100%" height="100%"')
   })
+
+  it('crops the bust out of the full figure: square, from the head down to the arms (#526)', () => {
+    const svg = rigMarkup(FULL, 'bust', 'cbA_')
+
+    expect(svg).toContain('viewBox="150 36 254 254" width="100%" height="100%"')
+    expect(svg).toContain('class="compibert-arm-left"')
+    expect(svg).toContain('<rect transform="translate(0 -58.4)" class="compibert-lid-left"')
+  })
 })

@@ -1,5 +1,6 @@
 // Compibert's rig (#311, spec #308 § Compibert's rig, ADR 0015): the animated twin of the still `Compibert`. A port of the seven states of
-// `docs/design_handoff_compies/reference/compibert-options.js` with its numbers (its timings agree with `Compibert Rig.dc.html`).
+// `docs/design_handoff_compies/reference/compibert-options.js` with its numbers (its timings agree with `Compibert Rig.dc.html`); `excited`
+// is the eighth, for the mascot at the wheel (#526).
 // Pure TS on purpose: no Nuxt auto-imports, no `~/` aliases, only erasable syntax. Node runs this file directly in `scripts/bake-compibert.mjs`,
 // and it is imported on the server too, so nothing here touches `window` or `navigator` at the top level.
 // The unit test imports this file under the node tsconfig, which has no DOM types; the DOM is what the rig works on. A triple-slash
@@ -7,11 +8,12 @@
 /// <reference lib="dom" />
 import type { Gsap } from './gsap'
 
-export const RIG_STATES = ['idle', 'run', 'suspense', 'cheer', 'confused', 'laugh', 'dance'] as const
+export const RIG_STATES = ['idle', 'run', 'suspense', 'cheer', 'confused', 'laugh', 'dance', 'excited'] as const
 export type RigState = typeof RIG_STATES[number]
-export type RigVariant = 'full' | 'head'
+/** `bust` (#526) is the full asset cropped to a square from the head to the arms: it has the breath and the tail, an outline, and no place on the stage. */
+export type RigVariant = 'full' | 'head' | 'bust'
 
-const VIEW_BOX = { full: '0 36 404 344', head: '212 40 192 192' }
+const VIEW_BOX = { full: '0 36 404 344', head: '212 40 192 192', bust: '150 36 254 254' }
 // Lid rect y for open eyes: −(2·ry + 10), ry = 24.2 (the mount step that sets the lids).
 const OPEN_LID = 'translate(0 -58.4)'
 
@@ -109,8 +111,8 @@ export function mountRig(gsap: Gsap, host: HTMLElement, options: { variant: RigV
   gsap.set(some(p.lidL, p.lidR), { y: (_index: number, element: Element) => lidY(element, LID_REST) })
   gsap.set(p.browL, { opacity: 1, rotation: BROW_REST[0] })
 
-  // The head crop has no body, tail or limbs: it gets no breath and no tail loops.
-  if (options.variant === 'full') {
+  // The head crop has no body, tail or limbs: it gets no breath and no tail loops. The bust is the full figure cropped, so it has them.
+  if (options.variant !== 'head') {
     loops.push(gsap.to(p.body, { scaleY: 1.035, scaleX: 0.99, duration: random(1.6, 2.1), ease: 'sine.inOut', yoyo: true, repeat: -1 }))
     for (const [element, angle, delay] of [[p.t1, 4, 0], [p.t2, 7, 0.22], [p.t3, 11, 0.44]] as const) {
       gsap.set(element, { rotation: -angle })
@@ -186,6 +188,19 @@ export function mountRig(gsap: Gsap, host: HTMLElement, options: { variant: RigV
         .to(p.armL, { rotation: -140, duration: 0.2 }, '<').to(p.armR, { rotation: -152, duration: 0.2 }, '<')
         .to(p.root, { scaleY: 0.9, scaleX: 1.07, duration: 0.07, yoyo: true, repeat: 1, ease: 'power1.out' })
       tl.add(jump, 0.3)
+    },
+    excited(tl) {
+      // The spin's first 60 %: grin, wide eyes, arms pumping in turn and a small hop (#526; the reference's `STATES.excited`).
+      mouth('grin', 0.1, tl, 0.05)
+      setLids(0, 0.15, tl, 0.05)
+      speed(2.6)
+      tl.to(p.browL, { y: -7, duration: 0.2 }, 0.05).to(p.armL, { rotation: -60, duration: 0.2 }, 0.05).to(p.armR, { rotation: -130, duration: 0.2 }, 0.05).to(p.head, { rotation: 2, duration: 0.2 }, 0.05)
+      const pump = gsap.timeline({ repeat: -1 })
+      pump.to(p.armL, { rotation: -130, duration: 0.2, ease: 'power2.out' }, 0).to(p.armR, { rotation: -60, duration: 0.2, ease: 'power2.out' }, 0)
+        .to(p.root, { y: -12, duration: 0.2, ease: 'power2.out' }, 0).to(p.head, { rotation: -5, duration: 0.2 }, 0)
+        .to(p.armL, { rotation: -60, duration: 0.2, ease: 'power2.out' }, 0.22).to(p.armR, { rotation: -130, duration: 0.2, ease: 'power2.out' }, 0.22)
+        .to(p.root, { y: 0, duration: 0.2, ease: 'power2.in' }, 0.22).to(p.head, { rotation: 2, duration: 0.2 }, 0.22)
+      tl.add(pump, 0.3)
     },
     suspense(tl) {
       const [reach] = PUPIL_REACH
