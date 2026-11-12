@@ -9,7 +9,8 @@ import { stubInView } from './in-view'
 
 // The bulbs of the Show-Rad lit by server time (#521, spec #503 § The motion): the rest blink, the chase while the wheel turns, the
 // stop's flash, and what a device that comes late or looks away sees. The pattern's numbers are pinned in test/unit/wheel-bulbs.test.ts;
-// here it is what a Member sees (the bulbs' `data-lit`) and when the wheel looks at the server's clock.
+// here it is what a Member sees (the bulbs' `data-lit`) and when the wheel looks at the server's clock: at the pattern's changes, not at
+// every frame (#584 Q1).
 
 // A multiple of 1200 ms, so the rest phase at START is even.
 const START = Date.UTC(2090, 10, 7, 20, 0, 0)
@@ -44,10 +45,10 @@ async function mount(wheel: WheelView, props: { hidden?: boolean, isHost?: boole
   return page
 }
 
-/** Moves the server's clock and lets the frame that follows it run. */
+/** Moves the server's clock and lets the wake that follows it run: the bulbs' clock sleeps up to 0.6 s between reads (#584 Q1). */
 async function at(ms: number) {
   serverMs = ms
-  vi.advanceTimersByTime(50)
+  vi.advanceTimersByTime(700)
   await flushPromises()
 }
 
@@ -92,14 +93,45 @@ describe('the bulbs at rest', () => {
     expect(lit()).toEqual(ODD)
   })
 
-  it('keep the clock running while the wheel is in view, one read at each frame', async () => {
-    serverMs = START
-    await mount(wheelOf(null))
-    serverNow.mockClear()
+  it('sleep between the changes of the pattern: about one read of the server\'s clock per 0.6 s, and the switch exactly at 600 ms (#584 Q1)', async () => {
+    vi.setSystemTime(START)
+    const clock = vi.fn(() => Date.now())
+    page = await mountSuspended(LuckyWheel, { props: { wheel: wheelOf(null), hidden: false, isHost: false, serverNow: clock } })
+    await flushPromises()
+    expect(lit()).toEqual(EVEN)
+    clock.mockClear()
 
-    await at(START + 5000)
+    // Nothing inside the 599 ms after a read, and the pattern still the first one at the last of them.
+    vi.advanceTimersByTime(599)
+    await flushPromises()
+    expect(clock).not.toHaveBeenCalled()
+    expect(lit()).toEqual(EVEN)
+    vi.advanceTimersByTime(1)
+    await flushPromises()
+    expect(clock).toHaveBeenCalledTimes(1)
+    expect(lit()).toEqual(ODD)
 
-    expect(serverNow.mock.calls.length).toBeGreaterThan(1)
+    clock.mockClear()
+    vi.advanceTimersByTime(5000)
+    await flushPromises()
+    expect(clock.mock.calls.length).toBeLessThanOrEqual(10)
+    expect(clock.mock.calls.length).toBeGreaterThanOrEqual(8)
+  })
+
+  it('wake early for a spin that is handed in while a rest wake is pending: the chase starts at its first step, not up to 0.6 s late (#584 Q1)', async () => {
+    vi.setSystemTime(START + 100)
+    page = await mountSuspended(LuckyWheel, { props: { wheel: wheelOf(null), hidden: false, isHost: false, serverNow: () => Date.now() } })
+    await flushPromises()
+    expect(lit()).toEqual(EVEN)
+
+    // The spin starts 250 ms in; the rest wake pending is at 600 ms.
+    await page.setProps({ wheel: wheelOf(spinOf({ spinStartAt: iso(START + 250), stopAt: iso(START + 6250) })) })
+    vi.advanceTimersByTime(149)
+    await flushPromises()
+    expect(lit()).toEqual(EVEN)
+    vi.advanceTimersByTime(1)
+    await flushPromises()
+    expect(lit()).toEqual(chase(0))
   })
 
   it('stand still while the wheel is scrolled out of view, and show the pattern of the clock at once on return', async () => {

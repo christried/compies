@@ -4,9 +4,9 @@ import { GAME_GRID } from '~/utils/game-grid'
 import { reducedMotion } from '~/utils/motion'
 import { SCRAMBLE_FRAME_MS, finalAngle, removalEase, removalEnd, revealStage, scramble, sliceSpans, wheelAngle, type WheelTiming } from '~/utils/wheel'
 import { BULB_RADIUS, FLAPPER_HINGE, FLAPPER_PLACEMENT, PIN_RADIUS, PIN_RING_RADIUS, WHEEL_COLOURS, WHEEL_FILLS, bulbPoints, pinAngles, wheelPoint } from '~/utils/wheel-look'
-import { bulbsLit } from '~/utils/wheel-bulbs'
+import { bulbsLit, nextBulbChange } from '~/utils/wheel-bulbs'
 import { flapperKick, pinCrossings } from '~/utils/wheel-pins'
-import { cardPop, labelPop } from '~/utils/wheel-stop'
+import { cardPop, labelPop, popOver } from '~/utils/wheel-stop'
 import { stopReached } from '~~/shared/draw-timeline'
 import type { HostGameFacts } from '~~/shared/game'
 import type { WheelView } from '~~/shared/stage'
@@ -16,8 +16,9 @@ import { refillAt, refillPlan, type RefillPlan, type RestSlice } from '~/utils/w
 // The Lucky Wheel on the stage (#229, 02-components § LuckyWheel, 04-motion § Lucky Wheel, reference App Spielrunde ?s=wheel).
 // It shows the games left on the wheel and, from the server's spin, turns toward a fixed stop: the angle is a function of the
 // server's clock alone (utils/wheel.ts), so every device, a late joiner included, stands at the same angle at the same moment. The
-// server ticker (useServerTicker) feeds it the server time every frame while a spin runs and shortly past its removal; at rest, and
-// while the wheel is scrolled out of view, nothing runs.
+// server ticker (useServerTicker) feeds it the server time: the spin's ticker (`clock`) every frame while a spin runs and shortly past its
+// removal, idle at rest; the bulbs' ticker (`lampClock`) sleeps between the pattern's changes, 0.6 s at rest, and wakes at the chase's and
+// the flash's steps during a spin (#584 Q1). Out of view nothing runs.
 // At the stop the drawn slice gets its outline, its label pops and the result card pops in (#523, utils/wheel-stop.ts: both are a function
 // of the server time since the stop, so a late joiner sees the end state). Under a Hidden wheel a Member sees placeholders; the
 // drawn label turns into the real game half a second after the stop (a scramble, under reduced motion a crossfade), and the
@@ -59,12 +60,16 @@ const FLAP_BLADE = 'M15 10 22 54 29 10Z'
 const reduced = ref(false)
 
 const spin = computed(() => props.wheel.spin)
-const timing = computed((): WheelTiming | null => {
+const sameTiming = (a: WheelTiming, b: WheelTiming) => a.spinStartAt === b.spinStartAt && a.stopAt === b.stopAt && a.slices === b.slices && a.resultIndex === b.resultIndex && a.resultOffset === b.resultOffset
+// Stable by value (#584 Q3): each refetch hands in a new `wheel`, but a spin that is equal keeps the object it had, so what is worked out from it
+// (the pins' crossings, the mascot's spin) is not worked out again, as `litBulbs` below returns its `previous`.
+const timing = computed((previous?: WheelTiming | null): WheelTiming | null => {
   const current = spin.value
-  return current && { spinStartAt: Date.parse(current.spinStartAt), stopAt: Date.parse(current.stopAt), slices: current.slices, resultIndex: current.resultIndex, resultOffset: current.resultOffset }
+  const next = current && { spinStartAt: Date.parse(current.spinStartAt), stopAt: Date.parse(current.stopAt), slices: current.slices, resultIndex: current.resultIndex, resultOffset: current.resultOffset }
+  return previous && next && sameTiming(previous, next) ? previous : next
 })
-/** The server time of this frame; null before the page has mounted, so the server's render and the first client render agree. */
 const rootEl = useTemplateRef('root')
+/** The server time of this frame; null before the page has mounted, so the server's render and the first client render agree. */
 const clock = useServerTicker(() => props.serverNow(), {
   until: () => (timing.value ? removalEnd(timing.value, props.hidden) + TAIL_MS : null),
   target: rootEl,
@@ -79,10 +84,15 @@ watch(() => spin.value?.drawId, () => void (reduced.value = reducedMotion()))
 
 /**
  * The bulbs' own clock (#521): it runs at rest too, for as long as the wheel is in view and motion is not reduced, since the bulbs blink
- * at rest. `clock` above stays as it is, so a finished moment (the removal, the pops, the flapper) never flips back on a resync.
+ * at rest. It reads only when the pattern changes (#584 Q1, `nextBulbChange`: 0.6 s at rest, the chase's and the flash's steps in a spin),
+ * not at every frame. A new spin is not known to the wake it has pending (a late refetch could show the rest pattern up to 0.6 s into the
+ * spin), so the ticker also reads at once when the spin changes. `clock` above stays as it is, so a finished moment (the removal, the pops,
+ * the flapper) never flips back on a resync.
  */
 const lampClock = useServerTicker(() => props.serverNow(), {
   until: () => (reduced.value ? null : Number.POSITIVE_INFINITY),
+  every: now => nextBulbChange(timing.value, now) - now,
+  restartOn: timing,
   target: rootEl,
 })
 
@@ -191,11 +201,11 @@ function fillOf(slot: number) {
   return total > 1 && index === total - 1 && total % WHEEL_FILLS.length === 1 ? COLOURS.paper : WHEEL_FILLS[index % WHEEL_FILLS.length]
 }
 
-// The Show-Rad's still defaults (#519); each is a function of the server's clock once its ticket fills it, and the template reads only these.
+// The Show-Rad's look (#519): the pins, the bulbs and the flapper, each a function of the server's clock, and the template reads only these.
 /** A pin at every slice edge, drawn in the rotor from the one place that works the positions out (utils/wheel-look.ts). */
 const pins = computed(() => pinAngles(spans.value).map(degrees => wheelPoint(degrees, PIN_RING_RADIUS)))
 /**
- * Which of the 24 bulbs are lit (#521): a function of the server time alone (utils/wheel-bulbs.ts). The lamp clock ticks every frame, so the
+ * Which of the 24 bulbs are lit (#521): a function of the server time alone (utils/wheel-bulbs.ts). The lamp clock wakes at the pattern's changes, so the
  * same array comes back while the lit set is unchanged and the wheel renders only when a bulb switches (every 0.6 s at rest).
  */
 const litBulbs = computed((previous?: boolean[]): boolean[] => {
@@ -225,7 +235,8 @@ const drawnOpacity = computed(() => {
 // late joiner or a returning tab reads the end state at once, and nothing here compares with the stop itself (`stopped` is the one gate).
 const stopElapsed = computed(() => (stopped.value && clock.value !== null && timing.value ? clock.value - timing.value.stopAt : null))
 const cardStyle = computed(() => {
-  if (!card.value || stopElapsed.value === null) return undefined
+  // Once the pop is over the card has no style at all: a late joiner gets none (#584 P4).
+  if (!card.value || stopElapsed.value === null || popOver(stopElapsed.value, reduced.value)) return undefined
   const { scale, opacity } = cardPop(stopElapsed.value, reduced.value)
   return { transform: `scale(${scale})`, opacity: String(opacity) }
 })
@@ -416,7 +427,7 @@ const headingId = useId()
             stroke-width="2"
           />
         </g>
-        <!-- The flapper at the top, in place of the pointer: it stays where it is while the wheel turns, and only its arm will move (#522). -->
+        <!-- The flapper at the top, in place of the pointer: it stays where it is while the wheel turns, and its arm kicks at the pins (#522). -->
         <g
           data-testid="wheel-flapper"
           aria-hidden="true"

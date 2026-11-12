@@ -1,4 +1,4 @@
-import { IO_EASE, bezier, sliceSpans } from './wheel'
+import { CROSSFADE_MS, IO_EASE, POP_EASE, REDISTRIBUTE_MS, bezier, sliceSpans } from './wheel'
 
 // The refill (#524, spec #503 § The motion, 04-motion § Lucky Wheel, put back and refill): when the games on a resting wheel change, the
 // slices that stay move to their new places over 0.6 s on `EASE.io`, a new slice scales in over 0.3 s on `EASE.pop`, a slice that leaves
@@ -6,12 +6,7 @@ import { IO_EASE, bezier, sliceSpans } from './wheel'
 // changed, no clock and no DOM: this is the one motion of the wheel that is not a function of the server's time (ADR 0013), because it
 // answers a change of data, not a moment the server sets. The component keeps the local clock and starts a plan only at rest.
 
-/** `EASE.pop` (04-motion), the ease of the new slice. */
-const POP_EASE = [0.34, 1.56, 0.64, 1] as const
-const REDISTRIBUTE_MS = 600
 const POP_MS = 300
-/** Under reduced motion the new layout fades in for the app's one crossfade length (04-motion: „Reduced: … fade 0.2“). */
-const FADE_MS = 200
 
 /**
  * A slice as the plan knows it: what tells it from another across a change of data, and its name. `key` is the game's id for a viewer who
@@ -50,7 +45,8 @@ export function refillPlan(from: readonly RestSlice[], to: readonly RestSlice[],
   const kept = to.flatMap(slice => place.get(slice.key) ?? [])
   if (kept.length === 0 && from.length > 0 && to.length > 0) return null
   if (kept.some((index, position) => position > 0 && index < kept[position - 1]!)) return null
-  return { from, to, reduced, ms: reduced ? FADE_MS : REDISTRIBUTE_MS }
+  // Reduced motion fades the new layout in for the app's one crossfade length (04-motion: „Reduced: … fade 0.2“).
+  return { from, to, reduced, ms: reduced ? CROSSFADE_MS : REDISTRIBUTE_MS }
 }
 
 /**
@@ -63,7 +59,7 @@ export function refillPlan(from: readonly RestSlice[], to: readonly RestSlice[],
 export function refillAt(plan: RefillPlan, elapsed: number): { slices: RefillSlice[], opacity: number } {
   const { from, to } = plan
   const final = () => sliceSpans(to.length, -1, 0).map((span, index) => ({ key: to[index]!.key, name: to[index]!.name, ...span, fillIndex: index, fillCount: to.length }))
-  if (plan.reduced) return { slices: final(), opacity: Math.min(Math.max(elapsed / FADE_MS, 0), 1) }
+  if (plan.reduced) return { slices: final(), opacity: Math.min(Math.max(elapsed / CROSSFADE_MS, 0), 1) }
   if (elapsed >= plan.ms) return { slices: final(), opacity: 1 }
 
   const move = bezier(IO_EASE, elapsed / REDISTRIBUTE_MS)

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { bezier } from '~/utils/wheel'
-import { cardPop, labelPop } from '~/utils/wheel-stop'
+import { cardPop, labelPop, popOver } from '~/utils/wheel-stop'
 
 // The pops at the stop (#523, 04-motion § Lucky Wheel `stop`): the drawn label `scaleY 0 -> 1.25 -> 1` and the result card
 // `scale .6 -> 1.08 -> 1` with its opacity, each 0.42 s on `EASE.pop` over the whole run, three keyframes at the eased progress 0, 0.5 and 1
@@ -95,5 +95,16 @@ describe('the pops at the stop, reduced motion', () => {
     expect(labelPop(100, true).opacity).toBeCloseTo(0.5, 6)
     expect(labelPop(200, true).opacity).toBe(1)
     expect(labelPop(-50, true).opacity).toBe(0)
+  })
+})
+
+describe('when a pop is over (#584 P4)', () => {
+  it('ends a full-motion pop at 420 ms and a reduced one at 200 ms', () => {
+    expect(popOver(0, false)).toBe(false)
+    expect(popOver(419, false)).toBe(false)
+    expect(popOver(420, false)).toBe(true)
+    expect(popOver(5000, false)).toBe(true)
+    expect(popOver(199, true)).toBe(false)
+    expect(popOver(200, true)).toBe(true)
   })
 })

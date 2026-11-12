@@ -10,6 +10,12 @@ import { stubInView } from './in-view'
 // and after the spin, stays up between pins that come faster than a kick lasts, is the same for a Member who joins mid-spin as for one who
 // watched, and does not kick under reduced motion. The kick's numbers are pinned in test/unit/wheel-pins.test.ts.
 
+// The crossings are worked out once per spin (#584 Q3): the spy counts how often the component asks for them.
+vi.mock('~/utils/wheel-pins', async (original) => {
+  const actual = await original<typeof import('~/utils/wheel-pins')>()
+  return { ...actual, pinCrossings: vi.fn(actual.pinCrossings) }
+})
+
 const START = Date.UTC(2090, 10, 7, 20, 0, 0)
 const STOP = START + 6000
 const iso = (ms: number) => new Date(ms).toISOString()
@@ -118,5 +124,35 @@ describe('the flapper kicks at the pins', () => {
     expect(armTransform()).toBe('rotate(0 22 10)')
     await at(START + 980)
     expect(armTransform()).toBe('rotate(0 22 10)')
+  })
+})
+
+describe('a spin handed in again (#584 Q3)', () => {
+  it('is not worked out again when it is equal: the crossings are not asked for and the flapper keeps its angle', async () => {
+    await mount(wheelOf(spinOf()))
+    await at(START + 3000)
+    const before = armTransform()
+    vi.mocked(pinCrossings).mockClear()
+
+    // A refetch brings the same spin as a new object.
+    await page!.setProps({ wheel: wheelOf(spinOf()) })
+
+    expect(pinCrossings).not.toHaveBeenCalled()
+    expect(armTransform()).toBe(before)
+    await at(START + 3000)
+    expect(armTransform()).toBe(before)
+  })
+
+  it.each([
+    ['another result', { resultIndex: 1 }],
+    ['a stop a millisecond later', { stopAt: iso(STOP + 1) }],
+  ])('is worked out again when it changes: %s', async (_what, fields) => {
+    await mount(wheelOf(spinOf()))
+    await at(START + 3000)
+    vi.mocked(pinCrossings).mockClear()
+
+    await page!.setProps({ wheel: wheelOf(spinOf(fields)) })
+
+    expect(pinCrossings).toHaveBeenCalledTimes(1)
   })
 })
