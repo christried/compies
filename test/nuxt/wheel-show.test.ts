@@ -35,7 +35,8 @@ const serverNow = vi.fn(() => serverMs)
 let page: Awaited<ReturnType<typeof mountSuspended>> | undefined
 
 async function mount(wheel: WheelView, props: { hidden?: boolean, isHost?: boolean, hostGames?: Record<string, HostGameFacts> | null } = {}) {
-  page = await mountSuspended(LuckyWheel, { props: { wheel, hidden: false, isHost: false, serverNow, ...props } })
+  // Compibert's rig (#526) has its own svg and hook inside the disc; this file is about the wheel's drawing, and wheel-mascot.test.ts about him.
+  page = await mountSuspended(LuckyWheel, { props: { wheel, hidden: false, isHost: false, serverNow, ...props }, global: { stubs: { CompibertRig: true } } })
   await flushPromises()
   return page
 }

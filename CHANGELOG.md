@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Neu
+
+- **Die App-Figur am Glücksrad:** Beim Dreh steigt die App-Figur hinter dem Rad hervor, fiebert mit, hält beim Bremsen die Luft an, jubelt beim Stopp und verschwindet mit dem gezogenen Feld. Wer später dazukommt, sieht sie dort, wo sie gerade ist. Bei reduzierter Bewegung blendet sie nur ein und aus. ([#526](https://github.com/christried/compies/issues/526))
+
 ### Geändert
 
 - **Das Glücksrad als Show-Rad:** Das Rad sieht jetzt aus wie in einer Spielshow: ein roter Rand mit 24 Lampen, ein Stift an jeder Scheibenkante und oben eine Klappe statt des Dreiecks. Das Rad hat in Hell und Dunkel dieselben Farben; die Karte darum folgt weiter deiner Darstellung. Die Lampen blinken, solange das Rad ruht, laufen beim Dreh um den Rand und blitzen beim Stopp. Die Klappe schnippt an jedem Stift, der vorbeikommt: erst ganz schnell, dann immer langsamer, bis das Rad steht. Beim Stopp springen der gezogene Name und die Ergebniskarte mit einem kleinen Hüpfer auf; wer später dazukommt, sieht beides schon fertig. Legt der Host ein Spiel zurück oder ändert sich der Spielepool, rücken die Scheiben sichtbar zusammen, und eine neue Scheibe springt auf. ([#519](https://github.com/christried/compies/issues/519), [#521](https://github.com/christried/compies/issues/521), [#522](https://github.com/christried/compies/issues/522), [#523](https://github.com/christried/compies/issues/523), [#524](https://github.com/christried/compies/issues/524))
