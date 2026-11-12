@@ -20,7 +20,7 @@ const SENTENCE = 'Dein Browser spielt Ton erst nach einem Tipp oder Tastendruck 
 
 /** A browser that lets no sound through before a gesture: the context is made suspended. */
 class HeldContext extends FakeAudioContext {
-  state = 'suspended'
+  override state = 'suspended'
 }
 
 function serveRunning() {
