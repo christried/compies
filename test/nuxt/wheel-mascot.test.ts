@@ -446,8 +446,8 @@ describe('the mascot on its own', () => {
   })
 
   it('leaves nothing behind when he is unmounted while the chunk is still arriving', async () => {
+    // The tweens on his box, not the global timeline's size: the rigs of other tests keep loops of their own there.
     const gsap = await loadGsap()
-    const before = gsap.globalTimeline.getChildren(false, true, true).length
     let release = () => {}
     chunk.held = new Promise<void>(resolve => (release = resolve))
     const one = await mountSuspended(LuckyWheelMascot, { props })
@@ -458,7 +458,7 @@ describe('the mascot on its own', () => {
     release()
     await flushPromises()
 
-    expect(gsap.globalTimeline.getChildren(false, true, true).length).toBe(before)
+    expect(gsap.getTweensOf(element)).toHaveLength(0)
     expect(element.style.transform).toBe('')
   })
 
@@ -466,9 +466,9 @@ describe('the mascot on its own', () => {
     const gsap = await loadGsap()
     const one = await mountSuspended(LuckyWheelMascot, { props: { ...props, now: START } })
     await flushPromises()
-    // The rig's own loops are on the global timeline too, and stay across the rebuild; only his travel is replaced.
-    const built = gsap.globalTimeline.getChildren(false, true, true).length
     const element = one.get('[data-testid="wheel-mascot"]').element as HTMLElement
+    // His travel is four tweens on his box; a rebuild that left the old timeline alive would double them.
+    expect(gsap.getTweensOf(element)).toHaveLength(4)
     expect(gsap.getProperty(element, 'x')).toBe(-130)
     expect(gsap.getProperty(element, 'y')).toBe(100)
 
@@ -478,7 +478,7 @@ describe('the mascot on its own', () => {
     expect(gsap.getProperty(element, 'x')).toBe(-100)
     expect(gsap.getProperty(element, 'y')).toBe(80)
     expect(element.getAttribute('data-ready')).toBe('true')
-    expect(gsap.globalTimeline.getChildren(false, true, true).length).toBe(built)
+    expect(gsap.getTweensOf(element)).toHaveLength(4)
     one.unmount()
   })
 })
