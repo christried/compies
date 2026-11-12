@@ -13,9 +13,6 @@
       "entry": [
         // Imported by nuxt.config.ts, which knip reads as config and does not follow in production mode (#178).
         "stage.ts!",
-        // The sound cue plan (#530): no importer until the cue player (#531), so knip names the whole file unused. Remove this entry
-        // with #531, and the @public tags on its exports.
-        "app/utils/sound-cues.ts!",
         // Registered by the inline module in nuxt.config.ts through addServerHandler with a path string; dev server and
         // staging build only (#178, #247).
         "server/dev/sign-in.ts!",
@@ -41,7 +38,9 @@
         // Run with node by the orchestrator to merge a reviewed ticket branch into the integration branch without a working tree (docs/agents/subagents.md § Supervision, #478).
         "scripts/merge-into.mjs!",
         // Run by hand with node after a change to the rig; its output (server/assets/compibert/*.svg) is committed, `--check` guards it (#311).
-        "scripts/bake-compibert.mjs!"
+        "scripts/bake-compibert.mjs!",
+        // Run by hand with node; its output under public/sounds/cues/ (the placeholder cue files, #531) is committed.
+        "scripts/make-placeholder-cues.mjs!"
       ],
       // Windows' own netstat, which serve.mjs calls to name the PID on a taken port.
       "ignoreBinaries": ["netstat"],

@@ -25,6 +25,7 @@ Each concern below has one home. New code calls it; a second copy is a finding e
 | A GET that must show a settled state (a draw whose instant has passed) | `settleBeforeRead` in `server/utils/rounds.ts` (#229): one cheap select when nothing is due, else a locked transaction that calls `settleDue`. A write goes through `changeEvent`, which settles by itself (#259); lint guards `server/api/e/**` only, so a new timed read calls `settleBeforeRead` instead of opening its own `for('update')` |
 | A stage piece: its block and place per page state, who sees it, the moment it rises at, the instants the page reads again at | `app/utils/event-stage.ts` (#415: one row per piece; a new piece is a row there and its component) |
 | Which sound cue is due at which server time (cue ids, relative volumes, the wheel's and the Veto window's plans, the ticks' cap) | `app/utils/sound-cues.ts` (#530, #532): the cue player (#531) schedules what it returns and never works a time out itself |
+| Playing a sound cue (the one audio context, scheduling on the audio clock, the Ton gate, loading the files) | `app/utils/cue-player.ts` and `useCuePlayer` (#531); the file folder and extension are in `sound-cues.ts` (`cueFileUrl`) |
 
 A second page, flow or component that does what an existing one does needs its reason in the PR description. Without one, the review asks for the existing module to grow instead.
 

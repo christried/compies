@@ -20,6 +20,15 @@ export const CUE_VOLUME: Record<CueId, number> = {
   'veto-open': 50, 'veto-clock': 25, 'veto-clip-close': 35, 'veto-seal': 55, 'veto-drumroll': 60, 'veto-reveal': 85,
 }
 
+/** Where the cue files are served from (`public/sounds/cues/`) and their extension: the one place that names either (#531). #536 may change the extension with the files. */
+export const CUE_FILE_FOLDER = '/sounds/cues'
+export const CUE_FILE_EXTENSION = 'wav'
+
+/** The URL of a cue's file. Only the cue player's composable fetches it. */
+export function cueFileUrl(id: CueId): string {
+  return `${CUE_FILE_FOLDER}/${id}.${CUE_FILE_EXTENSION}`
+}
+
 /** One cue of a plan: which, and when (server time, epoch ms). Its volume is `CUE_VOLUME[id]`, not a field: the plan holds only what a time decides. */
 export interface Cue { id: CueId, at: number }
 
@@ -42,16 +51,12 @@ export interface WheelCueInput {
  * Two ticks closer than this overlap and smear into a buzz: the tick sample is 30 ms long (`compibert-sound.md`), so 40 ms leaves ten
  * milliseconds of gap and 25 ticks a second at most. A placeholder for the listening session (#535), where it is tuned by ear; the one
  * constant, nothing else knows it. The flapper keeps kicking at every crossing: the cap thins the sound only.
- *
- * @public no production caller until the cue player (#531; knip: same wording as shared/draw-timeline.ts)
  */
 export const TICK_MIN_GAP_MS = 40
 
 /**
  * Greedy thinning of ascending times: the first is kept, then each time that is at least `minGapMs` after the last KEPT one (a gap of exactly
  * the cap keeps). The crossings' gaps widen toward the stop, so the late ticks always survive and the last tick is the last crossing.
- *
- * @public no production caller until the cue player (#531; knip: same wording as shared/draw-timeline.ts)
  */
 export function thinTicks(at: readonly number[], minGapMs: number): number[] {
   const kept: number[] = []
@@ -69,8 +74,6 @@ export function thinTicks(at: readonly number[], minGapMs: number): number[] {
  * The crossings come from `pinCrossings`, the one place they are worked out. The morph's presence depends on `hiddenWheel` and `isHost`
  * only, and the slice leaves later on a Hidden wheel for every viewer (the reveal must come first), so the devices stay in step. Nothing here
  * depends on the drawn game, so no cue's presence or time before the stop does either.
- *
- * @public no production caller until the cue player (#531; knip: same wording as shared/draw-timeline.ts)
  */
 export function wheelCuePlan(input: WheelCueInput): Cue[] {
   const { spin, hiddenWheel, isHost, reducedMotion } = input
