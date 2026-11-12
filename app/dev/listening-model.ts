@@ -277,7 +277,8 @@ export function configFor(kind: 'spin' | 'window' | 'both', controls: Controls):
     vetoes: controls.vetoes,
     hidden: controls.hidden,
     reduced: controls.reduced,
-    tickGapMs: controls.tickGapMs,
+    // An emptied field is no cap: the shipped one.
+    tickGapMs: controls.tickGapMs > 0 ? controls.tickGapMs : TICK_MIN_GAP_MS,
   }
 }
 
