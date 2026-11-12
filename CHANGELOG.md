@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+## [0.13.2] - 2026-11-12 – Show-Rad
+
+Das Glücksrad wird zur Spielshow: Lampen am Rand, ein Stift an jeder Scheibenkante, oben eine Klappe, die bei jedem Stift ausschlägt, und die App-Figur fiebert hinter dem Rad mit. Jeder Dreh dauert zwischen 6 und 10 Sekunden und endet mit Blitzen und einer Karte, die das gezogene Spiel zeigt.
+
 ### Neu
 
 - **Die App-Figur am Glücksrad:** Beim Dreh steigt die App-Figur hinter dem Rad hervor, fiebert mit, hält beim Bremsen die Luft an, jubelt beim Stopp und verschwindet mit dem gezogenen Feld. Wer später dazukommt, sieht sie dort, wo sie gerade ist. Bei reduzierter Bewegung blendet sie nur ein und aus. ([#526](https://github.com/christried/compies/issues/526))
