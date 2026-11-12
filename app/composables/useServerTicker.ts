@@ -1,3 +1,4 @@
+import type { WatchSource } from 'vue'
 import { serverClockReadyKey } from '~/composables/useServerClock'
 
 export interface ServerTickerOptions {
