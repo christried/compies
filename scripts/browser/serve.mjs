@@ -2,7 +2,7 @@
 // A TaskStop on a backgrounded `pnpm dev` ends the shell and leaves nuxt, the Worker, workerd and esbuild running on Windows, and the
 // auto-mode classifier refuses `taskkill` on a PID. So the agent runs this script in the background instead: it owns the children
 // and takes its own process tree down, however the run ends.
-//   node scripts/browser/serve.mjs start <run> [--only=dev,realtime,prod] [--minutes=90]
+//   node scripts/browser/serve.mjs start <run> [--only=dev,realtime,prod] [--minutes=90] [--slot=1|2]
 //   node scripts/browser/serve.mjs stop <run>
 // `start` stays up after printing `ready: …`. It stops its tree when `stop` leaves <run folder>/serve.stop, when its parent process is
 // gone (TaskStop, a dead agent shell), on SIGINT, SIGTERM, SIGBREAK or SIGHUP, and after --minutes (the backstop for an agent that dies
@@ -13,28 +13,21 @@ import { connect } from 'node:net'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { OUT } from './chrome.mjs'
+import { serversOf, slotOf } from './ports.mjs'
 
 const WINDOWS = process.platform === 'win32'
 const ROOT = fileURLToPath(new URL('../..', import.meta.url))
 
 // `pnpm` is a .cmd on Windows: the command line goes to cmd.exe as one string, so the child's PID is the shell's, the root `taskkill /T` walks from.
-const SERVERS = {
-  dev: { port: 3000, log: 'dev.log', command: 'pnpm dev', notBuilding: true },
-  realtime: {
-    port: 8787,
-    log: 'rt.log',
-    // The second origin lets a production build on :3001 play the run (browser check c3, 10b). wrangler splits `--var` at the first colon only.
-    command: 'pnpm --dir realtime dev --var "ALLOWED_ORIGINS:http://localhost:3000,http://localhost:3001"',
-  },
-  prod: { port: 3001, log: 'prod.log', command: null, args: ['--env-file=.env', '.output/server/index.mjs'], env: { PORT: '3001' }, needs: '.output/server/index.mjs' },
-}
+// The servers and their ports come from the slot (ports.mjs, #567); `start` assigns them.
+let SERVERS
 
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms))
 const stamp = () => new Date().toISOString().slice(11, 19)
 
 const [command, run, ...rest] = process.argv.slice(2)
 if (!['start', 'stop'].includes(command) || !run || !/^[\w.-]+$/.test(run)) {
-  console.error('usage: node scripts/browser/serve.mjs start <run> [--only=dev,realtime,prod] [--minutes=90]\n       node scripts/browser/serve.mjs stop <run>')
+  console.error('usage: node scripts/browser/serve.mjs start <run> [--only=dev,realtime,prod] [--minutes=90] [--slot=1|2]\n       node scripts/browser/serve.mjs stop <run>')
   process.exit(2)
 }
 const dir = join(OUT, run)
@@ -168,6 +161,17 @@ async function stop() {
 }
 
 async function start() {
+  const slotFlag = rest.find(a => a.startsWith('--slot='))?.slice(7)
+  if (slotFlag !== undefined && !['1', '2'].includes(slotFlag)) {
+    console.error(`--slot must be 1 or 2, got "${slotFlag}"`)
+    process.exit(2)
+  }
+  if (slotFlag !== undefined && process.env.COMPIES_SLOT && process.env.COMPIES_SLOT !== slotFlag) {
+    console.error(`--slot=${slotFlag} and COMPIES_SLOT=${process.env.COMPIES_SLOT} disagree`)
+    process.exit(2)
+  }
+  const slot = slotFlag === undefined ? slotOf() : Number(slotFlag)
+  SERVERS = serversOf(slot)
   const only = (rest.find(a => a.startsWith('--only='))?.slice(7) ?? 'dev,realtime').split(',').filter(Boolean)
   const minutes = Number(rest.find(a => a.startsWith('--minutes='))?.slice(10) ?? 90)
   if (!only.length || only.some(name => !SERVERS[name]) || !(minutes > 0)) {
@@ -176,6 +180,19 @@ async function start() {
   }
   const label = only.join('-')
   const stateFile = join(dir, `serve-${label}.json`)
+
+  // A run name belongs to one slot (#567): its logs and stop file are per run folder, and `stop <run>` ends the whole run.
+  for (const file of readdirSync(dir).filter(f => /^serve-.+\.json$/.test(f))) {
+    let other
+    try {
+      other = JSON.parse(readFileSync(join(dir, file), 'utf8'))
+    }
+    catch { continue }
+    if (alive(other.pid) && (other.slot ?? 1) !== slot) {
+      say(`start ${run}: this run already serves slot ${other.slot ?? 1}; use another run name for slot ${slot}`)
+      process.exit(1)
+    }
+  }
 
   if (existsSync(stateFile)) {
     const previous = JSON.parse(readFileSync(stateFile, 'utf8'))
@@ -271,7 +288,7 @@ async function start() {
     children.push(entry)
   }
   const started = new Date().toISOString()
-  const persist = () => writeFileSync(stateFile, JSON.stringify({ pid: process.pid, started, minutes, children: children.map(({ name, port, pid }) => ({ name, port, pid })), tree: [...tree].map(([pid, created]) => ({ pid, created })) }, null, 2))
+  const persist = () => writeFileSync(stateFile, JSON.stringify({ pid: process.pid, slot, started, minutes, children: children.map(({ name, port, pid }) => ({ name, port, pid })), tree: [...tree].map(([pid, created]) => ({ pid, created })) }, null, 2))
   persist()
   say(`start ${run}: ${children.map(c => `${c.name} :${c.port} PID ${c.pid}`).join(', ')}; output in ${dir}`)
 
