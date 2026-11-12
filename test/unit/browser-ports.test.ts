@@ -88,6 +88,12 @@ describe('serversOf', () => {
     expect(prod.env?.BETTER_AUTH_URL).toBe('http://localhost:3101')
   })
 
+  // nuxt.config.ts bakes REALTIME_URL into the build (#554); a production build made once carries slot 1's Worker address, so the
+  // slot's production server hands the browser its own Worker through the runtime override.
+  it('slot 2\'s production server hands the browser the slot\'s Worker address at runtime', () => {
+    expect(serversOf(2).prod.env?.NUXT_PUBLIC_REALTIME_URL).toBe('http://localhost:8887')
+  })
+
   it('slot 1 sets neither REALTIME_URL nor BETTER_AUTH_URL', () => {
     for (const server of Object.values(serversOf(1))) {
       expect(server.env ?? {}).not.toHaveProperty('REALTIME_URL')

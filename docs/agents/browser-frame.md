@@ -1,12 +1,12 @@
 # Browser-check frame
 
-The frame around every browser-check brief (`docs/agents/subagents.md` § Supervision). The brief lists the items to check; this file holds the setup, the measuring rules and the report, which were retyped in each session's brief until the 0.8 retro. The spawn prompt names the brief, the SHA to test and the run's name (`s8`, `g4`, …), and says which setup applies: the fresh setup in § Setup, or a prepared check worktree (§ Setup, the prepared path). Read this file first, then the brief.
+The frame around every browser-check brief (`docs/agents/subagents.md` § Supervision). The brief lists the items to check; this file holds the setup, the measuring rules and the report, which were retyped in each session's brief until the 0.8 retro. The spawn prompt names the brief, the SHA to test and the run's name (`s8`, `g4`, …), and says which setup applies: the fresh setup in § Setup, or the prepared path (§ Setup, Prepared check worktree). Read this file first, then the brief.
 
 You change no app code and commit nothing. Your **run folder** is `<tmp>/compies-browser/<run>/`, which `results('<run>')` makes.
 
 ## Setup
 
-Two paths. The **fresh setup** (steps 1 to 5) is for an agent that builds its own worktree at the SHA. The **prepared check worktree** (below the list) is for a check whose worktree the orchestrator built once at the SHA: that agent skips steps 1 to 3 and the production build in step 4.
+Two paths. The **fresh setup** (steps 1 to 5) is for an agent that builds its own worktree at the SHA. The **prepared path** (§ Prepared check worktree, below the list) is for a check whose prepared check worktree the orchestrator built once at the SHA: that agent skips steps 1 to 3 and the production build in step 4.
 
 1. Reset your worktree onto the SHA (`git reset --hard <sha>`), then `pnpm install --frozen-lockfile` and `pnpm --dir realtime install --frozen-lockfile`.
 2. `.env` and `realtime/.dev.vars` are already there (`.worktreeinclude`). If one is missing, copy it from the main checkout without printing it: without `.dev.vars` the Worker refuses every Room publish with a 401.
@@ -34,6 +34,8 @@ The agent on this path:
 
      `import { results, open } from 'file:///<check>/scripts/browser/kit.mjs'`
 
+     A file URL takes forward slashes only, so write `<check>` with `/` and without a backslash, for example `file:///C:/Users/<you>/…/.claude/worktrees/check-<name>/scripts/browser/kit.mjs`.
+
      `kit.mjs` imports `chrome.mjs` from the same folder itself. A script that imports `chrome.mjs` directly uses the same form.
 
 4. Start the Worker and the production server only, with `node <check>/scripts/browser/serve.mjs start <run> --only=realtime,prod` (`run_in_background`), and wait for its `ready:` line naming :8787 and :3001. No `dev` server. Its logs (`rt.log`, `prod.log`, `serve.log`) go to the run folder.
@@ -48,7 +50,7 @@ Slot 1 is the checks': the app on :3000, the Worker on :8787, the production ser
 
 ## Checks
 
-- Your scripts go in `scripts/browser/scratch/` (gitignored) and import `../chrome.mjs` and `../kit.mjs` (`scripts/browser/README.md` lists what they offer). To reuse an earlier run's scripts, copy them from its run folder's `scripts/`. On the prepared path they go in the run folder instead and import from `<check>` (§ Setup, step 3 of the agent's list).
+- Your scripts go in `scripts/browser/scratch/` (gitignored) and import `../chrome.mjs` and `../kit.mjs` (`scripts/browser/README.md` lists what they offer). To reuse an earlier run's scripts, copy them from its run folder's `scripts/`. On the prepared path they go in the run folder instead and import from `<check>` (§ Prepared check worktree, step 3 of the agent's steps).
 - Start each script with `const log = results('<run>')`. `log.check(label, passed, measured)` prints each line and appends it to the run folder's `results.log` the moment it is decided, so a check that stops early keeps its evidence (the s6 agent of 0.8 hit the usage limit after 40 minutes). `log.shot` saves into the run folder. A QUESTION is a note, `log.note('QUESTION <label>: <what was found>')`, which the log prints as `NOTE  QUESTION …`: the kit has no QUESTION line of its own.
 - Open every page with `open()`: it signs in through the dev route and hides the Nuxt devtools pill, which otherwise sits in what you measure.
 - Accounts `host`, `member`, `admin` (`launchAll`); 1440 × 900, and 390 × 844 with touch; the Appearance comes through `open(…, { appearance: 'dark' })` (the dev sign-in sets it, light when absent; `data-theme` belongs to the head, so an attribute set by hand is set back), System's dark through `colorScheme(tab, 'dark')`.
