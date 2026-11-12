@@ -36,7 +36,7 @@ watch(seal, (element) => {
       v-if="own.cast"
       data-testid="veto-locked"
       role="status"
-      class="relative flex h-control-lg w-full items-center gap-2.5 rounded-pill border-(length:--cp-bw) border-line bg-surface-2 px-5 font-extrabold text-ink"
+      class="relative flex h-control-lg w-full items-center gap-2.5 rounded-pill border-(length:--cp-bw) border-line bg-surface-2 px-5 font-extrabold text-ink sideways:gap-1.5 sideways:px-3"
     >
       <AppIcon
         :icon="Lock"
@@ -46,7 +46,7 @@ watch(seal, (element) => {
       <span
         ref="seal"
         data-testid="veto-seal"
-        class="ml-auto -rotate-[8deg] rounded-[10px] border-[3px] border-line bg-hot px-3 py-0.5 font-display text-[18px] font-normal tracking-wide text-on-hot uppercase shadow-sm"
+        class="ml-auto -rotate-[8deg] rounded-[10px] border-[3px] border-line bg-hot px-3 py-0.5 font-display text-[18px] font-normal tracking-wide text-on-hot uppercase shadow-sm sideways:px-2 sideways:text-[14px]"
       >{{ t('veto.stamp') }}</span>
     </div>
     <HoldToConfirmButton

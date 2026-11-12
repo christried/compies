@@ -19,6 +19,13 @@
   }
 }
 @custom-variant reduced (&:where([data-motion=reduced], [data-motion=reduced] *));
+/* A phone held sideways (#550): below md, wide enough for the Clip and the Veto bar side by side, too low to stack them. The 41rem is
+   2 × 10 px gutters + 10 px gap + --cp-veto-side-w (16.5rem) + the 356 px video floor (200 × 16/9) + the section's 2 × 3 px border. */
+@custom-variant sideways {
+  @media (min-width: 41rem) and (max-height: 30rem) and (width < theme(--breakpoint-md)) {
+    @slot;
+  }
+}
 
 /* mode-dependent → reference the variables */
 @theme inline {
