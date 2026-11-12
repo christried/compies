@@ -14,6 +14,10 @@ export type RigState = typeof RIG_STATES[number]
 export type RigVariant = 'full' | 'head' | 'bust'
 
 const VIEW_BOX = { full: '0 36 404 344', head: '212 40 192 192', bust: '150 36 254 254' }
+/** The width of the variant's viewBox, in the figure's own units (404, 192 or 254). */
+export function viewWidth(variant: RigVariant): number {
+  return Number(VIEW_BOX[variant].split(' ')[2])
+}
 // Lid rect y for open eyes: −(2·ry + 10), ry = 24.2 (the mount step that sets the lids).
 const OPEN_LID = 'translate(0 -58.4)'
 

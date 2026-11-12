@@ -1,5 +1,5 @@
 import type { Gsap } from './gsap'
-import { mascotBox, mascotMoments, type MascotSpin, type MascotWidth } from './wheel-mascot'
+import { ENTER_MS, FADE_REDUCED_MS, LEAVE_MS, mascotBox, mascotMoments, type MascotSpin, type MascotWidth } from './wheel-mascot'
 
 // Compibert's way in and out at the wheel (#526, 04-motion § Lucky Wheel · Compibert, ADR 0015): one paused GSAP timeline of transform and opacity on
 // his box, which the component moves with the server's clock as `ceremony-run.ts` does the Pokal-Lauf: the time put in is the clock minus the
@@ -7,12 +7,12 @@ import { mascotBox, mascotMoments, type MascotSpin, type MascotWidth } from './w
 // `mascotPhase` says it from the time. The eases are GSAP's names as 04-motion writes them (CODING_STANDARDS § Motion); `wheel-mascot-run.test.ts`
 // reads them off the timeline. Client only: it works on an element.
 
-const ENTER_S = 0.45
-const LEAVE_S = 0.4
+// The phase's times (`wheel-mascot.ts`, ms) are the only ones; the tweens run in seconds (#584).
+const ENTER_S = ENTER_MS / 1000
+const LEAVE_S = LEAVE_MS / 1000
 /** `dur-fast`: the opacity ramp that hides the last pixels at the rim, in and out. */
 const FADE_S = 0.14
-/** `dur-base`: reduced motion's fade, in place, in and out. */
-const FADE_REDUCED_S = 0.22
+const FADE_REDUCED_S = FADE_REDUCED_MS / 1000
 
 export interface MascotRun {
   width: MascotWidth

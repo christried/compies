@@ -13,8 +13,8 @@ const props = withDefaults(defineProps<{
   size?: number
 }>(), { state: 'idle', variant: 'full', size: undefined })
 
-// Cheap outline on weak devices (hand-off § Performance): the hard shadow's offset in the figure's own units, 7 and 8 of the viewBox's width:
-// 404 for the full figure, 254 for the bust's crop of it (#526).
+// Cheap outline on weak devices (hand-off § Performance): the hard shadow's offset in the figure's own units, 7 and 8 of the viewBox's width
+// (`viewWidth`: 404 for the full figure, 254 for the bust's crop of it (#526), 192 for the head (#584)).
 const SHADOW_X = 7
 const SHADOW_Y = 8
 const WEAK_CORES = 4
@@ -61,8 +61,8 @@ onMounted(async () => {
   // Client only, after mount, so the server's markup and the first client render agree.
   if (navigator.hardwareConcurrency <= WEAK_CORES) {
     const width = props.size ?? element.clientWidth
-    const viewWidth = props.variant === 'bust' ? 254 : 404
-    shadow.value = { x: Math.round(width * SHADOW_X / viewWidth * 100) / 100, y: Math.round(width * SHADOW_Y / viewWidth * 100) / 100 }
+    const figure = viewWidth(props.variant)
+    shadow.value = { x: Math.round(width * SHADOW_X / figure * 100) / 100, y: Math.round(width * SHADOW_Y / figure * 100) / 100 }
     cheap.value = true
   }
   let gsap
