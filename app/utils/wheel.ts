@@ -65,21 +65,25 @@ export function spinTurns({ spinStartAt, stopAt }: Pick<WheelTiming, 'spinStartA
   return Math.round((stopAt - spinStartAt) / 1250)
 }
 
-/** The angle (degrees, clockwise positive) the wheel rests at when the spin has stopped: the pointer at the top is in the result slice, at its offset, and `spinTurns` lie behind. */
-export function finalAngle(spin: WheelTiming): number {
+/** Under reduced motion the wheel turns one turn in the calm 1.2 s, ending at the stop the full spin rests at (#584 P1: five to eight turns in 1.2 s were 100 to 180 degrees a frame). */
+const REDUCED_TURNS = 1
+
+/** The angle (degrees, clockwise positive) the wheel rests at when the spin has stopped: the pointer at the top is in the result slice, at its offset, and `turns` (by default `spinTurns`) lie behind. */
+export function finalAngle(spin: WheelTiming, turns = spinTurns(spin)): number {
   const { slices, resultIndex, resultOffset } = spin
-  return -(resultIndex + resultOffset) * (360 / slices) - 360 * spinTurns(spin)
+  return -(resultIndex + resultOffset) * (360 / slices) - 360 * turns
 }
 
 /**
  * The wheel's angle at server time `nowMs`. It starts at 0 for every device, stands there until the spin starts, eases to the
- * final angle at `stopAt` and stays. Reduced motion stands until the last 1.2 s, then snaps to the same final angle at the same stop.
+ * final angle at `stopAt` and stays. Reduced motion stands until the last 1.2 s, then snaps one turn to the same stop (the same orientation, so nothing jumps
+ * when the removal starts).
  */
 export function wheelAngle(spin: WheelTiming, nowMs: number, reduced: boolean): number {
   const from = reduced ? spin.stopAt - SPIN_REDUCED_MS : spin.spinStartAt
   const progress = (nowMs - from) / (spin.stopAt - from)
   // `+ 0` turns a -0 (final times 0) into 0.
-  return finalAngle(spin) * bezier(reduced ? SNAP_EASE : SPIN_EASE, Math.min(Math.max(progress, 0), 1)) + 0
+  return (reduced ? finalAngle(spin, REDUCED_TURNS) : finalAngle(spin)) * bezier(reduced ? SNAP_EASE : SPIN_EASE, Math.min(Math.max(progress, 0), 1)) + 0
 }
 
 /** When the drawn slice starts to leave (server ms). */

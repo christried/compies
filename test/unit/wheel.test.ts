@@ -46,12 +46,13 @@ describe('wheelAngle', () => {
   })
 
   describe('under reduced motion', () => {
-    it('stands still until the last 1.2 s, then lands on the same final angle at the same stop', () => {
+    it('stands still until the last 1.2 s, then turns one turn and lands at the stop the full spin rests at (#584)', () => {
       expect(wheelAngle(spin, STOP - SPIN_REDUCED_MS - 1, true)).toBe(0)
       expect(wheelAngle(spin, STOP - SPIN_REDUCED_MS / 2, true)).toBeLessThan(0)
-      expect(wheelAngle(spin, STOP - SPIN_REDUCED_MS / 2, true)).toBeGreaterThan(finalAngle(spin))
-      expect(wheelAngle(spin, STOP, true)).toBeCloseTo(finalAngle(spin), 6)
-      expect(wheelAngle(spin, STOP + 5000, true)).toBeCloseTo(finalAngle(spin), 6)
+      expect(wheelAngle(spin, STOP - SPIN_REDUCED_MS / 2, true)).toBeGreaterThan(finalAngle(spin, 1))
+      expect(wheelAngle(spin, STOP, true)).toBeCloseTo(finalAngle(spin, 1), 6)
+      expect(wheelAngle(spin, STOP + 5000, true)).toBeCloseTo(finalAngle(spin, 1), 6)
+      expect(wheelAngle(spin, STOP, true) % 360).toBeCloseTo(finalAngle(spin) % 360, 6)
     })
   })
 })
@@ -175,7 +176,61 @@ describe('the spin\'s length', () => {
 
     expect(wheelAngle(long, stop - SPIN_REDUCED_MS - 1, true)).toBe(0)
     expect(wheelAngle(long, stop - SPIN_REDUCED_MS / 2, true)).toBeLessThan(0)
-    expect(wheelAngle(long, stop, true)).toBeCloseTo(finalAngle(long), 6)
-    expect(wheelAngle(long, stop + 5000, true)).toBeCloseTo(finalAngle(long), 6)
+    expect(wheelAngle(long, stop, true)).toBeCloseTo(finalAngle(long, 1), 6)
+    expect(wheelAngle(long, stop + 5000, true)).toBeCloseTo(finalAngle(long, 1), 6)
+  })
+
+  describe('under reduced motion, the one turn (#584 P1)', () => {
+    it.each([6000, 10_000])('lands the pointer in the result slice at its offset after %i ms, with one turn behind it, with 1, 2 and 5 slices', (ms) => {
+      for (const slices of [1, 2, 5]) {
+        const timing = lasting(ms, slices)
+        const landed = wheelAngle(timing, timing.stopAt, true)
+
+        expect(landed).toBeCloseTo(-(timing.resultIndex + timing.resultOffset) * (360 / slices) - 360, 6)
+        expect(pointedAt(landed, slices)).toBeCloseTo(timing.resultIndex + timing.resultOffset, 6)
+      }
+    })
+
+    it('rests where the full spin rests, so nothing jumps when the removal starts', () => {
+      for (const ms of [6000, 10_000]) {
+        const timing = lasting(ms)
+
+        expect(wheelAngle(timing, timing.stopAt, true) % 360).toBeCloseTo(finalAngle(timing) % 360, 6)
+      }
+    })
+
+    it('is one turn whatever the spin lasts: a 6 s and a 10 s spin end at the same angle, a sweep of less than 720 degrees', () => {
+      const short = lasting(6000)
+      const long = lasting(10_000)
+
+      expect(wheelAngle(long, long.stopAt, true)).toBeCloseTo(wheelAngle(short, short.stopAt, true), 9)
+      expect(Math.abs(wheelAngle(long, long.stopAt, true))).toBeLessThan(720 + 1)
+    })
+
+    it('never moves faster than 45 degrees in a frame of 16 ms', () => {
+      for (const ms of [6000, 10_000]) {
+        const timing = lasting(ms)
+        let previous = wheelAngle(timing, timing.stopAt - SPIN_REDUCED_MS, true)
+        let widest = 0
+
+        for (let at = timing.stopAt - SPIN_REDUCED_MS + 16; at <= timing.stopAt; at += 16) {
+          const angle = wheelAngle(timing, at, true)
+          widest = Math.max(widest, Math.abs(angle - previous))
+          previous = angle
+        }
+        expect(widest).toBeLessThan(45)
+      }
+    })
+
+    it('turns one way only, to the end', () => {
+      const timing = lasting(10_000)
+      let previous = 0
+
+      for (let at = timing.stopAt - SPIN_REDUCED_MS; at <= timing.stopAt; at += 16) {
+        const angle = wheelAngle(timing, at, true)
+        expect(angle).toBeLessThanOrEqual(previous)
+        previous = angle
+      }
+    })
   })
 })
