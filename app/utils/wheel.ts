@@ -17,7 +17,7 @@ export interface WheelTiming {
 /** The wheel's ease, `cubic-bezier(.15,.75,.25,1.035)` (04-motion): fast at first, braking late, and it overshoots a little by design. */
 const SPIN_EASE = [0.15, 0.75, 0.25, 1.035] as const
 /** `EASE.snap` (04-motion), the reduced-motion spin's ease. */
-const SNAP_EASE = [0.2, 0, 0, 1] as const
+export const SNAP_EASE = [0.2, 0, 0, 1] as const
 /** `EASE.io`, the ease of the slices closing the gap. */
 const IO_EASE = [0.65, 0, 0.35, 1] as const
 
@@ -30,7 +30,7 @@ const REMOVE_MS = 600
 const REMOVE_REDUCED_FADE_MS = 200
 
 /** The y of a CSS cubic-bezier at progress `x` (0 to 1): the curve's x is solved for its parameter, by Newton's steps and then bisection. */
-function bezier([x1, y1, x2, y2]: readonly [number, number, number, number], x: number): number {
+export function bezier([x1, y1, x2, y2]: readonly [number, number, number, number], x: number): number {
   if (x <= 0) return 0
   if (x >= 1) return 1
   const coordinate = (a: number, b: number, t: number) => 3 * a * (1 - t) ** 2 * t + 3 * b * (1 - t) * t ** 2 + t ** 3
@@ -104,7 +104,7 @@ export function removalEase(spin: Pick<WheelTiming, 'stopAt'>, nowMs: number, hi
 const REVEAL_AFTER_MS = 500
 /** The label scrambles for 6 frames of 0.05 s, then shows the game; reduced motion crossfades for 0.2 s instead. */
 const SCRAMBLE_MS = 300
-const CROSSFADE_MS = 200
+export const CROSSFADE_MS = 200
 export const SCRAMBLE_FRAME_MS = 50
 
 /**

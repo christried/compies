@@ -140,13 +140,6 @@ describe('the pins during a spin and its removal', () => {
     expect(all('[data-testid="wheel-pin"]')).toHaveLength(3)
   })
 
-  it('keeps the bulbs as at rest and the flapper down while the wheel turns', async () => {
-    await mount(wheelOf(spinOf()))
-
-    await at(START + 3000)
-    expect(one('wheel-flapper-arm').attributes('transform')).toBe('rotate(0 22 10)')
-  })
-
   it('draws the same wheel under reduced motion', async () => {
     document.documentElement.style.setProperty('--cp-motion', 'reduced')
     await mount(wheelOf(spinOf()))

@@ -4,6 +4,8 @@ import { reducedMotion } from '~/utils/motion'
 import { SCRAMBLE_FRAME_MS, finalAngle, removalEase, removalEnd, revealStage, scramble, sliceSpans, wheelAngle, type WheelTiming } from '~/utils/wheel'
 import { BULB_RADIUS, FLAPPER_HINGE, FLAPPER_PLACEMENT, PIN_RADIUS, PIN_RING_RADIUS, WHEEL_COLOURS, WHEEL_FILLS, bulbPoints, pinAngles, wheelPoint } from '~/utils/wheel-look'
 import { bulbsLit } from '~/utils/wheel-bulbs'
+import { flapperKick, pinCrossings } from '~/utils/wheel-pins'
+import { cardPop, labelPop } from '~/utils/wheel-stop'
 import { stopReached } from '~~/shared/draw-timeline'
 import type { HostGameFacts } from '~~/shared/game'
 import type { WheelView } from '~~/shared/stage'
@@ -14,12 +16,14 @@ import { characterCount, cutToCharacters } from '~~/shared/text'
 // server's clock alone (utils/wheel.ts), so every device, a late joiner included, stands at the same angle at the same moment. The
 // server ticker (useServerTicker) feeds it the server time every frame while a spin runs and shortly past its removal; at rest, and
 // while the wheel is scrolled out of view, nothing runs.
-// At the stop the drawn slice gets its outline and the result card comes. Under a Hidden wheel a Member sees placeholders; the
+// At the stop the drawn slice gets its outline, its label pops and the result card pops in (#523, utils/wheel-stop.ts: both are a function
+// of the server time since the stop, so a late joiner sees the end state). Under a Hidden wheel a Member sees placeholders; the
 // drawn label turns into the real game half a second after the stop (a scramble, under reduced motion a crossfade), and the
 // drawn slice leaves at stop + 2.8 s instead of 2.2 s. The drawn slice shrinks and the others close the gap (0.6 s), or fade and
 // jump under reduced motion. Since 0.13.2 (#519, spec #503) the wheel is drawn as the Show-Rad: a red band with a rim of 24 bulbs, a pin
 // at every slice edge, a flapper at the top, in fixed colours (a stage piece, the same in Hell and Dunkel: utils/wheel-look.ts). The
-// bulbs and the flapper are still for now; their motion comes with 0.13.2 (#521, #522), Compibert and the sounds with 0.13.3.
+// bulbs light by server time (#521) and the flapper kicks at every pin that passes the top (#522, utils/wheel-pins.ts); Compibert and
+// the sounds come with 0.13.3.
 // The wheel is 340 px at most on a phone and 420 px from md up, and never changes size during a spin.
 const props = withDefaults(defineProps<{
   wheel: WheelView
@@ -147,8 +151,10 @@ const litBulbs = computed((previous?: boolean[]): boolean[] => {
   const next = bulbsLit(timing.value, lampClock.value, reduced.value)
   return previous && previous.every((lit, index) => lit === next[index]) ? previous : next
 })
-/** The flapper's angle in degrees about its hinge, SVG sense (positive turns clockwise): down. #522 replaces the body: a kick at every pin that passes. */
-const flapperAngle = computed((): number => 0)
+/** The pins' crossings of this spin: worked out once, when the spin changes (utils/wheel-pins.ts); not for reduced motion, which has no kicks (#522). */
+const crossings = computed(() => (timing.value && !reduced.value ? pinCrossings(timing.value) : []))
+/** The flapper's angle in degrees about its hinge, SVG sense (positive turns clockwise): a kick at every pin that passes, a function of the server's clock alone (#522). */
+const flapperAngle = computed((): number => (running.value && clock.value !== null ? flapperKick(crossings.value, clock.value, reduced.value) : 0))
 
 /** The drawn slice has its outline from the stop on, until it leaves. */
 const winner = computed(() => (running.value && stopped.value && timing.value ? timing.value.resultIndex : -1))
@@ -158,6 +164,24 @@ const drawnOpacity = computed(() => {
   if (!current || !running.value || !reduced.value || clock.value === null) return 1
   return removalEase(current, clock.value, props.hidden, true) === 1 ? 0 : 1
 })
+
+// The pops at the stop (#523): the time since the stop from the server's clock, null before it. The pop functions clamp it to their run, so a
+// late joiner or a returning tab reads the end state at once, and nothing here compares with the stop itself (`stopped` is the one gate).
+const stopElapsed = computed(() => (stopped.value && clock.value !== null && timing.value ? clock.value - timing.value.stopAt : null))
+const cardStyle = computed(() => {
+  if (!card.value || stopElapsed.value === null) return undefined
+  const { scale, opacity } = cardPop(stopElapsed.value, reduced.value)
+  return { transform: `scale(${scale})`, opacity: String(opacity) }
+})
+/** Only the drawn label pops. Its scaleY pivots on its own centre line in the rotated frame (its y is 200 before the rotation). */
+const isDrawn = (index: number) => index === winner.value && stopElapsed.value !== null
+function labelTransform(index: number): string {
+  const scale = isDrawn(index) ? labelPop(stopElapsed.value!, reduced.value).scaleY : 1
+  const span = spans.value[index]!
+  return `rotate(${(span.start + span.end) / 2 - 90} 200 200) translate(0 200) scale(1 ${scale}) translate(0 -200)`
+}
+/** The Hidden reveal's crossfade times the pop's opacity (reduced motion fades the drawn label in). */
+const labelOpacity = (index: number) => labelOf(index).opacity * (isDrawn(index) ? labelPop(stopElapsed.value!, reduced.value).opacity : 1)
 
 // The result card names the game only while its spin is the latest draw (a later set, a veto or a put back takes it away, F6); a vetoed
 // game is then named in the Veto window's outcome line only.
@@ -254,7 +278,7 @@ const headingId = useId()
             <text
               v-if="pathOf(span) !== '' && span.end - span.start > 4"
               :data-testid="`wheel-label-${index}`"
-              :transform="`rotate(${(span.start + span.end) / 2 - 90} 200 200)`"
+              :transform="labelTransform(index)"
               :x="200 + RADIUS - 12"
               y="200"
               text-anchor="end"
@@ -262,7 +286,7 @@ const headingId = useId()
               :font-size="labelSize(shortened(labelOf(index).text))"
               font-weight="800"
               :fill="COLOURS.ink"
-              :opacity="labelOf(index).opacity"
+              :opacity="labelOpacity(index)"
             >{{ shortened(labelOf(index).text) }}</text>
           </template>
           <!-- The pins sit on the slice edges, last in the rotor so they turn with it and lie over the outlines. -->
@@ -384,7 +408,9 @@ const headingId = useId()
 
     <div
       v-if="card"
-      class="animate-pop-in flex w-full max-w-[420px] flex-col gap-2 rounded-[14px] border-2 border-line bg-surface-2 p-3"
+      data-testid="wheel-card"
+      :style="cardStyle"
+      class="flex w-full max-w-[420px] flex-col gap-2 rounded-[14px] border-2 border-line bg-surface-2 p-3"
     >
       <p class="m-0 text-[13px] font-extrabold tracking-wide text-ink-2 uppercase">
         {{ running ? t('wheel.says') : t('wheel.last') }}
