@@ -4,6 +4,8 @@ Where Compibert stands beside the LuckyWheel during a spin, how he enters and le
 
 **New tokens: none. New rig state: none.** `excited` already exists in the reference rig (`STATES.excited` in `reference/compibert-options.js`, documented in 04-motion § `excited` „Mitfiebern“). The Vue port only has to ship it; it must not be replaced by another state.
 
+**Deviation (0.13.2, #526):** the Vue rig got the state `excited` and the variant `bust` (`RIG_STATES` and `RigVariant` in `app/utils/compibert-rig.ts`); the reference rig had `excited`, the port had neither. The mascot's props are the spin's two instants, as 04-motion § Lucky Wheel, Deviation (0.13.2, #526) says.
+
 ---
 
 ## Additions to 02-components.md

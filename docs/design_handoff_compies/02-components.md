@@ -868,7 +868,8 @@ A game in library, pool, wheel lists, pick & ban.
 - **Desktop / mobile:** Desktop 420 px; mobile fits width (max 340). Never resizes during a spin.
 - **Accessibility:** `role="img"` with label „Glücksrad mit 9 Spielen“; live region announces result („Glücksrad: Counter-Strike 2“). Spin button for host only.
 - **Motion:** see 04-motion § Wheel.
-- **Deviation (0.13):** the look is the reference's skin `show` and keeps its colours in both Appearances; the card around it follows the Appearance. The spin has no Host setting: the server draws 6 to 10 s for each spin. Compibert beside the wheel waits for his own Claude Design hand-off (`docs/roadmap.md` § 0.13.2).
+- **Deviation (0.13):** the look is the reference's skin `show` and keeps its colours in both Appearances; the card around it follows the Appearance. The spin has no Host setting: the server draws 6 to 10 s for each spin. Compibert stands beside it as the bust behind the wheel (#526, hand-off 16, `LuckyWheelMascot`).
+- **Deviation (0.13.2, #521, #523, #524, #526):** under reduced motion the bulbs are steady, all lit (#521); the pops at the stop are functions of the server time, one `EASE.pop` over three keyframes (#523); the refill after a put back runs on the page's own clock and never during a spin (#524); `LuckyWheelMascot`'s props are the spin's two instants `{spinStartAt, stopAt}` (not `{startAt, durationMs, hidden}`), `hidden`, `reduced`, `width` and the wheel's clock `now`, and the Vue rig has the state `excited` and the variant `bust` (#526). Point to 04-motion § Lucky Wheel for the numbers.
 
 ## ClipPlayer
 **Scope:** [1.0] · **Ref:** App Spielrunde 11, App Systemzustände 30
@@ -882,6 +883,7 @@ A game in library, pool, wheel lists, pick & ban.
 - **Accessibility:** Controls labelled; closing is personal („Für mich schließen“).
 - **Motion:** open `scale .96→1, fade` `dur-slow`; close `dur-base`.
 - **Deviation (0.13):** `length` is 10 to 120 s (default 30). In a Session the player takes no pointer and no keyboard input from anyone; nothing is laid over it and nothing is cropped, so YouTube's title shows for the first seconds. A player that pauses for any other reason resumes at the synced second. Mute and „Für mich schließen“ stay with every Member, „Clip überspringen“ with the Host (`docs/roadmap.md` § 0.13.0).
+- **Deviation (0.13.2, #550):** on a phone held sideways (below md = 980 px, at least 656 px wide and at most 480 px high: the `sideways` variant in `compies-theme.css`) the player is the left column and the Veto bar the right one (`--cp-veto-side-w`, 16.5rem), so no fixed element lies over the video. The two labels „Ton aktivieren“ and „läuft für alle“ are visually hidden there, their names kept.
 
 ## VetoWindow
 **Scope:** [1.0] · **Ref:** VetoWindow
@@ -895,6 +897,7 @@ A game in library, pool, wheel lists, pick & ban.
 - **Accessibility:** HoldToConfirmButton „Veto (1 s halten)“; timer announces 30/10/5 s; reveal announced via live region.
 - **Motion:** see 04-motion § Veto.
 - **Deviation (0.13):** the window is not 60 s: it lasts the game's clip length plus 30 s, 30 s without a Clip, and a skipped Clip ends it 30 s after the skip if that is sooner. The states „clip first 30 s“ and „clip closed (30 s left)“ read accordingly (`GLOSSARY.md` § Veto window).
+- **Deviation (0.13.2, #550):** on a phone held sideways the bar is the right column, 16.5rem wide, beside the Clip, with its bottom offsets as upright (a Host's crown button stays free); its hint line is visually hidden (`sr-only`) and the locked pill's stamp is smaller. Upright and desktop unchanged.
 
 ## CoinFlip
 **Scope:** [1.0] · **Ref:** Coin3D, Game Options 1i
