@@ -4,9 +4,11 @@
 //
 //   node scripts/worktree-clean.mjs [<agent id> …]    (run it in the background: a worktree with node_modules takes minutes)
 //
-// Done means: named on the command line (`agent-a1b2…` or `a1b2…`, the agents of this session that have reported), or
-// locked by a Claude process that no longer runs (a session that has ended). A lock without a pid, set by hand, is kept:
-// „locked by hand (<reason>); the cleaner leaves it“. Nothing else is done: an unlocked worktree
+// Done means: named on the command line (the agent id, `agent-a1b2…` or `a1b2…`, of an agent of this session that has
+// reported, or the folder's name under .claude/worktrees/, `check-012c`), or locked by a Claude process that no longer
+// runs (a session that has ended). A lock without a pid, set by hand, is kept: „locked by hand (<reason>); the cleaner
+// leaves it“, unless it is named: a named worktree locked by hand is unlocked and removed, with „removed <name> (was
+// locked by hand: <reason>)“, so a check worktree a handoff keeps goes in one call (#560). Nothing else is done: an unlocked worktree
 // nobody named, such as another live session's merge worktree or a finished agent of a session that still runs, is kept
 // with „not named; name it if it is yours“ (#477; before, every unlocked worktree counted as done and a call with two
 // names removed a running session's worktrees). A done worktree is kept, with the reason, while it has uncommitted
@@ -71,13 +73,15 @@ for (const tree of worktrees()) {
   try {
     const pid = Number(/\(pid (\d+)\)/.exec(tree.lock ?? '')?.[1])
     const isNamed = named.has(name.replace(/^agent-/, ''))
+    // A lock whose text has no pid was set by hand (`git worktree lock --reason …`); the harness's reason always has one (#477, #560).
+    const byHand = tree.lock !== undefined && !(pid > 0)
     if (!isNamed && tree.lock === undefined) {
       // Another live session's worktree has no lock either (#477): only a name says it is ours.
       console.log(`kept ${name}: not named; name it if it is yours`)
       continue
     }
-    if (!isNamed && !(pid > 0)) {
-      // A lock without a pid was set by hand: no session to ask, so the cleaner leaves it (#477).
+    if (!isNamed && byHand) {
+      // No session to ask, so the cleaner leaves it (#477); a name is the operator's word that it may go (#560).
       console.log(`kept ${name}: locked by hand${tree.lock ? ` (${tree.lock})` : ''}; the cleaner leaves it`)
       continue
     }
@@ -113,7 +117,8 @@ for (const tree of worktrees()) {
     for (const branch of new Set(branches)) {
       if (git('branch', '-r', '--contains', git('rev-parse', branch)) !== '') git('branch', '-D', branch)
     }
-    console.log(`removed ${name}${branches.length > 0 ? ` and ${[...new Set(branches)].join(', ')}` : ''}`)
+    const wasByHand = byHand ? ` (was locked by hand${lockReason ? `: ${lockReason}` : ''})` : ''
+    console.log(`removed ${name}${wasByHand}${branches.length > 0 ? ` and ${[...new Set(branches)].join(', ')}` : ''}`)
   }
   catch (error) {
     console.log(`failed ${name}: ${String(error.stderr || error.message).trim().split('\n')[0]}`)

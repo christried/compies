@@ -9,6 +9,7 @@ import {
   changedKeys,
   checkSettingsChange,
   settingsEditable,
+  settingsForViewer,
   settingsLocked,
   defaultSettings,
   defaultVetoAllowance,
@@ -29,6 +30,7 @@ import {
   storedPoolPreview,
   storedHiddenWheel,
   tiePossible,
+  type EventSettings,
   type SettingsFloors,
   TEAM_SIZE_MIN,
   teamSizeFloor,
@@ -469,6 +471,39 @@ describe('Phases of the settings (#147)', () => {
   it('lets the Host change settings in every Phase before the Event is finished', () => {
     expect((['draft', 'poll', 'date_set', 'running', 'finished', 'archived'] as Phase[]).map(settingsEditable))
       .toEqual([true, true, true, true, false, false])
+  })
+})
+
+describe('settingsForViewer (#453)', () => {
+  const PHASES: Phase[] = ['draft', 'poll', 'date_set', 'running', 'finished', 'archived']
+  const wheel: EventSettings = { ...defaultSettings(), selectionMode: 'lucky_wheel', vetoAllowance: 3 }
+
+  it('hides the Veto allowance from a Member exactly until the first Session starts, and says so', () => {
+    expect(PHASES.map(phase => settingsForViewer(wheel, { isHost: false, phase }).vetoAllowanceHidden))
+      .toEqual([true, true, true, false, false, false])
+    for (const phase of PHASES.slice(0, 3)) expect(settingsForViewer(wheel, { isHost: false, phase }).settings).toEqual({ ...wheel, vetoAllowance: null })
+    for (const phase of PHASES.slice(3)) expect(settingsForViewer(wheel, { isHost: false, phase }).settings).toEqual(wheel)
+  })
+
+  it('shows the Host the number in every Phase', () => {
+    for (const phase of PHASES) expect(settingsForViewer(wheel, { isHost: true, phase })).toEqual({ settings: wheel, vetoAllowanceHidden: false })
+  })
+
+  it('hides an allowance of 0 like any other, so the missing number never reads as „0“', () => {
+    const none = { ...wheel, vetoAllowance: 0 }
+    expect(settingsForViewer(none, { isHost: false, phase: 'poll' })).toEqual({ settings: { ...none, vetoAllowance: null }, vetoAllowanceHidden: true })
+  })
+
+  it('has nothing to hide under Host pick, and none for an Event that is not set up', () => {
+    const pick = defaultSettings()
+    expect(settingsForViewer(pick, { isHost: false, phase: 'poll' })).toEqual({ settings: pick, vetoAllowanceHidden: false })
+    expect(settingsForViewer(null, { isHost: false, phase: 'poll' })).toEqual({ settings: null, vetoAllowanceHidden: false })
+  })
+
+  it('leaves the settings it was given as they are', () => {
+    const given = { ...wheel }
+    settingsForViewer(given, { isHost: false, phase: 'poll' })
+    expect(given).toEqual(wheel)
   })
 })
 

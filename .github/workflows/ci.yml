@@ -19,6 +19,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      # The changelog check compares every released section with main's (#566). checkout leaves a shallow clone of the
+      # pushed commit only, and on a feature branch no `origin/main` ref, so the test would skip itself.
+      - name: Fetch main for the changelog check
+        run: |
+          git fetch --no-tags --depth=1 origin +refs/heads/main:refs/remotes/origin/main
+          git log -1 --format='origin/main is at %h %s' origin/main
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:

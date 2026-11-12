@@ -295,6 +295,21 @@ export function settingsLocked(phase: Phase): boolean {
   return phase === 'running' || phase === 'finished' || phase === 'archived'
 }
 
+/**
+ * The settings as a viewer reads them (#453, GLOSSARY: Veto allowance). The Host always knows the Veto allowance; every other Member
+ * from the first Session start on (Phase running or later). Before that the number is null and `vetoAllowanceHidden` says so, so the
+ * client tells „hidden“ from „no Vetoes“ (Host pick). The number itself is never looked at: an allowance of 0 is hidden like any other.
+ * The Event read goes through this; the state and the rules keep the true number.
+ */
+export function settingsForViewer(
+  settings: EventSettings | null,
+  viewer: { isHost: boolean, phase: Phase },
+): { settings: EventSettings | null, vetoAllowanceHidden: boolean } {
+  const knows = viewer.isHost || settingsLocked(viewer.phase)
+  if (settings === null || !eventHasWheel(settings) || knows) return { settings, vetoAllowanceHidden: false }
+  return { settings: { ...settings, vetoAllowance: null }, vetoAllowanceHidden: true }
+}
+
 /** Settings can change in every Phase before the Event is finished. */
 export function settingsEditable(phase: Phase): boolean {
   return beforeFinish(phase)

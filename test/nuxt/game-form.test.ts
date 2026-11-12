@@ -1,8 +1,9 @@
 import { mountSuspended, registerEndpoint } from '@nuxt/test-utils/runtime'
 import { flushPromises, type VueWrapper } from '@vue/test-utils'
 import { createError, readBody } from 'h3'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import GameForm from '~/components/GameForm.vue'
+import { FINE_POINTER_QUERY } from '~/composables/useMediaQuery'
 import type { GameTag, GameView } from '~~/shared/game'
 import { kitty, signInAs } from './auth'
 
@@ -49,10 +50,13 @@ registerEndpoint('/api/games', {
 const posted = vi.fn()
 const patchedWith = vi.fn()
 let failWith: string | null = null
+// A test that holds a save (#456) sets this: the POST waits for it before it answers.
+let holdPost: Promise<void> | null = null
 registerEndpoint('/api/games', {
   method: 'POST',
   handler: async (event) => {
     posted(await readBody(event))
+    if (holdPost) await holdPost
     if (failWith) throw createError({ statusCode: 400, statusMessage: failWith })
     return saved
   },
@@ -366,10 +370,13 @@ describe('the game form', () => {
       await page.get('form').trigger('submit')
       await vi.waitFor(() => expect(patchedWith).toHaveBeenCalledWith(expect.objectContaining({ clipStart: 72, clipLength: 30 })))
 
+      // A saved form takes no second save (#573): the next save needs a form of its own.
+      page.unmount()
       patchedWith.mockClear()
-      await field(page, 'Ende').setValue('2:00')
-      expect(valueOf(page, 'Länge')).toBe('48')
-      await page.get('form').trigger('submit')
+      const again = await mountSuspended(GameForm, { props: { game: saved } })
+      await field(again, 'Ende').setValue('2:00')
+      expect(valueOf(again, 'Länge')).toBe('48')
+      await again.get('form').trigger('submit')
       await vi.waitFor(() => expect(patchedWith).toHaveBeenCalledWith(expect.objectContaining({ clipStart: 72, clipLength: 48 })))
     })
 
@@ -434,6 +441,12 @@ describe('the game form', () => {
 
       await vi.waitFor(() => expect(posted).toHaveBeenCalled())
       expect(posted).toHaveBeenCalledWith(expect.objectContaining({ playersMin: 2, playersMax: 10, suitabilities: ['teams'] }))
+    })
+
+    it('labels the player count as optional (#458)', async () => {
+      const page = await mountSuspended(GameForm)
+
+      expect(page.findAll('legend').map(item => item.text())).toContain('Empfohlene Spielerzahl (optional)')
     })
 
     it('takes one bound alone and leaves both empty as no count', async () => {
@@ -1197,5 +1210,390 @@ describe('the game form', () => {
 
     await vi.waitFor(() => expect(page.get('[role="alert"]').text()).toBe('Der Clip passt nicht: Die Länge liegt zwischen 10 und 120 Sekunden.'))
     expect(page.emitted('saved')).toBeUndefined()
+  })
+
+  describe('Speichern und noch eins (#456)', () => {
+    beforeEach(() => {
+      holdPost = null
+    })
+
+    function saveAndNextButton(page: Page) {
+      return page.findAll('button').find(button => button.text().trim() === 'Speichern und noch eins')
+    }
+
+    it('shows „Speichern und noch eins“ after the create button, as a button that does not submit', async () => {
+      const page = await mountSuspended(GameForm, { props: { saveAndNext: true } })
+
+      const buttons = page.findAll('button')
+      const next = buttons.findIndex(button => button.text().trim() === 'Speichern und noch eins')
+      const primary = buttons.findIndex(button => button.attributes('type') === 'submit')
+      expect(buttons[next]!.attributes('type')).toBe('button')
+      expect(next).toBe(primary + 1)
+    })
+
+    it('is absent on edit, even when the form is asked for it', async () => {
+      const page = await mountSuspended(GameForm, { props: { game: saved, saveAndNext: true } })
+
+      expect(saveAndNextButton(page)).toBeUndefined()
+    })
+
+    it('is absent where the form is not asked for it, as in the stepper\'s sheet', async () => {
+      const page = await mountSuspended(GameForm)
+
+      expect(saveAndNextButton(page)).toBeUndefined()
+    })
+
+    it('saves with it and emits savedAndNext with the game, never saved', async () => {
+      const page = await mountSuspended(GameForm, { props: { saveAndNext: true } })
+      await field(page, 'Name').setValue('Mario Kart')
+
+      await saveAndNextButton(page)!.trigger('click')
+
+      await vi.waitFor(() => expect(page.emitted('savedAndNext')).toEqual([[saved]]))
+      expect(page.emitted('saved')).toBeUndefined()
+      expect(posted).toHaveBeenCalledTimes(1)
+      expect(posted).toHaveBeenCalledWith(expect.objectContaining({ name: 'Mario Kart' }))
+    })
+
+    it('emits saved with the game for „Spiel anlegen“, never savedAndNext', async () => {
+      const page = await mountSuspended(GameForm, { props: { saveAndNext: true } })
+      await field(page, 'Name').setValue('Mario Kart')
+
+      expect(cta(page).text()).toContain('Spiel anlegen')
+      // „Spiel anlegen“ is the form's submit button; the form is submitted as the other form tests do.
+      await page.get('form').trigger('submit')
+
+      await vi.waitFor(() => expect(page.emitted('saved')).toEqual([[saved]]))
+      expect(page.emitted('savedAndNext')).toBeUndefined()
+    })
+
+    it('keeps every field and shows the server\'s reason when the save fails', async () => {
+      failWith = 'invalid_clip'
+      const page = await mountSuspended(GameForm, { props: { saveAndNext: true } })
+      await field(page, 'Name').setValue('Mario Kart')
+      await field(page, 'YouTube-Link').setValue(LINK)
+
+      await saveAndNextButton(page)!.trigger('click')
+
+      await vi.waitFor(() => expect(page.get('[role="alert"]').text()).toBe('Der Clip passt nicht: Die Länge liegt zwischen 10 und 120 Sekunden.'))
+      expect((field(page, 'Name').element as HTMLInputElement).value).toBe('Mario Kart')
+      expect((field(page, 'YouTube-Link').element as HTMLInputElement).value).toBe(LINK)
+      expect(page.emitted('savedAndNext')).toBeUndefined()
+    })
+
+    it('blocks with the name message and sends nothing while the name is empty, both buttons aria-disabled', async () => {
+      const page = await mountSuspended(GameForm, { props: { saveAndNext: true } })
+
+      await saveAndNextButton(page)!.trigger('click')
+
+      expect(posted).not.toHaveBeenCalled()
+      expect(page.text()).toContain('Gib dem Spiel einen Namen.')
+      expect(saveAndNextButton(page)!.attributes('aria-disabled')).toBe('true')
+      expect(cta(page).attributes('aria-disabled')).toBe('true')
+    })
+
+    it('does not send twice while a save runs, and shows both buttons as disabled meanwhile', async () => {
+      let release = () => {}
+      holdPost = new Promise<void>((resolve) => {
+        release = resolve
+      })
+      const page = await mountSuspended(GameForm, { props: { saveAndNext: true } })
+      await field(page, 'Name').setValue('Mario Kart')
+
+      await saveAndNextButton(page)!.trigger('click')
+      await saveAndNextButton(page)!.trigger('click')
+
+      await vi.waitFor(() => expect(posted).toHaveBeenCalledTimes(1))
+      expect(saveAndNextButton(page)!.attributes('aria-disabled')).toBe('true')
+      expect(cta(page).attributes('aria-disabled')).toBe('true')
+      expect(cta(page).text()).toContain('Speichert …')
+
+      release()
+      await vi.waitFor(() => expect(page.emitted('savedAndNext')).toEqual([[saved]]))
+      expect(posted).toHaveBeenCalledTimes(1)
+    })
+
+    it('takes the focus on the name when it mounts with focusName', async () => {
+      const page = await mountSuspended(GameForm, { props: { saveAndNext: true, focusName: true }, attachTo: document.body })
+
+      expect(document.activeElement).toBe(field(page, 'Name').element)
+      page.unmount()
+    })
+
+    it('does not take the focus on the name without focusName', async () => {
+      const page = await mountSuspended(GameForm, { props: { saveAndNext: true }, attachTo: document.body })
+
+      expect(document.activeElement).not.toBe(field(page, 'Name').element)
+      page.unmount()
+    })
+  })
+
+  describe('Strg + Enter (#465)', () => {
+    afterEach(() => {
+      holdPost = null
+    })
+
+    /** A keydown Enter with the given modifiers on the element; the event tells whether the form prevented it. */
+    function enter(el: Element, init: KeyboardEventInit = { ctrlKey: true }) {
+      const event = new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true, ...init })
+      el.dispatchEvent(event)
+      return event
+    }
+
+    it('saves from the name with Ctrl + Enter', async () => {
+      const page = await mountSuspended(GameForm, { props: { saveAndNext: true } })
+      await field(page, 'Name').setValue('Mario Kart')
+
+      enter(field(page, 'Name').element)
+
+      await vi.waitFor(() => expect(page.emitted('saved')).toEqual([[saved]]))
+      expect(posted).toHaveBeenCalledWith(expect.objectContaining({ name: 'Mario Kart' }))
+      expect(page.emitted('savedAndNext')).toBeUndefined()
+    })
+
+    it('saves from the name with Meta + Enter', async () => {
+      const page = await mountSuspended(GameForm)
+      await field(page, 'Name').setValue('Mario Kart')
+
+      enter(field(page, 'Name').element, { metaKey: true })
+
+      await vi.waitFor(() => expect(page.emitted('saved')).toEqual([[saved]]))
+    })
+
+    it('saves from Notizen with Ctrl + Enter and types no line break, while a bare Enter there is left alone', async () => {
+      const page = await mountSuspended(GameForm)
+      await field(page, 'Name').setValue('Mario Kart')
+      const notes = field(page, 'Notizen').element
+
+      expect(enter(notes, {}).defaultPrevented).toBe(false)
+      await flushPromises()
+      expect(posted).not.toHaveBeenCalled()
+
+      expect(enter(notes).defaultPrevented).toBe(true)
+      await vi.waitFor(() => expect(page.emitted('saved')).toEqual([[saved]]))
+    })
+
+    it('saves from Notizen with Meta + Enter too and types no line break', async () => {
+      const page = await mountSuspended(GameForm)
+      await field(page, 'Name').setValue('Mario Kart')
+
+      expect(enter(field(page, 'Notizen').element, { metaKey: true }).defaultPrevented).toBe(true)
+
+      await vi.waitFor(() => expect(page.emitted('saved')).toEqual([[saved]]))
+      expect(posted).toHaveBeenCalledTimes(1)
+    })
+
+    it('saves from the number field „von“ with Meta + Enter too', async () => {
+      const page = await mountSuspended(GameForm)
+      await field(page, 'Name').setValue('Mario Kart')
+      await field(page, 'von').setValue('2')
+
+      enter(field(page, 'von').element, { metaKey: true })
+
+      await vi.waitFor(() => expect(posted).toHaveBeenCalledWith(expect.objectContaining({ playersMin: 2 })))
+    })
+
+    it('saves from the number field „von“', async () => {
+      const page = await mountSuspended(GameForm)
+      await field(page, 'Name').setValue('Mario Kart')
+      await field(page, 'von').setValue('2')
+
+      enter(field(page, 'von').element)
+
+      await vi.waitFor(() => expect(posted).toHaveBeenCalledWith(expect.objectContaining({ playersMin: 2 })))
+    })
+
+    it('saves from the Tag field with a typed Tag, once', async () => {
+      const page = await mountSuspended(GameForm)
+      await field(page, 'Name').setValue('Mario Kart')
+      await field(page, 'Tags').setValue('Party')
+
+      const event = enter(field(page, 'Tags').element)
+
+      expect(event.defaultPrevented).toBe(true)
+      await vi.waitFor(() => expect(posted).toHaveBeenCalledTimes(1))
+      expect(posted).toHaveBeenCalledWith(expect.objectContaining({ tags: ['Party'] }))
+    })
+
+    it('saves nothing while blocked: shows the name error and posts nothing', async () => {
+      const page = await mountSuspended(GameForm, { props: { saveAndNext: true } })
+
+      enter(field(page, 'Name').element)
+
+      await vi.waitFor(() => expect(page.text()).toContain('Gib dem Spiel einen Namen.'))
+      expect(posted).not.toHaveBeenCalled()
+      expect(page.emitted('saved')).toBeUndefined()
+    })
+
+    it('saves nothing while a save runs: two presses, one POST', async () => {
+      let release = () => {}
+      holdPost = new Promise<void>((resolve) => {
+        release = resolve
+      })
+      const page = await mountSuspended(GameForm)
+      await field(page, 'Name').setValue('Mario Kart')
+
+      enter(field(page, 'Name').element)
+      enter(field(page, 'Name').element)
+
+      await vi.waitFor(() => expect(posted).toHaveBeenCalledTimes(1))
+      release()
+      await vi.waitFor(() => expect(page.emitted('saved')).toEqual([[saved]]))
+      expect(posted).toHaveBeenCalledTimes(1)
+    })
+
+    // #573: the form has told the page that the game is saved, the page is still busy (a reload, a route change) and nothing has
+    // replaced the form: it must not post the same game again. A test that saves twice on one mounted form mounts again.
+    it('takes no second save after a success', async () => {
+      const page = await mountSuspended(GameForm)
+      await field(page, 'Name').setValue('Mario Kart')
+
+      enter(field(page, 'Name').element)
+      await vi.waitFor(() => expect(page.emitted('saved')).toEqual([[saved]]))
+      enter(field(page, 'Name').element)
+      await page.get('form').trigger('submit')
+      await flushPromises()
+
+      expect(posted).toHaveBeenCalledTimes(1)
+      expect(cta(page).text()).toContain('Speichert …')
+      expect(cta(page).attributes('aria-disabled')).toBe('true')
+    })
+
+    it('takes no second save after „Speichern und noch eins“ either, by click or by Strg + Enter', async () => {
+      const page = await mountSuspended(GameForm, { props: { saveAndNext: true } })
+      await field(page, 'Name').setValue('Mario Kart')
+      const next = () => page.findAll('button').find(button => button.text().trim() === 'Speichern und noch eins')!
+
+      await next().trigger('click')
+      await vi.waitFor(() => expect(page.emitted('savedAndNext')).toEqual([[saved]]))
+      await next().trigger('click')
+      enter(field(page, 'Name').element)
+      await flushPromises()
+
+      expect(posted).toHaveBeenCalledTimes(1)
+      expect(next().attributes('aria-disabled')).toBe('true')
+      expect(cta(page).attributes('aria-disabled')).toBe('true')
+      expect(page.emitted('saved')).toBeUndefined()
+    })
+
+    // Guard: passes before the fix; it pins that a failure frees the form.
+    it('a failed save frees the form', async () => {
+      failWith = 'invalid_clip'
+      const page = await mountSuspended(GameForm)
+      await field(page, 'Name').setValue('Mario Kart')
+
+      enter(field(page, 'Name').element)
+      await vi.waitFor(() => expect(page.get('[role="alert"]').text()).toBe('Der Clip passt nicht: Die Länge liegt zwischen 10 und 120 Sekunden.'))
+      failWith = null
+      enter(field(page, 'Name').element)
+
+      await vi.waitFor(() => expect(page.emitted('saved')).toEqual([[saved]]))
+      expect(posted).toHaveBeenCalledTimes(2)
+    })
+
+    it('a held key saves nothing, and is swallowed like the first press', async () => {
+      const page = await mountSuspended(GameForm)
+      await field(page, 'Name').setValue('Mario Kart')
+
+      expect(enter(field(page, 'Name').element, { ctrlKey: true, repeat: true }).defaultPrevented).toBe(true)
+      await flushPromises()
+      expect(posted).not.toHaveBeenCalled()
+
+      enter(field(page, 'Name').element)
+      await vi.waitFor(() => expect(page.emitted('saved')).toEqual([[saved]]))
+      expect(posted).toHaveBeenCalledTimes(1)
+    })
+
+    it('a held key after a failed save posts nothing more: the repeat rule stops it, not a lock', async () => {
+      failWith = 'invalid_clip'
+      const page = await mountSuspended(GameForm)
+      await field(page, 'Name').setValue('Mario Kart')
+
+      enter(field(page, 'Name').element)
+      await vi.waitFor(() => expect(page.get('[role="alert"]').text()).toContain('Der Clip passt nicht'))
+      for (let press = 0; press < 3; press++) enter(field(page, 'Name').element, { ctrlKey: true, repeat: true })
+      await flushPromises()
+
+      expect(posted).toHaveBeenCalledTimes(1)
+    })
+
+    it('leaves Shift + Ctrl + Enter, Alt + Ctrl + Enter and an IME composition alone', async () => {
+      const page = await mountSuspended(GameForm)
+      await field(page, 'Name').setValue('Mario Kart')
+      const name = field(page, 'Name').element
+
+      const events = [
+        enter(name, { ctrlKey: true, shiftKey: true }),
+        enter(name, { ctrlKey: true, altKey: true }),
+        enter(name, { ctrlKey: true, isComposing: true }),
+      ]
+
+      expect(events.map(event => event.defaultPrevented)).toEqual([false, false, false])
+      await flushPromises()
+      expect(posted).not.toHaveBeenCalled()
+    })
+
+    describe('the hint (#465)', () => {
+      const PC_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0 Safari/537.36'
+      const MAC_UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15'
+
+      function userAgent(ua: string) {
+        Object.defineProperty(window.navigator, 'userAgent', { configurable: true, get: () => ua })
+      }
+
+      /** A fine pointer (a mouse) or none (a phone): what the page's media query answers. */
+      function finePointer(isFine: boolean) {
+        vi.spyOn(window, 'matchMedia').mockImplementation((query: string) => ({
+          matches: isFine && query === FINE_POINTER_QUERY,
+          media: query,
+          addEventListener() {},
+          removeEventListener() {},
+        }) as unknown as MediaQueryList)
+      }
+
+      function hintButton(page: Page) {
+        return page.findAll('button').find(button => button.attributes('aria-label') === 'Hinweis anzeigen')
+      }
+
+      afterEach(() => {
+        vi.restoreAllMocks()
+        delete (window.navigator as unknown as Record<string, unknown>).userAgent
+      })
+
+      it('shows the hint with a fine pointer, and it says „Strg + Enter speichert“ on a PC', async () => {
+        userAgent(PC_UA)
+        finePointer(true)
+        const page = await mountSuspended(GameForm)
+        await flushPromises()
+
+        await hintButton(page)!.trigger('click')
+
+        expect(document.querySelector('[role="note"]')?.textContent).toContain('Strg + Enter speichert')
+        expect(posted).not.toHaveBeenCalled()
+        page.unmount()
+      })
+
+      it('says „⌘ + Enter speichert“ on a Mac', async () => {
+        userAgent(MAC_UA)
+        finePointer(true)
+        const page = await mountSuspended(GameForm)
+        await flushPromises()
+
+        await hintButton(page)!.trigger('click')
+
+        expect(document.querySelector('[role="note"]')?.textContent).toContain('⌘ + Enter speichert')
+        page.unmount()
+      })
+
+      it('shows no hint without a fine pointer', async () => {
+        userAgent(PC_UA)
+        finePointer(false)
+        const page = await mountSuspended(GameForm)
+        await flushPromises()
+
+        expect(hintButton(page)).toBeUndefined()
+        page.unmount()
+      })
+    })
   })
 })

@@ -22,9 +22,9 @@ export const INFO_SECTIONS: Record<InfoTopic, InfoSectionParts[]> = {
   teams: BASICS,
   ffa: BASICS,
   admin: BASICS,
-  // The hidden wheel option ends with what the Host sees (#145).
+  // The hidden wheel option ends with what the Host sees (#145). „So läuft’s“ ends with the Veto number staying the Host's until the start (#453).
   wheel: [
-    { section: 'how', parts: ['how'] },
+    { section: 'how', parts: ['how', 'vetoHidden'] },
     { section: 'hideWheel', parts: ['hideWheel', 'hostSees'] },
     { section: 'good', parts: ['good'] },
     { section: 'warn', parts: ['warn'] },

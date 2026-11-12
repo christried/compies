@@ -144,7 +144,8 @@ describe('a Member\'s tiles on the Event page open the dialog (#444)', () => {
   /** What a Member's dialog shows of a game and never shows: the facts, and none of the Tags and Notes the Host's read carries. */
   function expectMemberDialog(name: string) {
     expect(dialog()!.querySelector('h2')?.textContent).toBe(name)
-    expect(dialog()!.textContent).toContain('2 bis 4')
+    expect(dialog()!.textContent).toContain('bis 4')
+    expect(dialog()!.textContent).not.toContain('2 bis')
     expect(dialog()!.textContent).toContain('Teams')
     for (const hidden of ['Koop-Halo', 'Retro-Pong', 'Rennen-Kart', 'Denken-Schach', 'Hausregel: keine Raketen', 'Kart-Notizen', 'Schach-Notizen', 'Notizen']) expect(dialog()!.textContent).not.toContain(hidden)
     expect(dialog()!.querySelector('a')).toBeNull()

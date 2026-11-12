@@ -17,7 +17,7 @@ const CONTEXT_VARIANT = /^(dark|reduced|sm|md|lg|xl|2xl|max-.+|min-.+|@.+|motion
 
 /** The coloured fills: every name with a `--color-on-<name>` token next to its `--color-<name>` (#481). A new on-colour token is covered without an edit to the test. */
 export function onColourFills(themeCss: string): string[] {
-  const colours = [...themeCss.matchAll(/--color-([a-z0-9-]+)\s*:/g)].map(m => m[1]!)
+  const colours = themeColours(themeCss)
   return [...themeCss.matchAll(/--color-on-([a-z0-9-]+)\s*:/g)].map(m => m[1]!).filter(name => colours.includes(name))
 }
 
@@ -108,4 +108,101 @@ export function findingMessage(file: string, classString: string, finding: OnCol
   const shown = classString.replace(/\s+/g, ' ').trim()
   const what = finding.rule === 'a' ? `${finding.text} on ${finding.fill}` : `${finding.fill} without ${finding.use}`
   return `${file}: "${shown}": ${what}; use ${finding.use}`
+}
+
+// Competing colours (#562): a colour of an element's static `class` against one of its `:class` literals. The stylesheet
+// emits same-property utilities in a fixed order, so one of two never shows (#496: `border-line` beat `border-focus`).
+
+/** An element of a `.vue` template that has both a static `class` and a `:class`. */
+export type ClassElement = {
+  /** The tag as written: `section`, `GameCard`. */
+  tag: string
+  /** The static `class` attribute, whitespace as written (multi-line ok). Never empty. */
+  static: string
+  /** The string literals of the `:class` / `v-bind:class` expression, in order, unique. Never empty. */
+  conditional: string[]
+}
+
+export type CompetingFinding = {
+  /** The property both classes set: `border`, `border-t`, `bg` or `text`. */
+  property: string
+  /** The variants both carry, sorted, joined with `:`; empty at rest. */
+  variants: string
+  /** The class of the static attribute, as written, variants and `!` included: `border-line`. */
+  staticClass: string
+  /** The class of the conditional literal, as written: `border-focus`. */
+  conditionalClass: string
+}
+
+/** The colour names of the theme: every `--color-<name>`; the `--color-*: initial` reset does not match, so the list is closed (#562). */
+export function themeColours(themeCss: string): string[] {
+  return [...themeCss.matchAll(/--color-([a-z0-9-]+)\s*:/g)].map(m => m[1]!)
+}
+
+/** An arbitrary value with an explicit colour shape; `bg-[image:...]` and `bg-[url(...)]` are no colours. */
+const ARBITRARY_COLOUR = /^(\[|\()(color:|#|rgba?\(|hsla?\(|oklch\(|color-mix\()/
+
+/** The opacity of `ink/10` or `ink/[0.2]` is cut at the last slash outside brackets. */
+function splitOpacity(value: string): { name: string, opacity: string } {
+  let depth = 0
+  let cut = -1
+  for (let i = 0; i < value.length; i++) {
+    const char = value[i]
+    if (char === '[' || char === '(') depth++
+    if (char === ']' || char === ')') depth--
+    if (char === '/' && depth === 0) cut = i
+  }
+  return cut < 0 ? { name: value, opacity: '' } : { name: value.slice(0, cut), opacity: value.slice(cut + 1) }
+}
+
+type ColourClass = { property: string, variants: string, value: string, text: string }
+
+/** A token that is a border, background or text colour utility, or null. A size, a width or another property is none. */
+function colourClass(token: string, colours: string[]): ColourClass | null {
+  const parts = splitVariants(token)
+  const utility = (parts.pop() ?? '').replace(/^!|!$/g, '')
+  const m = utility.match(/^(bg|text|border(?:-(?:x|y|t|r|b|l|s|e))?)-(.+)$/)
+  if (!m) return null
+  const value = m[2]!
+  const isColour = ARBITRARY_COLOUR.test(value) || colours.includes(splitOpacity(value).name)
+  return isColour ? { property: m[1]!, variants: [...parts].sort().join(':'), value, text: token } : null
+}
+
+/** The `.vue` opening tags with both attributes, in file order (#562). A `>` inside a quoted attribute does not end a tag. */
+export function classElements(file: string, source: string): ClassElement[] {
+  if (!file.endsWith('.vue')) return []
+  const elements: ClassElement[] = []
+  for (const tag of blankComments(source).matchAll(/<([A-Za-z][\w.-]*)((?:[^>"']|"[^"]*"|'[^']*')*)>/g)) {
+    const attributes = tag[2]!
+    const staticClass = attributes.match(/(?<![\w:@#.-])class="([^"]*)"/)?.[1]
+    const bound = attributes.match(/(?<![\w@#.-])(?::|v-bind:)class=(?:"([^"]*)"|'([^']*)')/)
+    const expression = bound?.[1] ?? bound?.[2]
+    if (!staticClass?.trim() || expression === undefined) continue
+    const conditional: string[] = []
+    literals(expression, conditional)
+    if (conditional.length) elements.push({ tag: tag[1]!, static: staticClass, conditional: [...new Set(conditional)] })
+  }
+  return elements
+}
+
+/** A static colour against the conditional literals of its element: one finding per (static class, conditional class) with the same property and variants and another colour or opacity (#562). */
+export function checkCompeting(staticClasses: string, conditional: string[], colours: string[]): CompetingFinding[] {
+  const parse = (classString: string) => classString.split(/\s+/).filter(Boolean).flatMap((token) => {
+    const found = colourClass(token, colours)
+    return found ? [found] : []
+  })
+  const findings: CompetingFinding[] = []
+  for (const fixed of parse(staticClasses)) {
+    for (const other of conditional.flatMap(parse)) {
+      if (fixed.property !== other.property || fixed.variants !== other.variants || fixed.value === other.value) continue
+      if (findings.some(f => f.staticClass === fixed.text && f.conditionalClass === other.text)) continue
+      findings.push({ property: fixed.property, variants: fixed.variants, staticClass: fixed.text, conditionalClass: other.text })
+    }
+  }
+  return findings
+}
+
+/** `app/components/StandsZone.vue: <section>: border-line in class competes with border-focus in :class; move border-line into the :class branches` (#562). `file` is relative to the repo root, with forward slashes. */
+export function competingMessage(file: string, tag: string, finding: CompetingFinding): string {
+  return `${file}: <${tag}>: ${finding.staticClass} in class competes with ${finding.conditionalClass} in :class; move ${finding.staticClass} into the :class branches`
 }

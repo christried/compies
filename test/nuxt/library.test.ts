@@ -326,7 +326,7 @@ describe('the library cards and filters (#142, #173)', () => {
     await settle(page)
 
     const [halo, cs] = page.findAll('main li')
-    expect(halo!.text()).toContain('2–10')
+    expect(halo!.text()).toContain('bis 10')
     expect(halo!.text()).toContain('Teams, Jeder gegen jeden')
     expect(cs!.text()).not.toContain('Teams')
   })
@@ -816,7 +816,8 @@ describe('the game page for its editors (#142)', () => {
     const page = await mountSuspended(DetailPage, { route: `/bibliothek/${withClip.id}` })
     await vi.waitFor(() => expect(page.find('h1').exists()).toBe(true))
 
-    expect(page.text()).toContain('2 bis 10')
+    expect(page.text()).toContain('bis 10')
+    expect(page.text()).not.toContain('2 bis')
     expect(page.text()).toContain('Teams, Jeder gegen jeden')
   })
 })
@@ -867,5 +868,16 @@ describe('the edit page (#142)', () => {
     await vi.waitFor(() => expect(useRouter().currentRoute.value.path).toBe(`/bibliothek/${withClip.id}`))
     expect(patched).toHaveBeenCalledWith(expect.objectContaining({ name: 'Counter-Strike 2 HD' }))
     expect(useState<{ text: string }[]>('toasts').value.map(toast => toast.text)).toEqual(['Gespeichert.'])
+  })
+
+  it('Strg + Enter in the name saves the changes too and goes back to the game (#465)', async () => {
+    const page = await mountSuspended(EditPage, { route: `/bibliothek/${withClip.id}/bearbeiten` })
+    await vi.waitFor(() => expect(page.find('h1').exists()).toBe(true))
+    await field(page, 'Name').setValue('Counter-Strike 2 HD')
+
+    field(page, 'Name').element.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', ctrlKey: true, bubbles: true, cancelable: true }))
+
+    await vi.waitFor(() => expect(useRouter().currentRoute.value.path).toBe(`/bibliothek/${withClip.id}`))
+    expect(patched).toHaveBeenCalledWith(expect.objectContaining({ name: 'Counter-Strike 2 HD' }))
   })
 })

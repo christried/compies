@@ -8,6 +8,7 @@ Issues and specs for this repo live as GitHub issues. Use the `gh` CLI for all o
 - **Read an issue**: `gh issue view <number> --json number,title,body,labels,comments`. From Git Bash on Windows `gh issue view` prints nothing: use `gh api repos/christried/compies/issues/<n> --jq .body`, and `.../issues/<n>/comments --jq '[.[].body]'` for the comments.
 - **List issues**: `gh issue list --state open --json number,title,body,labels,comments --jq '[.[] | {number, title, body, labels: [.labels[].name], comments: [.comments[].body]}]'` with appropriate `--label` and `--state` filters.
 - **Make an issue a sub-issue of a parent**: `gh issue create --parent <parent> ...`, or `gh issue edit <parent> --add-sub-issue <child>` afterwards (`gh` 2.94+). Older `gh`: `gh api --method POST repos/<owner>/<repo>/issues/<parent>/sub_issues -F sub_issue_id=<child-db-id>` (database id, as in **Blocking** below). Without sub-issues, put `Part of #<parent>` at the top of the child body.
+- **List a spec's sub-issues** by number, state and title: `gh api --paginate repos/christried/compies/issues/<spec>/sub_issues --jq '.[] | "\(.number) \(.state) \(.title)"'`. A REST call, so it works in a cloud session too; reading the same list through the GitHub tool returned 193k characters in a cloud session.
 - **Comment on an issue**: `gh issue comment <number> --body "..."`
 - **Apply / remove labels**: `gh issue edit <number> --add-label "..."` / `--remove-label "..."`
 - **Close**: `gh issue close <number> --comment "..."`

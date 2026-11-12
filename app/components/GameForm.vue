@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { ChevronRight } from '@lucide/vue'
+import { FINE_POINTER_QUERY } from '~/composables/useMediaQuery'
 import { apiErrorKey } from '~/utils/api-error'
 import { editClipField, openClipFields, type ClipField } from '~/utils/clip-fields'
 import type { PriceDraft } from '~/utils/price'
+import { isApplePlatform } from '~/utils/platform'
 import {
   CLIP_LENGTH_DEFAULT, CLIP_LENGTH_MAX, GAME_NAME_MAX, GAME_NOTES_MAX, SUITABILITIES, clipTime, gameNameProblem,
   gameNotesProblem, parseGameInput, parsePlayerCount, type GameTag,
@@ -20,9 +22,13 @@ import { parseYouTubeId } from '~~/shared/youtube'
 const props = defineProps<{
   /** The game to edit (#142); without it the form creates one. */
   game?: GameView
+  /** „Speichern und noch eins“ (#456) is shown. The create page passes it; edit and the stepper's sheet do not. */
+  saveAndNext?: boolean
+  /** The name takes the focus on mount (#456): the page passes it for the fresh form after „noch eins“. */
+  focusName?: boolean
 }>()
 
-const emit = defineEmits<{ saved: [game: GameView] }>()
+const emit = defineEmits<{ saved: [game: GameView], savedAndNext: [game: GameView] }>()
 
 const { t } = useI18n()
 const { toast } = useToast()
@@ -31,6 +37,7 @@ const { tagsInUse } = useTagsInUse()
 
 /** The cropped WebP waiting to be uploaded after the game is saved (#143). */
 const image = ref<Blob | null>(null)
+const imageField = useTemplateRef('imageField')
 const uploadingImage = ref(false)
 
 const name = ref(props.game?.name ?? '')
@@ -45,6 +52,7 @@ const playersToText = ref(props.game?.playersMax == null ? '' : String(props.gam
 const suitabilities = ref<Suitability[]>([...(props.game?.suitabilities ?? [])])
 const tags = ref<GameTag[]>([...(props.game?.tags ?? [])])
 const tagInput = useTemplateRef('tagInput')
+const nameField = useTemplateRef('nameField')
 const notes = ref(props.game?.notes ?? '')
 // The Price (#337, #361): the Price the field writes as the User types, and the one blocker the field reports.
 const price = ref<PriceDraft>(props.game?.price ? { cents: props.game.price.cents, source: props.game.price.source } : null)
@@ -55,6 +63,10 @@ const failure = ref<string | null>(null)
 /** What the player reported about the current link. */
 const duration = ref<number | null>(null)
 const playerFailed = ref(false)
+// The hint for Strg + Enter (#465): shown with a fine pointer only (`null` until the browser has answered, so the server render has none),
+// in the words of the platform's key.
+const finePointer = useMediaQuery(FINE_POINTER_QUERY)
+const shortcutHint = t(isApplePlatform(typeof navigator === 'undefined' ? '' : navigator.userAgent) ? 'gameEdit.saveShortcutApple' : 'gameEdit.saveShortcut')
 
 // The name rule is the shared one (gameNameProblem); the form only words it.
 const nameProblem = computed(() => gameNameProblem(name.value))
@@ -177,7 +189,11 @@ async function uploadImage(game: GameView): Promise<GameView> {
   }
 }
 
-async function submit() {
+/**
+ * Saves the game. `next` is „Speichern und noch eins“ (#456): it reports `savedAndNext`, every other save reports `saved`.
+ * Strg + Enter (#465) goes through `save(false)` too.
+ */
+async function save(next: boolean) {
   attempted.value = true
   // A Tag typed and not confirmed counts (#335); one that cannot be added blocks the save and shows why.
   if (tagInput.value && !tagInput.value.commit()) return
@@ -186,39 +202,72 @@ async function submit() {
   failure.value = null
   const body = draft.value
   try {
+    // The WebP of a crop still being made is waited for, so the upload matches the tile (#457).
+    await imageField.value?.settle()
     // An image picked while editing is uploaded too, once the game has been saved (#143).
     const game = props.game
       ? await $fetch<GameView>(`/api/games/${props.game.id}`, { method: 'PATCH', body })
       : await $fetch<GameView>('/api/games', { method: 'POST', body })
-    emit('saved', await uploadImage(game))
+    const saved = await uploadImage(game)
+    if (next) emit('savedAndNext', saved)
+    else emit('saved', saved)
   }
   catch (error) {
     failure.value = t(apiErrorKey(error))
-  }
-  finally {
+    // Only a failed save frees the form. After a success it stays locked until the page has left or the form is replaced:
+    // the emit does not wait for the page, and a second save in that moment would create the game twice (#573).
     saving.value = false
   }
+}
+
+// After „Speichern und noch eins“ (#456) the page mounts a fresh form: the cursor goes to the name.
+onMounted(() => {
+  if (props.focusName) nameField.value?.focus()
+})
+
+// Strg + Enter, and ⌘ + Enter on a Mac, saves from any field (#465). The capture listener on the form runs before a field's own Enter
+// (the Tag field adds its chip there) and before the browser's default (a line break in Notizen, an implicit submit). It calls
+// `save(false)`, the path of „Spiel anlegen“: `save` itself saves nothing while the form is blocked or a save runs or has succeeded,
+// and a held key is swallowed without saving.
+function onShortcut(event: KeyboardEvent) {
+  if (event.key !== 'Enter' || !(event.ctrlKey || event.metaKey) || event.altKey || event.shiftKey || event.isComposing) return
+  event.preventDefault()
+  event.stopPropagation()
+  // A held key repeats about thirty times a second; it is swallowed like the first press and saves nothing (#573).
+  if (event.repeat) return
+  void save(false)
 }
 </script>
 
 <template>
+  <!-- eslint-disable-next-line vuejs-accessibility/no-static-element-interactions -- Strg + Enter saves from any field (#465) -->
   <form
     novalidate
     class="@container"
-    @submit.prevent="submit"
+    @submit.prevent="save(false)"
+    @keydown.capture="onShortcut"
   >
+    <div
+      v-if="finePointer === true"
+      class="mb-2 flex justify-end"
+    >
+      <HintElement :text="shortcutHint" />
+    </div>
     <div class="grid grid-cols-1 items-start gap-[18px] @[640px]:grid-cols-2">
       <div class="flex min-w-0 flex-col gap-3.5">
         <TextField
+          ref="nameField"
           v-model="name"
           :label="t('gameEdit.name')"
           :error="nameError"
           :maxlength="GAME_NAME_MAX"
         />
         <GameImageField
+          ref="imageField"
           v-model="image"
           :image-url="game?.imageUrl"
           :uploading="uploadingImage"
+          :locked="saving"
         />
         <TextField
           v-model="link"
@@ -368,6 +417,16 @@ async function submit() {
               :icon="ChevronRight"
               :size="18"
             />
+          </AppButton>
+          <AppButton
+            v-if="saveAndNext && !game"
+            size="lg"
+            variant="secondary"
+            :aria-disabled="blocked || saving"
+            :aria-describedby="blocker ? 'game-blocker' : undefined"
+            @click="save(true)"
+          >
+            {{ t('gameEdit.saveAndNext') }}
           </AppButton>
           <span
             v-if="blocker"
