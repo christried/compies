@@ -333,7 +333,8 @@ export const roundPlaces = pgTable('round_places', {
 // A Round's draws: a spin or a set; vetoed ones stay in their Round. `source` says where the game came from (a library game
 // never returns to a pool). The instants: `committedAt` (the server drew or the Host set it), `spinStartAt` (a spin only: the
 // wheel starts a short lead after the commit), `stopAt` (the wheel's stop; for a set draw the commit itself; the clip starts
-// here) and `vetoEndsAt` (the end of the Veto window, null when no window opens). A draw settles at the first read or write
+// here) and `vetoEndsAt` (the end of the Veto window, null when no window opens; the Host's skip of the clip may move it earlier,
+// to 30 s after the skip, never later, #506). A draw settles at the first read or write
 // after its last instant: `outcome` and `settledAt` are null until then. A spin keeps what #229 needs to replay it
 // identically on reload: the games of the slices in order, the placeholder labels shuffled for that spin (null on a visible
 // wheel), the result index and the offset within the slice (a fraction from 0 up to 1). `clipSkippedAt` (0018, #230) is when the

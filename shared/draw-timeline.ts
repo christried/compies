@@ -11,8 +11,8 @@ import { msOf, type Instant } from './instant'
 const SPIN_LEAD_MS = 1500
 /** How long the wheel spins (04-motion § Lucky Wheel: 3 to 10 s); there is no setting for it. The stop is the start plus this. */
 const SPIN_DURATION_MS = 6000
-/** The Veto window: every Party with a Veto left has this long after the wheel's stop to reject the game (#231, spec #218 § Vetoes). */
-const VETO_WINDOW_MS = 60_000
+/** The Veto window lasts the drawn game's clip length plus this long: every Party with a Veto left may reject the game until then (#231, #505, spec #501). */
+const VETO_AFTER_CLIP_MS = 30_000
 
 /** The instants of a new Draw, as the columns store them (Dates). */
 export interface DrawInstants { spinStartAt: Date | null, stopAt: Date, vetoEndsAt: Date | null }
@@ -21,19 +21,25 @@ export interface DrawInstants { spinStartAt: Date | null, stopAt: Date, vetoEnds
 export interface DrawWindow { stopAt: Instant, vetoEndsAt: Instant | null }
 
 /** What a writer tells the timeline about a new Draw. */
-export interface NewDraw { kind: 'spin' | 'set', commitAt: Instant, windowOpens: boolean }
+export interface NewDraw {
+  kind: 'spin' | 'set'
+  commitAt: Instant
+  windowOpens: boolean
+  /** The drawn game's clip length in seconds, null for a game without a video; ignored without a window. Required, so a writer cannot forget it (#505). Not stored: only the resulting end is. */
+  clipLength: number | null
+}
 
 /**
  * WRITER. A spin starts SPIN_LEAD_MS after the commit and stops SPIN_DURATION_MS later; a set draw stops at the commit
- * (`spinStartAt` null). With `windowOpens` the Veto window ends VETO_WINDOW_MS after the stop, else `vetoEndsAt` is null.
+ * (`spinStartAt` null). With `windowOpens` the Veto window ends the clip length plus VETO_AFTER_CLIP_MS after the stop (a game
+ * without a video: VETO_AFTER_CLIP_MS), else `vetoEndsAt` is null.
  */
-export function drawInstants({ kind, commitAt, windowOpens }: NewDraw): DrawInstants {
+export function drawInstants({ kind, commitAt, windowOpens, clipLength }: NewDraw): DrawInstants {
   const commit = msOf(commitAt)
   const spinStart = kind === 'spin' ? commit + SPIN_LEAD_MS : null
   const stop = spinStart === null ? commit : spinStart + SPIN_DURATION_MS
-  // The Veto window's length is decided here and only here. Release 0.13 makes it the game's clip length plus 30 s: `NewDraw` then
-  // gains `clipLength` (the writers already know the game), and `windowFraction`, which reads the stored instants, needs no change.
-  const end = windowOpens ? stop + VETO_WINDOW_MS : null
+  // The Veto window's length is decided here and only here (#505): the readers, `windowFraction` included, work from the stored end.
+  const end = windowOpens ? stop + (clipLength ?? 0) * 1000 + VETO_AFTER_CLIP_MS : null
   return { spinStartAt: spinStart === null ? null : new Date(spinStart), stopAt: new Date(stop), vetoEndsAt: end === null ? null : new Date(end) }
 }
 
@@ -81,6 +87,27 @@ export function vetoesSealed(draw: { vetoEndsAt: Instant | null }, now: Instant)
   return draw.vetoEndsAt !== null && msOf(now) < msOf(draw.vetoEndsAt)
 }
 
+/**
+ * The latest end a Veto window may have after the Host skipped the Clip at `skippedAt`: 30 s later (#506). The one place the 30 s
+ * lives for the skip; `vetoEndAfterSkip` and its SQL twin `movedVetoEnd` both use it.
+ */
+export function vetoEndCap(skippedAt: Instant): Date {
+  return new Date(msOf(skippedAt) + VETO_AFTER_CLIP_MS)
+}
+
+/**
+ * @public WRITER, no production caller (the route uses the SQL twin `movedVetoEnd`; the parity test checks them against each other;
+ * knip: same wording as `isDue`). The window's end after a skip at `skippedAt` (#506): `vetoEndCap` when that is earlier than the
+ * stored end, else null for "no change" (a draw without a window, a skip in the last 30 s, a skip after the end). It never moves the
+ * end later. Precondition: a skip is at or after the Draw's stop (the Clip runs from it), so the result is >= the stop, which
+ * `draws_instants_check` needs; the function does not clamp. The twin returns the whole new value (the old one when nothing moves).
+ */
+export function vetoEndAfterSkip(draw: { vetoEndsAt: Instant | null }, skippedAt: Instant): Date | null {
+  if (draw.vetoEndsAt === null) return null
+  const cap = vetoEndCap(skippedAt)
+  return msOf(draw.vetoEndsAt) > cap.getTime() ? cap : null
+}
+
 /** READER. The instant the draw settles at: the end of its window, or the stop for a draw without one. */
 export function settleAt(draw: DrawWindow): Date {
   return new Date(msOf(draw.vetoEndsAt ?? draw.stopAt))
@@ -93,7 +120,8 @@ export function isDue(draw: DrawWindow & { outcome: string | null }, now: Instan
 
 /**
  * READER. How much of the window is left, from the Draw's own two instants: 1 at the stop, 0 at the end, clamped to 0..1 (before the
- * stop, and before the page has mounted and its clock is 0: 1). 0 for no window and for a zero-length one.
+ * stop, and before the page has mounted and its clock is 0: 1). 0 for no window and for a zero-length one. A skip of the Clip shortens
+ * the stored end (#506), so the fraction steps down once, at the refetch that carries the new end.
  */
 export function windowFraction(draw: DrawWindow, now: Instant): number {
   if (draw.vetoEndsAt === null) return 0
@@ -103,10 +131,19 @@ export function windowFraction(draw: DrawWindow, now: Instant): number {
   return Math.min(1, Math.max(0, (end - msOf(now)) / length))
 }
 
-/** CLIP (GLOSSARY: Clip; spec #218 § Clip, #230). The clip's two instants, in epoch ms: it starts at the draw's stop and ends the game's clip length (seconds) later. */
-export function clipWindow(draw: { stopAt: Instant }, game: { clipLength: number }): { startAt: number, endsAt: number } {
+/** A game's clip length in seconds, null without a video: no Clip to play, so its Veto window is the 30 s alone (#505, #546). Decided here only: both writers of a Draw and `clipWindow` call it. */
+export function clipLengthOf(game: { youtubeId: string | null, clipLength: number }): number | null {
+  return game.youtubeId === null ? null : game.clipLength
+}
+
+/**
+ * CLIP (GLOSSARY: Clip; spec #218 § Clip, #230). The clip's two instants, in epoch ms: it starts at the draw's stop and ends the game's clip length (seconds) later.
+ * A game without a video has its card there instead: a card has no player, so it shows for its stored length but at most as long as its window (#546).
+ */
+export function clipWindow(draw: { stopAt: Instant }, game: { youtubeId: string | null, clipLength: number }): { startAt: number, endsAt: number } {
   const startAt = msOf(draw.stopAt)
-  return { startAt, endsAt: startAt + game.clipLength * 1000 }
+  const seconds = clipLengthOf(game) ?? Math.min(game.clipLength, VETO_AFTER_CLIP_MS / 1000)
+  return { startAt, endsAt: startAt + seconds * 1000 }
 }
 
 /** CLIP. The clip runs from its start (inclusive) to its end (exclusive). */

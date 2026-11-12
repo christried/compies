@@ -2,6 +2,7 @@
 import { teamNameAt } from '~/utils/board'
 import { joinNames } from '~/utils/list'
 import { clockTick, revealTile, vetoStamp } from '~/utils/motion'
+import { clockText } from '~/utils/veto-bar'
 import { teamVar } from '~/utils/team-style'
 import type { BoardTeam } from '~~/shared/event'
 import type { WheelView } from '~~/shared/stage'
@@ -90,7 +91,7 @@ watch(revealed, (now, before) => {
         class="m-0 origin-right text-[14px] font-bold tabular-nums"
         :class="open && secondsLeft <= 10 ? 'text-error-fg' : 'text-ink-2'"
       >
-        {{ open ? t('veto.timeLeft', secondsLeft) : revealing ? t('veto.revealing') : t('veto.revealed') }}
+        {{ open ? t('veto.timeLeft', { time: clockText(secondsLeft) }) : revealing ? t('veto.revealing') : t('veto.revealed') }}
       </p>
     </div>
 

@@ -1,6 +1,7 @@
-// The Share image of a finished Event (#313, spec #308 § The Share image model): everything the picture says, as a pure function of the
-// Event read, so the rules are unit-tested and the renderer (server/utils/share-render.ts) only draws. The server builds the source from
-// its section builders, the sheet passes its EventView for the alt text. The Worker does not import this file.
+// The Share image of a finished Event (#313, rebuilt as the „Anzeigetafel“ in #510, note docs/design_handoff_compies/14-share-image-redesign.md):
+// everything the picture says, as a pure function of the Event read, so the rules are unit-tested and the renderer
+// (server/utils/share-render.ts) only draws. The server builds the source from its section builders, the sheet passes its EventView for the
+// alt text. The Worker does not import this file.
 
 import type { EventView } from './event'
 import { leadersOf } from './finish'
@@ -8,7 +9,7 @@ import { joinNames } from './list'
 import { berlinDay } from './time'
 import { SURFACE, teamColor } from './team-colors'
 import { teamDisplayName } from './team-name'
-import { characterCount } from './text'
+import { characterCount, graphemesOf } from './text'
 
 export const SHARE_FORMATS = ['wide', 'square'] as const
 export type ShareFormat = (typeof SHARE_FORMATS)[number]
@@ -25,7 +26,7 @@ export function parseShareFormat(raw: unknown): ShareFormat | null {
 }
 
 /** Exactly the fields of the Event read the model needs, so the server builds them from its section builders and the page passes its EventView. */
-export type ShareImageSource = Pick<EventView, 'event' | 'sessions' | 'standings' | 'teams' | 'members' | 'results'>
+export type ShareImageSource = Pick<EventView, 'event' | 'sessions' | 'standings' | 'teams' | 'results'>
 
 /**
  * The strings of `de.json` the model fills: § share (the picture's own copy is `share.image`) and § team. Typed structurally, so the
@@ -34,104 +35,119 @@ export type ShareImageSource = Pick<EventView, 'event' | 'sessions' | 'standings
 export interface ShareImageCopy {
   share: {
     image: {
-      winsOne: string
-      winsMany: string
+      winner: string
+      standings: string
+      parties: string
       points: string
-      pts: string
-      people: string
-      person: string
+      pointsLabel: string
       games: string
-      moreGames: string
-      moreParty: string
+      more: string
       moreParties: string
+      datesMany: string
       brand: string
       alt: string
       altPlace: string
       gameTied: string
-      tie: { label: string, labelBoth: string, labelAll: string, alt: string, altAll: string, whoBoth: string, whoAll: string }
+      tiedLegend: string
+      tie: { each: string, label: string, labelBoth: string, labelAll: string, alt: string, altAll: string, whoBoth: string, whoAll: string }
     }
   }
   team: { defaultName: string, colors: Record<string, string> }
 }
 
-/** One Winner of a Tie as the picture draws it (#315). */
-export interface ShareTieEntry {
-  team: number
-  /** The Team name as drawn (no pictographs, the colour name when nothing is left). */
-  name: string
-  /** One line, or two broken at the space nearest the middle when the name would run past its column (names mode only). */
+// --- the model ---
+
+/** One line, or two broken at the space nearest the middle; the renderer draws each line as its own Line. */
+export interface ShareName {
   lines: [string] | [string, string]
-  /** Hex of the Party: the strip and the text shadow. */
-  fill: string
+  /** Lilita px. */
+  size: number
 }
 
-/** What the picture shows of a Tie (#315, 12-siegerehrung-unentschieden § ShareImage): the Winners as names (2 or 3) or as chips (4 and more). */
-export interface ShareTie {
-  mode: 'names' | 'chips'
-  /** „Unentschieden · 2 Sieger“, „… · beide gleichauf“ (both of 2 Parties), „… · alle 8 gleichauf“. */
+export interface ShareHeader {
+  /** „Compies“ (copy), set in capitals by the renderer. */
+  brand: string
+  /** Pictographs stripped; wide: always one line; '' draws nothing. */
+  event: ShareName
+  /** § dates; null: no dates line. */
+  dates: string | null
+}
+
+/** „17“ and „Punkte“ („Punkt“ at 1). */
+export interface SharePoints { value: string, label: string }
+
+export interface ShareWinnerPanel {
+  kind: 'winner'
+  /** „Sieger“. */
   label: string
-  /** The Parties on rank 1, ascending. */
-  entries: ShareTieEntry[]
-  /** Lilita size in px: the same for every name in names mode, the chip's size in chips mode. */
+  team: number
+  /** Hex of the panel's background; the TeamMark on it is `#fffdf8` with a `#151515` symbol. */
+  fill: string
+  /** Hex of the text on the panel. */
+  ink: string
+  name: ShareName
+  points: SharePoints
+}
+
+/** A Tie's band: one Winner in its Team colour, or „+n weitere“ for the Winners beyond the fifth (surface background, no mark). */
+export type ShareTieBand
+  = | { kind: 'party', team: number, name: string, fill: string, ink: string }
+    | { kind: 'more', text: string, fill: string, ink: string }
+
+export interface ShareTiePanel {
+  kind: 'tie'
+  /** The tie bar's label. */
+  label: string
+  /** „je“, left of the points in the bar. */
+  each: string
+  points: SharePoints
+  /** Up to 6 Winners one band each, ascending team; 7 or 8 the first five and „+n weitere“. */
+  bands: ShareTieBand[]
+  /** Lilita px of every band, the „+n weitere“ band included: the tier of the number of Winners and the longest Winner name (the note's table). */
   size: number
-  lead: string
-  /** „14“, drawn in Bungee. */
-  points: string
-  tail: string
-  /** The square format's sunburst in px: 340, 300, 280 for 2, 3, 4 and more Winners (the wide one stays 330). */
-  burst: number
 }
 
-/** A single Winner: the picture of every Event that is not a Tie. */
-export interface SingleWinner {
-  /** The Party on rank 1. */
-  teams: number[]
-  /** The Team name. */
-  name: string
-  /** The name as drawn: one line, or two broken at the space nearest the middle. */
-  lines: [string] | [string, string]
-  /** Font size in px: 96/84/64 wide, 128/112/88 square. */
-  size: number
-  /** Hex of the Winner: the text shadow. */
-  color: string
-  lead: string
-  /** „17“, drawn in Bungee. */
-  points: string
-  tail: string
+/** A Party's row, or the „+n weitere Parteien“ line between the first rows and the last place. */
+export type ShareStandingsRow
+  = | { kind: 'party', rank: number, team: number, name: string, points: number, fill: string, ink: string }
+    | { kind: 'more', text: string }
+
+export interface ShareStandings {
+  /** „Endstand“. */
+  title: string
+  /** „8 Parteien“: all Parties, the Winners included. */
+  count: string
+  /** The Parties with rank >= 2 under the slot rule. */
+  rows: ShareStandingsRow[]
 }
 
-/** A game's chip. `teams` = every Party on Place 1 of that Round; `color` = the lowest team's fill (the dot). */
-export interface ShareChip {
-  name: string
-  teams: number[]
-  color: string
-  /** Only for a game with a Shared first place: one hex per Party in team order, at most 4 (the renderer draws them as the capsule's stripes). */
-  stripes?: string[]
+/** A game row: `stripe` is one hex per Party on place 1, ascending team, at most 4; `[SURFACE]` when nobody. */
+export type ShareGameRow
+  = | { kind: 'game', name: string, stripe: string[] }
+    | { kind: 'more', text: string }
+
+/** The games head's legend: the stripe of the first tied game's first two Parties and „gleichauf“. */
+export interface ShareLegend { stripe: string[], text: string }
+
+export interface ShareGames {
+  /** The played games: „12 Spiele“, „1 Spiel“, „0 Spiele“. */
+  label: string
+  /** Null when no played game has two or more Parties on place 1; set whatever the Winner panel is, and also when that game is folded into „+n weitere“. */
+  legend: ShareLegend | null
+  rows: ShareGameRow[]
 }
 
-interface Base {
+export interface ShareImageModel {
   format: ShareFormat
   width: number
   height: number
-  /** The pill: the Event's name (the renderer ellipsises this part first, it can be 60 characters) and the rest, which is never cut. */
-  pill: { event: string, rest: string }
-  /** The Dates of the started Sessions (also inside `pill.rest`); null when none has one. */
-  date: string | null
-  /** „9 Leute“, „1 Person“; null at 0 Players. */
-  people: string | null
-  /** The rows under the Winner(s): the next Standings with rank >= 2, each with its own rank (2, 2, 4), as many as the layout has room for. */
-  rows: { rank: number, team: number, name: string, points: number, fill: string, ink: string }[]
-  moreRows: string | null
-  gamesLabel: string
-  chips: ShareChip[]
-  moreChips: string | null
-  /** The brand word the picture signs with, „Compies“ (drawn in capitals). */
-  brand: string
+  header: ShareHeader
+  panel: ShareWinnerPanel | ShareTiePanel
+  /** Null when every Party is on rank 1: the block is hidden. */
+  standings: ShareStandings | null
+  games: ShareGames
   alt: string
 }
-
-/** Exactly one of `winner` (one Party on rank 1) and `tie` (several, #315) is set. */
-export type ShareImageModel = Base & ({ tie: null, winner: SingleWinner } | { tie: ShareTie, winner: null })
 
 // --- copy ---
 
@@ -159,16 +175,9 @@ function drawable(text: string): string {
   return text.replace(PICTOGRAPHS, '').replace(/\s+/g, ' ').trim()
 }
 
-const graphemes = new Intl.Segmenter('de', { granularity: 'grapheme' })
-
-/** The name as one line, or two when it is longer than 14 characters and has a space: broken at the space nearest the middle (a tie goes to the earlier). */
-function breakName(name: string): [string] | [string, string] {
-  return characterCount(name) <= ONE_LINE_MAX ? [name] : breakAtMiddle(name)
-}
-
 /** The name broken at the space nearest the middle (the earlier of two equally near), or on one line when it has no space. */
 function breakAtMiddle(name: string): [string] | [string, string] {
-  const parts = [...graphemes.segment(name)].map(part => part.segment)
+  const parts = graphemesOf(name)
   const middle = parts.length / 2
   let best = -1
   parts.forEach((part, index) => {
@@ -178,156 +187,92 @@ function breakAtMiddle(name: string): [string] | [string, string] {
   return [parts.slice(0, best).join(''), parts.slice(best + 1).join('')]
 }
 
-const ONE_LINE_MAX = 14
-const STEP_2_MAX = 34
-const SIZES: Record<ShareFormat, [number, number, number]> = { wide: [96, 84, 64], square: [128, 112, 88] }
+/** The Winner's name by its characters: <= 10 one line at the first size, never broken; <= 20 and longer broken at the middle at the second and third (the note's k = 1 tiers). */
+const WINNER_NAME: Record<ShareFormat, [number, number, number]> = { wide: [96, 80, 56], square: [112, 92, 64] }
+const WINNER_ONE_LINE_MAX = 10
+const WINNER_STEP_2_MAX = 20
 
-function nameSize(name: string, format: ShareFormat): number {
+function winnerName(name: string, format: ShareFormat): ShareName {
   const length = characterCount(name)
-  const [first, second, third] = SIZES[format]
-  return length <= ONE_LINE_MAX ? first : length <= STEP_2_MAX ? second : third
+  const [first, second, third] = WINNER_NAME[format]
+  if (length <= WINNER_ONE_LINE_MAX) return { lines: [name], size: first }
+  return { lines: breakAtMiddle(name), size: length <= WINNER_STEP_2_MAX ? second : third }
+}
+
+/** The Event's name: wide is always one line (30 px up to 40 characters, then 24); square 46 px up to 30, 34 px up to 44, and 34 px on two lines beyond. */
+const EVENT_WIDE_MAX = 40
+const EVENT_SQUARE_LARGE_MAX = 30
+const EVENT_SQUARE_ONE_LINE_MAX = 44
+
+function eventName(name: string, format: ShareFormat): ShareName {
+  const length = characterCount(name)
+  if (format === 'wide') return { lines: [name], size: length <= EVENT_WIDE_MAX ? 30 : 24 }
+  if (length <= EVENT_SQUARE_LARGE_MAX) return { lines: [name], size: 46 }
+  return { lines: length <= EVENT_SQUARE_ONE_LINE_MAX ? [name] : breakAtMiddle(name), size: 34 }
 }
 
 // --- dates ---
 
-/** The Dates of the started Sessions as one text: a day, or first to last (the year on both ends only across a New Year). */
-function dateText(sessions: ShareImageSource['sessions']): string | null {
+/** Up to this many days are listed; more are „first – last · n Termine“. */
+const DATES_LISTED_MAX = 3
+
+/**
+ * The days of the started Sessions (distinct Berlin days, ascending): 1 to 3 joined with „ · “, the year on the last only, or on every day
+ * across a New Year; 4 or more „first – last · n Termine“ with the year on the first only across a New Year.
+ */
+function dateText(sessions: ShareImageSource['sessions'], copy: ShareImageCopy['share']['image']): string | null {
   const instants = sessions
     .filter(session => session.startedAt !== null && session.startsAt !== null)
     .map(session => new Date(session.startsAt!))
     .sort((a, b) => a.getTime() - b.getTime())
-  const first = instants[0]
-  const last = instants.at(-1)
+  const days: Date[] = []
+  for (const instant of instants) {
+    if (days.length === 0 || berlinDay(days.at(-1)!, true) !== berlinDay(instant, true)) days.push(instant)
+  }
+  const first = days[0]
+  const last = days.at(-1)
   if (!first || !last) return null
-  const firstDay = berlinDay(first, true)
-  const lastDay = berlinDay(last, true)
-  if (firstDay === lastDay) return firstDay
-  const sameYear = firstDay.slice(-4) === lastDay.slice(-4)
-  return `${berlinDay(first, !sameYear)} – ${lastDay}`
+  const acrossYears = berlinDay(first, true).slice(-4) !== berlinDay(last, true).slice(-4)
+  if (days.length > DATES_LISTED_MAX) return fillCopy(copy.datesMany, { first: berlinDay(first, acrossYears), last: berlinDay(last, true), n: days.length })
+  return days.map((day, index) => berlinDay(day, acrossYears || index === days.length - 1)).join(' · ')
 }
 
-// --- the games ---
+// --- the slots ---
 
-const WIDE_CHIPS_MAX = 6
-const SQUARE_CHIPS_MAX = 9
-// The wide row is one line that must not run off the canvas (decision 7, 12-siegerehrung-unentschieden § ShareImage): a chip is about
-// name length x 8 + 36 wide plus a gap of 10, „+N weitere“ about 100, and the row has 1088 px minus the „N Spiele“ label.
-const WIDE_ROW_PX = 1088
-const CHIP_CHAR_PX = 8
-const CHIP_FRAME_PX = 36 + 10
-const MORE_CHIPS_PX = 100
-const LABEL_CHAR_PX = 10
-const LABEL_FRAME_PX = 14
+/** Standings slots: 4 wide, 6 square. More Parties than that show the first S - 2, „+n weitere Parteien“ and the last place. */
+const STANDINGS_SLOTS: Record<ShareFormat, number> = { wide: 4, square: 6 }
+/** Game slots: 6 wide (3 rows of 2), 8 square. More games show slots - 1 and „+n weitere“. */
+const GAME_SLOTS: Record<ShareFormat, number> = { wide: 6, square: 8 }
+/** A game's stripe has at most 4 colours. */
+const STRIPE_MAX = 4
+/** A game with this many Parties on place 1 or more says „· n gleichauf“ after its name. */
+const GAME_TIED_SUFFIX_MIN = 5
+/** A Tie shows this many bands of Winners; 7 or 8 Winners fold the rest into „+n weitere“. */
+const TIE_BANDS_MAX = 6
+const TIE_BANDS_SHOWN_WHEN_FOLDED = 5
+/** The ink on the „+n weitere“ band (the note: #151515 on #fffdf8). */
+const MORE_BAND_INK = '#151515'
 
-/** The width a chip adds to the wide row beside its name: the capsule of a game with a Shared first place is 8 px a stripe. */
-const CAPSULE_STRIPE_PX = 8
-/** A capsule draws at most 4 stripes; a game with more Parties on Place 1 says „· n gleichauf“ in its name. */
-const CAPSULE_STRIPES_MAX = 4
-/** The dot every plain chip draws, a Tie's and a single Winner's alike (`chipMark` in share-render.ts); the estimate must count it on each (#315, review 0.9). */
-const DOT_PX = 11
-
-/** How many of the wide row's chips fit: add chips while they and, if games remain, „+N weitere“ fit; the first always stays. `extra` is the capsule's or dot's width. */
-function wideChipCount(chips: readonly { name: string, extra: number }[], label: string): number {
-  const room = WIDE_ROW_PX - (label.length * LABEL_CHAR_PX + LABEL_FRAME_PX)
-  let used = 0
-  let count = 0
-  for (const [index, chip] of chips.slice(0, WIDE_CHIPS_MAX).entries()) {
-    used += characterCount(chip.name) * CHIP_CHAR_PX + chip.extra + CHIP_FRAME_PX
-    const reserve = chips.length - (index + 1) > 0 ? MORE_CHIPS_PX : 0
-    if (count > 0 && used + reserve > room) break
-    count += 1
-  }
-  return count
+/** The tier of a Tie's band font by the characters of the longest Winner name: <= 14 the first, <= 22 the second, longer the third. */
+const TIE_NAME_TIER_1_MAX = 14
+const TIE_NAME_TIER_2_MAX = 22
+/** Lilita px of the bands by the number of Winners (4 to 8 share a row) and format, tier 1 / 2 / 3. */
+const TIE_BAND_SIZES: Record<'2' | '3' | 'many', Record<ShareFormat, [number, number, number]>> = {
+  2: { wide: [72, 52, 38], square: [88, 68, 52] },
+  3: { wide: [56, 44, 34], square: [68, 56, 44] },
+  many: { wide: [36, 32, 28], square: [40, 36, 32] },
 }
 
-// The square wraps its chips, and three lines is what its layout has room for under a two-line name (a Winner's name over three lines or a
-// long list of long names would push the sunburst over the chips). Estimated as the wide row is: a chip is about name length x 11 + 58
-// wide at 22 px, the gap is 12, a line has 952 px, and „+N weitere“ (about 130 px) must fit the last line.
-const SQUARE_LINE_PX = 952
-const SQUARE_LINES_MAX = 3
-const SQUARE_CHIP_CHAR_PX = 11
-const SQUARE_CHIP_FRAME_PX = 58
-const SQUARE_GAP_PX = 12
-const SQUARE_MORE_PX = 130
-
-/** The square's dot is 15 px inside the chip's frame; a capsule of n stripes is n x 11. */
-const SQUARE_DOT_PX = 15
-const SQUARE_STRIPE_PX = 11
-
-/** How many of the square's chips fit its three lines; the first always stays. `stripes` > 1 is a capsule, wider than the dot. */
-function squareChipCount(chips: readonly { name: string, stripes: number }[]): number {
-  let line = 1
-  let x = 0
-  let count = 0
-  for (const [index, chip] of chips.slice(0, SQUARE_CHIPS_MAX).entries()) {
-    const capsule = chip.stripes > 1 ? chip.stripes * SQUARE_STRIPE_PX - SQUARE_DOT_PX : 0
-    const width = characterCount(chip.name) * SQUARE_CHIP_CHAR_PX + SQUARE_CHIP_FRAME_PX + capsule
-    const wraps = x > 0 && x + SQUARE_GAP_PX + width > SQUARE_LINE_PX
-    const nextLine = wraps ? line + 1 : line
-    const nextX = x === 0 || wraps ? width : x + SQUARE_GAP_PX + width
-    const more = chips.length - (index + 1) > 0
-    const tooMuch = nextLine > SQUARE_LINES_MAX || (more && nextLine === SQUARE_LINES_MAX && nextX + SQUARE_GAP_PX + SQUARE_MORE_PX > SQUARE_LINE_PX)
-    if (count > 0 && tooMuch) break
-    line = nextLine
-    x = nextX
-    count += 1
-  }
-  return count
+function tieBandSize(winners: number, longestName: number, format: ShareFormat): number {
+  const sizes = TIE_BAND_SIZES[winners === 2 ? '2' : winners === 3 ? '3' : 'many'][format]
+  return longestName <= TIE_NAME_TIER_1_MAX ? sizes[0] : longestName <= TIE_NAME_TIER_2_MAX ? sizes[1] : sizes[2]
 }
 
 // --- the model ---
 
-const ROWS_MAX = 3
-
-// The Tie (#315, 12-siegerehrung-unentschieden § ShareImage). The artboard's `share()` is the source of every number below; the wrap
-// estimate and the chip widths are its own estimates, checked by looking at the pictures, not by measuring a font.
-const TIE_NAMES_MAX = 3
-/** Lilita size of a name by k, for the longest name <= 14, <= 22, longer characters. */
-const TIE_NAME_SIZES: Record<ShareFormat, Record<2 | 3, [number, number, number]>> = {
-  wide: { 2: [80, 68, 52], 3: [64, 54, 44] },
-  square: { 2: [108, 92, 72], 3: [88, 74, 60] },
-}
-/** Lilita size of a name chip (4 Winners and more), for the longest name <= 14 and longer. */
-const TIE_CHIP_SIZES: Record<ShareFormat, [number, number]> = { wide: [34, 30], square: [44, 38] }
-/** How many rows names mode has room for under the Winners, by k, before a wrapping name takes some. */
-const TIE_ROWS: Record<ShareFormat, Record<2 | 3, number>> = { wide: { 2: 2, 3: 2 }, square: { 2: 3, 3: 2 } }
-/** The rows a wrapping name takes (the artboard: two Winners lose one, three lose two). */
-const TIE_ROWS_LOST_BY_WRAP: Record<2 | 3, number> = { 2: 1, 3: 2 }
-/** A name wraps when its characters x size x .47 pass the width of the names column. */
-const TIE_WRAP_EM = 0.47
-const TIE_WRAP_PX: Record<ShareFormat, number> = { wide: 680, square: 930 }
-const TIE_CHIP_LONG_NAME = 14
-/** Names mode steps its font size down twice: past ONE_LINE_MAX characters, and past this many (the artboard's three sizes). */
-const TIE_NAME_STEP_2_MAX = 22
-const TIE_BURST = { 2: 340, 3: 300, more: 280 }
-
-interface TieShape { tie: ShareTie, rowsMax: number }
-
-/** The Tie's picture without its copy: what the Winners are drawn as, how big, and how many rows are left for the other Parties. */
-function tieShape(leaders: number[], nameOf: (team: number) => string, format: ShareFormat, parts: Pick<ShareTie, 'label' | 'lead' | 'points' | 'tail'>): TieShape {
-  const k = leaders.length
-  const drawn = leaders.map(team => ({ team, name: nameOf(team) }))
-  const longest = Math.max(...drawn.map(entry => characterCount(entry.name)))
-  const burst = k === 2 ? TIE_BURST[2] : k === 3 ? TIE_BURST[3] : TIE_BURST.more
-  const entryOf = (entry: { team: number, name: string }, lines: ShareTieEntry['lines']): ShareTieEntry => ({ ...entry, lines, fill: teamColor(entry.team).fill })
-
-  if (k > TIE_NAMES_MAX) {
-    const size = TIE_CHIP_SIZES[format][longest <= TIE_CHIP_LONG_NAME ? 0 : 1]
-    return { tie: { mode: 'chips', ...parts, entries: drawn.map(entry => entryOf(entry, [entry.name])), size, burst }, rowsMax: 0 }
-  }
-
-  const sizes = TIE_NAME_SIZES[format][k as 2 | 3]
-  const size = longest <= ONE_LINE_MAX ? sizes[0] : longest <= TIE_NAME_STEP_2_MAX ? sizes[1] : sizes[2]
-  const limit = TIE_WRAP_PX[format]
-  const wraps = (length: number) => length * size * TIE_WRAP_EM > limit
-  const entries = drawn.map(entry => entryOf(entry, wraps(characterCount(entry.name)) ? breakAtMiddle(entry.name) : [entry.name]))
-  const rowsMax = Math.max(0, TIE_ROWS[format][k as 2 | 3] - (wraps(longest) ? TIE_ROWS_LOST_BY_WRAP[k as 2 | 3] : 0))
-  return { tie: { mode: 'names', ...parts, entries, size, burst }, rowsMax }
-}
-
 /**
- * Everything the picture says, or null without Standings or without a Party on rank 1. One Party on rank 1 is `winner`; several are a
- * `tie` (#315, ADR 0014: every Party on rank 1 wins, no tiebreaker).
+ * Everything the picture says, or null without Standings or without a Party on rank 1. One Party on rank 1 is a Winner panel; several are
+ * a tie panel (#315, ADR 0014: every Party on rank 1 wins, no tiebreaker).
  */
 export function shareImageModel(source: ShareImageSource, format: ShareFormat, copy: ShareImageCopy): ShareImageModel | null {
   const standings = source.standings
@@ -345,90 +290,76 @@ export function shareImageModel(source: ShareImageSource, format: ShareFormat, c
     return teamDisplayName(own === null ? null : plain ? own.trim() : drawable(own), position, teamCopy)
   }
 
-  const winnerPoints = standings.find(row => row.rank === 1)!.points
-  const several = leaders.length > 1
-  const pointsText = `${winnerPoints} ${pluralCopy(text.points, winnerPoints)}`
-  const ptsOf = (points: number) => fillCopy(pluralCopy(text.pts, points), { n: points })
-
+  const points = standings.find(row => row.rank === 1)!.points
+  const pointsOf = { value: String(points), label: pluralCopy(text.pointsLabel, points) }
   const below = standings.filter(row => row.rank >= 2)
-  const shape = several
-    ? tieShape(leaders, team => nameOf(team, false), format, {
+
+  const tieBands = (winners: number[]): ShareTieBand[] => {
+    const party = (team: number): ShareTieBand => ({ kind: 'party', team, name: nameOf(team, false), ...teamColor(team) })
+    if (winners.length <= TIE_BANDS_MAX) return winners.map(party)
+    return [...winners.slice(0, TIE_BANDS_SHOWN_WHEN_FOLDED).map(party), { kind: 'more', text: fillCopy(text.more, { n: winners.length - TIE_BANDS_SHOWN_WHEN_FOLDED }), fill: SURFACE, ink: MORE_BAND_INK }]
+  }
+
+  const panel: ShareImageModel['panel'] = leaders.length === 1
+    ? { kind: 'winner', label: text.winner, team: first, ...teamColor(first), name: winnerName(nameOf(first, false), format), points: pointsOf }
+    : {
+        kind: 'tie',
         label: below.length > 0
           ? fillCopy(text.tie.label, { k: leaders.length })
           : leaders.length === 2 ? text.tie.labelBoth : fillCopy(text.tie.labelAll, { k: leaders.length }),
-        lead: text.winsMany,
-        points: String(winnerPoints),
-        tail: pluralCopy(text.points, winnerPoints),
-      })
-    : null
-  const rows = below.slice(0, shape ? shape.rowsMax : ROWS_MAX).map((row) => {
-    const { fill, ink } = teamColor(row.team)
-    return { rank: row.rank, team: row.team, name: nameOf(row.team, false), points: row.points, fill, ink }
-  })
-  const hidden = below.length - rows.length
+        each: text.tie.each,
+        points: pointsOf,
+        bands: tieBands(leaders),
+        // The longest drawn name of all Winners counts, also of those folded into „+n weitere“.
+        size: tieBandSize(leaders.length, Math.max(...leaders.map(team => characterCount(nameOf(team, false)))), format),
+      }
+
+  const partyRows: ShareStandingsRow[] = below.map(row => ({ kind: 'party', rank: row.rank, team: row.team, name: nameOf(row.team, false), points: row.points, ...teamColor(row.team) }))
+  const slots = STANDINGS_SLOTS[format]
+  const shownRows: ShareStandingsRow[] = partyRows.length <= slots
+    ? partyRows
+    : [...partyRows.slice(0, slots - 2), { kind: 'more', text: fillCopy(text.moreParties, { n: partyRows.length - slots + 1 }) }, partyRows.at(-1)!]
 
   const results = [...source.results].sort((a, b) => a.number - b.number)
-  const gamesLabel = fillCopy(pluralCopy(text.games, results.length), { n: results.length })
-  const all: ShareChip[] = results.map((result) => {
-    const teams = result.places.filter(place => place.place === 1).map(place => place.team).sort((a, b) => a - b)
+  // The legend shows when any played game has two or more Parties on place 1, whichever row it ends up in (it may be folded into „+n weitere“).
+  const winnersOf = (result: (typeof results)[number]) => result.places.filter(place => place.place === 1).map(place => place.team).sort((a, b) => a - b)
+  const firstTied = results.map(winnersOf).find(teams => teams.length >= 2)
+  const legend: ShareLegend | null = firstTied ? { stripe: firstTied.slice(0, 2).map(team => teamColor(team).fill), text: text.tiedLegend } : null
+  const gameRows: ShareGameRow[] = results.map((result) => {
+    const teams = winnersOf(result)
     const name = drawable(result.game.name)
-    const chip = { name: teams.length > CAPSULE_STRIPES_MAX ? `${name} ${fillCopy(text.gameTied, { n: teams.length })}` : name, teams, color: teams[0] === undefined ? SURFACE : teamColor(teams[0]).fill }
-    // A game with a Shared first place gets a capsule: one stripe per Party, at most 4.
-    return teams.length > 1 ? { ...chip, stripes: teams.slice(0, CAPSULE_STRIPES_MAX).map(team => teamColor(team).fill) } : chip
+    return {
+      kind: 'game',
+      name: teams.length >= GAME_TIED_SUFFIX_MIN ? `${name} ${fillCopy(text.gameTied, { n: teams.length })}` : name,
+      stripe: teams.length === 0 ? [SURFACE] : teams.slice(0, STRIPE_MAX).map(team => teamColor(team).fill),
+    }
   })
-  const shown = format === 'wide'
-    ? wideChipCount(all.map(chip => ({ name: chip.name, extra: chip.stripes ? chip.stripes.length * CAPSULE_STRIPE_PX : DOT_PX })), gamesLabel)
-    : squareChipCount(all.map(chip => ({ name: chip.name, stripes: chip.stripes?.length ?? 1 })))
+  const gameSlots = GAME_SLOTS[format]
+  const shownGames: ShareGameRow[] = gameRows.length <= gameSlots
+    ? gameRows
+    : [...gameRows.slice(0, gameSlots - 1), { kind: 'more', text: fillCopy(text.more, { n: gameRows.length - gameSlots + 1 }) }]
 
-  const eventName = drawable(source.event.name)
-  const date = dateText(source.sessions)
-  const players = source.members.filter(member => member.zone === 'team').length
-  const people = players === 0 ? null : players === 1 ? text.person : fillCopy(text.people, { n: players })
-
-  const placeText = (row: { rank: number, team: number, points: number }) => fillCopy(text.altPlace, { rank: row.rank, name: nameOf(row.team, true), points: ptsOf(row.points) })
-  const plainNames = joinNames(leaders.map(team => nameOf(team, true)))
+  // The alt text names the Winner and place 2 (the note); a Tie names its Winners and no place. Names are the Team's own, not stripped.
   const event = source.event.name.trim()
-  const alt = (shape
-    // The artboard names the next three places whatever is drawn (chips mode draws none), and none when every Party won.
-    ? [
-        below.length === 0
-          ? fillCopy(text.tie.altAll, {
-              event, points: pointsText, names: plainNames,
-              who: leaders.length === 2 ? text.tie.whoBoth : fillCopy(text.tie.whoAll, { k: leaders.length }),
-            })
-          : fillCopy(text.tie.alt, { event, points: pointsText, names: plainNames }),
-        ...below.slice(0, ROWS_MAX).map(placeText),
-      ]
-    : [fillCopy(text.alt, { winner: plainNames, event, points: pointsText }), ...rows.map(placeText)]).join(' ')
+  const pointsText = `${points} ${pluralCopy(text.points, points)}`
+  const plainNames = joinNames(leaders.map(team => nameOf(team, true)))
+  const second = below.filter(row => row.rank === 2).map(row => nameOf(row.team, true))
+  const alt = leaders.length === 1
+    ? [fillCopy(text.alt, { winner: plainNames, event, points: pointsText }), ...(second.length > 0 ? [fillCopy(text.altPlace, { rank: 2, name: joinNames(second) })] : [])].join(' ')
+    : below.length === 0
+      ? fillCopy(text.tie.altAll, {
+          event, points: pointsText, names: plainNames,
+          who: leaders.length === 2 ? text.tie.whoBoth : fillCopy(text.tie.whoAll, { k: leaders.length }),
+        })
+      : fillCopy(text.tie.alt, { event, points: pointsText, names: plainNames })
 
-  const base = {
+  return {
     format,
     ...SHARE_SIZE[format],
-    pill: { event: eventName, rest: [date, people].filter(part => part !== null).join(' · ') },
-    date,
-    people,
-    rows,
-    moreRows: hidden === 0 ? null : hidden === 1 ? text.moreParty : fillCopy(text.moreParties, { n: hidden }),
-    gamesLabel,
-    chips: all.slice(0, shown),
-    moreChips: shown < all.length ? fillCopy(text.moreGames, { n: all.length - shown }) : null,
-    brand: text.brand,
+    header: { brand: text.brand, event: eventName(drawable(source.event.name), format), dates: dateText(source.sessions, text) },
+    panel,
+    standings: below.length === 0 ? null : { title: text.standings, count: fillCopy(text.parties, { n: standings.length }), rows: shownRows },
+    games: { label: fillCopy(pluralCopy(text.games, results.length), { n: results.length }), legend, rows: shownGames },
     alt,
-  }
-  if (shape) return { ...base, tie: shape.tie, winner: null }
-  const winnerName = nameOf(first, false)
-  return {
-    ...base,
-    tie: null,
-    winner: {
-      teams: leaders,
-      name: winnerName,
-      lines: breakName(winnerName),
-      size: nameSize(winnerName, format),
-      color: teamColor(first).fill,
-      lead: text.winsOne,
-      points: String(winnerPoints),
-      tail: pluralCopy(text.points, winnerPoints),
-    },
   }
 }
