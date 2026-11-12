@@ -4,7 +4,7 @@
 
 ### Geändert
 
-- **Das Glücksrad als Show-Rad:** Das Rad sieht jetzt aus wie in einer Spielshow: ein roter Rand mit 24 Lampen, ein Stift an jeder Scheibenkante und oben eine Klappe statt des Dreiecks. Das Rad hat in Hell und Dunkel dieselben Farben; die Karte darum folgt weiter deiner Darstellung. Die Lampen blinken, solange das Rad ruht, laufen beim Dreh um den Rand und blitzen beim Stopp. ([#519](https://github.com/christried/compies/issues/519), [#521](https://github.com/christried/compies/issues/521))
+- **Das Glücksrad als Show-Rad:** Das Rad sieht jetzt aus wie in einer Spielshow: ein roter Rand mit 24 Lampen, ein Stift an jeder Scheibenkante und oben eine Klappe statt des Dreiecks. Das Rad hat in Hell und Dunkel dieselben Farben; die Karte darum folgt weiter deiner Darstellung. Die Lampen blinken, solange das Rad ruht, laufen beim Dreh um den Rand und blitzen beim Stopp. Die Klappe schnippt an jedem Stift, der vorbeikommt: erst ganz schnell, dann immer langsamer, bis das Rad steht. ([#519](https://github.com/christried/compies/issues/519), [#521](https://github.com/christried/compies/issues/521), [#522](https://github.com/christried/compies/issues/522))
 - **Jeder Dreh dauert anders:** Das Glücksrad dreht sich jetzt zwischen 6 und 10 Sekunden, bei jedem Dreh neu vom Server ausgelost und auf allen Geräten gleich. Je länger es dreht, desto mehr Umdrehungen macht es, und niemand kann mehr bis zum Stopp mitzählen. Bisher waren es immer 6 Sekunden; der Host stellt die Dauer nirgends ein. Veto-Fenster und Clip beginnen wie bisher mit dem Stopp. ([#520](https://github.com/christried/compies/issues/520))
 
 ## [0.13.1] - 2026-11-12 – Kleinkram

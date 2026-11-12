@@ -118,6 +118,7 @@ Server sends `{startAt, durationMs (3–10 s host setting; reduced clients still
 - **Put back / refill:** slices redistribute 0.6 `EASE.io`, new slice `scale 0→1` 0.3 pop.
 - **Reduced:** spin = calm 1.2 s `EASE.snap` placed so it **ends at the same stopAt** (start at stopAt − 1.2 s); no bulbs chase, no flapper; reveal = crossfade 0.2; remove = fade 0.2 then redistribute instantly.
 - **Deviation (0.13):** `durationMs` is no Host setting: the server draws it evenly between 6 and 10 s for each spin, and the wheel makes more turns the longer it spins (5 at 6 s up to 8 at 10 s), not a fixed 1800°. Compibert's part and his cues wait for his hand-off; the wheel's five cues come with 0.13.3, scheduled ahead on the audio clock from the spin's data, so a hidden tab plays them too where the browser lets it.
+- **Deviation (0.13.2, #522):** the wheel turns counter-clockwise, so the flapper kicks the other way (+30° to 0, SVG sense); a pin that comes while the kick still falls holds the flapper up; a pin crossed back at the end of the overshoot kicks too. The crossings are worked out ahead from the spin's instants (`app/utils/wheel-pins.ts`), not in an `onUpdate`.
 
 ### Clip overlay [1.0]
 - Open at `clip.startAt`: `scale .96→1, opacity`, 0.36 `EASE.out`. Auto-close at startAt + 30 s: 0.22 `EASE.in` + `veto-clip-close`.
