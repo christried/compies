@@ -1,9 +1,12 @@
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import type { SpinView } from '~~/shared/stage'
+import type { SpinView, VetoView } from '~~/shared/stage'
 import { pinCrossings } from '../../app/utils/wheel-pins'
-import { CUE_IDS, CUE_VOLUME, TICK_MIN_GAP_MS, thinTicks, wheelCuePlan, type Cue, type WheelCueInput } from '../../app/utils/sound-cues'
+import {
+  ARRIVAL_LATE_MS, CUE_IDS, CUE_VOLUME, STAMP_GAP_MS, TICK_MIN_GAP_MS, thinTicks, vetoArrivalCues, vetoCuePlan, wheelCuePlan,
+  type ArrivalCue, type Cue, type VetoArrivalState, type VetoCueInput, type WheelCueInput,
+} from '../../app/utils/sound-cues'
 
 // The wheel's cue plan (#530, spec #504 § The cue plan): which sound cue is due at which server time for a spin, as a pure function of the
 // viewer's own Event read. Nothing here plays; the cue player (#531) schedules what the plan holds.
@@ -209,6 +212,276 @@ describe('wheelCuePlan keeps the drawn game secret', () => {
       expect(withGame.filter(cue => cue.at <= stop)).toEqual(without.filter(cue => cue.at <= stop))
       expect(withGame).toEqual(without)
       expect(withGame.length).toBeGreaterThan(0)
+    })
+  })
+})
+
+// The Veto window's plan (#532): from the viewer's own read, S = the window's stop, E = its end. Offsets below are from S.
+const CLOCK_OFFSETS_BEFORE_END = [10_000, 9000, 8000, 7000, 6000, 5000, 4500, 4000, 3500, 3000, 2500, 2000, 1500, 1000, 500]
+const drawOf = (windowMs: number | null, kind: 'spin' | 'set' = 'spin'): NonNullable<VetoCueInput['draw']> => ({
+  drawId: 'd1', kind, stopAt: iso(START), vetoEndsAt: windowMs === null ? null : iso(START + windowMs),
+})
+const clipOf = (endsMs: number, drawId = 'd1'): NonNullable<VetoCueInput['clip']> => ({ drawId, endsAt: iso(START + endsMs) })
+const VETO: VetoCueInput = { draw: drawOf(40_000), clip: clipOf(10_000), reducedMotion: false }
+const vetoPlan = (rest: Partial<VetoCueInput> = {}) => vetoCuePlan({ ...VETO, ...rest })
+const at = (cues: Cue[]) => cues.map(cue => [cue.id, cue.at - START])
+
+describe('vetoCuePlan, a window of 40 s with a Clip of 10 s', () => {
+  it('gives the opening, the Clip\'s close, fifteen clock ticks, the drumroll and the reveal, in order', () => {
+    const cues = vetoPlan()
+
+    expect(cues).toHaveLength(19)
+    expect(at(cues)).toEqual([
+      ['veto-open', 0],
+      ['veto-clip-close', 10_000],
+      ...[30_000, 31_000, 32_000, 33_000, 34_000, 35_000, 35_500, 36_000, 36_500, 37_000, 37_500, 38_000, 38_500].map(offset => ['veto-clock', offset]),
+      ['veto-drumroll', 38_800],
+      ['veto-clock', 39_000],
+      ['veto-clock', 39_500],
+      ['veto-reveal', 40_000],
+    ])
+  })
+
+  it('ticks five times at one a second and ten at two a second, none at the end itself', () => {
+    const ticks = offsets(vetoPlan(), 'veto-clock')
+
+    expect(ticks).toHaveLength(15)
+    expect(ticks.filter(offset => offset < 35_000 + 1)).toEqual([30_000, 31_000, 32_000, 33_000, 34_000, 35_000])
+    expect(ticks.slice(-9)).toEqual([35_500, 36_000, 36_500, 37_000, 37_500, 38_000, 38_500, 39_000, 39_500])
+    expect(ticks).not.toContain(40_000)
+  })
+})
+
+describe('vetoCuePlan, a window of 150 s with a Clip of 120 s', () => {
+  it('has the same cues at the window\'s end and the Clip\'s close at 120 s', () => {
+    const cues = vetoPlan({ draw: drawOf(150_000), clip: clipOf(120_000) })
+
+    expect(cues).toHaveLength(19)
+    expect(offsets(cues, 'veto-open')).toEqual([0])
+    expect(offsets(cues, 'veto-clip-close')).toEqual([120_000])
+    expect(offsets(cues, 'veto-clock')).toEqual(CLOCK_OFFSETS_BEFORE_END.map(before => 150_000 - before))
+    expect(offsets(cues, 'veto-drumroll')).toEqual([148_800])
+    expect(offsets(cues, 'veto-reveal')).toEqual([150_000])
+  })
+})
+
+describe('vetoCuePlan, the Clip\'s close', () => {
+  it('is absent with no Clip', () => {
+    expect(offsets(vetoPlan({ clip: null }), 'veto-clip-close')).toEqual([])
+  })
+
+  it('is absent when the Clip belongs to another draw', () => {
+    expect(offsets(vetoPlan({ clip: clipOf(10_000, 'd0') }), 'veto-clip-close')).toEqual([])
+  })
+
+  it('is at the window\'s end for a game without a video (a card of 30 s)', () => {
+    const cues = vetoPlan({ draw: drawOf(30_000), clip: clipOf(30_000) })
+
+    expect(offsets(cues, 'veto-clip-close')).toEqual([30_000])
+    expect(offsets(cues, 'veto-reveal')).toEqual([30_000])
+  })
+})
+
+describe('vetoCuePlan, a set game', () => {
+  it('has no opening of its own (it is an arrival cue), the rest as a spin\'s window', () => {
+    const cues = vetoPlan({ draw: drawOf(40_000, 'set') })
+
+    expect(cues).toHaveLength(18)
+    expect(offsets(cues, 'veto-open')).toEqual([])
+    expect(offsets(cues, 'veto-reveal')).toEqual([40_000])
+    expect(offsets(cues, 'veto-clip-close')).toEqual([10_000])
+  })
+})
+
+describe('vetoCuePlan, a moved end', () => {
+  it('is the plan of the read that follows the Clip\'s skip: the new clock, drumroll and reveal, no close, and none of the old end\'s', () => {
+    const unmoved = vetoPlan()
+    const moved = vetoPlan({ draw: drawOf(35_000), clip: null })
+
+    expect(offsets(moved, 'veto-clock')).toEqual(CLOCK_OFFSETS_BEFORE_END.map(before => 35_000 - before))
+    expect(offsets(moved, 'veto-clock')[0]).toBe(25_000)
+    expect(offsets(moved, 'veto-clock').at(-1)).toBe(34_500)
+    expect(offsets(moved, 'veto-drumroll')).toEqual([33_800])
+    expect(offsets(moved, 'veto-reveal')).toEqual([35_000])
+    expect(offsets(moved, 'veto-clip-close')).toEqual([])
+    // The old plan's ticks of 30 s to 34.5 s are the new plan's too (the player keeps them); every other instant of the old end is gone.
+    const kept = new Set(offsets(moved, 'veto-clock'))
+    for (const cue of unmoved.filter(cue => cue.id === 'veto-drumroll' || cue.id === 'veto-reveal' || cue.id === 'veto-clip-close')) {
+      expect(moved.some(other => other.id === cue.id && other.at === cue.at), `${cue.id}@${cue.at - START}`).toBe(false)
+    }
+    expect(offsets(unmoved, 'veto-clock').filter(offset => !kept.has(offset))).toEqual([35_000, 35_500, 36_000, 36_500, 37_000, 37_500, 38_000, 38_500, 39_000, 39_500])
+  })
+})
+
+describe('vetoCuePlan under reduced motion', () => {
+  it('leaves out the drumroll, the reveal\'s hit is the one hit, and changes nothing else', () => {
+    const normal = vetoPlan()
+    const reduced = vetoPlan({ reducedMotion: true })
+
+    expect(reduced).toEqual(normal.filter(cue => cue.id !== 'veto-drumroll'))
+    expect(offsets(reduced, 'veto-drumroll')).toEqual([])
+    expect(offsets(reduced, 'veto-reveal')).toEqual([40_000])
+    expect(offsets(reduced, 'veto-clock')).toHaveLength(15)
+  })
+})
+
+describe('vetoCuePlan, no window and a window not yet ended', () => {
+  it('has nothing for a Draw without a window, whatever else is given', () => {
+    expect(vetoPlan({ draw: null })).toEqual([])
+    expect(vetoPlan({ draw: null, clip: clipOf(10_000) })).toEqual([])
+  })
+
+  it('gives a Member before the stop only the opening of a spin: the end is not known yet', () => {
+    const cues = vetoPlan({ draw: drawOf(null), clip: null })
+
+    expect(at(cues)).toEqual([['veto-open', 0]])
+  })
+
+  it('gives a set game before its end nothing', () => {
+    expect(vetoPlan({ draw: drawOf(null, 'set'), clip: null })).toEqual([])
+  })
+})
+
+describe('vetoCuePlan, a window shorter than its cues (the code makes none)', () => {
+  it('plans no clock tick before the stop, the rest as offsets allow', () => {
+    const cues = vetoPlan({ draw: drawOf(8000), clip: null })
+
+    expect(offsets(cues, 'veto-clock')).toEqual([0, 1000, 2000, 3000, 3500, 4000, 4500, 5000, 5500, 6000, 6500, 7000, 7500])
+    expect(offsets(cues, 'veto-drumroll')).toEqual([6800])
+    expect(cues.every(cue => cue.at >= START)).toBe(true)
+  })
+
+  it('drops the drumroll too when the window is shorter than it', () => {
+    const cues = vetoPlan({ draw: drawOf(1000), clip: null })
+
+    expect(offsets(cues, 'veto-drumroll')).toEqual([])
+    expect(offsets(cues, 'veto-reveal')).toEqual([1000])
+  })
+})
+
+describe('vetoCuePlan keeps the Vetoes secret', () => {
+  const sealed: VetoView = {
+    left: [0, 0], own: { team: 1, cast: true, rejection: null }, revealed: [{ team: 1 }, { team: 2 }],
+    draw: { ...drawOf(40_000), game: null },
+  }
+
+  it('never holds a veto-seal: the stamps are arrival cues, not planned', () => {
+    for (const rest of [{}, { reducedMotion: true }, { draw: drawOf(40_000, 'set') }, { draw: drawOf(null) }]) {
+      expect(ids(vetoPlan(rest))).not.toContain('veto-seal')
+    }
+  })
+
+  it('is the same whatever else a whole Veto view holds: own, left, revealed and the game change nothing', () => {
+    const { draw: _draw, ...others } = sealed
+    const plain = vetoCuePlan(VETO)
+
+    expect(vetoCuePlan({ ...VETO, ...others, game: { name: 'Halo' } } as unknown as VetoCueInput)).toEqual(plain)
+    expect(vetoCuePlan({ ...VETO, own: null, left: [2, 2], revealed: null } as unknown as VetoCueInput)).toEqual(plain)
+  })
+})
+
+// The arrival cues (#532): what the arrival of a read causes, not a time known ahead. A pure function of the page's previous and its new read.
+describe('vetoArrivalCues', () => {
+  const NOW = START + 1000
+  const state = (rest: Partial<VetoArrivalState> = {}): VetoArrivalState => ({ draw: drawOf(40_000), ownCast: false, revealedCount: null, ...rest })
+  const cues = (previous: VetoArrivalState | null, next: VetoArrivalState, now = NOW): ArrivalCue[] => vetoArrivalCues(previous, next, now)
+
+  it('plays nothing on the page\'s first read, however much it shows', () => {
+    expect(cues(null, state({ ownCast: true, revealedCount: 2, draw: drawOf(40_000, 'set') }), START + 40_000)).toEqual([])
+  })
+
+  it('plays nothing without a window', () => {
+    expect(cues(state(), state({ draw: null }))).toEqual([])
+    expect(cues(state({ draw: null }), state({ draw: null, ownCast: true }))).toEqual([])
+  })
+
+  describe('the own Party\'s cast', () => {
+    it('is one veto-seal at once when the cast appears on the same draw', () => {
+      expect(cues(state(), state({ ownCast: true }))).toEqual([{ id: 'veto-seal', delayMs: 0 }])
+    })
+
+    it('is not played again by a refetch that still shows the cast', () => {
+      expect(cues(state({ ownCast: true }), state({ ownCast: true }))).toEqual([])
+    })
+
+    it('is not played for a new draw whose cast is already there', () => {
+      const next = state({ ownCast: true, draw: { ...drawOf(40_000), drawId: 'd2' } })
+
+      expect(cues(state(), next)).toEqual([])
+    })
+
+    it('is not played when no Party of the viewer cast: another Party\'s cast changes nothing the viewer\'s read holds', () => {
+      // The viewer's own Party did not cast; the read hides every other Party's cast before the end (`left`, `revealed` are the same), so
+      // the two states of that viewer are equal, whether or not another Party cast.
+      const nobodyCast = state()
+      const anotherPartyCast = state()
+
+      expect(anotherPartyCast).toEqual(nobodyCast)
+      expect(cues(nobodyCast, anotherPartyCast)).toEqual([])
+    })
+  })
+
+  describe('the stamps', () => {
+    const ended = (count: number | null) => state({ revealedCount: count })
+    const afterEnd = START + 40_000 + 300
+
+    it('are one veto-seal per Veto, the first at once and the next 80 ms apart', () => {
+      expect(STAMP_GAP_MS).toBe(80)
+      expect(cues(ended(null), ended(2), afterEnd)).toEqual([{ id: 'veto-seal', delayMs: 0 }, { id: 'veto-seal', delayMs: 80 }])
+    })
+
+    it('are eight at most: 0 to 560 ms', () => {
+      expect(cues(ended(null), ended(8), afterEnd).map(cue => cue.delayMs)).toEqual([0, 80, 160, 240, 320, 400, 480, 560])
+    })
+
+    it('are none for a window that ended with no Veto', () => {
+      expect(cues(ended(null), ended(0), afterEnd)).toEqual([])
+    })
+
+    it('are played when the reveal is read 2000 ms after the end, not 2001', () => {
+      expect(ARRIVAL_LATE_MS).toBe(2000)
+      expect(cues(ended(null), ended(1), START + 40_000 + 2000)).toHaveLength(1)
+      expect(cues(ended(null), ended(1), START + 40_000 + 2001)).toEqual([])
+    })
+
+    it('are not played again by a refetch, or for a new draw whose reveal is already there', () => {
+      expect(cues(ended(2), ended(2), afterEnd)).toEqual([])
+      expect(cues(ended(null), state({ revealedCount: 2, draw: { ...drawOf(40_000), drawId: 'd2' } }), afterEnd)).toEqual([])
+    })
+
+    it('are not played when the end is not known', () => {
+      expect(cues(ended(null), state({ revealedCount: 1, draw: drawOf(null) }), afterEnd)).toEqual([])
+    })
+
+    it('follow a cast that is seen only with the read after the end: the cast\'s seal first, then the stamps', () => {
+      const previous = state()
+      const next = state({ ownCast: true, revealedCount: 2 })
+
+      expect(cues(previous, next, afterEnd)).toEqual([
+        { id: 'veto-seal', delayMs: 0 }, { id: 'veto-seal', delayMs: 0 }, { id: 'veto-seal', delayMs: 80 },
+      ])
+    })
+  })
+
+  describe('the opening of a set game', () => {
+    const set = (drawId = 'd1') => state({ draw: { ...drawOf(40_000, 'set'), drawId } })
+
+    it('is one veto-open at once when its draw appears on a page that was open', () => {
+      expect(cues(state({ draw: null }), set())).toEqual([{ id: 'veto-open', delayMs: 0 }])
+      expect(cues(set('d0'), set('d1'))).toEqual([{ id: 'veto-open', delayMs: 0 }])
+    })
+
+    it('is not played again by a refetch of the same draw', () => {
+      expect(cues(set(), set())).toEqual([])
+    })
+
+    it('is not played for a spin\'s draw: that opening is planned ahead', () => {
+      expect(cues(state({ draw: null }), state())).toEqual([])
+    })
+
+    it('is not played when the set draw is more than 2000 ms old', () => {
+      expect(cues(state({ draw: null }), set(), START + 2000)).toHaveLength(1)
+      expect(cues(state({ draw: null }), set(), START + 2001)).toEqual([])
     })
   })
 })
