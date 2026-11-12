@@ -20,12 +20,14 @@ const SPIN_EASE = [0.15, 0.75, 0.25, 1.035] as const
 export const SNAP_EASE = [0.2, 0, 0, 1] as const
 /** `EASE.io`, the ease of the slices closing the gap. */
 export const IO_EASE = [0.65, 0, 0.35, 1] as const
+/** `EASE.pop` (04-motion), the ease of both pops at the stop and of the refill's new slice. */
+export const POP_EASE = [0.34, 1.56, 0.64, 1] as const
 
 /** The drawn slice leaves this long after the stop, a Hidden wheel a little later: its reveal comes first (04-motion). */
 const REMOVE_AFTER_MS = 2200
 const REMOVE_AFTER_HIDDEN_MS = 2800
-/** The other slices close the gap in this long. */
-const REMOVE_MS = 600
+/** The other slices close the gap in this long, and a put back or a refill redistributes the slices in as long. */
+export const REDISTRIBUTE_MS = 600
 /** Under reduced motion the drawn slice fades for this long, then the others redistribute at once. */
 const REMOVE_REDUCED_FADE_MS = 200
 
@@ -87,7 +89,7 @@ export function removalStart(spin: Pick<WheelTiming, 'stopAt'>, hidden: boolean)
 
 /** When the drawn slice is gone and the others have closed the gap (server ms). */
 export function removalEnd(spin: Pick<WheelTiming, 'stopAt'>, hidden: boolean): number {
-  return removalStart(spin, hidden) + REMOVE_MS
+  return removalStart(spin, hidden) + REDISTRIBUTE_MS
 }
 
 /**
@@ -97,11 +99,11 @@ export function removalEnd(spin: Pick<WheelTiming, 'stopAt'>, hidden: boolean): 
 export function removalEase(spin: Pick<WheelTiming, 'stopAt'>, nowMs: number, hidden: boolean, reduced: boolean): number {
   const elapsed = nowMs - removalStart(spin, hidden)
   if (reduced) return elapsed >= REMOVE_REDUCED_FADE_MS ? 1 : 0
-  return bezier(IO_EASE, Math.min(Math.max(elapsed / REMOVE_MS, 0), 1))
+  return bezier(IO_EASE, Math.min(Math.max(elapsed / REDISTRIBUTE_MS, 0), 1))
 }
 
 /** A Hidden wheel's drawn label turns into the real game this long after the stop (04-motion § reveal). */
-const REVEAL_AFTER_MS = 500
+export const REVEAL_AFTER_MS = 500
 /** The label scrambles for 6 frames of 0.05 s, then shows the game; reduced motion crossfades for 0.2 s instead. */
 const SCRAMBLE_MS = 300
 export const CROSSFADE_MS = 200

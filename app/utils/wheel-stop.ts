@@ -1,4 +1,4 @@
-import { CROSSFADE_MS, bezier } from './wheel'
+import { CROSSFADE_MS, POP_EASE, bezier } from './wheel'
 
 // The pops at the stop (#523, spec #503 § The motion, 04-motion § Lucky Wheel `stop`): the drawn slice's label `scaleY 0 -> 1.25 -> 1` and
 // the result card `scale .6 -> 1.08 -> 1` with its opacity, each over 0.42 s on `EASE.pop`. The reference runs each as one Web Animation
@@ -8,8 +8,6 @@ import { CROSSFADE_MS, bezier } from './wheel'
 // hidden reads the end state with nothing replayed (ADR 0013). The caller gives the time since the stop; the stop's own comparison stays
 // in `stopReached` (shared/draw-timeline.ts), so no copy of it is made here.
 
-/** `EASE.pop` (04-motion), the one ease of both pops. */
-const POP_EASE = [0.34, 1.56, 0.64, 1] as const
 const POP_MS = 420
 
 /** The value at an eased progress for the keyframes `from`, `peak` at 0.5 and 1 at 1 (a straight line through the last two past 1). */
