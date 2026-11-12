@@ -1,7 +1,7 @@
 import { readdirSync, readFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { checkClassString, classStrings, findingMessage, onColourFills } from './on-colour'
+import { checkClassString, checkCompeting, classElements, classStrings, competingMessage, findingMessage, onColourFills, themeColours } from './on-colour'
 import { clean, theme } from './css-tokens'
 
 // Ink is light in Dunkel and reads 1.26:1 on the yellow primary; the `--cp-on-*` tokens stay dark in both looks. The 0.11
@@ -127,6 +127,188 @@ describe('the class strings of a file', () => {
 
   it('returns the same string once', () => {
     expect(classStrings('a.ts', `const a = 'bg-info text-on-info'\nconst b = 'bg-info text-on-info'`)).toEqual(['bg-info text-on-info'])
+  })
+})
+
+// A static colour beside a conditional one of the same property: the stylesheet emits same-property utilities in a fixed
+// order, so one of the two never shows. #496: `border-line` static, `border-focus` conditional, a drop target never showed
+// its focus border (#562).
+const COLOURS = ['line', 'focus', 'surface', 'paper-2', 'ink', 'paper', 'primary', 'on-primary', 'transparent']
+const pairs = (staticClasses: string, conditional: string[]) =>
+  checkCompeting(staticClasses, conditional, COLOURS).map(f => [f.staticClass, f.conditionalClass])
+
+const STANDS_STATIC = 'flex min-w-0 flex-col gap-2 rounded-[18px] border-line bg-surface p-3 text-ink transition-[box-shadow,border-color] dur-fast'
+const TEAM_STATIC = 'flex min-w-0 flex-col rounded-[14px] border-line bg-surface text-ink transition-[box-shadow,border-color] dur-fast'
+
+describe('the competing colours', () => {
+  it('fails the Stands zone of #496 before its fix', () => {
+    expect(pairs(STANDS_STATIC, ['border-[3px] border-focus shadow-card', 'border-(length:--cp-bw)'])).toEqual([['border-line', 'border-focus']])
+  })
+
+  it('passes the Stands zone with the colour in the branches', () => {
+    const fixed = STANDS_STATIC.replace(' border-line', '')
+    expect(pairs(fixed, ['border-[3px] border-focus shadow-card', 'border-(length:--cp-bw) border-line'])).toEqual([])
+  })
+
+  it('fails the team zone of #496 before its fix', () => {
+    expect(pairs(TEAM_STATIC, ['border-[3px] border-focus shadow-card', 'border-[3px] shadow-card', 'border-(length:--cp-bw)'])).toEqual([['border-line', 'border-focus']])
+  })
+
+  it('passes the team zone with the colour in the branches', () => {
+    const fixed = TEAM_STATIC.replace(' border-line', '')
+    expect(pairs(fixed, ['border-[3px] border-focus shadow-card', 'border-[3px] border-line shadow-card', 'border-(length:--cp-bw) border-line'])).toEqual([])
+  })
+
+  it('passes colours of different properties', () => {
+    expect(pairs('bg-surface text-ink', ['border-focus'])).toEqual([])
+    expect(pairs('bg-ink', ['text-paper'])).toEqual([])
+  })
+
+  it('passes the same property at rest against hover', () => {
+    expect(pairs('border-line', ['hover:border-focus'])).toEqual([])
+    expect(pairs('hover:border-line', ['border-focus'])).toEqual([])
+  })
+
+  it('fails the same property in the same variant', () => {
+    expect(pairs('hover:border-line', ['hover:border-focus'])).toEqual([['hover:border-line', 'hover:border-focus']])
+  })
+
+  it('reads the pre-fix Stands element of #496 whole', () => {
+    const tag = `<section
+    class="${STANDS_STATIC}"
+    :class="dropTarget ? 'border-[3px] border-focus shadow-card' : 'border-(length:--cp-bw)'"
+    role="group"
+    :aria-label="t('board.stands')"
+    data-drop-zone="stands"
+  >`
+    const elements = classElements('StandsZone.vue', tag)
+    expect(elements).toHaveLength(1)
+    const [el] = elements
+    expect(el!.tag).toBe('section')
+    expect(checkCompeting(el!.static, el!.conditional, COLOURS).map(f => [f.staticClass, f.conditionalClass])).toEqual([['border-line', 'border-focus']])
+  })
+})
+
+describe('the competing colours at their edges', () => {
+  it.each<[string, string[], Array<[string, string]>]>([
+    ['border-2 border-line', ['border-[3px] border-focus'], [['border-line', 'border-focus']]],
+    ['border-(length:--cp-bw)', ['border-focus'], []],
+    ['text-small', ['text-ink'], []],
+    ['text-[12px]', ['text-ink'], []],
+    ['text-left', ['text-ink'], []],
+    ['text-ink', ['text-paper'], [['text-ink', 'text-paper']]],
+    ['bg-cover bg-surface', ['bg-paper-2'], [['bg-surface', 'bg-paper-2']]],
+    ['bg-ink', ['bg-ink'], []],
+    ['bg-ink', ['bg-ink/10'], [['bg-ink', 'bg-ink/10']]],
+    ['bg-ink/10', ['bg-primary/20'], [['bg-ink/10', 'bg-primary/20']]],
+    ['bg-ink/10', ['bg-ink/10'], []],
+    ['dark:bg-surface', ['dark:bg-paper-2'], [['dark:bg-surface', 'dark:bg-paper-2']]],
+    ['bg-surface', ['dark:bg-ink'], []],
+    ['md:bg-surface', ['bg-ink'], []],
+    ['dark:hover:bg-surface', ['hover:dark:bg-ink'], [['dark:hover:bg-surface', 'hover:dark:bg-ink']]],
+    ['focus-visible:border-line', ['focus-visible:border-focus'], [['focus-visible:border-line', 'focus-visible:border-focus']]],
+    ['focus:border-line', ['focus-visible:border-focus'], []],
+    ['group-hover:bg-surface', ['group-hover:bg-ink'], [['group-hover:bg-surface', 'group-hover:bg-ink']]],
+    ['aria-[current=page]:bg-surface', ['aria-[current=page]:bg-ink'], [['aria-[current=page]:bg-surface', 'aria-[current=page]:bg-ink']]],
+    ['data-[state=on]:bg-surface', ['bg-ink'], []],
+    ['!bg-surface', ['bg-ink'], [['!bg-surface', 'bg-ink']]],
+    ['border-t-line', ['border-t-focus'], [['border-t-line', 'border-t-focus']]],
+    ['border-line', ['border-t-focus'], []],
+    ['border-r-(length:--cp-bw-thin) border-r-line', ['border-r-line'], []],
+    ['bg-surface', ['bg-[#fff]'], [['bg-surface', 'bg-[#fff]']]],
+    ['bg-surface', ['bg-[image:linear-gradient(transparent_55%,var(--cp-primary)_55%)]'], []],
+    ['text-ink', ['text-[color:var(--cp-hot)]'], [['text-ink', 'text-[color:var(--cp-hot)]']]],
+    ['bg-red-500', ['bg-ink'], []],
+    ['border-line bg-surface text-ink', ['border-focus bg-paper-2'], [['border-line', 'border-focus'], ['bg-surface', 'bg-paper-2']]],
+    ['border-line', ['border-focus', 'border-focus shadow-card'], [['border-line', 'border-focus']]],
+    ['border-line border-focus', ['p-2'], []],
+    ['border-line', ['border-focus border-ink'], [['border-line', 'border-focus'], ['border-line', 'border-ink']]],
+    ['', ['border-focus'], []],
+  ])('%s against %j', (staticClasses, conditional, expected) => {
+    expect(pairs(staticClasses, conditional)).toEqual(expected)
+  })
+
+  it('names the property and the variants of a finding', () => {
+    const [f] = checkCompeting('dark:hover:border-t-line', ['hover:dark:border-t-focus'], COLOURS)
+    expect(f).toMatchObject({ property: 'border-t', variants: 'dark:hover' })
+  })
+})
+
+describe('the elements of a file', () => {
+  const read = (source: string) => classElements('A.vue', source)
+
+  it('reads a multi-line static class whole', () => {
+    const [el] = read('<div class="a\n    border-line bg-surface\n    b" :class="x ? \'c\' : \'d\'" />')
+    expect(collapse(el!.static)).toBe('a border-line bg-surface b')
+  })
+
+  it('reads the literals of an array and an object', () => {
+    expect(read(`<div class="p-2" :class="[x ? 'a' : 'b', { 'c d': e }]" />`)[0]!.conditional).toEqual(['a', 'b', 'c d'])
+  })
+
+  it('reads v-bind:class', () => {
+    expect(read(`<div class="p-2" v-bind:class="'bg-ink'" />`)[0]!.conditional).toEqual(['bg-ink'])
+  })
+
+  it('keeps an element whole around a > in an attribute', () => {
+    const elements = read(`<div class="p-2" :class="a > b ? 'bg-ink' : 'bg-paper-2'" role="group">`)
+    expect(elements).toHaveLength(1)
+    expect(elements[0]!.conditional).toEqual(['bg-ink', 'bg-paper-2'])
+  })
+
+  it('replaces the interpolation of a template literal with a space', () => {
+    const [el] = read('<div class="p-2" :class="`bg-${tone} p-2`" />')
+    expect(el!.conditional).toHaveLength(1)
+    expect(collapse(el!.conditional[0]!)).toBe('bg- p-2')
+  })
+
+  it('gives no element for a tag with one attribute only', () => {
+    expect(read('<div class="bg-ink" />')).toEqual([])
+    expect(read(`<div :class="'bg-ink'" />`)).toEqual([])
+  })
+
+  it('does not take enter-active-class for a static class', () => {
+    expect(read(`<Transition enter-active-class="bg-ink" :class="'bg-paper-2'" />`)).toEqual([])
+  })
+
+  it('skips a commented-out element', () => {
+    expect(read(`<!-- <div class="bg-ink" :class="'bg-paper-2'" /> -->`)).toEqual([])
+  })
+
+  it('reads a self-closing component', () => {
+    const [el] = read(`<GameCard class="bg-ink" :class="'bg-paper-2'" />`)
+    expect(el!.tag).toBe('GameCard')
+  })
+
+  it('returns two elements with the same strings twice', () => {
+    expect(read(`<div class="bg-ink" :class="'bg-paper-2'" />\n<div class="bg-ink" :class="'bg-paper-2'" />`)).toHaveLength(2)
+  })
+
+  it('reads a .vue file only', () => {
+    expect(classElements('a.ts', `<div class="bg-ink" :class="'bg-paper-2'" />`)).toEqual([])
+  })
+})
+
+describe('the theme colours', () => {
+  const names = themeColours(clean(theme))
+
+  it('are the colour names of the theme', () => {
+    expect(names).toEqual(expect.arrayContaining(['line', 'focus', 'surface', 'paper-2', 'on-primary', 'team-1-ink', 'transparent']))
+    expect(names).not.toContain('*')
+  })
+
+  it('keep a size apart from a colour', () => {
+    const sizes = [...clean(theme).matchAll(/--(?:text|border-width)-([a-z0-9-]+?)\s*:/g)].map(m => m[1]!)
+    expect(sizes.length).toBeGreaterThan(10)
+    for (const size of sizes) expect(names).not.toContain(size)
+  })
+})
+
+describe('the competing message', () => {
+  it('names the file, the static class and the conditional class', () => {
+    const finding = { property: 'border', variants: '', staticClass: 'border-line', conditionalClass: 'border-focus' }
+    expect(competingMessage('app/components/StandsZone.vue', 'section', finding))
+      .toBe('app/components/StandsZone.vue: <section>: border-line in class competes with border-focus in :class; move border-line into the :class branches')
   })
 })
 
