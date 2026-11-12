@@ -59,11 +59,12 @@ function stubYouTube() {
   window.YT = { Player, PlayerState: { PLAYING: 1, PAUSED: 2 } } as unknown as typeof window.YT
 }
 
-/** `stubChildren`: the child components keep the tag and classes the overlay writes on them and drop their own output (#546). */
-async function mount(clip: ClipView, { isHost = false, desktop = true, stubChildren = false }: { isHost?: boolean, desktop?: boolean, stubChildren?: boolean } = {}) {
+/** `stubChildren`: the child components keep the tag and classes the overlay writes on them and drop their own output (#546).
+ * `vetoBarShown`: a Veto bar shows beside the Clip (#584); the default is the case the sideways layout was made for (#550). */
+async function mount(clip: ClipView, { isHost = false, desktop = true, stubChildren = false, vetoBarShown = true }: { isHost?: boolean, desktop?: boolean, stubChildren?: boolean, vetoBarShown?: boolean } = {}) {
   stubScreen(desktop)
   const global = stubChildren ? { stubs: { AppButton: true, IconButton: true, GameCard: true } } : {}
-  page = await mountSuspended(ClipOverlay, { props: { clip, isHost, serverNow: () => serverMs, skip }, global })
+  page = await mountSuspended(ClipOverlay, { props: { clip, isHost, serverNow: () => serverMs, skip, vetoBarShown }, global })
   await flushPromises()
   return page
 }
@@ -567,6 +568,23 @@ describe('a low viewport (#549)', () => {
     // The upright and desktop placement stays as it was.
     expect(classes).toEqual(expect.arrayContaining(['inset-x-0', 'mx-auto', 'w-[min(720px,calc(100%-1.75rem))]']))
     expect(classesOf(wrapperOf())).toEqual(['relative', 'mx-auto', 'aspect-video', 'w-[min(100%,max(calc(200px*16/9),calc(var(--clip-video-h)*16/9)))]', 'bg-ink'])
+  })
+
+  // #584: no bar, no left column. The Clip stays centred (as before #550), and the box inside keeps its classes.
+  it.each([
+    ['a game with a video', clipOf(), 'bg-ink'],
+    ['a game without a video', clipOf(kart), 'bg-paper-2'],
+  ])('stays centred on a phone held sideways when no Veto bar shows, with no left-column token on the section: %s (#584)', async (_what, clip, background) => {
+    await mount(clip, { vetoBarShown: false })
+    const classes = classesOf(sectionOf())
+
+    expect(classes).not.toContain('sideways:inset-x-auto')
+    expect(classes).not.toContain('sideways:left-2.5')
+    expect(classes).not.toContain('sideways:mx-0')
+    expect(classes.filter(token => token.startsWith('sideways:w-['))).toEqual([])
+    expect(classes).toEqual(expect.arrayContaining(['inset-x-0', 'mx-auto', 'w-[min(720px,calc(100%-1.75rem))]']))
+    expect(classesOf(wrapperOf())).toContain('mx-auto')
+    expect(classesOf(wrapperOf())).toContain(background)
   })
 
   it('keeps the Host\'s bar in one row beside the Veto bar by showing the sound button and the live state as icons only, with their names kept (#550)', async () => {
