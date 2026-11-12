@@ -104,7 +104,7 @@ export function removalEase(spin: Pick<WheelTiming, 'stopAt'>, nowMs: number, hi
 const REVEAL_AFTER_MS = 500
 /** The label scrambles for 6 frames of 0.05 s, then shows the game; reduced motion crossfades for 0.2 s instead. */
 const SCRAMBLE_MS = 300
-const CROSSFADE_MS = 200
+export const CROSSFADE_MS = 200
 export const SCRAMBLE_FRAME_MS = 50
 
 /**
