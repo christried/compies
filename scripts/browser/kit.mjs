@@ -9,8 +9,9 @@ import { appendFileSync, mkdirSync } from 'node:fs'
 import { basename, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { OUT, resize, shot, sleep } from './chrome.mjs'
+import { originOf, slotOf } from './ports.mjs'
 
-export const BASE = process.env.BASE_URL ?? 'http://localhost:3000'
+export const BASE = process.env.BASE_URL ?? originOf(slotOf(), 'app')
 // Staging sits behind Vercel Authentication; its „Protection Bypass for Automation“ secret lets a check in (README § Staging).
 const VERCEL_BYPASS = process.env.VERCEL_AUTOMATION_BYPASS_SECRET
 

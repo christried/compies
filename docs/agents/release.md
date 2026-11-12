@@ -73,4 +73,5 @@ Releases count from 0.1 while COMPIES is being built; 1.0.0 is the Release the u
 ## Checks
 
 - `test/unit/changelog-file.test.ts` fails when `CHANGELOG.md` breaks its format, its Releases do not strictly go down in version or dates go up, or `package.json` is not at the newest Release version. Run `pnpm test` before opening a Release PR.
+- The same test fails when a Release section holds more list items than the same section on `origin/main` (#566): lines that belong to the next Release go under `[Unreleased]`, also after a merge of `staging` that git took without a conflict. CI fetches `main` for it; outside CI the case is skipped, visibly, when `origin/main` is not there (`git fetch origin main`).
 - The parser is `shared/changelog.ts`. The Neuigkeiten page reads the same file through it.
