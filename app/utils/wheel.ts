@@ -81,7 +81,7 @@ export function wheelAngle(spin: WheelTiming, nowMs: number, reduced: boolean): 
 }
 
 /** When the drawn slice starts to leave (server ms). */
-function removalStart(spin: Pick<WheelTiming, 'stopAt'>, hidden: boolean): number {
+export function removalStart(spin: Pick<WheelTiming, 'stopAt'>, hidden: boolean): number {
   return spin.stopAt + (hidden ? REMOVE_AFTER_HIDDEN_MS : REMOVE_AFTER_MS)
 }
 
