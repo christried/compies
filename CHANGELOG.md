@@ -2,6 +2,16 @@
 
 ## [Unreleased]
 
+### Neu
+
+- **Speichern und noch eins:** Legst du mehrere Spiele hintereinander an, speichert „Speichern und noch eins“ das Spiel und leert das Formular für das nächste; der Cursor steht gleich im Namen. Nichts wird übernommen, auch das Bild nicht. „Spiel anlegen“ führt wie bisher auf die Seite des Spiels. ([#456](https://github.com/christried/compies/issues/456))
+- **Bildausschnitt wählen:** Nach dem Wählen eines Bildes im Spielformular kannst du das Bild in der Kachel ziehen, mit Maus oder Finger, oder mit den Pfeiltasten verschieben, und es mit dem Regler darunter bis auf das Dreifache vergrößern, bis die Karte zeigt, was du willst. Was die Kachel zeigt, wird hochgeladen, und das Bild füllt die Kachel immer ganz. Fasst du es nicht an, bleibt es wie bisher in der Mitte. Das Original speichern wir nicht: Ein Bild, das ein Spiel schon hat, passt du an, indem du die Datei noch einmal wählst. ([#457](https://github.com/christried/compies/issues/457), [#516](https://github.com/christried/compies/issues/516))
+- **Strg + Enter speichert das Spiel:** Im Spielformular speicherst du mit Strg + Enter, auf dem Mac mit ⌘ + Enter, aus jedem Feld, auch aus den Notizen. Ein „?“ oben rechts am Formular sagt es dir; auf dem Handy erscheint es nicht. ([#465](https://github.com/christried/compies/issues/465))
+
+### Geändert
+
+- **Die Zahl der Vetos bleibt bis zum Start verborgen:** Bevor die erste Session eines Events startet, weiß nur der Host, wie viele Vetos jede Partei hat. Alle anderen lesen in „So wird gespielt“ „Vetos: Anzahl erst zum Start“ und erfahren die Zahl auch sonst nirgends. Mit dem Start der ersten Session sehen sie alle, auch zwischen den Sessions und wenn das Event beendet ist. Bei Host-Wahl bleibt alles, wie es war. ([#453](https://github.com/christried/compies/issues/453))
+
 ### Behoben
 
 - **Veto-Fenster:** Nach dem Aufdecken ist die Kachel eines Teams, das kein Veto eingelegt hat, jetzt abgedunkelt, wie vorgesehen. Bisher sah sie aus wie die der anderen Teams. ([#562](https://github.com/christried/compies/issues/562))

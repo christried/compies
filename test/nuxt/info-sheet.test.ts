@@ -55,6 +55,18 @@ describe('InfoSheet', () => {
     expect(page.text()).not.toContain('Jeder Spieler bringt 1 Veto mit')
   })
 
+  it('tells the Host, under „So läuft’s“ of the Glücksrad, that the others see the Veto number only from the start on (#453)', async () => {
+    const sentence = 'Die anderen sehen die Zahl der Vetos erst, wenn die erste Session startet.'
+    const page = await mountSuspended(InfoSheet, { props: { topic: 'wheel' } })
+
+    const how = page.findAll('section').find(section => section.find('h3').text() === 'So läuft’s')
+    expect(how!.findAll('p').map(paragraph => paragraph.text()).at(-1)).toBe(sentence)
+
+    for (const topic of ['teams', 'ffa', 'admin', 'end'] as const) {
+      expect((await mountSuspended(InfoSheet, { props: { topic } })).text(), topic).not.toContain(sentence)
+    }
+  })
+
   it('switches with the topic', async () => {
     const page = await mountSuspended(InfoSheet, { props: { topic: 'teams' } })
 
