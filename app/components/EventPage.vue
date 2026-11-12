@@ -21,6 +21,8 @@ const connection = useConnectionBanner(room.state, room.enabled)
 // run toward an instant (the wheel #229, the Countdown #236, and the other timers of 0.7) get its `now` as `server-now`.
 const presence = usePresence(room)
 const serverClock = useServerClock(room)
+// The wheel is heard (#531): the cue player schedules the read's plan on the audio clock, on the Event page only.
+useCuePlayer({ view: () => data.value, serverNow: serverClock.now, ready: () => serverClock.ready.value })
 const onlineState = (userId: string) => (presence.known.value ? presence.isOnline(userId) : undefined)
 
 useHead({ title: () => data.value?.event.name })
