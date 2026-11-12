@@ -30,7 +30,7 @@ export interface YouTubePlayerOptions {
 export interface YouTubeApi {
   Player: new (element: HTMLElement, options: YouTubePlayerOptions) => YouTubePlayer
   /** The player states `onStateChange` reports and `getPlayerState` returns. */
-  PlayerState?: { PLAYING: number }
+  PlayerState?: { PLAYING: number, PAUSED: number }
 }
 
 declare global {
@@ -45,6 +45,9 @@ export const YOUTUBE_HOST = 'https://www.youtube-nocookie.com'
 
 /** `PlayerState.PLAYING`, for the places that run before the API object has it (a test's stub has none). */
 export const YOUTUBE_PLAYING = 1
+
+/** `PlayerState.PAUSED`, for the same places. */
+export const YOUTUBE_PAUSED = 2
 
 let apiLoad: Promise<YouTubeApi> | null = null
 

@@ -434,6 +434,19 @@ describe('a read that still waits for a passed instant', () => {
     expect(stageUnsettled(wheelView({}), NOW)).toBe(false)
   })
 
+  // A Member's read before the stop carries neither the game nor the window's end (#505): the stop is its only instant, and a read that
+  // missed both at the stop waits through the spin's missing game, so the page reads again and gets the end.
+  it('reads again at the stop for a Member\'s read before it, with no end of the window yet, and waits there until the game and the end arrive', () => {
+    const before = wheelView({
+      spin: spin(5000, false),
+      vetoes: { left: [1, 1], own: null, revealed: null, draw: { drawId: 'd1', kind: 'spin', stopAt: iso(5000), vetoEndsAt: null, game: null } },
+    })
+
+    expect(new Set(instants(before))).toEqual(new Set([NOW + 5000]))
+    expect(stageUnsettled(before, NOW + 4999)).toBe(false)
+    expect(stageUnsettled(before, NOW + 5000)).toBe(true)
+  })
+
   // The edges of "passed" are inclusive: at the stop instant itself the game is known, and a window that ends exactly now has ended.
   it('waits at the stop instant itself and not one ms before it', () => {
     expect(stageUnsettled(wheelView({ spin: spin(SPIN.stop, false) }), NOW + SPIN.stop)).toBe(true)
