@@ -6,7 +6,8 @@ import AppSheet from '~/components/AppSheet.vue'
 import HintElement from '~/components/HintElement.vue'
 
 // The hint element (#515, 02-components § HintElement): a „?“ button with a popover for a short text or a slot. Click toggles it; Esc, a
-// press outside and a scroll outside close it; Esc and a press outside return the focus to the button, a scroll and a resize leave it.
+// press outside and a scroll outside close it; Esc and a press outside that lands on nothing focusable return the focus to the button, a press
+// on a field or a button leaves it there, and a scroll and a resize leave it (#578).
 
 const TEXT = 'Strg + Enter speichert'
 
@@ -32,6 +33,15 @@ const escape = async (target: EventTarget) => {
 }
 const pointerDown = async (target: EventTarget) => {
   target.dispatchEvent(new Event('pointerdown', { bubbles: true }))
+  await flushPromises()
+}
+// A press as a browser runs it: the pointerdown, then the focus moves (to what was pressed when that takes focus, else to the body), then the
+// mousedown, the pointerup, the mouseup and the click. The focus moves after the pointerdown, which is where the hint used to decide it (#578).
+const pressOutside = async (target: HTMLElement, focusGoesTo: HTMLElement | null) => {
+  target.dispatchEvent(new Event('pointerdown', { bubbles: true }))
+  if (focusGoesTo) focusGoesTo.focus()
+  else (document.activeElement as HTMLElement | null)?.blur()
+  for (const type of ['mousedown', 'pointerup', 'mouseup', 'click']) target.dispatchEvent(new Event(type, { bubbles: true }))
   await flushPromises()
 }
 
@@ -118,20 +128,100 @@ describe('the hint element (#515)', () => {
     document.body.removeEventListener('keydown', seen)
   })
 
-  it('closes on a press outside and gives the focus to the button; a press on the popover or the button does not close it', async () => {
+  it('closes on a click on the page background and gives the focus to the button, which the press itself took away', async () => {
     await mount()
+    trigger().focus()
     await click(trigger())
 
-    await pointerDown(popover()!)
-    expect(popover()).not.toBeNull()
-    await pointerDown(trigger())
-    expect(popover()).not.toBeNull()
-
-    trigger().blur()
-    await pointerDown(document.body)
+    await pressOutside(document.body, null)
 
     expect(popover()).toBeNull()
     expect(document.activeElement).toBe(trigger())
+  })
+
+  it('leaves the focus on the field a click on it lands on', async () => {
+    await mount()
+    const field = document.createElement('input')
+    document.body.append(field)
+    trigger().focus()
+    await click(trigger())
+
+    await pressOutside(field, field)
+
+    expect(popover()).toBeNull()
+    expect(document.activeElement).toBe(field)
+  })
+
+  it('does not close on a press on the popover or on the button', async () => {
+    await mount()
+    await click(trigger())
+
+    await pressOutside(popover()!, null)
+    expect(popover()).not.toBeNull()
+
+    // The button's click that follows a press toggles it, as a click does: only the press is sent here.
+    await pointerDown(trigger())
+    expect(popover()).not.toBeNull()
+  })
+
+  it('does not pull the focus after a press that ended without a click', async () => {
+    await mount()
+    const field = document.createElement('input')
+    document.body.append(field)
+    trigger().focus()
+    await click(trigger())
+    // A press on the background that ends off the page: its pointerdown closes the hint, and no click follows.
+    await pointerDown(document.body)
+    ;(document.activeElement as HTMLElement | null)?.blur()
+    expect(popover()).toBeNull()
+
+    await click(trigger())
+    await click(trigger())
+    expect(trigger().getAttribute('aria-expanded')).toBe('false')
+    expect(document.activeElement).toBe(trigger())
+
+    field.focus()
+    await click(field)
+    expect(document.activeElement).toBe(field)
+
+    // A later press on the background, with the hint closed, leaves the focus on the body.
+    await pressOutside(document.body, null)
+    expect(document.activeElement).not.toBe(trigger())
+  })
+
+  it('gives the focus to the second hint\'s button when a press on it closes the first', async () => {
+    const Two = defineComponent({
+      setup: () => () => h('div', [h(HintElement, { text: 'Eins' }), h(HintElement, { text: 'Zwei' })]),
+    })
+    page = await mountSuspended(Two, { attachTo: document.body })
+    await flushPromises()
+    const [first, second] = triggers() as [HTMLButtonElement, HTMLButtonElement]
+    first.focus()
+    await click(first)
+
+    await pressOutside(second, second)
+
+    expect(first.getAttribute('aria-expanded')).toBe('false')
+    expect(second.getAttribute('aria-expanded')).toBe('true')
+    expect(document.activeElement).toBe(second)
+  })
+
+  it('closes on a press on the sheet\'s background and returns the focus to the hint; the sheet stays open', async () => {
+    const sheetOpen = ref(true)
+    const Wrapper = defineComponent({
+      setup: () => () => h(AppSheet, { open: sheetOpen.value, title: 'Spiel anlegen', onClose: () => { sheetOpen.value = false } }, { default: () => h(HintElement, { text: TEXT }) }),
+    })
+    page = await mountSuspended(Wrapper, { attachTo: document.body })
+    await flushPromises()
+    trigger().focus()
+    await click(trigger())
+
+    await pressOutside(document.querySelector<HTMLElement>('[data-sheet="panel"]')!, null)
+
+    expect(popover()).toBeNull()
+    expect(document.activeElement).toBe(trigger())
+    expect(document.querySelector('[data-sheet="panel"]')).not.toBeNull()
+    expect(sheetOpen.value).toBe(true)
   })
 
   it('on Escape inside a sheet closes only the hint; a second Escape closes the sheet', async () => {
@@ -247,7 +337,8 @@ describe('the hint element (#515)', () => {
     expect(popover()).toBeNull()
   })
 
-  // The focus returns to the button for Esc and a press outside only; a scroll or a resize leaves it in the field the Host is using (#573).
+  // The focus returns to the button for Esc and a press outside that lands on nothing focusable (#578); a scroll or a resize leaves it in the
+  // field the Host is using (#573).
   it.each([
     ['a scroll', () => document.dispatchEvent(new Event('scroll'))],
     ['a resize', () => window.dispatchEvent(new Event('resize'))],
