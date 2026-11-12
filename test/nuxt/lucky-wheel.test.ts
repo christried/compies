@@ -315,6 +315,18 @@ describe('the result', () => {
     expect(text()).not.toContain('€')
   })
 
+  it('holds the kicker and then the one tile, and nothing else, in the card (#585)', async () => {
+    await mount(wheelOf(spinOf({ game: halo })))
+    await at(STOP)
+    const card = page!.get('[data-testid="wheel-card"]').element as HTMLElement
+    const kicker = card.querySelector('p')!
+    const openers = card.querySelectorAll<HTMLButtonElement>('button[aria-haspopup="dialog"]')
+    expect(kicker.textContent?.trim()).toBe('Das Glücksrad sagt')
+    expect(openers).toHaveLength(1)
+    expect(openers[0]!.textContent).toContain('Halo')
+    expect(kicker.compareDocumentPosition(openers[0]!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  })
+
   it('lets the drawn slice leave 2.2 s after the stop and the others close the gap', async () => {
     await mount(wheelOf(spinOf({ game: halo })))
     await at(STOP + 100)

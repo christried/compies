@@ -264,7 +264,7 @@ const headingId = useId()
   <section
     ref="root"
     :aria-labelledby="headingId"
-    class="flex flex-col items-center gap-3 rounded-[16px] border-(length:--cp-bw) border-line bg-surface p-4 text-ink"
+    class="@container flex flex-col items-center gap-3 rounded-[16px] border-(length:--cp-bw) border-line bg-surface p-4 text-ink"
   >
     <div class="flex w-full items-baseline justify-between gap-3">
       <h2
@@ -483,16 +483,19 @@ const headingId = useId()
       </svg>
     </div>
 
+    <!-- The card hugs its tile (#585). The tile is the pool's grid's track as it was at the card's old width C (up to 420 px): two
+         columns from C = 324 px, so the tile is (C − 40) / 2, and the card is that plus its padding and border, (C + 16) / 2. Below 324 px
+         the grid has one column and the card fills its width, as before. The card's width is set from the section's (@container). -->
     <div
       v-if="card"
       data-testid="wheel-card"
       :style="cardStyle"
-      class="flex w-full max-w-[420px] flex-col gap-2 rounded-[14px] border-2 border-line bg-surface-2 p-3"
+      class="flex w-full max-w-[420px] @min-[324px]:w-[calc((min(100%,420px)_+_16px)/2)] flex-col gap-2 rounded-[14px] border-2 border-line bg-surface-2 p-3"
     >
       <p class="m-0 text-[13px] font-extrabold tracking-wide text-ink-2 uppercase">
         {{ running ? t('wheel.says') : t('wheel.last') }}
       </p>
-      <!-- The drawn game as a tile in the pool's grid (#435): one column wide, as on the Event page's pool. -->
+      <!-- The drawn game as a tile in the pool's grid (#435): the one track the card's width leaves, so the tile fills the card. -->
       <div :class="GAME_GRID">
         <GameTile
           :game="card"
