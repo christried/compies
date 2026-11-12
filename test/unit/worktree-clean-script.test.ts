@@ -19,6 +19,7 @@ function git(cwd: string, ...args: string[]) {
 describe('scripts/worktree-clean.mjs', () => {
   let tmp: string
   let work: string
+  const handReason = '0.12 check worktree, local session 7'
   let result: { code: number | null, output: string }
 
   const folder = (name: string) => join(work, '.claude', 'worktrees', name)
@@ -27,6 +28,10 @@ describe('scripts/worktree-clean.mjs', () => {
   /** A worktree like the harness makes it: on its own branch, started from origin/main. */
   function add(name: string, branch = `worktree-${name}`) {
     git(work, 'worktree', 'add', '-b', branch, folder(name), 'origin/main')
+  }
+  /** A check worktree like a handoff keeps it: detached at origin/main. */
+  function addDetached(name: string) {
+    git(work, 'worktree', 'add', '--detach', folder(name), 'origin/main')
   }
   const listed = (name: string) => git(work, 'worktree', 'list', '--porcelain').replaceAll('\\', '/').includes(`/.claude/worktrees/${name}\n`)
   const locked = (name: string) => git(work, 'worktree', 'list', '--porcelain').split(/\n\n+/).some(block => block.replaceAll('\\', '/').includes(`/.claude/worktrees/${name}\n`) && /^locked/m.test(block))
@@ -75,12 +80,26 @@ describe('scripts/worktree-clean.mjs', () => {
     add('agent-f6f6f6')
     git(folder('agent-f6f6f6'), 'commit', '--allow-empty', '-m', 'not pushed')
 
+    // Locked by hand, then named (#560): the cleaner unlocks and removes what it does not keep.
+    addDetached('check-i1i1i1')
+    git(work, 'worktree', 'lock', '--reason', handReason, folder('check-i1i1i1'))
+    addDetached('check-i2i2i2')
+    git(work, 'worktree', 'lock', folder('check-i2i2i2'))
+    add('agent-j1j1j1')
+    git(work, 'worktree', 'lock', '--reason', handReason, folder('agent-j1j1j1'))
+    writeFileSync(join(folder('agent-j1j1j1'), 'unsaved.txt'), 'work in progress')
+    add('agent-j2j2j2')
+    git(work, 'worktree', 'lock', '--reason', handReason, folder('agent-j2j2j2'))
+    git(folder('agent-j2j2j2'), 'commit', '--allow-empty', '-m', 'not pushed')
+    add('agent-k3k3k3')
+    git(work, 'worktree', 'lock', '--reason', handReason, folder('agent-k3k3k3'))
+
     mkdirSync(folder('leftover-plain'), { recursive: true })
     writeFileSync(join(folder('leftover-plain'), 'file.txt'), 'x')
     mkdirSync(folder('leftover-git'), { recursive: true })
     writeFileSync(join(folder('leftover-git'), '.git'), '')
 
-    result = await run('agent-a1a1a1', 'a7a7a7', 'agent-e5e5e5', 'agent-f6f6f6')
+    result = await run('agent-a1a1a1', 'a7a7a7', 'agent-e5e5e5', 'agent-f6f6f6', 'check-i1i1i1', 'check-i2i2i2', 'agent-j1j1j1', 'agent-j2j2j2', 'agent-k3k3k3')
   }, 120_000)
 
   afterAll(() => {
@@ -96,6 +115,10 @@ describe('scripts/worktree-clean.mjs', () => {
     expect(existsSync(folder('agent-a1a1a1'))).toBe(false)
     expect(hasBranch('worktree-agent-a1a1a1')).toBe(false)
     expect(lines().some(line => line.startsWith('removed agent-a1a1a1'))).toBe(true)
+  })
+
+  it('does not call a worktree locked by a session "locked by hand"', () => {
+    expect(lines().filter(line => line.startsWith('removed agent-a1a1a1')).join('\n')).not.toContain('locked by hand')
   })
 
   it('removes a worktree named by its bare id', () => {
@@ -150,6 +173,36 @@ describe('scripts/worktree-clean.mjs', () => {
   it('keeps a named worktree with a commit no remote branch contains', () => {
     expect(listed('agent-f6f6f6')).toBe(true)
     expect(result.output).toMatch(/^kept agent-f6f6f6: [0-9a-f]{7} is on no remote branch$/m)
+  })
+
+  it('unlocks and removes a named worktree locked by hand, with its reason in the line (#560)', () => {
+    expect(listed('check-i1i1i1')).toBe(false)
+    expect(existsSync(folder('check-i1i1i1'))).toBe(false)
+    expect(lines()).toContain(`removed check-i1i1i1 (was locked by hand: ${handReason})`)
+  })
+
+  it('removes a named worktree locked by hand without a reason (#560)', () => {
+    expect(listed('check-i2i2i2')).toBe(false)
+    expect(existsSync(folder('check-i2i2i2'))).toBe(false)
+    expect(lines()).toContain('removed check-i2i2i2 (was locked by hand)')
+  })
+
+  it('removes a named worktree locked by hand with its branch, and the branches come last in the line (#560)', () => {
+    expect(listed('agent-k3k3k3')).toBe(false)
+    expect(hasBranch('worktree-agent-k3k3k3')).toBe(false)
+    expect(lines()).toContain(`removed agent-k3k3k3 (was locked by hand: ${handReason}) and worktree-agent-k3k3k3`)
+  })
+
+  it('keeps a named worktree locked by hand that has an uncommitted change, and it stays locked (#560)', () => {
+    expect(listed('agent-j1j1j1')).toBe(true)
+    expect(locked('agent-j1j1j1')).toBe(true)
+    expect(lines()).toContain('kept agent-j1j1j1: 1 uncommitted change')
+  })
+
+  it('keeps a named worktree locked by hand that has an unpushed commit, and it stays locked (#560)', () => {
+    expect(listed('agent-j2j2j2')).toBe(true)
+    expect(locked('agent-j2j2j2')).toBe(true)
+    expect(result.output).toMatch(/^kept agent-j2j2j2: [0-9a-f]{7} is on no remote branch$/m)
   })
 
   it('deletes a folder git does not list, which has no .git', () => {
