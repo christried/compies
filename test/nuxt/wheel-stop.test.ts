@@ -44,8 +44,11 @@ async function at(ms: number) {
 }
 
 const card = () => page!.find('[data-testid="wheel-card"]')
-const cardScale = () => Number(/scale\(([\d.]+)\)/.exec(card().attributes('style') ?? '')?.[1])
-const cardOpacity = () => Number(/opacity:\s*([\d.]+)/.exec(card().attributes('style') ?? '')?.[1])
+/** The card's scale and opacity: 1 when it has no style, which it has only while a pop runs (#584 P4). */
+const cardScale = () => Number(/scale\(([\d.]+)\)/.exec(card().attributes('style') ?? '')?.[1] ?? 1)
+const cardOpacity = () => Number(/opacity:\s*([\d.]+)/.exec(card().attributes('style') ?? '')?.[1] ?? 1)
+/** A label's transform without its rotation: what the pop could leave on it. */
+const unrotated = (index: number) => label(index).attributes('transform')!.replace(/^rotate\([^)]*\) /, '')
 const label = (index = 2) => page!.get(`[data-testid="wheel-label-${index}"]`)
 /** The `s` of `scale(1 s)` in the label's transform: always there, 1 at rest. */
 const labelScale = (index = 2) => Number(/scale\(1 ([\d.]+)\)/.exec(label(index).attributes('transform') ?? '')?.[1])
@@ -106,15 +109,26 @@ describe('the pops at the stop', () => {
     expect(labelScale()).toBeLessThan(1)
   })
 
-  it('rests after the run, and the card no longer carries a CSS animation that would replay on a mount', async () => {
+  it('rests after the run, and the card has no style left: nothing of the pop stays on it (#584 P4)', async () => {
     await mount(wheelOf(spinOf()))
     await at(STOP - 100)
     await at(STOP + 3000)
 
+    expect(card().attributes('style')).toBeUndefined()
     expect(cardScale()).toBe(1)
     expect(cardOpacity()).toBe(1)
     expect(labelScale()).toBe(1)
-    expect(card().classes()).not.toContain('animate-pop-in')
+    expect(unrotated(2)).toBe(unrotated(0))
+  })
+
+  it('ends the card\'s style with the run: still there at 419 ms after the stop, gone at 420 ms', async () => {
+    await mount(wheelOf(spinOf()))
+    await at(STOP - 100)
+
+    await at(STOP + 419)
+    expect(card().attributes('style')).toBeDefined()
+    await at(STOP + 420)
+    expect(card().attributes('style')).toBeUndefined()
   })
 
   it('shows a late joiner the end state at once, with no frame below its size', async () => {
@@ -122,11 +136,13 @@ describe('the pops at the stop', () => {
     await mount(wheelOf(spinOf()))
 
     expect(card().exists()).toBe(true)
+    expect(card().attributes('style')).toBeUndefined()
     expect(cardScale()).toBe(1)
     expect(cardOpacity()).toBe(1)
     expect(labelScale()).toBe(1)
-    expect(card().classes()).not.toContain('animate-pop-in')
+    expect(unrotated(2)).toBe(unrotated(0))
     await at(STOP + 1550)
+    expect(card().attributes('style')).toBeUndefined()
     expect(cardScale()).toBe(1)
   })
 
@@ -162,6 +178,18 @@ describe('the pops under reduced motion', () => {
     expect(cardOpacity()).toBeCloseTo(0.5, 1)
     expect(labelScale()).toBe(1)
     expect(Number(label().attributes('opacity'))).toBeCloseTo(0.5, 1)
+    expect(card().attributes('style')).toBeDefined()
+  })
+
+  it('has no style on the card from the end of the 0.2 s crossfade on', async () => {
+    document.documentElement.style.setProperty('--cp-motion', 'reduced')
+    await mount(wheelOf(spinOf()))
+    await at(STOP - 100)
+
+    await at(STOP + 199)
+    expect(card().attributes('style')).toBeDefined()
+    await at(STOP + 200)
+    expect(card().attributes('style')).toBeUndefined()
   })
 })
 

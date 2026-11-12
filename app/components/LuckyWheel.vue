@@ -6,7 +6,7 @@ import { SCRAMBLE_FRAME_MS, finalAngle, removalEase, removalEnd, revealStage, sc
 import { BULB_RADIUS, FLAPPER_HINGE, FLAPPER_PLACEMENT, PIN_RADIUS, PIN_RING_RADIUS, WHEEL_COLOURS, WHEEL_FILLS, bulbPoints, pinAngles, wheelPoint } from '~/utils/wheel-look'
 import { bulbsLit } from '~/utils/wheel-bulbs'
 import { flapperKick, pinCrossings } from '~/utils/wheel-pins'
-import { cardPop, labelPop } from '~/utils/wheel-stop'
+import { cardPop, labelPop, popOver } from '~/utils/wheel-stop'
 import { stopReached } from '~~/shared/draw-timeline'
 import type { HostGameFacts } from '~~/shared/game'
 import type { WheelView } from '~~/shared/stage'
@@ -225,7 +225,8 @@ const drawnOpacity = computed(() => {
 // late joiner or a returning tab reads the end state at once, and nothing here compares with the stop itself (`stopped` is the one gate).
 const stopElapsed = computed(() => (stopped.value && clock.value !== null && timing.value ? clock.value - timing.value.stopAt : null))
 const cardStyle = computed(() => {
-  if (!card.value || stopElapsed.value === null) return undefined
+  // Once the pop is over the card has no style at all: a late joiner gets none (#584 P4).
+  if (!card.value || stopElapsed.value === null || popOver(stopElapsed.value, reduced.value)) return undefined
   const { scale, opacity } = cardPop(stopElapsed.value, reduced.value)
   return { transform: `scale(${scale})`, opacity: String(opacity) }
 })

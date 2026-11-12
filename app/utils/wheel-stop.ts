@@ -20,10 +20,15 @@ const clamp01 = (value: number) => Math.min(Math.max(value, 0), 1)
 /** Reduced motion has no scale: the opacity rises linearly over the Hidden reveal's crossfade (04-motion: the pops crossfade). */
 const crossfade = (elapsed: number) => clamp01(elapsed / CROSSFADE_MS)
 
+/** The pops have run out `elapsed` ms after the stop (#584 P4): one home for when each run ends, so the card carries no inline style for as long as it shows. */
+export function popOver(elapsed: number, reduced: boolean): boolean {
+  return elapsed >= (reduced ? CROSSFADE_MS : POP_MS)
+}
+
 /** The result card `elapsed` ms after the stop: its scale and opacity. The reference's last keyframe has no opacity, which then stays at 1. */
 export function cardPop(elapsed: number, reduced: boolean): { scale: number, opacity: number } {
   if (reduced) return { scale: 1, opacity: crossfade(elapsed) }
-  if (elapsed >= POP_MS) return { scale: 1, opacity: 1 }
+  if (popOver(elapsed, false)) return { scale: 1, opacity: 1 }
   const progress = bezier(POP_EASE, Math.max(elapsed, 0) / POP_MS)
   return { scale: keyframes(progress, 0.6, 1.08), opacity: clamp01(progress / 0.5) }
 }
@@ -31,6 +36,6 @@ export function cardPop(elapsed: number, reduced: boolean): { scale: number, opa
 /** The drawn slice's label `elapsed` ms after the stop: its scaleY about its own centre line, and its opacity (1 but under reduced motion). */
 export function labelPop(elapsed: number, reduced: boolean): { scaleY: number, opacity: number } {
   if (reduced) return { scaleY: 1, opacity: crossfade(elapsed) }
-  if (elapsed >= POP_MS) return { scaleY: 1, opacity: 1 }
+  if (popOver(elapsed, false)) return { scaleY: 1, opacity: 1 }
   return { scaleY: keyframes(bezier(POP_EASE, Math.max(elapsed, 0) / POP_MS), 0, 1.25), opacity: 1 }
 }
