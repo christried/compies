@@ -13,6 +13,9 @@
       "entry": [
         // Imported by nuxt.config.ts, which knip reads as config and does not follow in production mode (#178).
         "stage.ts!",
+        // The sound cue plan (#530): no importer until the cue player (#531), so knip names the whole file unused. Remove this entry
+        // with #531, and the @public tags on its exports.
+        "app/utils/sound-cues.ts!",
         // Registered by the inline module in nuxt.config.ts through addServerHandler with a path string; dev server and
         // staging build only (#178, #247).
         "server/dev/sign-in.ts!",
