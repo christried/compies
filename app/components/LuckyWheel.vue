@@ -4,6 +4,7 @@ import { reducedMotion } from '~/utils/motion'
 import { SCRAMBLE_FRAME_MS, finalAngle, removalEase, removalEnd, revealStage, scramble, sliceSpans, wheelAngle, type WheelTiming } from '~/utils/wheel'
 import { BULB_RADIUS, FLAPPER_HINGE, FLAPPER_PLACEMENT, PIN_RADIUS, PIN_RING_RADIUS, WHEEL_COLOURS, WHEEL_FILLS, bulbPoints, pinAngles, wheelPoint } from '~/utils/wheel-look'
 import { bulbsLit } from '~/utils/wheel-bulbs'
+import { flapperKick, pinCrossings } from '~/utils/wheel-pins'
 import { stopReached } from '~~/shared/draw-timeline'
 import type { HostGameFacts } from '~~/shared/game'
 import type { WheelView } from '~~/shared/stage'
@@ -19,7 +20,8 @@ import { characterCount, cutToCharacters } from '~~/shared/text'
 // drawn slice leaves at stop + 2.8 s instead of 2.2 s. The drawn slice shrinks and the others close the gap (0.6 s), or fade and
 // jump under reduced motion. Since 0.13.2 (#519, spec #503) the wheel is drawn as the Show-Rad: a red band with a rim of 24 bulbs, a pin
 // at every slice edge, a flapper at the top, in fixed colours (a stage piece, the same in Hell and Dunkel: utils/wheel-look.ts). The
-// bulbs and the flapper are still for now; their motion comes with 0.13.2 (#521, #522), Compibert and the sounds with 0.13.3.
+// bulbs light by server time (#521) and the flapper kicks at every pin that passes the top (#522, utils/wheel-pins.ts); Compibert and
+// the sounds come with 0.13.3.
 // The wheel is 340 px at most on a phone and 420 px from md up, and never changes size during a spin.
 const props = withDefaults(defineProps<{
   wheel: WheelView
@@ -147,8 +149,10 @@ const litBulbs = computed((previous?: boolean[]): boolean[] => {
   const next = bulbsLit(timing.value, lampClock.value, reduced.value)
   return previous && previous.every((lit, index) => lit === next[index]) ? previous : next
 })
-/** The flapper's angle in degrees about its hinge, SVG sense (positive turns clockwise): down. #522 replaces the body: a kick at every pin that passes. */
-const flapperAngle = computed((): number => 0)
+/** The pins' crossings of this spin: worked out once, when the spin changes (utils/wheel-pins.ts); not for reduced motion, which has no kicks (#522). */
+const crossings = computed(() => (timing.value && !reduced.value ? pinCrossings(timing.value) : []))
+/** The flapper's angle in degrees about its hinge, SVG sense (positive turns clockwise): a kick at every pin that passes, a function of the server's clock alone (#522). */
+const flapperAngle = computed((): number => (running.value && clock.value !== null ? flapperKick(crossings.value, clock.value, reduced.value) : 0))
 
 /** The drawn slice has its outline from the stop on, until it leaves. */
 const winner = computed(() => (running.value && stopped.value && timing.value ? timing.value.resultIndex : -1))
