@@ -32,9 +32,10 @@ const plan = (from: RestSlice[], to: RestSlice[], reduced = false) => {
   return made
 }
 /** Start and end of the slice with `key` at `ms`, rounded by the matcher. */
-function span(from: RestSlice[], to: RestSlice[], ms: number, key: string) {
+function span(from: RestSlice[], to: RestSlice[], ms: number, key: string): [number, number] {
   const found = refillAt(plan(from, to), ms).slices.find(slice => slice.key === key)
-  return found && [found.start, found.end]
+  if (!found) throw new Error(`no slice ${key} at ${ms} ms`)
+  return [found.start, found.end]
 }
 const numbers = (slices: { start: number, end: number }[]) => slices.flatMap(slice => [slice.start, slice.end])
 
