@@ -86,6 +86,8 @@ band ×k: flex 1, border-top 3 #151515, bg team, colour team ink, padding 0 28, 
 | 4–6 | „Unentschieden · {k} Sieger“ / „· alle {k} gleichauf“ | 36 / 32 / 28 | 40 / 36 / 32 |
 | 7–8 | as 4–6 | 5 bands + band „+{n} weitere“ (bg `#fffdf8`, no mark) | same |
 
+- **Deviation (0.13, #551):** when every Party won (3 or more), the bar's label is „Alle {k} gleichauf“, without „Unentschieden · “: the long label was cut with „…“ in the wide picture beside two-digit points. The bar's sizes are unchanged.
+
 - 2-line split (k = 1 and Event) = the space nearest the middle; no space → 1 line with ellipsis. Each line is its own Line, nothing wraps on its own.
 - Bands always share the panel height equally (flex 1), so the band count is the only variable.
 - Standings list the Parties after the Winners with their shared rank (3 after two Winners); everyone on rank 1 → Standings block hidden.

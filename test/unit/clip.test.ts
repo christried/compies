@@ -8,7 +8,7 @@ import { clipWindow } from '../../shared/draw-timeline'
 const STOP = Date.parse('2090-10-30T10:00:07.500Z')
 
 describe('clipPosition', () => {
-  const clip = { ...clipWindow({ stopAt: STOP }, { clipLength: 30 }), game: { clipStart: 90 } }
+  const clip = { ...clipWindow({ stopAt: STOP }, { youtubeId: 'aaaaaaaaaaa', clipLength: 30 }), game: { clipStart: 90 } }
 
   it('is null before the clip starts', () => {
     expect(clipPosition(clip, STOP - 1)).toBeNull()

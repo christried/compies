@@ -237,7 +237,7 @@ export function hiddenWheelWorld() {
   // The rig is made when used: the hooks assign `testDb`.
   const rig = (): Rig => ({ request, db: testDb.db, clock, notifier })
 
-  async function newGame(name: string, videoId: string): Promise<Secret> {
+  async function newGame(name: string, videoId: string, clipLength?: number): Promise<Secret> {
     // Every game carries notes (#224): a Player must not get them under a Hidden wheel.
     const notes = `Hausregel fuer ${name}`
     // Lower case, so the key and the label are one string; only the library and the Host's `hostGames` carry a Tag (#335, #443): no Player's read does.
@@ -251,7 +251,7 @@ export function hiddenWheelWorld() {
     const created = await request('/api/games', {
       method: 'POST',
       headers: { 'content-type': 'application/json', 'cookie': hostSigned.cookie },
-      body: JSON.stringify({ name, youtubeUrl: `https://youtu.be/${videoId}`, notes, tags: [tag], price: { cents, source: 'steam' }, playersMin, playersMax, suitabilities: ['teams'] }),
+      body: JSON.stringify({ name, youtubeUrl: `https://youtu.be/${videoId}`, ...(clipLength === undefined ? {} : { clipLength }), notes, tags: [tag], price: { cents, source: 'steam' }, playersMin, playersMax, suitabilities: ['teams'] }),
     })
     expect(created.status).toBe(200)
     const { id, price } = await created.json() as GameView
@@ -283,10 +283,11 @@ export function hiddenWheelWorld() {
    * `extraGames` of the Game pool too. The Host's and the Player's sign-in and the set-up verbs are ./scenario's; the games are made
    * over HTTP with an image, so the builder stays here (#418).
    */
-  async function runningEvent(settings: Record<string, unknown> = LOBBY, extraGames = 0) {
-    const [a, b, c, epsilon] = [await newGame('Alpha Arena', 'aaaaaaaaaaa'), await newGame('Beta Bowling', 'bbbbbbbbbbb'), await newGame('Gamma Garten', 'ccccccccccc'), await newGame('Epsilon Eck', 'eeeeeeeeeee')]
+  async function runningEvent(settings: Record<string, unknown> = LOBBY, extraGames = 0, clipLength?: number) {
+    // `clipLength` is every game's clip length in seconds (a game's default otherwise): a test that moves the Veto window's end sets it (#505).
+    const [a, b, c, epsilon] = [await newGame('Alpha Arena', 'aaaaaaaaaaa', clipLength), await newGame('Beta Bowling', 'bbbbbbbbbbb', clipLength), await newGame('Gamma Garten', 'ccccccccccc', clipLength), await newGame('Epsilon Eck', 'eeeeeeeeeee', clipLength)]
     // More games for the Game pool, for a test that needs a wheel with many slices.
-    const more = await Promise.all(Array.from({ length: extraGames }, (_, index) => newGame(`Zusatz ${index}`, `zzzzzzzzzz${index}`)))
+    const more = await Promise.all(Array.from({ length: extraGames }, (_, index) => newGame(`Zusatz ${index}`, `zzzzzzzzzz${index}`, clipLength)))
     const created = await hostCreatesEvent(rig(), hostSigned, { sessions: 1, slots: ['2090-10-30T20:30'], settings, pool: [a.id, b.id, ...more.map(game => game.id)] })
     const secondSigned = await signInAs(rig(), second)
     await playersJoin(rig(), created, [playerSigned, secondSigned])

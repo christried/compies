@@ -2,6 +2,22 @@
 
 ## [Unreleased]
 
+## [0.13.0] - 2026-11-12 – Clip
+
+Der Clip, neu gefasst: Er läuft für alle gleich und lässt sich nicht mehr anhalten, darf 10 bis 120 Sekunden lang sein, und das Veto-Fenster richtet sich nach seiner Länge. Dazu kommt ein neues Ergebnis-Bild zum Teilen, die „Anzeigetafel“.
+
+### Geändert
+
+- **Der Clip läuft für alle gleich:** Das Video im Clip nimmt in einer Session keinen Tipp, Klick und keine Taste mehr an. Niemand kann es anhalten, YouTubes „Weitere Videos“ erscheinen nicht, und kein Link führt aus dem Event heraus. Stoppt dein Gerät das Video von sich aus, etwa durch die Kopfhörer-Taste, springt es zur Sekunde der anderen und läuft weiter. Ton an und aus, „Für mich schließen“ und für den Host „Clip überspringen“ bleiben. Der Titel des Videos zeigt sich in den ersten Sekunden: YouTube erlaubt nicht, ihn zu verbergen. ([#509](https://github.com/christried/compies/issues/509))
+- **Clips von 10 bis 120 s:** Du kannst einem Spiel jetzt einen Clip von 10 bis 120 Sekunden geben, bisher 5 bis 60. Im Spielformular trägst du Start, Ende und Länge ein, zwei davon genügen: Die beiden Felder, die du zuletzt geändert hast, gelten, das dritte rechnet sich von selbst mit. Ein Clip, der kürzer als 10 Sekunden war, läuft jetzt 10 Sekunden ab derselben Stelle. ([#507](https://github.com/christried/compies/issues/507), [#508](https://github.com/christried/compies/issues/508))
+- **Das Veto-Fenster passt zum Clip:** Es dauert jetzt so lange wie der Clip des gezogenen Spiels plus 30 Sekunden, bei einem Spiel ohne Video 30 Sekunden. Bisher waren es immer 60. Die Karte eines Spiels ohne Video bleibt dabei höchstens 30 Sekunden stehen. Überspringt der Host den Clip, endet das Fenster 30 Sekunden nach dem Überspringen, wenn das früher ist; länger wird es dadurch nie. Die Uhr zählt in Minuten und Sekunden. ([#505](https://github.com/christried/compies/issues/505), [#506](https://github.com/christried/compies/issues/506))
+- **Neues Ergebnis-Bild:** Das Bild zum Teilen ist jetzt eine „Anzeigetafel“: oben der Name des Events mit den Terminen, groß in der Teamfarbe der Sieger mit seinen Punkten, dazu die Tabelle und die gespielten Spiele als schlichte Zeilen. Zu lange Namen werden mit „…“ gekürzt, lange Listen mit „+N weitere“. Endet ein Event unentschieden, steht jeder Sieger auf einem eigenen Band in seiner Teamfarbe, ab sieben Siegern die ersten fünf und „+N weitere“. Ein Spiel mit mehreren Erstplatzierten trägt einen geteilten Streifen. Das neue Bild gibt es auch für Events, die schon vorher zu Ende gingen. ([#510](https://github.com/christried/compies/issues/510), [#511](https://github.com/christried/compies/issues/511))
+
+### Behoben
+
+- **Clip im Querformat:** Hältst du das Handy quer, passt der Clip jetzt in den Bildschirm. Die Knöpfe unter dem Video, „Ton aus“, „Clip überspringen“ und „Für mich schließen“, bleiben erreichbar; bisher lagen sie unter dem Bildschirmrand. ([#549](https://github.com/christried/compies/issues/549))
+- **Clip ohne Video:** Hat das gezogene Spiel kein Video, steht seine Karte auf dem Handy jetzt ganz im Clip. Bisher war sie oben abgeschnitten und lag unten über den Knöpfen. ([#555](https://github.com/christried/compies/issues/555))
+
 ## [0.12.0] - 2026-11-11 – Eventseite
 
 Die Eventseite, gründlich überarbeitet: Spiele zeigen sich als Kacheln mit eigenem Dialog, die Bühne rückt nach oben, was gerade passiert ist, und dein Teamwort änderst du jetzt das ganze Event über. Aus Bench und Tribüne ist eine Tribüne geworden, und ein beendetes Event verrät den Sieger erst mit der Siegerehrung.

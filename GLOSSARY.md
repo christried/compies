@@ -185,7 +185,7 @@ The time after a Draw's stop (or after the Host sets a game) in which every Part
 _Avoid_: Veto round, voting time, grace period
 
 **Clip**:
-The game's YouTube excerpt that every device plays from the same second at a Draw's stop, for the game's clip length or until the Host skips it; a game without a video shows its card instead. Nobody can pause the video or operate it; a Member can mute it or close it on their own device, and a Party can cast its Veto while it plays.
+The game's YouTube excerpt that every device plays from the same second at a Draw's stop, for the game's clip length or until the Host skips it; a game without a video shows its card instead, for its clip length but at most 30 seconds. Nobody can pause the video or operate it; a Member can mute it or close it on their own device, and a Party can cast its Veto while it plays.
 _Avoid_: Trailer, preview, video
 
 **Veto allowance**:

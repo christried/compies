@@ -2,8 +2,8 @@ import { and, eq, exists, sql } from 'drizzle-orm'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { activity, draws, events, games, rounds, users } from '../../server/db/schema'
 import { readActivityPage } from '../../server/utils/activity'
-import { dueDraws, stoppedDraws } from '../../server/utils/draw-timeline'
-import { drawGameKnown, drawInstants, isDue, settleAt } from '../../shared/draw-timeline'
+import { dueDraws, movedVetoEnd, stoppedDraws } from '../../server/utils/draw-timeline'
+import { drawGameKnown, drawInstants, isDue, settleAt, vetoEndAfterSkip } from '../../shared/draw-timeline'
 import { createTestDb } from './harness'
 
 // The parity guard of the Draw's timeline (#414, ADR 0013 amendment 2026-10-31): the SQL twins (`stoppedDraws`, `dueDraws`) select
@@ -27,17 +27,19 @@ beforeAll(async () => {
   eventId = event!.id
 
   const committedAt = new Date(COMMIT)
-  const shapes = [
+  // Each shape is stored for every clip length (#505): a window of 40, 60 and 150 s, and 30 s for a game without a video.
+  const clipLengths = [10, 30, 120, null] as const
+  const shapes = ([
     { kind: 'spin', windowOpens: true, settled: false },
     { kind: 'spin', windowOpens: false, settled: false },
     { kind: 'set', windowOpens: true, settled: false },
     { kind: 'set', windowOpens: false, settled: true },
     { kind: 'spin', windowOpens: true, settled: true },
     { kind: 'set', windowOpens: true, settled: true },
-  ] as const
+  ] as const).flatMap(shape => clipLengths.map(clipLength => ({ ...shape, clipLength })))
   stored = []
   for (const shape of shapes) {
-    const instants = drawInstants({ kind: shape.kind, commitAt: COMMIT, windowOpens: shape.windowOpens })
+    const instants = drawInstants({ kind: shape.kind, commitAt: COMMIT, windowOpens: shape.windowOpens, clipLength: shape.clipLength })
     // One Round per draw; each has its game set, so the one-drawn-Round-per-Event index does not apply.
     const [round] = await db.insert(rounds).values({ eventId, startedAt: committedAt, gameId: game!.id, setAt: committedAt }).returning({ id: rounds.id })
     const [row] = await db.insert(draws).values({
@@ -73,7 +75,7 @@ const ids = (rows: readonly { id: string }[]) => rows.map(row => row.id).sort()
 
 describe('the SQL twins agree with the JS predicates (#414)', () => {
   it('stores the instants the timeline gives, for every shape of Draw', () => {
-    expect(stored).toHaveLength(6)
+    expect(stored).toHaveLength(24)
     expect(new Set(probes().map(now => now.getTime())).size).toBeGreaterThan(8)
   })
 
@@ -103,6 +105,45 @@ describe('the SQL twins agree with the JS predicates (#414)', () => {
       }
       expect(known.sort(), `known at ${now.toISOString()}`).toEqual(ids(stored.filter(row => drawGameKnown({ isHost: false, draw: row, now }))))
     }
+  })
+})
+
+describe('the SQL twin of the moved end agrees with vetoEndAfterSkip (#506)', () => {
+  // The twin returns the whole new end (the stored one when nothing moves), the JS rule null for "no change": that is the `??`.
+  // Skips are at or after a Draw's stop, as in production; the window's edges (end - 30 001 ... end + 1) are where the comparison flips.
+  function skips(row: Stored): number[] {
+    const stop = row.stopAt.getTime()
+    const at = [stop, stop + 1, stop + 30_000]
+    if (row.vetoEndsAt) {
+      const end = row.vetoEndsAt.getTime()
+      at.push(end - 30_001, end - 30_000, end - 29_999, end - 1, end, end + 1)
+    }
+    return at.filter(instant => instant >= stop)
+  }
+
+  it('selects the end vetoEndAfterSkip moves to, and the stored one (or none) where it moves nothing', async () => {
+    const instants = [...new Set(stored.flatMap(skips))].sort((a, b) => a - b)
+    for (const skippedAt of instants) {
+      const rows = await testDb.db.select({ id: draws.id, end: movedVetoEnd(new Date(skippedAt)).mapWith(draws.vetoEndsAt) }).from(draws)
+      const found = new Map(rows.map(row => [row.id, row.end?.getTime() ?? null]))
+      for (const row of stored.filter(candidate => skips(candidate).includes(skippedAt))) {
+        const js = vetoEndAfterSkip(row, skippedAt)?.getTime() ?? row.vetoEndsAt?.getTime() ?? null
+        expect(found.get(row.id), `end after a skip at ${new Date(skippedAt).toISOString()} of the draw stopping ${row.stopAt.toISOString()} (window ${row.vetoEndsAt?.toISOString() ?? 'none'})`).toBe(js)
+      }
+    }
+  })
+
+  it('moves the end at 30.001 s left and not at exactly 30 s or less, and gives a draw without a window none', async () => {
+    const withWindow = stored.find(row => row.vetoEndsAt !== null && row.vetoEndsAt.getTime() - row.stopAt.getTime() === 150_000)!
+    const end = withWindow.vetoEndsAt!.getTime()
+    const endAt = async (skippedAt: number) => {
+      const [row] = await testDb.db.select({ end: movedVetoEnd(new Date(skippedAt)).mapWith(draws.vetoEndsAt) }).from(draws).where(eq(draws.id, withWindow.id))
+      return row!.end?.getTime()
+    }
+    expect([await endAt(end - 30_001), await endAt(end - 30_000), await endAt(end - 29_999)]).toEqual([end - 1, end, end])
+    const without = stored.find(row => row.vetoEndsAt === null)!
+    const [none] = await testDb.db.select({ end: movedVetoEnd(new Date(without.stopAt.getTime() + 1)).mapWith(draws.vetoEndsAt) }).from(draws).where(eq(draws.id, without.id))
+    expect(none!.end).toBeNull()
   })
 })
 

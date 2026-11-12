@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
-  CLIP_LENGTH_MAX, CLIP_LENGTH_MIN, CLIP_START_MAX, GAME_NAME_MAX, NO_FILTERS, SUITABILITIES, canEditGame, canSeeLibrary, clipTime, filterGames, gameNameProblem,
+  CLIP_END_MAX, CLIP_LENGTH_MAX, CLIP_LENGTH_MIN, CLIP_START_MAX, GAME_NAME_MAX, NO_FILTERS, SUITABILITIES, canEditGame, canSeeLibrary, clipTime, filterGames, gameNameProblem,
   isClipLength, normaliseTag, parseClipLength, parseClipTime, parseGameInput, parsePlayerCount, parseTags, tagProblem,
   formatPriceAmount, isPriceCheckOnly, parsePrice, parsePriceAmount, priceTakesAmount,
   FREE_TO_PLAY_TAG, tagsWithFreeToPlay,
@@ -44,6 +44,12 @@ describe('parseClipTime', () => {
   it.each([[''], ['   '], ['bald'], ['1:60'], ['1:12:60'], ['1:60:00'], ['-5'], ['1.5'], ['1:'], [':30'], ['1:2:3:4'], ['12:00:00'], ['43200']])('refuses %j', (text) => {
     expect(parseClipTime(text)).toBeNull()
   })
+
+  it('takes a later second when the caller raises the cap (Ende, #508)', () => {
+    expect(parseClipTime('12:01:59', CLIP_END_MAX)).toBe(43_319)
+    expect(parseClipTime('12:02:00', CLIP_END_MAX)).toBeNull()
+    expect(parseClipTime('12:00:00')).toBeNull()
+  })
 })
 
 describe('canSeeLibrary', () => {
@@ -83,19 +89,19 @@ describe('parsePlayerCount', () => {
 })
 
 describe('clip length', () => {
-  it.each([[CLIP_LENGTH_MIN], [30], [CLIP_LENGTH_MAX]])('accepts %i seconds', (seconds) => {
+  it.each([[10], [30], [120]])('accepts %i seconds', (seconds) => {
     expect(isClipLength(seconds)).toBe(true)
   })
 
-  it.each([[CLIP_LENGTH_MIN - 1], [CLIP_LENGTH_MAX + 1], [30.5], ['30'], [null], [undefined]])('refuses %j', (seconds) => {
+  it.each([[9], [121], [30.5], ['30'], [null], [undefined]])('refuses %j', (seconds) => {
     expect(isClipLength(seconds)).toBe(false)
   })
 
-  it.each([['5', 5], [' 60 ', 60], ['030', 30]])('reads %j as %i seconds', (text, seconds) => {
+  it.each([['10', 10], [' 120 ', 120], ['030', 30]])('reads %j as %i seconds', (text, seconds) => {
     expect(parseClipLength(text)).toBe(seconds)
   })
 
-  it.each([[''], ['4'], ['61'], ['30.5'], ['1e1'], ['bald']])('refuses %j', (text) => {
+  it.each([[''], ['9'], ['121'], ['30.5'], ['1e1'], ['bald']])('refuses %j', (text) => {
     expect(parseClipLength(text)).toBeNull()
   })
 })
@@ -178,14 +184,19 @@ describe('parseGameInput', () => {
       expect(parseGameInput({ ...valid, clipStart: CLIP_START_MAX, clipLength: CLIP_LENGTH_MAX })).toMatchObject({ ok: true })
     })
 
+    it('takes 10 and 120 seconds', () => {
+      expect(parseGameInput({ ...valid, clipLength: 10 })).toMatchObject({ ok: true })
+      expect(parseGameInput({ ...valid, clipLength: 120 })).toMatchObject({ ok: true })
+    })
+
     it.each([
       [{ clipStart: -1 }],
       [{ clipStart: CLIP_START_MAX + 1 }],
       [{ clipStart: 1.5 }],
       [{ clipStart: '72' }],
       [{ clipStart: null }],
-      [{ clipLength: CLIP_LENGTH_MIN - 1 }],
-      [{ clipLength: CLIP_LENGTH_MAX + 1 }],
+      [{ clipLength: 9 }],
+      [{ clipLength: 121 }],
       [{ clipLength: 30.5 }],
       [{ clipLength: '30' }],
     ])('refuses %j', (clip) => {
