@@ -1,14 +1,16 @@
 import { and, eq } from 'drizzle-orm'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { activity, draws, events, rounds } from '../../server/db/schema'
+import { SPIN_MAX_MS, SPIN_MIN_MS, clipLengthOf } from '../../shared/draw-timeline'
 import { testClock } from '../../server/utils/clock'
 import { memoryRoomNotifier } from '../../server/utils/room-notifier'
 import type { ActivityPage } from '../../shared/activity'
-import { SPIN } from '../draw-offsets'
+import { SPIN, windowMsFor } from '../draw-offsets'
 import { createTestApp, errorOf, sendVia, type TestRequest } from './app'
 import { createTestDb, resetDatabase } from './harness'
 import { readEvent, readFeed, readFeedText, startRunningEvent, type Rig } from './scenario'
 import { stubAuthEnv } from './sign-in'
+import { spinAnswer } from './spin-length'
 
 // Setting the next game, several open Rounds and putting one back (#228, spec #218 § Rounds, „Nächstes Spiel setzen“): the
 // Host's two endpoints through the HTTP API with the in-memory room, every refusal with its code, what the Event read shows
@@ -434,7 +436,7 @@ describe('Rounds', () => {
   })
 
   // Spinning the wheel (#229, spec #218 § Drawing, § Deadlines): the server draws, the spin starts a lead after the commit and
-  // stops 6 s later, and the game is set by whichever read or write comes first after the stop. The Hidden wheel's secrecy is
+  // stops 6 to 10 s later (the shortest, 6 s, unless a test says otherwise: setup.ts), and the game is set by whichever read or write comes first after the stop. The Hidden wheel's secrecy is
   // in hidden-wheel.test.ts.
   describe('spinning the wheel', () => {
     const { lead: LEAD, stop: STOP } = SPIN
@@ -465,6 +467,28 @@ describe('Rounds', () => {
       expect(row!.sliceGameIds![row!.resultIndex!]).toBe(row!.gameId)
       expect(row!.resultOffset).toBeGreaterThanOrEqual(0.2)
       expect(row!.resultOffset).toBeLessThan(0.8)
+    })
+
+    // #520: the length comes from the platform's source (setup.ts answers it from `spinAnswer`), 6 s at the lowest answer, 10 s at the highest.
+    it.each([
+      { answer: 0, length: 6000 },
+      { answer: SPIN_MAX_MS - SPIN_MIN_MS, length: 10_000 },
+    ])('stops a spin of $length ms that long after its start: the stored instants, the window, the Event read and the feed entry', async ({ answer, length }) => {
+      const game = await running({ wheel: true, vetoAllowance: 3 })
+      spinAnswer.value = answer
+
+      await spun(game)
+
+      const [row] = await drawRows()
+      const drawn = [game.halo, game.kart].find(candidate => candidate.id === row!.gameId)!
+      expect(row).toMatchObject({ spinStartAt: new Date(iso(LEAD)), stopAt: new Date(iso(LEAD + length)) })
+      expect(row!.vetoEndsAt).toEqual(new Date(iso(LEAD + length + windowMsFor(clipLengthOf(drawn)))))
+      expect((await read(game)).wheel!.spin).toMatchObject({ spinStartAt: iso(LEAD), stopAt: iso(LEAD + length) })
+      // The feed entry waits for the stop of this spin, to the millisecond.
+      clock.advance(LEAD + length - 1)
+      expect((await feedOf(game, game.cookies.three)).map(entry => entry.type)).not.toContain('game_drawn')
+      clock.advance(1)
+      expect((await feedOf(game, game.cookies.three)).map(entry => entry.type)).toContain('game_drawn')
     })
 
     it('tells the room only that the Event changed on a spin, and no message of the wheel', async () => {

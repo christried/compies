@@ -17,22 +17,22 @@ export interface WheelTiming {
 /** The wheel's ease, `cubic-bezier(.15,.75,.25,1.035)` (04-motion): fast at first, braking late, and it overshoots a little by design. */
 const SPIN_EASE = [0.15, 0.75, 0.25, 1.035] as const
 /** `EASE.snap` (04-motion), the reduced-motion spin's ease. */
-const SNAP_EASE = [0.2, 0, 0, 1] as const
+export const SNAP_EASE = [0.2, 0, 0, 1] as const
 /** `EASE.io`, the ease of the slices closing the gap. */
-const IO_EASE = [0.65, 0, 0.35, 1] as const
+export const IO_EASE = [0.65, 0, 0.35, 1] as const
+/** `EASE.pop` (04-motion), the ease of both pops at the stop and of the refill's new slice. */
+export const POP_EASE = [0.34, 1.56, 0.64, 1] as const
 
-/** Full turns past the target, so the spin is a spin. */
-const EXTRA_TURNS = 5
 /** The drawn slice leaves this long after the stop, a Hidden wheel a little later: its reveal comes first (04-motion). */
 const REMOVE_AFTER_MS = 2200
 const REMOVE_AFTER_HIDDEN_MS = 2800
-/** The other slices close the gap in this long. */
-const REMOVE_MS = 600
+/** The other slices close the gap in this long, and a put back or a refill redistributes the slices in as long. */
+export const REDISTRIBUTE_MS = 600
 /** Under reduced motion the drawn slice fades for this long, then the others redistribute at once. */
 const REMOVE_REDUCED_FADE_MS = 200
 
 /** The y of a CSS cubic-bezier at progress `x` (0 to 1): the curve's x is solved for its parameter, by Newton's steps and then bisection. */
-function bezier([x1, y1, x2, y2]: readonly [number, number, number, number], x: number): number {
+export function bezier([x1, y1, x2, y2]: readonly [number, number, number, number], x: number): number {
   if (x <= 0) return 0
   if (x >= 1) return 1
   const coordinate = (a: number, b: number, t: number) => 3 * a * (1 - t) ** 2 * t + 3 * b * (1 - t) * t ** 2 + t ** 3
@@ -56,30 +56,44 @@ function bezier([x1, y1, x2, y2]: readonly [number, number, number, number], x: 
   return coordinate(y1, y2, t)
 }
 
-/** The angle (degrees, clockwise positive) the wheel rests at when the spin has stopped: the pointer at the top is in the result slice, at its offset, and five turns lie behind. */
-export function finalAngle({ slices, resultIndex, resultOffset }: WheelTiming): number {
-  return -(resultIndex + resultOffset) * (360 / slices) - 360 * EXTRA_TURNS
+/**
+ * Full turns past the target (#520): 0.8 a second of the spin's length, rounded to whole turns, so 6 s make 5 and 10 s make 8. Worked out
+ * from the two instants every client has, so no new datum travels; written as a division by 1250 so the half-turn edge is exact
+ * (6 875 ms is 5.5 turns and rounds up). A spin stored before the length varied (6 s) reads 5, as it showed.
+ */
+export function spinTurns({ spinStartAt, stopAt }: Pick<WheelTiming, 'spinStartAt' | 'stopAt'>): number {
+  return Math.round((stopAt - spinStartAt) / 1250)
+}
+
+/** Under reduced motion the wheel turns one turn in the calm 1.2 s, ending at the stop the full spin rests at (#584 P1: five to eight turns in 1.2 s were 100 to 180 degrees a frame). */
+const REDUCED_TURNS = 1
+
+/** The angle (degrees, clockwise positive) the wheel rests at when the spin has stopped: the pointer at the top is in the result slice, at its offset, and `turns` (by default `spinTurns`) lie behind. */
+export function finalAngle(spin: WheelTiming, turns = spinTurns(spin)): number {
+  const { slices, resultIndex, resultOffset } = spin
+  return -(resultIndex + resultOffset) * (360 / slices) - 360 * turns
 }
 
 /**
  * The wheel's angle at server time `nowMs`. It starts at 0 for every device, stands there until the spin starts, eases to the
- * final angle at `stopAt` and stays. Reduced motion stands until the last 1.2 s, then snaps to the same final angle at the same stop.
+ * final angle at `stopAt` and stays. Reduced motion stands until the last 1.2 s, then snaps one turn to the same stop (the same orientation, so nothing jumps
+ * when the removal starts).
  */
 export function wheelAngle(spin: WheelTiming, nowMs: number, reduced: boolean): number {
   const from = reduced ? spin.stopAt - SPIN_REDUCED_MS : spin.spinStartAt
   const progress = (nowMs - from) / (spin.stopAt - from)
   // `+ 0` turns a -0 (final times 0) into 0.
-  return finalAngle(spin) * bezier(reduced ? SNAP_EASE : SPIN_EASE, Math.min(Math.max(progress, 0), 1)) + 0
+  return (reduced ? finalAngle(spin, REDUCED_TURNS) : finalAngle(spin)) * bezier(reduced ? SNAP_EASE : SPIN_EASE, Math.min(Math.max(progress, 0), 1)) + 0
 }
 
 /** When the drawn slice starts to leave (server ms). */
-function removalStart(spin: Pick<WheelTiming, 'stopAt'>, hidden: boolean): number {
+export function removalStart(spin: Pick<WheelTiming, 'stopAt'>, hidden: boolean): number {
   return spin.stopAt + (hidden ? REMOVE_AFTER_HIDDEN_MS : REMOVE_AFTER_MS)
 }
 
 /** When the drawn slice is gone and the others have closed the gap (server ms). */
 export function removalEnd(spin: Pick<WheelTiming, 'stopAt'>, hidden: boolean): number {
-  return removalStart(spin, hidden) + REMOVE_MS
+  return removalStart(spin, hidden) + REDISTRIBUTE_MS
 }
 
 /**
@@ -89,14 +103,14 @@ export function removalEnd(spin: Pick<WheelTiming, 'stopAt'>, hidden: boolean): 
 export function removalEase(spin: Pick<WheelTiming, 'stopAt'>, nowMs: number, hidden: boolean, reduced: boolean): number {
   const elapsed = nowMs - removalStart(spin, hidden)
   if (reduced) return elapsed >= REMOVE_REDUCED_FADE_MS ? 1 : 0
-  return bezier(IO_EASE, Math.min(Math.max(elapsed / REMOVE_MS, 0), 1))
+  return bezier(IO_EASE, Math.min(Math.max(elapsed / REDISTRIBUTE_MS, 0), 1))
 }
 
 /** A Hidden wheel's drawn label turns into the real game this long after the stop (04-motion § reveal). */
-const REVEAL_AFTER_MS = 500
+export const REVEAL_AFTER_MS = 500
 /** The label scrambles for 6 frames of 0.05 s, then shows the game; reduced motion crossfades for 0.2 s instead. */
 const SCRAMBLE_MS = 300
-const CROSSFADE_MS = 200
+export const CROSSFADE_MS = 200
 export const SCRAMBLE_FRAME_MS = 50
 
 /**

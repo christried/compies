@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { DOMWrapper } from '@vue/test-utils'
 import { defineComponent, h, nextTick, ref } from 'vue'
 import CompibertRig from '~/components/CompibertRig.vue'
-import { RIG_STATES, type RigState } from '~/utils/compibert-rig'
+import { RIG_STATES, type RigState, type RigVariant } from '~/utils/compibert-rig'
 import { loadGsap } from '~/utils/gsap'
 import { stubInView } from './in-view'
 import { motion } from './motion'
@@ -25,7 +25,7 @@ type Page = Awaited<ReturnType<typeof mountSuspended<typeof CompibertRig>>>
 
 const pages: Page[] = []
 
-interface Props { state?: RigState, variant?: 'full' | 'head', size?: number }
+interface Props { state?: RigState, variant?: RigVariant, size?: number }
 
 async function mountRig(props: Props = {}) {
   const page = await mountSuspended(CompibertRig, { props })
@@ -98,6 +98,18 @@ describe('mounting', () => {
     const atMount = pose(page, 'arm-left')
 
     await vi.waitFor(() => expect(pose(page, 'arm-left')).not.toBe(atMount), { timeout: 3000 })
+  })
+
+  it('is excited: both arms pump and the figure hops (#526)', async () => {
+    stubInView()
+    const page = await mountRig({ state: 'excited' })
+    await ready(page)
+    const arms = await sample(() => `${pose(page, 'arm-left')}|${pose(page, 'arm-right')}`, 1200)
+    const roots = await sample(() => pose(page, 'root'), 1200)
+
+    expect(attribute(page, 'data-state')).toBe('excited')
+    expect(arms.size).toBeGreaterThanOrEqual(3)
+    expect(roots.size).toBeGreaterThanOrEqual(2)
   })
 
   it('takes the width it is given, and the full width of its container without one', async () => {
@@ -175,6 +187,21 @@ describe('reduced motion', () => {
     const tail = pose(page, 'tail-3')
     await pause(300)
     expect([pose(page, 'body'), pose(page, 'tail-3')]).toEqual([body, tail])
+  })
+
+  it('holds the excited pose too: the arms and the hop stand still (#526)', async () => {
+    stubInView()
+    motion('reduced')
+    const page = await mountRig({ state: 'excited' })
+    await ready(page)
+    await pause(1000)
+
+    const first = [pose(page, 'arm-left'), pose(page, 'arm-right'), pose(page, 'root')]
+    await pause(500)
+
+    expect(attribute(page, 'data-held')).toBe('true')
+    expect([pose(page, 'arm-left'), pose(page, 'arm-right'), pose(page, 'root')]).toEqual(first)
+    expect(first[0]).toBeDefined()
   })
 
   it('moves under full motion, so that the held pose above can fail', async () => {
@@ -382,5 +409,74 @@ describe('the head', () => {
     expect(attribute(page, 'data-state')).toBe(state)
     expect(errors).not.toHaveBeenCalled()
     expect(warnings).not.toHaveBeenCalled()
+  })
+})
+
+describe('the bust', () => {
+  it('is hidden from assistive technology, crops the full figure to a square and keeps its outline (#526)', async () => {
+    stubInView()
+    const page = await mountRig({ variant: 'bust', state: 'idle', size: 232 })
+
+    expect(attribute(page, 'aria-hidden')).toBe('true')
+    expect(attribute(page, 'style')).toContain('width: 232px')
+    expect(attribute(page, 'style')).toContain('aspect-ratio: 1')
+    expect(page.get('svg').attributes('viewBox')).toBe('150 36 254 254')
+    expect(rootOf(page).classes()).toContain('overflow-hidden')
+    // The head crop has no outline; the bust has one, as the full figure.
+    expect(rootOf(page).classes('compibert-rig--head')).toBe(false)
+    expect(page.find('.compibert-arm-left').exists()).toBe(true)
+    await ready(page)
+  })
+
+  it.each(RIG_STATES)('shows the state %s without a complaint', async (state) => {
+    stubInView()
+    const errors = vi.spyOn(console, 'error')
+    const warnings = vi.spyOn(console, 'warn')
+    const page = await mountRig({ variant: 'bust', state })
+
+    await ready(page)
+    await pause(500)
+
+    expect(attribute(page, 'data-state')).toBe(state)
+    expect(errors).not.toHaveBeenCalled()
+    expect(warnings).not.toHaveBeenCalled()
+  })
+
+  it('does not take the stage: two busts both animate, and so does the full rig beside them', async () => {
+    stubInView()
+    const { rigs } = await mountMany([{ state: 'excited', variant: 'bust' }, { state: 'excited', variant: 'bust' }, { state: 'idle' }])
+    const all = rigs() as DOMWrapper<Element>[]
+    for (const rig of all) await vi.waitFor(() => expect(rig.attributes('data-ready')).toBe('true'), { timeout: 5000 })
+
+    for (const rig of all) expect(rig.attributes('data-animating')).toBe('true')
+  })
+
+  it('breathes like the full figure: the tail swings', async () => {
+    stubInView()
+    const page = await mountRig({ variant: 'bust', state: 'idle' })
+    await ready(page)
+
+    const tails = await sample(() => pose(page, 'tail-3'), 800)
+    expect(tails.size).toBeGreaterThanOrEqual(2)
+  })
+
+  it.each([4, 2])('with %s cores the cheap outline offset scales to the bust: 7 and 8 of 254 (6.39 and 7.31 at 232)', async (count) => {
+    stubInView()
+    cores(count)
+    const page = await mountRig({ variant: 'bust', size: 232 })
+
+    await vi.waitFor(() => expect(rootOf(page).classes('compibert-rig--cheap')).toBe(true))
+    expect(attribute(page, 'style')).toContain('--cb-dx: 6.39px')
+    expect(attribute(page, 'style')).toContain('--cb-dy: 7.31px')
+  })
+
+  it.each([4, 2])('with %s cores the head\'s cheap outline offset is 7 and 8 of its own 192, not of 404 (#584)', async (count) => {
+    stubInView()
+    cores(count)
+    const page = await mountRig({ variant: 'head', size: 192 })
+
+    await vi.waitFor(() => expect(rootOf(page).classes('compibert-rig--cheap')).toBe(true))
+    expect(attribute(page, 'style')).toContain('--cb-dx: 7px')
+    expect(attribute(page, 'style')).toContain('--cb-dy: 8px')
   })
 })

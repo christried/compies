@@ -2,8 +2,9 @@ import { mountSuspended, registerEndpoint } from '@nuxt/test-utils/runtime'
 import { flushPromises, type VueWrapper } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import ClipOverlay from '~/components/ClipOverlay.vue'
+import VetoBar from '~/components/VetoBar.vue'
 import EventPage from '~/pages/e/[slug]/index.vue'
-import type { ClipView } from '~~/shared/stage'
+import type { ClipView, WheelView } from '~~/shared/stage'
 import type { RoundGame } from '~~/shared/game'
 import { defaultSettings } from '~~/shared/settings'
 import { kitty, signInAs } from './auth'
@@ -23,12 +24,16 @@ function runningClip(): ClipView {
   return { drawId: 'd1', startAt: new Date(now - 1000).toISOString(), endsAt: new Date(now + 29_000).toISOString(), game: kart }
 }
 
-function serveRunning({ host, clip }: { host: boolean, clip: ClipView | null }) {
+/** The Veto bar's wheel with no window and no own part: the bar is mounted, and it does not show itself (#584). */
+const idleWheel: WheelView = { count: 2, slices: null, spin: null, vetoes: { left: [0, 0], own: null, revealed: null, draw: null } }
+
+function serveRunning({ host, clip, wheel = null }: { host: boolean, clip: ClipView | null, wheel?: WheelView | null }) {
   return serve(slug => viewWithSessions(slug, [{ number: null, startsAt: FIRST, startedAt: STARTED }], 0, {
     event: { isHost: host, phase: 'running' },
     settings: defaultSettings(),
     runningSessionId: `session-${slug}-0`,
     clip,
+    wheel,
   }))
 }
 
@@ -103,5 +108,23 @@ describe('the clip on the Event page', () => {
     const skip = [...page.element.querySelectorAll('section[aria-label="Clip: Kart"] button')].find((button: Element) => button.textContent?.trim() === 'Clip überspringen')
     skip!.dispatchEvent(new MouseEvent('click', { bubbles: true }))
     await vi.waitFor(() => expect(page!.find('section[aria-label^="Clip"]').exists()).toBe(false))
+  })
+
+  // #584: the Clip takes the left column (sideways) only while the Veto bar says it shows; the page passes that on as the flag.
+  it('takes the left column beside the Veto bar only while the bar says it shows (#584)', async () => {
+    const { slug } = serveRunning({ host: false, clip: runningClip(), wheel: idleWheel })
+    page = await mountSuspended(EventPage, { route: `/e/${slug}` })
+    const overlay = () => page!.element.querySelector('section[aria-label="Clip: Kart"]') as HTMLElement
+
+    expect(page.findComponent(VetoBar).exists()).toBe(true)
+    expect(overlay().classList.contains('sideways:left-2.5')).toBe(false)
+
+    page.findComponent(VetoBar).vm.$emit('shown', true)
+    await flushPromises()
+    expect(overlay().classList.contains('sideways:left-2.5')).toBe(true)
+
+    page.findComponent(VetoBar).vm.$emit('shown', false)
+    await flushPromises()
+    expect(overlay().classList.contains('sideways:left-2.5')).toBe(false)
   })
 })
