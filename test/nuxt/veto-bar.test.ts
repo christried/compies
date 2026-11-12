@@ -96,9 +96,9 @@ describe('who gets the bar and when', () => {
   it('keeps the hint in the page for assistive technology, only out of sight when held sideways (#550)', async () => {
     await mount(wheelOf())
 
-    const hint = bar().findAll('span').find(span => span.text().startsWith('Gedrückt halten'))
+    const hint = [...bar().element.querySelectorAll('span')].find(span => span.textContent?.startsWith('Gedrückt halten'))
     expect(hint).toBeDefined()
-    expect(hint!.classes()).toContain('sideways:sr-only')
+    expect(hint!.classList.contains('sideways:sr-only')).toBe(true)
   })
 
   it('tells the page whether it covers the bottom', async () => {
