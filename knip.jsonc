@@ -16,6 +16,10 @@
         // Registered by the inline module in nuxt.config.ts through addServerHandler with a path string; dev server and
         // staging build only (#178, #247).
         "server/dev/sign-in.ts!",
+        // Registered by the inline listening-page module in nuxt.config.ts through path strings (the page via pages:extend, the handler via
+        // addServerHandler); dev server only (#534).
+        "app/dev/**!",
+        "server/dev/cue-candidates.ts!",
         // The browser checks are run with node by agents (scripts/browser/README.md); chrome.mjs and kit.mjs are what they import.
         // The Dunkel-Check (#407): the runner imports the state files by name pattern, which knip cannot follow.
         "scripts/browser/dark.mjs!",

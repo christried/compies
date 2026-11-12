@@ -1,7 +1,7 @@
 import { readdirSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { carriesDevSignIn, isStagingBuild, stageBranding } from '../../stage'
+import { carriesDevSignIn, carriesListeningPage, isStagingBuild, stageBranding } from '../../stage'
 
 // Staging is decided at build time (#178): Vercel builds the `staging` branch with its ref in the env.
 describe('isStagingBuild (#178)', () => {
@@ -37,6 +37,20 @@ describe('carriesDevSignIn (#247)', () => {
 
   it('is false in the production build', () => {
     expect(carriesDevSignIn(false, { VERCEL: '1', VERCEL_GIT_COMMIT_REF: 'main' })).toBe(false)
+  })
+})
+
+// The listening page for the cue sounds (#534) is for the dev server only: test/build/listening-page.test.ts checks the
+// production build output itself. The function takes no env, so no staging variable can switch it on.
+describe('carriesListeningPage (#534)', () => {
+  it('is true on the dev server', () => {
+    expect(carriesListeningPage(true)).toBe(true)
+  })
+
+  // Both the production build and the staging build run with `dev` false: staging is a production build behind Vercel
+  // Authentication, and the page's candidate files must never be deployed there.
+  it('is false in the production build and in the staging build', () => {
+    expect(carriesListeningPage(false)).toBe(false)
   })
 })
 
