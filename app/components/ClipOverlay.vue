@@ -273,7 +273,7 @@ onBeforeUnmount(() => {
             :icon="Volume2"
             :size="16"
           />
-          {{ t('sound.enable') }}
+          <span class="sideways:sr-only">{{ t('sound.enable') }}</span>
         </AppButton>
         <IconButton
           v-else-if="showsPlayer"
@@ -290,7 +290,7 @@ onBeforeUnmount(() => {
             class="size-2 flex-none rounded-full bg-hot animate-live"
             aria-hidden="true"
           />
-          {{ t('clip.live') }}
+          <span class="sideways:sr-only">{{ t('clip.live') }}</span>
         </span>
         <AppButton
           v-if="isHost"

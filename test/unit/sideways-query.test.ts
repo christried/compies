@@ -28,7 +28,7 @@ describe('the sideways variant', () => {
     expect(min).toBe(656)
   })
 
-  it('is used by the Clip and the Veto bar, and by nothing else under app/ but those two', () => {
+  it('is used by both components: the Clip leaves room for the bar column and the Veto bar is as wide as it', () => {
     expect(read('app/components/ClipOverlay.vue')).toContain('sideways:w-[calc(100%-30px-var(--cp-veto-side-w))]')
     expect(read('app/components/VetoBar.vue')).toContain('sideways:w-(--cp-veto-side-w)')
   })

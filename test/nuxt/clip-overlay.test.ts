@@ -569,6 +569,18 @@ describe('a low viewport (#549)', () => {
     expect(classesOf(wrapperOf())).toEqual(['relative', 'mx-auto', 'aspect-video', 'w-[min(100%,max(calc(200px*16/9),calc(var(--clip-video-h)*16/9)))]', 'bg-ink'])
   })
 
+  it('keeps the Host\'s bar in one row beside the Veto bar by showing the sound button and the live state as icons only, with their names kept (#550)', async () => {
+    await mount(clipOf(), { isHost: true, desktop: false })
+    await ready()
+
+    // The innermost span with that text: the live state's wrapper has the same text.
+    const named = (text: string) => [...sectionOf().querySelectorAll('span')].filter(span => span.textContent?.trim() === text).at(-1)!
+    // The text stays in the page (accessible names, and the upright and desktop looks), only out of sight when held sideways.
+    expect(named('Ton aktivieren').classList.contains('sideways:sr-only')).toBe(true)
+    expect(named('läuft für alle').classList.contains('sideways:sr-only')).toBe(true)
+    expect(labels()).toEqual(['Ton aktivieren', 'Clip überspringen', 'Für mich schließen'])
+  })
+
   it('works the height that is left out of the viewport, the section\'s top offset, the bar and a 10 px gap', async () => {
     await mount(clipOf())
     const classes = classesOf(sectionOf())
