@@ -267,6 +267,30 @@ export function risen(before: Block[], after: Block[]): Block[] {
   })
 }
 
+/** The blocks that stay on top whatever has a moment (the pieces' `pinned`): they are never "the block that took the top" (#586). */
+const PINNED = new Set(PIECES.filter(piece => piece.pinned && piece.block).map(piece => piece.block))
+
+/** What the stage showed at one render: its kind, its blocks and what the page had counted (#586). */
+export interface StageShown { kind: PageKind, blocks: Block[], counted: StageCounted }
+
+/**
+ * Whether the page scrolls to the top between two renders (#586): a block took the first place of the stage, the first one under the pinned blocks, because something just happened. Either its
+ * moment was counted just now or is newer than the one the page had counted (a spin when the wheel is on top already moves nothing, yet a viewer scrolled down must come back), or the block
+ * took the place without a newer moment: it arrived there or moved up past another (a put back lowers the block above the wheel). No age limit on a moment: a read that comes late still scrolls.
+ * A reload and a late join have no earlier render, and the first read after one counts nothing new (#442). A pinned block that appears, a block that leaves the top or only shifts down, a change of the
+ * page's kind (a Session starts or ends) and a finished Event (no moments, and the end of the Award ceremony's wait lists new blocks) do not scroll.
+ */
+export function scrollsToTop(before: StageShown, after: StageShown): boolean {
+  if (after.kind === 'finished' || before.kind !== after.kind) return false
+  const top = after.blocks.find(block => !PINNED.has(block))
+  if (top === undefined) return false
+  const was = before.counted[top]
+  const now = after.counted[top]
+  if (now !== undefined && (was === undefined || now > was)) return true
+  const before1 = before.blocks.find(block => !PINNED.has(block))
+  return top !== before1 && before.blocks.length > 0 && (!before.blocks.includes(top) || risen(before.blocks, after.blocks).includes(top))
+}
+
 /**
  * The instants (server time, epoch ms) at which the page must read the Event again: every piece that has a deadline adds its own (#256).
  * No timer runs on the server: the first read after an instant settles it, but a read that reached the server a hair before the instant, or a
