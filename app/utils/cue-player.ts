@@ -42,6 +42,13 @@ export interface CuePlayer {
   setPlan: (cues: readonly Cue[]) => void
   /** Fetches and decodes the files once per id. */
   preload: (ids: readonly CueId[]) => void
+  /**
+   * Plays a cue `delayMs` from now, for one that the arrival of a read causes (`veto-seal`, a set game's `veto-open`, #532): it is no part of
+   * any plan and never cancelled by one. Gated like every cue: Ton off plays nothing and logs nothing; a context that does not run, a file
+   * that is not decoded yet or one that failed is logged `skipped`; otherwise it starts at the context's `currentTime` plus the delay and is
+   * logged `scheduled`.
+   */
+  playNow: (id: CueId, delayMs?: number) => void
   /** Asks the context to run (it needs a gesture) and reconciles. It never rejects. */
   resume: () => Promise<void>
   /** True unless the context runs. */
@@ -118,16 +125,22 @@ export function createCuePlayer(options: CuePlayerOptions): CuePlayer {
     })()
   }
 
-  function schedule(cue: Cue, buffer: AudioBuffer, now: number) {
-    const lead = cue.at - now
-    const when = context.currentTime + Math.max(lead, 0) / 1000
+  /** source -> the cue's own gain -> bus, started at `when` on the audio clock. */
+  function start(id: CueId, buffer: AudioBuffer, when: number): AudioBufferSourceNode {
     const source = context.createBufferSource()
     source.buffer = buffer
     const gain = context.createGain()
-    gain.gain.value = CUE_VOLUME[cue.id] / 100
+    gain.gain.value = CUE_VOLUME[id] / 100
     source.connect(gain)
     gain.connect(bus)
     source.start(when)
+    return source
+  }
+
+  function schedule(cue: Cue, buffer: AudioBuffer, now: number) {
+    const lead = cue.at - now
+    const when = context.currentTime + Math.max(lead, 0) / 1000
+    const source = start(cue.id, buffer, when)
     entries.set(keyOf(cue), { cue, source, line: record(cue, lead < 0 ? 'late' : 'scheduled', when) })
   }
 
@@ -135,13 +148,18 @@ export function createCuePlayer(options: CuePlayerOptions): CuePlayer {
     entries.set(keyOf(cue), { cue, source: null, line: record(cue, 'skipped', context.currentTime) })
   }
 
-  /** Brings what the player holds in line with the stored plan: what left the plan is cancelled, what is new is scheduled. */
+  /**
+   * Brings what the player holds in line with the stored plan: what left the plan and is not yet due is cancelled, what is new is scheduled.
+   * A cue that is due or past is only forgotten and rings out: the Clip's close leaves the plan with the read that follows its own moment (#532).
+   */
   function reconcile() {
     if (disposed || !enabled) return
     const now = serverNow()
     const wanted = new Set(plan.map(keyOf))
     for (const [key, entry] of entries) {
-      if (!wanted.has(key)) cancel(key, entry, now)
+      if (wanted.has(key)) continue
+      if (entry.cue.at > now) cancel(key, entry, now)
+      else entries.delete(key)
     }
     // A context that does not run holds sound back, and a source started on it fires when its clock resumes, long after the cue's moment.
     if (!running()) return
@@ -195,6 +213,20 @@ export function createCuePlayer(options: CuePlayerOptions): CuePlayer {
       for (const id of ids) {
         if (!buffers.has(id)) load(id)
       }
+    },
+    playNow(id, delayMs = 0) {
+      if (disposed || !enabled) return
+      const cue: Cue = { id, at: serverNow() + delayMs }
+      const slot = buffers.get(id)
+      if (!running() || slot?.state !== 'ready') {
+        // A seal that waits for a download would sound late: a file that is not there yet is asked for, and this cue is skipped.
+        if (slot === undefined) load(id)
+        record(cue, 'skipped', context.currentTime)
+        return
+      }
+      const when = context.currentTime + delayMs / 1000
+      start(id, slot.buffer, when)
+      record(cue, 'scheduled', when)
     },
     async resume() {
       if (disposed) return

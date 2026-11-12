@@ -1,6 +1,6 @@
 import { createCuePlayer, type CueLogEntry, type CuePlayer } from '~/utils/cue-player'
 import { reducedMotion } from '~/utils/motion'
-import { CUE_IDS, cueFileUrl, wheelCuePlan, type Cue, type CueId } from '~/utils/sound-cues'
+import { CUE_IDS, cueFileUrl, vetoArrivalCues, vetoCuePlan, wheelCuePlan, type Cue, type CueId, type VetoArrivalState } from '~/utils/sound-cues'
 import type { EventView } from '~~/shared/event'
 
 // The sound of the Event page (#531, spec #504 § The cue player): the page's one Web Audio context, the cue player on it, and the plan the
@@ -8,21 +8,45 @@ import type { EventView } from '~~/shared/event'
 // tab too) is all the player needs: the watch below runs on Vue's microtask queue and hands every cue to the audio clock ahead of time. No
 // timer, no frame and no visibility check here, because a hidden tab runs none of them on time.
 
-/** The Event page's cue files: fetched and decoded when the read has a wheel (#531; #532 adds the Veto window's). */
+/**
+ * The Event page's cue files: the wheel's are fetched and decoded when the read has a wheel (#531), the Veto window's too when the Event allows
+ * Vetoes or has a window (#532). Everyone fetches all six, whether their Party casts or not: no request may depend on a cast.
+ */
 const WHEEL_IDS: readonly CueId[] = CUE_IDS.filter(id => id.startsWith('wheel-'))
+const VETO_IDS: readonly CueId[] = CUE_IDS.filter(id => id.startsWith('veto-'))
 
 /**
  * The plan of a read: every cue the Event page has due, from the viewer's own read only (CODING_STANDARDS § Secrecy), so the five fields of the
- * spin are copied and the drawn game stays where it is. No spin or no wheel gives an empty plan. #532 adds the Veto window's plan here.
+ * spin, the window's four and the Clip's two are copied; the drawn game, `own`, `left` and `revealed` stay where they are. No spin and no
+ * window give an empty plan. The two plans may overlap in time; the player diffs by key, so no sort across them is needed.
  */
 function planOf(view: EventView): Cue[] {
   const spin = view.wheel?.spin
-  return wheelCuePlan({
-    spin: spin ? { spinStartAt: spin.spinStartAt, stopAt: spin.stopAt, slices: spin.slices, resultIndex: spin.resultIndex, resultOffset: spin.resultOffset } : null,
-    hiddenWheel: view.settings?.hiddenWheel ?? false,
-    isHost: view.event.isHost,
-    reducedMotion: reducedMotion(),
-  })
+  const draw = view.wheel?.vetoes.draw
+  return [
+    ...wheelCuePlan({
+      spin: spin ? { spinStartAt: spin.spinStartAt, stopAt: spin.stopAt, slices: spin.slices, resultIndex: spin.resultIndex, resultOffset: spin.resultOffset } : null,
+      hiddenWheel: view.settings?.hiddenWheel ?? false,
+      isHost: view.event.isHost,
+      reducedMotion: reducedMotion(),
+    }),
+    ...vetoCuePlan({
+      draw: draw ? { drawId: draw.drawId, kind: draw.kind, stopAt: draw.stopAt, vetoEndsAt: draw.vetoEndsAt } : null,
+      clip: view.clip ? { drawId: view.clip.drawId, endsAt: view.clip.endsAt } : null,
+      reducedMotion: reducedMotion(),
+    }),
+  ]
+}
+
+/** What the arrival cues read of a read: the window, the viewer's own Party's cast (`own` is the viewer's only) and how many Vetoes were revealed. */
+function arrivalOf(view: EventView): VetoArrivalState {
+  const vetoes = view.wheel?.vetoes
+  const draw = vetoes?.draw
+  return {
+    draw: draw ? { drawId: draw.drawId, kind: draw.kind, stopAt: draw.stopAt, vetoEndsAt: draw.vetoEndsAt } : null,
+    ownCast: vetoes?.own?.cast ?? false,
+    revealedCount: vetoes?.revealed?.length ?? null,
+  }
 }
 
 export function useCuePlayer(input: {
@@ -87,12 +111,28 @@ export function useCuePlayer(input: {
     if (!made) return
     made.setEnabled(true)
     const view = input.view()
-    if (view?.wheel) made.preload(WHEEL_IDS)
+    if (view?.wheel) {
+      made.preload(WHEEL_IDS)
+      // The allowance is the early signal (a set game's window opens at its commit, the files must be decoded by then), the window the late one.
+      if ((view.settings?.vetoAllowance ?? 0) > 0 || view.wheel.vetoes.draw !== null) made.preload(VETO_IDS)
+    }
     made.setPlan(view ? planOf(view) : [])
   }
 
   // Not a sync watch: a refetch of the same read is a new object every time, and the player diffs the plan, so it schedules nothing twice.
   watch([() => input.view(), () => input.ready(), () => enabled.value, mounted], sync)
+
+  // What the arrival of a read causes (#532): the own Party's cast, the stamps, a set game's opening. After `sync`, so the player exists. The
+  // state is kept with Ton off or a suspended context too, so switching either on later replays nothing; `playNow` is the gate.
+  let previous: VetoArrivalState | null = null
+  watch(() => input.view(), (view) => {
+    if (!view) return
+    const next = arrivalOf(view)
+    if (input.ready()) {
+      for (const cue of vetoArrivalCues(previous, next, input.serverNow())) player?.playNow(cue.id, cue.delayMs)
+    }
+    previous = next
+  }, { immediate: true })
 
   onScopeDispose(() => {
     player?.dispose()
