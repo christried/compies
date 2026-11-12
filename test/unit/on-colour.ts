@@ -17,7 +17,7 @@ const CONTEXT_VARIANT = /^(dark|reduced|sm|md|lg|xl|2xl|max-.+|min-.+|@.+|motion
 
 /** The coloured fills: every name with a `--color-on-<name>` token next to its `--color-<name>` (#481). A new on-colour token is covered without an edit to the test. */
 export function onColourFills(themeCss: string): string[] {
-  const colours = [...themeCss.matchAll(/--color-([a-z0-9-]+)\s*:/g)].map(m => m[1]!)
+  const colours = themeColours(themeCss)
   return [...themeCss.matchAll(/--color-on-([a-z0-9-]+)\s*:/g)].map(m => m[1]!).filter(name => colours.includes(name))
 }
 

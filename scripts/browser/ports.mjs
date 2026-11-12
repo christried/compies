@@ -74,7 +74,9 @@ export function serversOf(slot) {
       log: 'prod.log',
       command: null,
       args: ['--env-file=.env', '.output/server/index.mjs'],
-      env: { PORT: String(ports.prod), REALTIME_URL: realtime, BETTER_AUTH_URL: originOf(slot, 'prod') },
+      // nuxt.config.ts bakes REALTIME_URL into the build, so a build made once would send the browser to slot 1's Worker:
+      // the runtime override NUXT_PUBLIC_REALTIME_URL gives the browser the slot's own (REALTIME_URL stays for the server side).
+      env: { PORT: String(ports.prod), REALTIME_URL: realtime, NUXT_PUBLIC_REALTIME_URL: realtime, BETTER_AUTH_URL: originOf(slot, 'prod') },
       needs: '.output/server/index.mjs',
     },
   }

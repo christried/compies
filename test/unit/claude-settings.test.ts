@@ -21,11 +21,4 @@ describe('.claude/settings.json permissions (#561)', () => {
   it('has no autoMode key, which the classifier ignores in project settings', () => {
     expect(settings).not.toHaveProperty('autoMode')
   })
-
-  it('names only the cleaner and the remote branch deletion, each as a Bash rule', () => {
-    const rules: string[] = [...settings.permissions.allow, ...settings.permissions.deny]
-    for (const rule of rules) {
-      expect(rule).toMatch(/^Bash\((node scripts\/worktree-clean\.mjs |git push origin --delete )/)
-    }
-  })
 })

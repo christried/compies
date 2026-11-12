@@ -52,9 +52,19 @@ const jobCountOf = (run) => {
 }
 const runsOf = commit => JSON.parse(gh('run', 'list', '--workflow', 'ci.yml', '--commit', commit, '--json', 'databaseId,status,conclusion,event,url,attempt,headBranch,headSha'))
 
-/** The failing step's log from its first failure marker on, without the job/step/timestamp prefix and colour codes. */
-function failures(id) {
-  const lines = gh('run', 'view', String(id), '--log-failed')
+/**
+ * The failing step's log from its first failure marker on, without the job/step/timestamp prefix and colour codes.
+ * When the logs are missing or the call fails it returns one line with the run's URL instead of a stack trace; the exit code stays the caller's.
+ */
+function failures(run) {
+  let log
+  try {
+    log = gh('run', 'view', String(run.databaseId), '--log-failed')
+  }
+  catch {
+    return `logs not available: ${run.url}`
+  }
+  const lines = log
     .split('\n')
     // The log writes colour codes either as escapes or as a literal caret „^[“.
     .map(line => line.replace(/^[^\t]*\t[^\t]*\t\S+ ?/, '').replace(new RegExp(`(?:${String.fromCharCode(27)}|\\^\\[)\\[[0-9;]*m`, 'g'), ''))
@@ -64,13 +74,28 @@ function failures(id) {
 
 // The PR mode (#565): `--pr <n>` polls PR <n> until it is merged, for a background run after `gh pr merge --auto`. Since
 // #556 a PR's required check is the push run of ci.yml on its head, so every poll reads the PR and, while it is open,
-// the runs of its current head. It calls only `gh api` with the slug as a constant: in a cloud session `gh pr` is refused
-// (GraphQL) and the git remote is a proxy that `{owner}/{repo}` does not resolve. The decision is `prDecision`; the
+// the runs of its current head. It polls through `gh api` only, with the slug as a constant: in a cloud session `gh pr` is refused
+// (GraphQL) and the git remote is a proxy that `{owner}/{repo}` does not resolve. Its report of a red run calls
+// `gh run view --log-failed` (`reportRed`), which falls back to the run's URL when that call fails. The decision is `prDecision`; the
 // loop only turns the head's runs into one word (`check`). It ends the process itself, so the commit mode below never
 // runs in this mode. It always waits the long limit and ignores `--until-done`: a 2.5-minute call would end every wait.
 // Exit 0 merged; 1 closed unmerged, check red, start failure twice, blocked, no run or a failed gh call; 2 still open.
 const REPO = 'christried/compies'
 const PR_LIMIT_MS = 20 * 60_000
+
+/** Prints each run that is not green, for both modes: a start failure twice, or the run's failing step. `entries` are `{ run, word }`, the word being `rerunDecision`'s. */
+function reportRed(entries) {
+  for (const { run, word } of entries) {
+    if (word === 'green') continue
+    // Re-run once already (by this call or an earlier one): there is no job log to show.
+    if (word === 'twice') {
+      console.log(`start failure (zero jobs) twice: ${run.event} ${run.url}`)
+      continue
+    }
+    console.log(`${run.conclusion}: ${run.event} ${run.url}`)
+    if (run.conclusion === 'failure') console.log(failures(run))
+  }
+}
 
 function prUsage() {
   console.log('--pr needs a PR number, for example: node scripts/ci-wait.mjs --pr 570')
@@ -142,15 +167,7 @@ async function waitForPr(number) {
         pr = again
         continue
       }
-      for (const { run, word } of verdicts) {
-        if (word === 'green') continue
-        if (word === 'twice') {
-          console.log(`start failure (zero jobs) twice: ${run.event} ${run.url}`)
-          continue
-        }
-        console.log(`${run.conclusion}: ${run.event} ${run.url}`)
-        if (run.conclusion === 'failure') console.log(failures(run.databaseId))
-      }
+      reportRed(verdicts)
       process.exit(1)
     }
     if (decision.kind === 'rerun') {
@@ -292,13 +309,5 @@ if (red.length === 0) {
   console.log(`green: ${counted.map(run => run.event).join(', ')}${hops === 0 ? '' : ` (on ${head.slice(0, 7)}, which superseded ${sha.slice(0, 7)})`}`)
   process.exit(0)
 }
-for (const run of red) {
-  // Re-run once already (by this call or an earlier one): there is no job log to show.
-  if (decisionOf(run) === 'twice') {
-    console.log(`start failure (zero jobs) twice: ${run.event} ${run.url}`)
-    continue
-  }
-  console.log(`${run.conclusion}: ${run.event} ${run.url}`)
-  if (run.conclusion === 'failure') console.log(failures(run.databaseId))
-}
+reportRed(red.map(run => ({ run, word: decisionOf(run) })))
 process.exit(1)
