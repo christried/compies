@@ -19,7 +19,7 @@ const SPIN_EASE = [0.15, 0.75, 0.25, 1.035] as const
 /** `EASE.snap` (04-motion), the reduced-motion spin's ease. */
 export const SNAP_EASE = [0.2, 0, 0, 1] as const
 /** `EASE.io`, the ease of the slices closing the gap. */
-const IO_EASE = [0.65, 0, 0.35, 1] as const
+export const IO_EASE = [0.65, 0, 0.35, 1] as const
 
 /** The drawn slice leaves this long after the stop, a Hidden wheel a little later: its reveal comes first (04-motion). */
 const REMOVE_AFTER_MS = 2200
