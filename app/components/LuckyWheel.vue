@@ -10,6 +10,7 @@ import { stopReached } from '~~/shared/draw-timeline'
 import type { HostGameFacts } from '~~/shared/game'
 import type { WheelView } from '~~/shared/stage'
 import { characterCount, cutToCharacters } from '~~/shared/text'
+import { refillAt, refillPlan, type RefillPlan, type RestSlice } from '~/utils/wheel-refill'
 
 // The Lucky Wheel on the stage (#229, 02-components § LuckyWheel, 04-motion § Lucky Wheel, reference App Spielrunde ?s=wheel).
 // It shows the games left on the wheel and, from the server's spin, turns toward a fixed stop: the angle is a function of the
@@ -23,7 +24,8 @@ import { characterCount, cutToCharacters } from '~~/shared/text'
 // jump under reduced motion. Since 0.13.2 (#519, spec #503) the wheel is drawn as the Show-Rad: a red band with a rim of 24 bulbs, a pin
 // at every slice edge, a flapper at the top, in fixed colours (a stage piece, the same in Hell and Dunkel: utils/wheel-look.ts). The
 // bulbs light by server time (#521) and the flapper kicks at every pin that passes the top (#522, utils/wheel-pins.ts); Compibert and
-// the sounds come with 0.13.3.
+// the sounds come with 0.13.3. When the games change at rest (a put back, the Game pool), the slices move together over 0.6 s and a new
+// slice pops in (#524, utils/wheel-refill.ts): on the page's own clock from the moment the data arrives, never during a spin.
 // The wheel is 340 px at most on a phone and 420 px from md up, and never changes size during a spin.
 const props = withDefaults(defineProps<{
   wheel: WheelView
@@ -82,14 +84,55 @@ const lampClock = useServerTicker(() => props.serverNow(), {
   target: rootEl,
 })
 
+// A change of the games at rest (#524): the slices of the resting wheel, each with the key that tells it from the others across the change. A
+// viewer who has the slices keys them by the game's id; a Member under a Hidden wheel has only the count, so the key is the slot's number and
+// nothing of the pool reaches the plan that the server did not send. The keys are never rendered.
+const restSlices = computed((): RestSlice[] => props.wheel.slices
+  ? props.wheel.slices.map(slice => ({ key: slice.id, name: slice.name }))
+  : Array.from({ length: props.wheel.count }, (_, index) => ({ key: `slot-${index}`, name: t('wheel.placeholderQ') })))
+/** The slices the last change was measured against; set at setup, so a page opened after a change plays nothing. */
+let baseline = restSlices.value
+const refill = shallowRef<{ plan: RefillPlan, startedAt: number } | null>(null)
+// A change while a spin runs (its commit takes the drawn game off the wheel: the count falls by one) or its removal plays nothing: the
+// baseline moves to the new data silently and the wheel shows it as soon as the removal is over. At rest, a change starts a plan; a second
+// change inside the first starts from the layout the first one ends in.
+watch([restSlices, running], ([next, isRunning]) => {
+  const previous = baseline
+  baseline = next
+  if (isRunning) {
+    refill.value = null
+    return
+  }
+  const plan = refillPlan(previous, next, reducedMotion())
+  if (plan) refill.value = { plan, startedAt: performance.now() }
+})
+// The local clock: the app's frame ticker with this page's own time, not the server's (the refill answers a change of data, not a moment the
+// server sets, ADR 0013). `ready` is true at once, since it does not wait for the Event page's server clock. It stops itself at the plan's end
+// and, out of view or in a hidden tab, reads again on return: the plan has then run out unseen and the final layout shows, with no replay.
+const refillClock = useServerTicker(() => performance.now(), {
+  ready: () => true,
+  until: () => (refill.value ? refill.value.startedAt + refill.value.plan.ms : null),
+  target: rootEl,
+})
+const refilling = computed(() => {
+  const current = refill.value
+  if (!current || running.value || refillClock.value === null) return null
+  const elapsed = refillClock.value - current.startedAt
+  return elapsed < current.plan.ms ? refillAt(current.plan, elapsed) : null
+})
+/** Only under reduced motion does the refill fade: the rotor then rises from 0 to 1 (the layout itself jumps). */
+const refillOpacity = computed(() => (refilling.value && refilling.value.opacity < 1 ? refilling.value.opacity : undefined))
+
 // The wheel as drawn: the spin's slices while it runs, else the games left on the wheel (a Member under a Hidden wheel sees ???).
 const count = computed(() => (running.value ? spin.value!.slices : props.wheel.count))
 const spans = computed(() => {
   const current = timing.value
-  return running.value && current ? sliceSpans(current.slices, current.resultIndex, removalEase(current, clock.value!, props.hidden, reduced.value)) : sliceSpans(count.value, -1, 0)
+  if (running.value && current) return sliceSpans(current.slices, current.resultIndex, removalEase(current, clock.value!, props.hidden, reduced.value))
+  return refilling.value ? refilling.value.slices : sliceSpans(count.value, -1, 0)
 })
 const names = computed(() => {
   if (running.value) return spin.value!.labels ?? Array.from({ length: count.value }, () => t('wheel.placeholderQ'))
+  if (refilling.value) return refilling.value.slices.map(slice => slice.name)
   return props.wheel.slices ? props.wheel.slices.map(slice => slice.name) : Array.from({ length: count.value }, () => t('wheel.placeholderQ'))
 })
 
@@ -138,7 +181,13 @@ function pathOf({ start, end }: { start: number, end: number }): string {
   return `M200,200L${point(start, RADIUS)}A${RADIUS},${RADIUS} 0 ${end - start > 180 ? 1 : 0} 1 ${point(end, RADIUS)}Z`
 }
 // The last slice takes the surface colour when it would otherwise share the first one's fill (#263): a single slice has no neighbour, so it keeps the first fill.
-const fillOf = (index: number) => (count.value > 1 && index === count.value - 1 && count.value % WHEEL_FILLS.length === 1 ? COLOURS.paper : WHEEL_FILLS[index % WHEEL_FILLS.length])
+// During a refill a slice takes the fill of its place in the new layout (in the old one while it leaves), so no colour changes at the end.
+function fillOf(slot: number) {
+  const slice = refilling.value?.slices[slot]
+  const index = slice ? slice.fillIndex : slot
+  const total = slice ? slice.fillCount : count.value
+  return total > 1 && index === total - 1 && total % WHEEL_FILLS.length === 1 ? COLOURS.paper : WHEEL_FILLS[index % WHEEL_FILLS.length]
+}
 
 // The Show-Rad's still defaults (#519); each is a function of the server's clock once its ticket fills it, and the template reads only these.
 /** A pin at every slice edge, drawn in the rotor from the one place that works the positions out (utils/wheel-look.ts). */
@@ -259,7 +308,7 @@ const headingId = useId()
         </g>
         <g
           data-testid="wheel-rotor"
-          :style="{ transform: `rotate(${angle}deg)`, transformOrigin: '200px 200px' }"
+          :style="{ transform: `rotate(${angle}deg)`, transformOrigin: '200px 200px', opacity: refillOpacity }"
         >
           <template
             v-for="(span, index) in spans"
