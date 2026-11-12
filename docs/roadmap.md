@@ -18,7 +18,7 @@ Each release is one spec and usable on its own. A release is grilled, specced an
 | 0.10 | Feinschliff | released on 2026-11-09: [#332](https://github.com/christried/compies/issues/332); the list that waited for the first Event, plus the production check. 0.10.1 „Partyhut“ released on 2026-11-09: the review follow-ups, the Partyhut ([#38](https://github.com/christried/compies/issues/38)) and the Countdown fix ([#379](https://github.com/christried/compies/issues/379)) |
 | 0.11 | Profil | released on 2026-11-10: [#398](https://github.com/christried/compies/issues/398); the Profil page, Darstellung (Hell, Dunkel, System) and the dark check |
 | 0.12 | Eventseite | released on 2026-11-11: [#425](https://github.com/christried/compies/issues/425); one Tribüne, open Team names, the stage that follows the game, game tiles with the game dialog, and the finished page that waits for the Award ceremony |
-| 0.13 | Glücksrad & Clip | the wheel, the clip and the Share image findings of the production check; grilled on 2026-11-11 and split into four Releases: 0.13.0 „Clip“ ([#501](https://github.com/christried/compies/issues/501)), 0.13.1 „Kleinkram“ ([#502](https://github.com/christried/compies/issues/502)), 0.13.2 „Show-Rad“ ([#503](https://github.com/christried/compies/issues/503)), 0.13.3 „Ton“ ([#504](https://github.com/christried/compies/issues/504)) |
+| 0.13 | Glücksrad & Clip | the wheel, the clip and the Share image findings of the production check; grilled on 2026-11-11 and split into four Releases: 0.13.0 „Clip“ ([#501](https://github.com/christried/compies/issues/501), released on 2026-11-12), 0.13.1 „Kleinkram“ ([#502](https://github.com/christried/compies/issues/502)), 0.13.2 „Show-Rad“ ([#503](https://github.com/christried/compies/issues/503)), 0.13.3 „Ton“ ([#504](https://github.com/christried/compies/issues/504)) |
 | 1.0 | | when the user declares COMPIES ready |
 
 ## 0.4 Spielvorbereitung (was 1.3)
@@ -287,7 +287,7 @@ The wheel, the clip and the Share image findings of the first production check, 
 
 ### 0.13.0 Clip
 
-Spec: [#501](https://github.com/christried/compies/issues/501); tickets #505–#514. Nothing in it waits for the user.
+Released on 2026-11-12 (`v0.13.0`). Spec: [#501](https://github.com/christried/compies/issues/501); tickets #505–#514, and #546, #549, #551, #555 from the review and the browser checks.
 
 - **The clip raw:** in a Session the YouTube player takes no pointer and no keyboard input from anyone, so nobody pauses it, opens the „More videos“ shelf or follows a link. Nothing is laid over the player and nothing is cropped: YouTube's title shows for the first seconds, since no player parameter hides it and YouTube's developer policies forbid obscuring or blocking parts of the player. A player that pauses for any other reason resumes at the synced second. The Host keeps „Clip überspringen“; every Member keeps their own mute and „Für mich schließen“ (WCAG 1.4.2) and the remaining time. The clip preview in the game form stays operable: the Host seeks there.
 - **A Veto during the clip** works as today (the Veto bar sits above the clip); a test pins it.
