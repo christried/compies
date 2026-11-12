@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { MD_QUERY } from '~/composables/useMediaQuery'
 import { GAME_GRID } from '~/utils/game-grid'
 import { reducedMotion } from '~/utils/motion'
 import { SCRAMBLE_FRAME_MS, finalAngle, removalEase, removalEnd, revealStage, scramble, sliceSpans, wheelAngle, type WheelTiming } from '~/utils/wheel'
@@ -20,8 +21,8 @@ import { characterCount, cutToCharacters } from '~~/shared/text'
 // drawn slice leaves at stop + 2.8 s instead of 2.2 s. The drawn slice shrinks and the others close the gap (0.6 s), or fade and
 // jump under reduced motion. Since 0.13.2 (#519, spec #503) the wheel is drawn as the Show-Rad: a red band with a rim of 24 bulbs, a pin
 // at every slice edge, a flapper at the top, in fixed colours (a stage piece, the same in Hell and Dunkel: utils/wheel-look.ts). The
-// bulbs light by server time (#521) and the flapper kicks at every pin that passes the top (#522, utils/wheel-pins.ts); Compibert and
-// the sounds come with 0.13.3.
+// bulbs light by server time (#521) and the flapper kicks at every pin that passes the top (#522, utils/wheel-pins.ts); Compibert stands
+// beside the wheel since #526 (LuckyWheelMascot) and the sounds come with 0.13.3.
 // The wheel is 340 px at most on a phone and 420 px from md up, and never changes size during a spin.
 const props = withDefaults(defineProps<{
   wheel: WheelView
@@ -154,6 +155,11 @@ const crossings = computed(() => (timing.value && !reduced.value ? pinCrossings(
 /** The flapper's angle in degrees about its hinge, SVG sense (positive turns clockwise): a kick at every pin that passes, a function of the server's clock alone (#522). */
 const flapperAngle = computed((): number => (running.value && clock.value !== null ? flapperKick(crossings.value, clock.value, reduced.value) : 0))
 
+/** Compibert at the wheel (#526): told the spin's two instants and the width of this wheel (the theme's md, not `useRoomy`'s narrower one), nothing of the draw. */
+const wide = useMediaQuery(MD_QUERY)
+const mascotWidth = computed(() => (wide.value ? 'md' : 'sm'))
+const mascotSpin = computed(() => (timing.value ? { spinStartAt: timing.value.spinStartAt, stopAt: timing.value.stopAt } : null))
+
 /** The drawn slice has its outline from the stop on, until it leaves. */
 const winner = computed(() => (running.value && stopped.value && timing.value ? timing.value.resultIndex : -1))
 /** How far the drawn slice has faded under reduced motion (the redistribution then jumps). */
@@ -198,13 +204,23 @@ const headingId = useId()
          clears the flapper, which hangs past the box's top edge; the shadow reaches past its right and bottom edge, inside the card's padding. -->
     <div
       data-testid="wheel-disc"
-      class="relative mt-4 aspect-square w-full max-w-[340px] md:max-w-[420px]"
+      class="relative isolate mt-4 aspect-square w-full max-w-[340px] md:max-w-[420px]"
     >
+      <!-- Compibert peeks out from behind the wheel (#526): under the wheel's layer, which is why the svg is positioned. Mounted only while he is there. -->
+      <LuckyWheelMascot
+        v-if="mascotSpin && spin"
+        :key="spin.drawId"
+        :width="mascotWidth"
+        :spin="mascotSpin"
+        :hidden="hidden"
+        :now="clock"
+        :reduced="reduced"
+      />
       <svg
         viewBox="0 0 400 400"
         role="img"
         :aria-label="t('wheel.aria', { n: count }, count)"
-        class="size-full overflow-visible"
+        class="relative z-1 size-full overflow-visible"
       >
         <g aria-hidden="true">
           <!-- The wheel's hard shadow, the backing disc (what an empty wheel and the last slice's surface fill show) and the red band with its outline. -->
