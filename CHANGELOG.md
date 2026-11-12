@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Behoben
+
+- **Veto-Fenster:** Nach dem Aufdecken ist die Kachel eines Teams, das kein Veto eingelegt hat, jetzt abgedunkelt, wie vorgesehen. Bisher sah sie aus wie die der anderen Teams. ([#562](https://github.com/christried/compies/issues/562))
+
 ## [0.13.0] - 2026-11-12 – Clip
 
 Der Clip, neu gefasst: Er läuft für alle gleich und lässt sich nicht mehr anhalten, darf 10 bis 120 Sekunden lang sein, und das Veto-Fenster richtet sich nach seiner Länge. Dazu kommt ein neues Ergebnis-Bild zum Teilen, die „Anzeigetafel“.
