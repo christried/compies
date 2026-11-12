@@ -41,3 +41,20 @@ export function bulbsLit(spin: Pick<WheelTiming, 'spinStartAt' | 'stopAt'> | nul
   const phase = Math.floor(nowMs / REST_MS) % 2
   return lights(index => index % 2 === phase)
 }
+
+/**
+ * The server time (epoch ms) strictly after `nowMs` at which `bulbsLit` may next show another set (#584 Q1): the bulbs' ticker sleeps until
+ * then instead of reading every frame. It follows `bulbsLit`'s order and numbers: the flash's next step, the chase's next step or the stop,
+ * the spin's start during the lead, else the rest blink's next boundary. Like `bulbsLit` it takes no slices and no game. Reduced motion needs
+ * no answer: its bulbs are steady and its ticker does not run.
+ */
+export function nextBulbChange(spin: Pick<WheelTiming, 'spinStartAt' | 'stopAt'> | null, nowMs: number): number {
+  const restChange = (Math.floor(nowMs / REST_MS) + 1) * REST_MS
+  if (spin) {
+    const stopped = stopReached(spin, nowMs)
+    if (stopped && nowMs - spin.stopAt < FLASH_TOTAL_MS) return spin.stopAt + (Math.floor((nowMs - spin.stopAt) / FLASH_MS) + 1) * FLASH_MS
+    if (!stopped && nowMs >= spin.spinStartAt) return Math.min(spin.spinStartAt + (Math.floor((nowMs - spin.spinStartAt) / CHASE_STEP_MS) + 1) * CHASE_STEP_MS, spin.stopAt)
+    if (!stopped) return Math.min(restChange, spin.spinStartAt)
+  }
+  return restChange
+}

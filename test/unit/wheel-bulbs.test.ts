@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { bulbsLit } from '../../app/utils/wheel-bulbs'
+import { bulbsLit, nextBulbChange } from '../../app/utils/wheel-bulbs'
 import { BULB_COUNT } from '../../app/utils/wheel-look'
 
 // Which of the 24 bulbs are lit at a server time (#521, spec #503 § The motion): the rest blink, the chase while the wheel turns, the
@@ -139,5 +139,73 @@ describe('a pure function of the time', () => {
 
   it('has 24 bulbs, the top one first, at every stage', () => {
     for (const t of [null, 0, 60_000, 67_000, 67_120, 67_720]) expect(bulbsLit(SPIN, t, false)).toHaveLength(24)
+  })
+})
+
+describe('the next change of the pattern (#584 Q1)', () => {
+  const next = (now: number) => nextBulbChange(SPIN, now)
+
+  it('is the next rest boundary at rest, with or without a spin', () => {
+    expect(nextBulbChange(null, 0)).toBe(600)
+    expect(nextBulbChange(null, 599)).toBe(600)
+    expect(nextBulbChange(null, 600)).toBe(1200)
+    expect(nextBulbChange(null, 123_456)).toBe(123_600)
+    expect(next(10_000)).toBe(10_200)
+  })
+
+  it('is the spin\'s start when that comes before the next rest boundary, during the lead', () => {
+    // START = 60 000 is 100 times 600: a boundary itself, so the lead ends there at the same instant.
+    expect(next(59_400)).toBe(START)
+    expect(next(59_999)).toBe(START)
+    const early = { spinStartAt: 60_250, stopAt: 66_250 }
+    expect(nextBulbChange(early, 59_999)).toBe(60_000)
+    expect(nextBulbChange(early, 60_000)).toBe(60_250)
+    expect(nextBulbChange(early, 60_249)).toBe(60_250)
+  })
+
+  it('is the next step of the chase, 80 ms on, from the spin\'s start, and the stop when that comes first', () => {
+    expect(next(START)).toBe(START + 80)
+    expect(next(START + 79)).toBe(START + 80)
+    expect(next(START + 80)).toBe(START + 160)
+    expect(next(STOP - 1)).toBe(STOP)
+    expect(nextBulbChange({ spinStartAt: START, stopAt: START + 50 }, START)).toBe(START + 50)
+  })
+
+  it('is the next step of the flash, 120 ms on, from the stop, and the end of the flash at 720 ms', () => {
+    expect(next(STOP)).toBe(STOP + 120)
+    expect(next(STOP + 119)).toBe(STOP + 120)
+    expect(next(STOP + 600)).toBe(STOP + 720)
+    expect(next(STOP + 719)).toBe(STOP + 720)
+    // STOP + 720 = 67 720: the rest blink's next boundary is 67 800.
+    expect(next(STOP + 720)).toBe(67_800)
+  })
+
+  it('knows nothing of the games: the same for a spin of any length and for the Host and a Member alike', () => {
+    const long = { spinStartAt: START, stopAt: START + 10_000 }
+    expect(nextBulbChange(long, START + 9999)).toBe(START + 10_000)
+    expect(nextBulbChange(long, START + 10_000)).toBe(START + 10_120)
+  })
+
+  it.each([
+    ['a spin of 6 s', SPIN],
+    ['a spin of 10 s', { spinStartAt: START, stopAt: START + 10_000 }],
+    ['no spin', null],
+  ])('is always later than now, and the pattern is the same from one wake to the next, for %s', (_name, spin) => {
+    const from = START - 2000
+    const to = (spin?.stopAt ?? STOP) + 3000
+    const wakes = [from]
+    for (let w = nextBulbChange(spin, from); w <= to; w = nextBulbChange(spin, w)) wakes.push(w)
+
+    for (let t = from; t <= to; t++) {
+      expect(nextBulbChange(spin, t)).toBeGreaterThan(t)
+      const wake = wakes.findLast(candidate => candidate <= t)!
+      expect(bulbsLit(spin, t, false), `at ${t - START}`).toEqual(bulbsLit(spin, wake, false))
+    }
+  })
+
+  it('wakes fewer than 110 times from 2 s before a spin of 6 s to 3 s after it, not once a frame', () => {
+    let wakes = 0
+    for (let w = START - 2000; w <= STOP + 3000; w = next(w)) wakes++
+    expect(wakes).toBeLessThan(110)
   })
 })
