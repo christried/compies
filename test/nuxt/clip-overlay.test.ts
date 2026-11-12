@@ -583,7 +583,6 @@ describe('a low viewport (#549)', () => {
     expect(classes).not.toContain('sideways:mx-0')
     expect(classes.filter(token => token.startsWith('sideways:w-['))).toEqual([])
     expect(classes).toEqual(expect.arrayContaining(['inset-x-0', 'mx-auto', 'w-[min(720px,calc(100%-1.75rem))]']))
-    expect(classesOf(wrapperOf())).toContain('mx-auto')
     expect(classesOf(wrapperOf())).toContain(background)
   })
 
