@@ -39,57 +39,65 @@ const tone = hz => t => Math.sin(TAU * hz * t)
 /** Fast attack to 1 over `attack` seconds, then an exponential decay with time constant `decay`. */
 const pluck = (attack, decay) => t => (t < attack ? t / attack : Math.exp(-(t - attack) / decay))
 
+/** A sweep shaped by an envelope of t. */
+function shaped(from, to, seconds, shape) {
+  const glide = sweep(from, to, seconds)
+  return t => glide(t) * shape(t)
+}
+
+/** A steady tone shaped by a pluck. */
+function plucked(hz, attack, decay) {
+  const envelope = pluck(attack, decay)
+  return t => tone(hz)(t) * envelope(t)
+}
+
+/** A thump (low tone, fast decay) with something sounding from `from` seconds on, each on its own envelope. */
+function thumpAnd(thumpHz, thumpDecay, rest, from, restAttack, restDecay) {
+  const thump = plucked(thumpHz, 0.002, thumpDecay)
+  const tail = pluck(restAttack, restDecay)
+  return t => 0.7 * thump(t) + (t >= from ? rest(t) * tail(t - from) : 0)
+}
+
+/** A snare roll: a burst of seeded noise every `period` seconds, getting louder over `seconds`. */
+function drumroll(seconds, period) {
+  const random = seeded(0xD2011)
+  const burst = pluck(0.001, 0.012)
+  let last = -1
+  let noise = 0
+  return (t) => {
+    const index = Math.floor(t / period)
+    if (index !== last) {
+      last = index
+      noise = random() * 2 - 1
+    }
+    return (random() * 2 - 1 + 0.3 * noise) * burst(t - index * period) * (0.3 + 0.7 * (t / seconds))
+  }
+}
+
 // The cues: length in seconds and a function of time t (s) to a sample in about -1..1. Lengths as compibert-sound.md.
 const CUES = {
   // Ratchet pulled back: a rising sweep.
-  'wheel-windup': { seconds: 0.5, wave: (() => { const s = sweep(180, 420, 0.5); return t => s(t) * (0.4 + 0.6 * (t / 0.5)) })() },
+  'wheel-windup': { seconds: 0.5, wave: shaped(180, 420, 0.5, t => 0.4 + 0.6 * (t / 0.5)) },
   // Plastic flapper: a short high click.
-  'wheel-tick': { seconds: 0.03, wave: (() => { const e = pluck(0.001, 0.006); return t => tone(1400)(t) * e(t) })() },
+  'wheel-tick': { seconds: 0.03, wave: plucked(1400, 0.001, 0.006) },
   // Thunk and a G-B-D chord from 150 ms.
-  'wheel-stop': {
-    seconds: 0.6,
-    wave: (() => {
-      const thump = pluck(0.002, 0.07)
-      const chord = pluck(0.01, 0.18)
-      return t => 0.7 * tone(110)(t) * thump(t) + (t >= 0.15 ? 0.3 * (tone(392)(t) + tone(494)(t) + tone(587)(t)) * chord(t - 0.15) : 0)
-    })(),
-  },
+  'wheel-stop': { seconds: 0.6, wave: thumpAnd(110, 0.07, t => 0.3 * (tone(392)(t) + tone(494)(t) + tone(587)(t)), 0.15, 0.01, 0.18) },
   // Scramble turning real: a quick sweep up, with a tremolo.
-  'wheel-morph': { seconds: 0.5, wave: (() => { const s = sweep(300, 1200, 0.5); return t => s(t) * (0.6 + 0.4 * Math.sin(TAU * 24 * t)) })() },
+  'wheel-morph': { seconds: 0.5, wave: shaped(300, 1200, 0.5, t => 0.6 + 0.4 * Math.sin(TAU * 24 * t)) },
   // Schwupp: a falling sweep.
-  'wheel-slice-out': { seconds: 0.3, wave: (() => { const s = sweep(900, 300, 0.3); return t => s(t) * (1 - t / 0.3) })() },
+  'wheel-slice-out': { seconds: 0.3, wave: shaped(900, 300, 0.3, t => 1 - t / 0.3) },
   // Shutter whoosh, the window slides up: a rising sweep.
   'veto-open': { seconds: 0.4, wave: sweep(250, 700, 0.4) },
   // Dry clock tick.
-  'veto-clock': { seconds: 0.04, wave: (() => { const e = pluck(0.002, 0.01); return t => tone(900)(t) * e(t) })() },
+  'veto-clock': { seconds: 0.04, wave: plucked(900, 0.002, 0.01) },
   // Soft TV off: a falling sweep.
-  'veto-clip-close': { seconds: 0.3, wave: (() => { const s = sweep(600, 150, 0.3); return t => s(t) * (1 - 0.5 * (t / 0.3)) })() },
+  'veto-clip-close': { seconds: 0.3, wave: shaped(600, 150, 0.3, t => 1 - 0.5 * (t / 0.3)) },
   // Wax-stamp thud.
-  'veto-seal': { seconds: 0.3, wave: (() => { const e = pluck(0.003, 0.06); return t => tone(90)(t) * e(t) })() },
+  'veto-seal': { seconds: 0.3, wave: plucked(90, 0.003, 0.06) },
   // Snare roll: a train of short noise bursts every 50 ms, getting louder.
-  'veto-drumroll': {
-    seconds: 1.2,
-    wave: (() => {
-      const random = seeded(0xD2011)
-      const burst = pluck(0.001, 0.012)
-      let last = -1
-      let noise = 0
-      return (t) => {
-        const index = Math.floor(t / 0.05)
-        if (index !== last) { last = index; noise = random() * 2 - 1 }
-        return (random() * 2 - 1 + 0.3 * noise) * burst(t - index * 0.05) * (0.3 + 0.7 * (t / 1.2))
-      }
-    })(),
-  },
-  // Cymbal-ish hit: a thud and a decaying chime.
-  'veto-reveal': {
-    seconds: 0.8,
-    wave: (() => {
-      const thump = pluck(0.002, 0.08)
-      const chime = pluck(0.003, 0.25)
-      return t => 0.7 * tone(80)(t) * thump(t) + 0.5 * tone(880)(t) * chime(t)
-    })(),
-  },
+  'veto-drumroll': { seconds: 1.2, wave: drumroll(1.2, 0.05) },
+  // Cymbal-ish hit: a thud and a decaying chime from the start.
+  'veto-reveal': { seconds: 0.8, wave: thumpAnd(80, 0.08, tone(880), 0, 0.003, 0.25) },
 }
 
 /** The samples of a cue, normalised to PEAK and faded in and out over FADE_S. */

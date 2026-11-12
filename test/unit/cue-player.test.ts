@@ -321,7 +321,9 @@ describe('the files', () => {
 
   it('waits for the decode: the cue starts once the buffer is there, timed from that moment', async () => {
     let deliver: (bytes: ArrayBuffer) => void = () => {}
-    const { context, player, advance } = setup({ loadFile: () => new Promise((resolve) => { deliver = resolve }) })
+    const { context, player, advance } = setup({ loadFile: () => new Promise((resolve) => {
+      deliver = resolve
+    }) })
     player.setPlan([cue('wheel-stop', 1000)])
     await settle()
     expect(context.started()).toEqual([])
@@ -335,7 +337,9 @@ describe('the files', () => {
 
   it('applies the 150 ms rule when the decode arrives too late', async () => {
     let deliver: (bytes: ArrayBuffer) => void = () => {}
-    const { context, player, advance } = setup({ loadFile: () => new Promise((resolve) => { deliver = resolve }) })
+    const { context, player, advance } = setup({ loadFile: () => new Promise((resolve) => {
+      deliver = resolve
+    }) })
     player.setPlan([cue('wheel-stop', 1000)])
 
     advance(1300)

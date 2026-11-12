@@ -54,7 +54,7 @@ for (const id of WHEEL_FILES) {
     return new TextEncoder().encode(id)
   })
 }
-const requested = () => Object.keys(requests).sort()
+const requested = () => Object.keys(requests).filter(id => requests[id]).sort()
 
 const context = () => FakeAudioContext.instances.at(-1)
 
@@ -64,7 +64,7 @@ beforeEach(() => {
   signInAs(kitty)
   document.body.innerHTML = ''
   FakeAudioContext.instances = []
-  for (const key of Object.keys(requests)) delete requests[key]
+  for (const id of WHEEL_FILES) requests[id] = 0
   vi.stubGlobal('AudioContext', FakeAudioContext)
 })
 
