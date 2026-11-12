@@ -6,11 +6,12 @@ import { spawn } from 'node:child_process'
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { portsOf, profileOf, slotOf } from './ports.mjs'
 
 /** Profiles and screenshots go here, outside the repo. */
 export const OUT = join(tmpdir(), 'compies-browser')
-/** The DevTools port of each account's Chrome, so two accounts run side by side. */
-export const PORTS = { host: 9311, member: 9312, admin: 9313 }
+/** The DevTools port of each account's Chrome, so two accounts run side by side; slot 2 (COMPIES_SLOT, ports.mjs) is 100 higher. */
+export const PORTS = portsOf(slotOf()).chrome
 
 const CHROME = process.env.CHROME_PATH ?? {
   win32: 'C:/Program Files/Google/Chrome/Application/chrome.exe',
@@ -34,7 +35,8 @@ export function closeAll(tabs) {
 /** Starts Chrome for one account (`host`, `member`, `admin`) on its port in `PORTS` and connects to its page. */
 export async function launch(account) {
   if (!existsSync(CHROME)) throw new Error(`No Chrome at ${CHROME}; set CHROME_PATH.`)
-  const profile = join(OUT, `profile-${account}`)
+  // One Chrome per profile folder and cookies ignore ports, so slot 2 has its own folders (#567).
+  const profile = join(OUT, profileOf(slotOf(), account))
   mkdirSync(profile, { recursive: true })
   const port = PORTS[account]
   // Headless Chrome plays sound on the machine's speakers: a Clip check played its YouTube video out loud. Muted, the

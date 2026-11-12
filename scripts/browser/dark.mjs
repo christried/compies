@@ -39,6 +39,7 @@ import { closeAll, colorScheme, launchAll } from './chrome.mjs'
 import { cut, judgeBox, judgeRing, judgeSurface, judgeText, label, lines, same } from './contrast.mjs'
 import { keysOf, READ, READ_RINGS } from './dark-read.mjs'
 import { api, createEvent, createGame, eventView, ok, open, pressKey, results } from './kit.mjs'
+import { portsOf, slotOf } from './ports.mjs'
 
 const HERE = dirname(fileURLToPath(import.meta.url))
 const GAME_NAME_MAX = 60
@@ -241,7 +242,7 @@ async function readState(state, ctx) {
   try {
     await state.open(ctx)
     // The SSR page of a production build is visible before it hydrates (README).
-    if ((process.env.BASE_URL ?? '').includes(':3001')) await new Promise(resolve => setTimeout(resolve, 4000))
+    if ((process.env.BASE_URL ?? '').includes(`:${portsOf(slotOf()).prod}`)) await new Promise(resolve => setTimeout(resolve, 4000))
     if (!await measure({ tab, state, name: state.name, width, appearance, first: true, viewport: state.viewport === true })) return
   }
   catch (error) {
