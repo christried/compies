@@ -3,9 +3,10 @@ import { CircleHelp } from '@lucide/vue'
 import { placeNotePopover } from '~/utils/note-popover'
 
 // The hint element (#515, 02-components § HintElement): a small round „?“ that opens a popover with a short text or its slot. A click
-// toggles it; Esc, a press outside, a scroll that would move the popover away from its button and a resize close it. Esc and a press
-// outside return the focus to the button; a scroll or a resize leave it where it was, so the field the Host types in keeps it and the
-// page does not jump to the „?“ (#573). A popover at every width (no sheet: the text is short), in the look and on the layer of the Notes popover
+// toggles it; Esc, a press outside, a scroll that would move the popover away from its button and a resize close it. Esc returns the focus
+// to the button, and so does a press outside that puts the focus on nothing (the page background): the browser moves the focus after the
+// press starts, so the press's click decides it (#578). A press on a field or a button keeps the focus there. A scroll or a resize leave
+// it where it was, so the field the Host types in keeps it and the page does not jump to the „?“ (#573). A popover at every width (no sheet: the text is short), in the look and on the layer of the Notes popover
 // (GameNotesButton), placed by placeNotePopover so it stays inside the window (#494). One root element, so the caller's class (where it
 // sits, on which pointers it shows: #465) lands on it.
 const props = withDefaults(defineProps<{
@@ -20,6 +21,8 @@ const props = withDefaults(defineProps<{
 const { t } = useI18n()
 const popoverId = useId()
 const open = ref(false)
+// A press outside that closed the hint: its click decides where the focus goes (onDocumentClick). Every press starts without that memory.
+let closedByPress = false
 // Null until the drawn popover is measured: it stays hidden so long, as the Note popover does.
 const placed = ref<{ top: number, left: number, maxHeight?: number } | null>(null)
 const trigger = useTemplateRef<{ $el: HTMLElement }>('trigger')
@@ -46,6 +49,7 @@ function close(returnFocus = true) {
 watch(open, async (isOpen) => {
   placed.value = null
   if (!isOpen) return
+  closedByPress = false
   await nextTick()
   place()
 })
@@ -59,12 +63,24 @@ function onDocumentKeydown(event: KeyboardEvent) {
   close()
 }
 
-// The button is left out: its own click toggles, so a press on it would close here and reopen on the click.
+// The button is left out: its own click toggles, so a press on it would close here and reopen on the click. The focus is not set here:
+// the browser moves it after this pointerdown, with the mousedown, so a focus set now would be lost to a press on the background (#578).
 function onDocumentPointerDown(event: PointerEvent) {
+  closedByPress = false
   if (!open.value) return
   const target = event.target as Node
   if (popover.value?.contains(target) || trigger.value?.$el.contains(target)) return
-  close()
+  closedByPress = true
+  close(false)
+}
+
+// In the capture phase, so it runs before the click reaches the field or the button the press landed on. The focus is then where the press
+// put it; if that is the body, nothing took it, and the hint gets it back. A press that ends without a click leaves nothing behind.
+function onDocumentClick() {
+  if (!closedByPress) return
+  closedByPress = false
+  const active = document.activeElement
+  if (!active || active === document.body) trigger.value?.$el.focus()
 }
 
 // The popover is fixed, so a scroll of the page or of a sheet would leave it floating beside nothing: it closes instead. A scroll inside
@@ -82,12 +98,14 @@ function onResize() {
 onMounted(() => {
   document.addEventListener('keydown', onDocumentKeydown, { capture: true })
   document.addEventListener('pointerdown', onDocumentPointerDown)
+  document.addEventListener('click', onDocumentClick, { capture: true })
   window.addEventListener('scroll', onScroll, { capture: true, passive: true })
   window.addEventListener('resize', onResize)
 })
 onBeforeUnmount(() => {
   document.removeEventListener('keydown', onDocumentKeydown, { capture: true })
   document.removeEventListener('pointerdown', onDocumentPointerDown)
+  document.removeEventListener('click', onDocumentClick, { capture: true })
   window.removeEventListener('scroll', onScroll, { capture: true })
   window.removeEventListener('resize', onResize)
 })
