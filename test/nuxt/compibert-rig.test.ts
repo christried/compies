@@ -469,4 +469,14 @@ describe('the bust', () => {
     expect(attribute(page, 'style')).toContain('--cb-dx: 6.39px')
     expect(attribute(page, 'style')).toContain('--cb-dy: 7.31px')
   })
+
+  it.each([4, 2])('with %s cores the head\'s cheap outline offset is 7 and 8 of its own 192, not of 404 (#584)', async (count) => {
+    stubInView()
+    cores(count)
+    const page = await mountRig({ variant: 'head', size: 192 })
+
+    await vi.waitFor(() => expect(rootOf(page).classes('compibert-rig--cheap')).toBe(true))
+    expect(attribute(page, 'style')).toContain('--cb-dx: 7px')
+    expect(attribute(page, 'style')).toContain('--cb-dy: 8px')
+  })
 })

@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { mascotBox, mascotMoments, mascotPhase } from '../../app/utils/wheel-mascot'
 import { revealStage, removalEnd, removalEase } from '../../app/utils/wheel'
@@ -121,25 +123,32 @@ describe('what he is told', () => {
   })
 })
 
+// How far past the wheel's right edge each width's box stands: `mascotBox` keeps it to itself, the tests pin the places it gives.
+const OVERHANG = { md: 112, sm: 8 }
+
 describe('mascotBox', () => {
+  it('keeps the overhang to itself: the box is its size, top, travel and left', () => {
+    for (const width of ['md', 'sm'] as const) expect(Object.keys(mascotBox(width)).sort()).toEqual(['left', 'size', 'top', 'travel'])
+  })
+
   it('stands 232 px at the upper right of the wheel from md up: 300 px from the left of a 420 px wheel, 112 past its right edge', () => {
     const box = mascotBox('md')
-    expect(box).toMatchObject({ size: 232, top: 18, overhang: 112 })
+    expect(box).toMatchObject({ size: 232, top: 18 })
     expect(box.left).toBe('max(50% + 24px, 100% - 120px)')
-    expect(Math.max(420 / 2 + 24, 420 - (box.size - box.overhang))).toBe(300)
+    expect(Math.max(420 / 2 + 24, 420 - (box.size - OVERHANG.md))).toBe(300)
   })
 
   it('stands 150 px, 20 px above the wheel and 8 px past its right edge below md: 190 px from the left of a 332 px wheel', () => {
     const box = mascotBox('sm')
-    expect(box).toMatchObject({ size: 150, top: -20, overhang: 8 })
+    expect(box).toMatchObject({ size: 150, top: -20 })
     expect(box.left).toBe('max(50% + 24px, 100% - 142px)')
-    expect(Math.max(332 / 2 + 24, 332 - (box.size - box.overhang))).toBe(190)
+    expect(Math.max(332 / 2 + 24, 332 - (box.size - OVERHANG.sm))).toBe(190)
   })
 
   it('stays right of the flapper (the wheel\'s centre + 24 px) at every wheel width the card can give', () => {
     for (const [width, wheel] of [['md', 420], ['md', 300], ['sm', 340], ['sm', 240]] as const) {
       const box = mascotBox(width)
-      expect(Math.max(wheel / 2 + 24, wheel - (box.size - box.overhang))).toBeGreaterThanOrEqual(wheel / 2 + 24)
+      expect(Math.max(wheel / 2 + 24, wheel - (box.size - OVERHANG[width]))).toBeGreaterThanOrEqual(wheel / 2 + 24)
     }
   })
 
@@ -153,5 +162,13 @@ describe('mascotBox', () => {
   it('travels along the radius from behind the rim: 130 left and 100 down from md up, 100 and 80 below', () => {
     expect(mascotBox('md').travel).toEqual({ x: -130, y: 100 })
     expect(mascotBox('sm').travel).toEqual({ x: -100, y: 80 })
+  })
+})
+
+describe('LuckyWheelMascot.vue', () => {
+  it('carries no stylesheet of its own: his left edge and his hiding are utilities on his box, not a global rule (#584)', () => {
+    const source = readFileSync(resolve(import.meta.dirname, '../../app/components/LuckyWheelMascot.vue'), 'utf8')
+
+    expect(source).not.toContain('<style')
   })
 })

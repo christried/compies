@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { loadGsap } from '~/utils/gsap'
 import { buildMascotTravel } from '~/utils/wheel-mascot-run'
-import type { MascotWidth } from '~/utils/wheel-mascot'
+import { ENTER_MS, FADE_REDUCED_MS, LEAVE_MS, mascotMoments, type MascotWidth } from '~/utils/wheel-mascot'
 
 // Compibert's way in and out at the wheel (#526, 04-motion § Lucky Wheel · Compibert, CODING_STANDARDS § Motion, ADR 0015): the tweens of the
 // built timeline carry the note's eases, durations and places, read off the timeline as `ceremony-run-tweens.test.ts` does, and the timeline
@@ -102,6 +102,32 @@ describe('the travel at md', () => {
     const { timeline } = await build()
 
     expect(timeline.paused()).toBe(true)
+  })
+})
+
+// The phase (`mascotPhase`, in ms) and the tweens (in s) are two writings of one set of times: the tween that brings him in, and the one that takes him
+// out, end where `mascotMoments` says he is there and gone (#584). The lengths are read off the tweens and compared with the phase's constants.
+describe.each([['a spin', false], ['a Hidden spin', true]])('the tweens of %s join the phase\'s times', (_name, hidden) => {
+  const spin = { spinStartAt: START, stopAt: START + 8000 }
+
+  it('bring him in in ENTER_MS and take him out in LEAVE_MS, ending where he is gone', async () => {
+    const { tweens } = await build({ length: 8000, hidden })
+    const { goneAt } = mascotMoments(spin, hidden, false)
+    const enter = tweens.find(tween => tween.moves && tween.at === 0)!
+    const leave = tweens.find(tween => tween.moves && tween.at > 0)!
+
+    near(enter.duration * 1000, ENTER_MS)
+    near(leave.duration * 1000, LEAVE_MS)
+    near(leave.at * 1000 + LEAVE_MS, goneAt - spin.spinStartAt)
+  })
+
+  it('fade in place in FADE_REDUCED_MS under reduced motion, ending where he is gone', async () => {
+    const { tweens } = await build({ length: 8000, hidden, reduced: true })
+    const { goneAt } = mascotMoments(spin, hidden, true)
+
+    near(tweens[0]!.duration * 1000, FADE_REDUCED_MS)
+    near(tweens[1]!.duration * 1000, FADE_REDUCED_MS)
+    near(tweens[1]!.at * 1000 + FADE_REDUCED_MS, goneAt - spin.spinStartAt)
   })
 })
 

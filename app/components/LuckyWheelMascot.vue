@@ -23,7 +23,7 @@ const props = defineProps<{
 const box = useTemplateRef<HTMLElement>('box')
 const phase = computed(() => (props.now === null ? null : mascotPhase(props.spin, props.hidden, props.reduced, props.now)))
 const placement = computed(() => mascotBox(props.width))
-/** The travel is built and at the clock's place; until then the box is transparent (CSS on `data-ready`), so he never shows at rest before his way in. */
+/** The travel is built and at the clock's place; until then the box is transparent (`data-[ready=false]:opacity-0`), so he never shows at rest before his way in; GSAP owns the inline opacity after. */
 const ready = ref(false)
 
 let timeline: ReturnType<typeof buildMascotTravel> | undefined
@@ -76,7 +76,7 @@ onBeforeUnmount(release)
   <div
     v-if="phase"
     ref="box"
-    class="wheel-mascot pointer-events-none absolute z-0"
+    class="wheel-mascot pointer-events-none absolute z-0 left-(--wm-left) data-[ready=false]:opacity-0"
     :style="{ '--wm-left': placement.left, 'top': `${placement.top}px`, 'width': `${placement.size}px` }"
     aria-hidden="true"
     data-testid="wheel-mascot"
@@ -91,14 +91,3 @@ onBeforeUnmount(release)
     />
   </div>
 </template>
-
-<style>
-/* His left edge is a CSS expression of the wheel's width (`mascotBox`), handed over as a variable. */
-.wheel-mascot {
-  left: var(--wm-left);
-}
-/* Until his travel is built he is transparent, so a late joiner or a slow chunk shows no frame of him at rest; GSAP owns the inline opacity after. */
-.wheel-mascot[data-ready='false'] {
-  opacity: 0;
-}
-</style>

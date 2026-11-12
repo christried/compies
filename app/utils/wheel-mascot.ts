@@ -1,5 +1,5 @@
 import type { RigState } from './compibert-rig'
-import { removalStart, type WheelTiming } from './wheel'
+import { removalStart, REVEAL_AFTER_MS, type WheelTiming } from './wheel'
 
 // Compibert at the wheel (#526, spec #503, hand-off note 16-compibert-gluecksrad.md): where he is in a spin and where his box stands. Pure, no Vue and
 // no GSAP: his state is a function of the spin's two instants and the server's time, so every device, a late joiner and a returning tab
@@ -14,21 +14,20 @@ export type MascotWidth = 'md' | 'sm'
 export type MascotStage = 'in' | 'on' | 'out'
 
 /** The travel in and the fade, full motion; the way out lasts as long as the tween of the same name. */
-const ENTER_MS = 450
-const LEAVE_MS = 400
+export const ENTER_MS = 450
+export const LEAVE_MS = 400
 /** Reduced motion fades in place for this long, in and out (`dur-base`). */
-const FADE_REDUCED_MS = 220
+export const FADE_REDUCED_MS = 220
 /** The brake is at this share of the spin's length (04-motion: `0.6·D`), as a fraction of 5 so the integer instants stay exact. */
 const BRAKE_FIFTHS = 3
 /** He cheers for this long, then is idle until he leaves. */
 const CHEER_MS = 1600
-/** Under a Hidden wheel he holds his breath until the drawn label turns into the game (`revealStage`'s half second) and cheers then. */
-const HIDDEN_CHEER_AFTER_MS = 500
 
 /** The server instants (epoch ms) at which he changes, for a spin. */
 export function mascotMoments(spin: MascotSpin, hidden: boolean, reduced: boolean) {
   const { spinStartAt, stopAt } = spin
-  const cheerAt = stopAt + (hidden ? HIDDEN_CHEER_AFTER_MS : 0)
+  // Under a Hidden wheel he holds his breath until the drawn label turns into the game (`revealStage`'s half second) and cheers then.
+  const cheerAt = stopAt + (hidden ? REVEAL_AFTER_MS : 0)
   // He leaves with the drawn slice: the same instant, so a change of the wheel's timing moves him too.
   const leaveAt = removalStart(spin, hidden)
   return {
@@ -53,7 +52,7 @@ export function mascotPhase(spin: MascotSpin, hidden: boolean, reduced: boolean,
 
 /**
  * Where his box stands, relative to the wheel's square (its origin is the square's top left; `left` is CSS because it depends on the wheel's width):
- * `size` px square, `top`, and `overhang` px past the wheel's right edge. `left` puts the box's right edge at the wheel's edge plus the overhang, but never
+ * `size` px square and `top`; it stands `overhang` px past the wheel's right edge (112 from md up, 8 below), which only `left` needs. `left` puts the box's right edge at the wheel's edge plus the overhang, but never
  * left of the wheel's centre + 24 px, which is right of the flapper (44 px wide, centred). From md up the wheel is 420 px and he stands 300 px from its left;
  * below it the wheel is 332 px on a phone and he stands 190 px from it. He stays behind the wheel and above its centre line. `travel` is where he comes
  * from (and goes back to), in px from his place.
@@ -62,5 +61,6 @@ export function mascotBox(width: MascotWidth) {
   const box = width === 'md'
     ? { size: 232, top: 18, overhang: 112, travel: { x: -130, y: 100 } }
     : { size: 150, top: -20, overhang: 8, travel: { x: -100, y: 80 } }
-  return { ...box, left: `max(50% + 24px, 100% - ${box.size - box.overhang}px)` }
+  const { overhang, ...place } = box
+  return { ...place, left: `max(50% + 24px, 100% - ${box.size - overhang}px)` }
 }

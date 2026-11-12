@@ -396,7 +396,15 @@ describe('the mascot on its own', () => {
     one.unmount()
   })
 
-  it('is invisible until the travel is built and shows once it is; a chunk that never arrives leaves him invisible', async () => {
+  it('puts his left edge and his hiding on his box as utilities, with no rule of his own in the page (#584)', async () => {
+    const one = await mountSuspended(LuckyWheelMascot, { props })
+    await flushPromises()
+
+    expect(one.get('[data-testid="wheel-mascot"]').classes()).toEqual(expect.arrayContaining(['wheel-mascot', 'left-(--wm-left)', 'data-[ready=false]:opacity-0']))
+    one.unmount()
+  })
+
+  it('is invisible until the travel is built and shows once it is', async () => {
     let release = () => {}
     chunk.held = new Promise<void>(resolve => (release = resolve))
     const one = await mountSuspended(LuckyWheelMascot, { props })
@@ -407,6 +415,70 @@ describe('the mascot on its own', () => {
     await flushPromises()
 
     expect(one.get('[data-testid="wheel-mascot"]').attributes('data-ready')).toBe('true')
+    one.unmount()
+  })
+
+  it('stays invisible and still when the chunk fails, and asks again only with the next spin', async () => {
+    let fail = (_reason: Error) => {}
+    chunk.held = new Promise<void>((_, reject) => (fail = reject))
+    chunk.held.catch(() => {})
+    const one = await mountSuspended(LuckyWheelMascot, { props })
+    await flushPromises()
+
+    fail(new Error('chunk'))
+    await flushPromises()
+
+    const element = one.get('[data-testid="wheel-mascot"]')
+    expect(element.attributes('data-ready')).toBe('false')
+    expect(one.find('.compibert-rig').exists()).toBe(true)
+    expect(element.attributes('style')).not.toMatch(/opacity|transform/)
+
+    chunk.held = null
+    await one.setProps({ now: START + 2000 })
+    await flushPromises()
+    expect(one.get('[data-testid="wheel-mascot"]').attributes('data-ready')).toBe('false')
+    one.unmount()
+
+    const fresh = await mountSuspended(LuckyWheelMascot, { props })
+    await flushPromises()
+    expect(fresh.get('[data-testid="wheel-mascot"]').attributes('data-ready')).toBe('true')
+    fresh.unmount()
+  })
+
+  it('leaves nothing behind when he is unmounted while the chunk is still arriving', async () => {
+    const gsap = await loadGsap()
+    const before = gsap.globalTimeline.getChildren(false, true, true).length
+    let release = () => {}
+    chunk.held = new Promise<void>(resolve => (release = resolve))
+    const one = await mountSuspended(LuckyWheelMascot, { props })
+    await flushPromises()
+    const element = one.get('[data-testid="wheel-mascot"]').element as HTMLElement
+
+    one.unmount()
+    release()
+    await flushPromises()
+
+    expect(gsap.globalTimeline.getChildren(false, true, true).length).toBe(before)
+    expect(element.style.transform).toBe('')
+  })
+
+  it('builds his travel again for the other width: the new places, one timeline', async () => {
+    const gsap = await loadGsap()
+    const one = await mountSuspended(LuckyWheelMascot, { props: { ...props, now: START } })
+    await flushPromises()
+    // The rig's own loops are on the global timeline too, and stay across the rebuild; only his travel is replaced.
+    const built = gsap.globalTimeline.getChildren(false, true, true).length
+    const element = one.get('[data-testid="wheel-mascot"]').element as HTMLElement
+    expect(gsap.getProperty(element, 'x')).toBe(-130)
+    expect(gsap.getProperty(element, 'y')).toBe(100)
+
+    await one.setProps({ width: 'sm' })
+    await flushPromises()
+
+    expect(gsap.getProperty(element, 'x')).toBe(-100)
+    expect(gsap.getProperty(element, 'y')).toBe(80)
+    expect(element.getAttribute('data-ready')).toBe('true')
+    expect(gsap.globalTimeline.getChildren(false, true, true).length).toBe(built)
     one.unmount()
   })
 })
