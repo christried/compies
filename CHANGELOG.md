@@ -12,6 +12,10 @@
 
 - **Die Zahl der Vetos bleibt bis zum Start verborgen:** Bevor die erste Session eines Events startet, weiß nur der Host, wie viele Vetos jede Partei hat. Alle anderen lesen in „So wird gespielt“ „Vetos: Anzahl erst zum Start“ und erfahren die Zahl auch sonst nirgends. Mit dem Start der ersten Session sehen sie alle, auch zwischen den Sessions und wenn das Event beendet ist. Bei Host-Wahl bleibt alles, wie es war. ([#453](https://github.com/christried/compies/issues/453))
 
+### Behoben
+
+- **Veto-Fenster:** Nach dem Aufdecken ist die Kachel eines Teams, das kein Veto eingelegt hat, jetzt abgedunkelt, wie vorgesehen. Bisher sah sie aus wie die der anderen Teams. ([#562](https://github.com/christried/compies/issues/562))
+
 ## [0.13.0] - 2026-11-12 – Clip
 
 Der Clip, neu gefasst: Er läuft für alle gleich und lässt sich nicht mehr anhalten, darf 10 bis 120 Sekunden lang sein, und das Veto-Fenster richtet sich nach seiner Länge. Dazu kommt ein neues Ergebnis-Bild zum Teilen, die „Anzeigetafel“.
