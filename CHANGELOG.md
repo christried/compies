@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+## [0.13.1] - 2026-11-12 – Kleinkram
+
+Lauter Kleinigkeiten rund ums Spielformular: Du wählst den Bildausschnitt selbst, legst mit „Speichern und noch eins“ mehrere Spiele hintereinander an und speicherst mit Strg + Enter. Außerdem bleibt die Zahl der Vetos verborgen, bis ein Event startet.
+
 ### Neu
 
 - **Speichern und noch eins:** Legst du mehrere Spiele hintereinander an, speichert „Speichern und noch eins“ das Spiel und leert das Formular für das nächste; der Cursor steht gleich im Namen. Nichts wird übernommen, auch das Bild nicht. „Spiel anlegen“ führt wie bisher auf die Seite des Spiels. ([#456](https://github.com/christried/compies/issues/456))
