@@ -405,3 +405,140 @@ describe('dispose', () => {
     expect(context.closed).toBe(false)
   })
 })
+
+describe('a cue that left the plan', () => {
+  it('is not cut off once it sounded: a cue 100 ms past that played rings out when the plan no longer holds it (#532)', async () => {
+    const { context, player } = setup()
+    player.setPlan([cue('veto-clip-close', -100)])
+    await settle()
+
+    player.setPlan([])
+
+    expect(context.started().map(source => source.stopCalls)).toEqual([0])
+    expect(outcomes(player)).toEqual(['veto-clip-close@-100:late'])
+  })
+
+  it('is stopped and logged cancelled while it is not yet due', async () => {
+    const { context, player } = setup()
+    player.setPlan([cue('veto-reveal', 2000)])
+    await settle()
+
+    player.setPlan([])
+
+    expect(context.started().map(source => source.stopCalls)).toEqual([1])
+    expect(outcomes(player)).toEqual(['veto-reveal@2000:cancelled'])
+  })
+
+  it('is still stopped by Ton going off, after it started', async () => {
+    const { context, player } = setup()
+    player.setPlan([cue('veto-clip-close', -100)])
+    await settle()
+
+    player.setEnabled(false)
+
+    expect(context.started().map(source => source.stopCalls)).toEqual([1])
+  })
+})
+
+describe('playNow', () => {
+  it('starts a cue at the audio clock\'s now with the gain of its cue, and logs it scheduled', async () => {
+    const { context, player } = setup()
+    player.preload(['veto-seal'])
+    await settle()
+
+    player.playNow('veto-seal')
+
+    const [source, ...rest] = context.started()
+    expect(rest).toEqual([])
+    expect(source!.id).toBe('veto-seal')
+    expect(source!.startedAt).toBe(CLOCK)
+    expect(source!.gain).toBe(0.55)
+    expect(outcomes(player)).toEqual(['veto-seal@0:scheduled'])
+    expect(player.log[0]).toMatchObject({ when: CLOCK, currentTime: CLOCK })
+  })
+
+  it('starts after its delay: 80 ms is 10.08', async () => {
+    const { context, player } = setup()
+    player.preload(['veto-seal'])
+    await settle()
+
+    player.playNow('veto-seal', 80)
+
+    expect(when(context.started()[0]!)).toBe(10.08)
+    expect(outcomes(player)).toEqual(['veto-seal@80:scheduled'])
+  })
+
+  it('plays nothing and logs nothing while Ton is off', async () => {
+    const { context, player } = setup({ enabled: false })
+    player.preload(['veto-seal'])
+    await settle()
+
+    player.playNow('veto-seal')
+    player.setEnabled(false)
+    player.playNow('veto-seal')
+
+    expect(context.started()).toEqual([])
+    expect(player.log).toEqual([])
+  })
+
+  it('is skipped on a context that does not run', async () => {
+    const { context, player } = setup()
+    player.preload(['veto-seal'])
+    await settle()
+    context.state = 'suspended'
+
+    player.playNow('veto-seal')
+
+    expect(context.started()).toEqual([])
+    expect(outcomes(player)).toEqual(['veto-seal@0:skipped'])
+  })
+
+  it('is skipped when its file is not decoded yet, and asks for the file', async () => {
+    const { context, player, loadFile } = setup()
+
+    player.playNow('veto-seal')
+    await settle()
+
+    expect(context.started()).toEqual([])
+    expect(outcomes(player)).toEqual(['veto-seal@0:skipped'])
+    expect(loadFile.mock.calls.map(([id]) => id)).toEqual(['veto-seal'])
+  })
+
+  it('is skipped when its file failed to decode', async () => {
+    const { context, player } = setup()
+    context.decodeFails = true
+    player.preload(['veto-seal'])
+    await settle()
+
+    player.playNow('veto-seal')
+
+    expect(context.started()).toEqual([])
+    expect(outcomes(player)).toEqual(['veto-seal@0:skipped'])
+  })
+
+  it('is not cancelled by the plan: the next plan stops its pending cue, not the seal', async () => {
+    const { context, player } = setup()
+    player.preload(['veto-seal'])
+    await settle()
+    player.setPlan([cue('veto-open', 1000)])
+    await settle()
+
+    player.playNow('veto-seal')
+    player.setPlan([])
+
+    const seal = context.started().find(source => source.id === 'veto-seal')!
+    const open = context.started().find(source => source.id === 'veto-open')!
+    expect([seal.stopCalls, open.stopCalls]).toEqual([0, 1])
+  })
+
+  it('starts nothing after dispose', async () => {
+    const { context, player } = setup()
+    player.preload(['veto-seal'])
+    await settle()
+
+    player.dispose()
+    player.playNow('veto-seal')
+
+    expect(context.started()).toEqual([])
+  })
+})
