@@ -6,6 +6,10 @@
 
 - **Ton am Glücksrad und im Veto-Fenster:** Das Glücksrad und das Veto-Fenster haben jetzt Ton: vom Anziehen und Ticken des Rads bis zum Stopp, und vom Öffnen des Veto-Fensters über die tickende Uhr bis zum Trommelwirbel vor dem Aufdecken. Alle hören jeden Moment gleichzeitig, auch in einem Tab im Hintergrund, soweit der Browser es erlaubt. Der Schalter „Ton“ gilt jetzt für den Clip und für diese Geräusche zusammen und schaltet beides auf diesem Gerät aus. Hält dein Browser den Ton noch zurück, bittet dich ein kleiner Hinweis „Ton aktivieren“ um einen Tipp oder Tastendruck. ([#504](https://github.com/christried/compies/issues/504))
 
+### Geändert
+
+- **Clip mit Ton auf dem Handy:** Auf dem Handy startet der Clip jetzt mit Ton, sobald du die Seite einmal angetippt hast. Erlaubt dein Browser das nicht, bleibt der Clip stumm und zeigt weiter „Ton aktivieren“. ([#533](https://github.com/christried/compies/issues/533))
+
 ## [0.13.2] - 2026-11-12 – Show-Rad
 
 Das Glücksrad wird zur Spielshow: Lampen am Rand, ein Stift an jeder Scheibenkante, oben eine Klappe, die bei jedem Stift ausschlägt, und die App-Figur fiebert hinter dem Rad mit. Jeder Dreh dauert zwischen 6 und 10 Sekunden und endet mit Blitzen und einer Karte, die das gezogene Spiel zeigt.
