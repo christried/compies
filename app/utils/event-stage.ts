@@ -28,6 +28,9 @@ export type StageInput = Pick<EventView, 'settings' | 'sessions' | 'missingDates
 /** A block takes its new place this long after its moment (#441), so the news is on the page before the stage moves under the viewer. */
 export const RISE_DELAY_MS = 500
 
+/** The stage's column (#594): one place for the width, the side padding and the top padding that the block group and the „Ton aktivieren“ notice above it share, so the notice stays on the stage's edges (a fact of the device, no block: `EventStage.vue`). */
+export const STAGE_COLUMN_CLASS = 'mx-auto w-full max-w-[1100px] px-3.5 pt-4 md:px-6 md:pt-6'
+
 /**
  * The games still to start (#278): the Game count less the Results and the open Rounds, which each take one game. Never below 0:
  * open Rounds past the count (an old Event) leave none.
