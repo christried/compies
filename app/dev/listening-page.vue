@@ -6,6 +6,7 @@ import {
   type ArrivalButton, type Candidate, type Choices, type Controls, type Run,
 } from '~/dev/listening-model'
 import { createCuePlayer, type CuePlayer } from '~/utils/cue-player'
+import { CUE_CREDITS_URL } from '~/utils/sound-credits'
 import { CUE_IDS, CUE_VOLUME, TICK_MIN_GAP_MS, type CueId } from '~/utils/sound-cues'
 import type { WheelView } from '~~/shared/stage'
 
@@ -22,7 +23,7 @@ const RETRIES = 10
 const serverNow = () => Date.now()
 const sleep = (ms: number) => new Promise<void>(done => setTimeout(done, ms))
 
-const byCue = ref(candidatesOf({ cues: {} }).byCue)
+const byCue = ref(candidatesOf({ cues: {} }, null).byCue)
 const problems = ref<string[]>([])
 const choices = ref<Choices>(emptyChoices())
 
@@ -72,7 +73,7 @@ async function ensureContext(): Promise<AudioContext | null> {
   return context
 }
 
-/** A fresh player for runs, with the test file of each cue (the marked candidate, else the placeholder). Disposing the old one cancels its pending cues. */
+/** A fresh player for runs, with the test file of each cue (the marked candidate, else the shipped file). Disposing the old one cancels its pending cues. */
 function armPlayer() {
   armed?.dispose()
   armed = null
@@ -178,20 +179,27 @@ watch(choices, () => {
 }, { deep: true })
 watch(tickGapMs, persist)
 
-async function loadManifest() {
-  let manifest: unknown = { cues: {} }
-  let fetchProblem: string | null = null
+/** One JSON file, or the German line that says why it did not come (manifest.json and credits.json, #536). */
+async function fetchJson(url: string, name: string, init?: RequestInit): Promise<{ json: unknown } | { problem: string }> {
   try {
-    const response = await fetch(`${CANDIDATE_BASE}/manifest.json`)
-    if (!response.ok) fetchProblem = `manifest.json lädt nicht (${response.status}).`
-    else manifest = await response.json()
+    const response = await fetch(url, init)
+    if (!response.ok) return { problem: `${name} lädt nicht (${response.status}).` }
+    return { json: await response.json() }
   }
   catch {
-    fetchProblem = 'manifest.json lädt nicht oder ist kein JSON.'
+    return { problem: `${name} lädt nicht oder ist kein JSON.` }
   }
-  const read = candidatesOf(manifest)
+}
+
+async function loadManifest() {
+  const [manifest, credits] = await Promise.all([
+    fetchJson(`${CANDIDATE_BASE}/manifest.json`, 'manifest.json'),
+    fetchJson(CUE_CREDITS_URL, 'credits.json', { cache: 'no-store' }),
+  ])
+  const read = candidatesOf('json' in manifest ? manifest.json : { cues: {} }, 'json' in credits ? credits.json : null)
   byCue.value = read.byCue
-  problems.value = fetchProblem ? [fetchProblem] : read.problems
+  const fetchProblems = [manifest, credits].flatMap(result => 'problem' in result ? [result.problem] : [])
+  problems.value = fetchProblems.length > 0 ? fetchProblems : read.problems
   // The files on disk may have changed: nothing decoded before is trusted.
   disposeAlone()
   stopRun()
@@ -507,7 +515,7 @@ const FIELD = 'rounded border border-line bg-surface px-1.5 py-0.5 text-ink'
             <template v-else>{{ candidate.source }}</template>
           </span>
           <span>{{ candidate.author ?? 'kein Autor' }}</span>
-          <span>{{ candidate.licence }}</span>
+          <span>{{ candidate.licence ?? 'keine Lizenz' }}</span>
           <span
             v-if="candidate.note"
             class="text-ink-2"

@@ -2,6 +2,7 @@ import {
   CUE_IDS, TICK_MIN_GAP_MS, cueFileUrl, thinTicks, vetoArrivalCues, vetoCuePlan, wheelCuePlan,
   type ArrivalCue, type Cue, type CueId, type VetoArrivalState,
 } from '~/utils/sound-cues'
+import { parseCredits, type CueCredit, type Licence } from '~/utils/sound-credits'
 import { pinCrossings } from '~/utils/wheel-pins'
 import type { WheelTiming } from '~/utils/wheel'
 import type { RoundGame } from '~~/shared/game'
@@ -39,38 +40,44 @@ export const MOMENT_OF: Record<CueId, Moment> = {
 
 // Candidates -------------------------------------------------------------------------------------------------------------------------
 
-export type Licence = 'CC0' | 'generated'
-
 export interface Candidate {
   /** Unique within its cue; the choice stores it. */
   name: string
   /** What the page fetches. */
   url: string
-  /** The manifest's `file` (`<cue id>/<name>.<ext>`); for the shipped placeholder its URL. What #536 reads back. */
+  /** The manifest's `file` (`<cue id>/<name>.<ext>`); for the shipped file its URL. What #593 reads back. */
   file: string
   source: string
   author: string | null
-  licence: Licence
+  /** `null` only for the shipped row of a cue whose credit is missing or faulty. */
+  licence: Licence | null
   note: string | null
-  /** The shipped placeholder of the cue (the first candidate of every cue, no manifest entry). */
+  /** The file the app ships for the cue (the first row of every cue, no manifest entry). */
   shipped: boolean
 }
+
+/** The name of the first row of every cue: the file the app ships. Choosing it means keeping the provisional sound (#536). */
+export const SHIPPED_NAME = 'ausgeliefert'
 
 const EXTENSIONS = ['wav', 'ogg', 'mp3']
 const isText = (value: unknown): value is string => typeof value === 'string' && value.trim() !== ''
 const isObject = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null && !Array.isArray(value)
 
-const placeholderOf = (id: CueId): Candidate => ({
-  name: 'placeholder', url: cueFileUrl(id), file: cueFileUrl(id), source: 'scripts/make-placeholder-cues.mjs', author: null, licence: 'generated', note: null, shipped: true,
+/** The row of the file the app ships: its source, author and licence from the cue's credit, or an honest gap when there is none. */
+const shippedOf = (id: CueId, credit: CueCredit | undefined): Candidate => ({
+  name: SHIPPED_NAME, url: cueFileUrl(id), file: cueFileUrl(id),
+  source: credit?.source ?? 'credits.json: kein Eintrag', author: credit?.author ?? null, licence: credit?.licence ?? null,
+  note: credit ? `Datei der App: ${credit.candidate}` : null, shipped: true,
 })
 
 /**
- * The candidates of every cue: the shipped placeholder first, then the manifest's entries in order. An entry with a problem is left out and
- * named in `problems` (shown in red at the top of the page); nothing throws, so a half-edited manifest still lists what it can.
+ * The candidates of every cue: the shipped file first (its credit read from `credits.json`, #536), then the manifest's entries in order. An
+ * entry with a problem is left out and named in `problems` (shown in red at the top of the page), the credits' problems among them; nothing
+ * throws, so a half-edited manifest still lists what it can.
  */
-export function candidatesOf(manifest: unknown): { byCue: Record<CueId, Candidate[]>, problems: string[] } {
-  const byCue = Object.fromEntries(CUE_IDS.map(id => [id, [placeholderOf(id)]])) as Record<CueId, Candidate[]>
-  const problems: string[] = []
+export function candidatesOf(manifest: unknown, creditsFile: unknown): { byCue: Record<CueId, Candidate[]>, problems: string[] } {
+  const { credits, problems } = parseCredits(creditsFile)
+  const byCue = Object.fromEntries(CUE_IDS.map(id => [id, [shippedOf(id, credits[id])]])) as Record<CueId, Candidate[]>
   const cues = isObject(manifest) ? manifest.cues : undefined
   if (!isObject(cues)) {
     problems.push('manifest.json: "cues" fehlt oder ist kein Objekt.')
@@ -122,7 +129,7 @@ export const emptyChoices = (): Choices => Object.fromEntries(CUE_IDS.map(id => 
 const markedOf = (byCue: Record<CueId, Candidate[]>, choices: Choices, id: CueId): Candidate | undefined =>
   choices[id].noneFits ? undefined : byCue[id].find(candidate => candidate.name === choices[id].candidate)
 
-/** What a run plays for a cue: the marked candidate, else the placeholder (also for „keins passt“). */
+/** What a run plays for a cue: the marked candidate, else the shipped file (also for „keins passt“). */
 export const testCandidateOf = (byCue: Record<CueId, Candidate[]>, choices: Choices, id: CueId): Candidate => markedOf(byCue, choices, id) ?? byCue[id][0]!
 
 export interface ChoiceReport {

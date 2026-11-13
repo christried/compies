@@ -1,0 +1,70 @@
+{
+  "cues": {
+    "wheel-windup": {
+      "candidate": "holz-ratsche",
+      "source": "scripts/make-cue-candidates.mjs, Rezept holz-ratsche",
+      "author": null,
+      "licence": "generated"
+    },
+    "wheel-tick": {
+      "candidate": "plastik-klapper",
+      "source": "scripts/make-cue-candidates.mjs, Rezept plastik-klapper",
+      "author": null,
+      "licence": "generated"
+    },
+    "wheel-stop": {
+      "candidate": "holz-dur",
+      "source": "scripts/make-cue-candidates.mjs, Rezept holz-dur",
+      "author": null,
+      "licence": "generated"
+    },
+    "wheel-morph": {
+      "candidate": "chip-scramble",
+      "source": "scripts/make-cue-candidates.mjs, Rezept chip-scramble",
+      "author": null,
+      "licence": "generated"
+    },
+    "wheel-slice-out": {
+      "candidate": "schwupp-gleiter",
+      "source": "scripts/make-cue-candidates.mjs, Rezept schwupp-gleiter",
+      "author": null,
+      "licence": "generated"
+    },
+    "veto-open": {
+      "candidate": "rollladen",
+      "source": "scripts/make-cue-candidates.mjs, Rezept rollladen",
+      "author": null,
+      "licence": "generated"
+    },
+    "veto-clock": {
+      "candidate": "uhr-tick",
+      "source": "scripts/make-cue-candidates.mjs, Rezept uhr-tick",
+      "author": null,
+      "licence": "generated"
+    },
+    "veto-clip-close": {
+      "candidate": "roehren-aus",
+      "source": "scripts/make-cue-candidates.mjs, Rezept roehren-aus",
+      "author": null,
+      "licence": "generated"
+    },
+    "veto-seal": {
+      "candidate": "stempel-dumpf",
+      "source": "scripts/make-cue-candidates.mjs, Rezept stempel-dumpf",
+      "author": null,
+      "licence": "generated"
+    },
+    "veto-drumroll": {
+      "candidate": "snare-wirbel",
+      "source": "scripts/make-cue-candidates.mjs, Rezept snare-wirbel",
+      "author": null,
+      "licence": "generated"
+    },
+    "veto-reveal": {
+      "candidate": "becken-spielzeug",
+      "source": "scripts/make-cue-candidates.mjs, Rezept becken-spielzeug",
+      "author": null,
+      "licence": "generated"
+    }
+  }
+}

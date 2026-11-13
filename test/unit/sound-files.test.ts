@@ -1,11 +1,12 @@
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
+import { CUE_CREDITS_URL, parseCredits } from '../../app/utils/sound-credits'
 import { CUE_FILE_EXTENSION, CUE_FILE_FOLDER, CUE_IDS, cueFileUrl, type CueId } from '../../app/utils/sound-cues'
 
-// The cue files of 0.13.3 (#531): placeholder beeps of the lengths `compibert-sound.md` lists, until the real sounds (#535, #536). The
-// hub-pages criterion of the ticket („the files are not requested on the hub pages“) is pinned structurally: only `cueFileUrl` names the
-// folder, and only the Event page mounts the player.
+// The cue files of 0.13.3 (#531, #536): the sounds the app ships, each at most the length `compibert-sound.md` lists, and the credits file
+// that says where each is from. The hub-pages criterion of the ticket („the files are not requested on the hub pages“) is pinned
+// structurally: only `cueFileUrl` names the folder, and only the Event page mounts the player.
 
 const root = resolve(import.meta.dirname, '../..')
 /** The length column of `compibert-sound.md`, in ms. */
@@ -32,7 +33,8 @@ describe('the cue files', () => {
     }
   })
 
-  it.each(CUE_IDS)('%s is a 16-bit mono PCM WAV at 44.1 kHz of its length (±5 ms)', (id) => {
+  // At most the doc's length (+5 ms) and at least half of it: a candidate may be a little shorter than the doc says (a 24 ms tick, #536).
+  it.each(CUE_IDS)('%s is a 16-bit mono PCM WAV at 44.1 kHz of at most its length (+5 ms) and at least half of it', (id) => {
     expect(existsSync(fileOf(id))).toBe(true)
     const bytes = readFileSync(fileOf(id))
 
@@ -46,7 +48,9 @@ describe('the cue files', () => {
     expect(bytes.toString('ascii', 36, 40)).toBe('data')
     const samples = bytes.readUInt32LE(40) / 2
     expect(bytes.length).toBe(44 + samples * 2)
-    expect(Math.abs((samples / 44_100) * 1000 - LENGTH_MS[id])).toBeLessThanOrEqual(5)
+    const ms = (samples / 44_100) * 1000
+    expect(ms).toBeLessThanOrEqual(LENGTH_MS[id] + 5)
+    expect(ms).toBeGreaterThanOrEqual(LENGTH_MS[id] / 2)
   })
 
   it('peak at about -1 dBFS, so the player\'s gain alone sets the relative volume', () => {
@@ -57,6 +61,37 @@ describe('the cue files', () => {
       expect(peak / 32_768, id).toBeGreaterThan(0.85)
       expect(peak / 32_768, id).toBeLessThan(0.92)
     }
+  })
+})
+
+describe('the credits file', () => {
+  const folder = join(root, 'public', CUE_FILE_FOLDER)
+  const manifest = JSON.parse(readFileSync(join(root, 'sound-candidates/manifest.json'), 'utf8')) as {
+    cues: Record<string, { name: string, file: string, source: string, author: string | null, licence: string }[]>
+  }
+  const creditsFile = join(root, 'public', CUE_CREDITS_URL)
+  // A missing file is a problem line, not a crash of the whole test file.
+  const { credits, problems } = parseCredits(existsSync(creditsFile) ? JSON.parse(readFileSync(creditsFile, 'utf8')) : null)
+
+  it('sits beside exactly the eleven cue files', () => {
+    expect(readdirSync(folder).sort()).toEqual([...CUE_IDS.map(id => `${id}.${CUE_FILE_EXTENSION}`), 'credits.json'].sort())
+  })
+
+  it('has a valid entry for every cue id, and no licence but CC0 or generated', () => {
+    expect(problems).toEqual([])
+    expect(Object.keys(credits)).toEqual([...CUE_IDS])
+    for (const id of CUE_IDS) expect(['CC0', 'generated'], id).toContain(credits[id]!.licence)
+  })
+
+  // A candidate that left the manifest (#593 removes the unchosen ones) or is no .wav (it has to be converted, so the file is no byte copy)
+  // cannot be compared: those two checks are skipped for it, and the entry alone stands.
+  it.each(CUE_IDS)('%s ships the bytes of its credited candidate, with the source, author and licence of its manifest entry', (id) => {
+    const credit = credits[id]!
+    const candidate = manifest.cues[id]?.find(entry => entry.name === credit.candidate)
+    if (!candidate || !candidate.file.endsWith('.wav') || !existsSync(join(root, 'sound-candidates', candidate.file))) return
+
+    expect(readFileSync(fileOf(id)).equals(readFileSync(join(root, 'sound-candidates', candidate.file))), `${id}: ${credit.candidate}`).toBe(true)
+    expect({ source: credit.source, author: credit.author, licence: credit.licence }).toEqual({ source: candidate.source, author: candidate.author ?? null, licence: candidate.licence })
   })
 })
 

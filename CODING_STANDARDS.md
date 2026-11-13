@@ -26,6 +26,7 @@ Each concern below has one home. New code calls it; a second copy is a finding e
 | A stage piece: its block and place per page state, who sees it, the moment it rises at, the instants the page reads again at | `app/utils/event-stage.ts` (#415: one row per piece; a new piece is a row there and its component) |
 | Which sound cue is due at which server time (cue ids, relative volumes, the wheel's and the Veto window's plans, the ticks' cap) | `app/utils/sound-cues.ts` (#530, #532): the cue player (#531) schedules what it returns and never works a time out itself |
 | Playing a sound cue (the one audio context, scheduling on the audio clock, the Ton gate, loading the files) | `app/utils/cue-player.ts` and `useCuePlayer` (#531); the file folder and extension are in `sound-cues.ts` (`cueFileUrl`) |
+| Which file each cue ships and where it is from (credits file, shape, parser, the copy script) | `public/sounds/cues/credits.json`, `app/utils/sound-credits.ts`, `scripts/ship-cue-sound.mjs` (#536) |
 | The listening page for the cue sounds (development only, #534: page, candidates, choices) | `app/dev/` (`listening-page.vue`, `listening-model.ts`), `server/dev/cue-candidates.ts`, `sound-candidates/`; registered only by the `listening-page` module in `nuxt.config.ts` |
 | Letting sound through (the page-wide first-gesture listener, the „Ton aktivieren“ notice's condition, the page's gesture flag the Clip reads) | `useSoundUnlock` (#533); it calls the cue player's `resume` and never builds an audio context itself |
 
