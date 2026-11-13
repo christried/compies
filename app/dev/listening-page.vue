@@ -254,7 +254,10 @@ const FIELD = 'rounded border border-line bg-surface px-1.5 py-0.5 text-ink'
 </script>
 
 <template>
-  <main class="mx-auto flex w-full max-w-[960px] flex-col gap-4 bg-paper-2 p-4 text-[14px] text-ink" data-testid="compies-listening-page">
+  <main
+    class="mx-auto flex w-full max-w-[960px] flex-col gap-4 bg-paper-2 p-4 text-[14px] text-ink"
+    data-testid="compies-listening-page"
+  >
     <h1 class="m-0 text-[22px] font-extrabold">
       Hörsitzung: die elf Töne
     </h1>
@@ -262,82 +265,166 @@ const FIELD = 'rounded border border-line bg-surface px-1.5 py-0.5 text-ink'
       Nur auf dem Entwicklungsserver. Kandidaten: <code>sound-candidates/</code> (manifest.json). Einen Kandidaten pro Ton markieren; der Kasten unten ist, was zurückgelesen wird.
     </p>
 
-    <ul v-if="problems.length > 0" class="m-0 flex flex-col gap-1 pl-5 font-semibold text-error" data-testid="listening-problems">
-      <li v-for="problem in problems" :key="problem">
+    <ul
+      v-if="problems.length > 0"
+      class="m-0 flex flex-col gap-1 pl-5 font-semibold text-error"
+      data-testid="listening-problems"
+    >
+      <li
+        v-for="problem in problems"
+        :key="problem"
+      >
         {{ problem }}
       </li>
     </ul>
 
-    <section class="flex flex-col gap-3 rounded border border-line bg-surface p-3" aria-label="Steuerung">
+    <section
+      class="flex flex-col gap-3 rounded border border-line bg-surface p-3"
+      aria-label="Steuerung"
+    >
       <h2 class="m-0 text-[16px] font-extrabold">
         Test im Moment
       </h2>
       <div class="flex flex-wrap items-center gap-x-4 gap-y-2">
         <label>Drehung
-          <select v-model="controls.spin" :class="FIELD">
+          <select
+            v-model="controls.spin"
+            :class="FIELD"
+          >
             <option value="none">keine</option>
             <option value="6">6 s</option>
             <option value="10">10 s</option>
           </select>
         </label>
-        <label><input v-model="controls.hidden" type="checkbox"> Hidden wheel</label>
-        <label><input v-model="controls.reduced" type="checkbox"> Reduzierte Bewegung</label>
+        <label><input
+          v-model="controls.hidden"
+          type="checkbox"
+        > Hidden wheel</label>
+        <label><input
+          v-model="controls.reduced"
+          type="checkbox"
+        > Reduzierte Bewegung</label>
         <label>Fenster
-          <select v-model="controls.window" :class="FIELD">
+          <select
+            v-model="controls.window"
+            :class="FIELD"
+          >
             <option value="none">keins</option>
             <option value="40">40 s</option>
             <option value="150">150 s</option>
           </select>
         </label>
         <label>Start
-          <select v-model="controls.start" :class="FIELD">
+          <select
+            v-model="controls.start"
+            :class="FIELD"
+          >
             <option value="beginning">von Anfang</option>
             <option value="last12">letzte 12 s</option>
           </select>
         </label>
-        <label><input v-model="controls.clip" type="checkbox"> Clip dabei</label>
+        <label><input
+          v-model="controls.clip"
+          type="checkbox"
+        > Clip dabei</label>
         <label>Vetos beim Aufdecken
-          <select v-model.number="controls.vetoes" :class="FIELD">
+          <select
+            v-model.number="controls.vetoes"
+            :class="FIELD"
+          >
             <option :value="0">0</option>
             <option :value="1">1</option>
             <option :value="2">2</option>
           </select>
         </label>
         <label>Tick-Abstand (ms)
-          <input v-model.number="controls.tickGapMs" type="number" min="1" step="5" :class="[FIELD, 'w-20']">
+          <input
+            v-model.number="controls.tickGapMs"
+            type="number"
+            min="1"
+            step="5"
+            :class="[FIELD, 'w-20']"
+          >
         </label>
-        <button type="button" :class="BUTTON" @click="controls.tickGapMs = TICK_MIN_GAP_MS">
+        <button
+          type="button"
+          :class="BUTTON"
+          @click="controls.tickGapMs = TICK_MIN_GAP_MS"
+        >
           Zurück auf {{ TICK_MIN_GAP_MS }}
         </button>
       </div>
       <div class="flex flex-wrap items-center gap-2">
-        <button type="button" :class="BUTTON" @click="startRun('spin')">
+        <button
+          type="button"
+          :class="BUTTON"
+          @click="startRun('spin')"
+        >
           Test spin
         </button>
-        <button type="button" :class="BUTTON" @click="startRun('window')">
+        <button
+          type="button"
+          :class="BUTTON"
+          @click="startRun('window')"
+        >
           Test window
         </button>
-        <button type="button" :class="BUTTON" @click="startRun('both')">
+        <button
+          type="button"
+          :class="BUTTON"
+          @click="startRun('both')"
+        >
           Spin + window
         </button>
-        <button type="button" :class="BUTTON" @click="stopRun()">
+        <button
+          type="button"
+          :class="BUTTON"
+          @click="stopRun()"
+        >
           Stop
         </button>
-        <button type="button" :class="BUTTON" @click="loadManifest()">
+        <button
+          type="button"
+          :class="BUTTON"
+          @click="loadManifest()"
+        >
           Neu laden
         </button>
-        <span v-if="run" class="text-ink-2" data-testid="listening-run">
+        <span
+          v-if="run"
+          class="text-ink-2"
+          data-testid="listening-run"
+        >
           Plan: {{ run.plan.length }} Töne, {{ run.tickCount }} Ticks bei {{ controls.tickGapMs }} ms
         </span>
       </div>
-      <p v-if="controls.start === 'last12'" class="m-0 text-ink-2">
+      <p
+        v-if="controls.start === 'last12'"
+        class="m-0 text-ink-2"
+      >
         „Letzte 12 s“ gilt nur für Test window; Spin + window startet von Anfang.
       </p>
     </section>
 
-    <div v-if="run" class="flex flex-wrap items-start gap-4">
-      <LuckyWheel v-if="run.spin && liveWheel" :key="run.drawId" :wheel="liveWheel" :hidden="liveWheel.slices === null" :is-host="false" :server-now="serverNow" />
-      <VetoWindow v-if="run.draw && liveWheel" :key="run.drawId" :wheel="liveWheel" :teams="[]" :server-now="serverNow" />
+    <div
+      v-if="run"
+      class="flex flex-wrap items-start gap-4"
+    >
+      <LuckyWheel
+        v-if="run.spin && liveWheel"
+        :key="run.drawId"
+        :wheel="liveWheel"
+        :hidden="liveWheel.slices === null"
+        :is-host="false"
+        :server-now="serverNow"
+      />
+      <VetoWindow
+        v-if="run.draw && liveWheel"
+        :key="run.drawId"
+        :wheel="liveWheel"
+        :teams="[]"
+        :server-now="serverNow"
+      />
     </div>
 
     <section
@@ -353,63 +440,124 @@ const FIELD = 'rounded border border-line bg-surface px-1.5 py-0.5 text-ink'
         {{ CUE_BRIEF[id].character }} · {{ CUE_BRIEF[id].lengthMs }} ms{{ CUE_BRIEF[id].loop ? ' (Schleife)' : '' }} · Vol {{ CUE_VOLUME[id] }}
       </p>
       <div class="flex flex-wrap items-center gap-2">
-        <button type="button" :class="BUTTON" @click="playMoment(id)">
+        <button
+          type="button"
+          :class="BUTTON"
+          @click="playMoment(id)"
+        >
           In ihrem Moment
         </button>
         <span class="text-ink-2">
           {{ MOMENT_OF[id] === 'spin' ? 'Test spin' : MOMENT_OF[id] === 'window' ? 'Test window' : 'Ankunft der Antwort' }}
         </span>
         <template v-if="id === 'veto-seal'">
-          <button type="button" :class="BUTTON" @click="arrive('own')">
+          <button
+            type="button"
+            :class="BUTTON"
+            @click="arrive('own')"
+          >
             Eigenes Veto
           </button>
-          <button type="button" :class="BUTTON" @click="arrive('reveal-1')">
+          <button
+            type="button"
+            :class="BUTTON"
+            @click="arrive('reveal-1')"
+          >
             Aufdecken: 1 Veto
           </button>
-          <button type="button" :class="BUTTON" @click="arrive('reveal-2')">
+          <button
+            type="button"
+            :class="BUTTON"
+            @click="arrive('reveal-2')"
+          >
             Aufdecken: 2 Vetos
           </button>
         </template>
-        <button v-if="id === 'veto-open'" type="button" :class="BUTTON" @click="arrive('set')">
+        <button
+          v-if="id === 'veto-open'"
+          type="button"
+          :class="BUTTON"
+          @click="arrive('set')"
+        >
           Gesetztes Spiel
         </button>
       </div>
       <ul class="m-0 flex list-none flex-col gap-1 p-0">
-        <li v-for="candidate in byCue[id]" :key="candidate.name" class="flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-line-soft pt-1">
-          <button type="button" :class="BUTTON" @click="playAlone(id, candidate)">
+        <li
+          v-for="candidate in byCue[id]"
+          :key="candidate.name"
+          class="flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-line-soft pt-1"
+        >
+          <button
+            type="button"
+            :class="BUTTON"
+            @click="playAlone(id, candidate)"
+          >
             Abspielen
           </button>
           <strong>{{ candidate.name }}</strong>
           <span>
-            <a v-if="candidate.source.startsWith('http')" :href="candidate.source" target="_blank" rel="noopener" class="underline">{{ candidate.source }}</a>
+            <a
+              v-if="candidate.source.startsWith('http')"
+              :href="candidate.source"
+              target="_blank"
+              rel="noopener"
+              class="underline"
+            >{{ candidate.source }}</a>
             <template v-else>{{ candidate.source }}</template>
           </span>
           <span>{{ candidate.author ?? 'kein Autor' }}</span>
           <span>{{ candidate.licence }}</span>
-          <span v-if="candidate.note" class="text-ink-2">{{ candidate.note }}</span>
-          <span v-if="failed[`${id}/${candidate.name}`]" class="font-semibold text-error">Datei lädt nicht</span>
+          <span
+            v-if="candidate.note"
+            class="text-ink-2"
+          >{{ candidate.note }}</span>
+          <span
+            v-if="failed[`${id}/${candidate.name}`]"
+            class="font-semibold text-error"
+          >Datei lädt nicht</span>
           <label class="ml-auto">
-            <input type="radio" :name="`choice-${id}`" :checked="isMarked(id, candidate)" @change="choose(id, candidate.name)"> wählen
+            <input
+              type="radio"
+              :name="`choice-${id}`"
+              :checked="isMarked(id, candidate)"
+              @change="choose(id, candidate.name)"
+            > wählen
           </label>
         </li>
         <li class="flex justify-end border-t border-line-soft pt-1">
           <label>
-            <input type="radio" :name="`choice-${id}`" :checked="choices[id].noneFits" @change="choose(id, null)"> keins passt
+            <input
+              type="radio"
+              :name="`choice-${id}`"
+              :checked="choices[id].noneFits"
+              @change="choose(id, null)"
+            > keins passt
           </label>
         </li>
       </ul>
     </section>
 
-    <section class="flex flex-col gap-2 rounded border border-line bg-surface p-3" aria-label="Auswahl">
+    <section
+      class="flex flex-col gap-2 rounded border border-line bg-surface p-3"
+      aria-label="Auswahl"
+    >
       <h2 class="m-0 text-[16px] font-extrabold">
         Auswahl
       </h2>
       <div>
-        <button type="button" :class="BUTTON" @click="copyReport()">
+        <button
+          type="button"
+          :class="BUTTON"
+          @click="copyReport()"
+        >
           Kopieren
         </button>
       </div>
-      <pre class="m-0 overflow-x-auto text-[12px]" data-testid="listening-choices">{{ JSON.stringify(report, null, 2) }}</pre>
+      <pre
+        class="m-0 overflow-x-auto text-[12px]"
+        data-testid="listening-choices"
+      >{{ JSON.stringify(report, null, 2) }}</pre>
     </section>
 
     <details class="rounded border border-line bg-surface p-3">

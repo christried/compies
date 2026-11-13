@@ -17,7 +17,7 @@ const NOW = Date.UTC(2090, 10, 7, 20, 0, 0)
 const config = (fields: Partial<RunConfig> = {}): RunConfig => ({
   spinMs: 6000, hidden: false, reduced: false, windowMs: 0, start: 'beginning', clip: true, vetoes: 0, tickGapMs: TICK_MIN_GAP_MS, ...fields,
 })
-const ids = (plan: readonly { id: string }[], id: string) => plan.filter(cue => cue.id === id)
+const ids = (plan: readonly { id: string, at: number }[], id: string) => plan.filter(cue => cue.id === id)
 
 describe('CUE_BRIEF', () => {
   it('is the character and the length of compibert-sound.md, for every cue', () => {
