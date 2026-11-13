@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { createCuePlayer } from '../../app/utils/cue-player'
+import { createCuePlayer, CUE_MOVE_MS } from '../../app/utils/cue-player'
 import type { Cue, CueId } from '../../app/utils/sound-cues'
 import { bytesOf, FakeAudioContext, type FakeSource } from '../fake-audio'
 
@@ -22,7 +22,11 @@ function setup(options: { enabled?: boolean, loadFile?: (id: CueId) => Promise<A
     now += ms
     context.advance(ms)
   }
-  return { context, player, loadFile, onChange, advance }
+  /** The server clock's offset changes while the audio clock stands (#594). */
+  const shift = (ms: number) => {
+    now += ms
+  }
+  return { context, player, loadFile, onChange, advance, shift }
 }
 
 /** Lets the loads and decodes the player started finish. */
@@ -372,6 +376,186 @@ describe('the files', () => {
 
     expect(context.started()).toEqual([])
     expect(outcomes(player)).toEqual(['wheel-stop@900:skipped'])
+  })
+})
+
+describe('a clock that moves (#594)', () => {
+  it('moves a pending cue when the server clock is corrected: a phone 3 s ahead hears the stop at 15, not 12', async () => {
+    const { context, player, shift } = setup()
+    shift(+3000)
+    player.setPlan([cue('wheel-stop', 5000)])
+    await settle()
+    expect(when(context.started()[0]!)).toBe(12)
+
+    shift(-3000)
+    player.refresh()
+
+    const [first, second, ...rest] = context.started()
+    expect(rest).toEqual([])
+    expect(first!.stopCalls).toBe(1)
+    expect(when(second!)).toBe(15)
+    expect(second!.stopCalls).toBe(0)
+    expect(outcomes(player)).toEqual(['wheel-stop@5000:scheduled'])
+    expect(player.log[0]).toMatchObject({ when: 15, moved: 1 })
+  })
+
+  it('moves it on a refetch of the same plan too, with no refresh', async () => {
+    const { context, player, shift } = setup()
+    const plan = [cue('wheel-stop', 5000)]
+    shift(+3000)
+    player.setPlan(plan)
+    await settle()
+
+    shift(-3000)
+    player.setPlan(plan.map(entry => ({ ...entry })))
+
+    expect(context.started().map(source => [source.stopCalls, when(source)])).toEqual([[1, 12], [0, 15]])
+    expect(player.log).toHaveLength(1)
+  })
+
+  it('leaves a cue alone whose instant moved by less than the threshold', async () => {
+    const { context, player, shift } = setup()
+    player.setPlan([cue('wheel-stop', 5000)])
+    await settle()
+
+    shift(+20)
+    player.refresh()
+
+    expect(context.started().map(source => source.stopCalls)).toEqual([0])
+    expect(player.log[0]!.moved).toBeUndefined()
+  })
+
+  it('reads the threshold in whole milliseconds: 25 stays, 26 moves', async () => {
+    const { context, player, shift } = setup()
+    player.setPlan([cue('wheel-stop', 5000)])
+    await settle()
+
+    shift(+CUE_MOVE_MS)
+    player.refresh()
+    expect(context.started()).toHaveLength(1)
+
+    shift(+1)
+    player.refresh()
+    expect(context.started()).toHaveLength(2)
+  })
+
+  it('does not touch a cue that has sounded or started late, only the pending one', async () => {
+    const { context, player, advance, shift } = setup()
+    player.setPlan([cue('wheel-tick', -100), cue('wheel-stop', 500), cue('wheel-slice-out', 3000)])
+    await settle()
+    advance(600)
+
+    shift(+300)
+    player.refresh()
+
+    const [tick, stop, out, outAgain, ...rest] = context.started()
+    expect(rest).toEqual([])
+    expect([tick!.stopCalls, stop!.stopCalls, out!.stopCalls]).toEqual([0, 0, 1])
+    expect(when(outAgain!)).toBe(12.7)
+  })
+
+  it('plays a moved cue that now falls 100 ms past at once, as late', async () => {
+    const { context, player, shift } = setup()
+    player.setPlan([cue('wheel-stop', 1000)])
+    await settle()
+
+    shift(+1100)
+    player.refresh()
+
+    expect(context.started().map(source => [source.stopCalls, when(source)])).toEqual([[1, 11], [0, CLOCK]])
+    expect(outcomes(player)).toEqual(['wheel-stop@1000:late'])
+  })
+
+  it('skips a moved cue that now falls 151 ms past: the source is stopped and no new one starts', async () => {
+    const { context, player, shift } = setup()
+    player.setPlan([cue('wheel-stop', 1000)])
+    await settle()
+
+    shift(+1151)
+    player.refresh()
+
+    expect(context.started().map(source => source.stopCalls)).toEqual([1])
+    expect(outcomes(player)).toEqual(['wheel-stop@1000:skipped'])
+  })
+
+  it('brings a cue back that a clock too far ahead made look late: a phone 3 s ahead sounds the cue at 1000 once the clock is right', async () => {
+    const { context, player, shift } = setup()
+    shift(+3000)
+    player.setPlan([cue('wheel-stop', 1000)])
+    await settle()
+    expect(outcomes(player)).toEqual(['wheel-stop@1000:skipped'])
+
+    shift(-3000)
+    player.refresh()
+
+    expect(context.started().map(source => [source.stopCalls, when(source)])).toEqual([[0, 11]])
+    expect(outcomes(player)).toEqual(['wheel-stop@1000:scheduled'])
+    expect(player.log[0]!.moved).toBe(1)
+  })
+
+  it('leaves a late join silent: its skipped cue stays skipped on a refresh, and after a shift that leaves it past', async () => {
+    const { context, player, shift } = setup()
+    player.setPlan([cue('wheel-stop', -400)])
+    await settle()
+
+    player.refresh()
+    shift(-200) // 200 ms past is still more than 150
+    player.refresh()
+
+    expect(context.started()).toEqual([])
+    expect(outcomes(player)).toEqual(['wheel-stop@-400:skipped'])
+  })
+
+  it('does not bring back a cue whose file is missing when the clock moves', async () => {
+    const { context, player, shift } = setup({ loadFile: () => Promise.reject(new Error('404')) })
+    player.setPlan([cue('wheel-stop', 1000)])
+    await settle()
+
+    shift(+500)
+    player.refresh()
+
+    expect(context.started()).toEqual([])
+    expect(outcomes(player)).toEqual(['wheel-stop@1000:skipped'])
+  })
+
+  it('keeps one log line for a cue however often it moves, and counts the moves', async () => {
+    const { context, player, shift } = setup()
+    player.setPlan([cue('wheel-stop', 5000)])
+    await settle()
+
+    shift(+500)
+    player.refresh()
+    shift(-300)
+    player.refresh()
+
+    expect(context.started()).toHaveLength(3)
+    expect(outcomes(player)).toEqual(['wheel-stop@5000:scheduled'])
+    expect(player.log[0]!.moved).toBe(2)
+  })
+
+  it('does nothing with Ton off, on a context that does not run, or after dispose', async () => {
+    const off = setup({ enabled: false })
+    off.player.setPlan([cue('wheel-stop', 5000)])
+    off.shift(+500)
+    off.player.refresh()
+    expect(off.context.started()).toEqual([])
+
+    const held = setup()
+    held.player.setPlan([cue('wheel-stop', 5000)])
+    await settle()
+    held.context.state = 'suspended'
+    held.shift(+500)
+    held.player.refresh()
+    expect(held.context.started().map(source => source.stopCalls)).toEqual([0])
+
+    const gone = setup()
+    gone.player.setPlan([cue('wheel-stop', 5000)])
+    await settle()
+    gone.player.dispose()
+    gone.shift(+500)
+    gone.player.refresh()
+    expect(gone.context.started().map(source => source.stopCalls)).toEqual([1])
+    expect(gone.context.started()).toHaveLength(1)
   })
 })
 

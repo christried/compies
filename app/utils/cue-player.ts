@@ -33,6 +33,8 @@ export interface CueLogEntry {
   /** `performance.now()` when it was handled (0 where there is none). */
   perf: number
   outcome: 'scheduled' | 'late' | 'skipped' | 'cancelled'
+  /** How many times the cue was moved after it was scheduled (the clock's offset changed, #594); absent when it never was. */
+  moved?: number
 }
 
 export interface CuePlayer {
@@ -49,6 +51,8 @@ export interface CuePlayer {
    * logged `scheduled`.
    */
   playNow: (id: CueId, delayMs?: number) => void
+  /** Looks at what is pending again against the clocks as they are now: moves what moved (#594). */
+  refresh: () => void
   /** Asks the context to run (it needs a gesture) and reconciles. It never rejects. */
   resume: () => Promise<void>
   /** True unless the context runs. */
@@ -62,11 +66,17 @@ export interface CuePlayer {
 /** A cue this far past its time still plays, at once; a later one is skipped (04-motion § Synchronised moments). */
 const CUE_LATE_MS = 150
 const LOG_LIMIT = 500
+/** A pending cue whose instant moved by more than this (ms) is scheduled again: the clock's offset changed after it was scheduled (#594). */
+export const CUE_MOVE_MS = 25
 
 type BufferSlot = { state: 'loading' } | { state: 'failed' } | { state: 'ready', buffer: AudioBuffer }
 
-/** A cue the player has handled: the source it started (none for a skipped one) and its line in the log. */
-interface Entry { cue: Cue, source: AudioBufferSourceNode | null, line: CueLogEntry }
+/**
+ * A cue the player has handled: the source it started (none for a skipped one), the audio-clock time it was told to start at, its buffer (to
+ * start a new source when it moves), why it has no source (a cue skipped for lateness comes back when the clock says it is ahead, #594) and
+ * its line in the log.
+ */
+interface Entry { cue: Cue, source: AudioBufferSourceNode | null, when: number, buffer: AudioBuffer | null, skippedFor: 'late' | 'file' | null, line: CueLogEntry }
 
 const keyOf = (cue: Cue) => `${cue.id}@${cue.at}`
 
@@ -141,11 +151,62 @@ export function createCuePlayer(options: CuePlayerOptions): CuePlayer {
     const lead = cue.at - now
     const when = context.currentTime + Math.max(lead, 0) / 1000
     const source = start(cue.id, buffer, when)
-    entries.set(keyOf(cue), { cue, source, line: record(cue, lead < 0 ? 'late' : 'scheduled', when) })
+    entries.set(keyOf(cue), { cue, source, when, buffer, skippedFor: null, line: record(cue, lead < 0 ? 'late' : 'scheduled', when) })
   }
 
-  function skip(cue: Cue) {
-    entries.set(keyOf(cue), { cue, source: null, line: record(cue, 'skipped', context.currentTime) })
+  function skip(cue: Cue, reason: 'late' | 'file') {
+    entries.set(keyOf(cue), { cue, source: null, when: context.currentTime, buffer: null, skippedFor: reason, line: record(cue, 'skipped', context.currentTime) })
+  }
+
+  /**
+   * Puts a held cue on the audio clock again as the server clock reads now: a new source, or none when it is more than `CUE_LATE_MS` past. Its
+   * line is rewritten in place (the three clock fields together, so `perf + (when - currentTime) * 1000` stays the cue's instant) and counts the move.
+   */
+  function replace(entry: Entry, buffer: AudioBuffer, now: number) {
+    const lead = entry.cue.at - now
+    const currentTime = context.currentTime
+    stop(entry)
+    if (lead < -CUE_LATE_MS) {
+      entry.source = null
+      entry.buffer = null
+      entry.skippedFor = 'late'
+      entry.when = currentTime
+    }
+    else {
+      entry.when = currentTime + Math.max(lead, 0) / 1000
+      entry.source = start(entry.cue.id, buffer, entry.when)
+      entry.buffer = buffer
+      entry.skippedFor = null
+    }
+    entry.line.when = entry.when
+    entry.line.currentTime = currentTime
+    entry.line.perf = globalThis.performance?.now() ?? 0
+    entry.line.outcome = entry.source === null ? 'skipped' : lead < 0 ? 'late' : 'scheduled'
+    entry.line.moved = (entry.line.moved ?? 0) + 1
+  }
+
+  /**
+   * Looks at every cue the player holds against the clocks as they are now (#594). The server clock's offset changes after a cue was scheduled
+   * (the first `clock.pong`, a later round), and a started source cannot be moved: a pending one (it has a source and its `when` is ahead of
+   * the audio clock) whose instant moved by more than `CUE_MOVE_MS` is stopped and started again. One that sounded is left alone, so no cue
+   * sounds twice. A cue skipped for lateness comes back when the clock now says it is ahead: the wrong clock that skipped it was the one that
+   * scheduled the far cues at the wrong time. No gap rule between ticks at the move: every pending cue moves by the same delta, so the gaps
+   * among them hold, and only the boundary between a tick that sounded and the first moved one can shrink, once, in a rare re-sync.
+   */
+  function look(now: number) {
+    const currentTime = context.currentTime
+    for (const entry of entries.values()) {
+      const lead = entry.cue.at - now
+      if (entry.source === null) {
+        if (entry.skippedFor !== 'late' || lead < -CUE_LATE_MS) continue
+        const slot = buffers.get(entry.cue.id)
+        if (slot?.state === 'ready') replace(entry, slot.buffer, now)
+        continue
+      }
+      if (!(entry.when > currentTime) || entry.buffer === null) continue
+      const target = currentTime + Math.max(lead, 0) / 1000
+      if (Math.round(Math.abs(target - entry.when) * 1000) > CUE_MOVE_MS) replace(entry, entry.buffer, now)
+    }
   }
 
   /**
@@ -163,6 +224,7 @@ export function createCuePlayer(options: CuePlayerOptions): CuePlayer {
     }
     // A context that does not run holds sound back, and a source started on it fires when its clock resumes, long after the cue's moment.
     if (!running()) return
+    look(now)
     for (const cue of plan) {
       if (entries.has(keyOf(cue))) continue
       const slot = buffers.get(cue.id)
@@ -171,7 +233,8 @@ export function createCuePlayer(options: CuePlayerOptions): CuePlayer {
         continue
       }
       if (slot.state === 'loading') continue
-      if (slot.state === 'failed' || cue.at - now < -CUE_LATE_MS) skip(cue)
+      if (slot.state === 'failed') skip(cue, 'file')
+      else if (cue.at - now < -CUE_LATE_MS) skip(cue, 'late')
       else schedule(cue, slot.buffer, now)
     }
   }
@@ -202,6 +265,9 @@ export function createCuePlayer(options: CuePlayerOptions): CuePlayer {
       }
       const now = serverNow()
       for (const [key, entry] of entries) cancel(key, entry, now)
+    },
+    refresh() {
+      if (!disposed) reconcile()
     },
     setPlan(cues) {
       if (disposed) return
