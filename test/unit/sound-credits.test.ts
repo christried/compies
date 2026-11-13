@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { CUE_CREDITS_URL, parseCredits } from '../../app/utils/sound-credits'
+import { CUE_CREDITS_URL, isText, parseCredits } from '../../app/utils/sound-credits'
 import { CUE_IDS } from '../../app/utils/sound-cues'
 
 // The shape of the credits file beside the shipped cue sounds (#536): what the parser accepts, and the German problem line for each way an
@@ -55,5 +55,10 @@ describe('parseCredits', () => {
 
   it('is served from the cue folder', () => {
     expect(CUE_CREDITS_URL).toBe('/sounds/cues/credits.json')
+  })
+
+  it('takes a text guard that rejects what is no text (#594)', () => {
+    expect(isText('x')).toBe(true)
+    for (const value of ['', '  ', null, 3]) expect(isText(value)).toBe(false)
   })
 })

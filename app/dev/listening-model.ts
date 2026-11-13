@@ -2,10 +2,11 @@ import {
   CUE_IDS, TICK_MIN_GAP_MS, cueFileUrl, thinTicks, vetoArrivalCues, vetoCuePlan, wheelCuePlan,
   type ArrivalCue, type Cue, type CueId, type VetoArrivalState,
 } from '~/utils/sound-cues'
-import { parseCredits, type CueCredit, type Licence } from '~/utils/sound-credits'
+import { isText, parseCredits, type CueCredit, type Licence } from '~/utils/sound-credits'
 import { pinCrossings } from '~/utils/wheel-pins'
 import type { WheelTiming } from '~/utils/wheel'
 import type { RoundGame } from '~~/shared/game'
+import { isRecord } from '~~/shared/record'
 import type { ClipView, SpinView, VetoCastView, VetoDrawView, WheelView } from '~~/shared/stage'
 
 // The logic of the listening page for the cue sounds (#534, the session of #535): what each cue is meant to sound like, the candidates, a
@@ -60,8 +61,6 @@ export interface Candidate {
 export const SHIPPED_NAME = 'ausgeliefert'
 
 const EXTENSIONS = ['wav', 'ogg', 'mp3']
-const isText = (value: unknown): value is string => typeof value === 'string' && value.trim() !== ''
-const isObject = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null && !Array.isArray(value)
 
 /** The row of the file the app ships: its source, author and licence from the cue's credit, or an honest gap when there is none. */
 const shippedOf = (id: CueId, credit: CueCredit | undefined): Candidate => ({
@@ -78,8 +77,8 @@ const shippedOf = (id: CueId, credit: CueCredit | undefined): Candidate => ({
 export function candidatesOf(manifest: unknown, creditsFile: unknown): { byCue: Record<CueId, Candidate[]>, problems: string[] } {
   const { credits, problems } = parseCredits(creditsFile)
   const byCue = Object.fromEntries(CUE_IDS.map(id => [id, [shippedOf(id, credits[id])]])) as Record<CueId, Candidate[]>
-  const cues = isObject(manifest) ? manifest.cues : undefined
-  if (!isObject(cues)) {
+  const cues = isRecord(manifest) ? manifest.cues : undefined
+  if (!isRecord(cues)) {
     problems.push('manifest.json: "cues" fehlt oder ist kein Objekt.')
     return { byCue, problems }
   }
@@ -96,7 +95,7 @@ export function candidatesOf(manifest: unknown, creditsFile: unknown): { byCue: 
     }
     entries.forEach((entry: unknown, index) => {
       const where = `${id} #${index + 1}`
-      if (!isObject(entry) || !isText(entry.name) || !isText(entry.file) || !isText(entry.source) || !isText(entry.licence)) {
+      if (!isRecord(entry) || !isText(entry.name) || !isText(entry.file) || !isText(entry.source) || !isText(entry.licence)) {
         problems.push(`${where}: name, file, source oder licence fehlt.`)
         return
       }
