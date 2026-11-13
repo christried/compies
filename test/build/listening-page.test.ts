@@ -1,4 +1,4 @@
-import { readdirSync, readFileSync } from 'node:fs'
+import { readdirSync, readFileSync, statSync } from 'node:fs'
 import { basename, join, resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 
@@ -35,6 +35,8 @@ describe('the listening page in the production build', () => {
     const marks = ['compies-listening-page', '/_dev/cue-candidates', 'dev-listening', '/dev/ton']
     const carriers = outputFiles
       .filter(file => TEXT.test(file))
+      // A folder can end in .js too (a package's own folder under .output/server/node_modules).
+      .filter(file => statSync(join(OUTPUT, file)).isFile())
       .filter((file) => {
         const text = readFileSync(join(OUTPUT, file), 'utf8')
         return marks.some(mark => text.includes(mark))
