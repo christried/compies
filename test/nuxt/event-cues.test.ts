@@ -1,9 +1,12 @@
 import { mountSuspended, registerEndpoint } from '@nuxt/test-utils/runtime'
 import { flushPromises } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { defineComponent, h, ref } from 'vue'
+import { useCuePlayer } from '~/composables/useCuePlayer'
 import EventPage from '~/pages/e/[slug]/index.vue'
 import { reducedMotion } from '~/utils/motion'
 import { CUE_IDS, vetoCuePlan, wheelCuePlan, type CueId } from '~/utils/sound-cues'
+import type { EventView } from '~~/shared/event'
 import type { RoundGame } from '~~/shared/game'
 import type { ClipView, SpinView, VetoDrawView, VetoView, WheelView } from '~~/shared/stage'
 import { defaultSettings } from '~~/shared/settings'
@@ -67,6 +70,7 @@ beforeEach(() => {
   signInAs(kitty)
   document.body.innerHTML = ''
   FakeAudioContext.instances = []
+  FakeAudioContext.follows = true
   for (const id of CUE_IDS) requests[id] = 0
   vi.stubGlobal('AudioContext', FakeAudioContext)
 })
@@ -75,6 +79,7 @@ afterEach(() => {
   page?.unmount()
   page = undefined
   vi.unstubAllGlobals()
+  FakeAudioContext.follows = false
   localStorage.removeItem('compies-sound')
   Reflect.deleteProperty(document, 'visibilityState')
 })
@@ -252,7 +257,7 @@ describe('the Veto window on the Event page', () => {
 
       expect(seals()).toHaveLength(1)
       expect(context()!.started().at(-1)!.id).toBe('veto-seal')
-      expect(seals()[0]!.startedAt).toBe(context()!.currentTime)
+      expect(seals()[0]!.startedAt).toBeCloseTo(context()!.currentTime, 0) // the audio clock runs with real time here
       expect(seals()[0]!.stopCalls).toBe(0)
 
       served.set(read(window, 1, true), withAllowance(window))
@@ -330,7 +335,7 @@ describe('the Veto window on the Event page', () => {
       await vi.waitFor(() => expect(seals()).toHaveLength(2))
 
       const [first, second] = seals()
-      expect(first!.startedAt).toBe(context()!.currentTime)
+      expect(first!.startedAt).toBeCloseTo(context()!.currentTime, 0)
       expect(Math.round((second!.startedAt! - first!.startedAt!) * 1000)).toBe(80)
       served.set(revealed(window), withAllowance(window))
       await refreshEvent(served.slug)
@@ -392,6 +397,81 @@ describe('the Veto window on the Event page', () => {
     expect(ids().some(id => id!.startsWith('wheel-'))).toBe(false)
     expect(ids()).not.toContain('veto-open')
     expect(ids()).toContain('veto-reveal')
+  })
+})
+
+// A clock that moves after the plan was scheduled (#594): the server clock's offset changes (the first answer of a round, a re-sync) while the
+// audio clock stands, and the pending cues follow. The page has no room, so its clock is `Date.now()`, which the tests move.
+describe('a clock that moves (#594)', () => {
+  const SHIFT_MS = 1000
+
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  /** Moves the page's clock `ms` ahead of where it is now. */
+  function skewBy(ms: number) {
+    const real = Date.now.bind(Date)
+    vi.spyOn(Date, 'now').mockImplementation(() => real() + ms)
+  }
+  const showVisibility = (state: 'visible' | 'hidden') => Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => state })
+  /** Every pending cue of the first schedule is stopped and started again about `SHIFT_MS` earlier on the audio clock. */
+  function expectMoved(first: number) {
+    const sources = context()!.started()
+    expect(sources).toHaveLength(first * 2)
+    expect(sources.slice(0, first).every(source => source.stopCalls === 1)).toBe(true)
+    sources.slice(0, first).forEach((old, index) => {
+      expect(Math.abs((old.startedAt! - SHIFT_MS / 1000) - sources[first + index]!.startedAt!)).toBeLessThan(0.25)
+    })
+  }
+
+  it('moves the pending cues when the tab becomes visible with a clock that moved', async () => {
+    const spin = spinIn(8000)
+    const { slug } = serveWheel(wheelWith(spin))
+    page = await mountSuspended(EventPage, { route: `/e/${slug}` })
+    await settled(planOf(spin).length)
+
+    skewBy(SHIFT_MS)
+    showVisibility('visible')
+    document.dispatchEvent(new Event('visibilitychange'))
+
+    expectMoved(planOf(spin).length)
+  })
+
+  it('does nothing when the tab turns hidden', async () => {
+    const spin = spinIn(8000)
+    const { slug } = serveWheel(wheelWith(spin))
+    page = await mountSuspended(EventPage, { route: `/e/${slug}` })
+    await settled(planOf(spin).length)
+
+    skewBy(SHIFT_MS)
+    showVisibility('hidden')
+    document.dispatchEvent(new Event('visibilitychange'))
+
+    expect(context()!.started()).toHaveLength(planOf(spin).length)
+    expect(context()!.started().every(source => source.stopCalls === 0)).toBe(true)
+  })
+
+  it('moves the pending cues when the clock says its offset moved (the `moved` input of useCuePlayer)', async () => {
+    const spin = spinIn(8000)
+    const read = viewWithSessions('moved', [{ number: null, startsAt: FIRST, startedAt: STARTED }], 0, {
+      event: { isHost: false, phase: 'running' }, settings: { ...defaultSettings(), vetoAllowance: null }, runningSessionId: 'session-moved-0', wheel: wheelWith(spin),
+    }) as unknown as EventView
+    const skew = ref(0)
+    const moves = ref(0)
+    page = await mountSuspended(defineComponent({
+      setup() {
+        useCuePlayer({ view: () => read, serverNow: () => Date.now() + skew.value, ready: () => true, moved: () => moves.value })
+        return () => h('div')
+      },
+    }))
+    await settled(planOf(spin).length)
+
+    skew.value = SHIFT_MS
+    moves.value += 1
+    await flushPromises()
+
+    expectMoved(planOf(spin).length)
   })
 })
 

@@ -48,7 +48,15 @@ export class FakeAudioContext {
   /** Every context a test created, in order: the nuxt test reaches the one the page made through this. */
   static instances: FakeAudioContext[] = []
 
-  currentTime = 10
+  /**
+   * Off (the default): `currentTime` moves only through `advance`. On, for a page test whose clock is `Date.now()`: it runs with real time as a
+   * real audio clock does, so a cue is not "moved" by the time the test itself takes (#594).
+   */
+  static follows = false
+
+  private base = 10
+  private origin = performance.now()
+  private follow = FakeAudioContext.follows
   state: string = 'running'
   destination = { kind: 'destination' }
   onstatechange: (() => void) | null = null
@@ -66,6 +74,14 @@ export class FakeAudioContext {
   /** The way a test hands the fake to the player: it implements the few members the player reads. */
   get asContext(): CueContext {
     return this as unknown as CueContext
+  }
+
+  get currentTime() {
+    return this.base + (this.follow ? (performance.now() - this.origin) / 1000 : 0)
+  }
+
+  set currentTime(seconds: number) {
+    this.base += seconds - this.currentTime
   }
 
   advance(ms: number) {

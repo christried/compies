@@ -22,7 +22,7 @@ const connection = useConnectionBanner(room.state, room.enabled)
 const presence = usePresence(room)
 const serverClock = useServerClock(room)
 // The wheel is heard (#531): the cue player schedules the read's plan on the audio clock, on the Event page only.
-const cues = useCuePlayer({ view: () => data.value, serverNow: serverClock.now, ready: () => serverClock.ready.value })
+const cues = useCuePlayer({ view: () => data.value, serverNow: serverClock.now, ready: () => serverClock.ready.value, moved: () => serverClock.moves.value })
 const onlineState = (userId: string) => (presence.known.value ? presence.isOnline(userId) : undefined)
 
 useHead({ title: () => data.value?.event.name })

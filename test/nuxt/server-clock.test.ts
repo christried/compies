@@ -175,6 +175,24 @@ describe('useServerClock', () => {
     expect(sent).toHaveLength(18)
   })
 
+  it('counts the times its answer changed (moves): none before an answer, one after the first round, one more only when the offset changed (#594)', async () => {
+    const { room, clock } = await setUp(() => ({ out: 20, back: 20 }))
+    expect(clock.moves.value).toBe(0)
+    await open(room)
+    await elapse(1000)
+    expect(clock.moves.value).toBe(1)
+
+    // A round that lands on the same offset wakes nothing.
+    window.dispatchEvent(new Event('online'))
+    await elapse(1000)
+    expect(clock.moves.value).toBe(1)
+
+    server.bump = 5000 // the server's time jumped: the next round's best sample has another offset
+    window.dispatchEvent(new Event('online'))
+    await elapse(1000)
+    expect(clock.moves.value).toBe(2)
+  })
+
   it('probes again when a message is stamped later than the estimate of the server time, but not for one in step', async () => {
     const { room, sent, say } = await setUp(() => ({ out: 20, back: 20 }))
     await open(room)
