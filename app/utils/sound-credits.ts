@@ -1,3 +1,4 @@
+import { isRecord } from '~~/shared/record'
 import { CUE_FILE_FOLDER, CUE_IDS, type CueId } from './sound-cues'
 
 // Which file each cue ships and where it is from (#536): the shape of `credits.json` beside the cue files, written by
@@ -19,12 +20,13 @@ export interface CueCredit {
 }
 
 const KEYS = ['candidate', 'source', 'author', 'licence']
-const isText = (value: unknown): value is string => typeof value === 'string' && value.trim() !== ''
-const isObject = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null && !Array.isArray(value)
+
+/** A string with something in it, not only spaces (the credits and the listening page's manifest both read text this way). */
+export const isText = (value: unknown): value is string => typeof value === 'string' && value.trim() !== ''
 
 /** What is wrong with one entry, in German, or null. */
 function faultOf(entry: unknown): string | null {
-  if (!isObject(entry)) return 'ist kein Objekt'
+  if (!isRecord(entry)) return 'ist kein Objekt'
   if (!isText(entry.candidate)) return '"candidate" fehlt oder ist leer'
   if (!isText(entry.source)) return '"source" fehlt oder ist leer'
   if (entry.author !== null && !isText(entry.author)) return '"author" ist weder ein Name noch null'
@@ -40,8 +42,8 @@ function faultOf(entry: unknown): string | null {
 export function parseCredits(raw: unknown): { credits: Partial<Record<CueId, CueCredit>>, problems: string[] } {
   const credits: Partial<Record<CueId, CueCredit>> = {}
   const problems: string[] = []
-  const cues = isObject(raw) ? raw.cues : undefined
-  if (!isObject(cues)) {
+  const cues = isRecord(raw) ? raw.cues : undefined
+  if (!isRecord(cues)) {
     problems.push('credits.json: "cues" fehlt oder ist kein Objekt.')
     return { credits, problems }
   }

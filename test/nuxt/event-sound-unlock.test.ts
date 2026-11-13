@@ -3,6 +3,7 @@ import { flushPromises } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import EventPage from '~/pages/e/[slug]/index.vue'
 import { NOTICE_RETURN_MS, NOTICE_SETTLE_MS } from '~/composables/useSoundUnlock'
+import { STAGE_COLUMN_CLASS } from '~/utils/event-stage'
 import { defaultSettings } from '~~/shared/settings'
 import { FakeAudioContext } from '../fake-audio'
 import { kitty, signInAs } from './auth'
@@ -97,6 +98,29 @@ describe('the notice', () => {
     const wrapper = notice()!.parentElement!
     expect(wrapper.previousElementSibling).toBeNull()
     expect(wrapper.nextElementSibling!.querySelector('[data-block]')).not.toBeNull()
+  })
+
+  it('stands in the stage column of the block group, the same classes at every width (#594)', async () => {
+    await mount(serveRunning())
+    await shown()
+
+    const wrapper = notice()!.parentElement!
+    const group = wrapper.nextElementSibling!
+    const column = 'mx-auto w-full max-w-[1100px] px-3.5 pt-4 md:px-6 md:pt-6'
+    expect(new Set(wrapper.className.split(' '))).toEqual(new Set(column.split(' ')))
+    expect(new Set(group.className.split(' '))).toEqual(new Set([...column.split(' '), 'flex', 'flex-col', 'gap-[18px]', 'md:gap-[22px]']))
+  })
+
+  it('takes its classes from STAGE_COLUMN_CLASS, which the group and the notice both carry (#594)', async () => {
+    await mount(serveRunning())
+    await shown()
+
+    const wrapper = notice()!.parentElement!
+    const group = wrapper.nextElementSibling!
+    for (const token of STAGE_COLUMN_CLASS.split(' ')) {
+      expect(wrapper.classList).toContain(token)
+      expect(group.classList).toContain(token)
+    }
   })
 
   it('goes after a pointer event, which resumes the context', async () => {
