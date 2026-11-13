@@ -13,7 +13,7 @@
 //   filz-/papier-     soft and dry: filtered noise (paper, felt, a zipper), low rounded thumps, no sharp edge;
 //   and one more idea per cue where the cue invites it (a roller shutter, a cork, a toy tom, a seal ring, a gong ...).
 //
-// Format as the placeholders (scripts/make-placeholder-cues.mjs, whose WAV writer is copied here): 16-bit PCM, mono, 44.1 kHz WAV, peak at
+// Format as the shipped cue files have (app/utils/sound-cues.ts): 16-bit PCM, mono, 44.1 kHz WAV, peak at
 // -1 dBFS (the cue's relative volume is the player's gain, CUE_VOLUME, not the file's), a short fade in and out, no DC offset, no silence at
 // the start (a cue is scheduled to the millisecond: the transient sits in the first 5 ms, except where a candidate is a swell by nature, which
 // says so with `swell`). Length: at most the doc's length for the cue. Deterministic: seeded noise per candidate, no Math.random, so a rerun
@@ -56,7 +56,7 @@ function fnv(text) {
   return h >>> 0
 }
 
-// mulberry32, as in scripts/make-placeholder-cues.mjs.
+// mulberry32, as in scripts/bake-compibert.mjs.
 function seeded(seed) {
   let a = seed
   return () => {
@@ -749,7 +749,7 @@ function render(raw, { ms, swell = false, fadeOut = 0.004 }) {
   return samples.map(x => (x / top) * PEAK)
 }
 
-/** A 16-bit PCM mono WAV file of the samples (the writer of scripts/make-placeholder-cues.mjs). */
+/** A 16-bit PCM mono WAV file of the samples. */
 function wav(samples) {
   const bytes = Buffer.alloc(44 + samples.length * 2)
   bytes.write('RIFF', 0, 'ascii')

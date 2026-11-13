@@ -21,7 +21,7 @@ export const CUE_VOLUME: Record<CueId, number> = {
   'veto-open': 50, 'veto-clock': 25, 'veto-clip-close': 35, 'veto-seal': 55, 'veto-drumroll': 60, 'veto-reveal': 85,
 }
 
-/** Where the cue files are served from (`public/sounds/cues/`) and their extension: the one place that names either (#531). #536 may change the extension with the files. */
+/** Where the cue files are served from (`public/sounds/cues/`) and their extension: the one place that names either (#531). */
 export const CUE_FILE_FOLDER = '/sounds/cues'
 export const CUE_FILE_EXTENSION = 'wav'
 
