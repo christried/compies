@@ -69,7 +69,11 @@ const LOG_LIMIT = 500
 /** A pending cue whose instant moved by more than this (ms) is scheduled again: the clock's offset changed after it was scheduled (#594). */
 export const CUE_MOVE_MS = 25
 
-type BufferSlot = { state: 'loading' } | { state: 'failed' } | { state: 'ready', buffer: AudioBuffer }
+/** A cue file whose request failed (the network, a 404) is asked for again after this long; one that failed to decode never is (#594). */
+export const CUE_FILE_RETRY_MS = 30_000
+
+/** `dropped`: the request failed, asked again at `retryAt` (server ms); `failed`: the bytes came and cannot be decoded, final. */
+type BufferSlot = { state: 'loading' } | { state: 'failed' } | { state: 'dropped', retryAt: number } | { state: 'ready', buffer: AudioBuffer }
 
 /**
  * A cue the player has handled: the source it started (none for a skipped one), the audio-clock time it was told to start at, its buffer (to
@@ -120,16 +124,31 @@ export function createCuePlayer(options: CuePlayerOptions): CuePlayer {
     entries.delete(key)
   }
 
+  /** True when a file is to be requested: never asked for, or its request failed and the wait is over (#594). */
+  function asks(id: CueId, now: number) {
+    const slot = buffers.get(id)
+    return slot === undefined || (slot.state === 'dropped' && now >= slot.retryAt)
+  }
+
   function load(id: CueId) {
     buffers.set(id, { state: 'loading' })
     void (async () => {
+      let bytes: ArrayBuffer | null = null
       try {
-        const buffer = await context.decodeAudioData(await loadFile(id))
-        buffers.set(id, { state: 'ready', buffer })
+        bytes = await loadFile(id)
       }
       catch {
-        // A 404 or a browser that cannot decode the file: its cues are skipped, and it is not asked for again.
-        buffers.set(id, { state: 'failed' })
+        // A dropped request or a 404: its cues are skipped for now, and the file is asked for again after CUE_FILE_RETRY_MS.
+        buffers.set(id, { state: 'dropped', retryAt: serverNow() + CUE_FILE_RETRY_MS })
+      }
+      if (bytes !== null) {
+        try {
+          buffers.set(id, { state: 'ready', buffer: await context.decodeAudioData(bytes) })
+        }
+        catch {
+          // A browser that cannot decode the file: its cues are skipped, and it is never asked for again.
+          buffers.set(id, { state: 'failed' })
+        }
       }
       if (!disposed) reconcile()
     })()
@@ -228,12 +247,12 @@ export function createCuePlayer(options: CuePlayerOptions): CuePlayer {
     for (const cue of plan) {
       if (entries.has(keyOf(cue))) continue
       const slot = buffers.get(cue.id)
-      if (slot === undefined) {
+      if (asks(cue.id, now)) {
         load(cue.id)
         continue
       }
-      if (slot.state === 'loading') continue
-      if (slot.state === 'failed') skip(cue, 'file')
+      if (slot?.state === 'loading') continue
+      if (slot?.state !== 'ready') skip(cue, 'file')
       else if (cue.at - now < -CUE_LATE_MS) skip(cue, 'late')
       else schedule(cue, slot.buffer, now)
     }
@@ -277,8 +296,9 @@ export function createCuePlayer(options: CuePlayerOptions): CuePlayer {
     },
     preload(ids) {
       if (disposed) return
+      const now = serverNow()
       for (const id of ids) {
-        if (!buffers.has(id)) load(id)
+        if (asks(id, now)) load(id)
       }
     },
     playNow(id, delayMs = 0) {
@@ -287,7 +307,7 @@ export function createCuePlayer(options: CuePlayerOptions): CuePlayer {
       const slot = buffers.get(id)
       if (!running() || slot?.state !== 'ready') {
         // A seal that waits for a download would sound late: a file that is not there yet is asked for, and this cue is skipped.
-        if (slot === undefined) load(id)
+        if (asks(id, serverNow())) load(id)
         record(cue, 'skipped', context.currentTime)
         return
       }
