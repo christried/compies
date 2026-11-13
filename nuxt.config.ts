@@ -3,7 +3,7 @@ import { createRequire } from 'node:module'
 import { join } from 'node:path'
 import tailwindcss from '@tailwindcss/vite'
 import { addServerHandler, createResolver, defineNuxtModule } from 'nuxt/kit'
-import { carriesDevSignIn, isStagingBuild, stageBranding } from './stage'
+import { carriesDevSignIn, carriesListeningPage, isStagingBuild, stageBranding } from './stage'
 
 // Staging names itself and wears tinted icons (#178). Production and local builds keep the defaults.
 const staging = isStagingBuild()
@@ -22,6 +22,20 @@ export default defineNuxtConfig({
       setup(_options, nuxt) {
         if (!carriesDevSignIn(nuxt.options.dev)) return
         addServerHandler({ route: '/api/dev/sign-in', method: 'get', handler: createResolver(import.meta.url).resolve('./server/dev/sign-in') })
+      },
+    }),
+    // The listening page for the cue sounds (#534, the session of #535): the page /dev/ton and the handler that serves the candidate files,
+    // on the dev server only (carriesListeningPage, stage.ts). The page sits in app/dev/, a folder Nuxt does not scan, so nothing imports it
+    // unless this module registers it and no production build bundles it; test/build/listening-page.test.ts checks the build output.
+    defineNuxtModule({
+      meta: { name: 'listening-page' },
+      setup(_options, nuxt) {
+        if (!carriesListeningPage(nuxt.options.dev)) return
+        const { resolve } = createResolver(import.meta.url)
+        nuxt.hook('pages:extend', (pages) => {
+          pages.push({ name: 'dev-listening', path: '/dev/ton', file: resolve('./app/dev/listening-page.vue') })
+        })
+        addServerHandler({ route: '/_dev/cue-candidates/**', method: 'get', handler: resolve('./server/dev/cue-candidates') })
       },
     }),
     // GSAP loads through `loadGsap()` on the lead before a run only (ADR 0015). Vite's manifest marks the chunk of every dynamic import
