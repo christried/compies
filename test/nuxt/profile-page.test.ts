@@ -268,7 +268,7 @@ describe('the Profil page', () => {
 
       const sw = toggleIn(page)
       expect(resolve(page, sw.attributes('aria-labelledby'))).toBe('Ton')
-      expect(resolve(page, sw.attributes('aria-describedby'))).toBe('Clips starten mit Ton. Wird auf diesem Gerät gemerkt.')
+      expect(resolve(page, sw.attributes('aria-describedby'))).toBe('Clips und Geräusche mit Ton')
       expect(sw.attributes('aria-checked')).toBe('true')
       expect(headerSound(page).attributes('aria-pressed')).toBe('true')
     })
