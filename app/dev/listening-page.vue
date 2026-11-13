@@ -408,7 +408,7 @@ const FIELD = 'rounded border border-line bg-surface px-1.5 py-0.5 text-ink'
 
     <div
       v-if="run"
-      class="flex flex-wrap items-start gap-4"
+      class="flex w-full max-w-3xl flex-col gap-4"
     >
       <LuckyWheel
         v-if="run.spin && liveWheel"
