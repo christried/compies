@@ -48,10 +48,19 @@ export class FakeAudioContext {
   /** Every context a test created, in order: the nuxt test reaches the one the page made through this. */
   static instances: FakeAudioContext[] = []
 
-  currentTime = 10
+  /**
+   * Off (the default): `currentTime` moves only through `advance`. On, for a page test whose clock is `Date.now()`: it runs with real time as a
+   * real audio clock does, so a cue is not "moved" by the time the test itself takes (#594).
+   */
+  static follows = false
+
+  private base = 10
+  private origin = performance.now()
+  private follow = FakeAudioContext.follows
   state: string = 'running'
   destination = { kind: 'destination' }
-  onstatechange: (() => void) | null = null
+  /** The `statechange` listeners, as `addEventListener` keeps them. */
+  listeners = new Set<() => void>()
   closed = false
   decodeFails = false
   resumeRejects = false
@@ -68,13 +77,33 @@ export class FakeAudioContext {
     return this as unknown as CueContext
   }
 
+  get currentTime() {
+    return this.base + (this.follow ? (performance.now() - this.origin) / 1000 : 0)
+  }
+
+  set currentTime(seconds: number) {
+    this.base += seconds - this.currentTime
+  }
+
   advance(ms: number) {
     this.currentTime += ms / 1000
   }
 
+  addEventListener(type: string, listener: () => void) {
+    if (type === 'statechange') this.listeners.add(listener)
+  }
+
+  removeEventListener(type: string, listener: () => void) {
+    if (type === 'statechange') this.listeners.delete(listener)
+  }
+
+  private fire() {
+    for (const listener of [...this.listeners]) listener()
+  }
+
   setState(state: string) {
     this.state = state
-    this.onstatechange?.()
+    this.fire()
   }
 
   createGain() {
@@ -98,7 +127,7 @@ export class FakeAudioContext {
     this.resumeCalls += 1
     if (this.resumeRejects) return Promise.reject(new Error('not allowed'))
     this.state = 'running'
-    this.onstatechange?.()
+    this.fire()
     return Promise.resolve()
   }
 

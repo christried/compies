@@ -1,4 +1,4 @@
-import { createCuePlayer, type CueLogEntry, type CuePlayer } from '~/utils/cue-player'
+import { createCuePlayer, exposesCueLog, type CueLogEntry, type CuePlayer } from '~/utils/cue-player'
 import { reducedMotion } from '~/utils/motion'
 import { CUE_IDS, cueFileUrl, vetoArrivalCues, vetoCuePlan, wheelCuePlan, type Cue, type CueId, type VetoArrivalState } from '~/utils/sound-cues'
 import type { EventView } from '~~/shared/event'
@@ -6,7 +6,9 @@ import type { EventView } from '~~/shared/event'
 // The sound of the Event page (#531, spec #504 § The cue player): the page's one Web Audio context, the cue player on it, and the plan the
 // Event read gives it. The page's read is what carries a plan to a device, so a refetch (the room's `event.changed`, which reaches a hidden
 // tab too) is all the player needs: the watch below runs on Vue's microtask queue and hands every cue to the audio clock ahead of time. No
-// timer, no frame and no visibility check here, because a hidden tab runs none of them on time.
+// timer and no frame here, because a hidden tab runs none of them on time. The one `visibilitychange` listener only tells the player to look
+// again at what it holds (#594, a slept laptop can have an audio clock and a `performance.now()` that stopped apart): no cue is scheduled
+// from it, a timer or a frame.
 
 /**
  * The Event page's cue files: the wheel's are fetched and decoded when the read has a wheel (#531), the Veto window's too when the Event allows
@@ -54,6 +56,8 @@ export function useCuePlayer(input: {
   serverNow: () => number
   /** The server clock's readiness: nothing is planned before it, a device clock running ahead would start the cues early. */
   ready: () => boolean
+  /** Grows when the server clock's offset changed (`useServerClock().moves`): the pending cues are looked at again (#594). */
+  moved: () => number
 }): { suspended: Readonly<Ref<boolean>>, resume: () => Promise<void> } {
   // Order matters: `useSound` registers its read of the stored switch first, so Ton has its stored value when `mounted` turns true.
   const { enabled } = useSound()
@@ -67,7 +71,7 @@ export function useCuePlayer(input: {
   let context: AudioContext | null = null
   let player: CuePlayer | null = null
   // The log for the browser check (#537) is the page's own data: dev and staging builds only, never production.
-  const exposeLog = import.meta.dev || Boolean(useRuntimeConfig().public.staging)
+  const exposeLog = exposesCueLog(import.meta.dev, Boolean(useRuntimeConfig().public.staging))
   const globals = globalThis as { __compiesCueLog?: () => readonly CueLogEntry[], webkitAudioContext?: typeof AudioContext }
 
   /** The page's one context and player, made on the first moment the page is mounted and Ton is on: never on the server, never with Ton off. */
@@ -121,6 +125,16 @@ export function useCuePlayer(input: {
 
   // Not a sync watch: a refetch of the same read is a new object every time, and the player diffs the plan, so it schedules nothing twice.
   watch([() => input.view(), () => input.ready(), () => enabled.value, mounted], sync)
+
+  // The server clock's offset changed (the first answer, a re-sync): a cue scheduled on the old reading moves with it (#594).
+  watch(input.moved, () => player?.refresh())
+  const onVisibility = () => {
+    if (document.visibilityState === 'visible') player?.refresh()
+  }
+  if (import.meta.client) {
+    onMounted(() => document.addEventListener('visibilitychange', onVisibility))
+    onScopeDispose(() => document.removeEventListener('visibilitychange', onVisibility))
+  }
 
   // What the arrival of a read causes (#532): the own Party's cast, the stamps, a set game's opening. After `sync`, so the player exists. The
   // state is kept with Ton off or a suspended context too, so switching either on later replays nothing; `playNow` is the gate.
