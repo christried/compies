@@ -59,7 +59,8 @@ export class FakeAudioContext {
   private follow = FakeAudioContext.follows
   state: string = 'running'
   destination = { kind: 'destination' }
-  onstatechange: (() => void) | null = null
+  /** The `statechange` listeners, as `addEventListener` keeps them. */
+  listeners = new Set<() => void>()
   closed = false
   decodeFails = false
   resumeRejects = false
@@ -88,9 +89,21 @@ export class FakeAudioContext {
     this.currentTime += ms / 1000
   }
 
+  addEventListener(type: string, listener: () => void) {
+    if (type === 'statechange') this.listeners.add(listener)
+  }
+
+  removeEventListener(type: string, listener: () => void) {
+    if (type === 'statechange') this.listeners.delete(listener)
+  }
+
+  private fire() {
+    for (const listener of [...this.listeners]) listener()
+  }
+
   setState(state: string) {
     this.state = state
-    this.onstatechange?.()
+    this.fire()
   }
 
   createGain() {
@@ -114,7 +127,7 @@ export class FakeAudioContext {
     this.resumeCalls += 1
     if (this.resumeRejects) return Promise.reject(new Error('not allowed'))
     this.state = 'running'
-    this.onstatechange?.()
+    this.fire()
     return Promise.resolve()
   }
 

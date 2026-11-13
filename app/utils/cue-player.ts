@@ -7,7 +7,7 @@ import { CUE_VOLUME, type Cue, type CueId } from './sound-cues'
 // not a `setTimeout`, so a cue is scheduled on that clock before it is due and never from a callback near its moment.
 
 /** The members of `AudioContext` the player reads: the unit test passes a fake that implements these. */
-export type CueContext = Pick<AudioContext, 'currentTime' | 'state' | 'destination' | 'resume' | 'createGain' | 'createBufferSource' | 'decodeAudioData' | 'onstatechange'>
+export type CueContext = Pick<AudioContext, 'currentTime' | 'state' | 'destination' | 'resume' | 'createGain' | 'createBufferSource' | 'decodeAudioData' | 'addEventListener' | 'removeEventListener'>
 
 export interface CuePlayerOptions {
   context: CueContext
@@ -253,7 +253,8 @@ export function createCuePlayer(options: CuePlayerOptions): CuePlayer {
     }
     onChange?.()
   }
-  context.onstatechange = onState
+  // A listener, not the one `onstatechange` slot: two players on one context (the listening page) must not take each other's handler (#594).
+  context.addEventListener('statechange', onState)
 
   return {
     setEnabled(on) {
@@ -316,7 +317,7 @@ export function createCuePlayer(options: CuePlayerOptions): CuePlayer {
       if (disposed) return
       const now = serverNow()
       for (const [key, entry] of entries) cancel(key, entry, now)
-      context.onstatechange = null
+      context.removeEventListener('statechange', onState)
       disposed = true
     },
   }

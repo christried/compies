@@ -354,7 +354,85 @@ describe('the files', () => {
     expect(outcomes(player)).toEqual(['wheel-stop@1000:skipped'])
   })
 
-  it('skips only the cues of a file that failed, throws nothing and does not try it again', async () => {
+  describe('a dropped request (#594)', () => {
+    /** The first request fails (a dropped connection), every later one is answered. */
+    const rejectsOnce = () => {
+      let failed = false
+      return (id: CueId) => {
+        if (failed) return Promise.resolve(bytesOf(id))
+        failed = true
+        return Promise.reject(new Error('dropped'))
+      }
+    }
+
+    it('is not asked for again within 30 s, and is asked again after it: a cue planned later is scheduled, the one skipped meanwhile stays skipped', async () => {
+      const { context, player, loadFile, advance } = setup({ loadFile: rejectsOnce() })
+      player.setPlan([cue('wheel-stop', 1000)])
+      await settle()
+
+      advance(29_000)
+      player.setPlan([cue('wheel-stop', 1000)])
+      await settle()
+      expect(loadFile).toHaveBeenCalledTimes(1)
+
+      advance(1000)
+      player.setPlan([cue('wheel-stop', 1000), cue('wheel-stop', 40_000)])
+      await settle()
+
+      expect(loadFile).toHaveBeenCalledTimes(2)
+      expect(context.started().map(source => source.id)).toEqual(['wheel-stop'])
+      expect(outcomes(player)).toEqual(['wheel-stop@1000:skipped', 'wheel-stop@40000:scheduled'])
+    })
+
+    it('is asked for again by preload after 30 s', async () => {
+      const { player, loadFile, advance } = setup({ loadFile: rejectsOnce() })
+      player.preload(['veto-seal'])
+      await settle()
+      advance(29_999)
+      player.preload(['veto-seal'])
+      await settle()
+      expect(loadFile).toHaveBeenCalledTimes(1)
+
+      advance(1)
+      player.preload(['veto-seal'])
+      await settle()
+
+      expect(loadFile).toHaveBeenCalledTimes(2)
+    })
+
+    it('is asked for again by playNow after 30 s, which is itself skipped as the file is not there yet', async () => {
+      const { context, player, loadFile, advance } = setup({ loadFile: rejectsOnce() })
+      player.preload(['veto-seal'])
+      await settle()
+      player.playNow('veto-seal')
+      expect(loadFile).toHaveBeenCalledTimes(1)
+
+      advance(30_000)
+      player.playNow('veto-seal')
+      await settle()
+
+      expect(loadFile).toHaveBeenCalledTimes(2)
+      expect(player.log.map(entry => entry.outcome)).toEqual(['skipped', 'skipped'])
+      expect(context.started()).toEqual([])
+    })
+
+    it('is never asked for again when the file arrived but cannot be decoded', async () => {
+      const { context, player, loadFile, advance } = setup()
+      context.decodeFails = true
+      player.setPlan([cue('wheel-stop', 1000)])
+      await settle()
+
+      advance(60_000)
+      player.setPlan([cue('wheel-stop', 1000), cue('wheel-stop', 70_000)])
+      player.preload(['wheel-stop'])
+      await settle()
+
+      expect(loadFile).toHaveBeenCalledTimes(1)
+      expect(context.started()).toEqual([])
+    })
+  })
+
+  it('skips only the cues of a file that failed, throws nothing and does not try it again within 30 s', async () => {
     const { context, player, loadFile } = setup({ loadFile: id => (id === 'wheel-tick' ? Promise.reject(new Error('404')) : Promise.resolve(bytesOf(id))) })
 
     player.setPlan([cue('wheel-tick', 500), cue('wheel-stop', 900)])
@@ -585,8 +663,23 @@ describe('dispose', () => {
 
     expect(context.started().map(source => source.stopCalls)).toEqual([1, 1])
     expect(context.started()).toHaveLength(2)
-    expect(context.onstatechange).toBeNull()
+    expect(context.listeners.size).toBe(0)
     expect(context.closed).toBe(false)
+  })
+})
+
+describe('two players on one context (#594)', () => {
+  it('lets the first one go without taking the second one\'s handler: the second still takes back its pending cues', async () => {
+    const { context, player: first } = setup()
+    const second = createCuePlayer({ context: context.asContext, serverNow: () => NOW, loadFile: id => Promise.resolve(bytesOf(id)) })
+    second.setPlan([cue('wheel-stop', 2000)])
+    await settle()
+
+    first.dispose()
+    context.setState('interrupted')
+
+    expect(context.started().map(source => source.stopCalls)).toEqual([1])
+    expect(second.suspended).toBe(true)
   })
 })
 
