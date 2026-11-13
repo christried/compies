@@ -44,7 +44,9 @@
         // Run by hand with node after a change to the rig; its output (server/assets/compibert/*.svg) is committed, `--check` guards it (#311).
         "scripts/bake-compibert.mjs!",
         // Run by hand with node; its output under public/sounds/cues/ (the placeholder cue files, #531) is committed.
-        "scripts/make-placeholder-cues.mjs!"
+        "scripts/make-placeholder-cues.mjs!",
+        // Run by hand with node; its output under sound-candidates/ (the listening session's candidates, #535) is committed.
+        "scripts/make-cue-candidates.mjs!"
       ],
       // Windows' own netstat, which serve.mjs calls to name the PID on a taken port.
       "ignoreBinaries": ["netstat"],
