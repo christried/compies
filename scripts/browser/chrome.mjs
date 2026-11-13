@@ -41,7 +41,10 @@ export async function launch(account) {
   const port = PORTS[account]
   // Headless Chrome plays sound on the machine's speakers: a Clip check played its YouTube video out loud. Muted, the
   // video still plays and reports its time and state.
-  const chrome = spawn(CHROME, ['--headless=new', '--mute-audio', `--remote-debugging-port=${port}`, `--user-data-dir=${profile}`, '--no-first-run', '--no-default-browser-check', '--hide-scrollbars', 'about:blank'], { stdio: 'ignore' })
+  // A sound check (#537) needs Chrome with and without `--autoplay-policy=no-user-gesture-required`: headless Chrome
+  // holds an AudioContext back until a gesture, like a window does. `COMPIES_CHROME_FLAGS` adds flags, split at spaces.
+  const extra = (process.env.COMPIES_CHROME_FLAGS ?? '').split(' ').filter(Boolean)
+  const chrome = spawn(CHROME, ['--headless=new', '--mute-audio', `--remote-debugging-port=${port}`, `--user-data-dir=${profile}`, '--no-first-run', '--no-default-browser-check', '--hide-scrollbars', ...extra, 'about:blank'], { stdio: 'ignore' })
   for (let i = 0; i < 50; i++) {
     try {
       const targets = await (await fetch(`http://127.0.0.1:${port}/json/list`)).json()
