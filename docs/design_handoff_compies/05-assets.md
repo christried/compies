@@ -62,6 +62,7 @@ Full list with character, length and relative volume: `reference/docs/compibert-
 - 3 variants where listed, never the same twice in a row; ±2 semitones on UI cues.
 - Synced moments schedule cues against server time (Web Audio).
 - Delivery: 48 kHz mono, ≤ −1 dBTP, `.ogg` + `.m4a`, file name = cue id.
+- **Deviation (0.13.3, #536):** the eleven cues of the wheel and the Veto window ship as WAV, 16-bit mono, 44.1 kHz, peaks at about −1 dBFS, one file per cue id in `public/sounds/cues/` (`cueFileUrl`, `app/utils/sound-cues.ts`), not `.ogg` + `.m4a` at 48 kHz and ≤ −1 dBTP: they are provisional (generated or CC0, `credits.json`) until the chosen sounds replace them (#593).
 
 Cue ids: `boot-steps boot-skid cb-hi ui-hover ui-press ui-hold-fill ui-hold-done ui-toast ui-error drag-pick drag-over drag-snap drag-reject drag-longpress wheel-windup wheel-tick wheel-stop wheel-morph wheel-slice-out cb-hype cb-gulp cb-yay veto-open veto-clock veto-clip-close veto-seal veto-drumroll veto-reveal coin-toss coin-spin coin-land coin-result pb-turn pb-ban pb-pick lb-swap lb-count lb-winner tie-alarm tie-drum cer-drop cer-row cer-trophy-rattle cer-trip cer-bonk cer-stamp cer-fanfare cer-crowd share-shutter br-cutin br-move br-plus br-lead br-win emo-clap emo-haha emo-grr emo-roar cb-poke cb-giggle cb-boing cb-squish cb-huh cb-grr cb-snore cb-hmm cb-uhoh sys-join sys-reconnect`.
 
