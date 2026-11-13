@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { createCuePlayer, CUE_MOVE_MS } from '../../app/utils/cue-player'
+import { createCuePlayer, CUE_MOVE_MS, exposesCueLog } from '../../app/utils/cue-player'
 import type { Cue, CueId } from '../../app/utils/sound-cues'
 import { bytesOf, FakeAudioContext, type FakeSource } from '../fake-audio'
 
@@ -634,6 +634,16 @@ describe('a clock that moves (#594)', () => {
     gone.player.refresh()
     expect(gone.context.started().map(source => source.stopCalls)).toEqual([1])
     expect(gone.context.started()).toHaveLength(1)
+  })
+})
+
+describe('the log hook (#594)', () => {
+  it.each([
+    ['the dev server', true, false, true],
+    ['a staging build', false, true, true],
+    ['production', false, false, false],
+  ])('is exposed by %s: %s %s -> %s', (_name, dev, staging, exposed) => {
+    expect(exposesCueLog(dev, staging)).toBe(exposed)
   })
 })
 

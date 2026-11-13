@@ -496,15 +496,4 @@ describe('the cue log for the browser check', () => {
     page = undefined
     expect(log()).toBeUndefined()
   })
-
-  // import.meta.dev is true in this test environment, so a production build's absence of the hook is the browser check's (#537).
-  it.skipIf(import.meta.dev)('is not there in production', async () => {
-    useRuntimeConfig().public.staging = false
-    const { slug } = serveWheel(wheelWith(spinIn(4000)))
-
-    page = await mountSuspended(EventPage, { route: `/e/${slug}` })
-    await flushPromises()
-
-    expect(log()).toBeUndefined()
-  })
 })

@@ -143,6 +143,38 @@ describe('pinCrossings', () => {
   it('gives a late joiner the same list: nothing of the clock goes in', () => {
     expect(pinCrossings({ ...A })).toEqual(pinCrossings(A))
   })
+
+  describe('for the same spin again (#594)', () => {
+    it('gives the same list, not a new one, for an equal spin as a fresh object: a refetch works nothing out twice', () => {
+      const first = pinCrossings(A)
+
+      expect(pinCrossings({ ...A })).toBe(first)
+      expect(pinCrossings({ ...A })).toBe(first)
+    })
+
+    it.each([
+      ['spinStartAt', { spinStartAt: A.spinStartAt + 1000, stopAt: A.stopAt + 1000 }],
+      ['stopAt', { stopAt: A.stopAt + 1000 }],
+      ['slices', { slices: 6 }],
+      ['resultIndex', { resultIndex: 1 }],
+      ['resultOffset', { resultOffset: 0.75 }],
+    ])('gives another list, equal to a fresh one, when only %s differs', (_name, change) => {
+      const base = pinCrossings(A)
+      const other: WheelTiming = { ...A, ...change }
+
+      const list = pinCrossings(other)
+      expect(list).not.toBe(base)
+      pinCrossings(B) // another spin in between, so the next call works the list out again
+      expect(pinCrossings(other)).toEqual(list)
+    })
+
+    it('does not carry a list over to a spin of no slices, and works A out again after it', () => {
+      const first = pinCrossings(A)
+
+      expect(pinCrossings(spinOf(6000, 0, 0, 0))).toEqual([])
+      expect(pinCrossings(A)).toEqual(first)
+    })
+  })
 })
 
 describe('flapperKick', () => {

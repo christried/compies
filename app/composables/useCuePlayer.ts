@@ -1,4 +1,4 @@
-import { createCuePlayer, type CueLogEntry, type CuePlayer } from '~/utils/cue-player'
+import { createCuePlayer, exposesCueLog, type CueLogEntry, type CuePlayer } from '~/utils/cue-player'
 import { reducedMotion } from '~/utils/motion'
 import { CUE_IDS, cueFileUrl, vetoArrivalCues, vetoCuePlan, wheelCuePlan, type Cue, type CueId, type VetoArrivalState } from '~/utils/sound-cues'
 import type { EventView } from '~~/shared/event'
@@ -71,7 +71,7 @@ export function useCuePlayer(input: {
   let context: AudioContext | null = null
   let player: CuePlayer | null = null
   // The log for the browser check (#537) is the page's own data: dev and staging builds only, never production.
-  const exposeLog = import.meta.dev || Boolean(useRuntimeConfig().public.staging)
+  const exposeLog = exposesCueLog(import.meta.dev, Boolean(useRuntimeConfig().public.staging))
   const globals = globalThis as { __compiesCueLog?: () => readonly CueLogEntry[], webkitAudioContext?: typeof AudioContext }
 
   /** The page's one context and player, made on the first moment the page is mounted and Ton is on: never on the server, never with Ton off. */

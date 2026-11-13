@@ -66,6 +66,9 @@ export interface CuePlayer {
 /** A cue this far past its time still plays, at once; a later one is skipped (04-motion § Synchronised moments). */
 const CUE_LATE_MS = 150
 const LOG_LIMIT = 500
+/** Whether the page exposes `window.__compiesCueLog` for the browser check (#537): the dev server and the staging build, never production (#594). */
+export const exposesCueLog = (dev: boolean, staging: boolean): boolean => dev || staging
+
 /** A pending cue whose instant moved by more than this (ms) is scheduled again: the clock's offset changed after it was scheduled (#594). */
 export const CUE_MOVE_MS = 25
 
