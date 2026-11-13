@@ -4,7 +4,7 @@ import { pinAngles } from './wheel-look'
 // The pins' passes of the top and the flapper's kick at each (#522, spec #503 § The motion, 04-motion § Lucky Wheel). Pure functions of the
 // spin's instants and, for the kick, one server time: the same on every device, a late joiner included, with nothing replayed. Nothing
 // here knows Vue, a clock, a name or a game, so a Hidden wheel's Member gets the same crossings as the Host. 0.13.3's pin ticks use
-// `pinCrossings` too: this is the one place the crossings are worked out.
+// `pinCrossings` too: this is the one place the crossings are worked out, and it remembers the last spin's list (#594, read-only for callers).
 
 /** At each crossing the flapper kicks up by this many degrees (04-motion: 30, `rotation 30 -> 0`; the sign is the SVG sense, see `flapperKick`). */
 const FLAPPER_KICK_DEG = 30
@@ -15,6 +15,11 @@ const SEARCH_STEPS = 24
 /** Ternary steps for the peak of the overshoot: each keeps two thirds of the span. */
 const PEAK_STEPS = 60
 
+export type PinCrossing = { at: number, pin: number, back: boolean }
+
+/** The last spin's list (#594): the wheel's `crossings` and the cue plan ask for the same spin on every refetch, so an equal one is worked out once. */
+let memo: { spin: WheelTiming, crossings: readonly PinCrossing[] } | null = null
+
 /**
  * The server times (epoch ms) at which a pin's centre is at the top for a whole spin, in order, each with the slice whose start edge the
  * pin marks (`pin`, an index into `sliceSpans`, as `pinAngles` lists them). A crossing carries its direction: the ease overshoots the final
@@ -23,10 +28,15 @@ const PEAK_STEPS = 60
  *
  * Found by searching `wheelAngle` itself, not from a closed form: the angle function stays the one place the ease lives, and the crossings
  * follow it when the spin's length or turns change. The spin is worked in milliseconds from its start, so the epoch's size costs no precision.
+ *
+ * One entry is kept, keyed on the five fields of the spin: an equal spin gets the same array back (a caller must not change it). The listening
+ * page asks with changing timings and only pays a recompute.
  */
-export function pinCrossings(spin: WheelTiming): { at: number, pin: number, back: boolean }[] {
+export function pinCrossings(spin: WheelTiming): readonly PinCrossing[] {
   const length = spin.stopAt - spin.spinStartAt
   if (spin.slices < 1 || length <= 0) return []
+  if (memo && memo.spin.spinStartAt === spin.spinStartAt && memo.spin.stopAt === spin.stopAt && memo.spin.slices === spin.slices
+    && memo.spin.resultIndex === spin.resultIndex && memo.spin.resultOffset === spin.resultOffset) return memo.crossings
 
   const local: WheelTiming = { ...spin, spinStartAt: 0, stopAt: length }
   /** How far the wheel has turned (degrees, 0 up) `ms` into the spin. */
@@ -46,7 +56,7 @@ export function pinCrossings(spin: WheelTiming): { at: number, pin: number, back
   const farthest = turned(peak)
   const final = turned(length)
 
-  const crossings: { at: number, pin: number, back: boolean }[] = []
+  const crossings: PinCrossing[] = []
   const pins = pinAngles(sliceSpans(spin.slices, -1, 0))
   for (let lap = 0; 360 * lap < farthest; lap++) {
     pins.forEach((angle, pin) => {
@@ -57,7 +67,9 @@ export function pinCrossings(spin: WheelTiming): { at: number, pin: number, back
       if (level > final) crossings.push({ at: spin.spinStartAt + lastReach(turned, level, peak, length), pin, back: true })
     })
   }
-  return crossings.sort((a, b) => a.at - b.at)
+  crossings.sort((a, b) => a.at - b.at)
+  memo = { spin: { ...spin }, crossings }
+  return crossings
 }
 
 /** The first moment in `[0, peak]` the wheel has turned `level` degrees: `turned` rises all along there. */

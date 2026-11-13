@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { Lock } from '@lucide/vue'
+import { Lock, Volume2 } from '@lucide/vue'
 import { seatNote, teamsStay, waitsForCeremony, type EventPageState } from '~/utils/event-page'
-import { gamesToStart, risen, scrollsToTop, type StageCounted } from '~/utils/event-stage'
+import { gamesToStart, risen, scrollsToTop, STAGE_COLUMN_CLASS, type StageCounted } from '~/utils/event-stage'
 import { modalOpen, scrollToTop } from '~/utils/jump'
 import type { OptimisticVotes } from '~/composables/useOptimisticVotes'
 import type { StandingsNews } from '~/utils/standings-news'
@@ -43,6 +43,8 @@ const props = defineProps<{
   canChangeSessions: boolean
   /** The Veto bar covers the bottom of the page: the stage then gets room under its last block (F4). */
   vetoBarShown: boolean
+  /** „Ton aktivieren“ (#533): the browser holds sound back, with Ton on and a Session running. A fact of this device, so not a block of the read. Its column is `STAGE_COLUMN_CLASS`, the block group's too (#594). */
+  soundNotice?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -55,6 +57,8 @@ const emit = defineEmits<{
   share: []
   /** „Siegerehrung ansehen“ of the same row (#314): the page's layer plays the ceremony again. */
   replay: []
+  /** The notice's „Ton aktivieren“ (#533): the page's gesture handler takes it like any tap. */
+  unlock: []
 }>()
 
 const { t } = useI18n()
@@ -99,11 +103,31 @@ watch(() => ({ kind: props.pageState.kind, blocks: props.pageState.blocks, count
 
 <template>
   <div>
+    <div
+      v-if="soundNotice"
+      :class="STAGE_COLUMN_CLASS"
+    >
+      <NoticeBanner
+        tone="info"
+        :icon="Volume2"
+      >
+        {{ t('sound.notice') }}
+        <template #action>
+          <AppButton
+            size="md"
+            @click="emit('unlock')"
+          >
+            {{ t('sound.enable') }}
+          </AppButton>
+        </template>
+      </NoticeBanner>
+    </div>
     <TransitionGroup
       ref="group"
       tag="div"
       :move-class="unwatched() ? undefined : REFLOW_CLASS"
-      class="mx-auto flex w-full max-w-[1100px] flex-col gap-[18px] px-3.5 pt-4 md:gap-[22px] md:px-6 md:pt-6"
+      class="flex flex-col gap-[18px] md:gap-[22px]"
+      :class="STAGE_COLUMN_CLASS"
     >
       <div
         v-for="block in pageState.blocks"
