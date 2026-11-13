@@ -6,7 +6,8 @@ import { describe, expect, it } from 'vitest'
 // no build carries them, the staging build included (staging is a production build behind Vercel Authentication, and a candidate file must
 // never be deployed). Run `pnpm test:build` (builds first; CI builds production). Which builds register the page is carriesListeningPage in
 // stage.ts, covered in test/unit/stage.test.ts.
-// (c) is empty until #535 brings candidate files: (a) and (b) carry the pin until then.
+// (a) and (b) pin the page, the route and the folder; (c) checks the base name of each of the 44 candidate files #535 brought (it would
+// be empty without candidates, and then (a) and (b) alone carry the pin).
 const root = resolve(import.meta.dirname, '../..')
 const OUTPUT = resolve(root, '.output')
 const TEXT = /\.(mjs|js|json|html|map)$/
