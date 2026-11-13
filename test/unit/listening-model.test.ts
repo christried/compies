@@ -1,10 +1,11 @@
 import { existsSync, readFileSync } from 'node:fs'
-import { resolve } from 'node:path'
+import { join, resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import {
-  CUE_BRIEF, MOMENT_OF, STAMP_LAG_MS, arrivalCues, buildRun, candidatesOf, choicesReport, configFor, emptyChoices, stampCues, testCandidateOf, withTickGap,
+  CUE_BRIEF, MOMENT_OF, SHIPPED_NAME, STAMP_LAG_MS, arrivalCues, buildRun, candidatesOf, choicesReport, configFor, emptyChoices, stampCues, testCandidateOf, withTickGap,
   type RunConfig,
 } from '../../app/dev/listening-model'
+import { CUE_CREDITS_URL } from '../../app/utils/sound-credits'
 import { CUE_IDS, TICK_MIN_GAP_MS, cueFileUrl, wheelCuePlan } from '../../app/utils/sound-cues'
 import { REVEAL_AFTER_MS } from '../../app/utils/wheel'
 import { msOf } from '../../shared/instant'
@@ -18,6 +19,11 @@ const config = (fields: Partial<RunConfig> = {}): RunConfig => ({
   spinMs: 6000, hidden: false, reduced: false, windowMs: 0, start: 'beginning', clip: true, vetoes: 0, tickGapMs: TICK_MIN_GAP_MS, ...fields,
 })
 const ids = (plan: readonly { id: string, at: number }[], id: string) => plan.filter(cue => cue.id === id)
+/** A valid credits file: every cue ships a candidate of its own, named after the cue (#536). */
+const creditsOf = (fields: Record<string, unknown> = {}) => ({
+  cues: Object.fromEntries(CUE_IDS.map(id => [id, { candidate: `${id}-ton`, source: `Rezept ${id}`, author: null, licence: 'generated', ...fields }])),
+})
+const credits = creditsOf()
 
 describe('CUE_BRIEF', () => {
   it('is the character and the length of compibert-sound.md, for every cue', () => {
@@ -36,34 +42,70 @@ describe('CUE_BRIEF', () => {
 })
 
 describe('candidatesOf', () => {
-  it('gives the empty manifest the placeholder of every cue, built from the shipped file', () => {
-    const { byCue, problems } = candidatesOf({ cues: {} })
+  it('gives the empty manifest the shipped file of every cue as the first row, with the credit\'s source, author and licence', () => {
+    const { byCue, problems } = candidatesOf({ cues: {} }, credits)
 
     expect(problems).toEqual([])
     for (const id of CUE_IDS) {
-      expect(byCue[id]).toEqual([{ name: 'placeholder', url: cueFileUrl(id), file: cueFileUrl(id), source: 'scripts/make-placeholder-cues.mjs', author: null, licence: 'generated', note: null, shipped: true }])
+      expect(byCue[id]).toEqual([{
+        name: SHIPPED_NAME, url: cueFileUrl(id), file: cueFileUrl(id), source: `Rezept ${id}`, author: null, licence: 'generated', note: `Datei der App: ${id}-ton`, shipped: true,
+      }])
     }
   })
 
-  it('reads the committed manifest without a problem, and every entry has its file on disk', () => {
+  it('carries a CC0 credit\'s author into the shipped row', () => {
+    const { byCue } = candidatesOf({ cues: {} }, creditsOf({ licence: 'CC0', author: 'Ada' }))
+
+    expect(byCue['wheel-tick'][0]).toMatchObject({ licence: 'CC0', author: 'Ada', shipped: true })
+  })
+
+  it('keeps the shipped row of every cue when the credits are missing: no licence, a source that says so, and problems', () => {
+    const { byCue, problems } = candidatesOf({ cues: {} }, null)
+
+    expect(problems.length).toBeGreaterThan(0)
+    for (const id of CUE_IDS) {
+      expect(byCue[id]).toEqual([{
+        name: SHIPPED_NAME, url: cueFileUrl(id), file: cueFileUrl(id), source: 'credits.json: kein Eintrag', author: null, licence: null, note: null, shipped: true,
+      }])
+    }
+  })
+
+  it('names a credit with a licence that needs a credit, and gives that cue the fallback row', () => {
+    const { byCue, problems } = candidatesOf({ cues: {} }, { cues: { ...credits.cues, 'wheel-stop': { ...credits.cues['wheel-stop'], licence: 'CC-BY' } } })
+
+    expect(problems.filter(problem => problem.includes('wheel-stop'))).toHaveLength(1)
+    expect(byCue['wheel-stop'][0]).toMatchObject({ name: SHIPPED_NAME, licence: null, source: 'credits.json: kein Eintrag' })
+    expect(byCue['wheel-tick'][0]).toMatchObject({ licence: 'generated', source: 'Rezept wheel-tick' })
+  })
+
+  it('shows a credit whose candidate is no longer in the manifest by its name, and makes no problem of it', () => {
+    const { byCue, problems } = candidatesOf({ cues: { 'wheel-stop': [] } }, credits)
+
+    expect(problems).toEqual([])
+    expect(byCue['wheel-stop'][0]!.note).toBe('Datei der App: wheel-stop-ton')
+  })
+
+  it('reads the committed manifest and the committed credits without a problem, and every entry has its file on disk', () => {
     const manifest: unknown = JSON.parse(readFileSync(resolve(root, 'sound-candidates/manifest.json'), 'utf8'))
-    const { byCue, problems } = candidatesOf(manifest)
+    const committed: unknown = JSON.parse(readFileSync(join(root, 'public', CUE_CREDITS_URL), 'utf8'))
+    const { byCue, problems } = candidatesOf(manifest, committed)
 
     expect(problems).toEqual([])
     for (const id of CUE_IDS) {
-      expect(byCue[id][0]!.name, id).toBe('placeholder')
+      expect(byCue[id][0]!.name, id).toBe(SHIPPED_NAME)
+      expect(byCue[id][0]!.licence, id).not.toBeNull()
       for (const candidate of byCue[id].filter(entry => !entry.shipped)) {
         expect(existsSync(resolve(root, 'sound-candidates', candidate.file)), candidate.file).toBe(true)
       }
     }
   })
 
-  it('puts a valid entry after the placeholder, with the URL of the candidates route', () => {
+  it('puts a valid entry after the shipped row, with the URL of the candidates route', () => {
     const entry = { name: 'tick-b', file: 'wheel-tick/tick-b.wav', source: 'sfxr preset coin, seed 12', author: null, licence: 'generated', note: 'dry' }
-    const { byCue, problems } = candidatesOf({ cues: { 'wheel-tick': [entry] } })
+    const { byCue, problems } = candidatesOf({ cues: { 'wheel-tick': [entry] } }, credits)
 
     expect(problems).toEqual([])
-    expect(byCue['wheel-tick'].map(candidate => candidate.name)).toEqual(['placeholder', 'tick-b'])
+    expect(byCue['wheel-tick'].map(candidate => candidate.name)).toEqual([SHIPPED_NAME, 'tick-b'])
     expect(byCue['wheel-tick'][1]).toMatchObject({ file: 'wheel-tick/tick-b.wav', url: '/_dev/cue-candidates/wheel-tick/tick-b.wav', licence: 'generated', note: 'dry', shipped: false })
   })
 
@@ -74,24 +116,24 @@ describe('candidatesOf', () => {
     ['an extension the player does not take', { cues: { 'wheel-stop': [{ name: 'a', file: 'wheel-stop/a.flac', source: 's', licence: 'CC0' }] } }],
     ['a missing source', { cues: { 'wheel-stop': [{ name: 'a', file: 'wheel-stop/a.wav', licence: 'CC0' }] } }],
   ])('names a problem and leaves the entry out for %s', (_what, manifest) => {
-    const { byCue, problems } = candidatesOf(manifest)
+    const { byCue, problems } = candidatesOf(manifest, credits)
 
     expect(problems.length).toBeGreaterThan(0)
-    for (const id of CUE_IDS) expect(byCue[id].map(candidate => candidate.name), id).toEqual(['placeholder'])
+    for (const id of CUE_IDS) expect(byCue[id].map(candidate => candidate.name), id).toEqual([SHIPPED_NAME])
   })
 
   it('names a duplicate name within a cue and keeps the first', () => {
     const entry = { name: 'a', file: 'wheel-stop/a.wav', source: 's', licence: 'CC0' }
-    const { byCue, problems } = candidatesOf({ cues: { 'wheel-stop': [entry, { ...entry, file: 'wheel-stop/b.wav' }] } })
+    const { byCue, problems } = candidatesOf({ cues: { 'wheel-stop': [entry, { ...entry, file: 'wheel-stop/b.wav' }] } }, credits)
 
     expect(problems).toHaveLength(1)
     expect(byCue['wheel-stop'].map(candidate => candidate.file)).toEqual([cueFileUrl('wheel-stop'), 'wheel-stop/a.wav'])
   })
 
-  it('never throws: a manifest that is no object gives the placeholders and a problem', () => {
+  it('never throws: a manifest that is no object gives the shipped rows and a problem', () => {
     for (const manifest of [null, 'x', 3, [], { cues: 'x' }, { cues: { 'wheel-stop': 'x' } }]) {
-      const { byCue, problems } = candidatesOf(manifest)
-      expect(byCue['wheel-stop'][0]!.name).toBe('placeholder')
+      const { byCue, problems } = candidatesOf(manifest, credits)
+      expect(byCue['wheel-stop'][0]!.name).toBe(SHIPPED_NAME)
       expect(problems.length).toBeGreaterThan(0)
     }
   })
@@ -221,7 +263,7 @@ describe('arrival buttons', () => {
 })
 
 describe('choicesReport', () => {
-  const { byCue } = candidatesOf({ cues: { 'wheel-stop': [{ name: 'thunk', file: 'wheel-stop/thunk.wav', source: 'sfxr preset hit, seed 3', author: null, licence: 'CC0' }] } })
+  const { byCue } = candidatesOf({ cues: { 'wheel-stop': [{ name: 'thunk', file: 'wheel-stop/thunk.wav', source: 'sfxr preset hit, seed 3', author: null, licence: 'CC0' }] } }, credits)
 
   it('has all eleven cues in order, undecided by default', () => {
     const report = choicesReport(byCue, emptyChoices(), 40)
@@ -235,12 +277,12 @@ describe('choicesReport', () => {
     const choices = emptyChoices()
     choices['wheel-stop'] = { candidate: 'thunk', noneFits: false }
     choices['wheel-tick'] = { candidate: null, noneFits: true }
-    choices['wheel-windup'] = { candidate: 'placeholder', noneFits: false }
+    choices['wheel-windup'] = { candidate: SHIPPED_NAME, noneFits: false }
     const report = choicesReport(byCue, choices, 60)
 
     expect(report.choices['wheel-stop']).toEqual({ decision: 'candidate', candidate: 'thunk', file: 'wheel-stop/thunk.wav', source: 'sfxr preset hit, seed 3', author: null, licence: 'CC0' })
     expect(report.choices['wheel-tick']).toMatchObject({ decision: 'none-fits', candidate: null, file: null })
-    expect(report.choices['wheel-windup']).toMatchObject({ decision: 'candidate', file: cueFileUrl('wheel-windup'), licence: 'generated' })
+    expect(report.choices['wheel-windup']).toMatchObject({ decision: 'candidate', candidate: SHIPPED_NAME, file: cueFileUrl('wheel-windup'), licence: 'generated' })
     expect(report.tickMinGapMs).toBe(60)
   })
 
@@ -253,14 +295,14 @@ describe('choicesReport', () => {
 })
 
 describe('testCandidateOf', () => {
-  const { byCue } = candidatesOf({ cues: { 'wheel-stop': [{ name: 'thunk', file: 'wheel-stop/thunk.wav', source: 's', licence: 'CC0' }] } })
+  const { byCue } = candidatesOf({ cues: { 'wheel-stop': [{ name: 'thunk', file: 'wheel-stop/thunk.wav', source: 's', licence: 'CC0' }] } }, credits)
 
-  it('is the marked candidate, else the placeholder, also for none-fits', () => {
+  it('is the marked candidate, else the shipped file, also for none-fits', () => {
     const choices = emptyChoices()
-    expect(testCandidateOf(byCue, choices, 'wheel-stop').name).toBe('placeholder')
+    expect(testCandidateOf(byCue, choices, 'wheel-stop').name).toBe(SHIPPED_NAME)
     choices['wheel-stop'] = { candidate: 'thunk', noneFits: false }
     expect(testCandidateOf(byCue, choices, 'wheel-stop').name).toBe('thunk')
     choices['wheel-stop'] = { candidate: null, noneFits: true }
-    expect(testCandidateOf(byCue, choices, 'wheel-stop').name).toBe('placeholder')
+    expect(testCandidateOf(byCue, choices, 'wheel-stop').name).toBe(SHIPPED_NAME)
   })
 })
