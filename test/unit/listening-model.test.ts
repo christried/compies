@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import {
@@ -42,6 +42,19 @@ describe('candidatesOf', () => {
     expect(problems).toEqual([])
     for (const id of CUE_IDS) {
       expect(byCue[id]).toEqual([{ name: 'placeholder', url: cueFileUrl(id), file: cueFileUrl(id), source: 'scripts/make-placeholder-cues.mjs', author: null, licence: 'generated', note: null, shipped: true }])
+    }
+  })
+
+  it('reads the committed manifest without a problem, and every entry has its file on disk', () => {
+    const manifest: unknown = JSON.parse(readFileSync(resolve(root, 'sound-candidates/manifest.json'), 'utf8'))
+    const { byCue, problems } = candidatesOf(manifest)
+
+    expect(problems).toEqual([])
+    for (const id of CUE_IDS) {
+      expect(byCue[id][0]!.name, id).toBe('placeholder')
+      for (const candidate of byCue[id].filter(entry => !entry.shipped)) {
+        expect(existsSync(resolve(root, 'sound-candidates', candidate.file)), candidate.file).toBe(true)
+      }
     }
   })
 
