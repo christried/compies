@@ -320,6 +320,7 @@ Inline notices (team selection locked, uneven teams, pool warning).
 - **Desktop / mobile:** Same.
 - **Accessibility:** `role="status"` when it appears live, else plain text.
 - **Motion:** enter fade `dur-base`.
+- **Deviation (0.14, #621):** a Host-only notice shows „Nur du siehst das“ as a small bold line with a divider under it, above the text, at every width; its action sits below the text. 0.12 drew it as a chip beside the text.
 
 ## AppIcon
 **Scope:** [MVP] · **Ref:** Icon
