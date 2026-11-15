@@ -15,6 +15,10 @@
 - **Hinweis ohne Doppelkreis:** Der Hinweis im Spiele-Formular ist jetzt ein Kreis mit einem Fragezeichen und öffnet sich, wenn du mit der Maus darauffährst oder ihn mit der Tastatur erreichst; ein Klick hält ihn offen. Auf dem Handy zeigt der Info-Knopf im Event-Assistenten dasselbe Fragezeichen. ([#616](https://github.com/christried/compies/issues/616))
 - Die Knöpfe im Host-Dock und in der Stepper-Leiste haben mehr Platz für ihren Schatten. Die Einträge „Neue Terminsuche“ und „Entfernen“ im Menü „Mehr“ einer Session sind flache Zeilen wie die übrigen, mit etwas mehr Abstand dazwischen. ([#607](https://github.com/christried/compies/issues/607))
 
+### Behoben
+
+- Die App-Figur am Glücksrad ragt in mittleren Fensterbreiten nicht mehr über den Rahmen der Rad-Karte. ([#604](https://github.com/christried/compies/issues/604))
+
 ## [0.13.3] - 2026-11-15 – Ton
 
 Das Glücksrad und das Veto-Fenster sind jetzt zu hören, auf allen Geräten im selben Moment. Der Schalter „Ton“ schaltet Clip und Geräusche auf deinem Gerät gemeinsam aus.
