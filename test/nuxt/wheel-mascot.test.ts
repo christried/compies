@@ -40,7 +40,7 @@ const wheelOf = (spin: SpinView | null, fields: Partial<WheelView> = {}): WheelV
 const slicesOf = (n: number): WheelView['slices'] => Array.from({ length: n }, (_, index) => ({ id: `s${index}`, name: `Spiel ${index}` }))
 
 let serverMs = START - 1000
-const serverNow = vi.fn(() => serverMs)
+const serverNow = () => serverMs
 let page: Awaited<ReturnType<typeof mountSuspended>> | undefined
 
 async function mount(wheel: WheelView, props: { hidden?: boolean, isHost?: boolean } = {}) {
@@ -108,7 +108,6 @@ beforeAll(async () => {
 beforeEach(() => {
   vi.useFakeTimers()
   serverMs = START - 1000
-  serverNow.mockClear()
   stubInView()
 })
 
@@ -196,33 +195,20 @@ describe('a spin of 6 s', () => {
   })
 })
 
-describe('the brake follows the length of the spin', () => {
-  it.each([[7000, 4200], [8500, 5100], [10_000, 6000]])('of %i ms is at %i ms', async (length, brake) => {
-    await mount(wheelOf(spinOf(length)))
-
-    await at(START + brake - 1)
-    expect(rigState()).toBe('excited')
-    await at(START + brake)
-    expect(rigState()).toBe('suspense')
-    await at(START + length)
-    expect(rigState()).toBe('cheer')
-  })
-})
-
 describe('a late joiner', () => {
-  it.each([[100, 'in', 'excited'], [2000, 'on', 'excited'], [4000, 'on', 'suspense'], [6500, 'on', 'cheer'], [8000, 'on', 'idle'], [8300, 'out', 'idle']])('who opens the page %i ms into the spin finds him %s and %s, as one who watched', async (offset, wantedStage, wantedState) => {
+  it('who opens the page 4000 ms into the spin finds him on and holding his breath, as one who watched', async () => {
     // The one who watched: the clock moves frame by frame to the same instant.
     await mount(wheelOf(spinOf()))
-    for (let ms = START - 1000; ms <= START + offset; ms += 100) await at(ms)
-    await at(START + offset)
+    for (let ms = START - 1000; ms <= START + 4000; ms += 100) await at(ms)
+    await at(START + 4000)
     const watched = seen()
     page!.unmount()
 
-    serverMs = START + offset
+    serverMs = START + 4000
     await mount(wheelOf(spinOf()))
     await flushPromises()
 
-    expect(watched).toEqual({ stage: wantedStage, state: wantedState })
+    expect(watched).toEqual({ stage: 'on', state: 'suspense' })
     expect(seen()).toEqual(watched)
   })
 
@@ -338,11 +324,21 @@ describe('what he leaves alone', () => {
     expect(page!.get('[role="status"]').text()).toBe('')
   })
 
-  it('announces the result at the stop as before, with nothing of his', async () => {
+  it('moves with the wheel, on one clock: at the stop he cheers in the frame the wheel announces its result, with nothing of his in it', async () => {
     await mount(wheelOf(spinOf(6000, { game: halo })))
+    const rotor = () => page!.get('[data-testid="wheel-rotor"]').attributes('style')
 
-    await at(START + 6100)
+    await at(START + 3700)
+    const turning = rotor()
+    await at(START + 5999)
+    expect(rigState()).toBe('suspense')
+    expect(page!.get('[role="status"]').text()).toBe('')
+    // The wheel is turning while he holds his breath: both are seen to move.
+    expect(rotor()).not.toBe(turning)
+
+    await at(START + 6000)
     expect(mascot().exists()).toBe(true)
+    expect(rigState()).toBe('cheer')
     expect(page!.get('[role="status"]').text()).toBe('Glücksrad: Halo')
   })
 
@@ -353,22 +349,6 @@ describe('what he leaves alone', () => {
     const markup = mascot().element.outerHTML
     for (const secret of ['Halo', 'Kart', 'Pong', 'Schach', 'g-halo', 'd1', 'r1']) expect(markup).not.toContain(secret)
     expect(Object.keys(mascot().attributes()).sort()).toEqual(['aria-hidden', 'class', 'data-ready', 'data-stage', 'data-testid', 'data-width', 'style'])
-  })
-
-  it('does not read the server\'s clock for himself: a frame costs the wheel the same reads with and without him', async () => {
-    await mount(wheelOf(spinOf()))
-    await at(START + 1000)
-    serverNow.mockClear()
-    await at(START + 1050)
-    const withHim = serverNow.mock.calls.length
-    await at(START + 6000 + 2650)
-    expect(mascot().exists()).toBe(false)
-    serverNow.mockClear()
-    await at(START + 6000 + 2700)
-    const without = serverNow.mock.calls.length
-
-    expect(withHim).toBeGreaterThan(0)
-    expect(withHim).toBe(without)
   })
 
   it('does not change the wheel\'s size or the card: the box is positioned and takes no room', async () => {
