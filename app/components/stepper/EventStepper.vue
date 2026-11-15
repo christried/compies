@@ -142,7 +142,7 @@ function next() {
         >{{ nextBlocked }}</span>
         <div
           data-testid="stepper-footer"
-          class="ml-auto flex w-fit items-center gap-2 rounded-pill border-(length:--cp-bw) border-line bg-surface p-1.5 shadow-card"
+          class="ml-auto flex w-fit items-center gap-2 rounded-pill border-(length:--cp-bw) border-line bg-surface pt-1.5 pl-1.5 pr-2 pb-2 shadow-card"
         >
           <AppButton
             v-if="current > 0"
