@@ -1,6 +1,6 @@
 # Roadmap
 
-Where COMPIES goes after „Mehr Termine“ (0.3): a polished **Teams** Event with the **Lucky Wheel**, an equal **Veto allowance** per Party, in-app scores and the **Award ceremony**. Agreed on 2026-10-28 in a grilling session. Re-planned on 2026-10-31, in the grilling for „Glücksrad“: the Releases were renumbered, „Notizen“ was split out, and **Rounds** were added. Extended on 2026-11-08, in the grilling for „Feinschliff“: 0.10 takes the list that waited for the first Event, and 0.11 „Profil“ follows. Extended on 2026-11-09 from the first production check (the user's production-check notes (sorted here, then removed on 2026-11-09), #342): 0.12 „Eventseite“ and 0.13 „Glücksrad & Clip“ hold its bigger findings; its ideas for after the roadmap were listed in § Später until 2026-11-10 and are Idea issues now (#452–#468). Detailed on 2026-11-09, in the grilling for „Profil“: § 0.11 holds its rules. Detailed on 2026-11-10, in the grilling for „Eventseite“: § 0.12 holds its rules. Detailed on 2026-11-11, in the grilling for „Glücksrad & Clip“: § 0.13 holds its rules and its split into four Releases. Terms follow `GLOSSARY.md`.
+Where COMPIES goes after „Mehr Termine“ (0.3): a polished **Teams** Event with the **Lucky Wheel**, an equal **Veto allowance** per Party, in-app scores and the **Award ceremony**. Agreed on 2026-10-28 in a grilling session. Re-planned on 2026-10-31, in the grilling for „Glücksrad“: the Releases were renumbered, „Notizen“ was split out, and **Rounds** were added. Extended on 2026-11-08, in the grilling for „Feinschliff“: 0.10 takes the list that waited for the first Event, and 0.11 „Profil“ follows. Extended on 2026-11-09 from the first production check (the user's production-check notes (sorted here, then removed on 2026-11-09), #342): 0.12 „Eventseite“ and 0.13 „Glücksrad & Clip“ hold its bigger findings; its ideas for after the roadmap were listed in § Später until 2026-11-10 and are Idea issues now (#452–#468). Detailed on 2026-11-09, in the grilling for „Profil“: § 0.11 holds its rules. Detailed on 2026-11-10, in the grilling for „Eventseite“: § 0.12 holds its rules. Detailed on 2026-11-11, in the grilling for „Glücksrad & Clip“: § 0.13 holds its rules and its split into four Releases. Extended on 2026-11-15, after the 0.13 series: what comes next is chosen from the backlog, not from a fixed order. The operator marked nineteen issues, and one grilling cut them into the wording harness, 0.14 „Politur“ with 0.14.1 „Wortwahl“, and 0.15 „Tour“ (`GLOSSARY.md`: Tour; ADR 0017). Terms follow `GLOSSARY.md`.
 
 **Numbering.** Releases count from 0.1 while COMPIES is being built; 1.0.0 is the Release the user declares ready (`docs/agents/release.md` § Semantic versioning). Before 0.5.1 they were numbered 1.x: 1.0.0 is 0.1.0, 1.1.x is 0.2.x, 1.2.0 is 0.3.0, 1.3.0 is 0.4.0 and 1.4.0 is 0.5.0. Older specs, issues, reviews, ADRs and code comments keep the old numbers; in them, the planned 1.5 „Glücksrad“ is 0.7, 1.6 „Punkte“ is 0.8 and 1.7 „Siegerehrung“ is 0.9.
 
@@ -19,6 +19,9 @@ Each release is one spec and usable on its own. A release is grilled, specced an
 | 0.11 | Profil | released on 2026-11-10: [#398](https://github.com/christried/compies/issues/398); the Profil page, Darstellung (Hell, Dunkel, System) and the dark check |
 | 0.12 | Eventseite | released on 2026-11-11: [#425](https://github.com/christried/compies/issues/425); one Tribüne, open Team names, the stage that follows the game, game tiles with the game dialog, and the finished page that waits for the Award ceremony |
 | 0.13 | Glücksrad & Clip | the wheel, the clip and the Share image findings of the production check; grilled on 2026-11-11 and split into four Releases: 0.13.0 „Clip“ ([#501](https://github.com/christried/compies/issues/501), released on 2026-11-12), 0.13.1 „Kleinkram“ ([#502](https://github.com/christried/compies/issues/502), released on 2026-11-12), 0.13.2 „Show-Rad“ ([#503](https://github.com/christried/compies/issues/503), released on 2026-11-12), 0.13.3 „Ton“ ([#504](https://github.com/christried/compies/issues/504), released on 2026-11-15) |
+| no Release | Wording-Harness | developer tooling, built first: [#620](https://github.com/christried/compies/issues/620); every text of the app as one step, the wording sweep and its result |
+| 0.14 | Politur | the operator's review of production of 2026-11-15: [#621](https://github.com/christried/compies/issues/621); built while the operator sweeps. 0.14.1 „Wortwahl“ carries the sweep's result ([#620](https://github.com/christried/compies/issues/620)) |
+| 0.15 | Tour | the Rundgang for a Member's first Event: [#622](https://github.com/christried/compies/issues/622); waits for a Claude Design hand-off |
 | 1.0 | | when the user declares COMPIES ready |
 
 ## 0.4 Spielvorbereitung (was 1.3)
@@ -330,6 +333,64 @@ Released on 2026-11-15 (`v0.13.3`). Spec: [#504](https://github.com/christried/c
 - **Sound never holds a cut:** files that are not chosen yet delay 0.13.3 only.
 - All UI _own build_.
 
+## Wording-Harness (no Release)
+
+Developer tooling that shows the operator every text of the app in its place and turns their verdicts into changes. Spec: [#620](https://github.com/christried/compies/issues/620). Grilled on 2026-11-15 from the Idea issues #463, #468 and #619. Built first; no changelog line.
+
+- **The walk:** a script drives the real app through every page and Event state it can reach, starting from the dark check's states plus each form with its errors and each menu and sheet. It runs on the local dev database with the dev Users, in Hell, in the order a User meets the pages. Every text is recorded with a screenshot and a frame. A text it never reaches still gets a step, with its component and line. No target number: the build reports how many texts have a picture.
+- **Which texts:** every text of the locale file that the code uses, the offline page and the app's description for the home screen. Labels only a screen reader speaks are in, marked. The legal texts are a last group that can be skipped. The changelog's released entries are out.
+- **Texts nothing uses** are listed per group with „löschen“ or „behalten“, not swept.
+- **The review page:** one command, one step per text (a text used in several places is one step), keyboard-first. Answers: „passt“, a replacement, „Alternativen bitte“, and a free comment. Each answer is saved at once; a sweep resumes over days. A group can be skipped, never approved in one click.
+- **Checks:** a replacement that drops a placeholder or a singular or plural form is refused; the copy rules only warn.
+- **Marks and filters:** „Mono“ (it replaces the mono pass, #468; a COMPIES use on top of the general harness), „nur Screenreader“, „neu seit dem letzten Durchgang“.
+- **The result:** the answers file is committed under `docs/reviews/`. Replacements and deletions ship as 0.14.1 „Wortwahl“; a text that changed since the sweep is reported, not overwritten. „Alternativen bitte“ gets three drafts per text and a short second run. Comments become proposed tickets by component, which the operator approves.
+- **From now on** a Release's new texts are swept with „neu seit dem letzten Durchgang“ before its cut; no wording is reviewed in a walk-through.
+- **It stays in the repo** beside the browser scripts, a deviation from the idea's "throwaway app". Its switch in the app is dev-only, and a build test proves the production build has none of it.
+- **The operator's own skills** get `christried-` in their name: `christried-tag-review` goes into the repo now (#619), `christried-wording-sweep` is written after the first sweep and holds the general harness only. The other own skills keep their names.
+- All UI _own build_, outside the design system.
+
+## 0.14 Politur
+
+The operator's review of production of 2026-11-15 and four older findings. Spec: [#621](https://github.com/christried/compies/issues/621). Grilled on 2026-11-15 from the Idea issues #587, #471, #604 and #606 to #618 (without #615), with #602 and #603. Built after the wording harness, while the operator sweeps. Earlier decisions that contradict it no longer hold.
+
+- **The Clip's backdrop** (#587): while a Clip plays on a device, everything but the Clip with its bar, the Veto bar and the Host's dock goes close to black (about 85 %, the same in both Appearances) and takes no input. It fades with the Clip, lifts at once for a Member who closes the Clip, and covers a game without a video too. Nothing is laid over the player.
+- **The aura** (#471) marks the one button in a page's head that starts something new: „Neue Terminumfrage“ and „Spiel anlegen“. Never two on a page, never a form's submit.
+- **Room for shadows** (#607): padding only in the Host dock and the stepper's pill; the hold entries of the Session „Mehr“ menu become flat rows that keep their fill and badge.
+- **Lift on hover** (#608): a shadowed element that can be clicked lifts (game cards and tiles); static cards never do. Nothing lifts on touch; reduced motion shows the tint.
+- **A dragged person's name** (#609) rides on a small plate above the shadow.
+- **The Host's seat notice goes** (#610), both its texts.
+- **„Nur du siehst das“** (#611) is a heading line with a divider above the text, at every width, in all six Host-only notices.
+- **Game tiles and library cards reserve two title lines** (#612).
+- **„Zurück“ and „Weiter“** (#613) are fixed at the window's bottom on every step, right edge on the form's right edge, in the settings editor too.
+- **Tags on a card** (#614): pinned to the bottom, „+2“ matches the chips, and it opens a popover with every Tag.
+- **The hint** (#616) is one circle with a bare question mark. It and the Tags popover open the same way: hover or focus opens, a click or a tap pins.
+- **The Appearance button** (#617, on #603): from 980 px a header button left of the Sound button that opens a menu of Hell, Dunkel and System; below that a row in the avatar menu. Signed out there is none.
+- **„Profil“ in the avatar menu** (#618), directly above „Abmelden“.
+- **Compibert beside the wheel** (#604) uses the small bust until the wheel card holds the big one inside its border.
+- **Without a visible change:** #602, #603 and #606 (the wheel's mounted tests keep what a unit test cannot show; the ease-name checks stay).
+- **Datenschutzerklärung:** no change.
+- All UI _own build_.
+
+### 0.14.1 Wortwahl
+
+The result of the first wording sweep: the replacements and the deletions of unused texts, applied by an agent from the committed answers file ([#620](https://github.com/christried/compies/issues/620)). One changelog line. Where a UI word of the Glossary changes, the Glossary and the retired-words list change with it.
+
+## 0.15 Tour
+
+The Rundgang that shows a Member around the first Event they did not create. Spec: [#622](https://github.com/christried/compies/issues/622). Grilled on 2026-11-15 from the Idea issue #460 (`GLOSSARY.md`: Tour; ADR 0017). Built last, so it shows the polished header and the final wording.
+
+- **Who and when:** once per User, the first time they open an Event page of an Event they do not host, existing Users included. It starts when the page is calm: no Running Session, no sheet, no „Was ist neu“. Not on a finished Event.
+- **Stored** with the User on the server as a version number, so a reworked Tour shows once more to everyone.
+- **One chapter, the arrival,** of at most eight steps; a step whose thing is not on the page is left out: a greeting, the Event's head, the Date poll, the Game board with the Tribüne and the Teamwort, „So wird gespielt“, Aktivität (on a phone the tabs), the Ton button, the end. The game night itself gets no chapter here.
+- **Look, don't touch:** the Tour only points; the User never votes or moves in it.
+- **Leaving and repeating:** „Überspringen“ on every step and Esc, both count as seen; a row on the Profil page shows it again at the next Event.
+- **Compibert** speaks in the first person in a bubble and never says his name. He shows his face only, perhaps a hand; never the whole body.
+- **Built in-house,** without a tour library (ADR 0017); the steps are data, so the Host tour (#462) can reuse the machinery.
+- **A _Claude Design hand-off_** for the bubble, the spotlight and Compibert's face, with still and gently moving options to choose from; it blocks the build. The Profil row and the storage are _own build_.
+- **Datenschutzerklärung:** one line on the stored version; the operator approves the wording.
+- **The texts** are swept with the wording harness before the cut.
+- **Out:** #461 and #462, steps in which the User acts, a voice.
+
 ## Out of scope for this roadmap
 
-Free-for-all; Pick & Ban, Loser's Pick, Loser's Advantage; chat and emotes; sound before 0.13.3, and after it every cue but the wheel's and the Veto window's; push notifications; Compibert states outside the ceremony and the wheel (the party hat is an accessory, not a state); the boot splash (screen 01), the smoke background and the PWA install hint (screen 29; decided 2026-11-08); second provider, avatar upload and the settings 0.11 leaves out (Push, Sprache, Weniger Bewegung; T2b); account deletion in the app; Host permission admin page (T3, Hosts stay on the env allowlist); archive list (T16); battle replay; 3D podium; a public link to the Share image (a public URL would show the Team words in the Team names to anyone who has it; decided 2026-11-05); age-restricted videos playing embedded (not fixable: YouTube requires a signed-in viewer on youtube.com for age-gated videos, so such a game gets the card fallback the Glossary's Clip entry describes; from the production check of 2026-11-09).
+Free-for-all; Pick & Ban, Loser's Pick, Loser's Advantage; chat and emotes; sound before 0.13.3, and after it every cue but the wheel's and the Veto window's; push notifications; Compibert states outside the ceremony, the wheel and the Tour (the party hat is an accessory, not a state); the boot splash (screen 01), the smoke background and the PWA install hint (screen 29; decided 2026-11-08); second provider, avatar upload and the settings 0.11 leaves out (Push, Sprache, Weniger Bewegung; T2b); account deletion in the app; Host permission admin page (T3, Hosts stay on the env allowlist); archive list (T16); battle replay; 3D podium; a public link to the Share image (a public URL would show the Team words in the Team names to anyone who has it; decided 2026-11-05); age-restricted videos playing embedded (not fixable: YouTube requires a signed-in viewer on youtube.com for age-gated videos, so such a game gets the card fallback the Glossary's Clip entry describes; from the production check of 2026-11-09).
