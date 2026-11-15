@@ -1,10 +1,12 @@
-import { mountSuspended } from '@nuxt/test-utils/runtime'
+import { mountSuspended, registerEndpoint } from '@nuxt/test-utils/runtime'
 import type { VueWrapper } from '@vue/test-utils'
+import { createError, readBody } from 'h3'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import UserMenu from '~/components/UserMenu.vue'
 import ImpressumPage from '~/pages/impressum.vue'
 import DatenschutzPage from '~/pages/datenschutz.vue'
 import { kitty, signInAs } from './auth'
+import { shownToasts } from './event-page'
 
 // The back link reads the in-app history entry at click time; a direct visit has none.
 const setHistoryBack = (back: string | null) => window.history.replaceState({ ...window.history.state, back }, '')
@@ -186,6 +188,97 @@ describe('legal pages', () => {
     expect(items.slice(2).map(item => item.attributes('href'))).toEqual(['/impressum', '/datenschutz', '/neuigkeiten'])
     expect(menu.get('[role="none"]').text()).toContain('Kitty')
     expect(menu.findAll('*').filter(el => /^v\d+\.\d+\.\d+$/.test(el.text().trim()))).toHaveLength(0)
+  })
+
+  describe('the row „Darstellung“ in the avatar menu (#617)', () => {
+    const TOAST = 'Das hat nicht geklappt, die Darstellung ist wieder wie vorher. Versuch’s nochmal.'
+    const radios = (menu: VueWrapper) => menu.findAll('[role="menu"] [role="radio"]')
+    const tickedRadio = (menu: VueWrapper) => radios(menu).filter(r => r.attributes('aria-checked') === 'true').map(r => r.text())
+
+    beforeEach(() => {
+      signInAs(kitty)
+      useState('toasts').value = []
+    })
+
+    it('holds Hell, Dunkel and System with the current one ticked, in a wrapper hidden from md up', async () => {
+      const menu = await mountSuspended(UserMenu)
+
+      await menu.get('button[aria-haspopup="menu"]').trigger('click')
+
+      const group = menu.findAll('[role="menu"] [role="radiogroup"][aria-label="Darstellung"]')
+      expect(group).toHaveLength(1)
+      expect(radios(menu).map(r => r.text())).toEqual(['Hell', 'Dunkel', 'System'])
+      expect(tickedRadio(menu)).toEqual(['Hell'])
+      expect(group[0]!.element.parentElement!.classList).toContain('md:hidden')
+    })
+
+    it('is absent when signed out', async () => {
+      signInAs(null)
+
+      const menu = await mountSuspended(UserMenu)
+
+      expect(menu.find('[role="radiogroup"]').exists()).toBe(false)
+      expect(menu.find('[role="menu"]').exists()).toBe(false)
+    })
+
+    it('applies a choice at once and keeps the menu open', async () => {
+      const answered = vi.fn()
+      registerEndpoint('/api/me/appearance', {
+        method: 'POST',
+        handler: async (event) => {
+          const { appearance } = await readBody(event)
+          answered(appearance)
+          return { appearance }
+        },
+      })
+      const menu = await mountSuspended(UserMenu, { attachTo: document.body })
+      await menu.get('button[aria-haspopup="menu"]').trigger('click')
+
+      await radios(menu)[1]!.trigger('click')
+
+      expect(useAuthUser().value?.appearance).toBe('dark')
+      expect(tickedRadio(menu)).toEqual(['Dunkel'])
+      expect(menu.find('[role="menu"]').exists()).toBe(true)
+      await vi.waitFor(() => expect(answered).toHaveBeenCalledWith('dark'))
+      await new Promise(resolve => setTimeout(resolve, 50))
+      expect(shownToasts()).toEqual([])
+      menu.unmount()
+    })
+
+    it('puts the tick back and shows the error toast when the save fails', async () => {
+      registerEndpoint('/api/me/appearance', {
+        method: 'POST',
+        handler: () => {
+          throw createError({ statusCode: 500 })
+        },
+      })
+      const menu = await mountSuspended(UserMenu, { attachTo: document.body })
+      await menu.get('button[aria-haspopup="menu"]').trigger('click')
+
+      await radios(menu)[1]!.trigger('click')
+
+      await vi.waitFor(() => expect(shownToasts()).toHaveLength(1))
+      expect(shownToasts()[0]).toMatchObject({ tone: 'error', text: TOAST })
+      expect(tickedRadio(menu)).toEqual(['Hell'])
+      expect(menu.find('[role="menu"]').exists()).toBe(true)
+      menu.unmount()
+    })
+
+    it('walks with ArrowDown from the row to Profil and back with ArrowUp, and ArrowDown there does not change the Appearance', async () => {
+      const menu = await mountSuspended(UserMenu, { attachTo: document.body })
+      await menu.get('button[aria-haspopup="menu"]').trigger('click')
+      const profil = menu.findAll('[role="menuitem"]')[0]!
+      expect(document.activeElement).toBe(profil.element)
+      const selected = radios(menu)[0]!
+
+      await profil.trigger('keydown', { key: 'ArrowUp' })
+      expect(document.activeElement).toBe(selected.element)
+
+      await selected.trigger('keydown', { key: 'ArrowDown' })
+      expect(document.activeElement).toBe(profil.element)
+      expect(useAuthUser().value?.appearance).toBe('light')
+      menu.unmount()
+    })
   })
 
   it('closes the menu on Esc and gives focus back to the avatar button', async () => {

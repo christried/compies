@@ -72,6 +72,7 @@ The „v1.2.0“ pill and its unseen dot go away everywhere (UserMenu, sign-in, 
 - **Accessibility:** `role="menu"`; arrow keys move through Abmelden and the three links in order; Esc closes and returns focus to the avatar.
 - **Motion:** unchanged.
 - **Deviation (0.14, #621):** „Profil“ is back in the menu: a link to the Profil page, directly above „Abmelden“, at every width, with the hub nav's `User` icon. The 0.11 decision „The profile menu stays as designed, without a link to Profil“ no longer holds.
+- **Deviation (0.14, #621):** below md the menu has a row „Darstellung“ with Hell, Dunkel, System (the Profil page's SegmentedControl), above „Profil“; from md the Appearance button in the header holds it (#617).
 
 ## PollMatrix (change)
 **Ref:** Footer und Anmerkungen 1f, 4a–4c
