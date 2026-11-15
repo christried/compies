@@ -35,6 +35,7 @@
   --color-surface: var(--cp-surface);
   --color-surface-2: var(--cp-surface-2);
   --color-overlay: var(--cp-overlay);
+  --color-backdrop: var(--cp-backdrop);
   --color-ink: var(--cp-ink);
   --color-ink-2: var(--cp-ink-2);
   --color-ink-3: var(--cp-ink-3);
@@ -131,7 +132,7 @@
   --border-width-memphis: var(--cp-bw);  --border-width-thin: var(--cp-bw-thin);
 
   /* layer stack: use layer-dock, layer-veto … never raw z-index */
-  --layer-decor: var(--cp-z-decor);  --layer-content: var(--cp-z-content);  --layer-sticky: var(--cp-z-sticky);  --layer-header: var(--cp-z-header);  --layer-dock: var(--cp-z-dock);  --layer-sheet: var(--cp-z-sheet);
+  --layer-decor: var(--cp-z-decor);  --layer-content: var(--cp-z-content);  --layer-sticky: var(--cp-z-sticky);  --layer-header: var(--cp-z-header);  --layer-backdrop: var(--cp-z-backdrop);  --layer-dock: var(--cp-z-dock);  --layer-sheet: var(--cp-z-sheet);
   --layer-clip: var(--cp-z-clip);  --layer-veto: var(--cp-z-veto);  --layer-modal: var(--cp-z-modal);  --layer-popover: var(--cp-z-popover);  --layer-toast: var(--cp-z-toast);  --layer-confetti: var(--cp-z-confetti);
 
   /* matches DS Frame: mobile < 600 · tablet 600–979 · desktop 980–1439 · wide ≥ 1440. Reference layout 1280. */
@@ -155,6 +156,7 @@
   --animate-enter: cp-fade-in var(--cp-dur-base) var(--cp-ease-out) both;    /* UI: toasts, badges, modals */
   --animate-fade-in: cp-fade-in var(--cp-dur-fast) var(--cp-ease-out) both;
   --animate-clip-in: cp-clip-in var(--cp-dur-slow) var(--cp-ease-out) both;     /* the synced clip opens (04-motion § Clip overlay) */
+  --animate-backdrop-in: cp-fade-in var(--cp-dur-slow) var(--cp-ease-out) both;  /* the Clip's backdrop fades in with the Clip (#587): opacity only, a full-viewport layer scaled to .96 would show a strip of page at its edge */
   --animate-veto-in: cp-veto-in var(--cp-dur-slow) var(--cp-ease-out) both;     /* the Veto bar rises from the bottom (04-motion § Veto window) */
   --animate-sheet-in: cp-sheet-in var(--cp-dur-slow) var(--cp-ease-out) both;
   --animate-bounce-back: cp-bounce-back var(--cp-dur-slower) var(--cp-ease-spring) both;
@@ -176,11 +178,11 @@
 
 /* every animate-* class has a calm twin under reduced motion */
 @media (prefers-reduced-motion: reduce) {
-  .animate-clip-in, .animate-veto-in, .animate-sheet-in, .animate-bounce-back { animation: cp-fade-in var(--cp-dur-fast) linear both; }
+  .animate-clip-in, .animate-backdrop-in, .animate-veto-in, .animate-sheet-in, .animate-bounce-back { animation: cp-fade-in var(--cp-dur-fast) linear both; }
   .animate-emote-rise { animation: cp-fade-in 200ms linear both; }
   .animate-tick, .animate-wiggle, .animate-live { animation: none; }
 }
-[data-motion=reduced] .animate-clip-in, [data-motion=reduced] .animate-veto-in, [data-motion=reduced] .animate-sheet-in, [data-motion=reduced] .animate-bounce-back { animation: cp-fade-in var(--cp-dur-fast) linear both; }
+[data-motion=reduced] .animate-clip-in, [data-motion=reduced] .animate-backdrop-in, [data-motion=reduced] .animate-veto-in, [data-motion=reduced] .animate-sheet-in, [data-motion=reduced] .animate-bounce-back { animation: cp-fade-in var(--cp-dur-fast) linear both; }
 [data-motion=reduced] .animate-emote-rise { animation: cp-fade-in 200ms linear both; }
 [data-motion=reduced] .animate-tick, [data-motion=reduced] .animate-wiggle, [data-motion=reduced] .animate-live { animation: none; }
 
