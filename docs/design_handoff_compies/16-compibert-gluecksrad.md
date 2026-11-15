@@ -15,7 +15,7 @@ Where Compibert stands beside the LuckyWheel during a spin, how he enters and le
 
 Compibert (bust) peeking out from **behind** the wheel at its upper right during a spin. Child of the LuckyWheel card, not of the wheel SVG.
 
-- **Props / variants:** `width: 'md' | 'sm'` (from the LuckyWheel breakpoint, not from the viewport directly), `spin?: {startAt, durationMs, hidden}` (same object the wheel gets), `reduced: boolean` (from `reduced()`)
+- **Props / variants:** `width: 'md' | 'sm'` (from the card's content width, `mascotWidthFor`, #604), `spin?: {startAt, durationMs, hidden}` (same object the wheel gets), `reduced: boolean` (from `reduced()`)
 - **States:** absent (wheel at rest, default) · entering · `excited` · `suspense` · `cheer` (1.6 s) · `idle` (hold until removal) · leaving · absent
 - **Slots:** —
 - **Placement (all values relative to the wheel square, origin top-left; wheel size never changes):**
@@ -25,11 +25,13 @@ Compibert (bust) peeking out from **behind** the wheel at its upper right during
 | md and up (stage left of the side panel, e.g. 1440) | 420 | `bust` 232 | 300 · 18 (box 300–532 × 18–250) | under the wheel |
 | below md (card full width, e.g. 390 → wheel 332) | ≤ 340 | `bust` 150 | W − 142 · −20 (box W−142 … W+8 × −20 … 130) | under the wheel |
 
+> **Width (0.14, #604):** the size follows the wheel card's content width `C`, not the window: `bust` 232 only when `C >= wheel max + 192` (612 px from md up, 532 px below), otherwise `bust` 150; the rule „it must not cross the card border“ holds at every width.
+
   - Stacking inside the wheel's positioned wrapper (`isolation: isolate`): mascot `z-index: 0`, wheel (SVG, flapper, hub) `z-index: 1`. No layer token needed; the mascot never leaves the card's stacking context.
   - Because he is behind the wheel disc, band, bulbs, pins, flapper and every slice label are always painted over him: nothing on the wheel can be covered, at any slice count (proved at 2 and 30 slices).
   - He stays right of the flapper: box left edge ≥ W/2 + 24 px at both widths (flapper is 44 px wide, centred).
   - He never reaches below the wheel's horizontal centre line, so the result card „Das Rad sagt“ (under the wheel) is never touched.
-  - At sm the box may overhang the wheel square by ≤ 8 px into the card padding (14 px); it must not cross the card border. If the card padding ever drops below 10 px, move the box left by the difference.
+  - At sm the box may overhang the wheel square by ≤ 8 px into the card padding (16 px); it must not cross the card border. If the card padding ever drops below 10 px, move the box left by the difference.
   - He faces screen-left (the rig's profile), so he always looks at the wheel; never mirror him.
 - **Desktop / mobile:** Same idea at both widths; only the bust size changes (232 / 150). No layout space is reserved; the card height does not change when he appears.
 - **Outline:** as the rig documents it for `bust`: light = hard shadow (filter `hrd`, 7/8 px ink), dark = sticker (cream rim + shadow, filter `stk`). The wheel keeps its colours in both appearances; the outline is what separates him from the dark card.
