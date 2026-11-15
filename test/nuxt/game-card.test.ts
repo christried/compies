@@ -3,7 +3,7 @@ import type { VueWrapper } from '@vue/test-utils'
 import { h } from 'vue'
 import { afterEach, describe, expect, it } from 'vitest'
 import GameCard from '~/components/GameCard.vue'
-import { GAME_NAME_MAX, type GameView } from '~~/shared/game'
+import { GAME_NAME_MAX, TAG_MAX, type GameView } from '~~/shared/game'
 
 // The card's structure (#351): the actions sit in the card's last child, and the body grows, so in a stretched grid row the
 // buttons of every card share one bottom edge, whatever the length of the name, the player count, Suitabilities, Price and Tags.
@@ -111,6 +111,35 @@ describe('the Tag chips on a game card (#427)', () => {
 
     expect(chips()[0]!.getAttribute('style')).toContain('var(--cp-team-7)')
     expect(chips()[1]!.getAttribute('style')).toContain('var(--cp-team-8)')
+  })
+
+  it('renders no Tag group for a game without Tags', async () => {
+    await mount({ name: 'Mario Kart', tags: [] }, 'card')
+
+    expect(root().querySelector('[role="group"]')).toBeNull()
+    expect(chips()).toHaveLength(0)
+  })
+
+  it('renders one Tag as one chip in its colour, and no „+N“', async () => {
+    await mount({ name: 'Mario Kart', tags: [{ key: 'co-op', label: 'Co-op' }] }, 'card')
+
+    expect(chips()).toHaveLength(1)
+    expect(chips()[0]!.getAttribute('style')).toContain('var(--cp-team-1)')
+    expect(chips()[0]!.getAttribute('style')).toContain('var(--cp-team-1-ink)')
+    expect(root().textContent).not.toContain('+')
+  })
+
+  it('renders a Tag with the longest allowed label in its colour, cut inside the card', async () => {
+    const label = 'M'.repeat(TAG_MAX)
+    await mount({ name: 'Mario Kart', tags: [{ key: label.toLowerCase(), label }] }, 'card')
+
+    const chip = chips()[0]!
+    expect(chip.textContent!.trim()).toBe(label)
+    // 4: the key's own colour (see the unit test)
+    expect(chip.getAttribute('style')).toContain('var(--cp-team-4)')
+    expect(chip.getAttribute('style')).toContain('var(--cp-team-4-ink)')
+    expect(chip.className).toContain('truncate')
+    expect(chip.className).toContain('max-w-[9rem]')
   })
 })
 
