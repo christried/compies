@@ -21,6 +21,8 @@ const connection = useConnectionBanner(room.state, room.enabled)
 // run toward an instant (the wheel #229, the Countdown #236, and the other timers of 0.7) get its `now` as `server-now`.
 const presence = usePresence(room)
 const serverClock = useServerClock(room)
+// The wheel is heard (#531): the cue player schedules the read's plan on the audio clock, on the Event page only.
+const cues = useCuePlayer({ view: () => data.value, serverNow: serverClock.now, ready: () => serverClock.ready.value, moved: () => serverClock.moves.value })
 const onlineState = (userId: string) => (presence.known.value ? presence.isOnline(userId) : undefined)
 
 useHead({ title: () => data.value?.event.name })
@@ -91,6 +93,13 @@ const { held, release } = useCeremonyHold(data)
 const { orderAt, counted, arrivals } = useStageOrder(() => data.value, serverClock.now, () => serverClock.ready.value)
 const pageState = computed(() => (data.value ? eventPageState({ ...data.value, ceremonyHeld: held.value }, orderAt.value, counted.value) : null))
 /** What waits for the ceremony asks the page state, which the Stage module decides (waitsForCeremony): the Winners, the party hat, the Tabelle tab and the feed. */
+// „Ton aktivieren“ (#533): the page-wide gesture listener lives here, not in the stage, which a phone's Standings or Activity view does not mount.
+const { noticeShown: soundNotice, unlock: unlockSound } = useSoundUnlock({
+  suspended: cues.suspended,
+  resume: cues.resume,
+  ready: () => serverClock.ready.value,
+  sessionRunning: () => pageState.value?.kind === 'running',
+})
 const waits = computed(() => (pageState.value ? waitsForCeremony(pageState.value) : false))
 /** The Standings' sequence waits while their block has not arrived on top (#442): false for a null clock (server render, reload, hidden tab) and for a view without a Result moment, which have no arrival. */
 const standingsHeld = computed(() => {
@@ -246,6 +255,8 @@ const { news } = useStandingsNews(data, slug)
       :poll-open="pollOpen"
       :can-change-sessions="canChangeSessions"
       :veto-bar-shown="vetoBarShown"
+      :sound-notice="soundNotice"
+      @unlock="unlockSound"
       @pick="dialogs?.openConfirm($event)"
       @reschedule="dialogs?.openReschedule($event)"
       @add="dialogs?.openAdd()"

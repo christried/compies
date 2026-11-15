@@ -852,6 +852,7 @@
   },
   "sound": {
     "enable": "Ton aktivieren",
+    "notice": "Dein Browser spielt Ton erst nach einem Tipp oder Tastendruck ab.",
     "blocked": "Dein Browser hat den Ton blockiert. Der Clip läuft trotzdem weiter, damit du nicht hinterherhängst.",
     "on": "Ton ist an, für den Rest des Abends. Rad, Veto-Aufdecken und Fanfare klingen jetzt auch."
   },
@@ -1090,7 +1091,7 @@
   },
   "settings": {
     "title": "Einstellungen",
-    "soundHelp": "Clips starten mit Ton. Wird auf diesem Gerät gemerkt.",
+    "soundHelp": "Clips und Geräusche mit Ton",
     "appearance": "Darstellung",
     "appearanceHelp": "Gilt auf allen deinen Geräten. System folgt deinem Gerät.",
     "light": "Hell",

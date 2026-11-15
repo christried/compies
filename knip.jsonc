@@ -16,6 +16,10 @@
         // Registered by the inline module in nuxt.config.ts through addServerHandler with a path string; dev server and
         // staging build only (#178, #247).
         "server/dev/sign-in.ts!",
+        // Registered by the inline listening-page module in nuxt.config.ts through path strings (the page via pages:extend, the handler via
+        // addServerHandler); dev server only (#534).
+        "app/dev/**!",
+        "server/dev/cue-candidates.ts!",
         // The browser checks are run with node by agents (scripts/browser/README.md); chrome.mjs and kit.mjs are what they import.
         // The Dunkel-Check (#407): the runner imports the state files by name pattern, which knip cannot follow.
         "scripts/browser/dark.mjs!",
@@ -38,7 +42,11 @@
         // Run with node by the orchestrator to merge a reviewed ticket branch into the integration branch without a working tree (docs/agents/subagents.md § Supervision, #478).
         "scripts/merge-into.mjs!",
         // Run by hand with node after a change to the rig; its output (server/assets/compibert/*.svg) is committed, `--check` guards it (#311).
-        "scripts/bake-compibert.mjs!"
+        "scripts/bake-compibert.mjs!",
+        // Run by hand with node; its output under sound-candidates/ (the listening session's candidates, #535) is committed.
+        "scripts/make-cue-candidates.mjs!",
+        // Run by hand with node (#536, #593): copies a candidate to public/sounds/cues/ and writes its credits entry; the result is committed.
+        "scripts/ship-cue-sound.mjs!"
       ],
       // Windows' own netstat, which serve.mjs calls to name the PID on a taken port.
       "ignoreBinaries": ["netstat"],

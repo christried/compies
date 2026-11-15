@@ -1,5 +1,4 @@
-// Global mute, persisted per device (05-assets § Sound cues). The MVP plays no sounds yet;
-// the toggle ships now so it exists when the first cue arrives.
+// Ton: one switch per device, stored in this browser (05-assets § Sound cues), that the Clip's sound and the cue player (`useCuePlayer`, #531) read. Off means silence; nothing else changes.
 const STORAGE_KEY = 'compies-sound'
 
 export function useSound() {

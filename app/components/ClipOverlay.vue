@@ -42,6 +42,7 @@ const END_MARGIN_MS = 1000
 
 const { t } = useI18n()
 const sound = useSound()
+const gestured = useSoundGesture()
 const wide = useMediaQuery(MD_QUERY)
 const stage = useTemplateRef<HTMLElement>('stage')
 
@@ -189,6 +190,12 @@ function enableSound() {
   player?.unMute()
 }
 
+// The page's first gesture (#533) is the tap a phone's open Clip waited for. Sync, so it runs inside the gesture, before `unMute` can lose it.
+// A desktop's blocked Clip keeps its own button only (`wide === false`).
+watch(gestured, (now) => {
+  if (now && wide.value === false && offersSound.value) enableSound()
+}, { flush: 'sync' })
+
 /** Closes this device's clip. Nothing is sent: the other devices play on. */
 function closeForMe() {
   closedByMe.value = true
@@ -201,7 +208,8 @@ watch(open, (isOpen) => {
 onMounted(() => {
   // A desktop plays with sound unless the User turned sound off; a phone starts muted and offers the tap (the phone's browser
   // would block the unmuted start anyway).
-  muted.value = !(wide.value === true && sound.enabled.value)
+  // After the page's first gesture (#533) a phone tries the unmuted start too; a browser that still refuses falls back below.
+  muted.value = !((wide.value === true || gestured.value) && sound.enabled.value)
   soundBlocked.value = muted.value && sound.enabled.value
   if (open.value && videoId.value) void createPlayer()
 })

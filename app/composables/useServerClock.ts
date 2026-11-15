@@ -20,7 +20,8 @@ type RoomForClock = Pick<ReturnType<typeof useEventRoom>, 'enabled' | 'on' | 'on
  * than the estimate, which means the estimate is behind. The offset is the one of the probe with the lowest round
  * trip (`clockOffset`); local times are `performance.now()`, which does not jump when the User's clock does. A round
  * already sending its probes is not started twice. `synced` is true from the first answer on and stays true
- * across reconnects, because the old offset is good until a new round replaces it.
+ * across reconnects, because the old offset is good until a new round replaces it. `moves` counts the times `now()` changed its basis or its
+ * offset (the first answer, a round that lands elsewhere), so a cue scheduled on the old reading can be moved (#594).
  *
  * `ready` is true once the clock is usable: `synced`, or no live connection to sync over (`room.enabled` false: the page
  * polls), or no answer within `CLOCK_READY_GRACE_MS` (#287). It is provided to the descendants (`serverClockReadyKey`), and
@@ -28,6 +29,8 @@ type RoomForClock = Pick<ReturnType<typeof useEventRoom>, 'enabled' | 'on' | 'on
  */
 export function useServerClock(room: RoomForClock) {
   const synced = ref(false)
+  /** How many times `now()` changed its basis or its offset (#594): the cue player looks at its pending cues again when it grows. */
+  const moves = ref(0)
   const graceOver = ref(false)
   const ready = computed(() => synced.value || !room.enabled || graceOver.value)
   provide(serverClockReadyKey, () => ready.value)
@@ -71,6 +74,7 @@ export function useServerClock(room: RoomForClock) {
     samples.push({ t0: message.t0, serverTime: message.serverTime, t3 })
     const best = clockOffset(samples)
     if (best === null) return
+    if (!synced.value || best !== offset) moves.value += 1
     offset = best
     synced.value = true
   })
@@ -104,5 +108,5 @@ export function useServerClock(room: RoomForClock) {
     })
   }
 
-  return { synced: readonly(synced), ready, now }
+  return { synced: readonly(synced), moves: readonly(moves), ready, now }
 }

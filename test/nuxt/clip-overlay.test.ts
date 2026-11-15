@@ -268,6 +268,63 @@ describe('the sound', () => {
     expect(players[0]!.mute).not.toHaveBeenCalled()
     expect(text()).not.toContain('Ton aktivieren')
   })
+
+  // The page's first gesture (#533, useSoundUnlock) also counts for the Clip: `sound-gestured` is the page's flag.
+  describe('after the page\'s first gesture', () => {
+    afterEach(() => {
+      clearNuxtState('sound-gestured')
+    })
+
+    it('starts a phone\'s Clip with sound, with no button', async () => {
+      useState('sound-gestured').value = true
+      await mount(clipOf(), { desktop: false })
+      await ready()
+
+      expect(players[0]!.unMute).toHaveBeenCalled()
+      expect(players[0]!.mute).not.toHaveBeenCalled()
+      expect(labels()).not.toContain('Ton aktivieren')
+    })
+
+    it('still falls back to muted with „Ton aktivieren“ when the phone\'s browser blocks that start', async () => {
+      useState('sound-gestured').value = true
+      await mount(clipOf(), { desktop: false })
+      await ready()
+
+      players[0]!.options.events.onAutoplayBlocked?.()
+      await flushPromises()
+
+      expect(players[0]!.mute).toHaveBeenCalled()
+      expect(labels()).toContain('Ton aktivieren')
+    })
+
+    it('unmutes a phone\'s open Clip that offers „Ton aktivieren“, with no press', async () => {
+      await mount(clipOf(), { desktop: false })
+      await ready()
+      expect(labels()).toContain('Ton aktivieren')
+      expect(players[0]!.unMute).not.toHaveBeenCalled()
+
+      useState('sound-gestured').value = true
+      await flushPromises()
+
+      expect(players[0]!.unMute).toHaveBeenCalled()
+      expect(labels()).not.toContain('Ton aktivieren')
+    })
+
+    it('leaves a desktop\'s blocked Clip as it is: its own button only', async () => {
+      await mount(clipOf())
+      await ready()
+      players[0]!.options.events.onAutoplayBlocked?.()
+      await flushPromises()
+      expect(labels()).toContain('Ton aktivieren')
+      players[0]!.unMute.mockClear()
+
+      useState('sound-gestured').value = true
+      await flushPromises()
+
+      expect(players[0]!.unMute).not.toHaveBeenCalled()
+      expect(labels()).toContain('Ton aktivieren')
+    })
+  })
 })
 
 describe('what stays on this device', () => {

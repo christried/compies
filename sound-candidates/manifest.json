@@ -1,0 +1,378 @@
+{
+  "cues": {
+    "wheel-windup": [
+      {
+        "name": "holz-ratsche",
+        "file": "wheel-windup/holz-ratsche.wav",
+        "source": "scripts/make-cue-candidates.mjs, Rezept holz-ratsche",
+        "author": null,
+        "licence": "generated",
+        "note": "Holzratsche, wird schneller"
+      },
+      {
+        "name": "chip-aufzug",
+        "file": "wheel-windup/chip-aufzug.wav",
+        "source": "scripts/make-cue-candidates.mjs, Rezept chip-aufzug",
+        "author": null,
+        "licence": "generated",
+        "note": "Arcade-Aufladen, Stufen nach oben"
+      },
+      {
+        "name": "spielzeug-kurbel",
+        "file": "wheel-windup/spielzeug-kurbel.wav",
+        "source": "scripts/make-cue-candidates.mjs, Rezept spielzeug-kurbel",
+        "author": null,
+        "licence": "generated",
+        "note": "Aufzieh-Spielzeug, Zähnchen steigen"
+      },
+      {
+        "name": "filz-zug",
+        "file": "wheel-windup/filz-zug.wav",
+        "source": "scripts/make-cue-candidates.mjs, Rezept filz-zug",
+        "author": null,
+        "licence": "generated",
+        "note": "weiches Aufziehen, Papierrascheln"
+      }
+    ],
+    "wheel-tick": [
+      {
+        "name": "plastik-klapper",
+        "file": "wheel-tick/plastik-klapper.wav",
+        "source": "scripts/make-cue-candidates.mjs, Rezept plastik-klapper",
+        "author": null,
+        "licence": "generated",
+        "note": "heller Plastikklapper, knackig"
+      },
+      {
+        "name": "holz-klick",
+        "file": "wheel-tick/holz-klick.wav",
+        "source": "scripts/make-cue-candidates.mjs, Rezept holz-klick",
+        "author": null,
+        "licence": "generated",
+        "note": "trockener Holzklick, hoch"
+      },
+      {
+        "name": "chip-pip",
+        "file": "wheel-tick/chip-pip.wav",
+        "source": "scripts/make-cue-candidates.mjs, Rezept chip-pip",
+        "author": null,
+        "licence": "generated",
+        "note": "Arcade-Pip, kurz nach unten"
+      },
+      {
+        "name": "filz-tupf",
+        "file": "wheel-tick/filz-tupf.wav",
+        "source": "scripts/make-cue-candidates.mjs, Rezept filz-tupf",
+        "author": null,
+        "licence": "generated",
+        "note": "weiches Filz-Tupfen, tief"
+      }
+    ],
+    "wheel-stop": [
+      {
+        "name": "holz-dur",
+        "file": "wheel-stop/holz-dur.wav",
+        "source": "scripts/make-cue-candidates.mjs, Rezept holz-dur",
+        "author": null,
+        "licence": "generated",
+        "note": "Holz-Plock und Marimba-Dreiklang"
+      },
+      {
+        "name": "chip-akkord",
+        "file": "wheel-stop/chip-akkord.wav",
+        "source": "scripts/make-cue-candidates.mjs, Rezept chip-akkord",
+        "author": null,
+        "licence": "generated",
+        "note": "Arcade-Bumm und schneller Dreiklang"
+      },
+      {
+        "name": "glocken-akkord",
+        "file": "wheel-stop/glocken-akkord.wav",
+        "source": "scripts/make-cue-candidates.mjs, Rezept glocken-akkord",
+        "author": null,
+        "licence": "generated",
+        "note": "Filz-Bums, heller Glockenspiel-Dreiklang"
+      },
+      {
+        "name": "orgel-akkord",
+        "file": "wheel-stop/orgel-akkord.wav",
+        "source": "scripts/make-cue-candidates.mjs, Rezept orgel-akkord",
+        "author": null,
+        "licence": "generated",
+        "note": "Spielzeug-Orgel, weicher Dreiklang"
+      }
+    ],
+    "wheel-morph": [
+      {
+        "name": "chip-scramble",
+        "file": "wheel-morph/chip-scramble.wav",
+        "source": "scripts/make-cue-candidates.mjs, Rezept chip-scramble",
+        "author": null,
+        "licence": "generated",
+        "note": "Arcade-Zufallstöne, landet auf einem Ton"
+      },
+      {
+        "name": "reissverschluss",
+        "file": "wheel-morph/reissverschluss.wav",
+        "source": "scripts/make-cue-candidates.mjs, Rezept reissverschluss",
+        "author": null,
+        "licence": "generated",
+        "note": "Reißverschluss, schnell hochgezogen"
+      },
+      {
+        "name": "buchstaben-klackern",
+        "file": "wheel-morph/buchstaben-klackern.wav",
+        "source": "scripts/make-cue-candidates.mjs, Rezept buchstaben-klackern",
+        "author": null,
+        "licence": "generated",
+        "note": "Holzplättchen klackern, dann ein klarer Ton"
+      },
+      {
+        "name": "blubber-wirbel",
+        "file": "wheel-morph/blubber-wirbel.wav",
+        "source": "scripts/make-cue-candidates.mjs, Rezept blubber-wirbel",
+        "author": null,
+        "licence": "generated",
+        "note": "Blubbernde Tonleiter, löst sich auf"
+      }
+    ],
+    "wheel-slice-out": [
+      {
+        "name": "schwupp-gleiter",
+        "file": "wheel-slice-out/schwupp-gleiter.wav",
+        "source": "scripts/make-cue-candidates.mjs, Rezept schwupp-gleiter",
+        "author": null,
+        "licence": "generated",
+        "note": "kleines Plopp, dann fallender Schwupp"
+      },
+      {
+        "name": "chip-rutsch",
+        "file": "wheel-slice-out/chip-rutsch.wav",
+        "source": "scripts/make-cue-candidates.mjs, Rezept chip-rutsch",
+        "author": null,
+        "licence": "generated",
+        "note": "Arcade-Rutsch nach unten, dünn"
+      },
+      {
+        "name": "papier-zisch",
+        "file": "wheel-slice-out/papier-zisch.wav",
+        "source": "scripts/make-cue-candidates.mjs, Rezept papier-zisch",
+        "author": null,
+        "licence": "generated",
+        "note": "weiches Papier-Zischen nach unten"
+      },
+      {
+        "name": "korken-plopp",
+        "file": "wheel-slice-out/korken-plopp.wav",
+        "source": "scripts/make-cue-candidates.mjs, Rezept korken-plopp",
+        "author": null,
+        "licence": "generated",
+        "note": "Korkenplopp mit kurzem Pfeifen"
+      }
+    ],
+    "veto-open": [
+      {
+        "name": "rollladen",
+        "file": "veto-open/rollladen.wav",
+        "source": "scripts/make-cue-candidates.mjs, Rezept rollladen",
+        "author": null,
+        "licence": "generated",
+        "note": "Rollladen rattert hoch, Klack oben"
+      },
+      {
+        "name": "chip-hochlauf",
+        "file": "veto-open/chip-hochlauf.wav",
+        "source": "scripts/make-cue-candidates.mjs, Rezept chip-hochlauf",
+        "author": null,
+        "licence": "generated",
+        "note": "Arcade-Arpeggio nach oben"
+      },
+      {
+        "name": "papier-fahne",
+        "file": "veto-open/papier-fahne.wav",
+        "source": "scripts/make-cue-candidates.mjs, Rezept papier-fahne",
+        "author": null,
+        "licence": "generated",
+        "note": "weiches Rauschen nach oben, wie ein Blatt"
+      },
+      {
+        "name": "schiebe-klack",
+        "file": "veto-open/schiebe-klack.wav",
+        "source": "scripts/make-cue-candidates.mjs, Rezept schiebe-klack",
+        "author": null,
+        "licence": "generated",
+        "note": "kurzes Gleiten nach oben, dann Holzklack"
+      }
+    ],
+    "veto-clock": [
+      {
+        "name": "uhr-tick",
+        "file": "veto-clock/uhr-tick.wav",
+        "source": "scripts/make-cue-candidates.mjs, Rezept uhr-tick",
+        "author": null,
+        "licence": "generated",
+        "note": "feines Uhrwerk-Tick"
+      },
+      {
+        "name": "holz-tock",
+        "file": "veto-clock/holz-tock.wav",
+        "source": "scripts/make-cue-candidates.mjs, Rezept holz-tock",
+        "author": null,
+        "licence": "generated",
+        "note": "tiefer Holz-Tock, trocken"
+      },
+      {
+        "name": "chip-piep",
+        "file": "veto-clock/chip-piep.wav",
+        "source": "scripts/make-cue-candidates.mjs, Rezept chip-piep",
+        "author": null,
+        "licence": "generated",
+        "note": "Countdown-Piep, flach und digital"
+      },
+      {
+        "name": "filz-dub",
+        "file": "veto-clock/filz-dub.wav",
+        "source": "scripts/make-cue-candidates.mjs, Rezept filz-dub",
+        "author": null,
+        "licence": "generated",
+        "note": "weiches Dub, tief, wie ein Puls"
+      }
+    ],
+    "veto-clip-close": [
+      {
+        "name": "roehren-aus",
+        "file": "veto-clip-close/roehren-aus.wav",
+        "source": "scripts/make-cue-candidates.mjs, Rezept roehren-aus",
+        "author": null,
+        "licence": "generated",
+        "note": "Röhren-Fernseher aus, Ton fällt, kleines Tick"
+      },
+      {
+        "name": "chip-ausgang",
+        "file": "veto-clip-close/chip-ausgang.wav",
+        "source": "scripts/make-cue-candidates.mjs, Rezept chip-ausgang",
+        "author": null,
+        "licence": "generated",
+        "note": "Arcade-Ausschalten, Pulsbreite schrumpft"
+      },
+      {
+        "name": "filz-klapp",
+        "file": "veto-clip-close/filz-klapp.wav",
+        "source": "scripts/make-cue-candidates.mjs, Rezept filz-klapp",
+        "author": null,
+        "licence": "generated",
+        "note": "weiches Zuklappen, gepolstert"
+      },
+      {
+        "name": "schalter-aus",
+        "file": "veto-clip-close/schalter-aus.wav",
+        "source": "scripts/make-cue-candidates.mjs, Rezept schalter-aus",
+        "author": null,
+        "licence": "generated",
+        "note": "Kippschalter-Klick, Brummen läuft aus"
+      }
+    ],
+    "veto-seal": [
+      {
+        "name": "stempel-dumpf",
+        "file": "veto-seal/stempel-dumpf.wav",
+        "source": "scripts/make-cue-candidates.mjs, Rezept stempel-dumpf",
+        "author": null,
+        "licence": "generated",
+        "note": "dumpfer Stempel auf Wachs"
+      },
+      {
+        "name": "holz-bums",
+        "file": "veto-seal/holz-bums.wav",
+        "source": "scripts/make-cue-candidates.mjs, Rezept holz-bums",
+        "author": null,
+        "licence": "generated",
+        "note": "Holzklotz-Bums, hohl"
+      },
+      {
+        "name": "chip-bumm",
+        "file": "veto-seal/chip-bumm.wav",
+        "source": "scripts/make-cue-candidates.mjs, Rezept chip-bumm",
+        "author": null,
+        "licence": "generated",
+        "note": "Arcade-Bass-Bumm"
+      },
+      {
+        "name": "siegel-ting",
+        "file": "veto-seal/siegel-ting.wav",
+        "source": "scripts/make-cue-candidates.mjs, Rezept siegel-ting",
+        "author": null,
+        "licence": "generated",
+        "note": "Stempel mit kleinem Metall-Ting"
+      }
+    ],
+    "veto-drumroll": [
+      {
+        "name": "snare-wirbel",
+        "file": "veto-drumroll/snare-wirbel.wav",
+        "source": "scripts/make-cue-candidates.mjs, Rezept snare-wirbel",
+        "author": null,
+        "licence": "generated",
+        "note": "Snare-Wirbel, wird schneller und lauter"
+      },
+      {
+        "name": "chip-wirbel",
+        "file": "veto-drumroll/chip-wirbel.wav",
+        "source": "scripts/make-cue-candidates.mjs, Rezept chip-wirbel",
+        "author": null,
+        "licence": "generated",
+        "note": "Arcade-Rauschwirbel, Bass steigt"
+      },
+      {
+        "name": "tom-wirbel",
+        "file": "veto-drumroll/tom-wirbel.wav",
+        "source": "scripts/make-cue-candidates.mjs, Rezept tom-wirbel",
+        "author": null,
+        "licence": "generated",
+        "note": "Spielzeug-Tomtom, wird schneller und höher"
+      },
+      {
+        "name": "rassel",
+        "file": "veto-drumroll/rassel.wav",
+        "source": "scripts/make-cue-candidates.mjs, Rezept rassel",
+        "author": null,
+        "licence": "generated",
+        "note": "Erbsen-Rassel, wird dichter und lauter"
+      }
+    ],
+    "veto-reveal": [
+      {
+        "name": "becken-spielzeug",
+        "file": "veto-reveal/becken-spielzeug.wav",
+        "source": "scripts/make-cue-candidates.mjs, Rezept becken-spielzeug",
+        "author": null,
+        "licence": "generated",
+        "note": "Spielzeug-Becken mit Stempel-Bums"
+      },
+      {
+        "name": "chip-crash",
+        "file": "veto-reveal/chip-crash.wav",
+        "source": "scripts/make-cue-candidates.mjs, Rezept chip-crash",
+        "author": null,
+        "licence": "generated",
+        "note": "Arcade-Crash: Rauschen und Bass"
+      },
+      {
+        "name": "tusch-schlag",
+        "file": "veto-reveal/tusch-schlag.wav",
+        "source": "scripts/make-cue-candidates.mjs, Rezept tusch-schlag",
+        "author": null,
+        "licence": "generated",
+        "note": "Trommelschlag mit kurzem Beckenzischen"
+      },
+      {
+        "name": "gong-klein",
+        "file": "veto-reveal/gong-klein.wav",
+        "source": "scripts/make-cue-candidates.mjs, Rezept gong-klein",
+        "author": null,
+        "licence": "generated",
+        "note": "kleiner heller Gong, klingt aus"
+      }
+    ]
+  }
+}

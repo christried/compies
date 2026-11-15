@@ -34,7 +34,7 @@ Requirements: Node 24 (`.nvmrc`) and pnpm (the version is pinned in `package.jso
    The R2 variables are set in Vercel, not in your `.env`, by `scripts/wizards/r2-setup.sh` (#139); on Windows, run it from Git Bash, since WSL's bash can't run the Windows Vercel CLI. Image upload needs them; tests use an in-memory store, so leave them empty locally.
 
 4. Apply the migrations to your branch: `pnpm db:migrate`
-5. Start the dev server: `pnpm dev`, then open http://localhost:3000. `GET /api/health` answers `{"status":"ok"}` when the database is reachable and migrated. To sign in without Discord or Twitch, open http://localhost:3000/api/dev/sign-in?as=host (or `member`, `admin`; `&to=/bibliothek` picks the page, `&appearance=dark` the Appearance, or `system`, `light`; `&name=unset` leaves the Display name empty, for Profile setup). The route exists in the dev server and the staging build only, never in production.
+5. Start the dev server: `pnpm dev`, then open http://localhost:3000. `GET /api/health` answers `{"status":"ok"}` when the database is reachable and migrated. To sign in without Discord or Twitch, open http://localhost:3000/api/dev/sign-in?as=host (or `member`, `admin`; `&to=/bibliothek` picks the page, `&appearance=dark` the Appearance, or `system`, `light`; `&name=unset` leaves the Display name empty, for Profile setup). The route exists in the dev server and the staging build only, never in production. The listening page for the cue sounds (#534, dev server only) opens with http://localhost:3000/api/dev/sign-in?as=host&to=/dev/ton.
 
 ## Realtime (the Worker in `realtime/`)
 

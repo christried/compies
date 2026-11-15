@@ -1,0 +1,70 @@
+{
+  "cues": {
+    "wheel-windup": {
+      "candidate": "filz-zug",
+      "source": "scripts/make-cue-candidates.mjs, Rezept filz-zug",
+      "author": null,
+      "licence": "generated"
+    },
+    "wheel-tick": {
+      "candidate": "filz-tupf",
+      "source": "scripts/make-cue-candidates.mjs, Rezept filz-tupf",
+      "author": null,
+      "licence": "generated"
+    },
+    "wheel-stop": {
+      "candidate": "holz-dur",
+      "source": "scripts/make-cue-candidates.mjs, Rezept holz-dur",
+      "author": null,
+      "licence": "generated"
+    },
+    "wheel-morph": {
+      "candidate": "reissverschluss",
+      "source": "scripts/make-cue-candidates.mjs, Rezept reissverschluss",
+      "author": null,
+      "licence": "generated"
+    },
+    "wheel-slice-out": {
+      "candidate": "schwupp-gleiter",
+      "source": "scripts/make-cue-candidates.mjs, Rezept schwupp-gleiter",
+      "author": null,
+      "licence": "generated"
+    },
+    "veto-open": {
+      "candidate": "rollladen",
+      "source": "scripts/make-cue-candidates.mjs, Rezept rollladen",
+      "author": null,
+      "licence": "generated"
+    },
+    "veto-clock": {
+      "candidate": "uhr-tick",
+      "source": "scripts/make-cue-candidates.mjs, Rezept uhr-tick",
+      "author": null,
+      "licence": "generated"
+    },
+    "veto-clip-close": {
+      "candidate": "schalter-aus",
+      "source": "scripts/make-cue-candidates.mjs, Rezept schalter-aus",
+      "author": null,
+      "licence": "generated"
+    },
+    "veto-seal": {
+      "candidate": "chip-bumm",
+      "source": "scripts/make-cue-candidates.mjs, Rezept chip-bumm",
+      "author": null,
+      "licence": "generated"
+    },
+    "veto-drumroll": {
+      "candidate": "tom-wirbel",
+      "source": "scripts/make-cue-candidates.mjs, Rezept tom-wirbel",
+      "author": null,
+      "licence": "generated"
+    },
+    "veto-reveal": {
+      "candidate": "becken-spielzeug",
+      "source": "scripts/make-cue-candidates.mjs, Rezept becken-spielzeug",
+      "author": null,
+      "licence": "generated"
+    }
+  }
+}
