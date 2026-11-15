@@ -356,7 +356,7 @@ The operator's review of production of 2026-11-15 and four older findings. Spec:
 - **The Clip's backdrop** (#587): while a Clip plays on a device, everything but the Clip with its bar, the Veto bar and the Host's dock goes close to black (about 85 %, the same in both Appearances) and takes no input. It fades with the Clip, lifts at once for a Member who closes the Clip, and covers a game without a video too. Nothing is laid over the player.
 - **The aura** (#471) marks the one button in a page's head that starts something new: „Neue Terminumfrage“ and „Spiel anlegen“. Never two on a page, never a form's submit.
 - **Room for shadows** (#607): padding only in the Host dock and the stepper's pill; the hold entries of the Session „Mehr“ menu become flat rows that keep their fill and badge.
-- **Lift on hover** (#608): a shadowed element that can be clicked lifts (game cards and tiles); static cards never do. Nothing lifts on touch; reduced motion shows the tint.
+- **Lift on hover** (#608): a shadowed element that can be clicked lifts (the library's game cards and the Event's game tiles); static cards and a picker's cards never do. Nothing lifts on touch; reduced motion shows the tint.
 - **A dragged person's name** (#609) rides on a small plate above the shadow.
 - **The Host's seat notice goes** (#610), both its texts.
 - **„Nur du siehst das“** (#611) is a heading line with a divider above the text, at every width, in all six Host-only notices.
@@ -381,7 +381,7 @@ The Rundgang that shows a Member around the first Event they did not create. Spe
 
 - **Who and when:** once per User, the first time they open an Event page of an Event they do not host, existing Users included. It starts when the page is calm: no Running Session, no sheet, no „Was ist neu“. Not on a finished Event.
 - **Stored** with the User on the server as a version number, so a reworked Tour shows once more to everyone.
-- **One chapter, the arrival,** of at most eight steps; a step whose thing is not on the page is left out: a greeting, the Event's head, the Date poll, the Game board with the Tribüne and the Teamwort, „So wird gespielt“, Aktivität (on a phone the tabs), the Ton button, the end. The game night itself gets no chapter here.
+- **One chapter, the arrival,** of at most eight steps; a step whose thing is not on the page is left out: a greeting, the Event's head, the Date poll, the Game board with the Tribüne and the Teamwort, „So wird gespielt“, Aktivität (on a phone the tabs), the Ton button, the end. A Running Session (the Lucky Wheel, the Veto window, the Clip) gets no chapter here: Idea issue [#624](https://github.com/christried/compies/issues/624).
 - **Look, don't touch:** the Tour only points; the User never votes or moves in it.
 - **Leaving and repeating:** „Überspringen“ on every step and Esc, both count as seen; a row on the Profil page shows it again at the next Event.
 - **Compibert** speaks in the first person in a bubble and never says his name. He shows his face only, perhaps a hand; never the whole body.
