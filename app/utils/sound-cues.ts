@@ -50,7 +50,7 @@ export interface WheelCueInput {
 
 /**
  * Two ticks closer than this overlap and smear into a buzz: the tick sample is 30 ms long (`compibert-sound.md`), so 40 ms leaves ten
- * milliseconds of gap and 25 ticks a second at most. A placeholder for the listening session (#535), where it is tuned by ear; the one
+ * milliseconds of gap and 25 ticks a second at most. The operator kept it by ear in the listening session (#535); the one
  * constant, nothing else knows it. The flapper keeps kicking at every crossing: the cap thins the sound only.
  */
 export const TICK_MIN_GAP_MS = 40
