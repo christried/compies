@@ -201,6 +201,78 @@ describe('the tile layout (#435)', () => {
   })
 })
 
+// The name reserves two lines (#612), so a one-line title makes no shorter tile than a two-line one. jsdom has no layout:
+// the tests pin the classes that reserve the lines, the heights are measured in the browser check.
+describe('the two reserved title lines (#612)', () => {
+  const TITLES = [
+    ['a one-word title', 'Pong'],
+    ['a title of two lines', 'Mario Kart 8 Deluxe Booster Pass'],
+    ['the longest allowed title, without spaces', LONG_NAME],
+  ] as const
+  const tokens = (el: Element) => el.className.split(' ')
+
+  it.each(TITLES)('keeps two lines for %s in the tile, with the clamp and the wrap', async (_what, name) => {
+    await mount({ name }, 'tile', false)
+
+    const classes = tokens(root().querySelector('b')!)
+    expect(classes).toEqual(expect.arrayContaining(['min-h-[2lh]', 'line-clamp-2', 'break-words']))
+  })
+
+  it.each(TITLES)('keeps two lines for %s in the card layout, with the clamp', async (_what, name) => {
+    await mount({ name }, 'card', false)
+
+    expect(tokens(root().querySelector('b')!)).toEqual(expect.arrayContaining(['min-h-[2lh]', 'line-clamp-2']))
+  })
+
+  it.each(TITLES)('keeps two lines for %s only from md in the responsive layout, the row below stays one line', async (_what, name) => {
+    await mount({ name }, 'responsive', false)
+
+    const classes = tokens(root().querySelector('b')!)
+    expect(classes).toEqual(expect.arrayContaining(['md:min-h-[2lh]', 'truncate', 'md:line-clamp-2']))
+    expect(classes).not.toContain('min-h-[2lh]')
+  })
+
+  it.each(TITLES)('reserves nothing in the row layout for %s', async (_what, name) => {
+    await mount({ name }, 'row', false)
+
+    const name_ = root().querySelector('b')!
+    expect(name_.className).not.toContain('min-h-[2lh]')
+    expect(tokens(name_)).toContain('truncate')
+  })
+
+  it('reserves the lines on the button that opens a tile, and shows the whole title', async () => {
+    page = await mountSuspended(GameCard, {
+      props: { game: { id: 'g-1', name: LONG_NAME, imageUrl: null, youtubeId: null, price: null, playersMin: null, playersMax: null, suitabilities: [] }, layout: 'tile', opens: true },
+    })
+
+    const button = root().querySelector('button')!
+    expect(tokens(button)).toContain('min-h-[2lh]')
+    expect(button.textContent).toBe(LONG_NAME)
+  })
+
+  it('reserves the lines on the link of a responsive card from md, and shows the whole title', async () => {
+    page = await mountSuspended(GameCard, {
+      props: { game: { id: 'g-1', name: LONG_NAME, imageUrl: null, youtubeId: null, price: null, playersMin: null, playersMax: null, suitabilities: [] }, layout: 'responsive', to: '/bibliothek/g-1' },
+    })
+
+    const link = root().querySelector('a')!
+    expect(tokens(link)).toContain('md:min-h-[2lh]')
+    expect(tokens(link)).not.toContain('min-h-[2lh]')
+    expect(link.textContent).toBe(LONG_NAME)
+  })
+
+  it('gives a tile of the longest title and a tile of a one-word title the same classes, so the same size', async () => {
+    await mount({ name: LONG_NAME }, 'tile', false)
+    const long = { root: root().className, name: root().querySelector('b')!.className }
+    page!.unmount()
+
+    await mount({ name: 'Pong' }, 'tile', false)
+
+    expect(root().className).toBe(long.root)
+    expect(root().querySelector('b')!.className).toBe(long.name)
+  })
+})
+
 // A tile that opens a dialog (#443, #444): a tile with `opens` is a button, one without it stays plain.
 describe('the tile that opens (#443)', () => {
   async function mountOpening(props: { opens?: boolean, to?: string }) {
