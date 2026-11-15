@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Lock, Volume2 } from '@lucide/vue'
-import { seatNote, teamsStay, waitsForCeremony, type EventPageState } from '~/utils/event-page'
+import { teamsStay, waitsForCeremony, type EventPageState } from '~/utils/event-page'
 import { gamesToStart, risen, scrollsToTop, STAGE_COLUMN_CLASS, type StageCounted } from '~/utils/event-stage'
 import { modalOpen, scrollToTop } from '~/utils/jump'
 import type { OptimisticVotes } from '~/composables/useOptimisticVotes'
@@ -78,8 +78,6 @@ const needsSetup = computed(() => canEditSettings.value && props.view.settings =
 /** The first Session has started: the settings rows of „So spielen wir“ lock (HowWePlayCard). Team names stay open to Players (#438). */
 const started = computed(() => hasStarted(props.view.sessions))
 
-// The Host's seat note (teams only): where the Host sits does not change the dock, and the note says so. Closed for this visit.
-const seat = computed(() => seatNote(props.view, t))
 const stay = computed(() => teamsStay(props.pageState.next, props.view.event.isHost, t))
 
 // Reduced motion (04-motion § UI enters, #441): the glide has nothing then (`REFLOW_CLASS`), so a block that moved up past another fades in at its new place. A hidden tab plays no
@@ -173,11 +171,6 @@ watch(() => ({ kind: props.pageState.kind, blocks: props.pageState.blocks, count
           :is-host="view.event.isHost"
           :needs-setup="needsSetup"
           :host-name="hostName"
-        />
-
-        <EventSeatNotice
-          v-else-if="block === 'seat'"
-          :note="seat"
         />
 
         <EventPoll
