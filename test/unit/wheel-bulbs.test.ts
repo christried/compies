@@ -74,6 +74,11 @@ describe('the chase while the wheel turns', () => {
     expect(lit(SPIN, 66_999)).toEqual([1, 5, 9, 13, 17, 21])
   })
 
+  it('runs to the last millisecond before the stop of a spin of 6 s, the step 74 (#606)', () => {
+    const spin = { spinStartAt: START, stopAt: START + 6000 }
+    expect(lit(spin, START + 5999)).toEqual([2, 6, 10, 14, 18, 22])
+  })
+
   it('has no length of its own: it follows the stop of a longer spin', () => {
     const long = { spinStartAt: START, stopAt: START + 10_000 }
     expect(lit(long, 69_999)).toEqual([0, 4, 8, 12, 16, 20])
