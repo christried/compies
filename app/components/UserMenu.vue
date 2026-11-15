@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { LogOut } from '@lucide/vue'
+import { LogOut, User } from '@lucide/vue'
 import { shownName } from '~~/shared/auth'
 
 // Avatar menu in the header (09 § UserMenu, 10 § UserMenu): who is signed in and „Abmelden“. Below md the
@@ -99,6 +99,16 @@ onBeforeUnmount(() => document.removeEventListener('pointerdown', closeOnOutside
         <span class="min-w-0 truncate text-[16px] font-extrabold">{{ name }}</span>
       </div>
       <span class="mx-1 my-1.5 border-t-2 border-line-soft" />
+      <!-- „Profil“ (#618): the hub nav's Profil item, at every width; a click closes the menu. -->
+      <NuxtLink
+        to="/profil"
+        role="menuitem"
+        class="flex h-11 items-center gap-2.5 rounded-md px-3 text-left text-[15px] font-bold text-ink hover:bg-paper-2"
+        @click="open = false"
+      >
+        <AppIcon :icon="User" />
+        {{ t('nav.profile') }}
+      </NuxtLink>
       <button
         type="button"
         role="menuitem"
