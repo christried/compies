@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Neu
+
+- Du kannst jetzt über das Menü an deinem Avatar mit einem Klick zu deinem Profil. ([#618](https://github.com/christried/compies/issues/618))
+
 ## [0.13.3] - 2026-11-15 – Ton
 
 Das Glücksrad und das Veto-Fenster sind jetzt zu hören, auf allen Geräten im selben Moment. Der Schalter „Ton“ schaltet Clip und Geräusche auf deinem Gerät gemeinsam aus.
