@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Sun, Volume2 } from '@lucide/vue'
-import type { Appearance } from '~~/shared/auth'
+import type { Appearance } from '~~/shared/appearance'
 
 // The card „Einstellungen“ on the Profil page (screen 25, shipped trimmed, #400): one SettingsRow per setting. Ton is the device's Sound
 // (GLOSSARY § Sound), the same state as the header's button, stored as before. Darstellung is the User's Appearance (GLOSSARY § Appearance,

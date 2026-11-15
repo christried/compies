@@ -1,4 +1,5 @@
-import type { Appearance, SavedAppearance } from '~~/shared/auth'
+import type { Appearance } from '~~/shared/appearance'
+import type { SavedAppearance } from '~~/shared/auth'
 
 // The signed-in User's Appearance for the row „Darstellung“ on the Profil page (#404, GLOSSARY: Appearance). A choice shows
 // at once: it goes into the User's state, which app/plugins/appearance.ts draws onto <html> and the browser bar. Then it is
