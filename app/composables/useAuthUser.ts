@@ -1,5 +1,6 @@
 import { SIGN_IN_PATH } from '~/utils/auth-guard'
-import { APPEARANCE_COOKIE, type AuthUser } from '~~/shared/auth'
+import { APPEARANCE_COOKIE } from '~~/shared/appearance'
+import type { AuthUser } from '~~/shared/auth'
 
 /** The signed-in User, null when signed out. The auth middleware loads it once per page load. */
 export function useAuthUser() {
