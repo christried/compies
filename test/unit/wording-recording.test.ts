@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { assemble, createBudget, dedupeItems, SIGHTINGS_PER_KEY, selectItems } from '../../scripts/wording/recording.mjs'
+import { assemble, budgetId, createBudget, dedupeItems, SIGHTINGS_PER_KEY, selectItems } from '../../scripts/wording/recording.mjs'
 import { checkRecording } from '../../scripts/wording/review-model.mjs'
 
 // What the wording walk makes of its readings (scripts/wording/recording.mjs, #629): items with their pictures in, the recording of #628's
@@ -130,6 +130,23 @@ describe('selectItems', () => {
   it('does not look for a key in the items that have none', () => {
     const { kept } = selectItems([item({ key: null, marks: ['mono'], component: 'app/components/HostDock.vue' }), item({ key: null, fixedId: 'offline.title' })], known)
     expect(kept).toHaveLength(2)
+  })
+})
+
+describe('budgetId', () => {
+  const idFor = (fields: Partial<Item>) => budgetId(fields as never)
+  it('counts a mono use and a screen-reader use of a key apart from its plain ones, and a mono use per component', () => {
+    const plain = idFor(item({ key: 'common.counter' }))
+    const monoA = idFor(item({ key: 'common.counter', marks: ['mono'], component: 'app/components/TextField.vue' }))
+    const monoB = idFor(item({ key: 'common.counter', marks: ['mono'], component: 'app/components/NoteEditor.vue' }))
+    const hidden = idFor(item({ key: 'common.counter', via: 'aria-label', marks: ['sr-only'] }))
+    expect(new Set([plain, monoA, monoB, hidden]).size).toBe(4)
+    expect(idFor(item({ key: 'common.counter', via: 'title' }))).toBe(plain)
+  })
+
+  it('is the mono component for an element with no message and the fixed id for a fixed text', () => {
+    expect(idFor(item({ key: null, marks: ['mono'], component: 'app/components/HostDock.vue' }))).toBe('mono:app/components/HostDock.vue')
+    expect(idFor(item({ key: null, fixedId: 'offline.title' }))).toBe('fixed:offline.title')
   })
 })
 

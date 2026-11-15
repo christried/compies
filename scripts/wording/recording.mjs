@@ -18,10 +18,22 @@ const MONO_PREFIX = 'mono:'
 const FIXED_PREFIX = 'fixed:'
 
 /**
- * What an item counts under: its key, `fixed:<id>` or `mono:<component>`.
+ * What an item counts under for the cap of `SIGHTINGS_PER_KEY`: its key, `fixed:<id>` or `mono:<component>`. A message's mono use counts per component
+ * and its screen-reader use apart from its plain ones, so the first six plain sightings of a key (`common.counter` in a form) do not hide the mono
+ * use in another component, which the review's mono filter and B3 look for.
  * @param {Item} item
  */
-export function idOf(item) {
+export function budgetId(item) {
+  const id = idOf(item)
+  if (item.key === null) return id
+  return `${id}${item.marks.includes('mono') ? `|mono|${item.component}` : ''}${item.marks.includes('sr-only') ? '|sr-only' : ''}`
+}
+
+/**
+ * What an item is called in a reading: its key, `fixed:<id>` or `mono:<component>`.
+ * @param {Item} item
+ */
+function idOf(item) {
   if (item.fixedId !== undefined) return `${FIXED_PREFIX}${item.fixedId}`
   if (item.key === null) return `${MONO_PREFIX}${item.component ?? item.element}`
   return item.key

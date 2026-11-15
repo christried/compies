@@ -20,7 +20,7 @@ import de from '../../i18n/locales/de.json' with { type: 'json' }
 import { decodeTags } from '../../shared/key-tag.ts'
 import { flattenMessages } from './messages.mjs'
 import { findCandidates, measureCandidates, rowsFrom } from './read-keys.mjs'
-import { assemble, createBudget, idOf, selectItems } from './recording.mjs'
+import { assemble, budgetId, createBudget, selectItems } from './recording.mjs'
 import { checkRecording, stepsOf } from './review-model.mjs'
 import { firstReferences } from './unused-scan.mjs'
 import { orderStates, sectionOf } from './walk-order.mjs'
@@ -204,7 +204,7 @@ async function readPage(ctx, state, name) {
   for (const key of unknown) missing.add(key)
   const pictured = []
   for (const item of kept) {
-    const id = idOf(item)
+    const id = budgetId(item)
     if (budget.full(id)) {
       budget.drop()
       continue
