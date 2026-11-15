@@ -418,3 +418,37 @@ describe('the tile that opens (#443)', () => {
     expect(card.get('a').attributes('href')).toBe('/bibliothek/g-1')
   })
 })
+
+// A shadowed card lifts on hover only where the card itself can be clicked (#608): a lift always means a click.
+describe('the lift on a card that can be clicked (#608)', () => {
+  async function mountClickable(layout: Layout, props: { opens?: boolean, to?: string }, withActions = false) {
+    page = await mountSuspended(GameCard, {
+      props: { game: { id: 'g-1', name: 'Mario Kart', imageUrl: null, youtubeId: null, price: null, playersMin: null, playersMax: null, suitabilities: [], tags: [] }, layout, ...props },
+      slots: withActions ? { actions: () => h('button', { type: 'button' }, 'Hinzufügen') } : {},
+    })
+    return page
+  }
+
+  it.each<Layout>(['responsive', 'row', 'card'])('lifts a %s card with a link', async (layout) => {
+    await mountClickable(layout, { to: '/bibliothek/g-1' })
+
+    expect(root().classList.contains('lift')).toBe(true)
+  })
+
+  it('lifts a tile that opens, and one that opens and has a link', async () => {
+    await mountClickable('tile', { opens: true })
+    expect(root().classList.contains('lift')).toBe(true)
+    page?.unmount()
+
+    await mountClickable('tile', { opens: true, to: '/bibliothek/g-1' })
+    expect(root().classList.contains('lift')).toBe(true)
+  })
+
+  it('keeps a static card still: a tile without opens, a card and a row without a link, and an empty link', async () => {
+    for (const [layout, props, withActions] of [['tile', {}, false], ['card', {}, false], ['row', {}, true], ['row', { to: '' }, true]] as const) {
+      await mountClickable(layout, props, withActions)
+      expect(root().classList.contains('lift')).toBe(false)
+      page?.unmount()
+    }
+  })
+})
