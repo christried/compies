@@ -280,13 +280,13 @@ describe('the stepper', () => {
   })
 
   describe('on phones', () => {
-    it('shows a progress bar of 7 segments and a sticky footer with the kicker in the heading', async () => {
+    it('shows a progress bar of 7 segments and a fixed footer with the kicker in the heading', async () => {
       const page = await mountCreate()
       await stepTo(page, 2)
 
       expect(page.get('[data-testid="progress"]').findAll('span')).toHaveLength(7)
       expect(page.get('[data-testid="progress"]').attributes('aria-hidden')).toBe('true')
-      expect(page.get('[data-testid="stepper-footer"]').element.parentElement!.className).toContain('sticky')
+      expect(page.get('[data-testid="stepper-footer"]').element.parentElement!.className.split(' ')).toContain('fixed')
       expect(page.get('h1').text()).toContain('Schritt 3 von 7')
     })
   })
