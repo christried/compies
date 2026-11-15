@@ -51,7 +51,9 @@
         "scripts/wording/check-answers.mjs!",
         // Imported by the review page (#631); until then its tests are its user (#628).
         "scripts/wording/review-model.mjs!",
-        "scripts/wording/answers.mjs!"
+        "scripts/wording/answers.mjs!",
+        // Run by hand with node by the operator's skill christried-tag-review (#619); nothing imports it.
+        ".claude/skills/christried-tag-review/library-tags.mjs!"
       ],
       // Windows' own netstat, which serve.mjs calls to name the PID on a taken port.
       "ignoreBinaries": ["netstat"],
