@@ -668,6 +668,7 @@ Guided 8-step setup: Name, Format, Anzahl Spiele, Punktetabelle, Auswahlmodus, S
 - **States:** per step; error per step; done
 - **Slots:** one per step, `#info`
 - **Desktop / mobile:** Desktop: step list left (230), form centre, InfoSheet right (340) on format/mode/tie steps. Mobile: progress bar (8 segments), form, info via button + bottom sheet, sticky footer Zurück/Weiter. The info button's glyph is the bare „?“ (`QuestionMark`, as § HintElement), the circle being the button's own (#616); the desktop info column's heading keeps `CircleHelp`.
+- **Deviation (0.14, #621):** „Mobile: … sticky footer Zurück/Weiter“ became one rule for every width: the footer is a pill fixed at the window's bottom (`bottom-4`, `layer-sticky`) on every step, its right edge on the form column's right edge; on a step without the info column (from 980 px) it is inset by that column's width and gap (356 px), so Weiter does not move between steps. „Zurück“ appears left of „Weiter“ from step 2. The form reserves the pill's height (`pb-40`), and a blocked reason above the pill is capped at 320 px (#613).
 - **Accessibility:** Step list `aria-current="step"`; „Schritt n von 8“ in the heading.
 - **Motion:** step change crossfade `dur-base`.
 

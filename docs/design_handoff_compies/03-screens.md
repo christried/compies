@@ -103,6 +103,7 @@ Every screen exists in the design files at desktop 1280 and mobile 390, light an
 **Scope:** [1.0] (MVP: M2) · **Ref:** `App Vorbereitung ?s=create`
 
 - **Layout:** Desktop: step list 230 | form | InfoSheet 340. Mobile: 8-segment progress, form, sticky footer, info as bottom sheet.
+- **Deviation (0.14, #621):** the footer is no sticky footer: on every step and width it is a pill fixed at the window's bottom, right edge on the form column's (inset by the info column on a step without one), so Weiter keeps one place (#613). Details: `02-components.md` § EventStepper.
 - **Components:** EventStepper, RadioCardGroup, LockedOption, NumberStepper, PointsTableEditor, GamePoolPicker, InfoSheet, DateTimeField
 - **Data:** Event config; library (suggestions by format + player count).
 - **Host vs player:** Host only.
