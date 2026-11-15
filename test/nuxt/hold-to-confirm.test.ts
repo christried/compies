@@ -155,6 +155,8 @@ describe('HoldToConfirmButton', () => {
     expect(row.classes()).toContain('rounded-md')
     expect(row.classes()).not.toContain('shadow-btn')
     expect(row.classes()).not.toContain('outline-memphis')
+    expect(row.classes()).not.toContain('reduced:hover:shadow-btn')
+    expect(row.classes()).not.toContain('motion-reduce:hover:shadow-btn')
 
     await row.trigger('pointerdown')
     vi.advanceTimersByTime(500)
@@ -167,5 +169,12 @@ describe('HoldToConfirmButton', () => {
 
     expect(page.get('button').classes()).toContain('shadow-btn')
     expect(page.get('button').classes()).toContain('outline-memphis')
+  })
+
+  it('outside a menu the hovered pill keeps its resting shadow under reduced motion, in the app and in the OS (#608)', async () => {
+    const page = await mountSuspended(HoldToConfirmButton, { props: { label: 'Entfernen', size: 'dock', hint: 'badge' } })
+
+    expect(page.get('button').classes()).toContain('reduced:hover:shadow-btn')
+    expect(page.get('button').classes()).toContain('motion-reduce:hover:shadow-btn')
   })
 })

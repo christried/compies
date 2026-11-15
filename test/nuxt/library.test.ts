@@ -93,6 +93,8 @@ describe('the library page', () => {
     expect(cards[1]!.get('img').attributes('src')).toBe('https://i.ytimg.com/vi/dQw4w9WgXcQ/hqdefault.jpg')
     expect(cards[0]!.find('img').exists()).toBe(false)
     expect(cards[0]!.find('[data-cover="placeholder"]').exists()).toBe(true)
+    // The card can be clicked, so it lifts on hover (#608); the card's root, not the buttons inside it.
+    expect(cards.map(card => card.element.firstElementChild!.classList.contains('lift'))).toEqual([true, true])
   })
 
   it('shows the uploaded image on the card, over the YouTube thumbnail (#143)', async () => {
