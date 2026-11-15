@@ -826,3 +826,49 @@ describe('a paused player is resumed (#509)', () => {
     expect(player.seekTo).toHaveBeenCalledTimes(1)
   })
 })
+
+// #587: the page darkens everything else exactly while this overlay is open on the device. It says so with `shown`, and has no timer
+// of its own for the backdrop.
+describe('telling the page that it shows (#587)', () => {
+  const shownValues = () => ((page!.emitted('shown') ?? []) as boolean[][]).map(args => args[0])
+
+  it.each([
+    ['with a video', () => mount(clipOf())],
+    ['a game without a video', () => mount(clipOf(kart))],
+    ['a failed player', async () => {
+      await mount(clipOf())
+      players[0]!.options.events.onError?.()
+      await flushPromises()
+    }],
+  ])('says it shows from the start, and does not say otherwise: %s', async (_what, setUp) => {
+    await setUp()
+
+    expect(shownValues()).toEqual([true])
+  })
+
+  it('says it is gone after „Für mich schließen“', async () => {
+    await mount(clipOf())
+    expect(shownValues()).toEqual([true])
+
+    await press('Für mich schließen')
+
+    expect(shownValues()).toEqual([true, false])
+  })
+
+  it('says it is gone when the server clock passes the clip\'s end, and not before', async () => {
+    await mount(clipOf(kart))
+
+    await passTime(29_000)
+    expect(shownValues()).toEqual([true])
+
+    await passTime(1000)
+    expect(shownValues()).toEqual([true, false])
+  })
+
+  it('says it shows for a clip that is already running when the page opens', async () => {
+    serverMs = START + 20_000
+    await mount(clipOf())
+
+    expect(shownValues()).toEqual([true])
+  })
+})
