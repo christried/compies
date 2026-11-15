@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+## [0.13.3] - 2026-11-15 – Ton
+
+Das Glücksrad und das Veto-Fenster sind jetzt zu hören, auf allen Geräten im selben Moment. Der Schalter „Ton“ schaltet Clip und Geräusche auf deinem Gerät gemeinsam aus.
+
 ### Neu
 
 - **Ton am Glücksrad und im Veto-Fenster:** Das Glücksrad und das Veto-Fenster haben jetzt Ton: vom Anziehen und Ticken des Rads bis zum Stopp, und vom Öffnen des Veto-Fensters über die tickende Uhr bis zum Trommelwirbel vor dem Aufdecken. Alle hören jeden Moment gleichzeitig, auch in einem Tab im Hintergrund, soweit der Browser es erlaubt. Der Schalter „Ton“ gilt jetzt für den Clip und für diese Geräusche zusammen und schaltet beides auf diesem Gerät aus. Hält dein Browser den Ton noch zurück, bittet dich ein kleiner Hinweis „Ton aktivieren“ um einen Tipp oder Tastendruck. ([#504](https://github.com/christried/compies/issues/504))
