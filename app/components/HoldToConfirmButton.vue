@@ -130,7 +130,7 @@ const visibleLabel = computed(() => {
       class="hit-44 relative inline-flex cursor-pointer touch-none items-center justify-center gap-2 overflow-hidden whitespace-nowrap transition-[transform,translate,box-shadow] dur-instant ease-snap select-none aria-disabled:cursor-not-allowed aria-disabled:border-dashed aria-disabled:border-ink-3 aria-disabled:bg-paper-2 aria-disabled:text-ink-3 aria-disabled:shadow-none aria-disabled:hover:translate-y-0 aria-disabled:hover:shadow-none aria-disabled:hover:bg-none"
       :class="[
         menuitem
-          ? 'rounded-md px-3 py-1.5 text-left text-[15px] font-semibold text-ink hover:bg-surface-2'
+          ? 'min-h-11 rounded-md px-3 py-1.5 text-left text-[15px] font-semibold text-ink hover:bg-surface-2'
           : 'outline-memphis rounded-pill border-(length:--cp-bw) border-line shadow-btn hover:-translate-y-0.5 hover:shadow-card reduced:hover:translate-y-0 reduced:hover:tint motion-reduce:hover:translate-y-0 motion-reduce:hover:tint active:scale-[0.97] reduced:active:scale-100 motion-reduce:active:scale-100',
         {
           'bg-hot text-on-hot': variant === 'hot',
