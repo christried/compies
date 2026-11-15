@@ -5,11 +5,11 @@
 // `serve.mjs` runs at import, so the table cannot live in it.
 
 /** @typedef {1 | 2} Slot */
-/** @typedef {{ app: number, realtime: number, prod: number, inspector: number, chrome: { host: number, member: number, admin: number } }} Ports */
+/** @typedef {{ app: number, realtime: number, prod: number, inspector: number, chrome: { host: number, member: number, admin: number, member2: number } }} Ports */
 /** @typedef {{ port: number, log: string, command: string | null, args?: string[], env?: Record<string, string>, notBuilding?: true, needs?: string }} ServerSpec */
 
 // Slot 1's `inspector` is documentation: slot 1 passes no inspector flag and wrangler probes upward from 9229 itself.
-const SLOT_1 = { app: 3000, realtime: 8787, prod: 3001, inspector: 9229, chrome: { host: 9311, member: 9312, admin: 9313 } }
+const SLOT_1 = { app: 3000, realtime: 8787, prod: 3001, inspector: 9229, chrome: { host: 9311, member: 9312, admin: 9313, member2: 9314 } }
 const SLOT_STEP = 100
 
 /**
@@ -36,7 +36,7 @@ export function portsOf(slot) {
     realtime: SLOT_1.realtime + shift,
     prod: SLOT_1.prod + shift,
     inspector: SLOT_1.inspector + shift,
-    chrome: { host: chrome.host + shift, member: chrome.member + shift, admin: chrome.admin + shift },
+    chrome: { host: chrome.host + shift, member: chrome.member + shift, admin: chrome.admin + shift, member2: chrome.member2 + shift },
   }
 }
 

@@ -3,8 +3,8 @@ import { originOf, portsOf, profileOf, serversOf, slotOf } from '../../scripts/b
 
 // scripts/browser/ports.mjs is the one place that spells a port of the browser scripts (#567, spec #554). Slot 1 is the
 // checks' and must stay what it was before slots existed; slot 2 is an implementer's, every port 100 higher.
-const SLOT_1 = { app: 3000, realtime: 8787, prod: 3001, inspector: 9229, chrome: { host: 9311, member: 9312, admin: 9313 } }
-const leaves = (ports: ReturnType<typeof portsOf>) => [ports.app, ports.realtime, ports.prod, ports.inspector, ports.chrome.host, ports.chrome.member, ports.chrome.admin]
+const SLOT_1 = { app: 3000, realtime: 8787, prod: 3001, inspector: 9229, chrome: { host: 9311, member: 9312, admin: 9313, member2: 9314 } }
+const leaves = (ports: ReturnType<typeof portsOf>) => [ports.app, ports.realtime, ports.prod, ports.inspector, ports.chrome.host, ports.chrome.member, ports.chrome.admin, ports.chrome.member2]
 
 describe('slotOf', () => {
   it('is slot 1 when COMPIES_SLOT is unset or empty', () => {
@@ -29,15 +29,15 @@ describe('portsOf', () => {
 
   it('slot 2 is every port of slot 1 plus 100', () => {
     expect(leaves(portsOf(2))).toEqual(leaves(portsOf(1)).map(port => port + 100))
-    expect(portsOf(2)).toEqual({ app: 3100, realtime: 8887, prod: 3101, inspector: 9329, chrome: { host: 9411, member: 9412, admin: 9413 } })
+    expect(portsOf(2)).toEqual({ app: 3100, realtime: 8887, prod: 3101, inspector: 9329, chrome: { host: 9411, member: 9412, admin: 9413, member2: 9414 } })
   })
 
   it('has no collisions within a slot or between the slots', () => {
     const one = leaves(portsOf(1))
     const two = leaves(portsOf(2))
-    expect(new Set(one).size).toBe(7)
-    expect(new Set(two).size).toBe(7)
-    expect(new Set([...one, ...two]).size).toBe(14)
+    expect(new Set(one).size).toBe(8)
+    expect(new Set(two).size).toBe(8)
+    expect(new Set([...one, ...two]).size).toBe(16)
   })
 })
 
