@@ -15,6 +15,7 @@ Common rules for every component:
 - [`AppButton`](#appbutton) [MVP]
 - [`IconButton`](#iconbutton) [MVP]
 - [`HintElement`](#hintelement) [0.13.1]
+- [`RevealPopover`](#revealpopover) [0.14]
 - [`RangeSlider`](#rangeslider) [0.13.1]
 - [`HoldToConfirmButton`](#holdtoconfirmbutton) [MVP]
 - [`TextField`](#textfield) [MVP]
@@ -124,7 +125,7 @@ The button. One `primary` per view.
 
 Round icon-only button (sound toggle, close, remove slot).
 
-- **Props / variants:** `icon`, `label` (required → `aria-label`), `size: 32 | 36 | 40` (default 40), `tone?: success | error` (solid fill: `bg-success text-on-success` / `bg-error text-on-error`, `shadow-sm`; none = surface), `variant: outline | solid | ghost`, `pressed?: boolean`
+- **Props / variants:** `icon`, `label` (required → `aria-label`), `size: 32 | 36 | 40` (default 40), `tone?: success | error` (solid fill: `bg-success text-on-success` / `bg-error text-on-error`, `shadow-sm`; none = surface), `variant: outline | solid | ghost`, `pressed?: boolean`, `tooltip?: boolean` (default `true`: the label is also the native `title`; `false` leaves it out, for a button whose popover opens on hover: the HintElement, #616)
 - **States:** as AppButton; `pressed` shows ink fill (toggle)
 - **Slots:** —
 - **Desktop / mobile:** Visual 32–40 px, hit area always ≥ 44 (`hit-44`). The Note editor's ✓ and ✗ are 36 px with an 8 px gap, so their 44 px hit areas touch (#124).
@@ -136,12 +137,25 @@ Round icon-only button (sound toggle, close, remove slot).
 
 A small round „?“ that opens a popover with a short hint. Used first by the game form (#465), where its caller hides it on devices without a fine pointer.
 
-- **Props / variants:** `label?` (the button's accessible name, default „Hinweis anzeigen“), `text?` (the short text), `size: 32 | 36 | 40` (default 32, passed on to IconButton). The icon is lucide `CircleHelp`, as the Event stepper's info button.
-- **States:** closed · open (popover in the Notes popover's look: `rounded-[18px]`, line border, `bg-surface`, `shadow-modal`, on `layer-popover`, so above a Sheet). A click toggles; Esc, a press outside, a scroll outside the popover and a window resize close it.
+- **Props / variants:** `label?` (the button's accessible name, default „Hinweis anzeigen“), `text?` (the short text), `size: 32 | 36 | 40` (default 32, passed on to IconButton). The icon is the bare „?“ (`QuestionMark`, `app/utils/question-mark-icon.ts`: lucide's `circle-question-mark` without its circle, its paths scaled 1.5 about the centre): the IconButton's border is the one circle (#616). The native tooltip is off (`tooltip: false`; the label stays the `aria-label`): it would show beside the popover. This is the exception to § IconButton's „tooltip on hover/focus“.
+- **States:** closed · open (popover in the Notes popover's look: `rounded-[18px]`, line border, `bg-surface`, `shadow-modal`, on `layer-popover`, so above a Sheet). It opens by the shared behaviour of § RevealPopover: on mouse hover, and closes 120 ms after the mouse left the button and the popover (the pointer may move onto the popover); it opens on focus too, also for a tap. A click or tap pins it open until a click outside, a second click on the button or Esc. Esc, a press outside, a scroll outside the popover and a window resize close it.
+- **Deviation (0.14, #621):** 0.13.1 said „click or tap“ opens it; it now opens by the shared reveal behaviour (hover, focus, click pins).
 - **Slots:** default (replaces `text` for a richer hint)
 - **Desktop / mobile:** A popover at every width, no sheet. As wide as its content up to 288 px; placed by `placeNotePopover`: above the button with a 12 px gap, below when there is no room, 12 px inside the window's edges, and capped to the roomier side with its own scroll when it fits on neither (#494). The component does no media query and takes its place in the page from its caller's class.
-- **Accessibility:** the button carries `aria-expanded` at all times and `aria-controls` while open; the popover is `role="note"` and holds no control, so the focus stays on the button. Esc and a press outside close it and return the focus to the button; a scroll or a window resize close it and leave the focus where it was. Esc stops at the hint: it does not close a Sheet around it, the next Esc does.
+- **Accessibility:** the button carries `aria-expanded` at all times and `aria-controls` while open; the popover is `role="note"` and holds no control, so the focus stays on the button. Esc and a press outside close it and return the focus to the button; a scroll or a window resize close it and leave the focus where it was. Esc stops at the hint: it does not close a Sheet around it, the next Esc does. The focus-open is exempt from a scroll for two frames, so the browser's scroll of a focused button into view does not close what it just opened.
 - **Motion:** the popover enters with `animate-enter` (04-motion § UI enters; reduced motion handled there). Nothing else moves.
+
+## RevealPopover
+**Scope:** [0.14] · **Ref:** none, the behaviour of the HintElement (#515) made shared (#616)
+
+„A trigger opens a popover“: one behaviour and one box, used by HintElement, and by the game card's Tags popover (#614).
+
+- **Props / variants:** the composable `useRevealPopover(trigger: Ref<HTMLElement | null>)` (`app/composables/useRevealPopover.ts`) returns `{ open, popoverId, triggerAttrs, popoverAttrs, close }`: `triggerAttrs` (to `v-bind` on the trigger: the hover and focus handlers, `onClick`, `aria-expanded`, and `aria-controls` while open) and `popoverAttrs` (to `v-bind` on the component: `id`, `data-reveal-popover`, the hover handlers). The caller keeps its own `type`, name and class. The component `RevealPopover` takes `open` and `anchor` (the trigger's element), and passes its attrs on to the box. It stands beside `useNoteReveal` and shares nothing with it but the placement (`placeNotePopover`).
+- **States:** closed · open (hover or focus, unpinned) · pinned. A mouse (not touch or pen) entering the trigger or the popover opens it; leaving both closes it after 120 ms unless the trigger holds the focus. Focus opens it, blur closes it unless pinned. A click on the trigger pins an open popover, opens and pins a closed one, and closes a pinned one. Esc, a press on neither trigger nor popover, a scroll outside the popover (not for two frames after a focus-open) and a window resize close it and unpin it.
+- **Slots:** default (the content)
+- **Desktop / mobile:** the box is the Notes popover's look in a Teleport to `body` (`layer-popover`, `max-w-72`, scrolls past 60 vh), placed by `placeNotePopover` as § HintElement says. No media query: a tap arrives as focus and click, so a touch screen opens and pins it by a tap.
+- **Accessibility:** `role="note"`, no control inside, the focus stays on the trigger and the popover is not focusable. Esc stops there and does not close a Sheet around it; it returns the focus to the trigger when it is on the page background, the popover or the trigger, and leaves it in a field. A press outside on the page background returns the focus to the trigger when the popover was pinned. The listeners on the document and the window exist only while it is open.
+- **Motion:** `animate-enter` (04-motion § UI enters).
 
 ## HoldToConfirmButton
 **Scope:** [MVP] · **Ref:** DS Basics, VetoWindow, DS Game
@@ -653,7 +667,7 @@ Guided 8-step setup: Name, Format, Anzahl Spiele, Punktetabelle, Auswahlmodus, S
 - **Props / variants:** `event`, `step`
 - **States:** per step; error per step; done
 - **Slots:** one per step, `#info`
-- **Desktop / mobile:** Desktop: step list left (230), form centre, InfoSheet right (340) on format/mode/tie steps. Mobile: progress bar (8 segments), form, info via button + bottom sheet, sticky footer Zurück/Weiter.
+- **Desktop / mobile:** Desktop: step list left (230), form centre, InfoSheet right (340) on format/mode/tie steps. Mobile: progress bar (8 segments), form, info via button + bottom sheet, sticky footer Zurück/Weiter. The info button's glyph is the bare „?“ (`QuestionMark`, as § HintElement), the circle being the button's own (#616); the desktop info column's heading keeps `CircleHelp`.
 - **Accessibility:** Step list `aria-current="step"`; „Schritt n von 8“ in the heading.
 - **Motion:** step change crossfade `dur-base`.
 

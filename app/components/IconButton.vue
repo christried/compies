@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { Component } from 'vue'
 
-// Round icon-only button. The label is required: it becomes the aria-label and the tooltip. `tone` gives it a solid
+// Round icon-only button. The label is required: it becomes the aria-label and the tooltip (`tooltip` false leaves the tooltip out, #616). `tone` gives it a solid
 // fill (✓ success, ✗ error); `size` is the visual diameter, the hit area stays 44 px (02-components § IconButton).
 withDefaults(defineProps<{
   icon: Component
@@ -10,7 +10,9 @@ withDefaults(defineProps<{
   pressed?: boolean
   tone?: 'success' | 'error'
   size?: 32 | 36 | 40
-}>(), { pressed: undefined, tone: undefined, size: 40 })
+  /** The native tooltip (the label); off where a popover opens on hover instead. */
+  tooltip?: boolean
+}>(), { pressed: undefined, tone: undefined, size: 40, tooltip: true })
 </script>
 
 <template>
@@ -29,7 +31,7 @@ withDefaults(defineProps<{
     ]"
     :aria-label="label"
     :aria-pressed="pressed"
-    :title="label"
+    :title="tooltip ? label : undefined"
   >
     <AppIcon
       :icon="icon"

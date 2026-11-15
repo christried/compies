@@ -117,6 +117,15 @@ describe('EventStepper', () => {
       expect(dialog?.textContent).toContain('Erklärung')
     })
 
+    // The phone's Info button is the button's circle with a bare „?“ (#616); the desktop heading's icon is no button and keeps its circle.
+    it('draws the Info button\'s „?“ without a circle, and keeps the circle on the desktop heading\'s icon', async () => {
+      const page = await mountStepper({ infoTitle: 'Teams' }, { default: '<p>Formular</p>', info: '<p>Erklärung</p>' })
+
+      expect(page.find('button[aria-label="Info"] svg').exists()).toBe(true)
+      expect(page.find('button[aria-label="Info"] svg circle').exists()).toBe(false)
+      expect(page.find('aside h2 svg circle').exists()).toBe(true)
+    })
+
     it('has no Info button without an info slot', async () => {
       const page = await mountStepper()
 
