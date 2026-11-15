@@ -205,6 +205,11 @@ watch(open, (isOpen) => {
   if (!isOpen) destroyPlayer()
 })
 
+// The page's backdrop (#587) shows exactly while this is true: it is closed on this device, or ended, or never opened. A game without a
+// video and a failed player count as open. The page adds that the read still carries the Clip, which ends the backdrop at the Host's skip.
+const emit = defineEmits<{ shown: [shown: boolean] }>()
+watch(open, value => emit('shown', value), { immediate: true })
+
 onMounted(() => {
   // A desktop plays with sound unless the User turned sound off; a phone starts muted and offers the tap (the phone's browser
   // would block the unmuted start anyway).
