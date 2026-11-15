@@ -113,13 +113,14 @@ Common rules for every component:
 
 The button. One `primary` per view.
 
-- **Props / variants:** `variant: primary | secondary | ghost | hot`, `size: sm (36) | md (44) | lg (52)`, `icon?: string`, `iconRight?: string`, `loading?: boolean`, `disabled?: boolean`, `disabledReason?: string`, `to?: RouteLocation` (renders `<NuxtLink>`), `block?: boolean`
+- **Props / variants:** `variant: primary | secondary | ghost | hot`, `size: sm (36) | md (44) | lg (52)`, `icon?: string`, `iconRight?: string`, `loading?: boolean`, `disabled?: boolean`, `disabledReason?: string`, `to?: RouteLocation` (renders `<NuxtLink>`), `block?: boolean`, `aura?: boolean` (the aura, see Motion)
 - **States:** default · hover (lift −2 px, shadow +1) · active (translate by shadow offset, shadow none) · focus-visible · loading (spinner replaces icon, label stays, `aria-busy`) · disabled (dashed border, paper-2 fill, ink-2 text, `aria-disabled="true"`, reason rendered next to it or via `aria-describedby`)
 - **Slots:** default (label), `#icon`
 - **Desktop / mobile:** Same on both. `block` on mobile for sheet/footer CTAs.
 - **Card size (#49):** `size: card` is 48 px with 15 px / 700 text, and it is the same set on a Session card: „Verschieben“, „Einladen“, „Session hinzufügen“, „Neue Terminsuche“, „Entfernen“ and „In den Kalender“. Only „In den Kalender“ is filled (primary); the others are secondary. Text size and weight do not depend on the variant at this size.
 - **Accessibility:** Native `<button>`/`<a>`. Disabled keeps focus (aria-disabled, click handler no-ops). Hot variant is only for destructive actions and is usually wrapped by HoldToConfirmButton; no hot button sits on a Session card (#49).
-- **Motion:** hover/press `dur-instant` `ease-snap`. Reduced: no lift, colour change only.
+- **Aura:** the one button in a page's head that starts something new. Never two on a page; never a form's submit. Home's „Neue Terminumfrage“ and the library's „Spiel anlegen“ have it; the empty state's button does not.
+- **Motion:** hover/press `dur-instant` `ease-snap`. Reduced: no lift, colour change only. Aura: the ring's light turns (cp-aura-spin, 4 s, linear, infinite). Reduced: it stands still, the ring stays at 70 % of --cp-hot.
 
 ## IconButton
 **Scope:** [MVP] · **Ref:** DS Basics

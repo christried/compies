@@ -145,6 +145,21 @@ describe('home page', () => {
     expect(cta?.attributes('href')).toBe('/neu')
   })
 
+  // The aura marks „Neue Terminumfrage“, the one button of Home's head that starts something new (#471).
+  it('gives „Neue Terminumfrage“ the aura for a Host, and no User without the Host permission sees one', async () => {
+    const player = await mountSuspended(IndexPage)
+    await settle(player)
+    expect(player.findAll('.aura')).toEqual([])
+
+    signInAs({ ...kitty, canHost: true })
+    await clearNuxtData('home-events')
+    const hostPage = await mountSuspended(IndexPage)
+    await settle(hostPage)
+    const cta = hostPage.findAll('a').find(link => link.text().includes('Neue Terminumfrage'))!
+    expect(cta.classes()).toContain('aura')
+    expect(hostPage.findAll('.aura').length).toBe(1)
+  })
+
   it('labels each card’s call to action: Abstimmen while not voted, Ansehen once voted, Öffnen for the Host', async () => {
     homeEvents = [
       card({ slug: 'a-aaaa', name: 'Offen', action: 'vote' }),

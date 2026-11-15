@@ -35,7 +35,7 @@ useRefreshOnReturn(refresh)
           v-if="user?.canHost"
           to="/neu"
           size="lg"
-          class="aura"
+          aura
         >
           <template #icon>
             <AppIcon :icon="Plus" />
