@@ -133,6 +133,39 @@ describe('the library page', () => {
     expect(cta.length).toBeGreaterThan(0)
     expect(cta.every(link => link.attributes('href') === '/bibliothek/neu')).toBe(true)
   })
+
+  // The aura marks the one button of the page's head that starts something new (#471, spec #621): never two on a page.
+  it('puts the aura on the head button alone, the page has exactly one', async () => {
+    const page = await mountSuspended(LibraryPage, { route: '/bibliothek' })
+    await settle(page)
+
+    const head = page.findAll('header').find(element => element.find('h1').exists())!
+    const auras = page.findAll('.aura')
+    expect(auras.length).toBe(1)
+    expect(auras[0]!.attributes('href')).toBe('/bibliothek/neu')
+    expect(auras[0]!.element.closest('header')).toBe(head.element)
+  })
+
+  // The empty state's „Spiel anlegen“ is a plain button, so the page never shows two auras (#471).
+  it('gives the empty state’s create button no aura', async () => {
+    const page = await mountSuspended(LibraryPage, { route: '/bibliothek' })
+    await settle(page)
+
+    const emptyAction = page.findAll('a').filter(link => link.text().includes('Spiel anlegen') && link.element.closest('header') === null)
+    expect(emptyAction.length).toBeGreaterThan(0)
+    expect(emptyAction.every(link => !link.classes().includes('aura'))).toBe(true)
+  })
+
+  it('keeps the aura on the head button once the library has a game, and the page still has exactly one', async () => {
+    list = { games: [withClip] }
+
+    const page = await mountSuspended(LibraryPage, { route: '/bibliothek' })
+    await settle(page)
+
+    const head = page.findAll('header').find(element => element.find('h1').exists())!
+    expect(page.findAll('.aura').length).toBe(1)
+    expect(head.get('a[href="/bibliothek/neu"]').classes()).toContain('aura')
+  })
 })
 
 describe('the game page', () => {
