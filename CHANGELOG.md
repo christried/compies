@@ -16,6 +16,7 @@
 - Die Knöpfe im Host-Dock und in der Stepper-Leiste haben mehr Platz für ihren Schatten. Die Einträge „Neue Terminsuche“ und „Entfernen“ im Menü „Mehr“ einer Session sind flache Zeilen wie die übrigen, mit etwas mehr Abstand dazwischen. ([#607](https://github.com/christried/compies/issues/607))
 - **„Weiter“ bleibt stehen:** Im Event-Assistenten und in den Einstellungen sitzt die Leiste mit „Zurück“ und „Weiter“ auf jedem Schritt am unteren Fensterrand, und „Weiter“ wandert nicht mehr. ([#613](https://github.com/christried/compies/issues/613))
 - **Spiel anlegen** in der Spielbibliothek leuchtet jetzt wie „Neue Terminumfrage“ auf der Startseite. ([#471](https://github.com/christried/compies/issues/471))
+- Hinweise, die nur du als Host siehst, zeigen „Nur du siehst das“ jetzt als kleine fette Zeile über dem Text, getrennt durch einen Strich. Die Schaltfläche steht unter dem Text. ([#611](https://github.com/christried/compies/issues/611))
 
 ### Behoben
 
