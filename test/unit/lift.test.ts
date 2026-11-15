@@ -39,9 +39,24 @@ describe('lift', () => {
   const rules = async () => parse(await build(`${tint}\n${lift}`, ['lift']))
 
   it('presses onto its shadow, right and down (#608)', async () => {
-    const press = (await rules()).find(rule => header(rule).endsWith('&:active'))
+    const all = await rules()
+    const press = all.find(rule => header(rule).includes('&:active') && rule.decls.some(decl => decl.startsWith('translate')))
     expect(press?.decls).toContain('translate: var(--spacing) var(--spacing)')
-    expect(press?.decls).toContain('box-shadow: none')
+    // The shadow goes at every motion setting: it is a visual change, not motion.
+    const flat = all.find(rule => header(rule).endsWith('&:active') && !header(rule).includes('@media') && rule.decls.includes('box-shadow: none'))
+    expect(flat).toBeDefined()
+  })
+
+  it('moves a pressed element only where motion is not reduced, in the OS and in the app (#608)', async () => {
+    const all = await rules()
+    const moves = all.filter(rule => header(rule).includes('&:active') && rule.decls.some(decl => decl.startsWith('translate')))
+    expect(moves).toHaveLength(1)
+    expect(header(moves[0]!)).toContain('(prefers-reduced-motion: no-preference)')
+    expect(header(moves[0]!)).toMatch(/:not\(\[data-motion=reduced\] \*\)/)
+    // Nothing else reaches the press under reduced motion: no `:active` rule that sets `translate` sits in a reduce query or under data-motion=reduced.
+    for (const rule of all.filter(rule => /prefers-reduced-motion: reduce|\[data-motion=reduced\] &/.test(header(rule)) && header(rule).includes(':active'))) {
+      expect(rule.decls.some(decl => decl.startsWith('translate'))).toBe(false)
+    }
   })
 
   it('rises only where the device hovers and motion is not reduced, in the OS and in the app (#608)', async () => {

@@ -249,8 +249,9 @@
 
 /* Hover lift (#33, #608): a control or a clickable card rises with a card shadow on hover and presses onto its
    shadow (4 px right and down, the offset of --cp-shadow-btn) on click. Only a device that hovers lifts. Under reduced
-   motion (the OS setting or data-motion=reduced) the rise is unreachable: the element neither moves nor grows its
-   shadow, and the hover shows the tint instead. */
+   motion (the OS setting or data-motion=reduced) neither the rise nor the press moves the element and the hover does
+   not grow its shadow: it shows the tint instead. A pressed element loses its shadow at every motion setting (a visual
+   change, not motion). */
 @utility lift {
   transition-property: translate, box-shadow;
   transition-duration: var(--cp-dur-instant);
@@ -261,8 +262,12 @@
       box-shadow: var(--shadow-card);
     }
   }
+  @media (prefers-reduced-motion: no-preference) {
+    &:active:where(:not([data-motion=reduced] *)) {
+      translate: var(--spacing) var(--spacing);
+    }
+  }
   &:active {
-    translate: var(--spacing) var(--spacing);
     box-shadow: none;
   }
   /* The tint is the hover cue too, so it shows only where the device hovers. */
