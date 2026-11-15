@@ -6,6 +6,10 @@
 
 - Du kannst jetzt über das Menü an deinem Avatar mit einem Klick zu deinem Profil. ([#618](https://github.com/christried/compies/issues/618))
 
+### Geändert
+
+- **Spielkacheln gleich groß:** Jede Spielkachel auf der Eventseite lässt dem Namen jetzt Platz für zwei Zeilen, so sind alle gleich groß; ein längerer Name wird mit „…“ gekürzt und steht im Spiel-Fenster ganz. Die Karten der Bibliothek tun das in einem breiten Fenster auch. ([#612](https://github.com/christried/compies/issues/612))
+
 ## [0.13.3] - 2026-11-15 – Ton
 
 Das Glücksrad und das Veto-Fenster sind jetzt zu hören, auf allen Geräten im selben Moment. Der Schalter „Ton“ schaltet Clip und Geräusche auf deinem Gerät gemeinsam aus.
