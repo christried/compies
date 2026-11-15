@@ -176,12 +176,30 @@ describe('the reveal popover (#616)', () => {
     await pressOutside(document.body, null)
     expect(popover()).toBeNull()
 
-    // Unpinned: a later hover opens it, and leaving closes it again (the press gave the focus back to the trigger; the Host moves on).
-    trigger().blur()
+    // Unpinned: a later hover opens it, and leaving closes it again.
     await enter(trigger())
     expect(popover()).not.toBeNull()
     await leave(trigger())
     await advance(120)
+    expect(popover()).toBeNull()
+  })
+
+  it('closes a hover-opened popover 120 ms after the mouse left even though the trigger holds the focus', async () => {
+    await mount()
+    trigger().focus()
+    await click(trigger())
+    await pressOutside(document.body, null)
+    // The press gave the focus back to the trigger (#578), and nothing is open.
+    expect(document.activeElement).toBe(trigger())
+    expect(popover()).toBeNull()
+
+    await enter(trigger())
+    expect(popover()).not.toBeNull()
+    await leave(trigger())
+    await advance(119)
+    expect(popover()).not.toBeNull()
+
+    await advance(1)
     expect(popover()).toBeNull()
   })
 

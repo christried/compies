@@ -24,6 +24,9 @@ export function useRevealPopover(trigger: Ref<HTMLElement | null>): {
   const popoverId = useId()
   const open = ref(false)
   let pinned = false
+  // Opened by the focus (not by the mouse): only then does the focus on the trigger hold it open after the mouse left. A hover-opened popover
+  // closes 120 ms after the mouse left trigger and popover, whatever holds the focus (the press outside gives the trigger the focus back, #578).
+  let openedByFocus = false
   let closeTimer: ReturnType<typeof setTimeout> | undefined
   // The focus the composable itself gives the trigger (Esc, #578) must not open the popover again.
   let programmaticFocus = false
@@ -141,6 +144,7 @@ export function useRevealPopover(trigger: Ref<HTMLElement | null>): {
   function hide() {
     cancelClose()
     pinned = false
+    openedByFocus = false
     if (!open.value) return
     open.value = false
     detach()
@@ -150,7 +154,7 @@ export function useRevealPopover(trigger: Ref<HTMLElement | null>): {
     cancelClose()
     closeTimer = setTimeout(() => {
       closeTimer = undefined
-      if (!pinned && !holdsFocus()) hide()
+      if (!pinned && !(openedByFocus && holdsFocus())) hide()
     }, CLOSE_DELAY)
   }
 
@@ -166,7 +170,10 @@ export function useRevealPopover(trigger: Ref<HTMLElement | null>): {
     onPointerleave,
     'onFocus': () => {
       if (programmaticFocus) return
-      if (!open.value) ignoreScrollForAWhile()
+      if (!open.value) {
+        ignoreScrollForAWhile()
+        openedByFocus = true
+      }
       show()
     },
     'onBlur': () => {
