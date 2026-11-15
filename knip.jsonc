@@ -29,6 +29,8 @@
         "scripts/browser/serve.mjs!",
         "scripts/browser/shots.mjs!",
         "scripts/browser/standings.mjs!",
+        // Run by hand with node (#626, spec #620): lists the texts of de.json that no code refers to; its data file lands in <tmp>/compies-browser/wording/.
+        "scripts/wording/unused.mjs!",
         // Run by the PreToolUse hook on Bash in .claude/settings.json (the heredoc guard, #483), not imported.
         "scripts/bash-guard.mjs!",
         // Run by the SessionStart hook in .claude/settings.json (the session-start note, #484), not imported.
@@ -48,7 +50,14 @@
         // Run by hand with node (#536, #593): copies a candidate to public/sounds/cues/ and writes its credits entry; the result is committed.
         "scripts/ship-cue-sound.mjs!",
         // Run by hand with node (#627): prints the message keys a dev-server page carries.
-        "scripts/wording/keys.mjs!"
+        "scripts/wording/keys.mjs!",
+        // Run by hand with node (#628): checks an answers file of the wording review.
+        "scripts/wording/check-answers.mjs!",
+        // Imported by the review page (#631); until then its tests are its user (#628).
+        "scripts/wording/review-model.mjs!",
+        "scripts/wording/answers.mjs!",
+        // Run by hand with node by the operator's skill christried-tag-review (#619); nothing imports it.
+        ".claude/skills/christried-tag-review/library-tags.mjs!"
       ],
       // Windows' own netstat, which serve.mjs calls to name the PID on a taken port.
       "ignoreBinaries": ["netstat"],
