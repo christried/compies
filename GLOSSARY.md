@@ -298,6 +298,10 @@ _Avoid_: Theme, colour mode, dark mode
 Whether a device plays the app's sound. It belongs to the device, not to the User (UI: Ton).
 _Avoid_: Mute, volume
 
+**Tour**:
+A short guided look at an Event page for a User who opens an Event they do not host for the first time: Compibert points at one thing after another, and the User only looks and never has to act. Every User gets it once and can ask for it again; a reworked Tour is shown once more to everyone (UI: Rundgang).
+_Avoid_: Onboarding, tutorial, walkthrough, guide
+
 **Game library**:
 The platform-wide collection of games that Hosts fill their Events from; only Users with the Host permission and the Platform admin see it (UI: Bibliothek).
 _Avoid_: Game list, catalogue
