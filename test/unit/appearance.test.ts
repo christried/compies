@@ -1,6 +1,9 @@
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
-import { APPEARANCE_COOKIE, APPEARANCES, appearanceCookieValue, isAppearance, type AuthUser } from '../../shared/auth'
+import { PgDialect, getTableConfig } from 'drizzle-orm/pg-core'
+import { APPEARANCE_COOKIE, APPEARANCES, appearanceCookieValue, isAppearance } from '../../shared/appearance'
+import type { AuthUser } from '../../shared/auth'
+import { users } from '../../server/db/schema'
 import { THEME_COLORS, renderedAppearance, themeColorMetas } from '../../app/utils/appearance'
 
 // A User's Appearance (#401, GLOSSARY): Hell, Dunkel or System, light unless they choose otherwise. The page renders the signed-in User's,
@@ -115,5 +118,20 @@ describe('THEME_COLORS', () => {
     const dark = tokens.indexOf('[data-theme="dark"]')
     expect(dark).toBeGreaterThan(-1)
     expect(THEME_COLORS.dark).toBe(paperAfter(dark))
+  })
+})
+
+describe('the CHECK on a User\'s Appearance', () => {
+  // What drizzle-kit renders into the migration (and compares with the committed snapshot): a change here needs a migration (#603, ADR 0007).
+  const [check] = getTableConfig(users).checks
+  const rendered = new PgDialect().sqlToQuery(check!.value).sql
+
+  it('keeps its name and its SQL', () => {
+    expect(check!.name).toBe('users_appearance_check')
+    expect(rendered).toBe('"users"."appearance" IN (\'light\', \'dark\', \'system\')')
+  })
+
+  it('names every Appearance and nothing else', () => {
+    expect(rendered).toBe(`"users"."appearance" IN (${APPEARANCES.map(value => `'${value}'`).join(', ')})`)
   })
 })
