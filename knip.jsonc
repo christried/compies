@@ -51,6 +51,8 @@
         "scripts/ship-cue-sound.mjs!",
         // Run by hand with node (#627): prints the message keys a dev-server page carries.
         "scripts/wording/keys.mjs!",
+        // Run by hand with node (#629): walks the dark check's states with the key tags on and writes the recording of the wording review.
+        "scripts/wording/walk.mjs!",
         // Run by hand with node (#628): checks an answers file of the wording review.
         "scripts/wording/check-answers.mjs!",
         // Imported by the review page (#631); until then its tests are its user (#628).
