@@ -7,8 +7,9 @@ import { noticeChipClasses, noticeClasses, type NoticeTone } from '~/utils/notic
 // An inline notice inside a page (02-components § NoticeBanner). Four tones (#172): info, warning (Hinweis),
 // critical (Kritisch) and success. Each tone has its tint and a default icon, and the icon can be overridden.
 // `critical` is announced as an alert, the others as a status; the text carries the meaning. `hostOnly` adds the
-// "Nur du siehst das" chip. The ✕ is there only with `closable`: the page decides what closing means (it emits
-// `close`, the banner does not hide itself), and a notice with nothing to close has no dead button.
+// "Nur du siehst das" label as a bold line over a divider, above the text, at every width (#611). The ✕ is there
+// only with `closable`: the page decides what closing means (it emits `close`, the banner does not hide itself),
+// and a notice with nothing to close has no dead button.
 const props = withDefaults(defineProps<{
   tone?: NoticeTone
   icon?: Component
@@ -38,16 +39,32 @@ const icon = computed(() => props.icon ?? DEFAULT_ICON[props.tone])
         :size="14"
       />
     </span>
-    <!-- Below sm the „Nur du siehst das“ badge sits above the text and the action under it, aligned with the text, so the text keeps the whole line (#166). -->
-    <div class="flex min-w-0 flex-1 flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
+    <!-- Host-only (#611): the label is a bold line, a divider under it, then the text, and the action sits below the text at every width. -->
+    <div
+      v-if="hostOnly"
+      class="flex min-w-0 flex-1 flex-col gap-2"
+    >
+      <span class="text-[12px] font-bold">{{ t('common.hostOnly') }}</span>
+      <hr class="border-t-2 border-line-soft">
+      <span class="min-w-0 text-pretty">
+        <slot />
+      </span>
+      <div
+        v-if="$slots.action"
+        class="flex-none self-start"
+      >
+        <slot name="action" />
+      </div>
+    </div>
+    <!-- Below sm the action sits under the text, aligned with it, so the text keeps the whole line (#166). -->
+    <div
+      v-else
+      class="flex min-w-0 flex-1 flex-col gap-2 sm:flex-row sm:items-center sm:gap-3"
+    >
       <div class="flex min-w-0 flex-1 flex-col gap-1 sm:flex-row sm:items-center sm:gap-3">
         <span class="min-w-0 flex-1 text-pretty">
           <slot />
         </span>
-        <span
-          v-if="hostOnly"
-          class="rounded-pill border-2 border-line bg-paper-2 px-2 text-[11px] font-bold max-sm:order-first max-sm:self-start"
-        >{{ t('common.hostOnly') }}</span>
       </div>
       <div
         v-if="$slots.action"
