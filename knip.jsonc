@@ -46,7 +46,12 @@
         // Run by hand with node; its output under sound-candidates/ (the listening session's candidates, #535) is committed.
         "scripts/make-cue-candidates.mjs!",
         // Run by hand with node (#536, #593): copies a candidate to public/sounds/cues/ and writes its credits entry; the result is committed.
-        "scripts/ship-cue-sound.mjs!"
+        "scripts/ship-cue-sound.mjs!",
+        // Run by hand with node (#628): checks an answers file of the wording review.
+        "scripts/wording/check-answers.mjs!",
+        // Imported by the review page (#631); until then its tests are its user (#628).
+        "scripts/wording/review-model.mjs!",
+        "scripts/wording/answers.mjs!"
       ],
       // Windows' own netstat, which serve.mjs calls to name the PID on a taken port.
       "ignoreBinaries": ["netstat"],
