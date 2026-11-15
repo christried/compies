@@ -14,6 +14,7 @@
 - **Spielkacheln gleich groß:** Jede Spielkachel auf der Eventseite lässt dem Namen jetzt Platz für zwei Zeilen, so sind alle gleich groß; ein längerer Name wird mit „…“ gekürzt und steht im Spiel-Fenster ganz. Die Karten der Bibliothek tun das in einem breiten Fenster auch. ([#612](https://github.com/christried/compies/issues/612))
 - **Hinweis ohne Doppelkreis:** Der Hinweis im Spiele-Formular ist jetzt ein Kreis mit einem Fragezeichen und öffnet sich, wenn du mit der Maus darauffährst oder ihn mit der Tastatur erreichst; ein Klick hält ihn offen. Auf dem Handy zeigt der Info-Knopf im Event-Assistenten dasselbe Fragezeichen. ([#616](https://github.com/christried/compies/issues/616))
 - Die Knöpfe im Host-Dock und in der Stepper-Leiste haben mehr Platz für ihren Schatten. Die Einträge „Neue Terminsuche“ und „Entfernen“ im Menü „Mehr“ einer Session sind flache Zeilen wie die übrigen, mit etwas mehr Abstand dazwischen. ([#607](https://github.com/christried/compies/issues/607))
+- **„Weiter“ bleibt stehen:** Im Event-Assistenten und in den Einstellungen sitzt die Leiste mit „Zurück“ und „Weiter“ auf jedem Schritt am unteren Fensterrand, und „Weiter“ wandert nicht mehr. ([#613](https://github.com/christried/compies/issues/613))
 
 ### Behoben
 
