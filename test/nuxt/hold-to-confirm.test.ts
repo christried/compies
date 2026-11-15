@@ -145,4 +145,27 @@ describe('HoldToConfirmButton', () => {
     expect(page.get('button').attributes('aria-disabled')).toBe('true')
     expect(page.text()).toContain('Nur der Host')
   })
+
+  it('as a menu item it is a flat row, with no shadow and no thick border, and still fills while held (#607)', async () => {
+    const menuItem = await mountSuspended(HoldToConfirmButton, {
+      props: { label: 'Entfernen', menuitem: true, block: true, variant: 'secondary', size: 'dock', hint: 'badge' },
+    })
+
+    const row = menuItem.get('[role="menuitem"]')
+    expect(row.classes()).toContain('rounded-md')
+    expect(row.classes()).not.toContain('shadow-btn')
+    expect(row.classes()).not.toContain('outline-memphis')
+
+    await row.trigger('pointerdown')
+    vi.advanceTimersByTime(500)
+    expect(row.get('[aria-hidden="true"].absolute').attributes('style')).toContain('scaleX(1)')
+    expect(row.text()).toContain('1 s halten')
+  })
+
+  it('outside a menu the hold button keeps its shadowed pill look (#607)', async () => {
+    const page = await mountSuspended(HoldToConfirmButton, { props: { label: 'Entfernen', size: 'dock', hint: 'badge' } })
+
+    expect(page.get('button').classes()).toContain('shadow-btn')
+    expect(page.get('button').classes()).toContain('outline-memphis')
+  })
 })
