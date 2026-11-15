@@ -8,11 +8,11 @@ import { decodeTags } from '../../shared/key-tag.ts'
 /** @typedef {{ i: number, kind: Kind, element: string, raw: string }} Candidate */
 /** @typedef {{ key: string, text: string, kind: Kind, element: string, box: Box | null, partial: boolean }} Row */
 
-// One pass over the document in document order: a text node or an attribute value that holds the open marker (U+E0001) is a candidate and is
+// One pass over the document in document order: a text node or an attribute value that holds the open marker of a tag (U+2060 and a bit) is a candidate and is
 // kept in window.__wordingNodes[i] for the second call; a visible non-blank text node without one is counted as untagged. The devtools
 // container and the elements that hold no page text are skipped.
 const FIND = `(() => {
-  const OPEN = String.fromCodePoint(0xE0001)
+  const OPEN = /\\u2060[\\u2062\\u2063]/
   const SKIP = new Set(['script', 'style', 'noscript', 'template'])
   const ATTRIBUTES = ['aria-label', 'title', 'alt', 'placeholder']
   const nodes = (window.__wordingNodes = [])
@@ -25,7 +25,7 @@ const FIND = `(() => {
   for (let node = walker.nextNode(); node; node = walker.nextNode()) {
     if (node.nodeType === 3) {
       const raw = node.nodeValue ?? ''
-      if (raw.includes(OPEN)) {
+      if (OPEN.test(raw)) {
         candidates.push({ i: nodes.push(node) - 1, kind: 'text', element: describe(node.parentElement), raw })
       }
       else if (raw.trim() !== '') untagged++
@@ -33,7 +33,7 @@ const FIND = `(() => {
     }
     for (const name of ATTRIBUTES) {
       const raw = node.getAttribute(name)
-      if (raw && raw.includes(OPEN)) candidates.push({ i: nodes.push(node) - 1, kind: name, element: describe(node), raw })
+      if (raw && OPEN.test(raw)) candidates.push({ i: nodes.push(node) - 1, kind: name, element: describe(node), raw })
     }
   }
   return { candidates, untagged }

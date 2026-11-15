@@ -7,7 +7,8 @@ import { describe, expect, it } from 'vitest'
 // first; CI builds production). Which builds register the plugin is carriesKeyTags in stage.ts, covered in test/unit/stage.test.ts.
 const OUTPUT = resolve(import.meta.dirname, '../../.output')
 const TEXT = /\.(mjs|js|json|html|map)$/
-const TAG_CHARACTER = /[\u{E0000}-\u{E007F}]/u
+// The opening of a tag: the frame, then at least the seven bits of one key character. A bare U+2060 can sit in a vendor chunk's own tables.
+const TAG_OPENING = /⁠[⁢⁣]{7}/
 
 const carriers = (matches: (text: string) => boolean) => readdirSync(OUTPUT, { recursive: true, encoding: 'utf8' })
   .map(file => file.replaceAll('\\', '/'))
@@ -25,7 +26,7 @@ describe('the key tags in the production build', () => {
     expect(carriers(text => text.includes('compies-key-tags'))).toEqual([])
   })
 
-  it('has no tag character in any script, page or map', () => {
-    expect(carriers(text => TAG_CHARACTER.test(text))).toEqual([])
+  it('has no tagged text in any script, page or map', () => {
+    expect(carriers(text => TAG_OPENING.test(text))).toEqual([])
   })
 })

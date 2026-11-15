@@ -5,7 +5,9 @@ import { decodeTags, stripTags, tagKey } from '~~/shared/key-tag'
 // The development-only tag a translated text carries (shared/key-tag.ts, #627, spec #620 § Telling the texts apart): a script that
 // reads a page back learns which message each text came from and sees the visible text unchanged. Each case pins what such a
 // reader gets, not how the characters are laid out.
-const TAG_CHARACTER = /[\u{E0000}-\u{E007F}]/u
+// Word joiner, invisible times and invisible separator: the frame and the two bits of the tag. Plane 14 Tag characters were measured first and
+// added one letter-spacing to a tagged text's element (m627 B4), so the tag is made of these, which add nothing.
+const TAG_CHARACTER = /[⁠⁢⁣]/u
 
 function leaves(node: unknown, path: string[] = []): Array<{ key: string, value: string }> {
   if (typeof node === 'string') return [{ key: path.join('.'), value: node }]
@@ -127,10 +129,19 @@ describe('edges', () => {
   })
 
   it('a lone close is ignored and the visible text stays intact', () => {
-    const lone = String.fromCodePoint(0xE007F)
+    const lone = '⁠'
     const decoded = decodeTags(`Ende${lone}`)
 
     expect(decoded).toEqual({ text: 'Ende', tags: [] })
+  })
+
+  it('a key that does not decode is dropped, the tag around it stays', () => {
+    const broken = '⁠⁢⁠'
+    const raw = tagKey('outer', `Hallo ${broken}Welt⁠!`)
+    const decoded = decodeTags(raw)
+
+    expect(decoded.text).toBe('Hallo Welt!')
+    expect(decoded.tags).toEqual([expect.objectContaining({ key: 'outer', text: 'Hallo Welt!', partial: false })])
   })
 
   it('a cut key is dropped without a throw and the visible text stays intact', () => {
