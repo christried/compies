@@ -1,7 +1,7 @@
 import { mountSuspended } from '@nuxt/test-utils/runtime'
-import type { VueWrapper } from '@vue/test-utils'
+import { flushPromises, type VueWrapper } from '@vue/test-utils'
 import { h } from 'vue'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import GameCard from '~/components/GameCard.vue'
 import { GAME_NAME_MAX, TAG_MAX, type GameView } from '~~/shared/game'
 
@@ -13,7 +13,7 @@ type Layout = 'card' | 'row' | 'responsive' | 'tile'
 
 let page: VueWrapper | undefined
 
-async function mount(game: Props, layout: Layout, withActions = true) {
+async function mount(game: Props, layout: Layout, withActions = true, attachTo?: HTMLElement) {
   const { name, ...rest } = game
   page = await mountSuspended(GameCard, {
     props: {
@@ -21,6 +21,7 @@ async function mount(game: Props, layout: Layout, withActions = true) {
       layout,
     },
     slots: withActions ? { actions: () => h('button', { type: 'button' }, 'Hinzufügen') } : {},
+    attachTo,
   })
   return page
 }
@@ -90,18 +91,19 @@ describe('the game card structure (#351)', () => {
 // koop 2, horror 5, indie 7). The „+N“ stays neutral.
 describe('the Tag chips on a game card (#427)', () => {
   const chips = () => [...root().querySelectorAll<HTMLElement>('[role="group"] > span')]
+  const moreButton = () => root().querySelector<HTMLButtonElement>('[role="group"] > button')
 
   it('colours each shown Tag by its key, with its ink, and leaves the „+N“ neutral', async () => {
     const tags = [{ key: 'retro', label: 'Retro' }, { key: 'co-op', label: 'Co-op' }, { key: 'koop', label: 'Koop' }, { key: 'horror', label: 'Horror' }]
     await mount({ name: 'Mario Kart', tags }, 'card')
 
-    const [retro, coop, koop, more] = chips()
+    const [retro, coop, koop] = chips()
     expect(retro!.getAttribute('style')).toContain('var(--cp-team-7)')
     expect(retro!.getAttribute('style')).toContain('var(--cp-team-7-ink)')
     expect(coop!.getAttribute('style')).toContain('var(--cp-team-1)')
     expect(koop!.getAttribute('style')).toContain('var(--cp-team-2)')
-    expect(more!.textContent).toBe('+1')
-    expect(more!.getAttribute('style') ?? '').not.toContain('--cp-team')
+    expect(moreButton()!.textContent).toBe('+1')
+    expect(moreButton()!.getAttribute('style') ?? '').not.toContain('--cp-team')
   })
 
   it('gives a Tag whose colour an earlier Tag wears the next free one, as on the game page', async () => {
@@ -140,6 +142,110 @@ describe('the Tag chips on a game card (#427)', () => {
     expect(chip.getAttribute('style')).toContain('var(--cp-team-4-ink)')
     expect(chip.className).toContain('truncate')
     expect(chip.className).toContain('max-w-[9rem]')
+  })
+})
+
+// The „+N“ button (#614): it names its count, sits on the chips' line and opens a popover of every Tag. Using it never follows the card's link.
+describe('the „+N“ button and its popover (#614)', () => {
+  const FIVE = [{ key: 'retro', label: 'Retro' }, { key: 'co-op', label: 'Co-op' }, { key: 'koop', label: 'Koop' }, { key: 'horror', label: 'Horror' }, { key: 'indie', label: 'Indie' }]
+  const chips = () => [...root().querySelectorAll<HTMLElement>('[role="group"] > span')]
+  const moreButton = () => root().querySelector<HTMLButtonElement>('[role="group"] > button')
+  const popover = () => document.querySelector<HTMLElement>('[role="note"]')
+  const popoverChips = () => [...popover()!.querySelectorAll<HTMLElement>('[role="group"] > span')]
+  const hover = async (target: HTMLElement) => {
+    target.dispatchEvent(new PointerEvent('pointerenter', { pointerType: 'mouse' }))
+    await flushPromises()
+  }
+
+  it('is a button named by the Tags beyond three, with no native tooltip: „+2“ for five, „+1“ for four', async () => {
+    await mount({ name: 'Mario Kart', tags: FIVE }, 'card')
+
+    expect(moreButton()!.tagName).toBe('BUTTON')
+    expect(moreButton()!.textContent).toBe('+2')
+    expect(moreButton()!.getAttribute('aria-label')).toBe('2 weitere Tags')
+    expect(moreButton()!.hasAttribute('title')).toBe(false)
+    page!.unmount()
+
+    await mount({ name: 'Mario Kart', tags: FIVE.slice(0, 4) }, 'card')
+
+    expect(moreButton()!.textContent).toBe('+1')
+    expect(moreButton()!.getAttribute('aria-label')).toBe('1 weiterer Tag')
+  })
+
+  it('shows no „+N“ and no popover at three Tags or fewer', async () => {
+    await mount({ name: 'Mario Kart', tags: FIVE.slice(0, 3) }, 'card')
+
+    expect(chips()).toHaveLength(3)
+    expect(moreButton()).toBeNull()
+    expect(root().querySelector('button[aria-haspopup]')).toBeNull()
+  })
+
+  it('opens on hover a popover of every Tag, in the game’s order, with the colours the chips wear', async () => {
+    await mount({ name: 'Mario Kart', tags: FIVE }, 'card')
+    expect(popover()).toBeNull()
+
+    await hover(moreButton()!)
+
+    expect(popover()).not.toBeNull()
+    expect(popover()!.parentElement).toBe(document.body)
+    expect(popover()!.querySelector('[role="group"]')!.getAttribute('aria-label')).toBe('Tags')
+    expect(popoverChips().map(chip => chip.textContent!.trim())).toEqual(['Retro', 'Co-op', 'Koop', 'Horror', 'Indie'])
+    // The first three wear the colours of the card's chips; „Horror“ its own, „Indie“ the next free one after „Retro“ (#427).
+    expect(popoverChips()[0]!.getAttribute('style')).toBe(chips()[0]!.getAttribute('style'))
+    expect(popoverChips()[1]!.getAttribute('style')).toBe(chips()[1]!.getAttribute('style'))
+    expect(popoverChips()[2]!.getAttribute('style')).toBe(chips()[2]!.getAttribute('style'))
+    expect(popoverChips()[3]!.getAttribute('style')).toContain('var(--cp-team-5)')
+    expect(popoverChips()[4]!.getAttribute('style')).toContain('var(--cp-team-8)')
+  })
+
+  it('does not follow the card’s link: a click on „+N“ leaves the link and the router alone', async () => {
+    page = await mountSuspended(GameCard, {
+      props: { game: { id: 'g-1', name: 'Mario Kart', imageUrl: null, youtubeId: null, playersMin: null, playersMax: null, suitabilities: [], tags: FIVE, price: null }, layout: 'card', to: '/bibliothek/g-1' },
+    })
+    const link = root().querySelector('a')!
+    const onLinkClick = vi.fn()
+    link.addEventListener('click', onLinkClick)
+    const pushState = vi.spyOn(window.history, 'pushState')
+
+    moreButton()!.click()
+    await flushPromises()
+
+    expect(onLinkClick).not.toHaveBeenCalled()
+    expect(pushState).not.toHaveBeenCalled()
+    expect(popover()).not.toBeNull()
+    pushState.mockRestore()
+  })
+
+  it('does not press the picker’s own button: a click on „+N“ on a row without a link leaves the actions alone', async () => {
+    const onPick = vi.fn()
+    page = await mountSuspended(GameCard, {
+      props: { game: { id: 'g-1', name: 'Mario Kart', imageUrl: null, youtubeId: null, playersMin: null, playersMax: null, suitabilities: [], tags: FIVE, price: null }, layout: 'row' },
+      slots: { actions: () => h('button', { type: 'button', onClick: onPick }, 'Wählen') },
+    })
+
+    moreButton()!.click()
+    await flushPromises()
+
+    expect(onPick).not.toHaveBeenCalled()
+    expect(popover()).not.toBeNull()
+  })
+
+  it('closes on Esc and keeps the focus on „+N“, which the focus opened', async () => {
+    const container = document.createElement('div')
+    document.body.append(container)
+    await mount({ name: 'Mario Kart', tags: FIVE }, 'card', true, container)
+
+    moreButton()!.focus()
+    await flushPromises()
+    expect(popover()).not.toBeNull()
+    expect(document.activeElement).toBe(moreButton())
+
+    moreButton()!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }))
+    await flushPromises()
+
+    expect(popover()).toBeNull()
+    expect(document.activeElement).toBe(moreButton())
+    container.remove()
   })
 })
 
