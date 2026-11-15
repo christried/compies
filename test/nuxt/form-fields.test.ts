@@ -453,6 +453,29 @@ describe('SegmentedControl', () => {
     expect(page.emitted('update:modelValue')?.at(-1)).toEqual(['direct'])
   })
 
+  it('leaves ArrowUp and ArrowDown to the parent with arrows horizontal, and still moves on ArrowLeft and ArrowRight (#617)', async () => {
+    const page = await mountSuspended(SegmentedControl, { props: { modelValue: 'poll', options, label: 'Termin', arrows: 'horizontal' } })
+    const radio = page.findAll('[role="radio"]')[0]!
+
+    for (const key of ['ArrowDown', 'ArrowUp']) {
+      const event = new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true })
+      radio.element.dispatchEvent(event)
+      expect(event.defaultPrevented).toBe(false)
+    }
+    expect(page.emitted('update:modelValue')).toBeUndefined()
+
+    await radio.trigger('keydown', { key: 'ArrowRight' })
+    expect(page.emitted('update:modelValue')?.at(-1)).toEqual(['direct'])
+  })
+
+  it('selects on ArrowDown and ArrowUp by default', async () => {
+    const page = await mountSuspended(SegmentedControl, { props: { modelValue: 'poll', options, label: 'Termin' } })
+
+    await page.findAll('[role="radio"]')[0]!.trigger('keydown', { key: 'ArrowDown' })
+
+    expect(page.emitted('update:modelValue')?.at(-1)).toEqual(['direct'])
+  })
+
   it('fills the selected option with its own colour and draws its icon', async () => {
     const coloured = [
       { value: 'yes', label: 'Ja', icon: Check, fill: 'bg-success text-on-success' },
