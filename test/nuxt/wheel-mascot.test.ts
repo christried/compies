@@ -60,6 +60,40 @@ function wide(matches: boolean) {
   vi.stubGlobal('matchMedia', () => ({ matches, addEventListener: () => {}, removeEventListener: () => {} }))
 }
 
+/**
+ * The wheel card's width as its ResizeObserver reports it (#604): happy-dom's observer does nothing, so this stub reports `px` once when the card
+ * is observed, and `resize` reports a new width the way a real observer would. `seen` counts what was observed and how often it was disconnected.
+ */
+function cardWidth(px: number) {
+  const seen = { observed: [] as Element[], disconnects: 0 }
+  let width = px
+  let report: ResizeObserverCallback | undefined
+  class Stub {
+    constructor(callback: ResizeObserverCallback) {
+      report = callback
+    }
+
+    observe(target: Element) {
+      seen.observed.push(target)
+      report?.([{ target, contentRect: { width } } as unknown as ResizeObserverEntry], null as unknown as ResizeObserver)
+    }
+
+    unobserve() {}
+
+    disconnect() {
+      seen.disconnects++
+    }
+  }
+  vi.stubGlobal('ResizeObserver', Stub)
+  return {
+    seen,
+    resize(next: number) {
+      width = next
+      report?.([{ target: seen.observed[0]!, contentRect: { width: next } } as unknown as ResizeObserverEntry], null as unknown as ResizeObserver)
+    },
+  }
+}
+
 const mascot = () => page!.find('[data-testid="wheel-mascot"]')
 const stage = () => mascot().attributes('data-stage')
 const rigState = () => mascot().get('.compibert-rig').attributes('data-state')
@@ -352,6 +386,7 @@ describe('what he leaves alone', () => {
 describe('the width', () => {
   it('is sm on a phone: 150 px, from the wheel\'s upper right', async () => {
     wide(false)
+    cardWidth(300)
     await mount(wheelOf(spinOf()))
     await at(START + 1000)
 
@@ -359,8 +394,9 @@ describe('the width', () => {
     expect(mascot().get('.compibert-rig').attributes('style')).toContain('width: 150px')
   })
 
-  it('is md from the theme\'s md up, not from the narrower width `useRoomy` has: 232 px', async () => {
+  it('is md on a card that holds the wheel from the theme\'s md up, not from the narrower width `useRoomy` has: 232 px', async () => {
     wide(true)
+    cardWidth(1020)
     await mount(wheelOf(spinOf()))
     await at(START + 1000)
 
@@ -368,6 +404,61 @@ describe('the width', () => {
     expect(mascot().attributes('style')).toContain('--wm-left: max(50% + 24px, 100% - 120px)')
     expect(mascot().attributes('style')).toContain('top: 18px')
     expect(mascot().get('.compibert-rig').attributes('style')).toContain('width: 232px')
+  })
+
+  // The card's content width decides, on both sides of the threshold: 612 px at md up (the wheel 420), 532 px below (the wheel 340) (#604).
+  it.each([
+    [true, 611, 'sm', 150],
+    [true, 612, 'md', 232],
+    [false, 531, 'sm', 150],
+    [false, 532, 'md', 232],
+  ])('with md %s and a card of %i px is %s: %i px', async (isWide, card, width, size) => {
+    wide(isWide)
+    cardWidth(card)
+    await mount(wheelOf(spinOf()))
+    await at(START + 1000)
+
+    expect(mascot().attributes('data-width')).toBe(width)
+    expect(mascot().get('.compibert-rig').attributes('style')).toContain(`width: ${size}px`)
+  })
+
+  it('follows the card as it is resized: the big bust once the card holds it, the small one again when it narrows', async () => {
+    wide(true)
+    const card = cardWidth(600)
+    await mount(wheelOf(spinOf()))
+    await at(START + 1000)
+    expect(mascot().attributes('data-width')).toBe('sm')
+
+    card.resize(640)
+    await flushPromises()
+    expect(mascot().attributes('data-width')).toBe('md')
+    expect(mascot().get('.compibert-rig').attributes('style')).toContain('width: 232px')
+
+    card.resize(600)
+    await flushPromises()
+    expect(mascot().attributes('data-width')).toBe('sm')
+  })
+
+  it('watches the wheel card and lets go of it when the wheel leaves the page', async () => {
+    wide(true)
+    const card = cardWidth(1020)
+    await mount(wheelOf(null))
+
+    expect(card.seen.observed).toEqual([page!.find('section').element])
+    expect(card.seen.disconnects).toBe(0)
+    page!.unmount()
+    page = undefined
+    expect(card.seen.disconnects).toBe(1)
+  })
+
+  it('is sm while the card is not measured: no observer on the page, no error', async () => {
+    vi.unstubAllGlobals()
+    wide(true)
+    await mount(wheelOf(spinOf()))
+    await at(START + 1000)
+
+    expect(mascot().attributes('data-width')).toBe('sm')
+    expect(mascot().get('.compibert-rig').attributes('style')).toContain('width: 150px')
   })
 })
 
