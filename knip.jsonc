@@ -29,6 +29,8 @@
         "scripts/browser/serve.mjs!",
         "scripts/browser/shots.mjs!",
         "scripts/browser/standings.mjs!",
+        // Run by hand with node (#626, spec #620): lists the texts of de.json that no code refers to; its data file lands in <tmp>/compies-browser/wording/.
+        "scripts/wording/unused.mjs!",
         // Run by the PreToolUse hook on Bash in .claude/settings.json (the heredoc guard, #483), not imported.
         "scripts/bash-guard.mjs!",
         // Run by the SessionStart hook in .claude/settings.json (the session-start note, #484), not imported.
