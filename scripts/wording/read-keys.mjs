@@ -95,10 +95,30 @@ export function rowsFrom(candidates, boxes) {
  * @returns {Promise<{ rows: Row[], untagged: number }>}
  */
 export async function readKeys(tab) {
-  const { candidates, untagged } = await tab.evaluate(FIND)
+  const { candidates, untagged } = await findCandidates(tab)
+  return { rows: rowsFrom(candidates, await measureCandidates(tab, candidates)), untagged }
+}
+
+/**
+ * The first step of `readKeys` on its own (#629: the walk reads the page's candidates once and measures what it needs): the tagged text nodes
+ * and attributes in document order, kept in `window.__wordingNodes[candidate.i]` for `measureCandidates`, and the untagged count.
+ * @param {{ evaluate: (expression: string) => Promise<any> }} tab
+ * @returns {Promise<{ candidates: Candidate[], untagged: number }>}
+ */
+export function findCandidates(tab) {
+  return tab.evaluate(FIND)
+}
+
+/**
+ * The second step: `boxes[j]` holds the boxes of candidate `j`'s tags (document-relative CSS px, null where nothing is painted).
+ * @param {{ evaluate: (expression: string) => Promise<any> }} tab
+ * @param {Candidate[]} candidates
+ * @returns {Promise<Array<Array<Box | null>>>}
+ */
+export async function measureCandidates(tab, candidates) {
+  if (!candidates.length) return []
   const spans = candidates.map(candidate => ({ i: candidate.i, kind: candidate.kind, tags: decodeTags(candidate.raw).tags.map(({ from, to }) => ({ from, to })) }))
-  const boxes = candidates.length ? await tab.evaluate(boxesScript(spans)) : []
-  return { rows: rowsFrom(candidates, boxes), untagged }
+  return tab.evaluate(boxesScript(spans))
 }
 
 /**

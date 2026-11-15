@@ -16,7 +16,11 @@ import { api, BASE, clickText, createEvent, createGame, enterResult, eventView, 
 
 const COPY = JSON.parse(readFileSync(join(dirname(fileURLToPath(import.meta.url)), '../../i18n/locales/de.json'), 'utf8'))
 const run = process.argv.slice(2).find(arg => arg.startsWith('--run='))?.slice('--run='.length) ?? 'dark'
-const PREFIX = 'R011 Dunkel-Check '
+/** The games' names: library data, the same in the dark check and in the walk (#629). The Events' names come from `ctx.data.prefix` (`R011 Dunkel-Check ` in the dark check, `W<run> ` in the walk). */
+const GAME_PREFIX = 'R011 Dunkel-Check '
+// On a dev server started with `--wording` a text carries invisible key-tag characters (shared/key-tag.ts, #627): a page expression strips them before it compares
+// with `===`, a selector matches an attribute with `*=`. The backslashes are written doubled: the string holds `⁠` as text, which the page's regex reads.
+const UNTAG = '/[\\u2060\\u2062\\u2063]/g'
 /** The Coin flip's lead and flight (`shared/coin.ts`), plus a second. */
 const COIN_WAIT_MS = 1500 + 3600 + 1000
 
@@ -79,10 +83,10 @@ async function park(ctx, own) {
 // ---------------------------------------------------------------------------------------------------------------------------------
 // The data
 
-/** The Dev Host's Events named `R011 Dunkel-Check <kind>` are ended and deleted (the runner's own `R011 Dunkel-Check` has no space after). */
-async function purge(host) {
+/** The Dev Host's Events named `<prefix><kind>` are ended and deleted (the runner's own Event, `R011 Dunkel-Check` or `W<run>`, has no space after, so the prefix never takes it). */
+async function purge(host, prefix) {
   const { events } = await ok(api(host, 'GET', '/api/e'), 'GET /api/e')
-  for (const event of events.filter(entry => entry.name.startsWith(PREFIX) && entry.isHost)) {
+  for (const event of events.filter(entry => entry.name.startsWith(prefix) && entry.isHost)) {
     await api(host, 'POST', `/api/e/${event.slug}/sessions/end`)
     await api(host, 'DELETE', `/api/e/${event.slug}`)
   }
@@ -96,7 +100,7 @@ function games(ctx) {
     const known = (await ok(api(host, 'GET', '/api/games'), 'GET /api/games')).games
     const found = []
     for (let n = 2; n <= 12; n++) {
-      const name = `${PREFIX}Spiel ${n}`
+      const name = `${GAME_PREFIX}Spiel ${n}`
       found.push(known.find(game => game.name === name) ?? await createGame(host, { name, playersMin: 1, playersMax: 8, clipLength: 60, ...(n === 2 ? { notes: 'R011 Dunkel-Check Notiz' } : {}) }))
     }
     return [...found, ctx.data.game]
@@ -115,8 +119,8 @@ function dialogGames(ctx) {
     const known = (await ok(api(host, 'GET', '/api/games'), 'GET /api/games')).games
     const fields = { playersMin: 2, playersMax: 6, clipLength: 60, suitabilities: ['teams', 'one_v_one'] }
     const specs = [
-      { name: `${PREFIX}Spiel Dialog A`, notes: 'R011 Dunkel-Check Notiz A\nZweite Zeile der Notiz', tags: ['Koop', 'Schnell', 'Chaos', 'Party', 'Geschicklichkeit', 'Rätsel', 'Rennen', 'Strategie'], price: { cents: 1999, source: 'steam' } },
-      { name: `${PREFIX}Spiel Dialog B`, notes: 'R011 Dunkel-Check Notiz B', tags: ['Koop', 'Schnell', 'Chaos', 'Party', 'Rätsel'] },
+      { name: `${GAME_PREFIX}Spiel Dialog A`, notes: 'R011 Dunkel-Check Notiz A\nZweite Zeile der Notiz', tags: ['Koop', 'Schnell', 'Chaos', 'Party', 'Geschicklichkeit', 'Rätsel', 'Rennen', 'Strategie'], price: { cents: 1999, source: 'steam' } },
+      { name: `${GAME_PREFIX}Spiel Dialog B`, notes: 'R011 Dunkel-Check Notiz B', tags: ['Koop', 'Schnell', 'Chaos', 'Party', 'Rätsel'] },
     ]
     return Promise.all(specs.map(async spec => known.find(game => game.name === spec.name) ?? createGame(host, { ...fields, ...spec })))
   })()
@@ -135,7 +139,7 @@ const memo = new Map()
 let pass = null
 async function made(ctx, key, build) {
   if (pass !== ctx.appearance) {
-    await purge(ctx.tabs.host)
+    await purge(ctx.tabs.host, ctx.data.prefix)
     memo.clear()
     pass = ctx.appearance
   }
@@ -152,7 +156,7 @@ async function running(ctx, kind, { n = 4, long = false, settings = {}, set = 0,
   await signIn(ctx, 'member')
   const given = list ?? await pool(ctx, n, { long })
   // The Game count leaves room for the Vetoes, so only `pool-warnung` shows the Host's pool warning.
-  return runningEvent([host(ctx), member(ctx)], { name: `${PREFIX}${kind}`, pool: given, settings: { gameCount: Math.max(given.length - 2 * (settings.vetoAllowance ?? 0), 1), ...settings }, set })
+  return runningEvent([host(ctx), member(ctx)], { name: `${ctx.data.prefix}${kind}`, pool: given, settings: { gameCount: Math.max(given.length - 2 * (settings.vetoAllowance ?? 0), 1), ...settings }, set })
 }
 
 const WHEEL = { selectionMode: 'lucky_wheel' }
@@ -185,7 +189,7 @@ const BUILDS = {
     await signIn(ctx, 'member')
     await signIn(ctx, 'admin')
     const given = await pool(ctx, 3)
-    const { slug } = await createEvent(host(ctx), { name: `${PREFIX}Terminumfrage`, slots: [inDays(10), inDays(12, '20:00'), inDays(14, '18:30')], pool: given.map(game => game.id) })
+    const { slug } = await createEvent(host(ctx), { name: `${ctx.data.prefix}Terminumfrage`, slots: [inDays(10), inDays(12, '20:00'), inDays(14, '18:30')], pool: given.map(game => game.id) })
     await joinEvent(member(ctx), slug, host(ctx))
     await joinEvent(admin(ctx), slug, host(ctx))
     const { slots } = await eventView(host(ctx), slug)
@@ -202,7 +206,7 @@ const BUILDS = {
   async datiert(ctx) {
     await signIn(ctx, 'member')
     const given = await pool(ctx, 3)
-    const { slug } = await createEvent(host(ctx), { name: `${PREFIX}Termin steht`, slots: [inDays(10)], pool: given.map(game => game.id) })
+    const { slug } = await createEvent(host(ctx), { name: `${ctx.data.prefix}Termin steht`, slots: [inDays(10)], pool: given.map(game => game.id) })
     await joinEvent(member(ctx), slug, host(ctx))
     const { slots } = await eventView(host(ctx), slug)
     await ok(api(host(ctx), 'POST', `/api/e/${slug}/confirm`, { slotId: slots[0].id }), 'confirm the Date')
@@ -212,7 +216,7 @@ const BUILDS = {
     await signIn(ctx, 'member')
     await signIn(ctx, 'admin')
     const given = await pool(ctx, 3)
-    const { slug } = await createEvent(host(ctx), { name: `${PREFIX}Teamwahl`, settings: { teamCount: 2, teamSize: 3 }, pool: given.map(game => game.id) })
+    const { slug } = await createEvent(host(ctx), { name: `${ctx.data.prefix}Teamwahl`, settings: { teamCount: 2, teamSize: 3 }, pool: given.map(game => game.id) })
     await joinEvent(member(ctx), slug, host(ctx))
     await joinEvent(admin(ctx), slug, host(ctx))
     const place = async (tab, to) => ok(api(tab, 'POST', `/api/e/${slug}/move`, { userId: (await eventView(tab, slug)).viewerId, to }), 'move')
@@ -226,7 +230,7 @@ const BUILDS = {
     await signIn(ctx, 'member')
     await signIn(ctx, 'admin')
     const given = await pool(ctx, 3)
-    const { slug } = await createEvent(host(ctx), { name: `${PREFIX}Teamwort`, settings: { teamCount: 2, teamSize: 3 }, pool: given.map(game => game.id) })
+    const { slug } = await createEvent(host(ctx), { name: `${ctx.data.prefix}Teamwort`, settings: { teamCount: 2, teamSize: 3 }, pool: given.map(game => game.id) })
     await joinEvent(member(ctx), slug, host(ctx))
     await joinEvent(admin(ctx), slug, host(ctx))
     for (const tab of [host(ctx), member(ctx)]) await ok(api(tab, 'POST', `/api/e/${slug}/move`, { userId: (await eventView(tab, slug)).viewerId, to: { zone: 'team', team: 1 } }), 'move')
@@ -240,7 +244,7 @@ const BUILDS = {
     await signIn(ctx, 'member')
     await signIn(ctx, 'admin')
     const tabs = [host(ctx), member(ctx), admin(ctx)]
-    const event = await runningEvent(tabs, { name: `${PREFIX}Aktivitaet`, pool: await pool(ctx, 3), settings: { gameCount: 3 }, set: 3 })
+    const event = await runningEvent(tabs, { name: `${ctx.data.prefix}Aktivitaet`, pool: await pool(ctx, 3), settings: { gameCount: 3 }, set: 3 })
     await ok(api(member(ctx), 'POST', `/api/e/${event.slug}/team-word`, { word: 'Gurkensalat' }), 'give a Team word')
     await ok(api(admin(ctx), 'POST', `/api/e/${event.slug}/team-word`, { word: 'Spaghettieis' }), 'give a Team word')
     for (const [index, roundId] of event.roundIds.entries()) await enterResult(host(ctx), event.slug, roundId, placesOf([1, 2, 3].map((_, i) => [1, 2, 3][(i + index) % 3])))
@@ -265,7 +269,7 @@ const BUILDS = {
   // The finished page before the Award ceremony: no `ceremonyOver`, so the Host's dock offers „Siegerehrung starten“ and a Member has the card (#445).
   async 'fertig-offen'(ctx) {
     await signIn(ctx, 'member')
-    return finishedEvent([host(ctx), member(ctx)], { name: `${PREFIX}Fertig offen`, outcome: 'winner', pool: await pool(ctx, 3) })
+    return finishedEvent([host(ctx), member(ctx)], { name: `${ctx.data.prefix}Fertig offen`, outcome: 'winner', pool: await pool(ctx, 3) })
   },
   // The Lucky Wheel before a Draw (8 games, one of them the 60-character name), with 1 game, and after a Draw with 1 and with 0 games left.
   'rad-vorher': ctx => running(ctx, 'Rad vorher', { n: 8, long: true, settings: { ...WHEEL, vetoAllowance: 1 } }),
@@ -330,14 +334,14 @@ const BUILDS = {
   'pool': ctx => running(ctx, 'Pool', { n: 3, settings: { gameCount: 6 }, set: 1 }),
   async fertig(ctx) {
     await signIn(ctx, 'member')
-    const event = await finishedEvent([host(ctx), member(ctx)], { name: `${PREFIX}Fertig`, outcome: 'winner', pool: await pool(ctx, 3) })
+    const event = await finishedEvent([host(ctx), member(ctx)], { name: `${ctx.data.prefix}Fertig`, outcome: 'winner', pool: await pool(ctx, 3) })
     await ceremonyOver(ctx, event.slug)
     return event
   },
   async 'fertig-gleichstand'(ctx) {
     await signIn(ctx, 'member')
     await signIn(ctx, 'admin')
-    const event = await finishedEvent([host(ctx), member(ctx), admin(ctx)], { name: `${PREFIX}Fertig gleichauf`, outcome: 'tie', pool: await pool(ctx, 3) })
+    const event = await finishedEvent([host(ctx), member(ctx), admin(ctx)], { name: `${ctx.data.prefix}Fertig gleichauf`, outcome: 'tie', pool: await pool(ctx, 3) })
     await ceremonyOver(ctx, event.slug)
     return event
   },
@@ -353,7 +357,7 @@ async function closeLayer(tab) {
   const closed = await tab.evaluate(`(() => {
     const layer = ${layer}
     if (layer.getAttribute('role') === 'menu') { document.querySelector('[role=toolbar] button[aria-haspopup=menu]')?.click(); return true }
-    const button = [...layer.querySelectorAll('button')].find(b => [${JSON.stringify(COPY.common.close)}, ${JSON.stringify(COPY.common.cancel)}].some(text => b.getAttribute('aria-label') === text || b.textContent.trim() === text))
+    const button = [...layer.querySelectorAll('button')].find(b => [${JSON.stringify(COPY.common.close)}, ${JSON.stringify(COPY.common.cancel)}].some(text => (b.getAttribute('aria-label') ?? '').replace(${UNTAG}, '') === text || b.textContent.replace(${UNTAG}, '').trim() === text))
     if (!button) return false
     button.click()
     return true
@@ -398,7 +402,7 @@ const toastShown = (tab, text) => until(tab, `[...document.querySelectorAll('[ro
 async function openTile(tab, anchor, game) {
   const pressed = await tab.evaluate(`(() => {
     const seen = el => el.getBoundingClientRect().width > 0
-    const label = [...document.querySelectorAll('h2, h3, p')].find(el => seen(el) && el.textContent.trim() === ${JSON.stringify(anchor)})
+    const label = [...document.querySelectorAll('h2, h3, p')].find(el => seen(el) && el.textContent.replace(${UNTAG}, '').trim() === ${JSON.stringify(anchor)})
     for (let block = label?.parentElement; block; block = block.parentElement) {
       const button = [...block.querySelectorAll('button')].find(el => seen(el) && el.textContent.includes(${JSON.stringify(game)}))
       if (!button) continue
@@ -499,8 +503,8 @@ const finishedStops = key => [
 ]
 
 /** Ends the Sessions and deletes the Events this file made on the dev database (the runner calls it last, and `after` of the last state at the end of a pass). */
-export async function cleanup({ tabs }) {
-  await purge(tabs.host)
+export async function cleanup({ tabs, data }) {
+  await purge(tabs.host, data.prefix)
 }
 
 export const STATES = [
@@ -651,8 +655,8 @@ export const STATES = [
     // The side panel opens on „Aktivität“, which the page state reads already.
     hostStops: [stop('panel-tabelle', tab => press(tab, '[role=tab]', COPY.nav.tabs.table))],
     spielerStops: [
-      stop('tab-tabelle', tab => press(tab, `nav[aria-label=${JSON.stringify(COPY.event.tabs.label)}] button`, COPY.nav.tabs.table)),
-      stop('tab-aktivitaet', tab => press(tab, `nav[aria-label=${JSON.stringify(COPY.event.tabs.label)}] button`, COPY.nav.tabs.activity)),
+      stop('tab-tabelle', tab => press(tab, `nav[aria-label*=${JSON.stringify(COPY.event.tabs.label)}] button`, COPY.nav.tabs.table)),
+      stop('tab-aktivitaet', tab => press(tab, `nav[aria-label*=${JSON.stringify(COPY.event.tabs.label)}] button`, COPY.nav.tabs.activity)),
     ],
   }),
   // The coin lands on a side the server draws at random: Kopf in one pass, Schwanz in the other. The coin card is read in both and compared in neither.
@@ -690,7 +694,7 @@ export const STATES = [
     name: 'aktivitaet',
     group: 'event-finished',
     hostStops: [stop('panel-aktivitaet', tab => press(tab, '[role=tab]', COPY.nav.tabs.activity))],
-    spielerStops: [stop('tab-aktivitaet', tab => press(tab, `nav[aria-label=${JSON.stringify(COPY.event.tabs.label)}] button`, COPY.nav.tabs.activity))],
+    spielerStops: [stop('tab-aktivitaet', tab => press(tab, `nav[aria-label*=${JSON.stringify(COPY.event.tabs.label)}] button`, COPY.nav.tabs.activity))],
   }),
   // The game tiles of the Round and of the Wheel's card, and their dialog as the Host (Tags, Notes, library link) and as a Member (picture, facts, Price) (#435, #443, #444).
   ...pair({
@@ -773,10 +777,10 @@ export const STATES = [
     group: 'event-finished',
     hostStops: [stop('panel-tabelle', tab => press(tab, '[role=tab]', COPY.nav.tabs.table))],
     spielerStops: [
-      stop('tab-tabelle', tab => press(tab, `nav[aria-label=${JSON.stringify(COPY.event.tabs.label)}] button`, COPY.nav.tabs.table)),
-      stop('tab-aktivitaet', tab => press(tab, `nav[aria-label=${JSON.stringify(COPY.event.tabs.label)}] button`, COPY.nav.tabs.activity)),
+      stop('tab-tabelle', tab => press(tab, `nav[aria-label*=${JSON.stringify(COPY.event.tabs.label)}] button`, COPY.nav.tabs.table)),
+      stop('tab-aktivitaet', tab => press(tab, `nav[aria-label*=${JSON.stringify(COPY.event.tabs.label)}] button`, COPY.nav.tabs.activity)),
     ],
     // The last state of the file: the Events of the pass are deleted after it, so Home looks the same in the next pass.
-    after: ({ tabs }) => purge(tabs.host),
+    after: ({ tabs, data }) => purge(tabs.host, data.prefix),
   }),
 ]

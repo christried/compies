@@ -93,6 +93,31 @@ export function scanUnused(messages, sources) {
   return { groups: [...groups.values()], total }
 }
 
+/**
+ * The first place code names each key, name or prefix the scan reads (#629, for the walk's `locations`): the same three patterns as
+ * `scanUnused`, in source order. A literal key, a prefix code builds (`team.colors.` of `team.colors.${at}`) and a member chain off the
+ * locale import (`mvp.ics` of `de.mvp.ics`) are all names here; `locationOf` in where.mjs reads the map.
+ * @param {Source[]} sources
+ * @returns {Map<string, { file: string, line: number }>}
+ */
+export function firstReferences(sources) {
+  /** @type {Map<string, { file: string, line: number }>} */
+  const first = new Map()
+  for (const { file, text } of sources) {
+    const lineAt = (/** @type {number} */ index) => text.slice(0, index).split('\n').length
+    /** @param {RegExpMatchArray} match @param {number} drop */
+    const note = (match, drop = 0) => {
+      const name = (match[1] ?? '').slice(drop)
+      if (!first.has(name)) first.set(name, { file, line: lineAt(match.index ?? 0) })
+    }
+    for (const m of text.matchAll(LITERAL)) note(m)
+    for (const m of text.matchAll(BUILT)) note(m)
+    if (!text.includes(IMPORT_OF_LOCALE)) continue
+    for (const m of text.matchAll(MEMBER_CHAIN)) note(m, 1)
+  }
+  return first
+}
+
 const CUT = 100
 
 /** @param {string} text */
