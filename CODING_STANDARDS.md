@@ -28,6 +28,7 @@ Each concern below has one home. New code calls it; a second copy is a finding e
 | Playing a sound cue (the one audio context, scheduling on the audio clock, the Ton gate, loading the files) | `app/utils/cue-player.ts` and `useCuePlayer` (#531); the file folder and extension are in `sound-cues.ts` (`cueFileUrl`) |
 | Which file each cue ships and where it is from (credits file, shape, parser, the copy script) | `public/sounds/cues/credits.json`, `app/utils/sound-credits.ts`, `scripts/ship-cue-sound.mjs` (#536) |
 | The listening page for the cue sounds (development only, #534: page, candidates, choices) | `app/dev/` (`listening-page.vue`, `listening-model.ts`), `server/dev/cue-candidates.ts`, `sound-candidates/`; registered only by the `listening-page` module in `nuxt.config.ts` |
+| Telling a translated text apart on the page (development only, #627) | `shared/key-tag.ts`, `app/dev/key-tags.ts`; registered only by the `key-tags` module in `nuxt.config.ts` |
 | Letting sound through (the page-wide first-gesture listener, the „Ton aktivieren“ notice's condition, the page's gesture flag the Clip reads) | `useSoundUnlock` (#533); it calls the cue player's `resume` and never builds an audio context itself |
 
 A second page, flow or component that does what an existing one does needs its reason in the PR description. Without one, the review asks for the existing module to grow instead.
