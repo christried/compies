@@ -20,6 +20,7 @@
 ### Behoben
 
 - Die App-Figur am Glücksrad ragt in mittleren Fensterbreiten nicht mehr über den Rahmen der Rad-Karte. ([#604](https://github.com/christried/compies/issues/604))
+- **Name beim Ziehen:** Wer eine Person auf dem Spielbrett zieht, liest ihren Namen jetzt auch während des Ziehens, in Hell und Dunkel. ([#609](https://github.com/christried/compies/issues/609))
 
 ## [0.13.3] - 2026-11-15 – Ton
 
