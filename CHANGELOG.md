@@ -9,6 +9,7 @@
 ### Geändert
 
 - **Spielkacheln gleich groß:** Jede Spielkachel auf der Eventseite lässt dem Namen jetzt Platz für zwei Zeilen, so sind alle gleich groß; ein längerer Name wird mit „…“ gekürzt und steht im Spiel-Fenster ganz. Die Karten der Bibliothek tun das in einem breiten Fenster auch. ([#612](https://github.com/christried/compies/issues/612))
+- **Hinweis ohne Doppelkreis:** Der Hinweis im Spiele-Formular ist jetzt ein Kreis mit einem Fragezeichen und öffnet sich, wenn du mit der Maus darauffährst oder ihn mit der Tastatur erreichst; ein Klick hält ihn offen. Auf dem Handy zeigt der Info-Knopf im Event-Assistenten dasselbe Fragezeichen. ([#616](https://github.com/christried/compies/issues/616))
 
 ## [0.13.3] - 2026-11-15 – Ton
 

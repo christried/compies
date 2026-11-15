@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ChevronLeft, ChevronRight, CircleHelp } from '@lucide/vue'
+import { QuestionMark } from '~/utils/question-mark-icon'
 
 // The layout of the guided Event setup (02-components § EventStepper, screen 05). It knows no step: the
 // parent says which steps there are (the wizard's `steps`, 8 on /neu and 6 in the settings editor) and which one is
@@ -121,7 +122,7 @@ function next() {
           </h1>
           <IconButton
             v-if="$slots.info"
-            :icon="CircleHelp"
+            :icon="QuestionMark"
             :label="t('stepper.info')"
             class="md:hidden"
             @click="infoOpen = true"
