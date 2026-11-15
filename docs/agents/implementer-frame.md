@@ -29,6 +29,8 @@ You build ONE ticket in your own git worktree. The orchestrator reviews your dif
   - Working for an integration branch: the line goes in your report, not in `CHANGELOG.md`. The orchestrator adds it when it merges your branch (`docs/agents/release.md` § Changelog lines).
   - A branch whose PR goes straight into `staging`: add it under `## [Unreleased]` in `CHANGELOG.md`, in the group the brief names.
 - Shell: this is Windows, and the Bash tool is Git Bash. Script with `node` from a file, never Python; inline `node -e` in bash mangles backticks.
+  - Create every file with the Write tool: a script, a commit message's file, a scratch note. A heredoc that writes a file (`cat > x.mjs <<EOF`) is refused by the guard of `CLAUDE.md` § Scripting, 77 times in 53 subagents between 2026-11-11 and 2026-11-13 (#599).
+  - Write a git call plainly: from your worktree's folder, with no shell variable (`$R`, `B=…`), no `cd` and no `git -C` in the call. The harness refuses a git call it cannot verify stays in your worktree: 184 refusals in 89 of 149 subagents in those three days, most of them a call with a variable or a `cd` in front (#599). When a call is refused, run its git command alone, as its own call: of 173 such calls none was refused. The exit code is in the tool's result, so no `; echo $?`.
 - Scratch files (`red.log`, a throwaway script) go to your scratchpad directory, never into the checkout: `*.log` is gitignored, so git status hides them, and two stayed in the root after 0.10.
 - Touch only what your brief allows. If the brief and the ticket disagree, or the code makes the brief wrong, do what the ticket needs and say so in the report.
 
@@ -41,7 +43,11 @@ You build ONE ticket in your own git worktree. The orchestrator reviews your dif
 
 - `pnpm typecheck && pnpm lint && pnpm knip`, and the test files you touched (`pnpm vitest run test/nuxt/x.test.ts`). They must pass before you push. A branch that touches `CHANGELOG.md` also runs `pnpm vitest run test/unit/changelog-file.test.ts` before the push: the Partyhut line (#380) failed that test in CI, one 6-minute round late.
 - The full `pnpm test` and `pnpm test:build` run in CI on every push of your branch, not on this machine: several agents share it, and running them in parallel stalled it in Release 1.4. Your report waits for that run (§ Before you report). In 0.7 a test file nobody had touched broke the integration branch four times, each found only after the merge.
-- The orchestrator checks pages in the browser; you work without a dev server.
+- The orchestrator checks pages in the browser; you work without a dev server, with one exception: the browser-check items your brief marks „measure on slot 2“. Its drafter read the code and could not run the page, and in 0.13.1 to 0.13.3 a typed pass condition was wrong at least eleven times, each a QUESTION row in a later check; the two times an implementer measured (#550, #585), the measurement found the brief's error before any check ran (#599). Measure the marked items once, after your checks pass:
+  - `pnpm --dir realtime install --frozen-lockfile`, then `COMPIES_SLOT=2 node scripts/browser/serve.mjs start m<ticket>` with `run_in_background`, and wait for its `ready:` line naming :3100 and :8887. A taken port means another implementer is measuring: push, wait for CI and try again; after three refusals report the items as not measured.
+  - Your scripts go in `scripts/browser/scratch/`, run with `COMPIES_SLOT=2`, and follow `docs/agents/browser-frame.md` § Checks: `results('m<ticket>')`, `open()`, a number for every verdict. Name every Event „R<release> m<ticket> …“. The dev database is the one the checks use: run no `pnpm db:migrate`, and change no dev User's Appearance.
+  - End with `COMPIES_SLOT=2 node scripts/browser/serve.mjs stop m<ticket>`, and quote its last line in your report.
+  - A FAIL is yours to fix. A pass condition the page cannot meet as written (a typed literal, a state that does not exist) is corrected in your report, with what you measured in its place.
 
 ## Before you report
 
@@ -58,4 +64,5 @@ You build ONE ticket in your own git worktree. The orchestrator reviews your dif
 - Deviations from the brief or the ticket, and why.
 - Checks: pass, or the failing output.
 - The changelog line, when you work for an integration branch: its group and its text.
+- The browser-check items you measured on slot 2 (§ Checks): each with its number and PASS or FAIL, every pass condition you corrected, and the `stop`'s last line; or „not measured“ with the reason.
 - Anything the orchestrator must decide or look at (e.g. a page to check in the browser).
