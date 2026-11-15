@@ -32,7 +32,7 @@ export function closeAll(tabs) {
   for (const tab of Object.values(tabs)) tab.close()
 }
 
-/** Starts Chrome for one account (`host`, `member`, `admin`) on its port in `PORTS` and connects to its page. */
+/** Starts Chrome for one account (`host`, `member`, `admin`, `member2`) on its port in `PORTS` and connects to its page. */
 export async function launch(account) {
   if (!existsSync(CHROME)) throw new Error(`No Chrome at ${CHROME}; set CHROME_PATH.`)
   // One Chrome per profile folder and cookies ignore ports, so slot 2 has its own folders (#567).
