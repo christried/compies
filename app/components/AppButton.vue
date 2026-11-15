@@ -9,7 +9,9 @@ const props = withDefaults(defineProps<{
   size?: 'md' | 'card' | 'lg' | 'xl'
   /** Renders a NuxtLink instead of a button. */
   to?: RouteLocationRaw
-}>(), { variant: 'primary', size: 'md', to: undefined })
+  /** The page's head button that starts something new: the aura glow (#471). Never two on a page, never a form's submit. */
+  aura?: boolean
+}>(), { variant: 'primary', size: 'md', to: undefined, aura: false })
 
 const NuxtLink = resolveComponent('NuxtLink')
 
@@ -31,7 +33,7 @@ const weight = computed(() => (props.variant === 'primary' && props.size !== 'ca
     :to="to"
     :type="to ? undefined : 'button'"
     class="outline-memphis inline-flex items-center justify-center gap-2 rounded-pill shadow-btn whitespace-nowrap no-underline lift reduced:transition-colors reduced:active:translate-0 motion-reduce:transition-colors motion-reduce:active:translate-0 disabled:pointer-events-none aria-disabled:border-dashed aria-disabled:border-ink-3 aria-disabled:bg-paper-2 aria-disabled:text-ink-3 aria-disabled:shadow-none aria-disabled:hover:translate-y-0 aria-disabled:hover:shadow-none aria-disabled:hover:bg-none aria-disabled:active:translate-0"
-    :class="[SIZE[size], VARIANT[variant], weight]"
+    :class="[SIZE[size], VARIANT[variant], weight, { aura: props.aura }]"
   >
     <slot name="icon" />
     <slot />
