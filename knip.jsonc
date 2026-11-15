@@ -49,6 +49,11 @@
         "scripts/make-cue-candidates.mjs!",
         // Run by hand with node (#536, #593): copies a candidate to public/sounds/cues/ and writes its credits entry; the result is committed.
         "scripts/ship-cue-sound.mjs!",
+        // Run by hand with node (#628): checks an answers file of the wording review.
+        "scripts/wording/check-answers.mjs!",
+        // Imported by the review page (#631); until then its tests are its user (#628).
+        "scripts/wording/review-model.mjs!",
+        "scripts/wording/answers.mjs!",
         // Run by hand with node by the operator's skill christried-tag-review (#619); nothing imports it.
         ".claude/skills/christried-tag-review/library-tags.mjs!"
       ],

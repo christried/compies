@@ -68,6 +68,6 @@ What a feature keeps from some Users (a sealed Veto, a Hidden wheel before its s
 
 ## Copy
 
-- UI copy uses the glossary's UI word. When the glossary retires a word, it goes into `RETIRED` in `test/unit/copy.test.ts`.
+- UI copy uses the glossary's UI word. When the glossary retires a word, it goes into `RETIRED` in `scripts/wording/retired-words.mjs` (`test/unit/copy.test.ts` and the wording review read it).
 - Copy promises only what the app does today. A string the spec prescribes word for word is decided; the review names it only when the app has changed since the spec.
 - A new third party the browser or the server talks to goes into the Datenschutzerklärung; `test/unit/privacy-hosts.test.ts` names the host, and the user approves the text.
