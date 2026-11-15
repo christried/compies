@@ -174,15 +174,16 @@ describe('legal pages', () => {
     expect(controller.get('p').element.textContent).toContain('Gilges\nAugust-Thyssen-Str. 16\n52249 Eschweiler')
   })
 
-  it('puts Impressum, Datenschutz and the version in the avatar menu, not a version pill', async () => {
+  it('puts Profil above Abmelden, then Impressum, Datenschutz and the version in the avatar menu, not a version pill', async () => {
     signInAs(kitty)
     const menu = await mountSuspended(UserMenu)
 
     await menu.get('button[aria-haspopup="menu"]').trigger('click')
 
     const items = menu.findAll('[role="menuitem"]')
-    expect(items.map(item => item.text())).toEqual(['Abmelden', 'Impressum', 'Datenschutz', expect.stringMatching(/^Version \d+\.\d+\.\d+/)])
-    expect(items.slice(1).map(item => item.attributes('href'))).toEqual(['/impressum', '/datenschutz', '/neuigkeiten'])
+    expect(items.map(item => item.text())).toEqual(['Profil', 'Abmelden', 'Impressum', 'Datenschutz', expect.stringMatching(/^Version \d+\.\d+\.\d+/)])
+    expect(items[0]!.attributes('href')).toBe('/profil')
+    expect(items.slice(2).map(item => item.attributes('href'))).toEqual(['/impressum', '/datenschutz', '/neuigkeiten'])
     expect(menu.get('[role="none"]').text()).toContain('Kitty')
     expect(menu.findAll('*').filter(el => /^v\d+\.\d+\.\d+$/.test(el.text().trim()))).toHaveLength(0)
   })
@@ -200,16 +201,31 @@ describe('legal pages', () => {
     menu.unmount()
   })
 
-  it('moves focus to the next menu item on ArrowDown', async () => {
+  it('moves focus from Profil to Abmelden, and from Abmelden on to Impressum, on ArrowDown', async () => {
     signInAs(kitty)
     const menu = await mountSuspended(UserMenu, { attachTo: document.body })
     await menu.get('button[aria-haspopup="menu"]').trigger('click')
-    const abmelden = menu.get('[role="menuitem"]')
+    const profil = menu.findAll('[role="menuitem"]')[0]!
+    expect(document.activeElement).toBe(profil.element)
+
+    await profil.trigger('keydown', { key: 'ArrowDown' })
+    const abmelden = menu.findAll('[role="menuitem"]').find(item => item.text() === 'Abmelden')!
     expect(document.activeElement).toBe(abmelden.element)
 
     await abmelden.trigger('keydown', { key: 'ArrowDown' })
 
-    expect(document.activeElement).toBe(menu.findAll('[role="menuitem"]')[1]!.element)
+    expect(document.activeElement).toBe(menu.findAll('[role="menuitem"]')[2]!.element)
+    menu.unmount()
+  })
+
+  it('closes the menu on a click on Profil', async () => {
+    signInAs(kitty)
+    const menu = await mountSuspended(UserMenu, { attachTo: document.body })
+    await menu.get('button[aria-haspopup="menu"]').trigger('click')
+
+    await menu.findAll('[role="menuitem"]')[0]!.trigger('click')
+
+    expect(menu.find('[role="menu"]').exists()).toBe(false)
     menu.unmount()
   })
 
