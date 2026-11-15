@@ -48,7 +48,9 @@
         // Run by hand with node; its output under sound-candidates/ (the listening session's candidates, #535) is committed.
         "scripts/make-cue-candidates.mjs!",
         // Run by hand with node (#536, #593): copies a candidate to public/sounds/cues/ and writes its credits entry; the result is committed.
-        "scripts/ship-cue-sound.mjs!"
+        "scripts/ship-cue-sound.mjs!",
+        // Run by hand with node by the operator's skill christried-tag-review (#619); nothing imports it.
+        ".claude/skills/christried-tag-review/library-tags.mjs!"
       ],
       // Windows' own netstat, which serve.mjs calls to name the PID on a taken port.
       "ignoreBinaries": ["netstat"],
