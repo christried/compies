@@ -49,11 +49,11 @@ describe('the blocks of the stage', () => {
   })
 
   it('puts the Game board first once a Session is dated, with the poll of another one below it', () => {
-    expect(blocks([dated(1, SAT), undated()])).toEqual(['head', 'reopen', 'seat', 'board', 'poll', 'cards'])
+    expect(blocks([dated(1, SAT), undated()])).toEqual(['head', 'reopen', 'board', 'poll', 'cards'])
   })
 
   it('has no poll once every Session is dated', () => {
-    expect(blocks([dated(1, SAT), dated(2, SUN)], { phase: 'date_set' })).toEqual(['head', 'reopen', 'seat', 'board', 'cards'])
+    expect(blocks([dated(1, SAT), dated(2, SUN)], { phase: 'date_set' })).toEqual(['head', 'reopen', 'board', 'cards'])
   })
 
   it('shows the open Rounds above the Game board while a Session runs and between Sessions (#273), not before the first start', () => {
@@ -191,7 +191,7 @@ describe('the blocks of the stage', () => {
   it('lists neither Standings nor history on the finished stage without a Result, and none of the live blocks in any case (#277)', () => {
     expect(blocks([dated(1, SAT, ENDED)], FINISHED)).toEqual(['head', 'reopen', 'cards'])
     const list = blocks([dated(1, SAT, ENDED)], { ...WHEEL, ...COUNTDOWN, ...TOSS, ...POOL_WARNING, ...FINISHED_END })
-    for (const block of ['board', 'rounds', 'poll', 'wheel', 'pool', 'countdown', 'coin', 'stay', 'seat', 'setup']) expect(list).not.toContain(block)
+    for (const block of ['board', 'rounds', 'poll', 'wheel', 'pool', 'countdown', 'coin', 'stay', 'setup']) expect(list).not.toContain(block)
   })
 
   it('lists the actions of the finished stage (Bild teilen, #313) right after the reopen notices, in no other kind, and not without a Result', () => {
@@ -322,7 +322,7 @@ describe('the blocks of the stage', () => {
     })
 
     it('lists the teams page', () => {
-      expect(blocks([dated(1, SAT), undated()], { ...everything, ...STANDINGS })).toEqual(['head', 'reopen', 'seat', 'board', 'poll', 'cards'])
+      expect(blocks([dated(1, SAT), undated()], { ...everything, ...STANDINGS })).toEqual(['head', 'reopen', 'board', 'poll', 'cards'])
     })
 
     it('lists the running page', () => {
@@ -944,7 +944,7 @@ describe('a block takes the top of the stage (#586)', () => {
 
     it('without an earlier list, and when the kind changed', () => {
       expect(scrollsToTop(shown('running', []), shown('running', WHEEL_FIRST))).toBe(false)
-      expect(scrollsToTop(shown('teams', ['head', 'reopen', 'seat', 'board']), shown('running', WHEEL_FIRST, { wheel: 200 }))).toBe(false)
+      expect(scrollsToTop(shown('teams', ['head', 'reopen', 'board']), shown('running', WHEEL_FIRST, { wheel: 200 }))).toBe(false)
     })
 
     it('in a finished Event, whatever the list does', () => {

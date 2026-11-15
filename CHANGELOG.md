@@ -22,6 +22,10 @@
 - Die App-Figur am Glücksrad ragt in mittleren Fensterbreiten nicht mehr über den Rahmen der Rad-Karte. ([#604](https://github.com/christried/compies/issues/604))
 - **Name beim Ziehen:** Wer eine Person auf dem Spielbrett zieht, liest ihren Namen jetzt auch während des Ziehens, in Hell und Dunkel. ([#609](https://github.com/christried/compies/issues/609))
 
+### Entfernt
+
+- Als Host siehst du keinen Hinweis mehr darüber, wo du sitzt. ([#610](https://github.com/christried/compies/issues/610))
+
 ## [0.13.3] - 2026-11-15 – Ton
 
 Das Glücksrad und das Veto-Fenster sind jetzt zu hören, auf allen Geräten im selben Moment. Der Schalter „Ton“ schaltet Clip und Geräusche auf deinem Gerät gemeinsam aus.
