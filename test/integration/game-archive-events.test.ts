@@ -1,4 +1,4 @@
-import { and, eq, inArray } from 'drizzle-orm'
+import { eq, inArray } from 'drizzle-orm'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { activity, draws, eventPoolGames, events, games, rounds } from '../../server/db/schema'
 import { testClock } from '../../server/utils/clock'
@@ -9,7 +9,7 @@ import type { EventView } from '../../shared/event'
 import { notesFromLines } from '../../shared/notes-doc'
 import { createTestApp, errorOf, sendVia, type TestRequest } from './app'
 import { createTestDb, resetDatabase } from './harness'
-import { clockToStop, hostCreatesEvent, hostEntersResult, hostFinishes, hostSets, hostSpins, readEvent, readEventText, readFeed, signInAs, startRunningEvent, type Rig, type Signed } from './scenario'
+import { clockToStop, hostCreatesEvent, hostEntersResult, hostFinishes, hostSets, hostSpins, readEvent, readEventText, readFeed, signInAs, startRunningEvent, type Rig } from './scenario'
 import { setAllowlist, stubAuthEnv } from './sign-in'
 
 // An Archived game leaves the wheel, „Nächstes Spiel setzen“ and the Members' pool (#725, spec #717 § B, ADR 0013): the Event state's reading of the
@@ -347,7 +347,7 @@ describe('Archived games and the Events (#725)', () => {
 
     it('stops serving a pool game\'s picture to a Member when it is archived and serves it again after the restore, the owner throughout', async () => {
       const party = await running()
-      await store.put('kart-key', new Uint8Array([1, 2, 3]))
+      await store.put('kart-key', new Uint8Array([1, 2, 3]), 'image/webp')
 
       expect((await image(party, 'kart', party.one)).status).toBe(200)
 
@@ -362,7 +362,7 @@ describe('Archived games and the Events (#725)', () => {
 
     it('keeps serving the picture of an Archived game a Round has set', async () => {
       const party = await running()
-      await store.put('kart-key', new Uint8Array([1, 2, 3]))
+      await store.put('kart-key', new Uint8Array([1, 2, 3]), 'image/webp')
       await hostSets(rig, party, party.games.kart.id)
 
       await archive(party, party.games.kart.id)
