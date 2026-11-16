@@ -127,6 +127,8 @@ export interface GameView extends PoolGame {
    * PoolGameFace and RoundGame do not, so no Member's Event read, feed entry or message can name one.
    */
   tags: GameTag[]
+  /** Whether the owner archived the game (#467): the library list leaves it out unless the filter „Archiviert“ is on. Only here: no Member surface carries it. */
+  archived: boolean
   /** `name` is the display name if the User set one, like Event members. */
   createdBy: { id: string, name: string }
   createdAt: string
