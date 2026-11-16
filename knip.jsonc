@@ -57,7 +57,11 @@
         "scripts/wording/walk.mjs!",
         // Run by hand with node (#628): checks an answers file of the wording review.
         "scripts/wording/check-answers.mjs!",
-        // Imported by the review page (#631); until then its tests are its user (#628).
+        // Run by hand with node (#631): the wording review page's command; it starts the server (review-server.mjs).
+        "scripts/wording/review.mjs!",
+        // The review page's script is loaded by the browser from the server (index.html, #631), nothing imports it.
+        "scripts/wording/review-page/page.mjs!",
+        // The review page imports these in the browser, from the server's /modules/, so no import of a file reaches them (#631, #628).
         "scripts/wording/review-model.mjs!",
         "scripts/wording/answers.mjs!",
         // Run by hand with node by the operator's skill christried-tag-review (#619); nothing imports it.
@@ -65,7 +69,11 @@
       ],
       // Windows' own netstat, which serve.mjs calls to name the PID on a taken port.
       "ignoreBinaries": ["netstat"],
+      // The review page's imports are URLs the server answers (/modules/…), not files knip can resolve (#631).
+      "ignoreUnresolved": ["^/modules/"],
       "ignore": [
+        // The review page's stylesheet is linked from its index.html, which knip does not read (#631).
+        "scripts/wording/review-page/page.css",
         // The design hand-off and its prototype scripts are reference material, not shipped (also ignored by eslint).
         "docs/**",
         // Test helpers and fixtures. Tests are not entry points in production mode, so helpers only they import look unused.
