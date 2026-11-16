@@ -14,6 +14,8 @@
 -- The window is minutes. The 0.16 readers do not name a game of another Host in a Game pool or on the wheel, and the operator's rehearsal and the staging
 -- walk-through check the counts.
 -- Needs the operator's approval for production (Release PR).
+-- `ac.type::text`: drizzle-kit applies all pending files in one transaction, and an earlier one may have added a value to `activity_type`; Postgres refuses a
+-- comparison with an enum value that is not committed yet (55P04), so the types are compared as text.
 DO $$
 DECLARE
   pair record;
@@ -46,7 +48,7 @@ BEGIN
       FROM activity ac
       JOIN events ev ON ev.id = ac.event_id
       JOIN games gm ON gm.id::text = ac.params->>'gameId'
-      WHERE ac.type IN ('game_drawn', 'vetoes_revealed', 'game_set', 'game_put_back', 'result_entered', 'result_corrected')
+      WHERE ac.type::text IN ('game_drawn', 'vetoes_revealed', 'game_set', 'game_put_back', 'result_entered', 'result_corrected')
     ) refs
     JOIN games og ON og.id = refs.game_id
     WHERE og.created_by <> refs.host_id
@@ -86,7 +88,7 @@ BEGIN
     FROM events ev
     WHERE ev.id = ac.event_id
       AND ev.host_id = pair.host_id
-      AND ac.type IN ('game_drawn', 'vetoes_revealed', 'game_set', 'game_put_back', 'result_entered', 'result_corrected')
+      AND ac.type::text IN ('game_drawn', 'vetoes_revealed', 'game_set', 'game_put_back', 'result_entered', 'result_corrected')
       AND ac.params->>'gameId' = pair.game_id::text;
   END LOOP;
 END
