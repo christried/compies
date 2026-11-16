@@ -882,7 +882,7 @@ A game in library, pool, wheel lists, pick & ban.
 - **Desktop / mobile:** Desktop overlay over the stage (`layer-clip`), 16:9 max 720; mobile top, full width.
 - **Accessibility:** Controls labelled; closing is personal („Für mich schließen“).
 - **Motion:** open `scale .96→1, fade` `dur-slow`; close `dur-base`.
-- **Deviation (0.13):** `length` is 10 to 120 s (default 30). In a Session the player takes no pointer and no keyboard input from anyone; nothing is laid over it and nothing is cropped, so YouTube's title shows for the first seconds. A player that pauses for any other reason resumes at the synced second. Mute and „Für mich schließen“ stay with every Member, „Clip überspringen“ with the Host (`docs/roadmap.md` § 0.13.0).
+- **Deviation (0.13):** `length` is 10 to 120 s (default 30). In a Session the player takes no pointer and no keyboard input from anyone; nothing is laid over it and nothing is cropped, so YouTube's title shows for the first seconds. A player that pauses for any other reason resumes at the synced second. Mute and „Für mich schließen“ stay with every Member, „Clip überspringen“ with the Host (#501).
 - **Deviation (0.13.2, #550, #584):** on a phone held sideways (below md = 980 px, at least 656 px wide and at most 480 px high: the `sideways` variant in `compies-theme.css`) the player is the left column and the Veto bar the right one (`--cp-veto-side-w`, 16.5rem), so no fixed element lies over the video. The two labels „Ton aktivieren“ and „läuft für alle“ are visually hidden there, their names kept. For a viewer who gets no Veto bar (the Stands, a Host outside the Parties) the Clip is centred, as upright.
 
 ## VetoWindow
