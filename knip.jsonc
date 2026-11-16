@@ -24,6 +24,8 @@
         // The Dunkel-Check (#407): the runner imports the state files by name pattern, which knip cannot follow.
         "scripts/browser/dark.mjs!",
         "scripts/browser/dark-states-*.mjs!",
+        // The wording walk's own state files (#630): loaded by name pattern too (`states.mjs` with `extra`); `walk-kit.mjs` is imported by them.
+        "scripts/browser/walk-states-*.mjs!",
         "scripts/browser/moves.mjs!",
         "scripts/browser/pool-preview.mjs!",
         "scripts/browser/serve.mjs!",

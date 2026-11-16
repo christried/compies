@@ -24,7 +24,7 @@ function note(text) {
 const UNTAG = '/[\\u2060\\u2062\\u2063]/g'
 
 /** Polls a page expression until it is true, at most `ms`. */
-async function until(tab, expression, what, ms = 10_000) {
+export async function until(tab, expression, what, ms = 10_000) {
   for (const end = Date.now() + ms; Date.now() < end;) {
     if (await tab.evaluate(expression).catch(() => false)) return
     await sleep(200)
@@ -47,7 +47,7 @@ function page(name, group, account, address, { waitFor = 'h1', after, ...rest } 
 }
 
 // The close button, not Escape: after the reading focus is on the page, not in the sheet, and Escape would not reach it.
-const closeSheet = async (tab) => {
+export const closeSheet = async (tab) => {
   if (!await tab.evaluate(`!!document.querySelector('[role=dialog]')`)) return
   if (!await clickText(tab, '[role=dialog] button', COPY.common.close)) await pressKey(tab, 'Escape')
   await until(tab, `!document.querySelector('[role=dialog]')`, 'the sheet to close')
@@ -56,12 +56,12 @@ const closeSheet = async (tab) => {
 // The game browser loads the next 40 cards when its sentinel scrolls into view, and the runner scrolls every page through
 // once before it reads: the dev library has 1598 games, and a page with all of them cannot be read inside the protocol's
 // 30 s. The sentinel goes, so only „Mehr laden“ loads cards, and a state decides how many.
-const noAutoLoad = tab => tab.evaluate(`document.querySelectorAll('div[aria-hidden="true"].h-px').forEach(el => el.remove())`)
+export const noAutoLoad = tab => tab.evaluate(`document.querySelectorAll('div[aria-hidden="true"].h-px').forEach(el => el.remove())`)
 
 const stepHeading = `document.querySelector('form h1')?.textContent ?? ''`
 
 /** One step on: Weiter, then waits until the step's heading is another. A sheet that is open is closed first. */
-async function next(tab) {
+export async function next(tab) {
   await closeSheet(tab)
   const before = await tab.evaluate(stepHeading)
   await stepperNext(tab)
@@ -69,12 +69,12 @@ async function next(tab) {
   await sleep(300)
 }
 
-const step = (name, go, rest = {}) => ({
+export const step = (name, go, rest = {}) => ({
   name,
   go: ctx => go(ctx.tab),
   ...rest,
 })
-const forward = name => step(name, next)
+export const forward = name => step(name, next)
 
 /** The library up to the card of `gameId` (the 60-character name, at about 360 of 1598): „Mehr laden“ until its link is on the page. */
 async function loadUpTo(tab, gameId) {

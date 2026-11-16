@@ -26,10 +26,70 @@ describe('loadStates', () => {
     for (const cleanup of cleanups) expect(typeof cleanup).toBe('function')
   })
 
-  it('loads no walk-states file unless asked', async () => {
+  it('holds no state of the walk files unless asked (the dark check never loads them)', async () => {
     const plain = await loadStates()
     const asked = await loadStates({ extra: 'walk-states-' })
-    expect(asked.states.length).toBe(plain.states.length)
+    const plainNames = new Set(plain.states.map(state => state.name))
+    expect(asked.states.length).toBeGreaterThan(plain.states.length)
+    // Every state of the dark list is still there, in the same order, and the walk's states come after them.
+    expect(asked.states.slice(0, plain.states.length).map(state => state.name)).toEqual(plain.states.map(state => state.name))
+    const added = asked.states.slice(plain.states.length)
+    expect(added.length).toBeGreaterThan(0)
+    for (const state of added) expect(plainNames.has(state.name)).toBe(false)
+    expect(plainNames.has('einrichten-fehler')).toBe(false)
+    expect(asked.states.some(state => state.name === 'einrichten-fehler')).toBe(true)
+  })
+})
+
+const combined = (await loadStates({ extra: 'walk-states-' })).states as (State & { stops?: { name: unknown, go: unknown }[] })[]
+
+describe('the combined list of the dark check and the walk files', () => {
+  it('has a unique name per state, and a group, an account and an open for each', () => {
+    expect(new Set(combined.map(state => state.name)).size).toBe(combined.length)
+    for (const state of combined) {
+      expect(typeof state.group).toBe('string')
+      expect(['host', 'member', 'admin']).toContain(state.account)
+      expect(typeof state.open).toBe('function')
+    }
+  })
+
+  it('has a name and a go for every stop, and a stop name once per state', () => {
+    for (const state of combined) {
+      const names = (state.stops ?? []).map(stop => stop.name)
+      for (const stop of state.stops ?? []) {
+        expect(typeof stop.name).toBe('string')
+        expect(typeof stop.go).toBe('function')
+      }
+      expect(new Set(names).size, `stop names of ${state.name}`).toBe(names.length)
+    }
+  })
+
+  it('is placed by orderStates, state for state', () => {
+    const placed = orderStates(combined) as State[]
+    expect(placed).toHaveLength(combined.length)
+    expect(new Set(placed.map(state => state.name))).toEqual(new Set(combined.map(state => state.name)))
+  })
+
+  it('puts the form errors in the setup and Profil sections, as the walk meets them', () => {
+    const placed = orderStates(combined) as State[]
+    const index = (name: string) => placed.findIndex(state => state.name === name)
+    expect(index('einrichten-fehler')).toBe(index('einrichten') + 1)
+    for (const name of ['profil', 'profil-fehler', 'profil-gespeichert']) expect(sectionOf(placed[index(name)]!)).toBe('profil')
+    expect(index('profil')).toBeLessThan(index('profil-fehler'))
+    expect(index('profil-fehler')).toBeLessThan(index('profil-gespeichert'))
+    // The two new states sit right behind `profil`, `profil-gespeichert` (the one that writes) the later of them.
+    const profil = placed.filter(state => sectionOf(state) === 'profil').map(state => state.name)
+    expect(profil.indexOf('profil-gespeichert')).toBe(profil.indexOf('profil-fehler') + 1)
+  })
+
+  it('keeps the Event groups in their order', () => {
+    const placed = orderStates(combined) as State[]
+    const last = (group: string) => placed.map(state => state.group).lastIndexOf(group)
+    const first = (group: string) => placed.map(state => state.group).indexOf(group)
+    const groups = ['event-poll', 'event-board', 'event-live', 'event-finished']
+    for (const [i, group] of groups.entries()) {
+      if (i > 0) expect(last(groups[i - 1]!)).toBeLessThan(first(group))
+    }
   })
 })
 
