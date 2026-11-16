@@ -86,6 +86,7 @@ function gameView(row: typeof games.$inferSelect, creatorName: string, viewer: A
   return {
     ...poolGameView(row),
     tags,
+    archived: row.archivedAt !== null,
     createdBy: { id: row.createdBy, name: creatorName },
     createdAt: row.createdAt.toISOString(),
     canEdit: canEditGame(viewer, row),
