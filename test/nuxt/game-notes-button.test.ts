@@ -2,6 +2,7 @@ import { mountSuspended } from '@nuxt/test-utils/runtime'
 import { flushPromises } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import GameNotesButton from '~/components/GameNotesButton.vue'
+import { notesFromLines, type NotesDoc } from '~~/shared/notes-doc'
 import { GAME_NAME_MAX } from '~~/shared/game'
 import { restoreScreen, stubScreen } from './event-page'
 
@@ -14,7 +15,7 @@ const NOTES = 'Zeile eins\n\nZeile drei'
 let page: Awaited<ReturnType<typeof mountSuspended>> | undefined
 let setWide: (next: boolean) => void
 
-async function mount(props: { name?: string, notes: string | null }) {
+async function mount(props: { name?: string, notes: NotesDoc | null }) {
   page = await mountSuspended(GameNotesButton, { props: { name: 'Mario Kart', ...props }, attachTo: document.body })
   await flushPromises()
   return page
@@ -46,12 +47,12 @@ describe('the Notes button of a game (#436)', () => {
     expect(document.querySelector(TRIGGER)).toBeNull()
     page!.unmount()
 
-    await mount({ notes: '' })
+    await mount({ notes: notesFromLines(['  ']) })
     expect(document.querySelector(TRIGGER)).toBeNull()
   })
 
   it('is a button named „Notizen ansehen“ that starts closed', async () => {
-    await mount({ notes: NOTES })
+    await mount({ notes: notesFromLines(NOTES.split('\n')) })
 
     expect(trigger().getAttribute('aria-expanded')).toBe('false')
     expect(trigger().getAttribute('aria-haspopup')).toBe('dialog')
@@ -61,7 +62,7 @@ describe('the Notes button of a game (#436)', () => {
 
   it('opens a sheet below md, with the notes exactly as stored, line breaks included', async () => {
     setWide(false)
-    await mount({ notes: NOTES })
+    await mount({ notes: notesFromLines(NOTES.split('\n')) })
 
     await open()
 
@@ -73,7 +74,7 @@ describe('the Notes button of a game (#436)', () => {
   })
 
   it('opens a popover from md up, fixed and 288 px wide, with focus on its close button', async () => {
-    await mount({ notes: NOTES })
+    await mount({ notes: notesFromLines(NOTES.split('\n')) })
 
     await open()
 
@@ -88,7 +89,7 @@ describe('the Notes button of a game (#436)', () => {
   })
 
   it('closes on Escape and gives the focus back to the button', async () => {
-    await mount({ notes: NOTES })
+    await mount({ notes: notesFromLines(NOTES.split('\n')) })
     await open()
 
     popover()!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
@@ -99,7 +100,7 @@ describe('the Notes button of a game (#436)', () => {
   })
 
   it('closes on a press outside and gives the focus back to the button', async () => {
-    await mount({ notes: NOTES })
+    await mount({ notes: notesFromLines(NOTES.split('\n')) })
     await open()
 
     document.body.dispatchEvent(new Event('pointerdown', { bubbles: true }))
@@ -112,7 +113,7 @@ describe('the Notes button of a game (#436)', () => {
   it('keeps all of a 1000-character note, line breaks included, inside a scrolling popover', async () => {
     const long = `${'a'.repeat(495)}\n${'b'.repeat(495)}\n\n`
     expect(long.length).toBeLessThanOrEqual(1000)
-    await mount({ notes: long })
+    await mount({ notes: notesFromLines(long.split('\n')) })
     await open()
 
     expect(paragraph(popover()).textContent).toBe(long)
@@ -122,7 +123,7 @@ describe('the Notes button of a game (#436)', () => {
 
   it('keeps a game name of the longest allowed length in full', async () => {
     const name = 'W'.repeat(GAME_NAME_MAX)
-    await mount({ name, notes: NOTES })
+    await mount({ name, notes: notesFromLines(NOTES.split('\n')) })
     await open()
 
     expect(popover()!.querySelector('h2')!.textContent).toBe(name)
@@ -138,7 +139,7 @@ describe('the Notes button of a game (#436)', () => {
       return at(0, 0, 0, 0)
     })
     try {
-      await mount({ notes: NOTES })
+      await mount({ notes: notesFromLines(NOTES.split('\n')) })
 
       await open()
 
@@ -166,7 +167,7 @@ describe('the Notes button of a game (#436)', () => {
       return at(0, 0, 0, 0)
     })
     try {
-      await mount({ notes: NOTES })
+      await mount({ notes: notesFromLines(NOTES.split('\n')) })
 
       await open()
 

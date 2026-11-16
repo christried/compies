@@ -1,3 +1,4 @@
+import { notesLength, parseNotes, type NotesDoc } from './notes-doc'
 import { asRecord, isRecord } from './record'
 import { characterCount } from './text'
 import { parseYouTubeId } from './youtube'
@@ -16,8 +17,8 @@ export const CLIP_START_MAX = 43_199
 export const CLIP_END_MAX = CLIP_START_MAX + CLIP_LENGTH_MAX
 /** The most players a recommended count can name (#142). */
 export const PLAYERS_MAX = 99
-/** Game notes (#223, GLOSSARY: Game notes): at most this many characters after trimming (characterCount, #76). */
-export const GAME_NOTES_MAX = 1000
+/** Game notes (#223, GLOSSARY: Game notes): at most this many visible characters of the document (notesLength, #727; 1000 until 0.15). */
+export const GAME_NOTES_MAX = 2000
 /** A Tag (#335, GLOSSARY: Tag): at most this many characters after trimming (characterCount, so an emoji counts as one). */
 export const TAG_MAX = 20
 export const TAGS_PER_GAME_MAX = 8
@@ -88,8 +89,8 @@ export interface PoolGame {
   playersMax: number | null
   /** The Suitabilities, in SUITABILITIES order; empty when none is set (#171). */
   suitabilities: Suitability[]
-  /** Game notes (#223); null = none. In a pool only the Host reads them (#224); the Host's `hostGames` carries them for every game a tile shows (#443). */
-  notes: string | null
+  /** Game notes (#223) as a document (#727, ADR 0019); null = none. In a pool only the Host reads them (#224); the Host's `hostGames` carries them for every game a tile shows (#443). */
+  notes: NotesDoc | null
   /** The game's Price (#337, #338); null when it has none. It travels with the name: wherever a Member may know the game's name they get it too. */
   price: GamePrice | null
 }
@@ -118,7 +119,7 @@ export interface GameTag {
 }
 
 /** What the Host's game dialog shows of a game beyond what its tile's game carries (#443). Only the Host's read has it. */
-export interface HostGameFacts { tags: GameTag[], notes: string | null }
+export interface HostGameFacts { tags: GameTag[], notes: NotesDoc | null }
 
 /** A game as the library shows it (GET /api/games, GET /api/games/:id, POST answers). Times are UTC ISO strings. */
 export interface GameView extends PoolGame {
@@ -196,18 +197,9 @@ export function parseGameName(raw: unknown): string | null {
   return raw.trim()
 }
 
-/** What is wrong with the game notes: longer than GAME_NOTES_MAX characters once trimmed. Null when fine. */
-export function gameNotesProblem(raw: string): 'too_long' | null {
-  return characterCount(raw.trim()) > GAME_NOTES_MAX ? 'too_long' : null
-}
-
-/** The game notes (#223): absent, null or empty is none; trimmed, blank is none; inner line breaks stay. Undefined for anything else or too long. */
-export function parseGameNotes(raw: unknown): string | null | undefined {
-  if (raw === undefined || raw === null || raw === '') return null
-  if (typeof raw !== 'string') return undefined
-  const trimmed = raw.trim()
-  if (trimmed === '') return null
-  return gameNotesProblem(trimmed) === null ? trimmed : undefined
+/** What is wrong with the game notes the form holds: longer than GAME_NOTES_MAX visible characters. Null when fine (#727). */
+export function gameNotesProblem(doc: NotesDoc | null): 'too_long' | null {
+  return doc !== null && notesLength(doc) > GAME_NOTES_MAX ? 'too_long' : null
 }
 
 /** A Tag as typed: NFC, trimmed, inner whitespace collapsed to one space (the label), lower-cased for the key. Null when nothing is left. No length check (see tagProblem). */
@@ -357,8 +349,8 @@ export interface GameInput {
   playersMax: number | null
   /** Suitabilities in SUITABILITIES order, without duplicates (#171). */
   suitabilities: Suitability[]
-  /** Game notes, trimmed; null when none (#223). */
-  notes: string | null
+  /** Game notes as a rebuilt document (parseNotes, #727); null when none (#223). */
+  notes: NotesDoc | null
   /** The Tags sent (#335). Undefined when the body had none: a new game gets none, an edit keeps its own (a 0.9 tab never wipes them). */
   tags: GameTag[] | undefined
   /** The Price sent (#337): null clears it, undefined (no `price` in the body) keeps the game's own, as `tags` does. */
@@ -388,7 +380,7 @@ export function parseGameInput(input: unknown): { ok: true, game: GameInput } | 
   const suitabilities = parseSuitabilities(body.suitabilities)
   if (!suitabilities) return { ok: false, error: 'invalid_suitabilities' }
 
-  const notes = parseGameNotes(body.notes)
+  const notes = parseNotes(body.notes, GAME_NOTES_MAX)
   if (notes === undefined) return { ok: false, error: 'invalid_game_notes' }
 
   const tags = body.tags === undefined ? undefined : parseTags(body.tags)

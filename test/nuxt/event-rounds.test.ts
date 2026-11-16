@@ -8,6 +8,7 @@ import type { BoardTeam, EventView } from '~~/shared/event'
 import type { EndView, RoundView, SetGameView } from '~~/shared/stage'
 import { formatShortDay } from '~/utils/berlin-time'
 import { GAME_NAME_MAX, type GameView, type PoolGame } from '~~/shared/game'
+import { notesFromLines, type NotesDoc } from '~~/shared/notes-doc'
 import { defaultSettings } from '~~/shared/settings'
 import { kitty, signInAs } from './auth'
 import { clickButton, clickHostAction, dialog, hostActionElement, regionHeadings, serve, shownToasts, viewWithSessions, type Mounted, type Wrapper } from './event-page'
@@ -20,12 +21,12 @@ const FIRST = '2026-10-30T19:00:00.000Z'
 const STARTED = '2026-10-30T19:30:00.000Z'
 const ENDED = '2026-10-30T22:00:00.000Z'
 
-const halo: PoolGame = { id: 'g-halo', name: 'Halo', imageUrl: null, youtubeId: null, clipStart: 0, clipLength: 30, playersMin: 2, playersMax: 4, suitabilities: [], notes: 'Hausregel: keine Raketen', price: null }
+const halo: PoolGame = { id: 'g-halo', name: 'Halo', imageUrl: null, youtubeId: null, clipStart: 0, clipLength: 30, playersMin: 2, playersMax: 4, suitabilities: [], notes: notesFromLines(['Hausregel: keine Raketen']), price: null }
 const kart: PoolGame = { ...halo, id: 'g-kart', name: 'Kart', notes: null }
 const pong: PoolGame = { ...halo, id: 'g-pong', name: 'Pong', notes: null }
 const schach: GameView = { ...halo, id: 'g-schach', name: 'Schach', notes: null, createdBy: { id: kitty.id, name: 'Kitty' }, createdAt: '2026-01-15T10:00:00.000Z', canEdit: true, tags: [], archived: false, price: null }
 
-const round = (id: string, game: PoolGame, notes?: string): RoundView => {
+const round = (id: string, game: PoolGame, notes?: NotesDoc): RoundView => {
   const { notes: _notes, ...shown } = game
   return { id, startedAt: STARTED, setAt: STARTED, game: shown, ...(notes ? { notes } : {}) }
 }
@@ -845,7 +846,7 @@ describe('the Round tile carries no Price (#435, was #338)', () => {
 describe('the game dialog from the Round tiles (#443, #444)', () => {
   const hostGames = {
     'g-halo': { tags: [{ key: 'koop', label: 'Koop' }], notes: halo.notes },
-    'g-schach': { tags: [{ key: 'denken', label: 'Denken' }], notes: 'Schach-Notizen' },
+    'g-schach': { tags: [{ key: 'denken', label: 'Denken' }], notes: notesFromLines(['Schach-Notizen']) },
   }
   const opened = () => document.querySelector('[role="dialog"]') as HTMLElement | null
 
@@ -868,7 +869,7 @@ describe('the game dialog from the Round tiles (#443, #444)', () => {
   })
 
   it('opens the same dialog for a Round whose game is in no pool: its Tags come from hostGames, its Notes stay open under the tile', async () => {
-    const { slug } = serveRunning({ host: true, rounds: [round('r1', schach, 'Schach-Notizen')], hostGames })
+    const { slug } = serveRunning({ host: true, rounds: [round('r1', schach, notesFromLines(['Schach-Notizen'])!)], hostGames })
     const stage = await mount(slug)
 
     const rounds = stage.get('[aria-label="Offene Spiele"]')

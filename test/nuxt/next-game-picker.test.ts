@@ -5,6 +5,7 @@ import NextGamePicker from '~/components/NextGamePicker.vue'
 import type { GameTag, GameView, PoolGame } from '~~/shared/game'
 import { kitty, signInAs } from './auth'
 import { clickButton, dialog, restoreScreen, stubScreen } from './event-page'
+import { notesFromLines } from '~~/shared/notes-doc'
 
 // The switch „Veto erlauben“ in the picker for the next game (#232, spec #218 § „Nächstes Spiel setzen“, stories 50 and 53): off every
 // time the sheet opens, there only in a Selection mode with a wheel, and its value goes out with the game that is picked.
@@ -274,7 +275,7 @@ describe('the library list of the picker (#369)', () => {
 // The Notes button of a game in the picker (#436): on a pool game and a library game with Notes, and on no other; Escape closes its
 // popover, the sheet stays open and the focus goes back to the button.
 describe('the Notes button of a game in the picker (#436)', () => {
-  const poolWithNotes: PoolGame = { ...halo, notes: 'Settings: 3 Runden\nWarmup: Lobby' }
+  const poolWithNotes: PoolGame = { ...halo, notes: notesFromLines(['Settings: 3 Runden', 'Warmup: Lobby']) }
   const poolWithout: PoolGame = { ...halo, id: 'g-pong', name: 'Pong', notes: null }
   const poolList = () => dialog()!.querySelector<HTMLElement>('ul[aria-label="Spiele, die im Pool noch übrig sind"]')!
   const libraryList = () => dialog()!.querySelector<HTMLElement>('ul[aria-label="Bibliothek"]')!
@@ -288,7 +289,7 @@ describe('the Notes button of a game in the picker (#436)', () => {
     signInAs({ ...kitty, canHost: true })
     await clearNuxtData('games')
     useState('game-library').value = null
-    libraryGames = [libraryGame(1, 'Retro Kart', { notes: 'Setup: Tisch' }), libraryGame(2, 'Schach')]
+    libraryGames = [libraryGame(1, 'Retro Kart', { notes: notesFromLines(['Setup: Tisch']) }), libraryGame(2, 'Schach')]
     libraryTags = []
   })
 

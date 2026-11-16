@@ -22,7 +22,7 @@ export const API_ERROR_STATUS = {
   invalid_players: 400,
   /** A game's Suitabilities are unknown or repeated (#171). */
   invalid_suitabilities: 400,
-  /** A game's notes are longer than GAME_NOTES_MAX characters (#223). */
+  /** A game's notes are refused: not a valid document, or longer than GAME_NOTES_MAX visible characters (#223, #727). */
   invalid_game_notes: 400,
   /** A game's Tags are not a list of at most 8 Tags of 1 to 20 characters, none twice (#335). */
   invalid_tags: 400,

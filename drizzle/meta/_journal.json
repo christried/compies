@@ -260,6 +260,13 @@
       "when": 1794851416009,
       "tag": "0036_game_archived_at",
       "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "7",
+      "when": 1794851684707,
+      "tag": "0037_game_notes_document",
+      "breakpoints": true
     }
   ]
 }

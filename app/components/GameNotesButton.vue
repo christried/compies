@@ -2,6 +2,7 @@
 import { NotebookText, X } from '@lucide/vue'
 import { MD_QUERY } from '~/composables/useMediaQuery'
 import { placeNotePopover } from '~/utils/note-popover'
+import { notesPlainText, type NotesDoc } from '~~/shared/notes-doc'
 
 // The Notes of a game in a picker (#436, 02-components § GameCard, deviation 0.12): a Notes button that opens the game's notes read-only,
 // line breaks kept. From md up a popover beside the button, below it a sheet from the bottom (the pattern of the Sessions card's „Mehr“,
@@ -9,14 +10,16 @@ import { placeNotePopover } from '~/utils/note-popover'
 // away from its button close it; the focus goes back to the button. No notes, no button. The popover sits where placeNotePopover puts it
 // (above or below the button, inside the window), measured once it is drawn (#488). When it fits on neither side it is capped to the
 // roomier one and scrolls (#494).
-withDefaults(defineProps<{
+const props = withDefaults(defineProps<{
   name: string
-  notes: string | null
+  /** The game's notes as a document (#727); null = none, and then there is no button (a document is never an empty one, parseNotes makes those null). */
+  notes: NotesDoc | null
   /** The button's visual diameter: the picker's rows are 36, its cards 40. */
   size?: 36 | 40
 }>(), { size: 40 })
 
 const { t } = useI18n()
+const text = computed(() => notesPlainText(props.notes))
 const wide = useMediaQuery(MD_QUERY)
 const narrow = computed(() => wide.value === false)
 const titleId = useId()
@@ -86,7 +89,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <template v-if="notes?.trim()">
+  <template v-if="notes">
     <IconButton
       ref="trigger"
       :icon="NotebookText"
@@ -103,7 +106,7 @@ onBeforeUnmount(() => {
       @close="close"
     >
       <p class="m-0 text-[14px] leading-[1.45] whitespace-pre-wrap text-ink [overflow-wrap:anywhere]">
-        {{ notes }}
+        {{ text }}
       </p>
     </AppSheet>
     <Teleport
@@ -136,7 +139,7 @@ onBeforeUnmount(() => {
           />
         </header>
         <p class="m-0 text-[14px] leading-[1.45] whitespace-pre-wrap text-ink [overflow-wrap:anywhere]">
-          {{ notes }}
+          {{ text }}
         </p>
       </div>
     </Teleport>

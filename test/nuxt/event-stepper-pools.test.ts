@@ -4,6 +4,7 @@ import { createError, readBody } from 'h3'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import CreatePage from '~/pages/neu.vue'
 import type { GameView } from '~~/shared/game'
+import { notesFromLines } from '~~/shared/notes-doc'
 import { kitty, signInAs } from './auth'
 
 // Step 6 of the stepper, the Game pool (#146, #173; the Tiebreaker pool is gone, #279): the game browser over the library,
@@ -551,11 +552,12 @@ describe('the pool steps', () => {
       const page = await mountCreate()
       await toPoolStep(page)
       const notes = 'Settings: 3 Runden\nWin: meiste Punkte'
+      const document = notesFromLines(notes.split('\n'))
 
       await createInSheet(page, notes)
 
       await vi.waitFor(() => expect(dialog()).toBeNull())
-      expect(postedGame).toHaveBeenCalledWith(expect.objectContaining({ name: 'Frisch Angelegt', notes }))
+      expect(postedGame).toHaveBeenCalledWith(expect.objectContaining({ name: 'Frisch Angelegt', notes: document }))
       expect(inPool(page)!.findAll('li').map(row => row.get('b').text())).toEqual(['Frisch Angelegt'])
     })
   })
@@ -746,7 +748,7 @@ describe('the game browser in the pool steps (#173)', () => {
 // The Notes button of a game in the pool steps (#436): on a game with Notes, in the compact browser and on the chosen games, and on no
 // other. The ＋ and the ✕ stay where they are.
 describe('the Notes button of a game in the pool steps (#436)', () => {
-  const withNotes = game(1, 'Mario Kart', { notes: 'Settings: 3 Runden\nWarmup: Lobby' })
+  const withNotes = game(1, 'Mario Kart', { notes: notesFromLines(['Settings: 3 Runden', 'Warmup: Lobby']) })
   const notesButtons = (root: { element: Element }) => root.element.querySelectorAll('button[aria-label="Notizen ansehen"]')
   const cardOf = (page: Page, name: string) => picker(page).findAll('li').find(card => card.get('b').text() === name)!
 

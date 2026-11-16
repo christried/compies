@@ -163,7 +163,7 @@ describe('the create page', () => {
     await button(page, 'Speichern und noch eins').trigger('click')
 
     await vi.waitFor(() => expect(posted).toHaveBeenCalledTimes(1))
-    expect(posted).toHaveBeenCalledWith({ name: 'Zelda', youtubeUrl: '', clipStart: 0, clipLength: 30, playersMin: null, playersMax: null, suitabilities: [], tags: [], notes: '', price: null })
+    expect(posted).toHaveBeenCalledWith({ name: 'Zelda', youtubeUrl: '', clipStart: 0, clipLength: 30, playersMin: null, playersMax: null, suitabilities: [], tags: [], notes: null, price: null })
     expect(uploads).not.toHaveBeenCalled()
     page.unmount()
   })

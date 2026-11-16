@@ -5,6 +5,7 @@ import { ACTIVITY_TYPES, type ActivityParams, type ActivityType } from '../../sh
 import { PHASES } from '../../shared/event'
 import { ZONES } from '../../shared/board'
 import { PRICE_SOURCES, SUITABILITIES } from '../../shared/game'
+import type { NotesDoc } from '../../shared/notes-doc'
 import { COIN_SIDES, DRAW_KINDS, DRAW_OUTCOMES, DRAW_SOURCES } from '../../shared/rounds'
 import { CEREMONY_GAGS } from '../../shared/ceremony'
 import { FORMATS, SELECTION_MODES, type PointsTable } from '../../shared/settings'
@@ -211,8 +212,10 @@ export const games = pgTable('games', {
   playersMax: integer('players_max'),
   /** What kind of play the game works for, any number of them (#171). Was `formats` until 0007. */
   suitabilities: gameSuitability('suitabilities').array().default(sql`'{}'`).notNull(),
-  // Game notes (#223): plain text, at most GAME_NOTES_MAX characters; null = none.
-  notes: text('notes'),
+  // Game notes (#223, #727, ADR 0019): the document (a NotesDoc), at most GAME_NOTES_MAX visible characters; null = none.
+  notes: jsonb('notes_doc').$type<NotesDoc>(),
+  // The 0.15 text column (ADR 0007): the new code neither reads nor writes it. The Release after 0.16 drops it with the trigger that fills `notes_doc` from it.
+  notesLegacy: text('notes'),
   // The Price (#337, GLOSSARY: Price): amount in cents, where it is bought, the day it was last checked. All null = no Price.
   priceCents: integer('price_cents'),
   priceSource: priceSource('price_source'),
