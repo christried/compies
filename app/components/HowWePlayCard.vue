@@ -3,6 +3,7 @@ import { EyeOff, Lock, Pencil } from '@lucide/vue'
 import { GAME_GRID } from '~/utils/game-grid'
 import { summaryRows } from '~/utils/settings-summary'
 import type { HostGameFacts, PoolGame, PoolGameFace } from '~~/shared/game'
+import type { NotesDoc } from '~~/shared/notes-doc'
 import { hasWheel, lockedWhenRunning, type EventSettings } from '~~/shared/settings'
 
 // „So wird gespielt“ on the Event page (#148, #166, 11-event-seite § HowWePlayCard): Format, Spiele, Auswahl (with the Vetos
@@ -29,7 +30,9 @@ const props = withDefaults(defineProps<{
   hostName?: string
   /** The Tags and Notes of the games, for the Host's game dialog (#443); null for every other Member. */
   hostGames?: Record<string, HostGameFacts> | null
-}>(), { vetoHidden: false, editTo: null, locked: false, hostName: '', hostGames: null })
+  /** The Host's Event notes by game id (#732); null for every Member. Each game's tile reads its entry for the dialog. */
+  eventNotes?: Record<string, NotesDoc> | null
+}>(), { vetoHidden: false, editTo: null, locked: false, hostName: '', hostGames: null, eventNotes: null })
 
 const { t } = useI18n()
 const headingId = useId()
@@ -137,6 +140,7 @@ const rows = computed(() => (props.settings === null
                   :game="game"
                   :audience="isHost ? 'host' : 'member'"
                   :facts="hostGames?.[game.id] ?? null"
+                  :event-notes="eventNotes?.[game.id] ?? null"
                 />
               </li>
             </ul>

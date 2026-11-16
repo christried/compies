@@ -941,6 +941,9 @@
   "gameNotes": {
     "open": "Notizen ansehen"
   },
+  "eventNotes": {
+    "title": "Notizen für dieses Event"
+  },
   "hint": {
     "open": "Hinweis anzeigen"
   },

@@ -10,6 +10,7 @@ import { flapperKick, pinCrossings } from '~/utils/wheel-pins'
 import { cardPop, labelPop, popOver } from '~/utils/wheel-stop'
 import { stopReached } from '~~/shared/draw-timeline'
 import type { HostGameFacts } from '~~/shared/game'
+import type { NotesDoc } from '~~/shared/notes-doc'
 import type { WheelView } from '~~/shared/stage'
 import { characterCount, cutToCharacters } from '~~/shared/text'
 import { refillAt, refillPlan, type RefillPlan, type RestSlice } from '~/utils/wheel-refill'
@@ -40,7 +41,9 @@ const props = withDefaults(defineProps<{
   serverNow: () => number
   /** The Tags and Notes of the games, for the Host's game dialog on the drawn game's tile (#443); null for every other Member. */
   hostGames?: Record<string, HostGameFacts> | null
-}>(), { hostGames: null })
+  /** The Host's Event notes by game id (#732); null for every Member. Each game's tile reads its entry for the dialog. */
+  eventNotes?: Record<string, NotesDoc> | null
+}>(), { hostGames: null, eventNotes: null })
 
 const { t } = useI18n()
 
@@ -515,6 +518,7 @@ const headingId = useId()
           :game="card"
           :audience="isHost ? 'host' : 'member'"
           :facts="hostGames?.[card.id] ?? null"
+          :event-notes="eventNotes?.[card.id] ?? null"
         />
       </div>
     </div>

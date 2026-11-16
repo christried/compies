@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { canSeeLibrary, type HostGameFacts, type PoolGameFace } from '~~/shared/game'
+import type { NotesDoc } from '~~/shared/notes-doc'
 
 // The game dialog (#443, 02-components § GameCard, deviation 0.12): a game tile's details in the sheet shell (a sheet below md, a dialog from md up), read-only,
 // built from the library entry's parts (GameCover, GameFacts, GameNotes). It plays no Clip. The Host's audience has the picture, the facts (players, Suitabilities, Price
@@ -12,7 +13,9 @@ const props = withDefaults(defineProps<{
   audience: 'host' | 'member'
   /** The Tags and Notes of the game, from the Host's read (`hostGames`); null where the read has none. */
   facts?: HostGameFacts | null
-}>(), { facts: null })
+  /** The Host's Event notes of this game (#732), above the Game notes; the Host's audience only, like `facts`. */
+  eventNotes?: NotesDoc | null
+}>(), { facts: null, eventNotes: null })
 
 const emit = defineEmits<{ close: [] }>()
 
@@ -21,6 +24,7 @@ const user = useAuthUser()
 const isHost = computed(() => props.audience === 'host')
 const tags = computed(() => (isHost.value ? props.facts?.tags ?? [] : []))
 const notes = computed(() => (isHost.value ? props.facts?.notes ?? null : null))
+const hostEventNotes = computed(() => (isHost.value ? props.eventNotes ?? null : null))
 const library = computed(() => isHost.value && canSeeLibrary(user.value))
 </script>
 
@@ -35,6 +39,10 @@ const library = computed(() => isHost.value && canSeeLibrary(user.value))
       <GameFacts
         :game="game"
         :tags="tags"
+      />
+      <EventNotes
+        v-if="hostEventNotes"
+        :notes="hostEventNotes"
       />
       <GameNotes
         v-if="notes"

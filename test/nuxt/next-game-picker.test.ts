@@ -5,7 +5,7 @@ import NextGamePicker from '~/components/NextGamePicker.vue'
 import type { GameTag, GameView, PoolGame } from '~~/shared/game'
 import { kitty, signInAs } from './auth'
 import { clickButton, dialog, restoreScreen, stubScreen } from './event-page'
-import { notesFromLines } from '~~/shared/notes-doc'
+import { notesFromLines, type NotesDoc } from '~~/shared/notes-doc'
 import { FORMATTED_NOTES, readFormatted } from './helpers/formatted-notes'
 
 // The switch „Veto erlauben“ in the picker for the next game (#232, spec #218 § „Nächstes Spiel setzen“, stories 50 and 53): off every
@@ -15,7 +15,7 @@ const halo: PoolGame = { id: 'g-halo', name: 'Halo', imageUrl: null, youtubeId: 
 
 let page: Awaited<ReturnType<typeof mountSuspended>> | undefined
 
-async function mount(props: { open?: boolean, vetoSwitch?: boolean, pool?: PoolGame[] } = {}) {
+async function mount(props: { open?: boolean, vetoSwitch?: boolean, pool?: PoolGame[], eventNotes?: Record<string, NotesDoc> | null } = {}) {
   page = await mountSuspended(NextGamePicker, { props: { open: true, pool: [halo], busy: false, ...props } })
   await flushPromises()
   return page
@@ -311,6 +311,43 @@ describe('the Notes button of a game in the picker (#436)', () => {
     expect(notesButtons(rowOf(libraryList(), 'Retro Kart'))).toHaveLength(1)
     expect(notesButtons(rowOf(libraryList(), 'Schach'))).toHaveLength(0)
     expect(notesButtons(poolList())).toHaveLength(0)
+  })
+
+  it('shows it on a pool game that has only Event notes, next to its ✓, and not on one without a key (#732)', async () => {
+    await mount({ pool: [poolWithout, { ...halo, notes: null }], eventNotes: { 'g-halo': notesFromLines(['Heute nur Bo1'])! } })
+
+    expect(notesButtons(rowOf(poolList(), 'Halo'))).toHaveLength(1)
+    expect(rowOf(poolList(), 'Halo').querySelector('button[aria-label="Halo auswählen"]')).not.toBeNull()
+    expect(notesButtons(rowOf(poolList(), 'Pong'))).toHaveLength(0)
+
+    notesButtons(poolList())[0]!.click()
+    await flushPromises()
+    expect([...popover()!.querySelectorAll('h3')].map(h => h.textContent)).toEqual(['Notizen für dieses Event'])
+    expect(popover()!.textContent).toContain('Heute nur Bo1')
+  })
+
+  it('shows the Event notes above the Game notes in a pool game\'s popover (#732)', async () => {
+    await mount({ pool: [poolWithNotes], eventNotes: { 'g-halo': notesFromLines(['Heute nur Bo1'])! } })
+
+    notesButtons(poolList())[0]!.click()
+    await flushPromises()
+
+    const text = popover()!.textContent!
+    expect(text.indexOf('Heute nur Bo1')).toBeGreaterThan(-1)
+    expect(text.indexOf('Heute nur Bo1')).toBeLessThan(text.indexOf('Settings: 3 Runden'))
+  })
+
+  it('follows the same map on the library cards (#732)', async () => {
+    const schach = '00000000-0000-4000-8000-000000000002'
+    await mount({ pool: [poolWithout], eventNotes: { [schach]: notesFromLines(['Heute nur Bo1'])! } })
+    await vi.waitFor(() => expect(libraryList().querySelectorAll('li')).toHaveLength(2))
+
+    expect(notesButtons(rowOf(libraryList(), 'Schach'))).toHaveLength(1)
+    expect(notesButtons(rowOf(libraryList(), 'Retro Kart'))).toHaveLength(1)
+    notesButtons(rowOf(libraryList(), 'Schach'))[0]!.click()
+    await flushPromises()
+    expect(popover()!.textContent).toContain('Notizen für dieses Event')
+    expect(popover()!.textContent).toContain('Heute nur Bo1')
   })
 
   it('shows the formatted notes of a pool game in the popover (#728)', async () => {

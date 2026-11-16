@@ -12,7 +12,7 @@ import { notesFromLines, type NotesDoc } from '~~/shared/notes-doc'
 import { defaultSettings } from '~~/shared/settings'
 import { kitty, signInAs } from './auth'
 import { FORMATTED_HREF, FORMATTED_NOTES, readFormatted } from './helpers/formatted-notes'
-import { clickButton, clickHostAction, dialog, hostActionElement, regionHeadings, serve, shownToasts, viewWithSessions, type Mounted, type Wrapper } from './event-page'
+import { clickButton, clickHostAction, dialog, hostActionElement, regionHeadings, restoreScreen, serve, shownToasts, stubScreen, viewWithSessions, type Mounted, type Wrapper } from './event-page'
 
 // The open Rounds on the stage and „Nächstes Spiel setzen“ (#228, 11-event-seite § EventPage, screen 15): the Round card with
 // „wird gespielt“, its Game notes open for the Host only, „Zurücklegen“ as the Host's hold, the picker that lists the Game pool
@@ -35,10 +35,10 @@ const round = (id: string, game: PoolGame, notes?: NotesDoc): RoundView => {
 const pool: EventView['pool'] = [halo, kart, pong]
 const pill = (page: Mounted) => [...page.element.querySelectorAll('[role="toolbar"] button')].map(button => button.textContent?.replace(/\s+/g, ' ').trim())
 
-type Options = { host: boolean, rounds?: RoundView[], setGame?: SetGameView | null, sessions?: Parameters<typeof viewWithSessions>[1], phase?: string, teams?: BoardTeam[], end?: EndView | null, hostGames?: EventView['hostGames'] }
+type Options = { host: boolean, rounds?: RoundView[], setGame?: SetGameView | null, sessions?: Parameters<typeof viewWithSessions>[1], phase?: string, teams?: BoardTeam[], end?: EndView | null, hostGames?: EventView['hostGames'], eventNotes?: EventView['eventNotes'] }
 
 /** A running Event, set up for Host pick: the Host's or a Member's read of it, with these open Rounds. */
-function serveRunning({ host, rounds = [], setGame, sessions, phase = 'running', teams, end, hostGames }: Options) {
+function serveRunning({ host, rounds = [], setGame, sessions, phase = 'running', teams, end, hostGames, eventNotes }: Options) {
   return serve(slug => viewWithSessions(slug, sessions ?? [{ number: null, startsAt: FIRST, startedAt: STARTED }], 0, {
     event: { isHost: host, phase },
     settings: defaultSettings(),
@@ -49,6 +49,7 @@ function serveRunning({ host, rounds = [], setGame, sessions, phase = 'running',
     ...(end === undefined ? {} : { end }),
     pool: host ? pool : null,
     hostGames: hostGames ?? null,
+    eventNotes: eventNotes ?? null,
   }))
 }
 
@@ -146,6 +147,45 @@ describe('the open Rounds on the stage', () => {
       bold: 'Wichtig',
       link: { text: 'nachlesen', href: FORMATTED_HREF, target: '_blank', rel: 'noopener noreferrer' },
     })
+  })
+
+  it('opens the disclosure with the label and the Event notes for a game that has no Game notes (#732)', async () => {
+    const { slug } = serveRunning({ host: true, rounds: [round('r1', kart)], eventNotes: { 'g-kart': notesFromLines(['Heute nur Bo1'])! } })
+
+    const stage = await mount(slug)
+
+    const rounds = stage.get('[aria-label="Offene Spiele"]')
+    expect(rounds.get('button[aria-expanded]').attributes('aria-expanded')).toBe('true')
+    expect(rounds.findAll('h3').map((heading: Wrapper) => heading.text())).toEqual(['Notizen für dieses Event'])
+    expect(rounds.text()).toContain('Heute nur Bo1')
+  })
+
+  it('shows the Event notes first, then the Game notes, and the label once (#732)', async () => {
+    const { slug } = serveRunning({ host: true, rounds: [round('r1', halo, halo.notes!)], eventNotes: { 'g-halo': notesFromLines(['Heute nur Bo1'])! } })
+
+    const stage = await mount(slug)
+
+    const text = stage.get('[aria-label="Offene Spiele"]').text()
+    expect(text.split('Notizen für dieses Event')).toHaveLength(2)
+    expect(text.indexOf('Notizen für dieses Event')).toBeLessThan(text.indexOf('Heute nur Bo1'))
+    expect(text.indexOf('Heute nur Bo1')).toBeLessThan(text.indexOf('Hausregel: keine Raketen'))
+  })
+
+  it('shows no disclosure for Event notes that are blank, and none for a Round whose game has no key (#732)', async () => {
+    const { slug } = serveRunning({ host: true, rounds: [round('r1', kart), round('r2', pong)], eventNotes: { 'g-kart': { type: 'doc', content: [{ type: 'paragraph' }] } } })
+
+    const stage = await mount(slug)
+
+    expect(stage.get('[aria-label="Offene Spiele"]').find('button[aria-expanded]').exists()).toBe(false)
+  })
+
+  it('shows a Member the Round without any Notizen, the Event notes map being null (#732)', async () => {
+    const { slug } = serveRunning({ host: false, rounds: [round('r1', kart)], eventNotes: null })
+
+    const stage = await mount(slug)
+
+    const rounds = stage.get('[aria-label="Offene Spiele"]')
+    expect(rounds.text()).not.toContain('Notizen')
   })
 
   it('shows a Member the Round without any Game notes, as the server leaves them out', async () => {
@@ -580,6 +620,28 @@ describe('„Nächstes Spiel setzen“', () => {
     await vi.waitFor(() => expect(sheet.querySelector('ul[aria-label="Bibliothek"]')?.textContent).toContain('Schach'))
     const order = [...sheet.querySelectorAll('h3, ul[aria-label="Bibliothek"]')].map(element => element.tagName === 'H3' ? element.textContent?.trim() : 'Bibliothek')
     expect(order).toEqual(['Aus dem Pool: noch 2', 'Oder aus der ganzen Bibliothek', 'Bibliothek'])
+  })
+
+  it('shows the Event notes in the popover of a pool row, for a game without Game notes (#732)', async () => {
+    registerEndpoint('/api/games', { method: 'GET', handler: () => ({ games: [kart, schach], tagsInUse: [] }) })
+    signInAs({ ...kitty, canHost: true })
+    stubScreen(true)
+    const served = serveRunning({ host: true, setGame: { rejection: null, spinRejection: 'no_wheel', respin: false, left: [halo.id, pong.id], poolWarning: null }, eventNotes: { 'g-pong': notesFromLines(['Heute nur Bo1'])! } })
+    const stage = await mount(served.slug)
+
+    await clickHostAction(stage, 'Nächstes Spiel setzen')
+
+    await vi.waitFor(() => expect(dialog()).not.toBeNull())
+    const poolList = dialog()!.querySelector('ul[aria-label="Spiele, die im Pool noch übrig sind"]')!
+    // Halo has Game notes only, Pong Event notes only: both rows have the button.
+    const [haloRow, pongRow] = [...poolList.querySelectorAll('li')]
+    expect(haloRow!.querySelector('button[aria-label="Notizen ansehen"]')).not.toBeNull()
+    pongRow!.querySelector<HTMLButtonElement>('button[aria-label="Notizen ansehen"]')!.click()
+    await flushPromises()
+    const popover = document.querySelector<HTMLElement>('[role="dialog"]:not([data-sheet])')!
+    expect([...popover.querySelectorAll('h3')].map(heading => heading.textContent)).toEqual(['Notizen für dieses Event'])
+    expect(popover.textContent).toContain('Heute nur Bo1')
+    restoreScreen()
   })
 
   it('sets the chosen game from the bar and closes once the server took it', async () => {

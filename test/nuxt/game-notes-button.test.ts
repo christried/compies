@@ -16,7 +16,7 @@ const NOTES = 'Zeile eins\n\nZeile drei'
 let page: Awaited<ReturnType<typeof mountSuspended>> | undefined
 let setWide: (next: boolean) => void
 
-async function mount(props: { name?: string, notes: NotesDoc | null }) {
+async function mount(props: { name?: string, notes: NotesDoc | null, eventNotes?: NotesDoc | null }) {
   page = await mountSuspended(GameNotesButton, { props: { name: 'Mario Kart', ...props }, attachTo: document.body })
   await flushPromises()
   return page
@@ -82,6 +82,69 @@ describe('the Notes button of a game (#436)', () => {
       items: ['Erstens', 'Zweitens'],
       bold: 'Wichtig',
       link: { text: 'nachlesen', href: FORMATTED_HREF, target: '_blank', rel: 'noopener noreferrer' },
+    })
+  })
+
+  describe('with Event notes (#732)', () => {
+    const LABEL = 'Notizen für dieses Event'
+    const before = (first: Element, second: Element) => !!(first.compareDocumentPosition(second) & Node.DOCUMENT_POSITION_FOLLOWING)
+    const label = (within: Element) => [...within.querySelectorAll('h3')].find(h => h.textContent === LABEL)!
+    const paragraph = (within: Element, text: string) => [...within.querySelectorAll('p')].find(p => p.textContent === text)!
+
+    it('shows the button for a game with only Event notes, the label above the text in the popover', async () => {
+      await mount({ notes: null, eventNotes: notesFromLines(['Heute nur Bo1']) })
+
+      expect(document.querySelector(TRIGGER)).not.toBeNull()
+      await open()
+
+      expect(before(label(popover()!), paragraph(popover()!, 'Heute nur Bo1'))).toBe(true)
+      expect(lines(popover())).toEqual(['Heute nur Bo1'])
+    })
+
+    it('shows the label above the text in the sheet below md', async () => {
+      setWide(false)
+      await mount({ notes: null, eventNotes: notesFromLines(['Heute nur Bo1']) })
+      await open()
+
+      expect(before(label(sheet()!), paragraph(sheet()!, 'Heute nur Bo1'))).toBe(true)
+      expect(sheet()!.querySelector('h2')!.textContent).toBe('Mario Kart')
+    })
+
+    it.each([true, false])('puts the Event notes above the Game notes, the label once (wide %s)', async (wide) => {
+      setWide(wide)
+      await mount({ notes: notesFromLines(['Game-Zeile']), eventNotes: notesFromLines(['Heute nur Bo1']) })
+      await open()
+
+      const within = (wide ? popover() : sheet())!
+      expect(before(paragraph(within, 'Heute nur Bo1'), paragraph(within, 'Game-Zeile'))).toBe(true)
+      expect([...within.querySelectorAll('h3')].filter(h => h.textContent === LABEL)).toHaveLength(1)
+    })
+
+    it('shows the Game notes alone as it does today, with no label', async () => {
+      await mount({ notes: notesFromLines(['Game-Zeile']), eventNotes: null })
+      await open()
+
+      expect(popover()!.textContent).not.toContain(LABEL)
+      expect(lines(popover())).toEqual(['Game-Zeile'])
+    })
+
+    it.each(BLANK_NOTES)('renders no button for blank Event notes beside no Game notes', async (blank) => {
+      await mount({ notes: null, eventNotes: blank })
+
+      expect(document.querySelector(TRIGGER)).toBeNull()
+    })
+
+    it('reads the formatted Event notes back in the popover, their heading an h4', async () => {
+      await mount({ notes: null, eventNotes: FORMATTED_NOTES })
+      await open()
+
+      expect(readFormatted(popover()!)).toEqual({
+        heading: 'h4',
+        headingText: 'Regeln',
+        items: ['Erstens', 'Zweitens'],
+        bold: 'Wichtig',
+        link: { text: 'nachlesen', href: FORMATTED_HREF, target: '_blank', rel: 'noopener noreferrer' },
+      })
     })
   })
 

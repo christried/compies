@@ -3,6 +3,7 @@ import { GAME_GRID } from '~/utils/game-grid'
 import { CARD_REFLOW_CLASS, leaveInPlace, unwatched } from '~/utils/motion'
 import type { BoardTeam } from '~~/shared/event'
 import type { HostGameFacts } from '~~/shared/game'
+import type { NotesDoc } from '~~/shared/notes-doc'
 import type { ResultPlace } from '~~/shared/results'
 import type { PointsTable } from '~~/shared/settings'
 import type { EndView, RoundView } from '~~/shared/stage'
@@ -33,7 +34,9 @@ const props = withDefaults(defineProps<{
   end: EndView | null
   /** The Tags and Notes of the games, for the Host's game dialog (#443); null for every other Member. The Notes under the tile stay the Round's own. */
   hostGames?: Record<string, HostGameFacts> | null
-}>(), { hostGames: null })
+  /** The Host's Event notes by game id (#732); null for every Member. Each game's tile and Notizen disclosure read their entry. */
+  eventNotes?: Record<string, NotesDoc> | null
+}>(), { hostGames: null, eventNotes: null })
 
 const { t } = useI18n()
 const headingId = useId()
@@ -102,11 +105,13 @@ watch(resultFor, async (id, was) => {
             :game="round.game"
             :audience="isHost ? 'host' : 'member'"
             :facts="hostGames?.[round.game.id] ?? null"
+            :event-notes="eventNotes?.[round.game.id] ?? null"
           />
         </div>
         <GameNotesDisclosure
-          v-if="round.notes"
-          :notes="round.notes"
+          v-if="round.notes || eventNotes?.[round.game.id]"
+          :notes="round.notes ?? null"
+          :event-notes="eventNotes?.[round.game.id] ?? null"
           start-open
         />
         <div

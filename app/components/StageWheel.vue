@@ -21,6 +21,7 @@ const wheel = computed(() => props.view.wheel!)
       :is-host="view.event.isHost"
       :server-now="serverNow"
       :host-games="view.hostGames"
+      :event-notes="view.eventNotes"
     />
     <VetoWindow
       v-if="wheel.vetoes.draw"
