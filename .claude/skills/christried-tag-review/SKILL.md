@@ -1,26 +1,26 @@
 ---
 name: christried-tag-review
-description: Recurring Tag review of the production Game library — research every game, propose Tags and new Tags, apply what the user approves (#424).
+description: Recurring Tag review of the operator's own Game library (one library, nobody else's) — research every game, propose Tags and new Tags, apply what the user approves (#424, #730).
 disable-model-invocation: true
 ---
 
-A joint session: you prepare, the user decides. Tags are a Host's tool for finding games while building a Game pool; Members never see them (GLOSSARY: Tag). The agreed Tags, their meaning and the ones already turned down are in [`VOCABULARY.md`](VOCABULARY.md), the single source of truth for every label you propose.
+A joint session: you prepare, the user decides. The review works on **one library**, the operator's own: the script reads and writes the games of the one User it is given and no other, and nobody else's games, Tags or notes are read or written (ADR 0018). Tags are a Host's tool for finding games while building a Game pool; Members never see them (GLOSSARY: Tag). The agreed Tags, their meaning and the ones already turned down are in [`VOCABULARY.md`](VOCABULARY.md), the single source of truth for every label you propose.
 
 Work files (the export, your research, the plan) go in your scratchpad, never in the repo: they hold library data, and the repo is public (CLAUDE.md § Personal data). The user approved looking games up online by name for this task.
 
 ## 1. Export
 
-You never hold the production `DATABASE_URL` (`docs/agents/delivery.md` § Production data). Ask the user to put it in `.env.prod` at the repo root (git ignores it, and the § names this skill as its one exception) for this run, to delete it when the run ends, and to run:
+You never hold the production `DATABASE_URL` (`docs/agents/delivery.md` § Production data). Ask the user to put it in `.env.prod` at the repo root (git ignores it, and the § names this skill as its one exception) for this run, to delete it when the run ends, and to run the command below with their own User id in place of `<User id>`. The user types the id into the command: no file of the repo and no issue comment ever holds it, and you do not repeat it back.
 
 ```
-! node --env-file=.env.prod .claude/skills/christried-tag-review/library-tags.mjs export "<scratchpad>/library.json"
+! node --env-file=.env.prod .claude/skills/christried-tag-review/library-tags.mjs export "<scratchpad>/library.json" --user <User id>
 ```
 
 Done when the file exists and the printed count of games and Tags in use is in front of you. A label in use that is missing from the vocabulary was typed by a Host since the last run: treat it as a candidate in step 3.
 
 ## 2. Research every game
 
-For each game, read its notes first: they hold the operator's own setup knowledge (no spectator slot, mods, servers). Then look the game up: its store page (on Steam: genres, Free to Play, „Remote Play Together“, local versus online multiplayer, demo or playtest) and the official site for the launcher and account it needs. A game from an earlier run needs only the facts that change: free-to-play switches, a demo becoming the full game, a new launcher or mode.
+For each game, read its notes first: they hold the operator's own setup knowledge (no spectator slot, mods, servers). The export's `notes` is the note as plain text: a heading is its text, a list item starts `- ` or `1. `, bold and links show their text only; `null` is no note. Then look the game up: its store page (on Steam: genres, Free to Play, „Remote Play Together“, local versus online multiplayer, demo or playtest) and the official site for the launcher and account it needs. A game from an earlier run needs only the facts that change: free-to-play switches, a demo becoming the full game, a new launcher or mode.
 
 Done when every game has its row of proposed Tags, each Tag with its **evidence**: a URL or „notes“. A game you can't pin down gets a question for the user instead of a guess.
 
@@ -45,10 +45,10 @@ Write the user's decisions on Tags into `VOCABULARY.md`: an accepted Tag joins i
 
 ## 6. Apply
 
-Build the plan from the export: a JSON array of `{ id, name, tagsBefore, add, remove }`, where `tagsBefore` is the game's Tag keys in the export, in order (`library-tags.mjs` documents the format). Ask the user to run the dry run, then the same command with `--apply`:
+Build the plan from the export: a JSON array of `{ id, name, tagsBefore, add, remove }`, where `tagsBefore` is the game's Tag keys in the export, in order (`library-tags.mjs` documents the format). Ask the user to run the dry run, then the same command with `--apply` after it. A game that is not in the User's library is refused, whatever its id, and nothing is written:
 
 ```
-! node --env-file=.env.prod .claude/skills/christried-tag-review/library-tags.mjs "<scratchpad>/tag-plan.json"
+! node --env-file=.env.prod .claude/skills/christried-tag-review/library-tags.mjs "<scratchpad>/tag-plan.json" --user <User id>
 ```
 
 The script writes all or nothing. When it names a game whose Tags changed since the export, export again and rebuild the plan for those games. Done when it prints `Written: <n> games.`
