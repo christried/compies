@@ -31,7 +31,7 @@ You build ONE ticket in your own git worktree. The orchestrator reviews your dif
 - Shell: this is Windows, and the Bash tool is Git Bash. Script with `node` from a file, never Python; inline `node -e` in bash mangles backticks.
   - Create every file with the Write tool: a script, a commit message's file, a scratch note. A heredoc that writes a file (`cat > x.mjs <<EOF`) is refused by the guard of `CLAUDE.md` § Scripting, 77 times in 53 subagents between 2026-11-11 and 2026-11-13 (#599).
   - Write a git call plainly: from your worktree's folder, with no shell variable (`$R`, `B=…`), no `cd` and no `git -C` in the call. The harness refuses a git call it cannot verify stays in your worktree: 184 refusals in 89 of 149 subagents in those three days, most of them a call with a variable or a `cd` in front (#599). When a call is refused, run its git command alone, as its own call: of 173 such calls none was refused. The exit code is in the tool's result, so no `; echo $?`.
-- Scratch files (`red.log`, a throwaway script) go to your scratchpad directory, never into the checkout: `*.log` is gitignored, so git status hides them, and two stayed in the root after 0.10.
+- Scratch files (`red.log`, a throwaway script) go to a folder of your own, `<your scratchpad directory>/<your ticket's number>/`, never loose in the scratchpad and never into the checkout. Every agent of a session has the same scratchpad directory, and the orchestrator's folder in it is named after the spec: five implementers of 0.14 wrote their logs into it or beside it (#780). The checkout is out because `*.log` is gitignored, so git status hides them, and two stayed in the root after 0.10.
 - Touch only what your brief allows. If the brief and the ticket disagree, or the code makes the brief wrong, do what the ticket needs and say so in the report.
 
 ## Commits
@@ -53,12 +53,12 @@ You build ONE ticket in your own git worktree. The orchestrator reviews your dif
 
 1. Push your branch: `git push -u origin <your branch>`.
 2. Wait for CI on your pushed head: `node scripts/ci-wait.mjs`, in the foreground. One call waits at most 2.5 minutes; exit 2 means CI is still running (a run takes about 6 minutes), so call it again until it exits 0 or 1. It prints one line, then the failures if any. Red: fix, push, and wait again. Report a green head; a red one you can't fix goes into the report with its output.
-3. Then `git fetch origin` and check containment: `git merge-base --is-ancestor origin/<integration branch> HEAD`. Contained → done. Not contained, because the integration branch moved during the CI run → `git merge origin/<integration branch>`, resolving conflicts by keeping both sides (changelog lines, i18n keys) and keeping every removal the integration branch made, then rerun the checks, push, and wait for CI again from step 2. Checking only after the CI run avoids the loop in session 2 of 0.10, where all three parallel implementers merged the tip before their CI wait, found it had moved, and needed another round (#363 three, #364 four).
-4. The loop ends when the reported head contains the integration tip and is green, both on the same SHA.
+3. Then `git fetch origin` and test the merge: `git merge-tree --write-tree --name-only origin/<integration branch> HEAD`. Exit 0 → done: your head merges cleanly, also when the integration branch moved during your CI run. The orchestrator's merge builds the result, and CI runs on it. Exit 1 lists the conflicting paths → `git merge origin/<integration branch>`, resolving conflicts by keeping both sides (i18n keys) and keeping every removal the integration branch made, then rerun the checks, push, and wait for CI again from step 2. Until 0.14 a head had to contain the tip, so every other ticket's merge sent a waiting implementer round again (#610 six times, #607 five in 84 minutes; #780).
+4. The loop ends when the reported head is green and merges cleanly into the integration tip you last fetched.
 
 ## Report (once, short, this shape)
 
-- Branch and head SHA, and CI on it: green, or the failing output.
+- Branch and head SHA, CI on it (green, or the failing output), and the integration tip it merges cleanly into.
 - The red run: the first test you wrote, and its failing line before any production code existed. Twice in 0.7 an implementer wrote the code first, and once a bug the test would have caught got as far as the review.
 - Acceptance criteria of the ticket: each one ✅ / ❌, with one line on how it is covered (test file and case name).
 - Deviations from the brief or the ticket, and why.

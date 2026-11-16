@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { rerunDecision, verdict } from '../../scripts/ci-verdict.mjs'
+import { deployDecision, rerunDecision, verdict } from '../../scripts/ci-verdict.mjs'
 
 const A = 'a'.repeat(40)
 const B = 'b'.repeat(40)
@@ -92,5 +92,27 @@ describe('scripts/ci-verdict.mjs rerunDecision', () => {
 
   it('still re-runs a start failure when its branch has a newer head', () => {
     expect(rerunDecision({ conclusion: 'failure', headSha: A, attempt: 1 }, 0, false, B)).toBe('rerun')
+  })
+})
+
+// `ci-wait.mjs --deployed <sha>` (#780): Vercel reports a deployment as a commit status, newest first.
+describe('deployDecision', () => {
+  const vercel = (state: string, description = '') => ({ context: 'Vercel', state, description, target_url: 'https://example.invalid/d' })
+
+  it('waits while the commit has no status of Vercel', () => {
+    expect(deployDecision([])).toEqual({ kind: 'none' })
+    expect(deployDecision([{ context: 'other', state: 'success', description: '', target_url: '' }])).toEqual({ kind: 'none' })
+  })
+
+  it('waits while Vercel is deploying', () => {
+    expect(deployDecision([vercel('pending', 'Vercel is deploying your app')])).toEqual({ kind: 'pending' })
+  })
+
+  it('takes the newest status of Vercel, which the API lists first', () => {
+    expect(deployDecision([vercel('success', 'Deployment has completed'), vercel('pending')])).toEqual({ kind: 'deployed', description: 'Deployment has completed', url: 'https://example.invalid/d' })
+  })
+
+  it.each([['failure'], ['error']])('calls a %s status failed', (state) => {
+    expect(deployDecision([vercel(state, 'Deployment has failed'), vercel('pending')])).toEqual({ kind: 'failed', description: 'Deployment has failed', url: 'https://example.invalid/d' })
   })
 })

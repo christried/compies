@@ -18,13 +18,13 @@ Communication to and from subagents should be sparse. Communicate primarily thro
 
 **COMPIES (max):** this is `/implement-spec` with one change: every subagent spawned under it runs on the **tier** its task rates in § Model tiers: Fable 5.2, Opus 5.5 at high effort, or Sonnet 5.5 at high effort. That covers every Agent call this skill makes, directly or through a skill or doc it invokes: exploration subagents, brief drafters, implementers, merge jobs, the `code-review` Standards and Spec sub-agents, the three Release reviewers and the report merger of `docs/agents/release.md` § Review, and browser-check subagents. § Model tiers replaces `docs/agents/subagents.md` § Model per subagent and the model named in `docs/agents/merger.md`, `docs/agents/release.md` and the `code-review` patch; everything else in those documents still applies: isolation, the concurrency limits, and the 300k context limit with its handoff. A handoff written under this skill names the tier of each ticket not yet merged and tells the next session to continue with `/christried-implement-spec-max`, not `/implement-spec`.
 
-**COMPIES:** before the first spawn, read `docs/agents/subagents.md` (the model per subagent, one brief per ticket, reading every diff before it merges) and `docs/agents/delivery.md` (PRs into `staging`, verifying and closing tickets).
+**COMPIES:** before the first spawn, read `docs/agents/subagents.md` (the model per subagent, one brief per ticket, reading every diff before it merges) and `docs/agents/delivery.md` (PRs into `staging`, verifying and closing tickets). In a cloud session read `docs/agents/cloud.md` too, and name it first in every spawn prompt.
 
 ## Steps
 
 1. Read the spec and tickets to understand the task graph.
 
-   **COMPIES:** read the spec and the frontier tickets; read a later ticket when it opens (`docs/agents/subagents.md` § Supervision). All seven tickets of 0.9 up front cost 15k tokens before the first spawn.
+   **COMPIES:** read the spec and the frontier tickets; read a later ticket when it opens (`docs/agents/subagents.md` § Supervision). All seven tickets of 0.9 up front cost 15k tokens before the first spawn. A session that continues from a handoff starts from the handoff: it reads that, the frontier tickets and the doc sections its next step names, and the spec's body only for a ticket it builds (`docs/agents/subagents.md` § Supervision, Where a session starts; local session 1 of 0.14 read 85k before its first spawn).
 
 2. (optional) Use an **exploration subagent** to conduct any exploration required by the tickets - relevant codebase files or external documentation. Ensure the exploration subagent can save files - it should save its markdown notes in a directory outside the repo, accessible by all future subagents. This lets **implementer subagents** focus on implementation rather than exploration.
 
@@ -37,13 +37,15 @@ Communication to and from subagents should be sparse. Communicate primarily thro
    - calls the Skill tool with `tdd` to build the ticket;
    - merges the integration branch tip into its own branch before reporting done
 
+   **COMPIES:** an implementer merges the tip only when it conflicts with its branch; a head that merges cleanly is reported as it is (`docs/agents/implementer-frame.md` § Before you report).
+
 5. Once an **implementer subagent** completes, merge its work to the integration branch with a **merger subagent**.
 
-   **COMPIES:** merge it yourself when the head contains the integration tip and `git merge-tree` is clean, once CI is green on the head; a merger subagent (`docs/agents/merger.md`) only for a conflict (`docs/agents/subagents.md` § Supervision).
+   **COMPIES:** merge it yourself with `scripts/merge-into.mjs` once CI is green on the head, its changelog line in the same commit (`--changelog`), then wait for CI on the merge commit before the next merge; a merger subagent (`docs/agents/merger.md`) only for a conflict (`docs/agents/subagents.md` § Supervision).
 
 6. If this changes the **frontier** of available tickets, kick off more **implementer subagents** to work on the new tickets. This allows for maximum concurrency.
 
-   **COMPIES:** before every new implementer (steps 4, 6 and 7) check the context limit, passing your session id (`docs/agents/subagents.md` § Supervision); at the limit, hand off instead.
+   **COMPIES:** before every new implementer (steps 4, 6 and 7) check the context limit, passing your session id and, when the operator set another limit for this session, `--limit` (`docs/agents/subagents.md` § Supervision); at the limit, hand off instead.
 
 7. Once all tickets are complete, call the Skill tool with `code-review` on the integration branch. Fix all issues raised by the code review in a single **implementer subagent**.
 

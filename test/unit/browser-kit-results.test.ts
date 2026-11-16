@@ -61,4 +61,37 @@ describe('results', () => {
     expect(aside).toContain('set aside now')
     expect(existsSync(LOG)).toBe(true)
   })
+
+  // A run against staging tests the commit staging serves, not the check worktree's (#780): 0.14's staging logs named the wrong one.
+  it('names the commit a remote base serves, with the kit\'s own commit beside it', () => {
+    results(RUN, { sha: `${OTHER}${'f'.repeat(40 - OTHER.length)}`, base: 'https://staging.example.invalid' }).check('on staging', true)
+
+    const lines = readFileSync(LOG, 'utf8').trim().split('\n')
+    expect(lines[0]).toMatch(new RegExp(`^== .+ on ${OTHER}, .+ \\(served by https://staging\\.example\\.invalid; kit of ${HEAD}\\)$`))
+    expect(lines[1]).toBe('PASS  on staging')
+  })
+
+  it('sets a local run\'s log aside when the next run is of the commit a remote base serves', () => {
+    results(RUN).check('local run', true)
+
+    results(RUN, { sha: OTHER, base: 'https://staging.example.invalid' }).check('on staging', true)
+
+    expect(readFileSync(LOG, 'utf8')).not.toContain('local run')
+    expect(readFileSync(join(DIR, `results-${HEAD}.log`), 'utf8')).toContain('PASS  local run')
+  })
+
+  it('says so when a remote base is checked without the commit it serves', () => {
+    results(RUN, { sha: undefined, base: 'https://staging.example.invalid' })
+
+    const text = readFileSync(LOG, 'utf8')
+    expect(text).toMatch(new RegExp(`^== .+ on ${HEAD}, `))
+    expect(text).toContain('NOTE  ')
+    expect(text).toContain('COMPIES_TESTED_SHA')
+  })
+
+  it('keeps the plain header on a local base, whatever the environment names', () => {
+    results(RUN, { sha: OTHER, base: 'http://localhost:3001' })
+
+    expect(readFileSync(LOG, 'utf8')).toMatch(new RegExp(`^== .+ on ${HEAD}, [^(]+$`, 'm'))
+  })
 })
