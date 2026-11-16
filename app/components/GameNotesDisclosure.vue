@@ -1,14 +1,16 @@
 <script setup lang="ts">
 import { ChevronDown } from '@lucide/vue'
+import { notesPlainText, type NotesDoc } from '~~/shared/notes-doc'
 
 // The Game notes of a game (#224, GLOSSARY: Game notes) as a disclosure: collapsed by default, announced as open or
-// closed, and plain text with its line breaks, never formatted or linked. The panel is rendered only while it is open.
+// closed, and the document's plain text with its line breaks (#727), never formatted or linked until the renderer (#728). The panel is rendered only while it is open.
 // Only the Host gets the notes of a pool game (#224); 0.7 reuses it for the Host on the Round card (#217), where it starts
 // open (`startOpen`, #228): the notes are what the Host needs while the game is played. The Session rows reuse it for the Notes
 // on a Slot's Votes (#349): the `label` names it with the count, and its default slot is the panel's content instead of the text.
-const props = withDefaults(defineProps<{ notes?: string, label?: string, startOpen?: boolean }>(), { notes: '', label: undefined, startOpen: false })
+const props = withDefaults(defineProps<{ notes?: NotesDoc | null, label?: string, startOpen?: boolean }>(), { notes: null, label: undefined, startOpen: false })
 
 const { t } = useI18n()
+const text = computed(() => notesPlainText(props.notes))
 const panelId = useId()
 const open = ref(props.startOpen)
 </script>
@@ -36,7 +38,7 @@ const open = ref(props.startOpen)
     >
       <slot>
         <p class="m-0 text-[14px] leading-[1.45] whitespace-pre-wrap text-ink [overflow-wrap:anywhere]">
-          {{ notes }}
+          {{ text }}
         </p>
       </slot>
     </div>

@@ -7,6 +7,7 @@ import { GAME_NAME_MAX, type HostGameFacts, type RoundGame } from '~~/shared/gam
 import type { SpinView, WheelView } from '~~/shared/stage'
 import { kitty, signInAs } from './auth'
 import { stubInView } from './in-view'
+import { notesFromLines } from '~~/shared/notes-doc'
 
 // The Lucky Wheel (#229, 02-components § LuckyWheel, 04-motion § Lucky Wheel): its rotation toward a fixed stop instant at a given
 // server time, the result card that comes at the stop and not before, and the Hidden wheel's label that turns into the real game.
@@ -389,7 +390,7 @@ describe('a Hidden wheel', () => {
 
 // The game dialog from the drawn game's tile (#443, #444): the Host's has the Tags and Notes from `hostGames`; a Member's has the facts and never those.
 describe('the drawn game\'s tile and its dialog (#443, #444)', () => {
-  const hostGames = { 'g-halo': { tags: [{ key: 'koop', label: 'Koop' }, { key: 'retro', label: 'Retro' }], notes: 'Hausregel: keine Raketen' } }
+  const hostGames = { 'g-halo': { tags: [{ key: 'koop', label: 'Koop' }, { key: 'retro', label: 'Retro' }], notes: notesFromLines(['Hausregel: keine Raketen']) } }
   const dialog = () => document.querySelector('[role="dialog"]') as HTMLElement | null
 
   beforeEach(() => {

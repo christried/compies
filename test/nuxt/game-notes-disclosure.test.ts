@@ -1,6 +1,7 @@
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import { describe, expect, it } from 'vitest'
 import GameNotesDisclosure from '~/components/GameNotesDisclosure.vue'
+import { notesFromLines } from '~~/shared/notes-doc'
 
 // The Game notes under a game in „So wird gespielt“ (#224): a disclosure that starts collapsed, announces whether it is
 // open, and shows the notes as plain text with their line breaks.
@@ -9,7 +10,7 @@ const NOTES = 'Settings: 3 Runden\nWarmup: Lobby'
 
 describe('GameNotesDisclosure (#224)', () => {
   it('shows a Notizen button that starts collapsed, with no panel', async () => {
-    const disclosure = await mountSuspended(GameNotesDisclosure, { props: { notes: NOTES } })
+    const disclosure = await mountSuspended(GameNotesDisclosure, { props: { notes: notesFromLines(NOTES.split('\n')) } })
 
     const button = disclosure.get('button')
     expect(button.text()).toBe('Notizen')
@@ -22,14 +23,14 @@ describe('GameNotesDisclosure (#224)', () => {
   })
 
   it('is plain underlined text like Bearbeiten, with no outline-memphis box around it', async () => {
-    const disclosure = await mountSuspended(GameNotesDisclosure, { props: { notes: NOTES } })
+    const disclosure = await mountSuspended(GameNotesDisclosure, { props: { notes: notesFromLines(NOTES.split('\n')) } })
 
     expect(disclosure.get('button').classes()).not.toContain('outline-memphis')
     expect(disclosure.get('button').classes()).toContain('underline')
   })
 
   it('opens on a click, shows the notes with their line breaks, and names its panel', async () => {
-    const disclosure = await mountSuspended(GameNotesDisclosure, { props: { notes: NOTES } })
+    const disclosure = await mountSuspended(GameNotesDisclosure, { props: { notes: notesFromLines(NOTES.split('\n')) } })
     const button = disclosure.get('button')
 
     await button.trigger('click')
@@ -42,7 +43,7 @@ describe('GameNotesDisclosure (#224)', () => {
   })
 
   it('closes again on the second click, and the panel goes', async () => {
-    const disclosure = await mountSuspended(GameNotesDisclosure, { props: { notes: NOTES } })
+    const disclosure = await mountSuspended(GameNotesDisclosure, { props: { notes: notesFromLines(NOTES.split('\n')) } })
     const button = disclosure.get('button')
 
     await button.trigger('click')
@@ -54,7 +55,7 @@ describe('GameNotesDisclosure (#224)', () => {
   })
 
   it('starts open on the Round card, with its panel and the notes (#228)', async () => {
-    const disclosure = await mountSuspended(GameNotesDisclosure, { props: { notes: NOTES, startOpen: true } })
+    const disclosure = await mountSuspended(GameNotesDisclosure, { props: { notes: notesFromLines(NOTES.split('\n')), startOpen: true } })
 
     const button = disclosure.get('button')
     expect(button.attributes('aria-expanded')).toBe('true')
@@ -64,8 +65,18 @@ describe('GameNotesDisclosure (#224)', () => {
     expect(button.attributes('aria-expanded')).toBe('false')
   })
 
+  it('shows its slot instead of the notes, with its own label: the Vote notes of a Slot (#349) take no document', async () => {
+    const disclosure = await mountSuspended(GameNotesDisclosure, { props: { label: '2 Notizen' }, slots: { default: '<ul><li>Eine Stimme</li></ul>' } })
+
+    expect(disclosure.get('button').text()).toContain('2 Notizen')
+    await disclosure.get('button').trigger('click')
+
+    expect(disclosure.get('li').text()).toBe('Eine Stimme')
+    expect(disclosure.find('p').exists()).toBe(false)
+  })
+
   it('shows markup in the notes as text, never as an element or a link', async () => {
-    const disclosure = await mountSuspended(GameNotesDisclosure, { props: { notes: '<b>x</b> https://example.com' } })
+    const disclosure = await mountSuspended(GameNotesDisclosure, { props: { notes: notesFromLines(['<b>x</b> https://example.com']) } })
 
     await disclosure.get('button').trigger('click')
 

@@ -123,9 +123,13 @@ function textOf(block: NotesParagraph | NotesHeading): string {
   return (block.content ?? []).map(node => node.text).join('')
 }
 
+function isList(block: NotesBlock): block is NotesList {
+  return block.type === 'bulletList' || block.type === 'orderedList'
+}
+
 /** The textblocks of a block, in order: the block itself, or the paragraphs of a list's items. */
 function textblocks(block: NotesBlock): (NotesParagraph | NotesHeading)[] {
-  return block.type === 'bulletList' || block.type === 'orderedList' ? block.content.flatMap(item => item.content) : [block]
+  return isList(block) ? block.content.flatMap(item => item.content) : [block]
 }
 
 /** How many characters the document shows: per paragraph or heading its text nodes joined first (an emoji with a skin tone split over two marks is one character), then summed. Block, list and item boundaries, marks and a link's address count nothing; spaces count. */
@@ -159,7 +163,7 @@ export function parseNotes(raw: unknown, max: number): NotesDoc | null | undefin
 export function notesPlainText(doc: NotesDoc | null): string {
   if (doc === null) return ''
   return doc.content.map((block) => {
-    if (block.type !== 'bulletList' && block.type !== 'orderedList') return textOf(block)
+    if (!isList(block)) return textOf(block)
     return block.content
       .map((item, index) => item.content.map((paragraph, at) => `${at === 0 ? (block.type === 'bulletList' ? '- ' : `${index + 1}. `) : ''}${textOf(paragraph)}`).join('\n'))
       .join('\n')

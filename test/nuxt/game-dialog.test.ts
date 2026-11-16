@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import GameDialog from '~/components/GameDialog.vue'
 import GameTile from '~/components/GameTile.vue'
 import { GAME_NAME_MAX, GAME_NOTES_MAX, TAG_MAX, TAGS_PER_GAME_MAX, type HostGameFacts, type PoolGameFace } from '~~/shared/game'
+import { notesFromLines } from '~~/shared/notes-doc'
 import { colorTags } from '~~/shared/tag-colors'
 import { kitty, signInAs } from './auth'
 
@@ -24,7 +25,7 @@ const FULL: PoolGameFace = {
 const longTag = (n: number) => `${String.fromCharCode(65 + n)}`.repeat(TAG_MAX)
 const EIGHT_TAGS = Array.from({ length: TAGS_PER_GAME_MAX }, (_, n) => ({ key: longTag(n).toLowerCase(), label: longTag(n) }))
 const NOTES = 'Erste Zeile\nZweite Zeile\n\nDritte Zeile nach Leerzeile'
-const FACTS: HostGameFacts = { tags: EIGHT_TAGS, notes: NOTES }
+const FACTS: HostGameFacts = { tags: EIGHT_TAGS, notes: notesFromLines(NOTES.split('\n')) }
 
 let wrapper: VueWrapper | undefined
 
@@ -76,7 +77,7 @@ describe('the game dialog for the Host (#443)', () => {
   })
 
   it('keeps the Notes\' line breaks and renders them as text, not as markup or links', async () => {
-    await open({ facts: { tags: [], notes: 'Zeile eins\nZeile <b>zwei</b>\nhttps://example.com/x' } })
+    await open({ facts: { tags: [], notes: notesFromLines(['Zeile eins', 'Zeile <b>zwei</b>', 'https://example.com/x']) } })
 
     const notes = [...dialog().querySelectorAll('p')].find(p => p.textContent?.includes('Zeile eins'))!
     expect(notes.textContent).toBe('Zeile eins\nZeile <b>zwei</b>\nhttps://example.com/x')
@@ -139,10 +140,10 @@ describe('the game dialog for the Host (#443)', () => {
     expect(link()).not.toBeNull()
   })
 
-  it('holds the longest name allowed, without spaces, and 1000-character Notes', async () => {
+  it('holds the longest name allowed, without spaces, and 2000-character Notes', async () => {
     const name = 'x'.repeat(GAME_NAME_MAX)
     const notes = 'n'.repeat(GAME_NOTES_MAX - 1) + 'z'
-    await open({ game: { ...FULL, name }, facts: { tags: [], notes } })
+    await open({ game: { ...FULL, name }, facts: { tags: [], notes: notesFromLines([notes]) } })
 
     expect(dialog().querySelector('h2')?.textContent).toBe(name)
     expect(dialog().querySelector('h2')?.className).toContain('[overflow-wrap:anywhere]')
