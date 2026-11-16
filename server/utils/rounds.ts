@@ -1,4 +1,4 @@
-import { eq } from 'drizzle-orm'
+import { and, eq } from 'drizzle-orm'
 import { draws, events, games, rounds, vetoes } from '../db/schema'
 import { WHEEL_PLACEHOLDERS, drawSpin } from '../domain/wheel'
 import type { RoundSpun, VetoCast } from '../../shared/stage'
@@ -66,7 +66,7 @@ export async function setNextGame({ tx, eventRow, user, publish, now }: ChangeCo
   if (rejection) throw apiError(rejection)
   // The rules above refused an Event without settings. Host pick has no Vetoes (spec #218 § Vetoes).
   if (vetoAllowed && !hasWheel(state.settings!.selectionMode)) throw apiError('no_wheel')
-  const [game] = await tx.select({ id: games.id, youtubeId: games.youtubeId, clipLength: games.clipLength }).from(games).where(eq(games.id, gameId))
+  const [game] = await tx.select({ id: games.id, youtubeId: games.youtubeId, clipLength: games.clipLength }).from(games).where(and(eq(games.id, gameId), eq(games.createdBy, eventRow.hostId)))
   if (!game) throw apiError('unknown_game')
   const roundRows = roundRowsOf(state)
   // A retried „Setzen“ would open a second Round of the same game, and a vetoed game stays vetoed, library or pool (review 0.7, F14).

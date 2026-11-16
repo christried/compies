@@ -63,7 +63,7 @@ export async function applySettingsChange(
   else if (before === null) throw apiError('invalid_settings')
   else after = before
 
-  if (pool !== undefined) await assertGamesExist(tx, pool)
+  if (pool !== undefined) await assertGamesExist(tx, eventRow.hostId, pool)
   if (change !== undefined) await tx.update(events).set(after).where(eq(events.id, eventRow.id))
   if (pool !== undefined) {
     await tx.delete(eventPoolGames).where(eq(eventPoolGames.eventId, eventRow.id))
