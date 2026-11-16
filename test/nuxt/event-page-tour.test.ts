@@ -106,6 +106,25 @@ async function click(label: string) {
   button(label).click()
   await flushPromises()
 }
+/** The texts of the step shown: its title and its text. */
+const stepText = () => ({ title: tourTitle(), text: tour()?.querySelector('p')?.textContent?.trim() ?? '' })
+/** Goes on with „Weiter“ to the last step. */
+async function walk() {
+  while (button('Weiter')) await click('Weiter')
+}
+/** The titles of the whole run, from the step shown, walked with „Weiter“; the texts of each in `seen`. */
+async function titles(seen: { title?: string, text: string }[] = []) {
+  seen.push(stepText())
+  while (button('Weiter')) {
+    await click('Weiter')
+    seen.push(stepText())
+  }
+  return seen.map(step => step.title)
+}
+/** The step's count, „3 von 8“. */
+const count = () => [...tour()!.querySelectorAll('span')].map(element => element.textContent?.trim()).find(text => /^\d+ von \d+$/.test(text ?? ''))
+/** The window's width as `documentElement.clientWidth` says it (happy-dom has no layout). */
+const windowWidth = (width: number) => Object.defineProperty(document.documentElement, 'clientWidth', { configurable: true, get: () => width })
 const pressEscape = () => document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }))
 const stored = () => useAuthUser().value?.tourSeen
 
@@ -151,14 +170,14 @@ describe('the start', () => {
     expect(tour()!.getAttribute('aria-modal')).toBe('true')
   })
 
-  it('goes on to the head and the end with „Weiter“ and is over with „Fertig“: seen at once, saved in the background', async () => {
+  it('goes on to the end with „Weiter“ and is over with „Fertig“: seen at once, saved in the background', async () => {
     const { slug } = serveEvent()
     await mount(slug)
     await shown()
 
     await click('Weiter')
     expect(tourTitle()).toBe('Das Event')
-    await click('Weiter')
+    await walk()
     expect(tourTitle()).toBe('Das war’s')
     await click('Fertig')
 
@@ -252,12 +271,13 @@ describe('the run on the page (#460)', () => {
     await vi.waitFor(() => expect(spotlight().style.width).toBe('316px'))
     expect([spotlight().style.left, spotlight().style.top, spotlight().style.height]).toEqual(['32px', '12px', '96px'])
     expect(tourTitle()).toBe('Das Event')
-    await click('Weiter')
+    await walk()
     expect(tourTitle()).toBe('Das war’s')
     await vi.waitFor(() => expect(spotlight().style.width).toBe('2px'))
   })
 
-  it('has no head step on the phone\'s Standings view: the run is the greeting and the end', async () => {
+  it('has no head step on the phone\'s Standings view: the run is the greeting, the tab bar, the sound button and the end (#648)', async () => {
+    windowWidth(390)
     stubScreen(false)
     const { slug } = serveEvent()
     await mount(slug)
@@ -267,10 +287,8 @@ describe('the run on the page (#460)', () => {
     expect(page!.find('[data-tour="head"]').exists()).toBe(false)
 
     await shown()
-    expect(tourTitle()).toBe('Willkommen!')
-    await click('Weiter')
 
-    expect(tourTitle()).toBe('Das war’s')
+    expect(await titles()).toEqual(['Willkommen!', 'Aktivität', 'Ton', 'Das war’s'])
   })
 
   it('marks the Host\'s head the same way, so the marker is the page\'s and not the Tour\'s', async () => {
@@ -299,6 +317,112 @@ describe('the run on the page (#460)', () => {
 
     expect(tour()).toBeNull()
     expect(gsapRequests.asked).not.toHaveBeenCalled()
+  })
+})
+
+// The steps after the head (#648): the Date poll, the Game board with its three texts, „So wird gespielt“, the Aktivität panel (the tab on a phone) and the
+// sound button. Each Phase of the Event has its own run, walked with „Weiter“ as a Member reads it.
+describe('the stations of the run (#648)', () => {
+  const ENDED = '2026-10-30T22:12:00.000Z'
+  const joined = (slug: string) => `https://compies.test/join/${slug}`
+  /** An Event with its settings and two teams, as a set-up Event reads. */
+  const setUp = { settings: defaultSettings(), teams: [team(1), team(2)], members: members() }
+  const pollSetUp = (slug: string, overrides: Parameters<typeof view>[2] = {}): Read => view(slug, [], { event: { phase: 'poll', isHost: false }, inviteUrl: joined(slug), ...setUp, ...overrides })
+  const dateSet = (slug: string): Read => viewWithSessions(slug, [{ number: 1, startsAt: FIRST }], 0, { event: { phase: 'date_set', isHost: false }, teamChoiceOpen: true, ...setUp })
+  const between = (slug: string, more: { number: number | null, startsAt: string | null }[] = []): Read => viewWithSessions(slug, [{ number: 1, startsAt: FIRST, startedAt: STARTED, endedAt: ENDED }, ...more], more.length, {
+    event: { phase: 'running', isHost: false },
+    runningSessionId: null,
+    ...setUp,
+  })
+
+  async function run(build: (slug: string) => Read) {
+    const { slug } = serveEvent(build)
+    await mount(slug)
+    await shown()
+    const seen: { title?: string, text: string }[] = []
+    const found = await titles(seen)
+    return { titles: found, texts: seen.map(step => step.text) }
+  }
+
+  it('walks the poll Phase: the poll, the Game board, „So wird gespielt“, the panel and the sound button, eight steps in all', async () => {
+    const { slug } = serveEvent(pollSetUp)
+    await mount(slug)
+    await shown()
+    expect(count()).toBe('1 von 8')
+    const seen: { title?: string, text: string }[] = []
+    const found = await titles(seen)
+    const texts = seen.map(step => step.text)
+
+    expect(found).toEqual(['Willkommen!', 'Das Event', 'Terminumfrage', 'Spielbrett', 'So wird gespielt', 'Aktivität', 'Ton', 'Das war’s'])
+    expect(texts[2]).toContain('Ja, Meh oder Nein')
+    expect(texts[3]).toContain('Dein Team wählst du')
+    expect(texts[4]).not.toMatch(/\d/)
+    expect(texts[5]).toBe('Hier steht, was im Event passiert: wer beigetreten ist, welche Spiele drankommen und wie sie ausgehen.')
+    expect(texts[6]).toBe('Hier schaltest du den Ton an oder aus.')
+    expect(count()).toBe('8 von 8')
+  })
+
+  it('has no „So wird gespielt“ step for an Event without settings', async () => {
+    const { titles: found } = await run(slug => poll(slug))
+
+    expect(found).toEqual(['Willkommen!', 'Das Event', 'Terminumfrage', 'Spielbrett', 'Aktivität', 'Ton', 'Das war’s'])
+  })
+
+  it('has no poll step for an Event without an open Slot', async () => {
+    const { titles: found } = await run(slug => pollSetUp(slug, { slots: [] }))
+
+    expect(found).not.toContain('Terminumfrage')
+    expect(found).toContain('Spielbrett')
+  })
+
+  it('has no poll step once the Date is set, and the Game board then says the choice is open', async () => {
+    const { titles: found, texts } = await run(dateSet)
+
+    expect(found).toEqual(['Willkommen!', 'Das Event', 'Spielbrett', 'So wird gespielt', 'Aktivität', 'Ton', 'Das war’s'])
+    expect(texts[2]).toContain('Such dir jetzt ein Team aus')
+  })
+
+  it('says between two Sessions that the teams are fixed since the start', async () => {
+    const { titles: found, texts } = await run(slug => between(slug))
+
+    expect(found).toContain('Spielbrett')
+    expect(texts[found.indexOf('Spielbrett')]).toContain('Die Teams stehen seit dem Start fest')
+    expect(found).not.toContain('Terminumfrage')
+  })
+
+  it('keeps the poll step between two Sessions while another Session waits for its Date', async () => {
+    const { titles: found } = await run(slug => between(slug, [{ number: null, startsAt: null }]))
+
+    expect(found).toContain('Terminumfrage')
+    expect(found).toContain('Spielbrett')
+  })
+
+  it('has the tab bar\'s step on a phone in place of the panel\'s', async () => {
+    windowWidth(390)
+    stubScreen(false)
+    const { titles: found, texts } = await run(pollSetUp)
+
+    expect(found).toEqual(['Willkommen!', 'Das Event', 'Terminumfrage', 'Spielbrett', 'So wird gespielt', 'Aktivität', 'Ton', 'Das war’s'])
+    expect(texts[5]).toContain('Unten findest du den Reiter')
+  })
+
+  it('points the phone\'s poll step at the first card: the hole is its rect plus 6 px', async () => {
+    windowWidth(390)
+    stubScreen(false)
+    const { slug } = serveEvent(pollSetUp)
+    await mount(slug)
+    await shown()
+    // happy-dom has no layout: the tab bar stands at the window's bottom, so the hole is not clipped to nothing.
+    ;(page!.get('[data-tour-edge="tabs"]').element as HTMLElement).getBoundingClientRect = () => ({ left: 0, top: 700, width: 390, height: 68, x: 0, y: 700, right: 390, bottom: 768, toJSON() {} }) as DOMRect
+    const card = page!.get('[data-tour="poll-card"]').element as HTMLElement
+    card.getBoundingClientRect = () => ({ left: 14, top: 300, width: 200, height: 100, x: 14, y: 300, right: 214, bottom: 400, toJSON() {} }) as DOMRect
+
+    await click('Weiter')
+    await click('Weiter')
+
+    expect(tourTitle()).toBe('Terminumfrage')
+    const hole = document.querySelector<HTMLElement>('[data-tour-spotlight]')!
+    await vi.waitFor(() => expect([hole.style.left, hole.style.width, hole.style.height]).toEqual(['8px', '212px', '112px']))
   })
 })
 

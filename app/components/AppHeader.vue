@@ -75,6 +75,7 @@ const user = useAuthUser()
 
       <AppearanceMenu />
       <IconButton
+        data-tour="sound"
         :icon="sound.enabled.value ? Volume2 : VolumeX"
         :label="t('common.sound')"
         :pressed="sound.enabled.value"

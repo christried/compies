@@ -17,6 +17,8 @@ export interface TabBarItem {
   /** The accessible name when the visible label is not all of it. */
   ariaLabel?: string
   description?: string
+  /** The `data-tour` value the Tour points at (#648): the Event page's Activity item. */
+  tour?: string
 }
 
 defineProps<{
@@ -43,6 +45,7 @@ const NuxtLink = resolveComponent('NuxtLink')
       :aria-current="item.current ? 'page' : undefined"
       :aria-label="item.ariaLabel"
       :aria-description="item.description"
+      :data-tour="item.tour"
       class="relative -mt-0.5 flex h-[58px] cursor-pointer flex-col items-center justify-center gap-[3px] border-t-3 bg-transparent text-[11px] text-inherit no-underline hover:tint"
       :class="item.current ? 'border-ink font-extrabold text-ink' : 'border-transparent font-semibold text-ink-2'"
       @click="emit('select', item.key)"

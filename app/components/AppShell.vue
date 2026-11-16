@@ -70,8 +70,11 @@ const user = useAuthUser()
         <PageFooter :class="user && 'max-md:hidden'" />
       </div>
 
+      <!-- `data-tour` and `data-tour-edge` (#648): the Tour's panel step. The panel is sticky chrome: the Tour does not scroll to it and its hole is flush with the header. -->
       <aside
         v-if="$slots.panel"
+        data-tour="panel"
+        data-tour-edge="panel"
         :aria-label="t('app.sidePanel')"
         class="sticky top-[calc(var(--cp-header-h)+var(--cp-bw))] hidden h-[calc(100dvh-var(--cp-header-h)-var(--cp-bw))] w-panel flex-none flex-col self-start border-l-(length:--cp-bw) border-line bg-surface md:flex"
       >

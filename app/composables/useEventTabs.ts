@@ -51,6 +51,8 @@ export function useEventTabs(room: Pick<ReturnType<typeof useEventRoom>, 'on'>) 
     if (tab.key !== COUNTING_TAB) return item
     return {
       ...item,
+      // The Tour's step „Aktivität“ points at this item on a phone (#648).
+      tour: 'tab-activity',
       badge: activeView.value === COUNTING_TAB ? 0 : unread.value,
       ariaLabel: activeView.value !== COUNTING_TAB && unread.value > 0 ? t('event.tabs.unread', { label: item.label, n: unread.value }) : undefined,
     }

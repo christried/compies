@@ -42,6 +42,7 @@ function move(event: KeyboardEvent) {
         :key="tab.key"
         type="button"
         role="tab"
+        :data-tour-anchor="`tab-${tab.key}`"
         :aria-selected="tab.key === current"
         :aria-controls="panelId(tab.key)"
         :tabindex="tab.key === current ? 0 : -1"
