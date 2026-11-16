@@ -1,6 +1,8 @@
 import { mountSuspended, registerEndpoint } from '@nuxt/test-utils/runtime'
 import { flushPromises, type VueWrapper } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { createSSRApp, h, Suspense } from 'vue'
+import { renderToString } from 'vue/server-renderer'
 import ClipOverlay from '~/components/ClipOverlay.vue'
 import HostDock from '~/components/HostDock.vue'
 import VetoBar from '~/components/VetoBar.vue'
@@ -304,5 +306,105 @@ describe('the backdrop behind the clip (#587)', () => {
 
     await vi.waitFor(() => expect(backdrop()).not.toBeNull())
     expect(covered(header())).toBe(true)
+  })
+
+  // #699: a hard load paints the server's HTML. The tests above look at the page after the overlay has said it shows (its `shown` emit lands
+  // after the first render), so they stayed green while the HTML had the Clip and neither the backdrop nor an `inert`. These render the page
+  // to a string, as the server does (`renderToString` on an SSR app that carries the Nuxt test app's providers), and read that string.
+  describe('on the first render, which is the server render (#699)', () => {
+    async function renderOnServer(slug: string): Promise<HTMLElement> {
+      const nuxtApp = useNuxtApp()
+      const app = createSSRApp({ render: () => h(Suspense, null, { default: () => h(EventPage, { slug }) }) })
+      const context = nuxtApp.vueApp
+      Object.assign(app._context.provides, context._context.provides)
+      Object.assign(app._context.components, context._context.components)
+      Object.assign(app._context.directives, context._context.directives)
+      app.config.globalProperties = context.config.globalProperties
+      // The i18n plugin and the Nuxt app find themselves by properties of the app, which a new app does not have.
+      for (const key of [...Object.getOwnPropertyNames(context), ...Object.getOwnPropertySymbols(context)]) {
+        if (typeof key === 'symbol' || key.startsWith('__VUE_I18N') || key === '$nuxt') Object.assign(app, { [key]: (context as unknown as Record<string | symbol, unknown>)[key] })
+      }
+      const root = document.createElement('div')
+      root.innerHTML = await renderToString(app)
+      return root
+    }
+    const covers = (root: Element, selector: string) => {
+      const element = root.querySelector(selector)
+      expect(element, selector).not.toBeNull()
+      return element!.closest('[inert]') !== null
+    }
+    const labelled = (element: Element) => element.getAttribute('aria-label') ?? element.textContent?.trim()
+    const litIn = (root: Element) => [...root.querySelectorAll(FOCUSABLE)].filter(element => element.closest('[inert]') === null)
+
+    /** The regions the backdrop covers (AppShell's `covered`), the banner's wrapper under the header included. */
+    function expectCovered(root: HTMLElement) {
+      expect(root.querySelectorAll('[data-testid="clip-backdrop"]')).toHaveLength(1)
+      for (const region of ['a[href="#stage"]', 'header', 'main', 'aside', 'nav[aria-label="Event"]']) expect(covers(root, region), region).toBe(true)
+      expect(root.querySelector('header')!.nextElementSibling!.closest('[inert]')).not.toBeNull()
+    }
+
+    it('has the backdrop and the covered regions inert for the Host, with the clip, its buttons and the dock lit', async () => {
+      const { slug } = serveRunning({ host: true, clip: runningClip() })
+      const root = await renderOnServer(slug)
+
+      expectCovered(root)
+      const section = root.querySelector('section[aria-label="Clip: Kart"]')
+      expect(section).not.toBeNull()
+      expect(section!.closest('[inert]')).toBeNull()
+      const lit = litIn(root).map(labelled)
+      expect(lit).toContain('Clip überspringen')
+      expect(lit).toContain('Für mich schließen')
+      const dock = root.querySelector('[role="toolbar"]')
+      expect(dock).not.toBeNull()
+      expect(dock!.closest('[inert]')).toBeNull()
+    })
+
+    it('has the same for a Player of a Party, with no skip and no dock', async () => {
+      const { slug } = serveRunning({ host: false, clip: runningClip(), wheel: openWindow() })
+      const root = await renderOnServer(slug)
+
+      expectCovered(root)
+      expect(root.querySelector('section[aria-label="Clip: Kart"]')!.closest('[inert]')).toBeNull()
+      // The Veto bar opens with the page's server clock, which the server's HTML does not have (useVetoClock): it comes in after the
+      // first render, outside the covered regions (the Player's test above, on the mounted page). Whatever the HTML lights is the clip's.
+      const lit = litIn(root).map(labelled)
+      expect(lit).toContain('Für mich schließen')
+      expect(lit).not.toContain('Clip überspringen')
+      expect(root.querySelector('[role="toolbar"]')).toBeNull()
+    })
+
+    it('has the same for a Member on the Stands, with only the clip\'s own button lit', async () => {
+      const { slug } = serveRunning({ host: false, clip: runningClip(), wheel: idleWheel })
+      const root = await renderOnServer(slug)
+
+      expectCovered(root)
+      expect(root.querySelector('[data-testid="veto-bar"]')).toBeNull()
+      expect(litIn(root).map(labelled)).toEqual(['Für mich schließen'])
+    })
+
+    it('has no backdrop and nothing inert without a clip', async () => {
+      for (const host of [true, false]) {
+        const { slug } = serveRunning({ host, clip: null })
+        const root = await renderOnServer(slug)
+
+        expect(root.querySelector('[data-testid="clip-backdrop"]')).toBeNull()
+        expect(root.querySelectorAll('[inert]')).toHaveLength(0)
+      }
+    })
+
+    it('has the backdrop for a clip whose end has passed since the read, and the page lets it go at its first sample', async () => {
+      const now = Date.now()
+      const clip: ClipView = { drawId: 'd1', startAt: new Date(now - 30_000).toISOString(), endsAt: new Date(now - 200).toISOString(), game: kart }
+      const { slug } = serveRunning({ host: false, clip })
+
+      // The server never ends a clip by itself (ADR 0013): this read still carries it, so the HTML shows it with its backdrop.
+      const root = await renderOnServer(slug)
+      expectCovered(root)
+
+      // The device that takes this HTML starts the same way and drops the backdrop with the clip, at the ticker's first sample.
+      page = await mountSuspended(EventPage, { route: `/e/${slug}` })
+      await vi.waitFor(() => expect(backdrop()).toBeNull(), { timeout: 3000 })
+      expect(covered(header())).toBe(false)
+    })
   })
 })
