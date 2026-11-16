@@ -1,9 +1,10 @@
-import { and, eq, inArray } from 'drizzle-orm'
+import { and, count, eq, inArray, isNull } from 'drizzle-orm'
 import type { H3Event } from 'h3'
 import type { EventView } from '../../shared/event'
 import { canSeeLibrary, type GamePrice, type GamePriceInput, type GameTag, type GameView, type HostGameFacts, type PoolGame, type PoolGameFace, type RoundGame } from '../../shared/game'
 import type { AuthUser } from '../../shared/auth'
-import { games } from '../db/schema'
+import { beforeFinish, PHASES } from '../../shared/phase'
+import { eventPoolGames, events, games } from '../db/schema'
 import { isUuid } from '../domain/uuid'
 import type { Db } from './db'
 import { apiError, apiNotFound } from './errors'
@@ -141,4 +142,20 @@ export async function readHostGameFacts(db: Db, ids: string[]): Promise<Record<s
     db.select({ id: games.id, notes: games.notes }).from(games).where(inArray(games.id, ids)),
   ])
   return Object.fromEntries(rows.map(row => [row.id, { tags: tags.get(row.id) ?? [], notes: row.notes }]))
+}
+
+/**
+ * How many of the Host's live Events hold each game in their Game pool (#733, „in 2 Events“ on the library card). Live is an Event that has not
+ * finished (`beforeFinish`) and is not deleted; the rule is the pool row alone, so a game a Round or a Draw set but the pool lost does not count, and an
+ * archived game keeps its count (#725 leaves its pool rows). Only the Host's own Events (ADR 0018: a pool row of another Host's Event is a leftover of the
+ * 0.15 code). One grouped statement, whatever the number of games. Only games with a count above 0 have a key.
+ */
+export async function liveEventCounts(db: Db, hostId: string): Promise<Record<string, number>> {
+  const rows = await db
+    .select({ gameId: eventPoolGames.gameId, n: count() })
+    .from(eventPoolGames)
+    .innerJoin(events, eq(events.id, eventPoolGames.eventId))
+    .where(and(eq(events.hostId, hostId), isNull(events.deletedAt), inArray(events.phase, PHASES.filter(beforeFinish))))
+    .groupBy(eventPoolGames.gameId)
+  return Object.fromEntries(rows.map(row => [row.gameId, Number(row.n)]))
 }

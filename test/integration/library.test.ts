@@ -176,7 +176,7 @@ describe('the Game library API (#141)', () => {
     it('is empty without games', async () => {
       const cookie = await cookieOf(host)
 
-      expect(await (await list(cookie)).json()).toEqual({ games: [], tagsInUse: [] })
+      expect(await (await list(cookie)).json()).toEqual({ games: [], tagsInUse: [], eventCounts: {} })
     })
 
     it('orders by name, ignoring case', async () => {
