@@ -1,4 +1,4 @@
-import { mountSuspended, registerEndpoint } from '@nuxt/test-utils/runtime'
+import { mockNuxtImport, mountSuspended, registerEndpoint } from '@nuxt/test-utils/runtime'
 import { flushPromises } from '@vue/test-utils'
 import { createError, readBody } from 'h3'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -13,7 +13,18 @@ import { members, team } from './event-page-states'
 
 // The Tour on the Event page (#647, spec #622, ADR 0017): it starts for a Member who has not seen it, after the page has been calm for a second,
 // and ends unseen when the page stops being calm. The page behind takes no input while it shows. Finishing or skipping counts as seen at once
-// and is saved in the background. The calm second is a real one.
+// and is saved in the background. The calm second is a real one. A Member's run is the greeting, the head of the page and the end (#460); the phone's
+// Standings view has no head, and Compibert's face loads GSAP only while the Tour shows (ADR 0015, ADR 0017).
+
+// GSAP is requested through `loadGsap` (its own chunk): the request is what the page is pinned to, not what the rig does with it.
+const gsapRequests = vi.hoisted(() => ({ asked: vi.fn() }))
+mockNuxtImport('loadGsap', async () => {
+  const { loadGsap: real } = await vi.importActual<typeof import('~/utils/gsap')>('~/utils/gsap')
+  return async () => {
+    gsapRequests.asked()
+    return real()
+  }
+})
 
 const FIRST = '2026-10-30T19:00:00.000Z'
 const STARTED = '2026-10-30T19:34:00.000Z'
@@ -87,8 +98,8 @@ async function past() {
   await flushPromises()
 }
 
-/** The Tour's box: the dialog on the popover layer (a sheet's dialog is teleported and has no such layer). */
-const tour = () => document.querySelector<HTMLElement>('.layer-popover [role="dialog"]')
+/** The Tour's box: the dialog in the Tour's layer (a sheet's dialog is teleported and is not in it). */
+const tour = () => document.querySelector<HTMLElement>('[data-tour-layer] [role="dialog"]')
 const tourTitle = () => tour()?.querySelector('h2')?.textContent?.trim()
 const button = (label: string) => [...(tour()?.querySelectorAll('button') ?? [])].find(element => element.textContent?.trim() === label)!
 async function click(label: string) {
@@ -98,15 +109,28 @@ async function click(label: string) {
 const pressEscape = () => document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }))
 const stored = () => useAuthUser().value?.tourSeen
 
+const realWidth = Object.getOwnPropertyDescriptor(document.documentElement, 'clientWidth')
+const ownAnimate = Element.prototype.animate
+
 beforeEach(() => {
   signInAs({ ...kitty, tourSeen: 0 })
   stubScreen(true)
   saves.posts = []
   saves.fail = false
+  gsapRequests.asked.mockClear()
   useState('open-layers').value = 0
+  // The motion is pinned in tour-layer.test.ts: without `Element.animate` (happy-dom has one of its own, with real durations) a step changes at once and
+  // the layer is gone as soon as the page closes it.
+  Reflect.deleteProperty(Element.prototype, 'animate')
+  // happy-dom has no layout: a window 1024 px wide, as `innerWidth` says.
+  Object.defineProperty(document.documentElement, 'clientWidth', { configurable: true, get: () => 1024 })
 })
 
 afterEach(() => {
+  Element.prototype.animate = ownAnimate
+  vi.restoreAllMocks()
+  if (realWidth) Object.defineProperty(document.documentElement, 'clientWidth', realWidth)
+  else Reflect.deleteProperty(document.documentElement, 'clientWidth')
   page?.unmount()
   page = undefined
   restoreScreen()
@@ -127,11 +151,13 @@ describe('the start', () => {
     expect(tour()!.getAttribute('aria-modal')).toBe('true')
   })
 
-  it('goes on to the end with „Weiter“ and is over with „Fertig“: seen at once, saved in the background', async () => {
+  it('goes on to the head and the end with „Weiter“ and is over with „Fertig“: seen at once, saved in the background', async () => {
     const { slug } = serveEvent()
     await mount(slug)
     await shown()
 
+    await click('Weiter')
+    expect(tourTitle()).toBe('Das Event')
     await click('Weiter')
     expect(tourTitle()).toBe('Das war’s')
     await click('Fertig')
@@ -205,6 +231,74 @@ describe('the start', () => {
     await shown()
 
     expect(tourTitle()).toBe('Willkommen!')
+  })
+})
+
+describe('the run on the page (#460)', () => {
+  const spotlight = () => document.querySelector<HTMLElement>('[data-tour-spotlight]')!
+
+  it('points at the head of the page on its second step: the hole is its rect plus 8 px, and the page is dark on the greeting', async () => {
+    const { slug } = serveEvent()
+    await mount(slug)
+    await shown()
+    expect([spotlight().style.width, spotlight().style.height]).toEqual(['2px', '2px'])
+
+    // From md up the phone's tab bar is `display: none`: happy-dom has no CSS to say so.
+    ;(page!.get('[data-tour-edge="tabs"]').element as HTMLElement).checkVisibility = () => false
+    const head = page!.get('[data-tour="head"]').element as HTMLElement
+    head.getBoundingClientRect = () => ({ left: 40, top: 20, width: 300, height: 80, x: 40, y: 20, right: 340, bottom: 100, toJSON() {} }) as DOMRect
+    await click('Weiter')
+
+    await vi.waitFor(() => expect(spotlight().style.width).toBe('316px'))
+    expect([spotlight().style.left, spotlight().style.top, spotlight().style.height]).toEqual(['32px', '12px', '96px'])
+    expect(tourTitle()).toBe('Das Event')
+    await click('Weiter')
+    expect(tourTitle()).toBe('Das war’s')
+    await vi.waitFor(() => expect(spotlight().style.width).toBe('2px'))
+  })
+
+  it('has no head step on the phone\'s Standings view: the run is the greeting and the end', async () => {
+    stubScreen(false)
+    const { slug } = serveEvent()
+    await mount(slug)
+    const tabs = [...page!.get('nav[aria-label="Event"]').element.querySelectorAll('button')]
+    tabs.find(item => item.textContent?.trim() === 'Tabelle')!.click()
+    await flushPromises()
+    expect(page!.find('[data-tour="head"]').exists()).toBe(false)
+
+    await shown()
+    expect(tourTitle()).toBe('Willkommen!')
+    await click('Weiter')
+
+    expect(tourTitle()).toBe('Das war’s')
+  })
+
+  it('marks the Host\'s head the same way, so the marker is the page\'s and not the Tour\'s', async () => {
+    const { slug } = serveEvent(s => poll(s, true))
+    await mount(slug)
+
+    expect(page!.find('[data-tour="head"]').exists()).toBe(true)
+  })
+
+  it('requests GSAP only once the Tour shows: not before the calm second, not at all for a Member who has seen it', async () => {
+    const { slug } = serveEvent()
+    await mount(slug)
+    await sleep(TOUR_CALM_MS / 2)
+    expect(gsapRequests.asked).not.toHaveBeenCalled()
+
+    await shown()
+    await vi.waitFor(() => expect(gsapRequests.asked).toHaveBeenCalled())
+  })
+
+  it('requests no GSAP on a page whose Member has seen the Tour', async () => {
+    signInAs(kitty)
+    const { slug } = serveEvent()
+    await mount(slug)
+
+    await past()
+
+    expect(tour()).toBeNull()
+    expect(gsapRequests.asked).not.toHaveBeenCalled()
   })
 })
 

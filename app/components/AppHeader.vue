@@ -7,6 +7,7 @@ import type { EventContext } from '~/utils/event-page'
 // Full-width pages (sign-in, setup) stretch the header edge to edge, so the logo sits at the left edge.
 // `accessory` is the head's party hat on the Event page (#38); the hub and the other pages pass none.
 // `event` is the Event the nav's current tab names (kind `event` only).
+// `data-tour-edge` (#460) marks sticky chrome the Tour never scrolls: the header's bottom edge is the top of the usable area.
 defineProps<{ kind: 'hub' | 'event' | 'bare', flush?: boolean, accessory?: 'partyhat', event?: EventContext }>()
 
 const { t } = useI18n()
@@ -15,7 +16,10 @@ const user = useAuthUser()
 </script>
 
 <template>
-  <header class="sticky top-0 layer-header flex-none border-b-(length:--cp-bw) border-line bg-surface">
+  <header
+    data-tour-edge="header"
+    class="sticky top-0 layer-header flex-none border-b-(length:--cp-bw) border-line bg-surface"
+  >
     <div
       class="flex h-14 flex-nowrap items-center gap-3 px-3.5 md:h-header"
       :class="flush ? 'w-full' : 'mx-auto max-w-shell'"

@@ -1,13 +1,30 @@
 import { describe, expect, it } from 'vitest'
-import { MEMBER_TOUR, TOUR_CALM_MS, TOUR_VERSION, tourMayStart, tourMove, tourRun, type TourPage, type TourStartInput, type TourStep } from '../../shared/tour'
+import { MEMBER_TOUR, TOUR_CALM_MS, TOUR_VERSION, tourMayStart, tourFace, tourMove, tourRun, type TourPage, type TourStartInput, type TourStep } from '../../shared/tour'
 
 // The Tour's pure rules (#647, ADR 0017): which steps a run holds for the page it opens on, when it may start, and how a step moves.
 
 const page: TourPage = { phase: 'poll', role: 'member', present: new Set<string>(), wide: true }
 
 describe('tourRun', () => {
-  it('gives the Member\'s tour greeting and end, which point at nothing', () => {
+  it('gives the Member\'s tour greeting and end when the head is not on the page (the phone\'s Standings view has none)', () => {
     expect(tourRun(MEMBER_TOUR, page).map(step => step.id)).toEqual(['greeting', 'end'])
+  })
+
+  it('gives the Member\'s tour greeting, head and end when the head is on the page (#460)', () => {
+    expect(tourRun(MEMBER_TOUR, { ...page, present: new Set(['head']) }).map(step => step.id)).toEqual(['greeting', 'head', 'end'])
+  })
+
+  it('has the face each step shows: hello, points at a thing, cheers at the end (#460)', () => {
+    const faces = Object.fromEntries(MEMBER_TOUR.map(step => [step.id, tourFace(step)]))
+
+    expect(faces).toEqual({ greeting: 'hello', head: 'points', end: 'cheers' })
+  })
+
+  it('lets a step choose its face and defaults to pointing when it has a target, else hello', () => {
+    expect(tourFace({ id: 'a', target: 'board' })).toBe('points')
+    expect(tourFace({ id: 'b', target: null })).toBe('hello')
+    expect(tourFace({ id: 'c', target: null, face: 'cheers' })).toBe('cheers')
+    expect(tourFace({ id: 'd', target: 'board', face: 'hello' })).toBe('hello')
   })
 
   const steps: TourStep[] = [
