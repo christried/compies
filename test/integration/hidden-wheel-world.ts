@@ -116,7 +116,7 @@ export const EXPECTED_STATUS: Readonly<Record<string, Readonly<Record<string, nu
   '/api/games/tags': answers(404, 404, 200),
   // Reads `events`, no viewer.
   '/api/health': answers(200, 200, 200),
-  // `canSeeImage`: the Host always; a Member only for a game a Round set or a draw stopped on (`seen`, below).
+  // `canSeeImage`: the game's owner always (the Host owns every swept game); a Member only for a game a Round set or a draw stopped on (`seen`, below).
   '/api/images/:key': answers(404, 404, 200),
   // Needs a signed room call: every refusal is the same 401, whatever the cookie.
   '/api/internal/deploy-check': answers(401, 401, 401),
