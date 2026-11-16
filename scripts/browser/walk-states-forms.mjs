@@ -69,6 +69,15 @@ async function openInfo(tab) {
   await until(tab, `!!document.querySelector('[role=dialog]')`, 'the Info sheet')
 }
 
+/**
+ * A save navigates on after its toast (the game's page, the Event page): the reading waits until the new page is there and nothing on it is loading, so no text node it
+ * measures is gone on the way (measured: the full walk's F7 read the Event page while it was still replacing the form, #630).
+ */
+async function landed(tab, path) {
+  await until(tab, `location.pathname === ${JSON.stringify(path)} && !!document.querySelector('h1') && !document.querySelector('[aria-busy="true"], .animate-pulse')`, 'the page after the save', 30_000)
+  await sleep(500)
+}
+
 /** The create stepper's library step: waits for the first cards and takes the auto-load sentinel away (rule 6 of the brief). */
 async function libraryLoaded(tab) {
   await until(tab, `!!document.querySelector('button[aria-label*="in den Pool"]')`, 'the library in the pool step', 30_000)
@@ -154,6 +163,7 @@ export const STATES = [
       await keepToasts(ctx.tab)
       if (!await clickText(ctx.tab, 'button[type=submit]', COPY.gameEdit.saveChanges)) throw new Error('no save button on the edit form')
       await toastShown(ctx.tab, COPY.library.saveDone)
+      await landed(ctx.tab, `/bibliothek/${ctx.data.game.id}`)
     },
   }),
 
@@ -248,6 +258,7 @@ export const STATES = [
       await keepToasts(tab)
       await stepperNext(tab)
       await toastShown(tab, COPY.eventSettings.saved)
+      await landed(tab, `/e/${ctx.data.slug}`)
     },
   }),
 
