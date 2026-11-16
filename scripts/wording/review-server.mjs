@@ -16,7 +16,7 @@ import { checkRecording, progressOf, stepsOf } from './review-model.mjs'
 
 /** @typedef {import('./answers.mjs').AnswersFile} AnswersFile */
 /** @typedef {import('./review-model.mjs').Step} Step */
-/** @typedef {{ answersPath: string, answersName: string, baselineName: string | null, progress: { total: number, done: number, left: number } }} ReviewInfo */
+/** @typedef {{ answersPath: string, answersName: string, baselineName: string | null, answerProblems: string[], hasUnused: boolean, progress: { total: number, done: number, left: number } }} ReviewInfo */
 
 const HERE = dirname(fileURLToPath(import.meta.url))
 const ROOT = join(HERE, '../..')
@@ -85,7 +85,7 @@ function loadModel(recordingDir, localePath) {
     recording = JSON.parse(readFileSync(recordingPath, 'utf8'))
   }
   catch (error) {
-    throw new Error(`recording.json ist kein gültiges JSON: ${error instanceof Error ? error.message : String(error)}`)
+    throw new Error(`recording.json ist kein gültiges JSON: ${error instanceof Error ? error.message : String(error)}`, { cause: error })
   }
   const problems = checkRecording(recording)
   if (problems.length > 0) {
@@ -102,7 +102,7 @@ function loadModel(recordingDir, localePath) {
       unused = JSON.parse(readFileSync(unusedPath, 'utf8'))
     }
     catch (error) {
-      throw new Error(`unused.json ist kein gültiges JSON: ${error instanceof Error ? error.message : String(error)}`)
+      throw new Error(`unused.json ist kein gültiges JSON: ${error instanceof Error ? error.message : String(error)}`, { cause: error })
     }
   }
   const messages = flattenMessages(JSON.parse(readFileSync(localePath, 'utf8')))
@@ -115,7 +115,8 @@ function loadModel(recordingDir, localePath) {
  * @param {string} rulesPath
  */
 function readRules(rulesPath) {
-  let text = ''
+  /** @type {string} */
+  let text
   try {
     text = readFileSync(rulesPath, 'utf8')
   }
@@ -360,6 +361,8 @@ export async function createReviewServer({
     answersPath: target,
     answersName: basename(target),
     baselineName: baselineOf().name,
+    answerProblems: first.problems,
+    hasUnused: start.hasUnused,
     progress: (({ total, done, left }) => ({ total, done, left }))(progressOf(start.steps, first.answers)),
   }
   return Object.assign(server, { info })
