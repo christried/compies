@@ -96,6 +96,8 @@ With each ticket, delete the matching construction routes and BaustelleZone usag
 
 ## Post-1.0 issues (one issue each)
 
+Filed as Idea issues on 2026-11-16: Crews with the founding permission [#692](https://github.com/christried/compies/issues/692), tournament bracket [#693](https://github.com/christried/compies/issues/693), league [#694](https://github.com/christried/compies/issues/694), reported Results [#695](https://github.com/christried/compies/issues/695), the Stands [#696](https://github.com/christried/compies/issues/696), English [#679](https://github.com/christried/compies/issues/679), kick or ban [#697](https://github.com/christried/compies/issues/697). The chat proposals are open questions of [#667](https://github.com/christried/compies/issues/667), custom emotes of [#668](https://github.com/christried/compies/issues/668). A comment per Slot is the Note of a Vote (`GLOSSARY.md`), already built.
+
 | Issue | Mockup | Notes |
 |---|---|---|
 | Crews: overview, found, members + host rights, crew invite (rotatable), crew archive | `App Post-1.0.dc.html?s=crews` (5 states) | Data model already has `crewId` (nullable) on Events and permissions |
