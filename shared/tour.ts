@@ -24,6 +24,8 @@ export interface TourPage {
   present: ReadonlySet<string>
   /** From md (980 px) up: `useEventTabs`' `wide`. */
   wide: boolean
+  /** `EventView.teamChoiceOpen`: the Game board's text depends on it (#648). */
+  teamChoiceOpen: boolean
 }
 
 export interface TourStep {
@@ -31,7 +33,11 @@ export interface TourStep {
   id: string
   /** The value of the `data-tour` attribute of the thing it points at; null points at nothing. */
   target: string | null
-  /** A further rule beyond the target being on the page (#648 uses it for the phone's tabs against the panel). */
+  /** Below TOUR_NARROW_BELOW (600 px) the step points at the `data-tour` value of this child instead of `target` (#648). */
+  targetNarrow?: string
+  /** The value of a `data-tour-anchor` inside the thing: the tail aims at its centre. Without one, or when it is not found: the thing's centre. */
+  anchor?: string
+  /** A further rule beyond the target being on the page: the phone's tabs against the panel, the Game board's three texts by state (#648). */
   applies?: (page: TourPage) => boolean
   /** Compibert's face at the bubble (#460): `hello` waves, `points` looks at the thing, `cheers` hops. Default: see `tourFace`. */
   face?: TourFace
@@ -44,16 +50,37 @@ export function tourFace(step: TourStep): TourFace {
   return step.face ?? (step.target === null ? 'hello' : 'points')
 }
 
-/** The Member's Tour: the greeting, the head (#460), then #648's pointing steps, then the end; the Host tour (#462) is a second list. */
+/**
+ * The Member's Tour: the greeting, the pointing steps in the order the spec names them (not the page's: a compact poll below the board in a running
+ * Event still comes before it), then the end; the Host tour (#462) is a second list. Exactly one of `board`, `boardOpen` and `boardLocked` applies,
+ * and `activity` (the side panel) or `tabs` (the phone's tab bar), so a run holds at most eight steps (#648).
+ */
 export const MEMBER_TOUR: readonly TourStep[] = [
   { id: 'greeting', target: null },
   { id: 'head', target: 'head' },
+  { id: 'poll', target: 'poll', targetNarrow: 'poll-card', anchor: 'vote' },
+  { id: 'board', target: 'board', anchor: 'me', applies: page => !page.teamChoiceOpen && page.phase !== 'running' },
+  { id: 'boardOpen', target: 'board', anchor: 'me', applies: page => page.teamChoiceOpen },
+  { id: 'boardLocked', target: 'board', anchor: 'me', applies: page => !page.teamChoiceOpen && page.phase === 'running' },
+  { id: 'how', target: 'how' },
+  { id: 'activity', target: 'panel', anchor: 'tab-activity', applies: page => page.wide },
+  { id: 'tabs', target: 'tab-activity', applies: page => !page.wide },
+  { id: 'sound', target: 'sound' },
   { id: 'end', target: null, face: 'cheers' },
 ]
 
-/** The steps of this run, in list order: a step stays when what it points at is on the page and its own rule agrees. */
+/** The `data-tour` value a step points at on a window that is `narrow` or not: the narrow child where the step has one and it is narrow. */
+export function tourThing(step: TourStep, narrow: boolean): string | null {
+  return narrow && step.targetNarrow ? step.targetNarrow : step.target
+}
+
+/**
+ * The steps of this run, in list order: a step stays when what it points at is on the page and its own rule agrees. A run with no pointing step
+ * left is no run (#648): the greeting and the end alone are not a Tour, and `useTour` then starts nothing and saves nothing.
+ */
 export function tourRun(steps: readonly TourStep[], page: TourPage): TourStep[] {
-  return steps.filter(step => (step.target === null || page.present.has(step.target)) && step.applies?.(page) !== false)
+  const run = steps.filter(step => (step.target === null || page.present.has(step.target)) && step.applies?.(page) !== false)
+  return run.some(step => step.target !== null) ? run : []
 }
 
 export interface TourStartInput {

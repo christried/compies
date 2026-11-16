@@ -1,23 +1,83 @@
 import { describe, expect, it } from 'vitest'
-import { MEMBER_TOUR, TOUR_CALM_MS, TOUR_VERSION, tourMayStart, tourFace, tourMove, tourRun, type TourPage, type TourStartInput, type TourStep } from '../../shared/tour'
+import { MEMBER_TOUR, TOUR_CALM_MS, TOUR_VERSION, tourMayStart, tourFace, tourMove, tourRun, tourThing, type TourPage, type TourStartInput, type TourStep } from '../../shared/tour'
 
 // The Tour's pure rules (#647, ADR 0017): which steps a run holds for the page it opens on, when it may start, and how a step moves.
 
-const page: TourPage = { phase: 'poll', role: 'member', present: new Set<string>(), wide: true }
+const page: TourPage = { phase: 'poll', role: 'member', present: new Set<string>(), wide: true, teamChoiceOpen: false }
+const withBoard: TourPage = { ...page, present: new Set(['board']) }
+const ids = (run: readonly TourStep[]) => run.map(step => step.id)
+const EVERYTHING = new Set(['head', 'poll', 'poll-card', 'board', 'how', 'panel', 'tab-activity', 'sound'])
 
 describe('tourRun', () => {
-  it('gives the Member\'s tour greeting and end when the head is not on the page (the phone\'s Standings view has none)', () => {
-    expect(tourRun(MEMBER_TOUR, page).map(step => step.id)).toEqual(['greeting', 'end'])
+  it('gives no run at all when nothing it points at is on the page: greeting and end alone are not a Tour (#648)', () => {
+    expect(tourRun(MEMBER_TOUR, page)).toEqual([])
   })
 
-  it('gives the Member\'s tour greeting, head and end when the head is on the page (#460)', () => {
-    expect(tourRun(MEMBER_TOUR, { ...page, present: new Set(['head']) }).map(step => step.id)).toEqual(['greeting', 'head', 'end'])
+  it('gives the Member\'s tour greeting, head and end when only the head is on the page (#460)', () => {
+    expect(ids(tourRun(MEMBER_TOUR, { ...page, present: new Set(['head']) }))).toEqual(['greeting', 'head', 'end'])
+  })
+
+  it('gives a Member\'s full run in the poll Phase: greeting, head, poll, board, how, activity, sound, end (#648)', () => {
+    expect(ids(tourRun(MEMBER_TOUR, { ...page, present: EVERYTHING }))).toEqual(['greeting', 'head', 'poll', 'board', 'how', 'activity', 'sound', 'end'])
+  })
+
+  it.each([
+    ['poll', 'poll'],
+    ['board', 'board'],
+    ['how', 'how'],
+    ['activity', 'panel'],
+    ['sound', 'sound'],
+  ])('leaves the %s step out when its thing (%s) is not on the page, and keeps it when it is', (id, thing) => {
+    const without = new Set([...EVERYTHING].filter(value => value !== thing))
+
+    expect(ids(tourRun(MEMBER_TOUR, { ...page, present: without }))).not.toContain(id)
+    expect(ids(tourRun(MEMBER_TOUR, { ...page, present: EVERYTHING }))).toContain(id)
+  })
+
+  it('has the phone\'s tabs step in place of the panel\'s, never both (#648)', () => {
+    expect(ids(tourRun(MEMBER_TOUR, { ...page, present: EVERYTHING, wide: true }))).toContain('activity')
+    expect(ids(tourRun(MEMBER_TOUR, { ...page, present: EVERYTHING, wide: true }))).not.toContain('tabs')
+    expect(ids(tourRun(MEMBER_TOUR, { ...page, present: EVERYTHING, wide: false }))).toContain('tabs')
+    expect(ids(tourRun(MEMBER_TOUR, { ...page, present: EVERYTHING, wide: false }))).not.toContain('activity')
+  })
+
+  it.each([
+    ['poll', false, 'board'],
+    ['date_set', true, 'boardOpen'],
+    ['running', false, 'boardLocked'],
+  ] as const)('has exactly one Game board step in the %s Phase (team choice open: %s): %s', (phase, teamChoiceOpen, expected) => {
+    const run = ids(tourRun(MEMBER_TOUR, { ...page, phase, teamChoiceOpen, present: EVERYTHING }))
+
+    expect(run.filter(id => id.startsWith('board'))).toEqual([expected])
   })
 
   it('has the face each step shows: hello, points at a thing, cheers at the end (#460)', () => {
     const faces = Object.fromEntries(MEMBER_TOUR.map(step => [step.id, tourFace(step)]))
 
-    expect(faces).toEqual({ greeting: 'hello', head: 'points', end: 'cheers' })
+    expect(faces).toEqual({
+      greeting: 'hello',
+      head: 'points',
+      poll: 'points',
+      board: 'points',
+      boardOpen: 'points',
+      boardLocked: 'points',
+      how: 'points',
+      activity: 'points',
+      tabs: 'points',
+      sound: 'points',
+      end: 'cheers',
+    })
+  })
+
+  it('points a step at its narrow child below the narrow width and at the thing otherwise (#648)', () => {
+    const poll = MEMBER_TOUR.find(step => step.id === 'poll')!
+    const board = MEMBER_TOUR.find(step => step.id === 'board')!
+
+    expect(tourThing(poll, true)).toBe('poll-card')
+    expect(tourThing(poll, false)).toBe('poll')
+    expect(tourThing(board, true)).toBe('board')
+    expect(tourThing(board, false)).toBe('board')
+    expect(tourThing(MEMBER_TOUR[0]!, true)).toBeNull()
   })
 
   it('lets a step choose its face and defaults to pointing when it has a target, else hello', () => {
@@ -34,8 +94,14 @@ describe('tourRun', () => {
   ]
 
   it('drops a step whose target is not on the page and keeps it when it is', () => {
-    expect(tourRun(steps, page).map(step => step.id)).toEqual(['a', 'c'])
-    expect(tourRun(steps, { ...page, present: new Set(['board']) }).map(step => step.id)).toEqual(['a', 'b', 'c'])
+    const more: TourStep[] = [...steps.slice(0, 2), { id: 'd', target: 'sound' }, steps[2]!]
+
+    expect(ids(tourRun(more, { ...page, present: new Set(['sound']) }))).toEqual(['a', 'd', 'c'])
+    expect(ids(tourRun(more, { ...page, present: new Set(['board', 'sound']) }))).toEqual(['a', 'b', 'd', 'c'])
+  })
+
+  it('gives no run for a list of greeting and end only (#648)', () => {
+    expect(tourRun([steps[0]!, steps[2]!], page)).toEqual([])
   })
 
   it('drops a step whose own rule says no and hands it the page', () => {
@@ -43,17 +109,17 @@ describe('tourRun', () => {
     const run = tourRun([
       {
         id: 'a',
-        target: null,
+        target: 'board',
         applies: (given) => {
           seen.push(given)
           return false
         },
       },
-      { id: 'b', target: null, applies: () => true },
-    ], page)
+      { id: 'b', target: 'board', applies: () => true },
+    ], withBoard)
 
     expect(run.map(step => step.id)).toEqual(['b'])
-    expect(seen).toEqual([page])
+    expect(seen).toEqual([withBoard])
   })
 
   it('keeps the order of the list', () => {
@@ -64,7 +130,7 @@ describe('tourRun', () => {
   })
 
   it('runs another list the same way, which is how a Host tour will work', () => {
-    expect(tourRun([{ id: 'host-one', target: null }], page).map(step => step.id)).toEqual(['host-one'])
+    expect(tourRun([{ id: 'host-one', target: 'board' }], withBoard).map(step => step.id)).toEqual(['host-one'])
   })
 
   it('gives an empty run for an empty list', () => {
