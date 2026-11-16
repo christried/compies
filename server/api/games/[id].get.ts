@@ -8,7 +8,7 @@ import type { GameView } from '../../../shared/game'
 export default defineEventHandler(async (event): Promise<GameView> => {
   const viewer = await requireLibraryViewer(event)
   const db = useDb(event)
-  const { game, creatorName } = await loadGame(db, getRouterParam(event, 'id') ?? '', viewer.id)
-  const [view] = await readGameViews(db, [{ game, creatorName }], viewer)
+  const game = await loadGame(db, getRouterParam(event, 'id') ?? '', viewer.id)
+  const [view] = await readGameViews(db, [game])
   return view!
 })

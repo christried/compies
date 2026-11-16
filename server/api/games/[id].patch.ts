@@ -18,7 +18,7 @@ import { isPriceCheckOnly, parseGameInput, tagsWithFreeToPlay, type GameView } f
 export default defineEventHandler(async (event): Promise<GameView> => {
   const viewer = await requireLibraryViewer(event)
   const db = useDb(event)
-  const { game, creatorName } = await loadGame(db, getRouterParam(event, 'id') ?? '', viewer.id)
+  const game = await loadGame(db, getRouterParam(event, 'id') ?? '', viewer.id)
 
   const body = await readBody(event)
   // The flag alone writes nothing but the Price day: no columns, no Tags, no Price (#360).
@@ -38,7 +38,7 @@ export default defineEventHandler(async (event): Promise<GameView> => {
     const next = tagsWithFreeToPlay(tags ?? stored, priceOf(row!))
     const changed = tags !== undefined || next.length !== stored.length || next.some((tag, index) => tag.key !== stored[index]!.key)
     if (changed) await saveTags(tx, game.id, next, viewer.id)
-    const [built] = await readGameViews(tx, [{ game: row!, creatorName }], viewer)
+    const [built] = await readGameViews(tx, [row!])
     return built!
   })
   return view

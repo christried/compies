@@ -1,11 +1,10 @@
 <script setup lang="ts">
-import { Lock, Pencil } from '@lucide/vue'
-import { formatMonthYear } from '~/utils/berlin-time'
+import { Pencil } from '@lucide/vue'
 
 // One game of the library (screen 23, `?s=detail`, #141, #142): the clip preview from the start second for the
-// set length, the facts (player count, Suitabilities, clip length, the Price (#337)), the Tags (#335, each in its colour, #427) and who created it. The cover, the facts with the Tags and the Notes
-// are components of their own (#443), which the Host's game dialog on the Event page uses too. The creator and the Platform
-// admin get „Bearbeiten“; everyone else gets the reason instead of a dead button. A game that does not exist
+// set length, the facts (player count, Suitabilities, clip length, the Price (#337)) and the Tags (#335, each in its colour, #427). The cover, the facts with the Tags and the Notes
+// are components of their own (#443), which the Host's game dialog on the Event page uses too. „Bearbeiten“ is always there: the library
+// holds only the viewer's own games (#724). A game that does not exist
 // looks like any missing page; so does the page for Users who may not see the library. The switch „Archiviert“ (#467) is the owner's: the route answers
 // only own games, and an Archived game keeps its page and stays editable.
 const { t } = useI18n()
@@ -16,7 +15,6 @@ const { viewer, game, status, error, refresh, missing } = useLibraryGame(id)
 useHead({ title: () => game.value?.name ?? t('nav.library') })
 
 const { setArchived } = useGameArchive()
-const createdMonth = computed(() => (game.value ? formatMonthYear(new Date(game.value.createdAt)) : ''))
 </script>
 
 <template>
@@ -88,12 +86,7 @@ const createdMonth = computed(() => (game.value ? formatMonthYear(new Date(game.
             :help="t('library.archiveHelp')"
             @update:model-value="setArchived(game.id, $event)"
           />
-          <p class="m-0 text-[13px] text-ink-2">
-            {{ t('library.createdBy', { name: game.createdBy.name, month: createdMonth }) }}
-          </p>
-
           <AppButton
-            v-if="game.canEdit"
             :to="`/bibliothek/${game.id}/bearbeiten`"
             variant="secondary"
             class="self-start"
@@ -106,16 +99,6 @@ const createdMonth = computed(() => (game.value ? formatMonthYear(new Date(game.
             </template>
             {{ t('library.edit') }}
           </AppButton>
-          <p
-            v-else
-            class="m-0 inline-flex items-center gap-1.5 text-[13px] text-ink-2"
-          >
-            <AppIcon
-              :icon="Lock"
-              :size="14"
-            />
-            {{ t('library.editOnlyOwner', { name: game.createdBy.name }) }}
-          </p>
         </div>
       </div>
 
