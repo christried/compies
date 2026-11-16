@@ -53,6 +53,8 @@ export interface AuthUser {
   newsSeen: string | null
   /** The User's Appearance (#401); light for every User who never chose. */
   appearance: Appearance
+  /** The Tour version the User last saw; 0 for never (#646). */
+  tourSeen: number
 }
 
 /** The name a User is shown with: the Display name once they set one, else the provider name (one rule for Home, the menu, Event members, hosts and game creators). */
@@ -73,6 +75,11 @@ export interface SavedNewsSeen {
 /** What POST /api/me/appearance returns: the Appearance just saved (#401). */
 export interface SavedAppearance {
   appearance: Appearance
+}
+
+/** What POST /api/me/tour-seen and POST /api/me/tour-reset return: the Tour version stored now (#646). */
+export interface SavedTourSeen {
+  tourSeen: number
 }
 
 /** What `POST /api/profile/setup` returns, at setup and on a rename from the Profil page (#399): the User with the Display name just saved. */
