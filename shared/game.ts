@@ -128,6 +128,8 @@ export interface GameView extends PoolGame {
    * PoolGameFace and RoundGame do not, so no Member's Event read, feed entry or message can name one.
    */
   tags: GameTag[]
+  /** Whether the owner archived the game (#467): the library list leaves it out unless the filter „Archiviert“ is on. Only here: no Member surface carries it. */
+  archived: boolean
   /** `name` is the display name if the User set one, like Event members. */
   createdBy: { id: string, name: string }
   createdAt: string
@@ -154,20 +156,23 @@ export interface GameFilters {
   tag: string | null
   /** Only the viewer's own games („Von mir“). */
   mine: boolean
+  /** The list the filters cover (#467): false is the normal list, Archived games left out; true is only the Archived games („Archiviert“). */
+  archived: boolean
 }
 
-export const NO_FILTERS: GameFilters = { q: '', players: null, suitability: null, tag: null, mine: false }
+export const NO_FILTERS: GameFilters = { q: '', players: null, suitability: null, tag: null, mine: false, archived: false }
 
 /**
  * The games the filters keep, combined with AND: a name search (trimmed, without regard to case, `%` and `_` are plain
  * characters, and the search also reads the labels of the game's Tags (#336)), a player count the recommended range covers
- * (a game without any count never matches one), a Suitability, a Tag the game must carry, and the viewer's own games. One
- * function for the library and both pool pickers (#173).
+ * (a game without any count never matches one), a Suitability, a Tag the game must carry, the viewer's own games, and the list: the
+ * normal one leaves Archived games out, the filter „Archiviert“ keeps only them (#467). One function for the library and both pool pickers (#173).
  */
 export function filterGames(games: GameView[], filters: GameFilters, viewerId: string): GameView[] {
   const text = filters.q.trim().toLocaleLowerCase('de')
   const { players, suitability, tag } = filters
   return games.filter((game) => {
+    if (game.archived !== filters.archived) return false
     if (text && !game.name.toLocaleLowerCase('de').includes(text) && !game.tags.some(item => item.label.toLocaleLowerCase('de').includes(text))) return false
     if (players !== null) {
       const { playersMin: min, playersMax: max } = game

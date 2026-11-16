@@ -220,6 +220,8 @@ export const games = pgTable('games', {
   priceCents: integer('price_cents'),
   priceSource: priceSource('price_source'),
   priceCheckedAt: timestamp('price_checked_at', { withTimezone: true }),
+  // When the owner archived the game (#467, spec #717 § B); null = not archived. The library list carries every own game flagged.
+  archivedAt: timestamp('archived_at', { withTimezone: true }),
   createdBy: uuid('created_by').notNull().references(() => users.id),
   createdAt: createdAt(),
   updatedAt: updatedAt(),
