@@ -1,6 +1,7 @@
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import { afterEach, describe, expect, it } from 'vitest'
 import EventStepper from '~/components/stepper/EventStepper.vue'
+import { useStepperPill } from '~/composables/useStepperPill'
 
 // The stepper's layout (#144): step list on desktop, progress bar, sticky footer and info sheet on phones. Both
 // layouts are in the markup; CSS shows one of them, so the tests read each by its own landmark.
@@ -199,6 +200,19 @@ describe('EventStepper', () => {
       const page = await mountStepper()
 
       expect(page.get('form > div').classes()).toContain('pb-40')
+    })
+
+    // The page footer makes room for the pill while it is on screen (#701, PageFooter): the stepper counts itself in while mounted.
+    it('tells the page footer about its pill while mounted, and not after', async () => {
+      const { shown } = useStepperPill()
+      expect(shown.value).toBe(false)
+
+      const page = await mountStepper()
+      expect(shown.value).toBe(true)
+
+      page.unmount()
+      mounted.splice(mounted.indexOf(page), 1)
+      expect(shown.value).toBe(false)
     })
 
     it('keeps the blocker reason out of the dock, right above it, and still describes Weiter with it', async () => {
