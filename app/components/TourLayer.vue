@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { bubbleIn, bubbleOut, canAnimate, cancelQuietly, glideScroll, moveHole, tourEnter, tourExit, tourTick, type TourHole, type TourPlay } from '~/utils/tour-motion'
 import { placeTour, tourBubbleWidth, TOUR_NARROW_BELOW, type TourPlacement, type TourThing } from '~/utils/tour-placement'
-import { tourFace, tourMove, type TourStep } from '~~/shared/tour'
+import { tourFace, tourMove, tourThing, type TourStep } from '~~/shared/tour'
 
 // The Tour's layer (#647, #460, ADR 0017): the controller of the Rundgang. It measures the thing a step points at, asks `placeTour` where the hole and the
 // bubble stand, scrolls the page to it, follows it through resizing and scrolling, and plays the note's motion (17-rundgang.md); the pieces it moves are
@@ -58,9 +58,17 @@ const measured = computed(() => texts(measuring.value))
 
 // --- Measuring and placing --------------------------------------------------------------------------------------------------------------------------
 
+/**
+ * The element a step points at: its narrow child below TOUR_NARROW_BELOW, and the whole thing when that child is not on the page (#648).
+ * Null when the step points at nothing or the thing is not there.
+ */
+function findThing(step: TourStep | undefined): HTMLElement | null {
+  const find = (value: string | null) => value ? document.querySelector<HTMLElement>(`[data-tour="${value}"]`) : null
+  return find(step ? tourThing(step, narrow.value) : null) ?? find(step?.target ?? null)
+}
+
 /** The thing a step points at, in the placement's terms; null when the step points at nothing, or it is gone or not visible (the step stays, without a thing). */
-function readThing(target: string | null): TourThing | null {
-  const element = target ? document.querySelector<HTMLElement>(`[data-tour="${target}"]`) : null
+function readThing(element: HTMLElement | null): TourThing | null {
   if (!element || element.checkVisibility?.() === false) return null
   const box = element.getBoundingClientRect()
   // A thing in the sticky header or the tab bar never scrolls; the others are placed by their page y.
@@ -69,6 +77,16 @@ function readThing(target: string | null): TourThing | null {
   // A percentage is of the short side, as the reference's `measure()`.
   if (getComputedStyle(element).borderTopLeftRadius.includes('%')) radius = Math.min(box.width, box.height) * radius / 100
   return { x: box.left, y: scrolls ? box.top + window.scrollY : box.top, w: box.width, h: box.height, radius, scrolls }
+}
+
+/** Where the tail aims: the centre of the step's `data-tour-anchor` inside the thing (the first visible one in DOM order), in the thing's coordinates; null: the thing's centre. */
+function readAnchor(element: HTMLElement, name: string | undefined): { x: number, y: number, scrolls: boolean } | null {
+  if (!name) return null
+  const found = [...element.querySelectorAll<HTMLElement>(`[data-tour-anchor="${name}"]`)].find(candidate => candidate.checkVisibility?.() !== false)
+  if (!found) return null
+  const box = found.getBoundingClientRect()
+  const scrolls = !found.closest('[data-tour-edge]')
+  return { x: box.left + box.width / 2, y: box.top + box.height / 2 + (scrolls ? window.scrollY : 0), scrolls }
 }
 
 // A layer that opens in its own setup (mounted open) is not in the DOM yet when it starts to measure.
@@ -81,7 +99,7 @@ const inDomWhen = new Promise<void>(resolve => onMounted(() => {
 /** Where the bubble and the hole stand for a step, measured now. `keepScroll`: the page stays where a User put it. */
 async function place(index: number, keepScroll?: number): Promise<TourPlacement> {
   if (!inDom) await inDomWhen
-  const target = props.steps[index]?.target ?? null
+  const current = props.steps[index]
   // The twin takes the step's texts and the live bubble's width, and its height is the one that is placed.
   const win = { w: document.documentElement.clientWidth, h: window.innerHeight }
   measuring.value = index
@@ -90,12 +108,15 @@ async function place(index: number, keepScroll?: number): Promise<TourPlacement>
   await nextTick()
   const bubbleHeight = twin.value?.root?.offsetHeight ?? 0
   const tabs = document.querySelector<HTMLElement>('[data-tour-edge="tabs"]')
+  const element = findThing(current)
+  const thing = readThing(element)
   return placeTour({
     window: win,
     headerBottom: document.querySelector('[data-tour-edge="header"]')?.getBoundingClientRect().bottom ?? 0,
     stageBottom: tabs && tabs.checkVisibility?.() !== false ? tabs.getBoundingClientRect().top : win.h,
     maxScroll: Math.max(0, document.documentElement.scrollHeight - window.innerHeight),
-    thing: readThing(target),
+    thing,
+    anchor: (thing && element && readAnchor(element, current?.anchor)) || undefined,
     keepScroll,
     bubbleHeight,
   })
@@ -301,8 +322,7 @@ function watchThing() {
   observer ??= new ResizeObserver(() => replace(true))
   observer.disconnect()
   observer.observe(document.body)
-  const target = step.value?.target
-  const element = target ? document.querySelector(`[data-tour="${target}"]`) : null
+  const element = findThing(step.value)
   if (element) observer.observe(element)
 }
 

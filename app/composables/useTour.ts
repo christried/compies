@@ -74,8 +74,14 @@ export function useTour(options: {
       return
     }
     if (done || !tourMayStart(now)) return
-    // An empty run starts nothing and latches nothing: it stays unseen (#648 adds the steps that can come to nothing).
-    const starting = tourRun(steps, { phase: now.phase!, role: now.role, present: tourPresent(), wide: options.wide() })
+    // An empty run starts nothing and latches nothing: it stays unseen (`tourRun` gives none when no pointing step is left, #648).
+    const starting = tourRun(steps, {
+      phase: now.phase!,
+      role: now.role,
+      present: tourPresent(),
+      wide: options.wide(),
+      teamChoiceOpen: options.view()?.teamChoiceOpen ?? false,
+    })
     if (starting.length === 0) return
     run.value = starting
     shown.value = true

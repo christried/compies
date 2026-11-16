@@ -13,9 +13,9 @@ import { motion } from './motion'
 let page: Awaited<ReturnType<typeof mountSuspended>> | undefined
 
 /** The run of a page without the head on it: the greeting and the end. */
-const TWO: readonly TourStep[] = MEMBER_TOUR.filter(step => step.id !== 'head')
+const TWO: readonly TourStep[] = MEMBER_TOUR.filter(step => ['greeting', 'end'].includes(step.id))
 /** The run of a page that has the head: greeting, head, end. */
-const THREE = MEMBER_TOUR
+const THREE: readonly TourStep[] = MEMBER_TOUR.filter(step => ['greeting', 'head', 'end'].includes(step.id))
 
 async function mount(open = true, steps: readonly TourStep[] = TWO) {
   page = await mountSuspended(TourLayer, { props: { open, steps }, attachTo: document.body })
@@ -305,15 +305,24 @@ describe('the bubble', () => {
 
 // --- The spotlight, the placement and the scroll -----------------------------------------------------------------------------------------------------
 
-/** A host element for `data-tour="head"` whose rect the test decides (happy-dom has no layout). */
-function host(rect: { left: number, top: number, width: number, height: number }, radius = '14px') {
+/** A host element for `data-tour="head"` (or another value) whose rect the test decides (happy-dom has no layout). */
+function host(rect: { left: number, top: number, width: number, height: number }, radius = '14px', value = 'head') {
   const element = document.createElement('div')
-  element.dataset.tour = 'head'
+  element.dataset.tour = value
   element.style.borderRadius = radius
   let current = rect
   element.getBoundingClientRect = () => ({ ...current, x: current.left, y: current.top, right: current.left + current.width, bottom: current.top + current.height, toJSON() {} }) as DOMRect
   document.body.append(element)
   return { element, move: (next: typeof rect) => void (current = next) }
+}
+
+/** A `data-tour-anchor` inside `parent` with a rect of its own. */
+function anchorIn(parent: HTMLElement, value: string, rect: { left: number, top: number, width: number, height: number }) {
+  const element = document.createElement('span')
+  element.dataset.tourAnchor = value
+  element.getBoundingClientRect = () => ({ ...rect, x: rect.left, y: rect.top, right: rect.left + rect.width, bottom: rect.top + rect.height, toJSON() {} }) as DOMRect
+  parent.append(element)
+  return element
 }
 
 const px = (value: string) => Number.parseFloat(value)
@@ -476,6 +485,65 @@ describe('the spotlight', () => {
 
     expect(holeOf().width).toBe(2)
     expect(title()).toBe(HEAD)
+  })
+})
+
+describe('the narrow child and the anchor (#648)', () => {
+  const POLL: TourStep = { id: 'head', target: 'poll', targetNarrow: 'poll-card' }
+  const END: TourStep = { id: 'end', target: null }
+
+  it('points at the narrow child below 600 px, the rect plus 6 px', async () => {
+    windowWidth(390)
+    host({ left: 14, top: 20, width: 362, height: 600 }, '14px', 'poll')
+    host({ left: 14, top: 120, width: 200, height: 80 }, '14px', 'poll-card')
+    await mount(true, [POLL, END])
+
+    await vi.waitFor(() => expect(holeOf()).toMatchObject({ left: 8, top: 114, width: 212, height: 92 }))
+  })
+
+  it('points at the thing from 600 px up, the rect plus 8 px', async () => {
+    windowWidth(1024)
+    host({ left: 40, top: 20, width: 500, height: 300 }, '14px', 'poll')
+    host({ left: 40, top: 120, width: 200, height: 80 }, '14px', 'poll-card')
+    await mount(true, [POLL, END])
+
+    await vi.waitFor(() => expect(holeOf()).toMatchObject({ left: 32, top: 12, width: 516, height: 316 }))
+  })
+
+  it('falls back to the thing when the narrow child is not found', async () => {
+    windowWidth(390)
+    host({ left: 14, top: 20, width: 362, height: 100 }, '14px', 'poll')
+    await mount(true, [POLL, END])
+
+    await vi.waitFor(() => expect(holeOf()).toMatchObject({ left: 8, top: 14, width: 374, height: 112 }))
+  })
+
+  /** The bubble's `left` for a step on a wide thing, with its anchor at the thing's right end when `found`. */
+  async function bubbleLeft(anchor: string | undefined, found: boolean) {
+    const { element } = host({ left: 24, top: 20, width: 960, height: 80 }, '14px', 'board')
+    if (found) anchorIn(element, 'me', { left: 900, top: 40, width: 40, height: 40 })
+    await mount(true, [{ id: 'head', target: 'board', anchor }, END])
+    await vi.waitFor(() => expect(px(box()!.style.top)).toBeGreaterThan(0))
+    const left = px(box()!.style.left)
+    page!.unmount()
+    page = undefined
+    document.body.innerHTML = ''
+    return left
+  }
+
+  it('aims the bubble at the anchor: it stands elsewhere than without one', async () => {
+    const without = await bubbleLeft(undefined, true)
+    const withAnchor = await bubbleLeft('me', true)
+
+    // Without an anchor the bubble is centred on the thing; with one, on the anchor's centre at the thing's right end.
+    expect(withAnchor).toBeGreaterThan(without)
+  })
+
+  it('behaves as no anchor when the anchor is not found', async () => {
+    const without = await bubbleLeft(undefined, true)
+    const missing = await bubbleLeft('me', false)
+
+    expect(missing).toBe(without)
   })
 })
 

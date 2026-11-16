@@ -39,6 +39,7 @@ const label = computed(() => t(props.online === undefined ? 'board.personAria' :
     class="relative flex w-12 touch-manipulation flex-col items-center gap-1 rounded-md pt-1 text-ink select-none [-webkit-touch-callout:none] md:w-[60px]"
     :class="[draggable ? 'cursor-grab' : 'cursor-pointer', lifted ? 'layer-sticky cursor-grabbing' : '']"
     :data-user-id="userId"
+    :data-tour-anchor="you ? 'me' : undefined"
     :aria-label="label"
     aria-haspopup="menu"
     :aria-expanded="menuOpen"

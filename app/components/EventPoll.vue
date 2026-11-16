@@ -56,80 +56,87 @@ function removeMissing() {
     :aria-labelledby="headingId"
     class="flex flex-col gap-3.5"
   >
-    <div class="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-      <h2
-        :id="headingId"
-        tabindex="-1"
-        class="m-0 scroll-mt-20 font-display text-[24px] leading-none font-normal outline-none md:text-[30px]"
-      >
-        {{ number === null ? t('phase.poll') : t('event.poll.title', { n: number }) }}
-      </h2>
-      <span class="text-[13px] font-bold text-ink-2">{{ t('event.sessions.voted', view.progress) }}</span>
-    </div>
-
-    <NoticeBanner
-      v-if="savedNote"
-      tone="success"
-      :icon="Check"
-      closable
-      @close="savedNote = false"
-    >
-      {{ t('mvp.poll.savedNote') }}
-    </NoticeBanner>
-
+    <!-- The Tour's „Terminumfrage“ step (#648) points at this block, from the heading to the Slot grid: the matrix below it is too tall to be a thing. Only an open Slot makes it one. -->
     <div
-      v-if="missing > 0"
-      class="flex flex-wrap items-center gap-3"
+      :data-tour="slots.length > 0 ? 'poll' : undefined"
+      class="flex flex-col gap-3.5"
     >
-      <p class="m-0 font-display text-[26px] leading-[1.05] max-sm:text-[22px]">
-        {{ t('mvp.poll.missingDates', { n: missing }, missing) }}
-      </p>
-      <IconButton
-        v-if="canRemoveMissing"
-        :icon="Minus"
-        :label="t('mvp.sessions.removeMissing')"
-        @click="removeMissing"
-      />
-    </div>
+      <div class="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+        <h2
+          :id="headingId"
+          tabindex="-1"
+          class="m-0 scroll-mt-20 font-display text-[24px] leading-none font-normal outline-none md:text-[30px]"
+        >
+          {{ number === null ? t('phase.poll') : t('event.poll.title', { n: number }) }}
+        </h2>
+        <span class="text-[13px] font-bold text-ink-2">{{ t('event.sessions.voted', view.progress) }}</span>
+      </div>
 
-    <VoteLegend v-if="slots.length > 0" />
-
-    <div
-      v-if="slots.length === 0"
-      class="flex flex-col gap-1 rounded-[20px] border-2 border-dashed border-line bg-surface p-5 text-ink-2"
-    >
-      <h3 class="m-0 text-[18px] text-ink">
-        {{ t('mvp.reopen.noSlotsTitle') }}
-      </h3>
-      <p class="m-0 text-pretty">
-        {{ view.event.isHost ? t('mvp.reopen.noSlotsHost') : t('mvp.reopen.noSlotsMember') }}
-      </p>
-    </div>
-
-    <ol
-      v-else
-      class="m-0 grid list-none gap-3.5 p-0 pt-2 md:grid-cols-4"
-    >
-      <li
-        v-for="slot in slots"
-        :key="slot.id"
+      <NoticeBanner
+        v-if="savedNote"
+        tone="success"
+        :icon="Check"
+        closable
+        @close="savedNote = false"
       >
-        <PollSlotCard
-          :timeslot="slot"
-          :counts="countsFor(slot.id)"
-          :total="view.members.length"
-          :my-vote="myVoteFor(slot.id)"
-          :best="view.bestSlotId === slot.id"
-          :can-pick="view.event.isHost"
-          :compact="compact"
-          :notes="notesFor(slot.id, view.members)"
-          :my-note="myNoteFor(slot.id)"
-          @vote="value => vote(slot.id, value)"
-          @pick="emit('pick', slot.id)"
-          @note="text => saveNote(slot.id, text)"
+        {{ t('mvp.poll.savedNote') }}
+      </NoticeBanner>
+
+      <div
+        v-if="missing > 0"
+        class="flex flex-wrap items-center gap-3"
+      >
+        <p class="m-0 font-display text-[26px] leading-[1.05] max-sm:text-[22px]">
+          {{ t('mvp.poll.missingDates', { n: missing }, missing) }}
+        </p>
+        <IconButton
+          v-if="canRemoveMissing"
+          :icon="Minus"
+          :label="t('mvp.sessions.removeMissing')"
+          @click="removeMissing"
         />
-      </li>
-    </ol>
+      </div>
+
+      <VoteLegend v-if="slots.length > 0" />
+
+      <div
+        v-if="slots.length === 0"
+        class="flex flex-col gap-1 rounded-[20px] border-2 border-dashed border-line bg-surface p-5 text-ink-2"
+      >
+        <h3 class="m-0 text-[18px] text-ink">
+          {{ t('mvp.reopen.noSlotsTitle') }}
+        </h3>
+        <p class="m-0 text-pretty">
+          {{ view.event.isHost ? t('mvp.reopen.noSlotsHost') : t('mvp.reopen.noSlotsMember') }}
+        </p>
+      </div>
+
+      <ol
+        v-else
+        class="m-0 grid list-none gap-3.5 p-0 pt-2 md:grid-cols-4"
+      >
+        <li
+          v-for="(slot, index) in slots"
+          :key="slot.id"
+        >
+          <PollSlotCard
+            :data-tour="index === 0 ? 'poll-card' : undefined"
+            :timeslot="slot"
+            :counts="countsFor(slot.id)"
+            :total="view.members.length"
+            :my-vote="myVoteFor(slot.id)"
+            :best="view.bestSlotId === slot.id"
+            :can-pick="view.event.isHost"
+            :compact="compact"
+            :notes="notesFor(slot.id, view.members)"
+            :my-note="myNoteFor(slot.id)"
+            @vote="value => vote(slot.id, value)"
+            @pick="emit('pick', slot.id)"
+            @note="text => saveNote(slot.id, text)"
+          />
+        </li>
+      </ol>
+    </div>
 
     <button
       v-if="slots.length > 0 && compact"

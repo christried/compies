@@ -1198,6 +1198,38 @@
       "title": "Das Event",
       "text": "Hier steht, worum es geht und wann es losgeht."
     },
+    "poll": {
+      "title": "Terminumfrage",
+      "text": "Hier stimmst du für jeden Termin ab: Ja, Meh oder Nein. Zu deiner Stimme kannst du eine Anmerkung schreiben."
+    },
+    "board": {
+      "title": "Spielbrett",
+      "text": "Hier sitzt du erst auf der Tribüne. Dein Team wählst du, sobald das Event eingerichtet ist und der Termin steht."
+    },
+    "boardOpen": {
+      "title": "Spielbrett",
+      "text": "Such dir jetzt ein Team aus: Zieh dich hinein oder tipp dich an und wähl eins. Dort trägst du dein Teamwort ein, es wird Teil des Teamnamens."
+    },
+    "boardLocked": {
+      "title": "Spielbrett",
+      "text": "Die Teams stehen seit dem Start fest. Wer in einem Team sitzt, kann sein Teamwort weiter ändern."
+    },
+    "how": {
+      "title": "So wird gespielt",
+      "text": "Hier steht, wie ihr spielt: das Format, wie die Spiele gewählt werden und wie die Punkte zählen."
+    },
+    "activity": {
+      "title": "Aktivität",
+      "text": "Hier steht, was im Event passiert: wer beigetreten ist, welche Spiele drankommen und wie sie ausgehen."
+    },
+    "tabs": {
+      "title": "Aktivität",
+      "text": "Unten findest du den Reiter „Aktivität“. Dort steht, was im Event passiert."
+    },
+    "sound": {
+      "title": "Ton",
+      "text": "Hier schaltest du den Ton an oder aus."
+    },
     "end": {
       "title": "Das war’s",
       "text": "Du willst den Rundgang noch einmal sehen? Auf deinem Profil unter „Einstellungen“ startest du ihn neu."

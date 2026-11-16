@@ -41,8 +41,10 @@ const rows = computed(() => (props.settings === null
 </script>
 
 <template>
+  <!-- `data-tour` (#648): the Tour's „So wird gespielt“ step needs the Event's settings, so a card without them is no thing. -->
   <section
     :aria-labelledby="headingId"
+    :data-tour="settings === null ? undefined : 'how'"
     class="flex flex-col gap-3 rounded-[16px] border-(length:--cp-bw) border-line bg-surface p-4 text-ink"
   >
     <div class="flex min-h-7 items-center gap-2.5">
