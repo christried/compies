@@ -42,14 +42,14 @@ GitHub shares one number space across issues and PRs, so a bare `#42` may be eit
 
 ## Ideas
 
-An idea that isn't grilled yet is an **Idea issue**, never a line in `docs/roadmap.md` (the user, 2026-11-10). The roadmap holds only what a grilling has given a Release. `/capture-idea` files one in about two minutes: a few quick questions, a draft, the user's OK.
+An idea that isn't grilled yet is an **Idea issue**, never a line in `docs/roadmap.md` (the user, 2026-11-10). The roadmap holds only what a grilling has given a Release, and since 2026-11-16 the user picks from the open Idea issues what to grill next (`CLAUDE.md` § Roadmap). `/capture-idea` files one in about two minutes: a few quick questions, a draft, the user's OK.
 
-- **Title**: `Idea: <the idea in a few words>`. The prefix says what the issue is: a placeholder, not a ticket.
+- **Title**: `<the idea in a few words>`, without an `Idea:` prefix: the `needs-triage` label already says it is a placeholder, not a ticket (the user, 2026-11-16; older titles lost the prefix the same day).
 - **Labels**: `enhancement` + `needs-triage`, where `needs-triage` means "not grilled yet". An Idea issue waits for a grilling, not for `/triage`: it is the user's own.
 - **Body**: unfinished on purpose. The idea in the user's words, where it came from (a staging review, a game night, a session), and, where known, what it contradicts (`GLOSSARY.md`, an ADR, the design hand-off) and the open questions. Nothing about the app's Users: the repo is public (`CLAUDE.md` § Personal data).
 - **One idea per issue**: a note that holds several ideas becomes several issues.
-- **Create**: `gh issue create --title "Idea: …" --label enhancement --label needs-triage --body-file body.md`. In a cloud session: the REST call of § In a cloud session with `-f "labels[]=enhancement" -f "labels[]=needs-triage"`.
-- **Find**: `gh issue list --state open --label needs-triage --search "Idea in:title" --json number,title,body`. Every release grilling reads them beside the roadmap (`docs/roadmap.md`).
+- **Create**: `gh issue create --title "…" --label enhancement --label needs-triage --body-file body.md`. In a cloud session: the REST call of § In a cloud session with `-f "labels[]=enhancement" -f "labels[]=needs-triage"`.
+- **Find**: `gh issue list --state open --label enhancement --label needs-triage --json number,title,body` (`needs-triage` alone also finds incoming bug reports). The user picks from them what to grill next, and every grilling reads them.
 - **Picked up**: a grilling that takes an idea into a spec closes the Idea issue with a link to the spec, or rewrites it into one of the spec's tickets (new title, `ready-for-agent` instead of `needs-triage`), as #38 became 0.10-8. An idea too small for a spec is grilled with `/grill-with-docs` and built in the same session with `/implement`, or rewritten into a `ready-for-agent` ticket. An idea the user drops is closed as not planned (`gh issue close <n> --reason "not planned"`), with the reason in a comment.
 
 ## When a skill says "publish to the issue tracker"

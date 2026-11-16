@@ -31,7 +31,7 @@ Look these up yourself:
 Write one draft per idea; a message holding several ideas gets several drafts. Show them all in one message:
 
 ```
-Title: Idea: <the idea in a few words>
+Title: <the idea in a few words>
 Labels: enhancement, needs-triage
 
 <the idea, 1–3 sentences>
