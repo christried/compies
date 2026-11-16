@@ -2,7 +2,7 @@
 import { Search } from '@lucide/vue'
 import type { ComponentPublicInstance } from 'vue'
 import type { RouteLocationRaw } from 'vue-router'
-import { NO_FILTERS, SUITABILITIES, filterGames, parsePlayerCount, type GameFilters, type GameView } from '~~/shared/game'
+import { NO_FILTERS, SUITABILITIES, filterGames, parsePlayerCount, sortTagsByLabel, type GameFilters, type GameView } from '~~/shared/game'
 import { CHIP_OFF, CHIP_ON, CHIP_SHAPE } from '~/utils/chip-look'
 
 // The one game browser (#173, review B4): the library page and both pool pickers show the Game library through it.
@@ -34,7 +34,7 @@ const { games, tagsInUse, error, refresh } = useGameLibrary()
 const PLAYER_CHOICES = Array.from({ length: 24 }, (_, index) => index + 1)
 
 // The Tags offered: the ones some game carries, by label (German collation); `tagsInUse` comes by key (#336).
-const tagOptions = computed(() => [...tagsInUse.value].sort((a, b) => a.label.localeCompare(b.label, 'de')))
+const tagOptions = computed(() => sortTagsByLabel(tagsInUse.value))
 // An active Tag that no game carries (an old address, or its last game lost it): shown as the chip's value so the filter says what it does, but not offered.
 const strayTag = computed(() => {
   const key = filters.value.tag
