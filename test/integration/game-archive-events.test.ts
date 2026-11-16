@@ -6,6 +6,7 @@ import { memoryImageStore } from '../../server/utils/image-store'
 import { memoryRoomNotifier } from '../../server/utils/room-notifier'
 import { fileShareAssets } from '../../server/utils/share-assets'
 import type { EventView } from '../../shared/event'
+import { notesFromLines } from '../../shared/notes-doc'
 import { createTestApp, errorOf, sendVia, type TestRequest } from './app'
 import { createTestDb, resetDatabase } from './harness'
 import { clockToStop, hostCreatesEvent, hostEntersResult, hostFinishes, hostSets, hostSpins, readEvent, readEventText, readFeed, signInAs, startRunningEvent, type Rig, type Signed } from './scenario'
@@ -199,6 +200,143 @@ describe('Archived games and the Events (#725)', () => {
       const [round] = await roundRows(party)
       expect(round).toMatchObject({ id: roundId, gameId: party.games.kart.id })
       for (const cookie of [party.hostCookie, party.one]) expect((await read(party, cookie)).rounds).toMatchObject([{ id: roundId, game: { id: party.games.kart.id, name: 'Kart' } }])
+    })
+  })
+
+  describe('a pool change', () => {
+    const patch = (party: Party, body: unknown) => send('PATCH', `/api/e/${party.slug}/settings`, party.hostCookie, body)
+    const gameCountOf = async (party: Party) => (await testDb.db.select({ gameCount: events.gameCount }).from(events).where(eq(events.id, party.eventId)))[0]!.gameCount
+
+    it('drops an Archived game that the new list omits, and keeps its row when the list keeps it', async () => {
+      const party = await running()
+      const { halo, kart, dame } = party.games
+      await archive(party, kart.id)
+
+      // The Host's own list shows the Archived game, so the client sends it back: it stays in the pool.
+      expect((await patch(party, { pool: [halo.id, kart.id, dame.id] })).status).toBe(200)
+      expect(await poolRows(party)).toEqual([halo.id, kart.id, dame.id].sort())
+
+      expect((await patch(party, { pool: [halo.id, dame.id] })).status).toBe(200)
+      expect(await poolRows(party)).toEqual([halo.id, dame.id].sort())
+    })
+
+    it('refuses to add an Archived game as an absent one: no pool row and no setting is written', async () => {
+      const party = await running()
+      const { halo, kart, dame, schach } = party.games
+      await archive(party, schach.id)
+      const before = await poolRows(party)
+
+      expect(await errorOf(await patch(party, { settings: { gameCount: 7 }, pool: [halo.id, kart.id, dame.id, schach.id] }))).toEqual({ status: 400, code: 'unknown_game' })
+
+      expect(await poolRows(party)).toEqual(before)
+      expect(await gameCountOf(party)).toBe(10)
+      await restore(party, schach.id)
+      expect((await patch(party, { settings: { gameCount: 7 }, pool: [halo.id, kart.id, dame.id, schach.id] })).status).toBe(200)
+      expect(await poolRows(party)).toEqual([halo.id, kart.id, dame.id, schach.id].sort())
+      expect(await gameCountOf(party)).toBe(7)
+    })
+
+    it('refuses to create an Event with an Archived game in its pool, and writes no Event', async () => {
+      const party = await running()
+      await archive(party, party.games.schach.id)
+      const count = async () => (await testDb.db.select({ id: events.id }).from(events)).length
+      const before = await count()
+
+      const created = await send('POST', '/api/e', party.hostCookie, {
+        name: 'Neuer Abend', dateMode: 'poll', sessions: 1, slots: ['2091-10-30T20:30'], settings: { format: 'teams', teamCount: 2, teamSize: 2, gameCount: 5, pointsTable: { preset: 'linear', values: [1, 0] }, selectionMode: 'admin_pick', hiddenWheel: false, vetoAllowance: null },
+        pool: [party.games.halo.id, party.games.schach.id],
+      })
+
+      expect(await errorOf(created)).toEqual({ status: 400, code: 'unknown_game' })
+      expect(await count()).toBe(before)
+    })
+
+    it('still takes Event notes for an Archived game', async () => {
+      const party = await running()
+      await archive(party, party.games.kart.id)
+
+      const saved = await send('PUT', `/api/e/${party.slug}/games/${party.games.kart.id}/notes`, party.hostCookie, { notes: notesFromLines(['Hausregel Kart']) })
+
+      expect(saved.status).toBe(200)
+    })
+  })
+
+  // After an archive or a restore commits, the room of every live Event of the owner that holds the game hears the payload-free `event.changed` (ADR 0013).
+  describe('the room', () => {
+    /** Host H's game in the pool of E1 (live), E2 (finished), E3 (deleted) and not in E4 (live); E5 is live and belongs to Host H2, who holds his own copy of the game. */
+    async function world() {
+      const signedHost = await signInAs(rig, host)
+      const signedOther = await signInAs(rig, otherHost)
+      const [game] = await testDb.db.insert(games).values({ name: 'Geheimspiel Zebra', imageKey: 'zebra-key', createdBy: signedHost.id }).returning()
+      const [copy] = await testDb.db.insert(games).values({ name: 'Geheimspiel Zebra', imageKey: 'zebra-key', createdBy: signedOther.id }).returning()
+      const e1 = await hostCreatesEvent(rig, signedHost, { name: 'E1', pool: [game!.id] })
+      const e2 = await hostCreatesEvent(rig, signedHost, { name: 'E2', pool: [game!.id] })
+      const e3 = await hostCreatesEvent(rig, signedHost, { name: 'E3', pool: [game!.id] })
+      const e4 = await hostCreatesEvent(rig, signedHost, { name: 'E4' })
+      const e5 = await hostCreatesEvent(rig, signedOther, { name: 'E5', pool: [copy!.id] })
+      await testDb.db.update(events).set({ phase: 'finished', finishedAt: new Date(T0) }).where(eq(events.id, e2.eventId))
+      await testDb.db.update(events).set({ deletedAt: new Date(T0) }).where(eq(events.id, e3.eventId))
+      notifier.clear()
+      return { signedHost, signedOther, game: game!, copy: copy!, e1, e2, e3, e4, e5 }
+    }
+
+    type World = Awaited<ReturnType<typeof world>>
+    const heard = (w: World) => Object.fromEntries(Object.entries({ e1: w.e1, e2: w.e2, e3: w.e3, e4: w.e4, e5: w.e5 }).map(([key, ev]) => [key, notifier.messages(ev.eventId)]))
+    const silent = { e1: [], e2: [], e3: [], e4: [], e5: [] }
+    const once = { ...silent, e1: [{ v: 1, type: 'event.changed', serverTime: new Date(T0).getTime() }] }
+
+    it('tells exactly the live Events of the owner that hold the game, once, on an archive and on a restore', async () => {
+      const w = await world()
+
+      expect((await archived(w.game.id, true, w.signedHost.cookie)).status).toBe(200)
+      expect(heard(w)).toEqual(once)
+
+      notifier.clear()
+      expect((await archived(w.game.id, false, w.signedHost.cookie)).status).toBe(200)
+      expect(heard(w)).toEqual(once)
+    })
+
+    it('tells every live Event that holds the game, one message each', async () => {
+      const w = await world()
+      await testDb.db.insert(eventPoolGames).values({ eventId: w.e4.eventId, gameId: w.game.id })
+      notifier.clear()
+
+      await archived(w.game.id, true, w.signedHost.cookie)
+
+      expect(heard(w)).toEqual({ ...once, e4: once.e1 })
+    })
+
+    it('tells nobody when nothing changed: a repeat, another User\'s request and a body without the flag', async () => {
+      const w = await world()
+      await archived(w.game.id, true, w.signedHost.cookie)
+      notifier.clear()
+
+      expect((await archived(w.game.id, true, w.signedHost.cookie)).status).toBe(200)
+      expect((await archived(w.game.id, true, w.signedOther.cookie)).status).toBe(404)
+      expect((await send('PUT', `/api/games/${w.game.id}/archived`, w.signedHost.cookie, {})).status).toBe(400)
+      expect((await archived(w.copy.id, false, w.signedOther.cookie)).status).toBe(200)
+
+      expect(heard(w)).toEqual(silent)
+    })
+
+    it('carries neither the game\'s name nor its id nor its image key', async () => {
+      const w = await world()
+
+      await archived(w.game.id, true, w.signedHost.cookie)
+      await archived(w.game.id, false, w.signedHost.cookie)
+
+      const all = JSON.stringify(heard(w))
+      for (const trace of [w.game.name, w.game.id, w.game.imageKey!]) expect(all).not.toContain(trace)
+    })
+
+    it('publishes after the commit: the Event read made on receiving the message already shows the change', async () => {
+      const party = await running()
+      const messages = notifier.messages(party.eventId).length
+
+      await archive(party, party.games.kart.id)
+
+      expect(notifier.messages(party.eventId).slice(messages).map(message => message.type)).toEqual(['event.changed'])
+      expect((await read(party)).wheel?.count).toBe(2)
     })
   })
 

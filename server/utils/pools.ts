@@ -6,6 +6,7 @@ import { stoppedDraws } from './draw-timeline'
 import { apiError } from './errors'
 import { poolGameFace, poolGameView } from './library'
 import type { PoolGame, PoolGameFace } from '../../shared/game'
+import { beforeFinish, PHASES } from '../../shared/phase'
 import { storedPoolPreview } from '../../shared/settings'
 
 // The Game pool of an Event as `GET /api/e/:slug` shows it (#146). One pool since 0.8 (ADR 0014, #279, #286).
@@ -47,6 +48,34 @@ export async function assertGamesExist(tx: Db, hostId: string, ...lists: string[
   if (ids.length === 0) return
   const known = await tx.select({ id: games.id }).from(games).where(and(inArray(games.id, ids), eq(games.createdBy, hostId)))
   if (known.length !== ids.length) throw apiError('unknown_game')
+}
+
+/**
+ * The check of a pool change (#725, spec #717 § B „Setting and pooling“): every game of the list must be in the Event's Host's library and not Archived,
+ * unless the Event's pool already holds it (`unknown_game` otherwise, one lookup for all of them, before anything is written). A pool change replaces the whole
+ * list and the Host's own pool shows the Archived game, so the client sends it back; refusing it would silently drop it. An Archived game is only
+ * added by a restore first. `eventId` is null for a new Event, which has no pool yet: an Archived game never counts then. Event notes keep `assertGamesExist`,
+ * since they take an Archived game too (#731).
+ */
+export async function assertPoolGames(tx: Db, hostId: string, eventId: string | null, pool: string[]): Promise<void> {
+  const ids = [...new Set(pool.map(id => id.toLowerCase()))]
+  if (ids.length === 0) return
+  const pooled = eventId === null ? undefined : exists(tx.select({ one: sql`1` }).from(eventPoolGames).where(and(eq(eventPoolGames.eventId, eventId), eq(eventPoolGames.gameId, games.id))))
+  const known = await tx.select({ id: games.id }).from(games).where(and(inArray(games.id, ids), eq(games.createdBy, hostId), or(isNull(games.archivedAt), pooled)))
+  if (known.length !== ids.length) throw apiError('unknown_game')
+}
+
+/**
+ * The ids of the Events a game's archive or restore reaches (#725, ADR 0013): the owner's Events (`events.hostId`, ADR 0018: another Host's Event holds a
+ * copy, a different row) whose pool holds the game, that are not deleted and not finished (`beforeFinish`). One statement; the route publishes to each.
+ */
+export async function liveEventsHolding(db: Db, gameId: string, hostId: string): Promise<string[]> {
+  const found = await db
+    .select({ id: events.id })
+    .from(events)
+    .innerJoin(eventPoolGames, eq(eventPoolGames.eventId, events.id))
+    .where(and(eq(events.hostId, hostId), isNull(events.deletedAt), inArray(events.phase, PHASES.filter(beforeFinish)), eq(eventPoolGames.gameId, gameId)))
+  return found.map(row => row.id)
 }
 
 /**
