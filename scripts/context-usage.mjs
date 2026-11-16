@@ -5,13 +5,16 @@
 // cache. Subagents keep their own transcripts and do not count. The transcript folder is the main checkout's, also
 // from a worktree. A session id (argument, else $CLAUDE_CODE_SESSION_ID when its transcript exists) picks the session;
 // without one the newest transcript is measured, unless another changed in the last 10 minutes: then exit 2 (#480).
-// Usage: node scripts/context-usage.mjs [session id]
+// The limit is 300k unless the operator set another for the session: pass it as --limit (retro 0.14, #780: they raised it to
+// 400k and to 600k, and the script still said HAND OFF at 300k). --startup lists instead what the session read before its
+// first subagent, the largest first: local session 1 of 0.14 was at 71k on its first turn and at 156k when it first spawned.
+// Usage: node scripts/context-usage.mjs [session id] [--limit <tokens, e.g. 400k>] [--startup]
 import { execFileSync } from 'node:child_process'
-import { closeSync, openSync, readdirSync, readSync, statSync } from 'node:fs'
+import { closeSync, openSync, readdirSync, readFileSync, readSync, statSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { basename, dirname, join } from 'node:path'
 
-const LIMIT = 300_000
+const DEFAULT_LIMIT = 300_000
 const TAIL_BYTES = 4 * 1024 * 1024
 const RECENT_MS = 10 * 60 * 1000
 
@@ -49,8 +52,19 @@ const sessions = readdirSync(folder, { withFileTypes: true })
   .map(entry => ({ id: entry.name.slice(0, -'.jsonl'.length), at: statSync(join(folder, entry.name)).mtimeMs }))
   .sort((a, b) => b.at - a.at)
 
+// `--limit 400k`, `--limit 400000`; `--startup`; anything else is the session id.
+const args = process.argv.slice(2)
+const startup = args.includes('--startup')
+const limitAt = args.indexOf('--limit')
+let limit = DEFAULT_LIMIT
+if (limitAt !== -1) {
+  const match = /^(\d+)(k?)$/i.exec(args[limitAt + 1] ?? '')
+  limit = match ? Number(match[1]) * (match[2] ? 1000 : 1) : 0
+  if (limit <= 0) refuse(`--limit needs a number of tokens above 0, such as 400k or 400000 (got "${args[limitAt + 1] ?? ''}")`)
+}
+
 // The id is compared with the listing, never joined into a path.
-const given = process.argv[2]
+const given = args.find((arg, index) => !arg.startsWith('--') && (limitAt === -1 || index !== limitAt + 1))
 const fromEnv = process.env.CLAUDE_CODE_SESSION_ID
 let session
 if (given) {
@@ -71,6 +85,60 @@ if (!session) {
   session = sessions[0]
 }
 const file = join(folder, `${session.id}.jsonl`)
+
+const contextOf = usage => (usage.input_tokens ?? 0) + (usage.cache_creation_input_tokens ?? 0) + (usage.cache_read_input_tokens ?? 0)
+const thousands = tokens => `${Math.round(tokens / 1000)}k`
+
+if (startup) {
+  // The whole transcript up to the turn that spawns the first subagent: each tool result with its size in characters,
+  // and the context the API reported at the first turn and at that one.
+  const calls = new Map()
+  const seen = new Set()
+  const reads = []
+  let first
+  let last
+  let spawned = false
+  for (const line of readFileSync(file, 'utf8').split('\n')) {
+    if (!line || spawned) continue
+    let entry
+    try {
+      entry = JSON.parse(line)
+    }
+    catch {
+      continue
+    }
+    const content = entry.message?.content
+    if (entry.isSidechain || !Array.isArray(content)) continue
+    if (entry.message.role === 'assistant') {
+      if (entry.message.usage) {
+        last = contextOf(entry.message.usage)
+        first ??= last
+      }
+      for (const part of content) {
+        if (part.type !== 'tool_use') continue
+        calls.set(part.id, part)
+        if (part.name === 'Agent' || part.name === 'Task') spawned = true
+      }
+    }
+    else {
+      for (const part of content) {
+        // A transcript can hold one result twice; it reached the context once.
+        if (part.type !== 'tool_result' || seen.has(part.tool_use_id)) continue
+        seen.add(part.tool_use_id)
+        const call = calls.get(part.tool_use_id)
+        const text = typeof part.content === 'string' ? part.content : (part.content ?? []).map(piece => piece.text ?? '').join('\n')
+        const input = call?.input ?? {}
+        const what = String(input.description ?? input.file_path ?? input.skill ?? input.query ?? input.command ?? '').replace(/\s+/g, ' ').slice(0, 90)
+        reads.push({ chars: text.length, label: `${call?.name ?? 'tool'}: ${what}` })
+      }
+    }
+  }
+  if (first === undefined) throw new Error(`No assistant turn with usage in ${file}`)
+  const end = spawned ? `${thousands(last)} before its first subagent` : `${thousands(last)} now, no subagent yet`
+  console.log(`Startup of session ${session.id}: ${thousands(first)} tokens at its first turn, ${end}: ${thousands(last - first)} read in ${reads.length} tool results. The largest:`)
+  for (const read of reads.sort((a, b) => b.chars - a.chars).slice(0, 12)) console.log(`  ${read.chars.toLocaleString('en-US')} ch  ${read.label}`)
+  process.exit(0)
+}
 
 // Only the end of the file matters, and a long session's transcript runs to many MB.
 const size = statSync(file).size
@@ -96,5 +164,5 @@ for (const line of buffer.toString('utf8').split('\n').reverse()) {
 }
 if (!usage) throw new Error(`No assistant turn with usage in the last ${TAIL_BYTES} bytes of ${file}`)
 
-const tokens = (usage.input_tokens ?? 0) + (usage.cache_creation_input_tokens ?? 0) + (usage.cache_read_input_tokens ?? 0)
-console.log(`Context: ${Math.round(tokens / 1000)}k tokens (${tokens}); limit for a new implementer: ${LIMIT / 1000}k → ${tokens >= LIMIT ? 'HAND OFF' : 'ok'}; session ${session.id}`)
+const tokens = contextOf(usage)
+console.log(`Context: ${thousands(tokens)} tokens (${tokens}); limit for a new implementer: ${thousands(limit)} → ${tokens >= limit ? 'HAND OFF' : 'ok'}; session ${session.id}`)
