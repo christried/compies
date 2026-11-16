@@ -127,7 +127,7 @@ export function startSection(state: EventState<'sessions' | 'members'>, viewer: 
  * pools is selected for a viewer who may not see them (#222).
  */
 export function poolGamesOf(db: Db, eventRow: EventRow, viewer: Viewer): Promise<(PoolGame | PoolGameFace)[] | null> {
-  return canSeePoolGames(poolFactsOf({ isHost: viewer.isHost, settings: settingsFromRow(eventRow) })) ? eventPool(db, eventRow.id, viewer.isHost) : Promise.resolve(null)
+  return canSeePoolGames(poolFactsOf({ isHost: viewer.isHost, settings: settingsFromRow(eventRow) })) ? eventPool(db, eventRow.id, eventRow.hostId, viewer.isHost) : Promise.resolve(null)
 }
 
 /**

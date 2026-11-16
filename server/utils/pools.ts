@@ -22,22 +22,27 @@ export function assertNoOldPools(body: Record<string, unknown>): void {
  * The Game pool of an Event, sorted by name. The caller decides whether the viewer may see it (canSeePoolGames) and
  * does not call this otherwise, so nothing about the pool is selected for a viewer who may not see it (#148, #222, #225).
  * Only the Host gets the games whole; every other Member gets picture, name, Price, players and Suitabilities (#224, #338, #444).
+ * Only games of the Event's Host's library are in it (`games.created_by = events.host_id`, #722, ADR 0018): a pool row of another Host's game,
+ * which the 0.15 code could still write while a migration ran (ADR 0007), reaches no list.
  */
-export async function eventPool(db: Db, eventId: string, isHost: boolean): Promise<(PoolGame | PoolGameFace)[]> {
+export async function eventPool(db: Db, eventId: string, hostId: string, isHost: boolean): Promise<(PoolGame | PoolGameFace)[]> {
   const rows = await db
     .select({ game: games })
     .from(eventPoolGames)
     .innerJoin(games, eq(eventPoolGames.gameId, games.id))
-    .where(eq(eventPoolGames.eventId, eventId))
+    .where(and(eq(eventPoolGames.eventId, eventId), eq(games.createdBy, hostId)))
     .orderBy(asc(sql`lower(${games.name})`), asc(games.id))
   return rows.map(row => (isHost ? poolGameView(row.game) : poolGameFace(row.game)))
 }
 
-/** Every game of the lists must be in the library (`unknown_game` otherwise); one lookup for all of them, before anything is written (#146). */
-export async function assertGamesExist(tx: Db, ...lists: string[][]): Promise<void> {
+/**
+ * Every game of the lists must be in the Event's Host's library (`unknown_game` otherwise; another Host's game answers as an absent one, #722); one
+ * lookup for all of them, before anything is written (#146).
+ */
+export async function assertGamesExist(tx: Db, hostId: string, ...lists: string[][]): Promise<void> {
   const ids = [...new Set(lists.flat().map(id => id.toLowerCase()))]
   if (ids.length === 0) return
-  const known = await tx.select({ id: games.id }).from(games).where(inArray(games.id, ids))
+  const known = await tx.select({ id: games.id }).from(games).where(and(inArray(games.id, ids), eq(games.createdBy, hostId)))
   if (known.length !== ids.length) throw apiError('unknown_game')
 }
 

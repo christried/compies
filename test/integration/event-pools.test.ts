@@ -10,15 +10,18 @@ import { setAllowlist, signIn, stubAuthEnv } from './sign-in'
 
 // The Game pool of an Event (#146, ADR 0014, #286): the list under `pool`, created with the Event, read back by the Host in full,
 // by every other Member as picture and name only while the Pool preview is on (#148, #224, #225), and otherwise they learn
-// nothing about it (#222).
+// nothing about it (#222). The pool only ever holds games of the Event's Host's library (#722, ADR 0018): another Host's game is
+// refused as an absent one, and a row of one that the 0.15 code wrote in the migration window reaches no list.
 
 const host = { provider: 'discord', id: '1', name: 'Hostess', email: 'host@example.com', image: undefined } as const
 const member = { provider: 'discord', id: '2', name: 'Gast', email: 'member@example.com', image: undefined } as const
+const otherHost = { provider: 'discord', id: '3', name: 'Zweiter', email: 'host2@example.com', image: undefined } as const
 
 describe('the pool of an Event (#146, #286)', () => {
   let testDb: Awaited<ReturnType<typeof createTestDb>>
   let request: TestRequest
   let hostCookie: string
+  let otherCookie: string
 
   beforeAll(async () => {
     testDb = await createTestDb()
@@ -31,19 +34,20 @@ describe('the pool of an Event (#146, #286)', () => {
 
   beforeEach(async () => {
     stubAuthEnv()
-    setAllowlist({ hosts: 'discord:1', admins: 'discord:9' })
+    setAllowlist({ hosts: 'discord:1,discord:3', admins: 'discord:9' })
     await resetDatabase(testDb.db)
     hostCookie = (await signIn(testDb.db, host)).cookie
+    otherCookie = (await signIn(testDb.db, otherHost)).cookie
   })
 
   afterEach(() => {
     vi.unstubAllEnvs()
   })
 
-  async function newGame(name: string, extra: Record<string, unknown> = {}) {
+  async function newGame(name: string, extra: Record<string, unknown> = {}, cookie = hostCookie) {
     const response = await request('/api/games', {
       method: 'POST',
-      headers: { 'content-type': 'application/json', 'cookie': hostCookie },
+      headers: { 'content-type': 'application/json', cookie },
       body: JSON.stringify({ name, ...extra }),
     })
     expect(response.status).toBe(200)
@@ -68,6 +72,20 @@ describe('the pool of an Event (#146, #286)', () => {
     const response = await request(`/api/e/${slug}`, { headers: { cookie } })
     expect(response.status).toBe(200)
     return await response.json() as EventView
+  }
+
+  /** A pool row the 0.15 code could write in the migration window: a game of another Host in this Event's pool, put there straight in the database. */
+  async function poolForeign(slug: string, gameId: string) {
+    const [row] = await testDb.db.select().from(events).where(eq(events.slug, slug))
+    await testDb.db.insert(eventPoolGames).values({ eventId: row!.id, gameId })
+  }
+
+  /** Joins the Member by the invite of a created Event. */
+  async function joined(inviteUrl: string) {
+    const { cookie } = await signIn(testDb.db, member)
+    const invite = new URL(inviteUrl).pathname.slice('/e/'.length)
+    expect((await request(`/api/invite/${invite}`, { method: 'POST', headers: { cookie } })).status).toBe(200)
+    return cookie
   }
 
   async function poolRows() {
@@ -107,6 +125,42 @@ describe('the pool of an Event (#146, #286)', () => {
       expect(response.statusText).toBe('unknown_game')
       expect(await testDb.db.select().from(events)).toEqual([])
       expect(await poolRows()).toEqual([])
+    })
+
+    it('takes two of the Host\'s own games, beside the refusals of another Host\'s game (#722)', async () => {
+      const kart = await newGame('Mario Kart')
+      const pong = await newGame('Pong')
+
+      const { slug } = await createdEvent({ pool: [kart.id, pong.id] })
+
+      expect((await read(hostCookie, slug)).pool!.map(game => game.id).sort()).toEqual([kart.id, pong.id].sort())
+    })
+
+    it.each([
+      { label: 'alone', order: (_own: string, foreign: string) => [foreign] },
+      { label: 'after an own game', order: (own: string, foreign: string) => [own, foreign] },
+      { label: 'before an own game', order: (own: string, foreign: string) => [foreign, own] },
+    ])('refuses another Host\'s game $label with unknown_game, creates no Event and writes no pool row (#722)', async ({ order }) => {
+      const own = await newGame('Mario Kart')
+      const foreign = await newGame('Fremdes Spiel', {}, otherCookie)
+
+      const response = await create({ pool: order(own.id, foreign.id) })
+
+      expect(response.status).toBe(400)
+      expect(response.statusText).toBe('unknown_game')
+      expect(await testDb.db.select().from(events)).toEqual([])
+      expect(await poolRows()).toEqual([])
+    })
+
+    it('answers another Host\'s game exactly as an absent one: nobody can probe another library (#722)', async () => {
+      const foreign = await newGame('Fremdes Spiel', {}, otherCookie)
+
+      const foreignAnswer = await create({ pool: [foreign.id] })
+      const absentAnswer = await create({ pool: ['00000000-0000-4000-8000-000000000000'] })
+
+      expect(foreignAnswer.status).toBe(absentAnswer.status)
+      expect(foreignAnswer.statusText).toBe(absentAnswer.statusText)
+      expect(await foreignAnswer.text()).toBe(await absentAnswer.text())
     })
 
     it('refuses a malformed Game pool with invalid_pools and creates no Event', async () => {
@@ -201,6 +255,49 @@ describe('the pool of an Event (#146, #286)', () => {
       const { slug } = await createdEvent({})
 
       expect((await read(hostCookie, slug)).pool).toEqual([])
+    })
+
+    describe('a pool row of another Host\'s game, written in the migration window (#722, ADR 0007)', () => {
+      /** An Event of the Host with the games named and one of the other Host's put into its pool straight in the database, and a Member who joined. */
+      async function withForeignRow(ownNames: string[]) {
+        const own = await Promise.all(ownNames.map(name => newGame(name)))
+        const foreign = await newGame('Fremdes Spiel', {}, otherCookie)
+        const { slug, inviteUrl } = await createdEvent({ pool: own.map(game => game.id) })
+        await poolForeign(slug, foreign.id)
+        return { slug, own, foreign, memberCookie: await joined(inviteUrl) }
+      }
+
+      async function rawRead(cookie: string, slug: string) {
+        const response = await request(`/api/e/${slug}`, { headers: { cookie } })
+        expect(response.status).toBe(200)
+        return await response.text()
+      }
+
+      it.each([
+        { label: 'one own game and the foreign one', names: ['Mario Kart'] },
+        { label: 'two own games and the foreign one', names: ['Zebra Rennen', 'alpha Quest'] },
+      ])('shows the Host and a Member the own games only, sorted by name, for $label', async ({ names }) => {
+        const { slug, own, foreign, memberCookie } = await withForeignRow(names)
+        const expected = [...own].sort((a, b) => a.name.toLowerCase().localeCompare(b.name.toLowerCase())).map(game => game.id)
+
+        for (const cookie of [hostCookie, memberCookie]) {
+          const raw = await rawRead(cookie, slug)
+          expect((JSON.parse(raw) as EventView).pool!.map(game => game.id)).toEqual(expected)
+          expect(raw).not.toContain('Fremdes Spiel')
+          expect(raw).not.toContain(foreign.id)
+        }
+      })
+
+      it('shows the Host and a Member an empty list when the foreign row is the whole pool', async () => {
+        const { slug, foreign, memberCookie } = await withForeignRow([])
+
+        for (const cookie of [hostCookie, memberCookie]) {
+          const raw = await rawRead(cookie, slug)
+          expect((JSON.parse(raw) as EventView).pool).toEqual([])
+          expect(raw).not.toContain('Fremdes Spiel')
+          expect(raw).not.toContain(foreign.id)
+        }
+      })
     })
 
     it('gives every other Member nothing about the pools under a Hidden wheel, no count and not a trace of the games (the full test is hidden-wheel.test.ts, #148, #222)', async () => {
