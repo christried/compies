@@ -18,14 +18,21 @@ describe('drawInstants', () => {
     expect(spinCommitAt({ spinStartAt: instants.spinStartAt! })).toBe(C)
   })
 
-  it('a set draw ignores the length', () => {
-    const instants = drawInstants({ kind: 'set', spinLengthMs: SPIN_MAX_MS, commitAt: C, windowOpens: true, clipLength: 30 })
+  it('a set draw stops at the commit and has no spin start', () => {
+    const instants = drawInstants({ kind: 'set', commitAt: C, windowOpens: true, clipLength: 30 })
     expect(instants.spinStartAt).toBeNull()
     expect(ms(instants.stopAt)).toBe(C)
   })
 
-  it('a spin without a length is a bug: it throws instead of stopping at the start', () => {
-    expect(() => drawInstants({ kind: 'spin', spinLengthMs: null, commitAt: C, windowOpens: true, clipLength: 30 })).toThrow()
+  // The type refuses a spin without its length and a set with one (#605). Nothing runs: `pnpm typecheck` reads these calls.
+  it('refuses a spin without its length and a set with one, at compile time', () => {
+    const refused = (): void => {
+      // @ts-expect-error a spin needs its length
+      drawInstants({ kind: 'spin', commitAt: C, windowOpens: true, clipLength: 30 })
+      // @ts-expect-error a set has no length
+      drawInstants({ kind: 'set', spinLengthMs: SPIN_MIN_MS, commitAt: C, windowOpens: true, clipLength: 30 })
+    }
+    expect(refused).toBeTypeOf('function')
   })
 
   it('a spin with a window: starts a lead after the commit, stops 6 s later, the window ends the clip length plus 30 s after the stop', () => {
@@ -45,7 +52,7 @@ describe('drawInstants', () => {
   })
 
   it('a set draw with a window stops at the commit and has no spin start', () => {
-    const instants = drawInstants({ kind: 'set', spinLengthMs: null, commitAt: C, windowOpens: true, clipLength: 30 })
+    const instants = drawInstants({ kind: 'set', commitAt: C, windowOpens: true, clipLength: 30 })
     expect(instants.spinStartAt).toBeNull()
     expect(ms(instants.stopAt)).toBe(C)
     expect(ms(instants.vetoEndsAt)).toBe(C + 60_000)
@@ -53,7 +60,7 @@ describe('drawInstants', () => {
 
   it('a set draw without a window has no end, whatever the clip length', () => {
     for (const clipLength of [null, 10, 30, 120]) {
-      const instants = drawInstants({ kind: 'set', spinLengthMs: null, commitAt: C, windowOpens: false, clipLength })
+      const instants = drawInstants({ kind: 'set', commitAt: C, windowOpens: false, clipLength })
       expect(instants.spinStartAt).toBeNull()
       expect(ms(instants.stopAt)).toBe(C)
       expect(instants.vetoEndsAt).toBeNull()
@@ -73,7 +80,7 @@ describe('drawInstants', () => {
     { clipLength: 120, window: 150_000 },
     { clipLength: null, window: 30_000 },
   ])('a window for a clip of $clipLength s lasts $window ms after the stop, for a set draw and a spin', ({ clipLength, window }) => {
-    const set = drawInstants({ kind: 'set', spinLengthMs: null, commitAt: C, windowOpens: true, clipLength })
+    const set = drawInstants({ kind: 'set', commitAt: C, windowOpens: true, clipLength })
     expect(ms(set.vetoEndsAt) - ms(set.stopAt)).toBe(window)
     expect(ms(set.vetoEndsAt)).toBe(C + window)
     const spin = drawInstants({ kind: 'spin', spinLengthMs: SPIN_MIN_MS, commitAt: C, windowOpens: true, clipLength })
@@ -85,12 +92,14 @@ describe('drawInstants', () => {
 const KINDS = ['spin', 'set'] as const
 // A window of 40 s (10 s clip), one minute (30 s clip), 150 s (the longest clip) and 30 s (no video): every edge holds for each.
 const CLIPS = [{ clipLength: 10, windowMs: 40_000 }, { clipLength: 30, windowMs: 60_000 }, { clipLength: 120, windowMs: 150_000 }, { clipLength: null, windowMs: 30_000 }]
-// A spin at both ends of its range (#520): the edges hold for the longest too, since the stop moves with the length.
-const SHAPES = [{ kind: 'spin', spinLengthMs: SPIN_MIN_MS }, { kind: 'spin', spinLengthMs: SPIN_MAX_MS }, { kind: 'set', spinLengthMs: null }] as const
+// A spin at both ends of its range (#520): the edges hold for the longest too, since the stop moves with the length. A set has no
+// length (#605), so its title says what it is.
+const SHAPES = [{ kind: 'spin', spinLengthMs: SPIN_MIN_MS, title: `a spin draw of ${SPIN_MIN_MS} ms` }, { kind: 'spin', spinLengthMs: SPIN_MAX_MS, title: `a spin draw of ${SPIN_MAX_MS} ms` }, { kind: 'set', title: 'a set draw' }] as const
 const CASES = SHAPES.flatMap(shape => CLIPS.map(clip => ({ ...shape, ...clip })))
 
-describe.each(CASES)('a $kind draw of $spinLengthMs ms with a Veto window and a clip of $clipLength s', ({ kind, spinLengthMs, clipLength, windowMs }) => {
-  const draw = drawInstants({ kind, spinLengthMs, commitAt: C, windowOpens: true, clipLength })
+describe.each(CASES)('$title with a Veto window and a clip of $clipLength s', (c) => {
+  const { windowMs } = c
+  const draw = drawInstants({ ...(c.kind === 'spin' ? { kind: c.kind, spinLengthMs: c.spinLengthMs } : { kind: c.kind }), commitAt: C, windowOpens: true, clipLength: c.clipLength })
   const S = ms(draw.stopAt)
   const E = ms(draw.vetoEndsAt)
   const probes = [S - 1, S, E - 1, E]
@@ -140,7 +149,7 @@ describe.each(CASES)('a $kind draw of $spinLengthMs ms with a Veto window and a 
 })
 
 describe.each(KINDS)('a %s draw without a Veto window', (kind) => {
-  const draw = drawInstants({ kind, spinLengthMs: kind === 'spin' ? SPIN_MIN_MS : null, commitAt: C, windowOpens: false, clipLength: null })
+  const draw = drawInstants({ ...(kind === 'spin' ? { kind, spinLengthMs: SPIN_MIN_MS } : { kind }), commitAt: C, windowOpens: false, clipLength: null })
   const S = ms(draw.stopAt)
   const probes = [S - 1, S, S + 1]
   const row = { stopAt: draw.stopAt, vetoEndsAt: null }
@@ -237,7 +246,7 @@ describe('a game without a video (#546)', () => {
   for (const kind of ['spin', 'set'] as const) {
     it.each(rows)(`a ${kind} of $youtubeId / $clipLength s: card $card ms, window $window ms`, ({ youtubeId, clipLength, card, window }) => {
       const game = { youtubeId, clipLength }
-      const draw = drawInstants({ kind, spinLengthMs: kind === 'spin' ? SPIN_MIN_MS : null, commitAt: C, windowOpens: true, clipLength: clipLengthOf(game) })
+      const draw = drawInstants({ ...(kind === 'spin' ? { kind, spinLengthMs: SPIN_MIN_MS } : { kind }), commitAt: C, windowOpens: true, clipLength: clipLengthOf(game) })
       const clip = clipWindow(draw, game)
       expect(clip.startAt).toBe(ms(draw.stopAt))
       expect(clip.endsAt - clip.startAt).toBe(card)
@@ -253,7 +262,7 @@ describe('a game without a video (#546)', () => {
 
 // #506: a skip of the Clip ends the window 30 s after it when that is sooner; it never moves the end later.
 describe('vetoEndAfterSkip (#506)', () => {
-  const windowOf = (clipLength: number | null) => drawInstants({ kind: 'set', spinLengthMs: null, commitAt: C, windowOpens: true, clipLength })
+  const windowOf = (clipLength: number | null) => drawInstants({ kind: 'set', commitAt: C, windowOpens: true, clipLength })
   const after = (clipLength: number | null, skipAt: number) => {
     const moved = vetoEndAfterSkip(windowOf(clipLength), skipAt)
     return moved === null ? null : ms(moved)
@@ -310,7 +319,7 @@ describe('vetoEndAfterSkip (#506)', () => {
   })
 
   it.each(CASES)('never moves the end later, in a $kind draw with a clip of $clipLength s', ({ kind, clipLength }) => {
-    const draw = drawInstants({ kind, spinLengthMs: kind === 'spin' ? SPIN_MIN_MS : null, commitAt: C, windowOpens: true, clipLength })
+    const draw = drawInstants({ ...(kind === 'spin' ? { kind, spinLengthMs: SPIN_MIN_MS } : { kind }), commitAt: C, windowOpens: true, clipLength })
     const stop = ms(draw.stopAt)
     const end = ms(draw.vetoEndsAt)
     const skips = [stop, stop + 1, end - 30_001, end - 30_000, end - 29_999, end - 1, end, end + 1]

@@ -30,18 +30,23 @@ beforeAll(async () => {
   // Each shape is stored for every clip length (#505): a window of 40, 60 and 150 s, and 30 s for a game without a video. A spin is stored at both
   // ends of its length (#520), so the probes include the stop of a 10 s spin: 3 spin shapes twice and 3 set shapes are 9 shapes of 4 clip lengths.
   const clipLengths = [10, 30, 120, null] as const
-  const shapes = ([
+  // A shape: a spin with its length (#605: a set has none), a window or not, settled or not, at each clip length.
+  type Shape = { windowOpens: boolean, settled: boolean, clipLength: number | null } & ({ kind: 'spin', spinLengthMs: number } | { kind: 'set' })
+  const bases = [
     { kind: 'spin', windowOpens: true, settled: false },
     { kind: 'spin', windowOpens: false, settled: false },
     { kind: 'set', windowOpens: true, settled: false },
     { kind: 'set', windowOpens: false, settled: true },
     { kind: 'spin', windowOpens: true, settled: true },
     { kind: 'set', windowOpens: true, settled: true },
-  ] as const).flatMap(shape => (shape.kind === 'spin' ? [SPIN_MIN_MS, SPIN_MAX_MS] : [null]).map(spinLengthMs => ({ ...shape, spinLengthMs })))
-    .flatMap(shape => clipLengths.map(clipLength => ({ ...shape, clipLength })))
+  ] as const
+  const shapes: Shape[] = bases.flatMap(base => clipLengths.flatMap((clipLength): Shape[] => (base.kind === 'spin'
+    ? [SPIN_MIN_MS, SPIN_MAX_MS].map(spinLengthMs => ({ ...base, spinLengthMs, clipLength }))
+    : [{ ...base, clipLength }])))
   stored = []
   for (const shape of shapes) {
-    const instants = drawInstants({ kind: shape.kind, commitAt: COMMIT, windowOpens: shape.windowOpens, clipLength: shape.clipLength, spinLengthMs: shape.spinLengthMs })
+    const draw = shape.kind === 'spin' ? { kind: shape.kind, spinLengthMs: shape.spinLengthMs } : { kind: shape.kind }
+    const instants = drawInstants({ ...draw, commitAt: COMMIT, windowOpens: shape.windowOpens, clipLength: shape.clipLength })
     // One Round per draw; each has its game set, so the one-drawn-Round-per-Event index does not apply.
     const [round] = await db.insert(rounds).values({ eventId, startedAt: committedAt, gameId: game!.id, setAt: committedAt }).returning({ id: rounds.id })
     const [row] = await db.insert(draws).values({

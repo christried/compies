@@ -21,29 +21,30 @@ export interface DrawInstants { spinStartAt: Date | null, stopAt: Date, vetoEnds
 /** What a reader needs of a Draw's window: its two instants, as a row, a view or `DrawInstants` carry them. */
 export interface DrawWindow { stopAt: Instant, vetoEndsAt: Instant | null }
 
-/** What a writer tells the timeline about a new Draw. */
-export interface NewDraw {
-  kind: 'spin' | 'set'
+/**
+ * What a writer tells the timeline about a new Draw (#605). A spin carries its length in ms, required, so a writer cannot forget it
+ * (#520): the range is the draw's rule (`drawSpin`), not the timeline's, so it is not clamped here, and it is not stored (the stop
+ * carries it). A set has no length. Both carry the commit, the window and the clip (#505); the clip is required too, and not stored:
+ * only the resulting end is.
+ */
+type NewDraw = ({ kind: 'spin', spinLengthMs: number } | { kind: 'set' }) & {
   commitAt: Instant
   windowOpens: boolean
   /** The drawn game's clip length in seconds, null for a game without a video; ignored without a window. Required, so a writer cannot forget it (#505). Not stored: only the resulting end is. */
   clipLength: number | null
-  /** The spin's length in ms, null for a set draw (ignored). Required, so a writer cannot forget it (#520). The range is the draw's rule (`drawSpin`), not the timeline's: it is not clamped here. Not stored: the stop carries it. */
-  spinLengthMs: number | null
 }
 
 /**
- * WRITER. A spin starts SPIN_LEAD_MS after the commit and stops `spinLengthMs` later; a set draw stops at the commit
+ * WRITER. A spin starts SPIN_LEAD_MS after the commit and stops its length later; a set draw stops at the commit
  * (`spinStartAt` null). With `windowOpens` the Veto window ends the clip length plus VETO_AFTER_CLIP_MS after the stop (a game
  * without a video: VETO_AFTER_CLIP_MS), else `vetoEndsAt` is null.
  */
-export function drawInstants({ kind, commitAt, windowOpens, clipLength, spinLengthMs }: NewDraw): DrawInstants {
-  if (kind === 'spin' && spinLengthMs === null) throw new Error('A spin needs its length (#520)')
-  const commit = msOf(commitAt)
-  const spinStart = kind === 'spin' ? commit + SPIN_LEAD_MS : null
-  const stop = spinStart === null ? commit : spinStart + spinLengthMs!
+export function drawInstants(draw: NewDraw): DrawInstants {
+  const commit = msOf(draw.commitAt)
+  const spinStart = draw.kind === 'spin' ? commit + SPIN_LEAD_MS : null
+  const stop = draw.kind === 'spin' ? commit + SPIN_LEAD_MS + draw.spinLengthMs : commit
   // The Veto window's length is decided here and only here (#505): the readers, `windowFraction` included, work from the stored end.
-  const end = windowOpens ? stop + (clipLength ?? 0) * 1000 + VETO_AFTER_CLIP_MS : null
+  const end = draw.windowOpens ? stop + (draw.clipLength ?? 0) * 1000 + VETO_AFTER_CLIP_MS : null
   return { spinStartAt: spinStart === null ? null : new Date(spinStart), stopAt: new Date(stop), vetoEndsAt: end === null ? null : new Date(end) }
 }
 
