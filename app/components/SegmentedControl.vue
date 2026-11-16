@@ -5,12 +5,15 @@ import type { Component } from 'vue'
 // move and select, with the focus following; the selected option is the only tab stop. Options can
 // carry their own selected fill and icon (the Slot card's vote options); a disabled group shows its
 // options but does not select. Typed by its values (T), so a caller gets back the value type it passed in (review D1).
+// `arrows` 'horizontal' leaves ArrowUp and ArrowDown to the parent, for a row inside a menu that walks its items with them (#617).
 const props = defineProps<{
   modelValue: T
   options: { value: T, label: string, icon?: Component, fill?: string }[]
   /** The group's accessible name. */
   label: string
   disabled?: boolean
+  /** Which arrow keys select: all four (default), or only left and right. */
+  arrows?: 'all' | 'horizontal'
 }>()
 
 const emit = defineEmits<{ 'update:modelValue': [value: T] }>()
@@ -32,6 +35,7 @@ function isTabStop(index: number) {
 function onKeydown(event: KeyboardEvent, index: number) {
   const step = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 }[event.key]
   if (step === undefined) return
+  if (props.arrows === 'horizontal' && (event.key === 'ArrowDown' || event.key === 'ArrowUp')) return
   event.preventDefault()
   const next = (index + step + props.options.length) % props.options.length
   select(props.options[next]!.value)

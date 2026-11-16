@@ -35,6 +35,7 @@
   --color-surface: var(--cp-surface);
   --color-surface-2: var(--cp-surface-2);
   --color-overlay: var(--cp-overlay);
+  --color-backdrop: var(--cp-backdrop);
   --color-ink: var(--cp-ink);
   --color-ink-2: var(--cp-ink-2);
   --color-ink-3: var(--cp-ink-3);
@@ -131,7 +132,7 @@
   --border-width-memphis: var(--cp-bw);  --border-width-thin: var(--cp-bw-thin);
 
   /* layer stack: use layer-dock, layer-veto … never raw z-index */
-  --layer-decor: var(--cp-z-decor);  --layer-content: var(--cp-z-content);  --layer-sticky: var(--cp-z-sticky);  --layer-header: var(--cp-z-header);  --layer-dock: var(--cp-z-dock);  --layer-sheet: var(--cp-z-sheet);
+  --layer-decor: var(--cp-z-decor);  --layer-content: var(--cp-z-content);  --layer-sticky: var(--cp-z-sticky);  --layer-header: var(--cp-z-header);  --layer-backdrop: var(--cp-z-backdrop);  --layer-dock: var(--cp-z-dock);  --layer-sheet: var(--cp-z-sheet);
   --layer-clip: var(--cp-z-clip);  --layer-veto: var(--cp-z-veto);  --layer-modal: var(--cp-z-modal);  --layer-popover: var(--cp-z-popover);  --layer-toast: var(--cp-z-toast);  --layer-confetti: var(--cp-z-confetti);
 
   /* matches DS Frame: mobile < 600 · tablet 600–979 · desktop 980–1439 · wide ≥ 1440. Reference layout 1280. */
@@ -155,6 +156,7 @@
   --animate-enter: cp-fade-in var(--cp-dur-base) var(--cp-ease-out) both;    /* UI: toasts, badges, modals */
   --animate-fade-in: cp-fade-in var(--cp-dur-fast) var(--cp-ease-out) both;
   --animate-clip-in: cp-clip-in var(--cp-dur-slow) var(--cp-ease-out) both;     /* the synced clip opens (04-motion § Clip overlay) */
+  --animate-backdrop-in: cp-fade-in var(--cp-dur-slow) var(--cp-ease-out) both;  /* the Clip's backdrop fades in with the Clip (#587): opacity only, a full-viewport layer scaled to .96 would show a strip of page at its edge */
   --animate-veto-in: cp-veto-in var(--cp-dur-slow) var(--cp-ease-out) both;     /* the Veto bar rises from the bottom (04-motion § Veto window) */
   --animate-sheet-in: cp-sheet-in var(--cp-dur-slow) var(--cp-ease-out) both;
   --animate-bounce-back: cp-bounce-back var(--cp-dur-slower) var(--cp-ease-spring) both;
@@ -176,11 +178,11 @@
 
 /* every animate-* class has a calm twin under reduced motion */
 @media (prefers-reduced-motion: reduce) {
-  .animate-clip-in, .animate-veto-in, .animate-sheet-in, .animate-bounce-back { animation: cp-fade-in var(--cp-dur-fast) linear both; }
+  .animate-clip-in, .animate-backdrop-in, .animate-veto-in, .animate-sheet-in, .animate-bounce-back { animation: cp-fade-in var(--cp-dur-fast) linear both; }
   .animate-emote-rise { animation: cp-fade-in 200ms linear both; }
   .animate-tick, .animate-wiggle, .animate-live { animation: none; }
 }
-[data-motion=reduced] .animate-clip-in, [data-motion=reduced] .animate-veto-in, [data-motion=reduced] .animate-sheet-in, [data-motion=reduced] .animate-bounce-back { animation: cp-fade-in var(--cp-dur-fast) linear both; }
+[data-motion=reduced] .animate-clip-in, [data-motion=reduced] .animate-backdrop-in, [data-motion=reduced] .animate-veto-in, [data-motion=reduced] .animate-sheet-in, [data-motion=reduced] .animate-bounce-back { animation: cp-fade-in var(--cp-dur-fast) linear both; }
 [data-motion=reduced] .animate-emote-rise { animation: cp-fade-in 200ms linear both; }
 [data-motion=reduced] .animate-tick, [data-motion=reduced] .animate-wiggle, [data-motion=reduced] .animate-live { animation: none; }
 
@@ -217,6 +219,8 @@
 @utility tape { background-image: repeating-linear-gradient(-45deg, #ff4f4f 0 14px, #fffdf8 14px 28px); border-block: 2.5px solid #151515; }
 @utility tape-chip { background-image: repeating-linear-gradient(-45deg, #ff4f4f 0 3px, #fffdf8 3px 6px); border: 1.5px solid #151515; border-radius: 2px; }
 @utility fence-mesh { background-image: linear-gradient(color-mix(in srgb, var(--cp-line) 38%, transparent) 1.5px, transparent 1.5px), linear-gradient(90deg, color-mix(in srgb, var(--cp-line) 38%, transparent) 1.5px, transparent 1.5px); background-size: 12px 12px; }
+/* Keeps the scrollbar's place while the page is locked, so the page and every fixed element stay where they are (ClipBackdrop, #658). */
+@utility scroll-gutter { scrollbar-gutter: stable; }
 @utility hit-44 { position: relative; &::after { content: ""; position: absolute; inset: 50% auto auto 50%; width: max(100%, 44px); height: max(100%, 44px); transform: translate(-50%,-50%); } }
 /* Hover tint (#33): items inside a group, and the reduced-motion stand-in for the lift. Used as hover:tint. Stronger on Dunkel (#406). */
 @utility tint {
@@ -245,31 +249,44 @@
   }
 }
 
-/* Hover lift (#33): a control rises with a card shadow on hover and presses down on click. Hover-only
-   devices lift; under reduced motion the control stays still and shows the hover tint instead. */
+/* Hover lift (#33, #608): a control or a clickable card rises with a card shadow on hover and presses onto its
+   shadow (4 px right and down, the offset of --cp-shadow-btn) on click. Only a device that hovers lifts. Under reduced
+   motion (the OS setting or data-motion=reduced) neither the rise nor the press moves the element and the hover does
+   not grow its shadow: it shows the tint instead. A pressed element loses its shadow at every motion setting (a visual
+   change, not motion). */
 @utility lift {
   transition-property: translate, box-shadow;
   transition-duration: var(--cp-dur-instant);
   transition-timing-function: var(--cp-ease-snap);
-  @media (hover: hover) {
-    &:hover {
+  @media (hover: hover) and (prefers-reduced-motion: no-preference) {
+    &:hover:where(:not([data-motion=reduced] *)) {
       translate: 0 calc(var(--spacing) * -0.5);
       box-shadow: var(--shadow-card);
     }
   }
-  &:active {
-    translate: var(--spacing);
+  /* `:active` matches the pressed element and every ancestor of it, so a lift that holds a control of its own (the game card's
+     „+N“, its action buttons) would press along with that control (#658). It presses only when no control inside it is pressed,
+     except the one marked data-lift-owner: the card's stretched name, whose press is the card's click. Zero specificity. */
+  &:active:where(:not(:has(:active:is(a, button, input, select, textarea, summary, [role=button]):not([data-lift-owner])))) {
     box-shadow: none;
+    @media (prefers-reduced-motion: no-preference) {
+      &:where(:not([data-motion=reduced] *)) {
+        translate: var(--spacing) var(--spacing);
+      }
+    }
   }
-  @media (prefers-reduced-motion: reduce) {
-    &:hover {
+  /* The tint is the hover cue too, so it shows only where the device hovers. */
+  @media (hover: hover) {
+    @media (prefers-reduced-motion: reduce) {
+      &:hover {
+        translate: none;
+        @apply tint;
+      }
+    }
+    [data-motion=reduced] &:hover {
       translate: none;
       @apply tint;
     }
-  }
-  [data-motion=reduced] &:hover {
-    translate: none;
-    @apply tint;
   }
 }
 

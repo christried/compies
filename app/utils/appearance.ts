@@ -1,4 +1,5 @@
-import { isAppearance, type Appearance, type AuthUser } from '~~/shared/auth'
+import { isAppearance, type Appearance } from '~~/shared/appearance'
+import type { AuthUser } from '~~/shared/auth'
 
 // The Appearance a page renders and the browser bar's colour for it (#401, GLOSSARY: Appearance): the signed-in User's, or
 // signed out the device's `compies-appearance` cookie (#403). Pure, so the plugin (app/plugins/appearance.ts) and the unit

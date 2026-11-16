@@ -5,9 +5,10 @@ import { defineComponent, h, ref } from 'vue'
 import AppSheet from '~/components/AppSheet.vue'
 import HintElement from '~/components/HintElement.vue'
 
-// The hint element (#515, 02-components § HintElement): a „?“ button with a popover for a short text or a slot. Click toggles it; Esc, a
-// press outside and a scroll outside close it; Esc and a press outside that lands on nothing focusable return the focus to the button, a press
-// on a field or a button leaves it there, and a scroll and a resize leave it (#578).
+// The hint element (#515, 02-components § HintElement): a „?“ button with a popover for a short text or a slot. It opens by the shared reveal
+// behaviour (#616: mouse hover, focus; a click pins it, a second click closes it); Esc, a press outside and a scroll outside close it; Esc and a
+// press outside that lands on nothing focusable return the focus to the button, a press on a field or a button leaves it there, and a scroll
+// and a resize leave it (#578). The shared behaviour's own cases are in reveal-popover.test.ts.
 
 const TEXT = 'Strg + Enter speichert'
 
@@ -364,6 +365,81 @@ describe('the hint element (#515)', () => {
     page = undefined
 
     expect(popover()).toBeNull()
+  })
+
+  describe('as one circle that opens by hover and focus (#616)', () => {
+    const mouse = async (target: EventTarget, type: 'pointerenter' | 'pointerleave') => {
+      target.dispatchEvent(new PointerEvent(type, { pointerType: 'mouse' }))
+      await flushPromises()
+    }
+
+    afterEach(() => {
+      vi.useRealTimers()
+    })
+
+    it('draws a bare question mark: no circle in the glyph, and the button is the only round shape', async () => {
+      await mount()
+
+      const svg = trigger().querySelector('svg')!
+      expect(svg.querySelector('circle')).toBeNull()
+      expect(svg.querySelectorAll('path')).toHaveLength(2)
+      expect(trigger().className).toContain('rounded-pill')
+    })
+
+    it('opens when the mouse reaches it and closes 120 ms after the mouse left', async () => {
+      vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+      await mount()
+
+      await mouse(trigger(), 'pointerenter')
+      expect(popover()).not.toBeNull()
+      expect(popover()!.textContent).toContain(TEXT)
+
+      await mouse(trigger(), 'pointerleave')
+      await vi.advanceTimersByTimeAsync(119)
+      expect(popover()).not.toBeNull()
+      await vi.advanceTimersByTimeAsync(1)
+      await flushPromises()
+      expect(popover()).toBeNull()
+    })
+
+    it('opens when the keyboard reaches it', async () => {
+      await mount()
+
+      trigger().focus()
+      await flushPromises()
+
+      expect(popover()).not.toBeNull()
+      expect(trigger().getAttribute('aria-expanded')).toBe('true')
+    })
+
+    it('stays open after a click on a hover-opened hint, past the 120 ms after the mouse left', async () => {
+      vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+      await mount()
+      await mouse(trigger(), 'pointerenter')
+
+      await click(trigger())
+      await mouse(trigger(), 'pointerleave')
+      await vi.advanceTimersByTimeAsync(500)
+      await flushPromises()
+
+      expect(popover()).not.toBeNull()
+    })
+
+    it('has no native tooltip, and still a name', async () => {
+      await mount()
+
+      expect(trigger().hasAttribute('title')).toBe(false)
+      expect(trigger().getAttribute('aria-label')).toBe('Hinweis anzeigen')
+    })
+
+    it('names the button by a custom label', async () => {
+      await mount({ props: { label: 'Was ist das?' } })
+
+      const button = document.querySelector<HTMLButtonElement>('button[aria-label="Was ist das?"]')
+      expect(button).not.toBeNull()
+      expect(document.querySelector('button[aria-label="Hinweis anzeigen"]')).toBeNull()
+      expect(button!.hasAttribute('title')).toBe(false)
+    })
   })
 
   it('closes the first of two hints when the second one opens, each keeping its own state', async () => {

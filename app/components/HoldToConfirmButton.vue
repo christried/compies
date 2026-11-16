@@ -10,6 +10,9 @@ import { Check } from '@lucide/vue'
 // one, it is done at once and the parent acts on `confirm`.
 // The hint „1 Sekunde halten“ is a line below the button, or with `hint="badge"` a small „1 s halten“ badge inside it
 // (the HostDock, #164); the badge is hidden from screen readers, which hear the full hint through aria-describedby.
+// As a menu item (`menuitem`, #607) it is a flat row like the plain entries of the menu: no pill look, no shadow, no
+// dock size. Its icon and gap are the plain rows' (20 px, `gap-3`, #659). It keeps the fill and the badge; the variant's
+// fill and text colour and its size do not apply, whatever the variant.
 const props = withDefaults(defineProps<{
   label: string
   holdingLabel?: string
@@ -110,6 +113,9 @@ function onKeyup(event: KeyboardEvent) {
   cancel()
 }
 
+/** A menu row's icon is the plain rows' 20 px (MoveToMenuList, #659); the pill's is 18 px. */
+const iconSize = computed(() => (props.menuitem ? 20 : 18))
+
 const visibleLabel = computed(() => {
   if (done.value) return props.doneLabel ?? props.label
   if (holding.value || running.value) return props.holdingLabel ?? props.label
@@ -125,8 +131,22 @@ const visibleLabel = computed(() => {
     <button
       type="button"
       :role="menuitem ? 'menuitem' : undefined"
-      class="outline-memphis hit-44 relative inline-flex cursor-pointer touch-none items-center justify-center gap-2 overflow-hidden rounded-pill border-(length:--cp-bw) border-line whitespace-nowrap shadow-btn transition-[transform,translate,box-shadow] dur-instant ease-snap select-none hover:-translate-y-0.5 hover:shadow-card reduced:hover:translate-y-0 reduced:hover:tint motion-reduce:hover:translate-y-0 motion-reduce:hover:tint active:scale-[0.97] reduced:active:scale-100 motion-reduce:active:scale-100 aria-disabled:cursor-not-allowed aria-disabled:border-dashed aria-disabled:border-ink-3 aria-disabled:bg-paper-2 aria-disabled:text-ink-3 aria-disabled:shadow-none aria-disabled:hover:translate-y-0 aria-disabled:hover:shadow-none aria-disabled:hover:bg-none"
-      :class="{ 'bg-hot text-on-hot': variant === 'hot', 'bg-primary text-on-primary': variant === 'primary', 'bg-surface text-ink': variant === 'secondary', 'h-12 px-5 text-body font-bold': size === 'card', 'h-control-lg px-5 font-extrabold': size === 'lg', 'h-11 px-4 text-[14px] font-bold': size === 'dock', 'min-h-14 px-5 text-body font-bold': size === 'row', 'w-full justify-start': block }"
+      class="hit-44 relative inline-flex cursor-pointer touch-none items-center justify-center gap-2 overflow-hidden whitespace-nowrap transition-[transform,translate,box-shadow] dur-instant ease-snap select-none aria-disabled:cursor-not-allowed aria-disabled:border-dashed aria-disabled:border-ink-3 aria-disabled:bg-paper-2 aria-disabled:text-ink-3 aria-disabled:shadow-none aria-disabled:hover:translate-y-0 aria-disabled:hover:shadow-none aria-disabled:hover:bg-none"
+      :class="[
+        menuitem
+          ? 'min-h-11 rounded-md px-3 py-1.5 text-left text-[15px] font-semibold text-ink hover:bg-surface-2'
+          : 'outline-memphis rounded-pill border-(length:--cp-bw) border-line shadow-btn hover:-translate-y-0.5 hover:shadow-card reduced:hover:translate-y-0 reduced:hover:shadow-btn reduced:hover:tint motion-reduce:hover:translate-y-0 motion-reduce:hover:shadow-btn motion-reduce:hover:tint active:scale-[0.97] reduced:active:scale-100 motion-reduce:active:scale-100',
+        {
+          'bg-hot text-on-hot': variant === 'hot' && !menuitem,
+          'bg-primary text-on-primary': variant === 'primary' && !menuitem,
+          'bg-surface text-ink': variant === 'secondary' && !menuitem,
+          'h-12 px-5 text-body font-bold': size === 'card' && !menuitem,
+          'h-control-lg px-5 font-extrabold': size === 'lg' && !menuitem,
+          'h-11 px-4 text-[14px] font-bold': size === 'dock' && !menuitem,
+          'min-h-14 px-5 text-body font-bold': size === 'row' && !menuitem,
+          'w-full justify-start': block,
+        },
+      ]"
       :aria-disabled="disabled ? 'true' : undefined"
       :aria-describedby="disabled && disabledReason ? reasonId : (!disabled && hint === 'badge' ? hintId : undefined)"
       @pointerdown="onPointerDown"
@@ -148,18 +168,18 @@ const visibleLabel = computed(() => {
         }"
       />
       <span
-        class="relative flex items-center gap-2"
-        :class="{ 'w-full': block }"
+        class="relative flex items-center"
+        :class="[menuitem ? 'gap-3' : 'gap-2', { 'w-full': block }]"
       >
         <AppIcon
           v-if="done"
           :icon="Check"
-          :size="18"
+          :size="iconSize"
         />
         <AppIcon
           v-else-if="icon"
           :icon="icon"
-          :size="18"
+          :size="iconSize"
         />
         {{ visibleLabel }}
         <span

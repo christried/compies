@@ -185,7 +185,7 @@ The time after a Draw's stop (or after the Host sets a game) in which every Part
 _Avoid_: Veto round, voting time, grace period
 
 **Clip**:
-The game's YouTube excerpt that every device plays from the same second at a Draw's stop, for the game's clip length or until the Host skips it; a game without a video shows its card instead, for its clip length but at most 30 seconds. Nobody can pause the video or operate it; a Member can mute it or close it on their own device, and a Party can cast its Veto while it plays.
+The game's YouTube excerpt that every device plays from the same second at a Draw's stop, for the game's clip length or until the Host skips it; a game without a video shows its card instead, for its clip length but at most 30 seconds. Nobody can pause the video or operate it; a Member can mute it or close it on their own device, and a Party can cast its Veto while it plays. A video YouTube will not play embedded, such as an age-restricted one (it needs a viewer signed in on youtube.com), shows the card the same way; COMPIES cannot fix that.
 _Avoid_: Trailer, preview, video
 
 **Veto allowance**:
@@ -205,7 +205,7 @@ The free text on a game in the Game library, such as its settings, warm-up and w
 _Avoid_: Note (a Note belongs to a Vote), description, rules
 
 **Tag**:
-A short word a game's editors attach to it in the Game library, such as a genre or „Co-op“, to find and filter games by; free, shared across the library, and never shown to Members (UI: Tag).
+A short word a game's editors attach to it in the Game library, such as a genre or „Co-op“, to find and filter games by; free, shared across the library, and never shown to Members (UI: Tag). Each Tag chip wears one of the eight Team colours, chosen by the Tag's key; the Tags of one game never share one until all eight are in use.
 _Avoid_: Label, category, keyword, genre (a genre is one kind of Tag)
 
 **Price**:
@@ -281,7 +281,7 @@ A Party on the first rank of a finished Event's final Standings: one, or several
 _Avoid_: Champion, victor, leader (a Leading Party is first while the Event still runs)
 
 **Share image**:
-The picture of a finished Event's Winners, Standings and played games, landscape or square, that a Member downloads or shares from their own device; only Members of the Event can get it (UI: Ergebnis-Bild).
+The picture of a finished Event's Winners, Standings and played games, landscape or square, that a Member downloads or shares from their own device; only Members of the Event can get it (UI: Ergebnis-Bild). There is no public link to it: a public URL would show the Team words in the Team names to anyone who has it (decided 2026-11-05).
 _Avoid_: Poster, OG image, screenshot, share link
 
 ## App
@@ -298,6 +298,10 @@ _Avoid_: Theme, colour mode, dark mode
 Whether a device plays the app's sound. It belongs to the device, not to the User (UI: Ton).
 _Avoid_: Mute, volume
 
+**Tour**:
+A short guided look at an Event page for a User who opens an Event they do not host for the first time: Compibert points at one thing after another, and the User only looks and never has to act. Every User gets it once and can ask for it again; a reworked Tour is shown once more to everyone (UI: Rundgang).
+_Avoid_: Onboarding, tutorial, walkthrough, guide
+
 **Game library**:
 The platform-wide collection of games that Hosts fill their Events from; only Users with the Host permission and the Platform admin see it (UI: Bibliothek).
 _Avoid_: Game list, catalogue
@@ -311,5 +315,5 @@ The public list of Releases, newest first, saying in plain words what changed fo
 _Avoid_: Release notes, news, patch notes
 
 **Compibert**:
-The app's mascot; it appears on screen but is never named in UI copy.
+The app's mascot; it appears on screen but is never named in UI copy. A hat (the hard hat, the party hat) is an accessory, never one of its states.
 _Avoid_: CompiBeard, Compi, mascot

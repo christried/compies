@@ -37,6 +37,16 @@ describe('dev sign-in', { timeout: 20_000 }, () => {
     expect(user).toMatchObject({ displayName: 'Dev Member', canHost: false, isAdmin: false, image: '/icons/icon-192.png' })
   })
 
+  // A fourth dev User (#599): two Parties of two need four Players, and a check of a teammate's Veto had none in 0.13.3.
+  it('signs in as a second Member, a User of its own', async () => {
+    const { db } = await createTestDb()
+    const first = await signInAs('?as=member', db)
+    const second = await signInAs('?as=member2', db)
+
+    expect(second.user).toMatchObject({ displayName: 'Dev Member 2', canHost: false, isAdmin: false, image: '/icons/icon-192.png' })
+    expect(second.user!.id).not.toBe(first.user!.id)
+  })
+
   it('signs in as the Platform admin', async () => {
     const { user } = await signInAs('?as=admin')
 

@@ -5,11 +5,11 @@
 // `serve.mjs` runs at import, so the table cannot live in it.
 
 /** @typedef {1 | 2} Slot */
-/** @typedef {{ app: number, realtime: number, prod: number, inspector: number, chrome: { host: number, member: number, admin: number } }} Ports */
+/** @typedef {{ app: number, realtime: number, prod: number, inspector: number, chrome: { host: number, member: number, admin: number, member2: number } }} Ports */
 /** @typedef {{ port: number, log: string, command: string | null, args?: string[], env?: Record<string, string>, notBuilding?: true, needs?: string }} ServerSpec */
 
 // Slot 1's `inspector` is documentation: slot 1 passes no inspector flag and wrangler probes upward from 9229 itself.
-const SLOT_1 = { app: 3000, realtime: 8787, prod: 3001, inspector: 9229, chrome: { host: 9311, member: 9312, admin: 9313 } }
+const SLOT_1 = { app: 3000, realtime: 8787, prod: 3001, inspector: 9229, chrome: { host: 9311, member: 9312, admin: 9313, member2: 9314 } }
 const SLOT_STEP = 100
 
 /**
@@ -36,7 +36,7 @@ export function portsOf(slot) {
     realtime: SLOT_1.realtime + shift,
     prod: SLOT_1.prod + shift,
     inspector: SLOT_1.inspector + shift,
-    chrome: { host: chrome.host + shift, member: chrome.member + shift, admin: chrome.admin + shift },
+    chrome: { host: chrome.host + shift, member: chrome.member + shift, admin: chrome.admin + shift, member2: chrome.member2 + shift },
   }
 }
 
@@ -51,23 +51,26 @@ export function originOf(slot, name) {
 /**
  * The three servers `serve.mjs` can start. Slot 1 is what the script always ran; slot 2 passes its own port, tells the Worker the slot's app
  * origins and the app the slot's Worker address (`REALTIME_URL`) and its own origin (`BETTER_AUTH_URL`, which Better Auth trusts as the only origin).
+ * `wording` starts the dev server with COMPIES_WORDING=1, so translated texts carry their message key (stage.ts carriesKeyTags, #627).
  * @param {Slot} slot
+ * @param {{ wording?: boolean }} [options]
  * @returns {{ dev: ServerSpec, realtime: ServerSpec, prod: ServerSpec }}
  */
-export function serversOf(slot) {
+export function serversOf(slot, { wording = false } = {}) {
   const ports = portsOf(slot)
   // The second origin lets a production build play the run (browser check c3, 10b). wrangler splits `--var` at the first colon only.
   const origins = `--var "ALLOWED_ORIGINS:${originOf(slot, 'app')},${originOf(slot, 'prod')}"`
+  const wordingEnv = wording ? { COMPIES_WORDING: '1' } : null
   if (slot === 1) {
     return {
-      dev: { port: ports.app, log: 'dev.log', command: 'pnpm dev', notBuilding: true },
+      dev: { port: ports.app, log: 'dev.log', command: 'pnpm dev', notBuilding: true, ...(wordingEnv && { env: wordingEnv }) },
       realtime: { port: ports.realtime, log: 'rt.log', command: `pnpm --dir realtime dev ${origins}` },
       prod: { port: ports.prod, log: 'prod.log', command: null, args: ['--env-file=.env', '.output/server/index.mjs'], env: { PORT: String(ports.prod) }, needs: '.output/server/index.mjs' },
     }
   }
   const realtime = originOf(slot, 'realtime')
   return {
-    dev: { port: ports.app, log: 'dev.log', command: `pnpm dev --port ${ports.app}`, notBuilding: true, env: { REALTIME_URL: realtime, BETTER_AUTH_URL: originOf(slot, 'app') } },
+    dev: { port: ports.app, log: 'dev.log', command: `pnpm dev --port ${ports.app}`, notBuilding: true, env: { REALTIME_URL: realtime, BETTER_AUTH_URL: originOf(slot, 'app'), ...wordingEnv } },
     realtime: { port: ports.realtime, log: 'rt.log', command: `pnpm --dir realtime dev --port ${ports.realtime} --inspector-port ${ports.inspector} ${origins}` },
     prod: {
       port: ports.prod,

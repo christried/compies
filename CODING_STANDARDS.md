@@ -13,6 +13,7 @@ Each concern below has one home. New code calls it; a second copy is a finding e
 | A rule both sides enforce (name length, clip, player count, points table, settings) | a pure function in `shared/`, called by the form and by the server parser |
 | Request input | `unknown` until a domain parser has checked it; `asRecord`/`isRecord` from `shared/record.ts`, no casts (lint) |
 | A User's visible name | `shownName` in `shared/auth.ts` (lint) |
+| What an Appearance is (the list, the guard, the cookie's name and value rule); the users table's CHECK is built from the list | `shared/appearance.ts` (#603) |
 | Text length | `characterCount` in `shared/text.ts` |
 | Dates and times shown to Users | `app/utils/berlin-time.ts`, `shared/time.ts` |
 | An API error shown to Users | `reasonKey` / `apiErrorKey` and their table in `app/utils/api-error.ts` (a screen's own words are a screen entry there, not an override at the call site; `test/unit/api-error.test.ts` checks every code × screen); Event page actions through `useEventMutation` |
@@ -28,6 +29,8 @@ Each concern below has one home. New code calls it; a second copy is a finding e
 | Playing a sound cue (the one audio context, scheduling on the audio clock, the Ton gate, loading the files) | `app/utils/cue-player.ts` and `useCuePlayer` (#531); the file folder and extension are in `sound-cues.ts` (`cueFileUrl`) |
 | Which file each cue ships and where it is from (credits file, shape, parser, the copy script) | `public/sounds/cues/credits.json`, `app/utils/sound-credits.ts`, `scripts/ship-cue-sound.mjs` (#536) |
 | The listening page for the cue sounds (development only, #534: page, candidates, choices) | `app/dev/` (`listening-page.vue`, `listening-model.ts`), `server/dev/cue-candidates.ts`, `sound-candidates/`; registered only by the `listening-page` module in `nuxt.config.ts` |
+| Telling a translated text apart on the page (development only, #627) | `shared/key-tag.ts`, `app/dev/key-tags.ts`, `app/dev/key-tags-plugin.ts`; registered only by the `key-tags` module in `nuxt.config.ts` |
+| The wording harness (development only, #620: walk, review page, answers file, unused scan) | `scripts/wording/`: the review's model in `review-model.mjs` (steps, filters, resume, what is new), the answers file and the step-id prefixes in `answers.mjs`, the unused scan in `unused-scan.mjs`, the recording the walk makes in `recording.mjs`; `scripts/wording/README.md` says how a sitting runs |
 | Letting sound through (the page-wide first-gesture listener, the „Ton aktivieren“ notice's condition, the page's gesture flag the Clip reads) | `useSoundUnlock` (#533); it calls the cue player's `resume` and never builds an audio context itself |
 
 A second page, flow or component that does what an existing one does needs its reason in the PR description. Without one, the review asks for the existing module to grow instead.
@@ -68,6 +71,6 @@ What a feature keeps from some Users (a sealed Veto, a Hidden wheel before its s
 
 ## Copy
 
-- UI copy uses the glossary's UI word. When the glossary retires a word, it goes into `RETIRED` in `test/unit/copy.test.ts`.
+- UI copy uses the glossary's UI word. When the glossary retires a word, it goes into `RETIRED` in `scripts/wording/retired-words.mjs` (`test/unit/copy.test.ts` and the wording review read it).
 - Copy promises only what the app does today. A string the spec prescribes word for word is decided; the review names it only when the app has changed since the spec.
 - A new third party the browser or the server talks to goes into the Datenschutzerklärung; `test/unit/privacy-hosts.test.ts` names the host, and the user approves the text.

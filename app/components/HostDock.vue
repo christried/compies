@@ -159,7 +159,7 @@ onBeforeUnmount(() => {
       ref="toolbar"
       role="toolbar"
       :aria-label="t('dock.label')"
-      class="fixed bottom-6 left-1/2 layer-dock hidden -translate-x-1/2 items-center gap-2 rounded-pill border-(length:--cp-bw) border-line bg-surface p-1.5 shadow-card md:flex"
+      class="fixed bottom-6 left-1/2 layer-dock hidden -translate-x-1/2 items-center gap-2 rounded-pill border-(length:--cp-bw) border-line bg-surface pt-1.5 pl-1.5 pr-2 pb-2 shadow-card md:flex"
       :class="centre"
       @keydown="moveFocus"
     >

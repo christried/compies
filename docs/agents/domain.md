@@ -44,7 +44,7 @@ When your output names a domain concept (in an issue title, a refactor proposal,
 
 If the concept you need isn't in the glossary yet, that's a signal: either you're inventing language the project doesn't use (reconsider) or there's a real gap (note it for `/domain-modeling`).
 
-When the glossary retires a UI word, add it with its successor to `RETIRED` in `test/unit/copy.test.ts` in the same change, so the copy can't fall back to it.
+When the glossary retires a UI word, add it with its successor to `RETIRED` in `scripts/wording/retired-words.mjs` (read by `test/unit/copy.test.ts` and the wording review) in the same change, so the copy can't fall back to it.
 
 ## Flag ADR conflicts
 

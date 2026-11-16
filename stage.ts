@@ -29,6 +29,13 @@ export function carriesListeningPage(dev: boolean): boolean {
   return dev
 }
 
+// Whether translated texts carry their message key in invisible characters (app/dev/key-tags-plugin.ts, #627): the dev server only,
+// and only when COMPIES_WORDING=1 asks for it at its start (scripts/browser/serve.mjs start <run> --wording). Never a staging or
+// production build: `dev` is false in both, whatever the environment says.
+export function carriesKeyTags(dev: boolean, env: Record<string, string | undefined> = process.env): boolean {
+  return dev && env.COMPIES_WORDING === '1'
+}
+
 export function stageBranding(staging: boolean): StageBranding {
   return staging
     ? { name: 'Compies Staging', shortName: 'Staging', appleTitle: 'Compies Staging', iconDir: '/icons/staging' }

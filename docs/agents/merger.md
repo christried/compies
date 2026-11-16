@@ -3,6 +3,7 @@
 The brief of a merge job (`docs/agents/subagents.md` § Supervision, on its ticket's model): one reviewed ticket branch whose merge conflicts into the integration branch, checked. A clean branch the orchestrator merges itself. The orchestrator's spawn prompt names both branches and the ticket number. One merge job runs at a time.
 
 - Work in your own worktree: the orchestrator spawned you with `isolation: "worktree"` (`docs/agents/subagents.md` § Model per subagent), in Git Bash on Windows. Never switch, check out, merge, reset or pull in the main checkout, and leave it alone (`docs/agents/delivery.md` § Several sessions in one checkout). The orchestrator removes your worktree by name after your report.
+- Write a git call plainly, with no shell variable, no `cd` and no `git -C` in it, and create every file with the Write tool (`docs/agents/implementer-frame.md` § Rules, Shell): the harness refuses the other forms.
 - The orchestrator has already reviewed the diff. Change code only to resolve merge conflicts.
 - Leave running dev servers alone; the orchestrator may be using them.
 

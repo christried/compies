@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { dateBlockedKey, eventPageState, headerPill, pagePill, pollingNumber, seatNote, sessionMenuKeys, shownSessionNumbers, startedIn, teamsStay, type PageInput, unevenNoticeIn, waitsForCeremony, wearsPartyhat } from '../../app/utils/event-page'
-import type { BoardTeam, MemberView } from '../../shared/event'
+import { dateBlockedKey, eventPageState, headerPill, pagePill, pollingNumber, sessionMenuKeys, shownSessionNumbers, startedIn, teamsStay, type PageInput, unevenNoticeIn, waitsForCeremony, wearsPartyhat } from '../../app/utils/event-page'
+import type { MemberView } from '../../shared/event'
 import type { RoundGame } from '../../shared/game'
 import type { ResultView, StandingView } from '../../shared/stage'
 import { standingsOf } from '../../shared/results'
@@ -185,13 +185,6 @@ describe('the facts of the page state', () => {
 
 // The page's text lines (#257, B1): pure, with a fake `t` that names the key and its parameters, so a case reads the key it picks.
 const fakeT = (key: string, named?: Record<string, unknown>) => (named ? `${key}(${Object.entries(named).map(([k, v]) => `${k}=${v}`).join(',')})` : key)
-const HOST_ID = 'host'
-const hostView = (fields: Partial<MemberView> & Pick<MemberView, 'zone'>, teams: BoardTeam[] = []) => ({
-  members: [{ id: HOST_ID, name: 'Sanne', image: null, isHost: true, team: null, teamWord: null, ...fields }],
-  viewerId: HOST_ID,
-  teams,
-  event: { isHost: true },
-})
 
 // Which page kinds have started the first Session (#164) and which ones show the notice about uneven teams (#166).
 describe('startedIn and unevenNoticeIn', () => {
@@ -207,29 +200,6 @@ describe('startedIn and unevenNoticeIn', () => {
   ] as const)('the %s page: started %s, uneven notice %s', (kind, started, uneven) => {
     expect(startedIn(kind)).toBe(started)
     expect(unevenNoticeIn(kind)).toBe(uneven)
-  })
-})
-
-describe('seatNote', () => {
-  it('is null for a Member, whatever zone they sit in', () => {
-    expect(seatNote({ ...hostView({ zone: 'stands' }), event: { isHost: false } }, fakeT)).toBeNull()
-  })
-
-  it('names the Tribüne for a Host who sits there', () => {
-    expect(seatNote(hostView({ zone: 'stands' }), fakeT)).toBe('event.notice.seatStands')
-  })
-
-  it('names the Team by its name for a Host in a named Team', () => {
-    expect(seatNote(hostView({ zone: 'team', team: 1 }, [{ position: 1, name: 'Rot' }]), fakeT)).toBe('event.notice.seatTeam(team=Rot)')
-  })
-
-  it('names a Team without a name by its default name and colour', () => {
-    expect(seatNote(hostView({ zone: 'team', team: 2 }, [{ position: 2, name: null }]), fakeT))
-      .toBe('event.notice.seatTeam(team=team.defaultName(color=team.colors.2))')
-  })
-
-  it('is null when the viewer is not among the Members', () => {
-    expect(seatNote({ ...hostView({ zone: 'stands' }), viewerId: 'nobody' }, fakeT)).toBeNull()
   })
 })
 

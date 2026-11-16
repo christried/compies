@@ -36,6 +36,7 @@ const filters = useRouteFilters()
         <AppButton
           to="/bibliothek/neu"
           size="lg"
+          aura
         >
           <template #icon>
             <AppIcon :icon="Plus" />

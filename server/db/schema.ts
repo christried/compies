@@ -1,6 +1,6 @@
 import { sql } from 'drizzle-orm'
 import { boolean, check, doublePrecision, index, integer, jsonb, pgEnum, pgTable, primaryKey, text, timestamp, unique, uniqueIndex, uuid } from 'drizzle-orm/pg-core'
-import { APPEARANCES } from '../../shared/auth'
+import { APPEARANCES } from '../../shared/appearance'
 import { ACTIVITY_TYPES, type ActivityParams, type ActivityType } from '../../shared/activity'
 import { PHASES } from '../../shared/event'
 import { ZONES } from '../../shared/board'
@@ -33,7 +33,8 @@ export const users = pgTable('users', {
   // The User's Appearance (#401, GLOSSARY): light unless they choose otherwise. Better Auth's insert gets the default (ADR 0004).
   appearance: text('appearance', { enum: APPEARANCES }).default('light').notNull(),
 }, table => [
-  check('users_appearance_check', sql`${table.appearance} IN ('light', 'dark', 'system')`),
+  // The list is written once, in shared/appearance.ts (#603); raw because a CHECK takes no parameters, safe because the values are our own constants.
+  check('users_appearance_check', sql`${table.appearance} IN (${sql.join(APPEARANCES.map(value => sql.raw(`'${value}'`)), sql`, `)})`),
 ])
 
 // Better Auth's login sessions, provider accounts and OAuth state, renamed so that a bare "session"

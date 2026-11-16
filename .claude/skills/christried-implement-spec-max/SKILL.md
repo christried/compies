@@ -1,5 +1,5 @@
 ---
-name: implement-spec-max
+name: christried-implement-spec-max
 description: "Implement the result of /to-spec and /to-tickets in code, with every subagent on Fable 5.2, Opus 5.5 or Sonnet 5.5 by how hard its task is."
 disable-model-invocation: true
 ---
@@ -16,7 +16,7 @@ Communication to and from subagents should be sparse. Communicate primarily thro
 
 **Implementer subagents** should be run in the background where possible for maximum concurrency.
 
-**COMPIES (max):** this is `/implement-spec` with one change: every subagent spawned under it runs on the **tier** its task rates in § Model tiers: Fable 5.2, Opus 5.5 at high effort, or Sonnet 5.5 at high effort. That covers every Agent call this skill makes, directly or through a skill or doc it invokes: exploration subagents, brief drafters, implementers, merge jobs, the `code-review` Standards and Spec sub-agents, the three Release reviewers and the report merger of `docs/agents/release.md` § Review, and browser-check subagents. § Model tiers replaces `docs/agents/subagents.md` § Model per subagent and the model named in `docs/agents/merger.md`, `docs/agents/release.md` and the `code-review` patch; everything else in those documents still applies: isolation, the concurrency limits, and the 300k context limit with its handoff. A handoff written under this skill names the tier of each ticket not yet merged and tells the next session to continue with `/implement-spec-max`, not `/implement-spec`.
+**COMPIES (max):** this is `/implement-spec` with one change: every subagent spawned under it runs on the **tier** its task rates in § Model tiers: Fable 5.2, Opus 5.5 at high effort, or Sonnet 5.5 at high effort. That covers every Agent call this skill makes, directly or through a skill or doc it invokes: exploration subagents, brief drafters, implementers, merge jobs, the `code-review` Standards and Spec sub-agents, the three Release reviewers and the report merger of `docs/agents/release.md` § Review, and browser-check subagents. § Model tiers replaces `docs/agents/subagents.md` § Model per subagent and the model named in `docs/agents/merger.md`, `docs/agents/release.md` and the `code-review` patch; everything else in those documents still applies: isolation, the concurrency limits, and the 300k context limit with its handoff. A handoff written under this skill names the tier of each ticket not yet merged and tells the next session to continue with `/christried-implement-spec-max`, not `/implement-spec`.
 
 **COMPIES:** before the first spawn, read `docs/agents/subagents.md` (the model per subagent, one brief per ticket, reading every diff before it merges) and `docs/agents/delivery.md` (PRs into `staging`, verifying and closing tickets).
 
@@ -90,6 +90,6 @@ Who runs on which tier:
 
 - A ticket's **brief drafter, implementer and merge job** run on the ticket's tier. Rate the ticket from its text and the spec before the drafter, and again from the brief: a brief that names a Fable risk raises it. The fix implementer of step 7 is rated by its hardest fix.
 - **`code-review`**: the Spec sub-agent on the tier of the hardest ticket on the branch, Opus at least; the Standards sub-agent on Opus.
-- **Release review**: the Spec reviewer and `thermo-nuclear-code-quality-review` on Fable, the Standards reviewer on Opus, the report merger on Sonnet.
+- **Release review**: the Spec reviewer and `christried-thermo-nuclear-code-quality-review` on Fable, the Standards reviewer on Opus, the report merger on Sonnet.
 - **Browser check**: Sonnet for layout on one account; Opus for motion or the two-account check.
 - **Exploration**: Sonnet; Opus when its question touches a Fable risk.

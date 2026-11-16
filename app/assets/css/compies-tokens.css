@@ -13,6 +13,7 @@
   --cp-surface: #fffdf8;        /* cards, zones, panels */
   --cp-surface-2: #fff9ef;      /* nested surface, hover on surface */
   --cp-overlay: rgba(21,21,21,.48);
+  --cp-backdrop: rgba(8,5,12,.85);
   /* ink */
   --cp-ink: #151515;            /* 17.6:1 on paper */
   --cp-ink-2: #5d5650;          /* secondary text · 6.4:1 on paper */
@@ -53,6 +54,7 @@
   --cp-surface: #221b2b;
   --cp-surface-2: #2d2438;
   --cp-overlay: rgba(8,5,12,.66);
+  --cp-backdrop: rgba(8,5,12,.85);
   --cp-ink: #f7efe1;            /* 16.4:1 on paper */
   --cp-ink-2: #b9ad9f;          /* 8.4:1 on paper */
   --cp-ink-3: #75697f;
@@ -91,6 +93,7 @@
     --cp-surface: #221b2b;
     --cp-surface-2: #2d2438;
     --cp-overlay: rgba(8,5,12,.66);
+    --cp-backdrop: rgba(8,5,12,.85);
     --cp-ink: #f7efe1;
     --cp-ink-2: #b9ad9f;
     --cp-ink-3: #75697f;
@@ -194,8 +197,8 @@
   --cp-control-sm: 36px;  --cp-control-md: 44px;  --cp-control-lg: 52px;
   /* radii */
   --cp-r-xs: 4px;  --cp-r-sm: 8px;  --cp-r-md: 12px;  --cp-r-lg: 14px;  --cp-r-xl: 20px;  --cp-r-pill: 999px;
-  /* layers · the clip overlay sits UNDER the veto bar, always */
-  --cp-z-decor: 1;  --cp-z-content: 2;  --cp-z-sticky: 10;  --cp-z-header: 20;  --cp-z-dock: 30;  --cp-z-sheet: 40;
+  /* layers · the clip overlay sits UNDER the veto bar, always; the Clip's backdrop (25) lies above the header and below the dock, the Clip and the Veto bar */
+  --cp-z-decor: 1;  --cp-z-content: 2;  --cp-z-sticky: 10;  --cp-z-header: 20;  --cp-z-backdrop: 25;  --cp-z-dock: 30;  --cp-z-sheet: 40;
   --cp-z-clip: 44;  --cp-z-veto: 46;  --cp-z-modal: 50;  --cp-z-popover: 55;  --cp-z-toast: 60;  --cp-z-confetti: 70;
   /* motion */
   --cp-dur-instant: 80ms;  --cp-dur-fast: 140ms;  --cp-dur-base: 220ms;  --cp-dur-slow: 360ms;

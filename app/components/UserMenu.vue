@@ -1,53 +1,22 @@
 <script setup lang="ts">
-import { LogOut } from '@lucide/vue'
+import { LogOut, User } from '@lucide/vue'
 import { shownName } from '~~/shared/auth'
 
 // Avatar menu in the header (09 § UserMenu, 10 § UserMenu): who is signed in and „Abmelden“. Below md the
-// page footer's links follow below a divider (PageFooter variant menu); a click on one of them closes the menu.
-// Arrow keys move through the visible items, Esc closes and gives focus back to the avatar.
+// page footer's links follow below a divider (PageFooter variant menu); a click on one of them closes the menu. Below md it also
+// holds the row „Darstellung“ (the Profil page's SegmentedControl, #617), because the header's Appearance button is from md up only.
+// Arrow keys move through the visible items (the row's selected radio is one step), Esc closes and gives focus back to the avatar.
 const { t } = useI18n()
 const user = useAuthUser()
 const signOut = useSignOut()
+const appearance = useAppearance({ toast: true })
 
-const open = ref(false)
-const root = useTemplateRef('root')
-const trigger = useTemplateRef('trigger')
+// A freshly opened menu focuses „Profil“, not the row above it.
+const { open, toggle, close, move, menuItems } = useDropdownMenu({
+  itemSelector: '[role="menuitem"], [role="radio"][tabindex="0"]',
+  initialFocus: () => menuItems().find(item => item.getAttribute('role') === 'menuitem'),
+})
 const name = computed(() => (user.value ? shownName(user.value) : ''))
-
-async function toggle() {
-  open.value = !open.value
-  if (open.value) {
-    await nextTick()
-    menuItems()[0]?.focus()
-  }
-}
-
-function close() {
-  open.value = false
-  trigger.value?.focus()
-}
-
-// Items hidden by CSS (the footer links below md, on desktop) are skipped.
-function menuItems() {
-  return [...(root.value?.querySelectorAll<HTMLElement>('[role="menuitem"]') ?? [])]
-    .filter(item => item.checkVisibility?.() ?? true)
-}
-
-function move(step: 1 | -1, event: KeyboardEvent) {
-  const items = menuItems()
-  if (!items.length) return
-  event.preventDefault()
-  const index = items.indexOf(document.activeElement as HTMLElement)
-  const next = index < 0 ? (step > 0 ? 0 : items.length - 1) : (index + step + items.length) % items.length
-  items[next]!.focus()
-}
-
-function closeOnOutside(event: Event) {
-  if (open.value && !root.value?.contains(event.target as Node)) open.value = false
-}
-
-onMounted(() => document.addEventListener('pointerdown', closeOnOutside))
-onBeforeUnmount(() => document.removeEventListener('pointerdown', closeOnOutside))
 </script>
 
 <template>
@@ -61,7 +30,6 @@ onBeforeUnmount(() => document.removeEventListener('pointerdown', closeOnOutside
     @keydown.up="move(-1, $event)"
   >
     <button
-      ref="trigger"
       type="button"
       class="group hit-44 grid place-items-center rounded-pill lift aria-expanded:ring-2 aria-expanded:ring-line"
       aria-haspopup="menu"
@@ -99,6 +67,34 @@ onBeforeUnmount(() => document.removeEventListener('pointerdown', closeOnOutside
         <span class="min-w-0 truncate text-[16px] font-extrabold">{{ name }}</span>
       </div>
       <span class="mx-1 my-1.5 border-t-2 border-line-soft" />
+      <!-- Below md the Appearance row (#617); a choice keeps the menu open, it is a control and not a pick list. -->
+      <div
+        role="none"
+        class="flex flex-col gap-1.5 px-2 pt-1 pb-1.5 md:hidden"
+      >
+        <span
+          aria-hidden="true"
+          class="text-[13px] font-bold text-ink-2"
+        >{{ t('settings.appearance') }}</span>
+        <SegmentedControl
+          :model-value="appearance.appearance.value"
+          :options="appearance.choices.value"
+          :label="t('settings.appearance')"
+          arrows="horizontal"
+          @update:model-value="appearance.choose"
+        />
+      </div>
+      <span class="mx-1 my-1.5 block border-t-2 border-line-soft md:hidden" />
+      <!-- „Profil“ (#618): the hub nav's Profil item, at every width; a click closes the menu. -->
+      <NuxtLink
+        to="/profil"
+        role="menuitem"
+        class="flex h-11 items-center gap-2.5 rounded-md px-3 text-left text-[15px] font-bold text-ink hover:bg-paper-2"
+        @click="open = false"
+      >
+        <AppIcon :icon="User" />
+        {{ t('nav.profile') }}
+      </NuxtLink>
       <button
         type="button"
         role="menuitem"

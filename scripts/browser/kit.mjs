@@ -5,7 +5,7 @@
 // checks had copied from session to session in a temp folder live here since the 0.8 retro. The protocol itself
 // (launch, send/evaluate, resize, screenshot) is `chrome.mjs`.
 import { execFileSync } from 'node:child_process'
-import { appendFileSync, mkdirSync } from 'node:fs'
+import { appendFileSync, existsSync, mkdirSync, readFileSync, rmSync } from 'node:fs'
 import { basename, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { OUT, resize, shot, sleep } from './chrome.mjs'
@@ -13,7 +13,9 @@ import { originOf, slotOf } from './ports.mjs'
 
 export const BASE = process.env.BASE_URL ?? originOf(slotOf(), 'app')
 // Staging sits behind Vercel Authentication; its „Protection Bypass for Automation“ secret lets a check in (README § Staging).
-const VERCEL_BYPASS = process.env.VERCEL_AUTOMATION_BYPASS_SECRET
+// The secret lives in `.env`, which a script on localhost may load too (`node --env-file=.env`): it goes to an https base
+// only, so a local server never sees it in a request or a log (#599).
+const VERCEL_BYPASS = BASE.startsWith('https://') ? process.env.VERCEL_AUTOMATION_BYPASS_SECRET : undefined
 
 /** Logs every Element.animate of the page in `window.__animations`: who moved (a person by user id), from what, how. */
 const ANIMATION_SPY = `(() => {
@@ -61,6 +63,26 @@ export async function open(tab, path, width, height, waitFor = 'body', { news = 
   }
   await tab.send('Page.navigate', { url: `${BASE}/api/dev/sign-in?as=${tab.account}&to=${encodeURIComponent(path)}${news ? '&news=unseen' : ''}${appearance ? `&appearance=${appearance}` : ''}${setup ? '&name=unset' : ''}` })
   await hydrated(tab, waitFor)
+}
+
+/**
+ * @public For the agents' own checks (docs/agents/browser-frame.md § Checks).
+ * Makes `matchMedia('(pointer: fine)')` answer `fine` in every page the tab loads from now on; call it before `open()`.
+ * What Chrome reports there follows the machine, not the check: on 2026-11-12 the headless Chrome and the operator's own
+ * both reported no fine pointer, and the „?“ hint of #465 never rendered in a check; on 2026-11-15 the same machine
+ * reported one. Chrome's media emulation (`Emulation.setEmulatedMedia`) ignores `pointer` (tried 2026-11-15), so this
+ * replaces the answer in the page's JavaScript. It proves what the page does with the answer (`useMediaQuery`), not what a
+ * device reports, and a CSS `@media (pointer: fine)` rule does not follow it (#599).
+ */
+export async function finePointer(tab, fine = true) {
+  await tab.send('Page.addScriptToEvaluateOnNewDocument', { source: `(() => {
+    const real = window.matchMedia.bind(window);
+    window.matchMedia = (query) => {
+      const list = real(query);
+      if (String(query).replace(/\\s+/g, '') !== '(pointer:fine)') return list;
+      return new Proxy(list, { get: (target, key) => key === 'matches' ? ${fine === true} : typeof target[key] === 'function' ? target[key].bind(target) : target[key] });
+    };
+  })();` })
 }
 
 /**
@@ -337,6 +359,16 @@ export function results(name) {
     appendFileSync(log, `${line}\n`)
   }
   const sha = execFileSync('git', ['-C', fileURLToPath(new URL('.', import.meta.url)), 'rev-parse', '--short', 'HEAD'], { encoding: 'utf8' }).trim()
+  // A run name comes back from Release to Release (`l1`, `m2`): a log of another commit is set aside under that commit,
+  // so this run's lines never follow an earlier Release's (0.13.1 and 0.13.2: every report had to say where its lines start, #599).
+  if (existsSync(log)) {
+    const last = [...readFileSync(log, 'utf8').matchAll(/^== .* on ([0-9a-f]+), /gm)].at(-1)?.[1]
+    if (last && !last.startsWith(sha) && !sha.startsWith(last)) {
+      appendFileSync(join(dir, `results-${last}.log`), readFileSync(log))
+      rmSync(log)
+      console.log(`NOTE  the log of ${last} in this run folder is now results-${last}.log`)
+    }
+  }
   appendFileSync(log, `== ${basename(process.argv[1] ?? 'check')} on ${sha}, ${new Date().toISOString()}\n`)
   let failed = false
   return {

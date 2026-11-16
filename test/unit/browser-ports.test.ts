@@ -3,8 +3,8 @@ import { originOf, portsOf, profileOf, serversOf, slotOf } from '../../scripts/b
 
 // scripts/browser/ports.mjs is the one place that spells a port of the browser scripts (#567, spec #554). Slot 1 is the
 // checks' and must stay what it was before slots existed; slot 2 is an implementer's, every port 100 higher.
-const SLOT_1 = { app: 3000, realtime: 8787, prod: 3001, inspector: 9229, chrome: { host: 9311, member: 9312, admin: 9313 } }
-const leaves = (ports: ReturnType<typeof portsOf>) => [ports.app, ports.realtime, ports.prod, ports.inspector, ports.chrome.host, ports.chrome.member, ports.chrome.admin]
+const SLOT_1 = { app: 3000, realtime: 8787, prod: 3001, inspector: 9229, chrome: { host: 9311, member: 9312, admin: 9313, member2: 9314 } }
+const leaves = (ports: ReturnType<typeof portsOf>) => [ports.app, ports.realtime, ports.prod, ports.inspector, ports.chrome.host, ports.chrome.member, ports.chrome.admin, ports.chrome.member2]
 
 describe('slotOf', () => {
   it('is slot 1 when COMPIES_SLOT is unset or empty', () => {
@@ -29,15 +29,15 @@ describe('portsOf', () => {
 
   it('slot 2 is every port of slot 1 plus 100', () => {
     expect(leaves(portsOf(2))).toEqual(leaves(portsOf(1)).map(port => port + 100))
-    expect(portsOf(2)).toEqual({ app: 3100, realtime: 8887, prod: 3101, inspector: 9329, chrome: { host: 9411, member: 9412, admin: 9413 } })
+    expect(portsOf(2)).toEqual({ app: 3100, realtime: 8887, prod: 3101, inspector: 9329, chrome: { host: 9411, member: 9412, admin: 9413, member2: 9414 } })
   })
 
   it('has no collisions within a slot or between the slots', () => {
     const one = leaves(portsOf(1))
     const two = leaves(portsOf(2))
-    expect(new Set(one).size).toBe(7)
-    expect(new Set(two).size).toBe(7)
-    expect(new Set([...one, ...two]).size).toBe(14)
+    expect(new Set(one).size).toBe(8)
+    expect(new Set(two).size).toBe(8)
+    expect(new Set([...one, ...two]).size).toBe(16)
   })
 })
 
@@ -99,6 +99,30 @@ describe('serversOf', () => {
       expect(server.env ?? {}).not.toHaveProperty('REALTIME_URL')
       expect(server.env ?? {}).not.toHaveProperty('BETTER_AUTH_URL')
     }
+  })
+})
+
+// `serve.mjs start <run> --wording` starts the dev server with the switch of the key tags (#627, stage.ts carriesKeyTags).
+describe('serversOf with wording (#627)', () => {
+  it('slot 1\'s dev server gets COMPIES_WORDING=1 and nothing else changes', () => {
+    const { dev } = serversOf(1, { wording: true })
+    expect(dev.env).toEqual({ COMPIES_WORDING: '1' })
+    expect({ ...dev, env: undefined }).toEqual({ ...serversOf(1).dev, env: undefined })
+  })
+
+  it('slot 2\'s dev server keeps REALTIME_URL and BETTER_AUTH_URL beside it', () => {
+    const { dev } = serversOf(2, { wording: true })
+    expect(dev.env).toEqual({ ...serversOf(2).dev.env, COMPIES_WORDING: '1' })
+    expect(dev.env?.REALTIME_URL).toBe('http://localhost:8887')
+    expect(dev.env?.BETTER_AUTH_URL).toBe('http://localhost:3100')
+  })
+
+  it.each([1, 2] as const)('slot %i has no COMPIES_WORDING without the option, and the Worker and the production server never get it', (slot) => {
+    expect(serversOf(slot).dev.env ?? {}).not.toHaveProperty('COMPIES_WORDING')
+    expect(serversOf(slot, {}).dev.env ?? {}).not.toHaveProperty('COMPIES_WORDING')
+    const { realtime, prod } = serversOf(slot, { wording: true })
+    expect(realtime.env ?? {}).not.toHaveProperty('COMPIES_WORDING')
+    expect(prod.env ?? {}).not.toHaveProperty('COMPIES_WORDING')
   })
 })
 

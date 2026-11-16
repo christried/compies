@@ -18,8 +18,13 @@ function note(text) {
   appendFileSync(join(OUT, run, 'results.log'), `NOTE  ${text}\n`)
 }
 
+// On a dev server started with `--wording` every translated text and attribute carries invisible key-tag characters (shared/key-tag.ts, #627),
+// so a page expression that compares a text with `===` strips them first, and a selector matches an attribute with `*=` (the text is contiguous).
+// Without tags both are what they were (#629). The backslashes are written doubled: the string holds `\u2060` as text, which the page's regex reads.
+const UNTAG = '/[\\u2060\\u2062\\u2063]/g'
+
 /** Polls a page expression until it is true, at most `ms`. */
-async function until(tab, expression, what, ms = 10_000) {
+export async function until(tab, expression, what, ms = 10_000) {
   for (const end = Date.now() + ms; Date.now() < end;) {
     if (await tab.evaluate(expression).catch(() => false)) return
     await sleep(200)
@@ -28,7 +33,7 @@ async function until(tab, expression, what, ms = 10_000) {
 }
 
 /** A state that opens `address(ctx)` as `account` and waits for `waitFor`. */
-function page(name, group, account, address, { waitFor = 'h1', after, ...rest } = {}) {
+export function page(name, group, account, address, { waitFor = 'h1', after, ...rest } = {}) {
   return {
     name,
     group,
@@ -42,7 +47,7 @@ function page(name, group, account, address, { waitFor = 'h1', after, ...rest } 
 }
 
 // The close button, not Escape: after the reading focus is on the page, not in the sheet, and Escape would not reach it.
-const closeSheet = async (tab) => {
+export const closeSheet = async (tab) => {
   if (!await tab.evaluate(`!!document.querySelector('[role=dialog]')`)) return
   if (!await clickText(tab, '[role=dialog] button', COPY.common.close)) await pressKey(tab, 'Escape')
   await until(tab, `!document.querySelector('[role=dialog]')`, 'the sheet to close')
@@ -51,12 +56,12 @@ const closeSheet = async (tab) => {
 // The game browser loads the next 40 cards when its sentinel scrolls into view, and the runner scrolls every page through
 // once before it reads: the dev library has 1598 games, and a page with all of them cannot be read inside the protocol's
 // 30 s. The sentinel goes, so only „Mehr laden“ loads cards, and a state decides how many.
-const noAutoLoad = tab => tab.evaluate(`document.querySelectorAll('div[aria-hidden="true"].h-px').forEach(el => el.remove())`)
+export const noAutoLoad = tab => tab.evaluate(`document.querySelectorAll('div[aria-hidden="true"].h-px').forEach(el => el.remove())`)
 
 const stepHeading = `document.querySelector('form h1')?.textContent ?? ''`
 
 /** One step on: Weiter, then waits until the step's heading is another. A sheet that is open is closed first. */
-async function next(tab) {
+export async function next(tab) {
   await closeSheet(tab)
   const before = await tab.evaluate(stepHeading)
   await stepperNext(tab)
@@ -64,16 +69,16 @@ async function next(tab) {
   await sleep(300)
 }
 
-const step = (name, go, rest = {}) => ({
+export const step = (name, go, rest = {}) => ({
   name,
   go: ctx => go(ctx.tab),
   ...rest,
 })
-const forward = name => step(name, next)
+export const forward = name => step(name, next)
 
 /** The library up to the card of `gameId` (the 60-character name, at about 360 of 1598): „Mehr laden“ until its link is on the page. */
 async function loadUpTo(tab, gameId) {
-  await until(tab, `!!document.querySelector('ul[aria-label=${JSON.stringify(COPY.library.title)}] li')`, 'the library', 30_000)
+  await until(tab, `!!document.querySelector('ul[aria-label*=${JSON.stringify(COPY.library.title)}] li')`, 'the library', 30_000)
   await noAutoLoad(tab)
   const there = `!!document.querySelector('a[href$="/bibliothek/${gameId}"]')`
   for (let i = 0; i < 100 && !await tab.evaluate(there) && await clickText(tab, 'button', COPY.library.loadMore); i++) await sleep(250)
@@ -116,7 +121,7 @@ export const STATES = [
       await open(ctx.tab, '/profil', ctx.width, ctx.height, 'h1', { appearance: ctx.appearance })
       await ctx.tab.evaluate(FAKE_NO_EVENTS)
       if (!await clickText(ctx.tab, 'a[href="/"]')) throw new Error('no link to Home on Profil')
-      await until(ctx.tab, `document.querySelector('h1')?.textContent.trim() === ${title}`, 'the empty Home')
+      await until(ctx.tab, `document.querySelector('h1')?.textContent.replace(${UNTAG}, '').trim() === ${title}`, 'the empty Home')
       if (!homeNoted) note('home-leer: the Dev Member\'s `GET /api/e` answered no Events by a replaced `window.fetch`, Home reached by the nav link')
       homeNoted = true
     },
@@ -152,7 +157,7 @@ export const STATES = [
     after: ctx => loadUpTo(ctx.tab, ctx.data.longGame.id),
     stops: [step('bibliothek-leer', async (tab) => {
       await typeInto(tab, 'input[type=search]', 'zzzqqq')
-      await until(tab, `!document.querySelector('ul[aria-label=${JSON.stringify(COPY.library.title)}] li')`, 'the empty search')
+      await until(tab, `!document.querySelector('ul[aria-label*=${JSON.stringify(COPY.library.title)}] li')`, 'the empty search')
     })],
   }),
   page('bibliothek-spiel', 'library', 'host', ctx => `/bibliothek/${ctx.data.longGame.id}`),
@@ -176,7 +181,7 @@ export const STATES = [
       }),
       // The „Info“ sheet exists on a phone only: from md up the info is a column of the page.
       step('neu-info', async (tab) => {
-        if (!await clickText(tab, 'button[aria-label="Info"]')) throw new Error('no Info button on the Format step')
+        if (!await tab.evaluate(`(() => { const el = [...document.querySelectorAll('button')].find(b => (b.getAttribute('aria-label') ?? '').replace(${UNTAG}, '') === 'Info' && b.getBoundingClientRect().width > 0); if (!el) return false; el.scrollIntoView({ block: 'center', behavior: 'instant' }); el.click(); return true })()`)) throw new Error('no Info button on the Format step')
         await until(tab, `!!document.querySelector('[role=dialog]')`, 'the Info sheet')
       }, { widths: [390] }),
       forward('neu-games'),
@@ -184,9 +189,9 @@ export const STATES = [
       forward('neu-mode'),
       step('neu-pool', async (tab) => {
         await next(tab)
-        await until(tab, `!!document.querySelector('button[aria-label$="in den Pool"]')`, 'the library in the pool step', 30_000)
+        await until(tab, `!!document.querySelector('button[aria-label*="in den Pool"]')`, 'the library in the pool step', 30_000)
         await noAutoLoad(tab)
-        await clickText(tab, 'button[aria-label$="in den Pool"]')
+        await clickText(tab, 'button[aria-label*="in den Pool"]')
         await sleep(300)
       }),
       // The new-game sheet of the pool step; never saved.
@@ -204,7 +209,7 @@ export const STATES = [
       ...['games', 'points', 'mode'].map(key => forward(`einstellungen-${key}`)),
       step('einstellungen-pool', async (tab) => {
         await next(tab)
-        await until(tab, `!!document.querySelector('ul[aria-label=${JSON.stringify(COPY.library.title)}] li')`, 'the library in the pool step', 30_000)
+        await until(tab, `!!document.querySelector('ul[aria-label*=${JSON.stringify(COPY.library.title)}] li')`, 'the library in the pool step', 30_000)
         await noAutoLoad(tab)
       }),
     ],

@@ -2,7 +2,7 @@ import { makeSignature } from 'better-auth/crypto'
 import { sql } from 'drizzle-orm'
 import { defineEventHandler, getQuery, sendRedirect, setCookie } from 'h3'
 import { users } from '../db/schema'
-import { isAppearance, type Appearance } from '../../shared/auth'
+import { isAppearance, type Appearance } from '../../shared/appearance'
 import { createAuth } from '../utils/auth'
 import { useDb } from '../utils/db'
 import { CURRENT_RELEASE } from '../utils/release'
@@ -10,13 +10,16 @@ import { CURRENT_RELEASE } from '../utils/release'
 // Signs in without Discord or Twitch, so the user and agents can open Host and Member pages and take screenshots
 // (retro 1.3). Only the builds carriesDevSignIn names register this route (stage.ts, read by nuxt.config.ts; #247).
 // The handler has no check of its own: the staging build carries it and runs with NODE_ENV=production.
-// `?as=host|member|admin` picks the User, `?to=/path` where to land, `?news=unseen` leaves „Was ist neu“ unseen,
+// `?as=host|member|admin|member2` picks the User, `?to=/path` where to land, `?news=unseen` leaves „Was ist neu“ unseen,
 // `?appearance=dark|system|light` sets the Appearance, light when absent (#401), `?name=unset` stores no Display name,
 // so Profile setup opens (#407).
+// `member2` is the fourth User (#599): two Parties of two need four Players, and with three a check of a teammate's
+// Veto had nobody to seat (0.13.3, #532's items).
 const PEOPLE = {
   host: { name: 'Dev Host', canHost: true, isAdmin: false },
   member: { name: 'Dev Member', canHost: false, isAdmin: false },
   admin: { name: 'Dev Admin', canHost: true, isAdmin: true },
+  member2: { name: 'Dev Member 2', canHost: false, isAdmin: false },
 } as const
 
 type Person = keyof typeof PEOPLE
@@ -33,7 +36,7 @@ export default defineEventHandler(async (event) => {
   const as: Person = typeof query.as === 'string' && query.as in PEOPLE ? query.as as Person : 'host'
   const person = PEOPLE[as]
 
-  // The same three Users every time; the permissions are set here, since no allowlist knows them. Every sign-in marks
+  // The same four Users every time; the permissions are set here, since no allowlist knows them. Every sign-in marks
   // the current Release seen, so a Release never opens the pop-up on the dev server (review 0.5.1 T2); `?news=unseen`
   // stores null, for the one check that wants the pop-up. The Appearance is reset on every sign-in like the news, so a
   // check starts from a known look: the one `?appearance=` names, else light (#401).

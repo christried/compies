@@ -1,9 +1,10 @@
 import { mountSuspended } from '@nuxt/test-utils/runtime'
-import type { VueWrapper } from '@vue/test-utils'
+import { flushPromises, type VueWrapper } from '@vue/test-utils'
 import { h } from 'vue'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 import GameCard from '~/components/GameCard.vue'
-import { GAME_NAME_MAX, type GameView } from '~~/shared/game'
+import { build, parse, themeBlock } from '../unit/css-tokens'
+import { GAME_NAME_MAX, TAG_MAX, type GameView } from '~~/shared/game'
 
 // The card's structure (#351): the actions sit in the card's last child, and the body grows, so in a stretched grid row the
 // buttons of every card share one bottom edge, whatever the length of the name, the player count, Suitabilities, Price and Tags.
@@ -13,7 +14,7 @@ type Layout = 'card' | 'row' | 'responsive' | 'tile'
 
 let page: VueWrapper | undefined
 
-async function mount(game: Props, layout: Layout, withActions = true) {
+async function mount(game: Props, layout: Layout, withActions = true, attachTo?: HTMLElement) {
   const { name, ...rest } = game
   page = await mountSuspended(GameCard, {
     props: {
@@ -21,6 +22,7 @@ async function mount(game: Props, layout: Layout, withActions = true) {
       layout,
     },
     slots: withActions ? { actions: () => h('button', { type: 'button' }, 'Hinzufügen') } : {},
+    attachTo,
   })
   return page
 }
@@ -90,18 +92,19 @@ describe('the game card structure (#351)', () => {
 // koop 2, horror 5, indie 7). The „+N“ stays neutral.
 describe('the Tag chips on a game card (#427)', () => {
   const chips = () => [...root().querySelectorAll<HTMLElement>('[role="group"] > span')]
+  const moreButton = () => root().querySelector<HTMLButtonElement>('[role="group"] > button')
 
   it('colours each shown Tag by its key, with its ink, and leaves the „+N“ neutral', async () => {
     const tags = [{ key: 'retro', label: 'Retro' }, { key: 'co-op', label: 'Co-op' }, { key: 'koop', label: 'Koop' }, { key: 'horror', label: 'Horror' }]
     await mount({ name: 'Mario Kart', tags }, 'card')
 
-    const [retro, coop, koop, more] = chips()
+    const [retro, coop, koop] = chips()
     expect(retro!.getAttribute('style')).toContain('var(--cp-team-7)')
     expect(retro!.getAttribute('style')).toContain('var(--cp-team-7-ink)')
     expect(coop!.getAttribute('style')).toContain('var(--cp-team-1)')
     expect(koop!.getAttribute('style')).toContain('var(--cp-team-2)')
-    expect(more!.textContent).toBe('+1')
-    expect(more!.getAttribute('style') ?? '').not.toContain('--cp-team')
+    expect(moreButton()!.textContent).toBe('+1')
+    expect(moreButton()!.getAttribute('style') ?? '').not.toContain('--cp-team')
   })
 
   it('gives a Tag whose colour an earlier Tag wears the next free one, as on the game page', async () => {
@@ -111,6 +114,148 @@ describe('the Tag chips on a game card (#427)', () => {
 
     expect(chips()[0]!.getAttribute('style')).toContain('var(--cp-team-7)')
     expect(chips()[1]!.getAttribute('style')).toContain('var(--cp-team-8)')
+  })
+
+  it('renders no Tag group for a game without Tags', async () => {
+    await mount({ name: 'Mario Kart', tags: [] }, 'card')
+
+    expect(root().querySelector('[role="group"]')).toBeNull()
+    expect(chips()).toHaveLength(0)
+  })
+
+  it('renders one Tag as one chip in its colour, and no „+N“', async () => {
+    await mount({ name: 'Mario Kart', tags: [{ key: 'co-op', label: 'Co-op' }] }, 'card')
+
+    expect(chips()).toHaveLength(1)
+    expect(chips()[0]!.getAttribute('style')).toContain('var(--cp-team-1)')
+    expect(chips()[0]!.getAttribute('style')).toContain('var(--cp-team-1-ink)')
+    expect(root().textContent).not.toContain('+')
+  })
+
+  it('renders a Tag with the longest allowed label in its colour, cut inside the card', async () => {
+    const label = 'M'.repeat(TAG_MAX)
+    await mount({ name: 'Mario Kart', tags: [{ key: label.toLowerCase(), label }] }, 'card')
+
+    const chip = chips()[0]!
+    expect(chip.textContent!.trim()).toBe(label)
+    // 4: the key's own colour (see the unit test)
+    expect(chip.getAttribute('style')).toContain('var(--cp-team-4)')
+    expect(chip.getAttribute('style')).toContain('var(--cp-team-4-ink)')
+    expect(chip.className).toContain('truncate')
+    expect(chip.className).toContain('max-w-[9rem]')
+  })
+})
+
+// The „+N“ button (#614): it names its count, sits on the chips' line and opens a popover of every Tag. Using it never follows the card's link.
+describe('the „+N“ button and its popover (#614)', () => {
+  const FIVE = [{ key: 'retro', label: 'Retro' }, { key: 'co-op', label: 'Co-op' }, { key: 'koop', label: 'Koop' }, { key: 'horror', label: 'Horror' }, { key: 'indie', label: 'Indie' }]
+  const chips = () => [...root().querySelectorAll<HTMLElement>('[role="group"] > span')]
+  const moreButton = () => root().querySelector<HTMLButtonElement>('[role="group"] > button')
+  const popover = () => document.querySelector<HTMLElement>('[role="note"]')
+  const popoverChips = () => [...popover()!.querySelectorAll<HTMLElement>('[role="group"] > span')]
+  const hover = async (target: HTMLElement) => {
+    target.dispatchEvent(new PointerEvent('pointerenter', { pointerType: 'mouse' }))
+    await flushPromises()
+  }
+
+  it('is a button named by the Tags beyond three, with no native tooltip: „+2“ for five, „+1“ for four', async () => {
+    await mount({ name: 'Mario Kart', tags: FIVE }, 'card')
+
+    expect(moreButton()!.tagName).toBe('BUTTON')
+    expect(moreButton()!.textContent).toBe('+2')
+    expect(moreButton()!.getAttribute('aria-label')).toBe('2 weitere Tags')
+    expect(moreButton()!.hasAttribute('title')).toBe(false)
+    page!.unmount()
+
+    await mount({ name: 'Mario Kart', tags: FIVE.slice(0, 4) }, 'card')
+
+    expect(moreButton()!.textContent).toBe('+1')
+    expect(moreButton()!.getAttribute('aria-label')).toBe('1 weiterer Tag')
+  })
+
+  it('shows no „+N“ and no popover at three Tags or fewer', async () => {
+    await mount({ name: 'Mario Kart', tags: FIVE.slice(0, 3) }, 'card')
+
+    expect(chips()).toHaveLength(3)
+    expect(moreButton()).toBeNull()
+    expect(root().querySelector('button[aria-haspopup]')).toBeNull()
+  })
+
+  it('opens on hover a popover of every Tag, in the game’s order, with the colours the chips wear', async () => {
+    await mount({ name: 'Mario Kart', tags: FIVE }, 'card')
+    expect(popover()).toBeNull()
+
+    await hover(moreButton()!)
+
+    expect(popover()).not.toBeNull()
+    expect(popover()!.parentElement).toBe(document.body)
+    expect(popover()!.querySelector('[role="group"]')!.getAttribute('aria-label')).toBe('Tags')
+    expect(popoverChips().map(chip => chip.textContent!.trim())).toEqual(['Retro', 'Co-op', 'Koop', 'Horror', 'Indie'])
+    // The first three wear the colours of the card's chips; „Horror“ its own, „Indie“ the next free one after „Retro“ (#427).
+    expect(popoverChips()[0]!.getAttribute('style')).toBe(chips()[0]!.getAttribute('style'))
+    expect(popoverChips()[1]!.getAttribute('style')).toBe(chips()[1]!.getAttribute('style'))
+    expect(popoverChips()[2]!.getAttribute('style')).toBe(chips()[2]!.getAttribute('style'))
+    expect(popoverChips()[3]!.getAttribute('style')).toContain('var(--cp-team-5)')
+    expect(popoverChips()[4]!.getAttribute('style')).toContain('var(--cp-team-8)')
+  })
+
+  it('does not follow the card’s link: a click on „+N“ leaves the link and the router alone', async () => {
+    page = await mountSuspended(GameCard, {
+      props: { game: { id: 'g-1', name: 'Mario Kart', imageUrl: null, youtubeId: null, playersMin: null, playersMax: null, suitabilities: [], tags: FIVE, price: null }, layout: 'card', to: '/bibliothek/g-1' },
+    })
+    const link = root().querySelector('a')!
+    const onLinkClick = vi.fn()
+    link.addEventListener('click', onLinkClick)
+    const pushState = vi.spyOn(window.history, 'pushState')
+
+    moreButton()!.click()
+    await flushPromises()
+
+    expect(onLinkClick).not.toHaveBeenCalled()
+    expect(pushState).not.toHaveBeenCalled()
+    expect(popover()).not.toBeNull()
+    pushState.mockRestore()
+  })
+
+  it('does not press the picker’s own button: a click on „+N“ on a row without a link leaves the actions alone', async () => {
+    const onPick = vi.fn()
+    page = await mountSuspended(GameCard, {
+      props: { game: { id: 'g-1', name: 'Mario Kart', imageUrl: null, youtubeId: null, playersMin: null, playersMax: null, suitabilities: [], tags: FIVE, price: null }, layout: 'row' },
+      slots: { actions: () => h('button', { type: 'button', onClick: onPick }, 'Wählen') },
+    })
+
+    moreButton()!.click()
+    await flushPromises()
+
+    expect(onPick).not.toHaveBeenCalled()
+    expect(popover()).not.toBeNull()
+  })
+
+  it('has a 44 px hit area, and keeps its own height, font and line (#658, #614)', async () => {
+    await mount({ name: 'Mario Kart', tags: FIVE }, 'card')
+
+    const classes = moreButton()!.classList
+    expect(classes.contains('hit-44')).toBe(true)
+    // What #614 built stays: the hit area is a pseudo-element, so the button's look and the card's layout do not change.
+    for (const kept of ['h-6', 'px-1.5', 'text-[12px]', 'leading-5', 'font-bold']) expect(classes.contains(kept)).toBe(true)
+  })
+
+  it('closes on Esc and keeps the focus on „+N“, which the focus opened', async () => {
+    const container = document.createElement('div')
+    document.body.append(container)
+    await mount({ name: 'Mario Kart', tags: FIVE }, 'card', true, container)
+
+    moreButton()!.focus()
+    await flushPromises()
+    expect(popover()).not.toBeNull()
+    expect(document.activeElement).toBe(moreButton())
+
+    moreButton()!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }))
+    await flushPromises()
+
+    expect(popover()).toBeNull()
+    expect(document.activeElement).toBe(moreButton())
+    container.remove()
   })
 })
 
@@ -172,6 +317,78 @@ describe('the tile layout (#435)', () => {
   })
 })
 
+// The name reserves two lines (#612), so a one-line title makes no shorter tile than a two-line one. jsdom has no layout:
+// the tests pin the classes that reserve the lines, the heights are measured in the browser check.
+describe('the two reserved title lines (#612)', () => {
+  const TITLES = [
+    ['a one-word title', 'Pong'],
+    ['a title of two lines', 'Mario Kart 8 Deluxe Booster Pass'],
+    ['the longest allowed title, without spaces', LONG_NAME],
+  ] as const
+  const tokens = (el: Element) => el.className.split(' ')
+
+  it.each(TITLES)('keeps two lines for %s in the tile, with the clamp and the wrap', async (_what, name) => {
+    await mount({ name }, 'tile', false)
+
+    const classes = tokens(root().querySelector('b')!)
+    expect(classes).toEqual(expect.arrayContaining(['min-h-[2lh]', 'line-clamp-2', 'break-words']))
+  })
+
+  it.each(TITLES)('keeps two lines for %s in the card layout, with the clamp', async (_what, name) => {
+    await mount({ name }, 'card', false)
+
+    expect(tokens(root().querySelector('b')!)).toEqual(expect.arrayContaining(['min-h-[2lh]', 'line-clamp-2']))
+  })
+
+  it.each(TITLES)('keeps two lines for %s only from md in the responsive layout, the row below stays one line', async (_what, name) => {
+    await mount({ name }, 'responsive', false)
+
+    const classes = tokens(root().querySelector('b')!)
+    expect(classes).toEqual(expect.arrayContaining(['md:min-h-[2lh]', 'truncate', 'md:line-clamp-2']))
+    expect(classes).not.toContain('min-h-[2lh]')
+  })
+
+  it.each(TITLES)('reserves nothing in the row layout for %s', async (_what, name) => {
+    await mount({ name }, 'row', false)
+
+    const name_ = root().querySelector('b')!
+    expect(name_.className).not.toContain('min-h-[2lh]')
+    expect(tokens(name_)).toContain('truncate')
+  })
+
+  it('reserves the lines on the button that opens a tile, and shows the whole title', async () => {
+    page = await mountSuspended(GameCard, {
+      props: { game: { id: 'g-1', name: LONG_NAME, imageUrl: null, youtubeId: null, price: null, playersMin: null, playersMax: null, suitabilities: [] }, layout: 'tile', opens: true },
+    })
+
+    const button = root().querySelector('button')!
+    expect(tokens(button)).toContain('min-h-[2lh]')
+    expect(button.textContent).toBe(LONG_NAME)
+  })
+
+  it('reserves the lines on the link of a responsive card from md, and shows the whole title', async () => {
+    page = await mountSuspended(GameCard, {
+      props: { game: { id: 'g-1', name: LONG_NAME, imageUrl: null, youtubeId: null, price: null, playersMin: null, playersMax: null, suitabilities: [] }, layout: 'responsive', to: '/bibliothek/g-1' },
+    })
+
+    const link = root().querySelector('a')!
+    expect(tokens(link)).toContain('md:min-h-[2lh]')
+    expect(tokens(link)).not.toContain('min-h-[2lh]')
+    expect(link.textContent).toBe(LONG_NAME)
+  })
+
+  it('gives a tile of the longest title and a tile of a one-word title the same classes, so the same size', async () => {
+    await mount({ name: LONG_NAME }, 'tile', false)
+    const long = { root: root().className, name: root().querySelector('b')!.className }
+    page!.unmount()
+
+    await mount({ name: 'Pong' }, 'tile', false)
+
+    expect(root().className).toBe(long.root)
+    expect(root().querySelector('b')!.className).toBe(long.name)
+  })
+})
+
 // A tile that opens a dialog (#443, #444): a tile with `opens` is a button, one without it stays plain.
 describe('the tile that opens (#443)', () => {
   async function mountOpening(props: { opens?: boolean, to?: string }) {
@@ -209,5 +426,107 @@ describe('the tile that opens (#443)', () => {
 
     expect(card.find('button').exists()).toBe(false)
     expect(card.get('a').attributes('href')).toBe('/bibliothek/g-1')
+  })
+})
+
+// A shadowed card lifts on hover only where the card itself can be clicked (#608): a lift always means a click.
+describe('the lift on a card that can be clicked (#608)', () => {
+  async function mountClickable(layout: Layout, props: { opens?: boolean, to?: string }, withActions = false) {
+    page = await mountSuspended(GameCard, {
+      props: { game: { id: 'g-1', name: 'Mario Kart', imageUrl: null, youtubeId: null, price: null, playersMin: null, playersMax: null, suitabilities: [], tags: [] }, layout, ...props },
+      slots: withActions ? { actions: () => h('button', { type: 'button' }, 'Hinzufügen') } : {},
+    })
+    return page
+  }
+
+  it.each<Layout>(['responsive', 'row', 'card'])('lifts a %s card with a link', async (layout) => {
+    await mountClickable(layout, { to: '/bibliothek/g-1' })
+
+    expect(root().classList.contains('lift')).toBe(true)
+  })
+
+  it('lifts a tile that opens, and one that opens and has a link', async () => {
+    await mountClickable('tile', { opens: true })
+    expect(root().classList.contains('lift')).toBe(true)
+    page?.unmount()
+
+    await mountClickable('tile', { opens: true, to: '/bibliothek/g-1' })
+    expect(root().classList.contains('lift')).toBe(true)
+  })
+
+  // The press (#658): `:active` matches the pressed element and every ancestor of it, so a button inside the card would press the card
+  // too. jsdom has no `:active`, so the compiled rule is read for its selector and `:active` is swapped for an attribute that the
+  // test sets on the pressed element and on each of its ancestors, as the browser does.
+  describe('presses only for its own click (#658)', () => {
+    const FIVE = [{ key: 'a', label: 'Retro' }, { key: 'b', label: 'Koop' }, { key: 'c', label: 'Party' }, { key: 'd', label: 'Horror' }, { key: 'e', label: 'Indie' }]
+    const NAME = 'Mario Kart'
+
+    let pressSelector: string
+    beforeAll(async () => {
+      const css = await build(`${themeBlock(/@utility tint/)}\n${themeBlock(/@utility lift/)}`, ['lift'])
+      const flat = parse(css).find(rule => rule.decls.includes('box-shadow: none') && rule.chain.at(-1)!.startsWith('&:active'))
+      pressSelector = flat!.chain.at(-1)!.replace(/^&/, '.lift').replaceAll(':active', '[data-down]')
+    })
+
+    /** Whether the card presses while `target` is held down: the target and its ancestors carry `data-down`, as `:active` does. */
+    function pressedBy(target: HTMLElement) {
+      const down: HTMLElement[] = []
+      for (let el: HTMLElement | null = target; el; el = el.parentElement) {
+        el.setAttribute('data-down', '')
+        down.push(el)
+      }
+      const presses = root().matches(pressSelector)
+      for (const el of down) el.removeAttribute('data-down')
+      return presses
+    }
+
+    async function mountCard(props: { to?: string, opens?: boolean }, layout: Layout = 'card') {
+      page = await mountSuspended(GameCard, {
+        props: { game: { id: 'g-1', name: NAME, imageUrl: null, youtubeId: null, price: null, playersMin: null, playersMax: null, suitabilities: [], tags: FIVE }, layout, ...props },
+        slots: { actions: () => [h('button', { type: 'button' }, 'Wählen'), h('a', { href: '/x' }, 'Notizen')] },
+      })
+    }
+    const name = () => root().querySelector<HTMLElement>('a[href="/bibliothek/g-1"], [data-lift-owner]')!
+
+    it('presses when the name link is pressed', async () => {
+      await mountCard({ to: '/bibliothek/g-1' })
+
+      expect(name().textContent!.trim()).toBe(NAME)
+      expect(pressedBy(name())).toBe(true)
+    })
+
+    it('presses when the tile’s name button is pressed', async () => {
+      await mountCard({ opens: true }, 'tile')
+
+      expect(name().tagName).toBe('BUTTON')
+      expect(pressedBy(name())).toBe(true)
+    })
+
+    it('presses when the card is pressed anywhere else on it, where no control is', async () => {
+      await mountCard({ to: '/bibliothek/g-1' })
+
+      expect(pressedBy(root().querySelector('[data-cover]')!)).toBe(true)
+    })
+
+    it('stays still when „+N“ is pressed', async () => {
+      await mountCard({ to: '/bibliothek/g-1' })
+
+      expect(pressedBy(root().querySelector<HTMLElement>('[role="group"] > button')!)).toBe(false)
+    })
+
+    it('stays still when a button or a link in the actions is pressed', async () => {
+      await mountCard({ to: '/bibliothek/g-1' })
+
+      expect(pressedBy(root().querySelector<HTMLElement>('button:not([aria-haspopup])')!)).toBe(false)
+      expect(pressedBy(root().querySelector<HTMLElement>('a[href="/x"]')!)).toBe(false)
+    })
+  })
+
+  it('keeps a static card still: a tile without opens, a card and a row without a link, and an empty link', async () => {
+    for (const [layout, props, withActions] of [['tile', {}, false], ['card', {}, false], ['row', {}, true], ['row', { to: '' }, true]] as const) {
+      await mountClickable(layout, props, withActions)
+      expect(root().classList.contains('lift')).toBe(false)
+      page?.unmount()
+    }
   })
 })
