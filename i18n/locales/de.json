@@ -1184,6 +1184,18 @@
     "title": "Was ist neu",
     "all": "Alle Neuigkeiten"
   },
+  "tour": {
+    "skip": "Überspringen",
+    "finish": "Fertig",
+    "greeting": {
+      "title": "Willkommen!",
+      "text": "Ich zeige dir kurz, wie dieses Event funktioniert. Du musst nichts tun: nur schauen und auf „Weiter“ klicken."
+    },
+    "end": {
+      "title": "Das war’s",
+      "text": "Du willst den Rundgang noch einmal sehen? Auf deinem Profil unter „Einstellungen“ startest du ihn neu."
+    }
+  },
   "legal": {
     "_scope": "Impressum und Datenschutzerklärung von Compies. Jeder Abschnitt hat eine Überschrift und einen Text; Absätze sind durch eine Leerzeile getrennt. Bei Änderungen an der App (neue Dienste, Cookies, Daten) hier nachziehen und den Stand anpassen.",
     "nav": "Rechtliches und Version",

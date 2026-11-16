@@ -20,7 +20,7 @@ withDefaults(defineProps<{
   accessory?: 'partyhat'
   /** The Event of an Event page (#426): the header's nav names it under Events. */
   event?: EventContext
-  /** A Clip's backdrop covers the page (#587): everything here takes no pointer, tap or key; what the `layers` slot holds stays usable. */
+  /** A Clip's backdrop (#587) or the Tour (#647) covers the page: everything here takes no pointer, tap or key; what the `layers` slot holds stays usable. */
   covered?: boolean
 }>(), { kind: 'hub', flush: false, noTabs: false, accessory: undefined, event: undefined, covered: false })
 
