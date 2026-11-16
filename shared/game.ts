@@ -216,6 +216,11 @@ export function normaliseTag(raw: string): GameTag | null {
   return label === '' ? null : { key: label.toLocaleLowerCase('de'), label }
 }
 
+/** The Tags by label in German collation (#615): the order of the library's Tag filter and of the form's „Alle Tags“. A sorted copy. */
+export function sortTagsByLabel<T extends GameTag>(tags: readonly T[]): T[] {
+  return [...tags].sort((a, b) => a.label.localeCompare(b.label, 'de'))
+}
+
 /** What is wrong with a Tag: nothing left after normalising, or longer than TAG_MAX characters. Null when fine (#335). */
 export function tagProblem(raw: string): 'empty' | 'too_long' | null {
   const tag = normaliseTag(raw)

@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Neu
+
+- **Alle Tags im Spiele-Formular:** Unter dem Tag-Feld klappst du jetzt „Alle Tags“ auf und siehst alle Tags deiner Bibliothek. Ein Klick fügt einen Tag dem Spiel hinzu, ein zweiter Klick nimmt ihn wieder weg. ([#615](https://github.com/christried/compies/issues/615))
+
 ### Geändert
 
 - **Deine eigene Bibliothek:** Jeder Host hat jetzt eine eigene Bibliothek. Du siehst und bearbeitest nur die Spiele, die du selbst angelegt hast, und niemand sonst sieht deine, auch die Plattform-Admin nicht. Spiele anderer Hosts, die in deinen Events vorkamen, hast du als eigene Kopie bekommen. Tags und Tag-Vorschläge kommen nur noch aus deinen eigenen Spielen. ([#455](https://github.com/christried/compies/issues/455))

@@ -998,6 +998,7 @@
     "tagsTooMany": "Höchstens {max} Tags",
     "tagRemove": "Tag „{label}“ entfernen",
     "tagSuggestions": "Vorschläge",
+    "allTags": "Alle Tags",
     "price": "Preis",
     "priceAmount": "Betrag in €",
     "priceAmountHelp": "Zum Beispiel 19,99",

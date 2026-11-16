@@ -5,6 +5,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import GameForm from '~/components/GameForm.vue'
 import { FINE_POINTER_QUERY } from '~/composables/useMediaQuery'
 import type { GameTag, GameView } from '~~/shared/game'
+import { teamVar } from '~/utils/team-style'
+import { colorTags } from '~~/shared/tag-colors'
 import { kitty, signInAs } from './auth'
 
 const saved: GameView = {
@@ -874,6 +876,122 @@ describe('the game form', () => {
         await withSuggestions(page, 'co')
 
         expect(options(page)).toEqual(['Co-op'])
+      })
+    })
+
+    // „Alle Tags“ (#615): every Tag in use as a chip under the field. Its chips are buttons with `aria-pressed`, named by their
+    // label, so `chips()` (remove buttons) and `options()` (the listbox) do not see them.
+    describe('„Alle Tags“ (#615)', () => {
+      const allTagsButton = (page: Page) => page.findAll('button').find(button => button.text() === 'Alle Tags')
+      // The chips are the `aria-pressed` buttons in the panel the disclosure button names; other buttons of the form have `aria-pressed` too.
+      const listChips = (page: Page) => {
+        const panelId = allTagsButton(page)?.attributes('aria-controls')
+        return panelId ? page.findAll(`[id="${panelId}"] button[aria-pressed]`) : []
+      }
+      const listLabels = (page: Page) => listChips(page).map(chip => chip.text())
+      const chip = (page: Page, label: string) => listChips(page).find(candidate => candidate.text() === label)!
+
+      /** Mounts with the Tags in use answered, and opens the list. */
+      async function mountOpen(tags: GameTag[] = suggestedTags, attachTo?: HTMLElement) {
+        tagsInUse = tags
+        const page = await mountSuspended(GameForm, { attachTo })
+        await vi.waitFor(() => expect(allTagsButton(page)).toBeDefined())
+        await allTagsButton(page)!.trigger('click')
+        return page
+      }
+
+      it('shows no „Alle Tags“ while no Tag is in use', async () => {
+        tagsInUse = []
+        const page = await mountSuspended(GameForm)
+        await vi.waitFor(() => expect(tagsRequested).toHaveBeenCalled())
+        await flushPromises()
+
+        expect(allTagsButton(page)).toBeUndefined()
+      })
+
+      it('is closed by default, with no chip in the page', async () => {
+        const page = await mountSuspended(GameForm)
+        await vi.waitFor(() => expect(allTagsButton(page)).toBeDefined())
+
+        expect(allTagsButton(page)!.attributes('aria-expanded')).toBe('false')
+        expect(listChips(page)).toHaveLength(0)
+      })
+
+      it.each([
+        [[{ key: 'retro', label: 'Retro' }], ['Retro']],
+        [[{ key: 'retro', label: 'Retro' }, { key: 'co-op', label: 'Co-op' }], ['Co-op', 'Retro']],
+      ])('shows one chip for each of %j Tags in use once opened', async (tags, labels) => {
+        const page = await mountOpen(tags)
+
+        expect(allTagsButton(page)!.attributes('aria-expanded')).toBe('true')
+        expect(listLabels(page)).toEqual(labels)
+      })
+
+      it('lists the Tags alphabetically in German collation', async () => {
+        const page = await mountOpen([{ key: 'zeit', label: 'Zeit' }, { key: 'ärger', label: 'Ärger' }, { key: 'bo1', label: 'Bo1' }])
+
+        expect(listLabels(page)).toEqual(['Ärger', 'Bo1', 'Zeit'])
+      })
+
+      it('shows a Tag of 20 characters in full', async () => {
+        const long = 'Zwanzig Zeichen lang'
+        expect(long).toHaveLength(20)
+        const page = await mountOpen([{ key: long.toLocaleLowerCase('de'), label: long }])
+
+        expect(listLabels(page)).toEqual([long])
+      })
+
+      it('colours each chip with its own Tag colour', async () => {
+        const page = await mountOpen()
+
+        for (const tag of suggestedTags) {
+          const expected = teamVar(colorTags([tag])[0]!.color)
+          expect((chip(page, tag.label).element as HTMLElement).querySelector<HTMLElement>('[style]')!.style.backgroundColor).toBe(expected)
+        }
+      })
+
+      it('adds the Tag on a click, and keeps the typed text and the focus on the chip', async () => {
+        // Attached, so `focus()` works as a click does in a browser.
+        const page = await mountOpen(suggestedTags, document.body)
+        try {
+          await type(page, 'Pa')
+          const retro = chip(page, 'Retro')
+          const retroButton = retro.element as HTMLElement
+          retroButton.focus()
+
+          await retro.trigger('click')
+
+          expect(chips(page)).toEqual(['Retro'])
+          expect(chip(page, 'Retro').attributes('aria-pressed')).toBe('true')
+          expect((tagsField(page).element as HTMLInputElement).value).toBe('Pa')
+          expect(document.activeElement).toBe(chip(page, 'Retro').element)
+        }
+        finally {
+          page.unmount()
+        }
+      })
+
+      it('takes the Tag away again on a second click', async () => {
+        const page = await mountOpen()
+        await chip(page, 'Retro').trigger('click')
+
+        await chip(page, 'Retro').trigger('click')
+
+        expect(chips(page)).toEqual([])
+        expect(chip(page, 'Retro').attributes('aria-pressed')).toBe('false')
+      })
+
+      it('disables the chips that are not on the game at 8 Tags, and frees them when one is removed', async () => {
+        const many = Array.from({ length: 10 }, (_, index) => ({ key: `tag${index}`, label: `Tag${index}` }))
+        const page = await mountOpen(many)
+        for (const tag of many.slice(0, 8)) await chip(page, tag.label).trigger('click')
+
+        const disabled = () => listChips(page).filter(candidate => candidate.attributes('disabled') !== undefined).map(candidate => candidate.text())
+        expect(disabled()).toEqual(['Tag8', 'Tag9'])
+
+        await chip(page, 'Tag3').trigger('click')
+
+        expect(disabled()).toEqual([])
       })
     })
 

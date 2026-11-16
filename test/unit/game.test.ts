@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   CLIP_END_MAX, CLIP_LENGTH_MAX, CLIP_LENGTH_MIN, CLIP_START_MAX, GAME_NAME_MAX, NO_FILTERS, SUITABILITIES, canEditGame, canSeeLibrary, clipTime, filterGames, gameNameProblem,
-  isClipLength, normaliseTag, parseClipLength, parseClipTime, parseGameInput, parsePlayerCount, parseTags, tagProblem,
+  isClipLength, normaliseTag, parseClipLength, parseClipTime, parseGameInput, parsePlayerCount, parseTags, sortTagsByLabel, tagProblem,
   formatPriceAmount, isPriceCheckOnly, parsePrice, parsePriceAmount, priceTakesAmount,
   FREE_TO_PLAY_TAG, tagsWithFreeToPlay,
   type GameFilters, type GameView, type Suitability,
@@ -498,6 +498,15 @@ describe('normaliseTag (#335)', () => {
 
   it.each([[''], ['   '], [' \t'], ['\u00a0']])('gives nothing for %j', (raw) => {
     expect(normaliseTag(raw)).toBeNull()
+  })
+})
+
+describe('sortTagsByLabel (#615)', () => {
+  it('sorts by label in German collation, so an umlaut sorts with its letter, and leaves the input as it was', () => {
+    const tags = [{ key: 'zeit', label: 'Zeit' }, { key: 'ärger', label: 'Ärger' }, { key: 'bo1', label: 'Bo1' }]
+
+    expect(sortTagsByLabel(tags).map(tag => tag.label)).toEqual(['Ärger', 'Bo1', 'Zeit'])
+    expect(tags.map(tag => tag.label)).toEqual(['Zeit', 'Ärger', 'Bo1'])
   })
 })
 
