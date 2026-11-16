@@ -23,6 +23,8 @@
 
 - Die App-Figur am Glücksrad ragt in mittleren Fensterbreiten nicht mehr über den Rahmen der Rad-Karte. ([#604](https://github.com/christried/compies/issues/604))
 - **Name beim Ziehen:** Wer eine Person auf dem Spielbrett zieht, liest ihren Namen jetzt auch während des Ziehens, in Hell und Dunkel. ([#609](https://github.com/christried/compies/issues/609))
+- Startet oder endet ein Clip, springt die Seite am Computer nicht mehr zur Seite. Auf einer Spielkarte bewegt sich die Karte nur noch, wenn du ihren Namen drückst, nicht mehr beim Drücken von „+N“ oder einem Knopf auf der Karte, und „+N“ lässt sich sicher antippen. ([#658](https://github.com/christried/compies/issues/658))
+- Im Menü „Mehr“ einer Session stehen „Neue Terminsuche“ und „Entfernen“ jetzt bündig unter den anderen Einträgen. ([#659](https://github.com/christried/compies/issues/659))
 
 ### Entfernt
 
