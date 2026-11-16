@@ -36,7 +36,8 @@ const showMeta = computed(() => props.layout !== 'tile')
 const cover = computed(() => gameCover(props.game))
 /** What the name is: the link, else the button that opens the dialog (#443), else a plain element. */
 const asButton = computed(() => props.opens && !props.to)
-/** Whether the card itself can be clicked: only then it lifts on hover, so a lift always means a click (#608). */
+/** Whether the card itself can be clicked: only then it lifts on hover, so a lift always means a click (#608). It presses only for the
+ *  click of its name (`data-lift-owner` below), not for a control inside it (#658): `lift` leaves the card still while one of those is pressed. */
 const clickable = computed(() => Boolean(props.to) || props.opens)
 // The compact player count and the Suitabilities („Passt zu“, #171: „Teams, 1 gegen 1“).
 const description = computed(() => describeGame({
@@ -130,6 +131,7 @@ const look = computed(() => LAYOUT[props.layout])
         :to="to"
         :type="asButton ? 'button' : undefined"
         :aria-haspopup="asButton ? 'dialog' : undefined"
+        :data-lift-owner="to || asButton ? '' : undefined"
         class="leading-tight font-bold text-ink no-underline"
         :class="[
           to || asButton ? 'focus-visible:focus-ring after:absolute after:inset-0 after:block after:content-[\'\']' : '',
@@ -181,7 +183,7 @@ const look = computed(() => LAYOUT[props.layout])
           v-if="moreTags > 0"
           ref="more"
           type="button"
-          class="relative inline-flex h-6 flex-none items-center rounded-pill border-2 border-transparent px-1.5 text-[12px] leading-5 font-bold text-ink-2 focus-visible:focus-ring"
+          class="hit-44 inline-flex h-6 flex-none items-center rounded-pill border-2 border-transparent px-1.5 text-[12px] leading-5 font-bold text-ink-2 focus-visible:focus-ring"
           :aria-label="t('library.moreTagsLabel', { n: moreTags }, moreTags)"
           v-bind="triggerAttrs"
         >

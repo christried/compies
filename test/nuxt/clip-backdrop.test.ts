@@ -22,7 +22,7 @@ async function mount(shown: boolean) {
 afterEach(() => {
   page?.unmount()
   page = undefined
-  html().remove('overflow-hidden')
+  html().remove('overflow-hidden', 'scroll-gutter')
 })
 
 describe('the backdrop', () => {
@@ -71,6 +71,50 @@ describe('the stylesheet', () => {
     expect(css).toMatch(/--animate-backdrop-in:[^;]*cp-fade-in[^;]*var\(--cp-dur-slow\)[^;]*var\(--cp-ease-out\)/)
     expect(css).toMatch(/@media \(prefers-reduced-motion: reduce\) \{[^}]*\.animate-backdrop-in[^}]*cp-fade-in var\(--cp-dur-fast\) linear both/)
     expect(css).toMatch(/\[data-motion=reduced\] \.animate-backdrop-in[^{]*\{ animation: cp-fade-in var\(--cp-dur-fast\) linear both; \}/)
+  })
+})
+
+// The lock takes the scrollbar away on a desktop with a classic one, and the page and every fixed element would move by its width (#658).
+// So a page that scrolls keeps the scrollbar's place as a gutter while locked; a page that does not scroll has no scrollbar and needs none.
+// happy-dom has no layout: the scrollbar is the difference between the window's width and the root's `clientWidth`, which the test sets.
+describe('the lock keeps the width of the page (#658)', () => {
+  const SCROLLBAR = 15
+  const scrollbar = (width: number) => Object.defineProperty(document.documentElement, 'clientWidth', { configurable: true, get: () => window.innerWidth - width })
+  afterEach(() => {
+    Reflect.deleteProperty(document.documentElement, 'clientWidth')
+  })
+
+  it('on a page that scrolls, keeps the scrollbar\'s place while locked, and gives it back with the lock', async () => {
+    scrollbar(SCROLLBAR)
+    await mount(true)
+    expect(html().contains('overflow-hidden')).toBe(true)
+    expect(html().contains('scroll-gutter')).toBe(true)
+
+    await page!.setProps({ shown: false })
+    expect(html().contains('overflow-hidden')).toBe(false)
+    expect(html().contains('scroll-gutter')).toBe(false)
+  })
+
+  it('on a page that does not scroll, reserves no gutter: nothing was there to keep', async () => {
+    scrollbar(0)
+    await mount(true)
+
+    expect(html().contains('overflow-hidden')).toBe(true)
+    expect(html().contains('scroll-gutter')).toBe(false)
+  })
+
+  it('frees the gutter too when it is unmounted while shown', async () => {
+    scrollbar(SCROLLBAR)
+    await mount(true)
+
+    page!.unmount()
+    page = undefined
+
+    expect(html().contains('scroll-gutter')).toBe(false)
+  })
+
+  it('has a `scroll-gutter` utility that keeps the gutter even where the scrollbar is hidden', () => {
+    expect(clean(theme)).toMatch(/@utility scroll-gutter \{\s*scrollbar-gutter: stable;?\s*\}/)
   })
 })
 
