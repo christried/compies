@@ -573,8 +573,8 @@ const parts = {
   body: h('div', { id: 'body' }),
 }
 stepBox.append(parts.empty, parts.body)
+// The text and what can be done with it come first, so they are on screen with the picture below; the buttons repeat the keys.
 parts.body.append(
-  h('div', { class: 'pictures', id: 'pictures' }),
   h('div', { class: 'meta', id: 'kind' }),
   h('div', { class: 'text', id: 'text' }),
   h('div', { class: 'meta' }, h('span', { id: 'rendered-label', text: 'Gerendert: ' }), h('span', { class: 'rendered', id: 'rendered' }), ' ', h('em', { id: 'rendered-note' })),
@@ -584,14 +584,6 @@ parts.body.append(
   h('div', { id: 'answer' }),
   h('div', { class: 'changed', id: 'changed' }),
   h('div', { class: 'alternatives', id: 'alternatives' }),
-  h('div', { class: 'actions', id: 'actions-text' },
-    h('button', { type: 'button', id: 'btn-passt', text: 'passt (Enter)', onclick: answerPasst }),
-    h('button', { type: 'button', id: 'btn-replace', text: 'Ersetzen (F2 oder tippen)', onclick: () => {
-      const step = current()
-      openReplacement(stepEntry(step ?? /** @type {any} */ ({}))?.replacement ?? step?.text ?? '')
-    } }),
-    h('button', { type: 'button', id: 'btn-alternatives', text: 'Alternativen bitte (Alt+A)', onclick: answerAlternatives }),
-  ),
   h('div', { id: 'replace-box', hidden: true }, h('label', { text: 'Ersatztext' }), replacement, issues, saveReplacementButton, h('button', { type: 'button', text: 'Verwerfen (Esc)', onclick: closeReplacement })),
   h('div', { id: 'unused-box', hidden: true },
     h('div', { class: 'meta', id: 'unused-count' }),
@@ -605,6 +597,15 @@ parts.body.append(
     h('label', { text: 'Kommentar (Alt+C, Enter speichert)' }),
     comment,
     h('button', { type: 'button', id: 'btn-comment', text: 'Kommentar speichern', onclick: saveComment }),
+  ),
+  h('div', { class: 'pictures', id: 'pictures' }),
+  h('div', { class: 'actions', id: 'actions-text' },
+    h('button', { type: 'button', id: 'btn-passt', text: 'passt (Enter)', onclick: answerPasst }),
+    h('button', { type: 'button', id: 'btn-replace', text: 'Ersetzen (F2 oder tippen)', onclick: () => {
+      const step = current()
+      openReplacement(stepEntry(step ?? /** @type {any} */ ({}))?.replacement ?? step?.text ?? '')
+    } }),
+    h('button', { type: 'button', id: 'btn-alternatives', text: 'Alternativen bitte (Alt+A)', onclick: answerAlternatives }),
   ),
   h('div', { class: 'actions' },
     h('button', { type: 'button', id: 'btn-prev', text: 'Zurück (←)', onclick: previous }),
