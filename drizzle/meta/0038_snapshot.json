@@ -1,5 +1,5 @@
 {
-  "id": "5d17f2ae-510f-44a8-9d91-aeeab7427996",
+  "id": "b69c9b3f-522e-46df-9bbf-07b5637da03f",
   "prevId": "4dfe4a29-a726-4da4-a433-69fa751e39d6",
   "version": "7",
   "dialect": "postgresql",
@@ -1631,6 +1631,12 @@
         },
         "price_checked_at": {
           "name": "price_checked_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "archived_at": {
+          "name": "archived_at",
           "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": false

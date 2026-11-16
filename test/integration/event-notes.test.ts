@@ -155,6 +155,15 @@ describe('Event notes, the Host\'s server side (#731)', () => {
       expect((await rows(party)).find(row => row.gameId === party.games.halo.id)?.notes).toEqual(longest)
     })
 
+    it('takes a note for an Archived game of the Host\'s library (#467: archived or not)', async () => {
+      const party = await running()
+      await counted.update(games).set({ archivedAt: new Date(T0) }).where(eq(games.id, party.games.kart.id))
+
+      await saved(await put(party, party.games.kart.id, party.hostCookie, doc('Archiviert')))
+
+      expect(await hostRead(party)).toEqual({ [party.games.kart.id]: doc('Archiviert') })
+    })
+
     it('works with an upper-case game id and stores it lower-case', async () => {
       const party = await running()
 
