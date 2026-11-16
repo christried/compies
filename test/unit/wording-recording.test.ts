@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { assemble, budgetId, createBudget, dedupeItems, SIGHTINGS_PER_KEY, selectItems } from '../../scripts/wording/recording.mjs'
 import { checkRecording } from '../../scripts/wording/review-model.mjs'
+import { isLocalBase } from '../../scripts/wording/walk-report.mjs'
 
 // What the wording walk makes of its readings (scripts/wording/recording.mjs, #629): items with their pictures in, the recording of #628's
 // typedef out. Everything that needs Chrome (the page scripts, the pictures) is measured by running the walk, not here.
@@ -170,5 +171,16 @@ describe('createBudget', () => {
     budget.restore(snapshot)
     expect(budget.full('a')).toBe(false)
     expect(budget.dropped).toBe(0)
+  })
+})
+
+// The walk makes a Host and Events, so it runs only against the local dev server (Hell only, the local dev database; #620).
+describe('isLocalBase', () => {
+  it('takes the loopback names with a port', () => {
+    for (const base of ['http://localhost:3100', 'http://127.0.0.1:3000', 'http://localhost:3100/']) expect(isLocalBase(base)).toBe(true)
+  })
+
+  it('refuses staging, production, another host that starts like a local one, and a base without a port', () => {
+    for (const base of ['https://staging.compies.de', 'https://compies.de', 'http://localhost.evil.example:3100', 'http://localhost', 'https://localhost:3100', 'http://127.0.0.1:3100@evil.example', 'http://localhost:3100/x']) expect(isLocalBase(base)).toBe(false)
   })
 })

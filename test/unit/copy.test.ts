@@ -114,9 +114,6 @@ describe('counted copy', () => {
   })
 })
 
-// The words of GLOSSARY.md (#175): RETIRED, in scripts/wording/retired-words.mjs since #628 (the wording review reads it too), so
-// neither the copy nor the changelog falls back to a word the glossary replaced.
-
 // The changelog lines that announce a removal name the removed feature by its old word, so they are the one place a retired word may stay: the
 // lines of the issues that removed it, found by the link they end with (#279 took out the Tiebreaker pool, #280 its mention in the privacy text,
 // #437 the Bench).
