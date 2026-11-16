@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<div style="padding:36px 40px;border:3px solid #151515;border-radius:20px;background:#fffdf8;box-shadow:6px 6px 0 #151515;font-family:var(--cp-font-mono);font-size:16px;line-height:1.6;color:#151515;white-space:pre-wrap;text-wrap:pretty">{{ doc }}</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1200,&quot;height&quot;:600},&quot;src&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;global&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+class Component extends DCLogic {
+  state={doc:'Loading …'};
+  componentDidMount(){ const g=this.props.global&&window[this.props.global]; if(g){ this.setState({doc:g}); return; } const src=this.props.src; if(!src) return; fetch(src).then(r=>r.ok?r.text():Promise.reject()).then(doc=>this.setState({doc})).catch(()=>this.setState({doc:'See '+src})); }
+  renderVals(){ return {doc:this.state.doc}; }
+}
+</script>
+</body>
+</html>
