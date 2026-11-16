@@ -340,6 +340,38 @@ describe('Archived games and the Events (#725)', () => {
     })
   })
 
+  // The image follows the pool (#725): a Member with the Pool preview on cannot fetch the picture of a pool game that was archived, as the pool list no longer
+  // names it; a game a Round has set stays visible, and the owner's own access is unaffected.
+  describe('the image', () => {
+    const image = (party: Party, key: string, cookie: string) => send('GET', `/api/images/${party.games[key as 'kart'].imageKey}`, cookie)
+
+    it('stops serving a pool game\'s picture to a Member when it is archived and serves it again after the restore, the owner throughout', async () => {
+      const party = await running()
+      await store.put('kart-key', new Uint8Array([1, 2, 3]))
+
+      expect((await image(party, 'kart', party.one)).status).toBe(200)
+
+      await archive(party, party.games.kart.id)
+      const refused = await image(party, 'kart', party.one)
+      expect([refused.status, refused.statusText]).toEqual([404, 'Not Found'])
+      expect((await image(party, 'kart', party.hostCookie)).status).toBe(200)
+
+      await restore(party, party.games.kart.id)
+      expect((await image(party, 'kart', party.one)).status).toBe(200)
+    })
+
+    it('keeps serving the picture of an Archived game a Round has set', async () => {
+      const party = await running()
+      await store.put('kart-key', new Uint8Array([1, 2, 3]))
+      await hostSets(rig, party, party.games.kart.id)
+
+      await archive(party, party.games.kart.id)
+
+      expect((await image(party, 'kart', party.one)).status).toBe(200)
+      expect((await image(party, 'kart', party.hostCookie)).status).toBe(200)
+    })
+  })
+
   describe('what keeps an Archived game', () => {
     it('keeps an open spin: the slice list and the drawn game of the Host and of a Member stay from the stop on, and the draw settles', async () => {
       const party = await running()

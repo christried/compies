@@ -81,12 +81,14 @@ export async function liveEventsHolding(db: Db, gameId: string, hostId: string):
 /**
  * The live Events `userId` is a Member of whose Game pool holds a game with the image key, or in which a Round has set one, with whether
  * they host it, whether their Pool preview is on and whether a Round set the game: what the image route needs (#148,
- * #225, #228). Copies of a game share a key (ADR 0018), so it asks by key, not by game (#723). One query, deleted Events left out.
+ * #225, #228). Copies of a game share a key (ADR 0018), so it asks by key, not by game (#723). One query, deleted Events left out. An Archived game counts as in a pool no more (#725); one a Round or a draw has set still counts as set.
  * A Round that was put back still counts as set: everyone saw it.
  */
 export async function gameEventsOf(db: Db, userId: string, imageKey: string, now: Date): Promise<GameFacts[]> {
   const withKey = db.select({ id: games.id }).from(games).where(eq(games.imageKey, imageKey))
-  const inPool = exists(db.select({ one: sql`1` }).from(eventPoolGames).where(and(eq(eventPoolGames.eventId, events.id), inArray(eventPoolGames.gameId, withKey))))
+  // The picture follows the pool (#725): an Archived pool game is on no Member's list, so its picture is out too. A game a Round has set or a draw has stopped on
+  // stays visible whatever its state, so the Round and the draw terms below use the plain `withKey`.
+  const inPool = exists(db.select({ one: sql`1` }).from(eventPoolGames).where(and(eq(eventPoolGames.eventId, events.id), inArray(eventPoolGames.gameId, db.select({ id: games.id }).from(games).where(and(eq(games.imageKey, imageKey), isNull(games.archivedAt)))))))
   // A game is set once a Round has it, or a draw of the Event has it and stopped (#229): a draw whose stop has passed but nobody has
   // read since is not settled yet, and its image must not wait for that.
   const stopped = exists(db.select({ one: sql`1` }).from(draws).innerJoin(rounds, eq(draws.roundId, rounds.id)).where(and(stoppedDraws(events.id, now), inArray(draws.gameId, withKey))))
