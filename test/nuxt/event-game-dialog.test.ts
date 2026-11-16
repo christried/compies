@@ -38,6 +38,13 @@ const hostGames = {
   'g-schach': { tags: [{ key: 'denken', label: 'Denken-Schach' }], notes: schach.notes },
 }
 
+// The Host's Event notes (#732) by game id: a key only for a game that has some, none for Pong.
+const eventNotes = {
+  'g-halo': notesFromLines(['Event-Halo: nur Bo1'])!,
+  'g-kart': notesFromLines(['Event-Kart: Mirror aus'])!,
+  'g-schach': notesFromLines(['Event-Schach: mit Uhr'])!,
+}
+
 const spin: SpinView = {
   roundId: 'r-spin', drawId: 'd1', spinStartAt: iso(Date.parse(STOP) - 6000), stopAt: STOP, slices: 3, resultIndex: 0, resultOffset: 0.5,
   labels: null, game: roundGame(kart), current: true,
@@ -55,6 +62,7 @@ function serveHost(host: boolean) {
     rounds: host ? [round('r1', base, base.notes!), round('r2', schach, schach.notes!)] : [round('r1', base), round('r2', schach)],
     wheel,
     hostGames: host ? hostGames : null,
+    eventNotes: host ? eventNotes : null,
   }))
 }
 
@@ -73,6 +81,14 @@ function sectionOf(heading: string): HTMLElement | null {
 }
 const tileButton = (heading: string, name: string) => [...sectionOf(heading)!.querySelectorAll<HTMLButtonElement>('button[aria-haspopup="dialog"]')].find(button => button.textContent?.trim() === name)
 const dialog = () => document.querySelector<HTMLElement>('[role="dialog"]')
+const EVENT_LABEL = 'Notizen für dieses Event'
+/** The Event notes in the open dialog: their label once, then their text, then the Game notes (#732). */
+function expectEventNotesAboveGameNotes(eventText: string, gameText: string) {
+  const text = dialog()!.textContent!
+  expect(text.split(EVENT_LABEL)).toHaveLength(2)
+  expect(text.indexOf(EVENT_LABEL)).toBeLessThan(text.indexOf(eventText))
+  expect(text.indexOf(eventText)).toBeLessThan(text.indexOf(gameText))
+}
 
 beforeEach(() => {
   document.body.innerHTML = ''
@@ -97,6 +113,49 @@ describe('the Host\'s game dialog on the Event page (#443)', () => {
     expect(dialog()!.textContent).toContain('Retro-Pong')
     expect(dialog()!.textContent).not.toContain('Notizen')
     expect(dialog()!.querySelector('a')?.getAttribute('href')).toBe('/bibliothek/g-pong')
+  })
+
+  it('shows the Event notes above the Game notes in the dialog of a Spielepool tile, and none on a tile without a key (#732)', async () => {
+    const { slug } = serveHost(true)
+    await mount(slug)
+
+    tileButton('So wird gespielt', 'Kart')!.click()
+    await flushPromises()
+    expectEventNotesAboveGameNotes('Event-Kart: Mirror aus', 'Kart-Notizen')
+    dialog()!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+    await flushPromises()
+    await vi.waitFor(() => expect(dialog()).toBeNull())
+
+    tileButton('So wird gespielt', 'Pong')!.click()
+    await flushPromises()
+    expect(dialog()!.textContent).not.toContain(EVENT_LABEL)
+  })
+
+  it('shows the Event notes above the Game notes in the dialog of „Zuletzt gezogen“ (#732)', async () => {
+    const { slug } = serveHost(true)
+    await mount(slug)
+
+    const button = [...sectionOf('Zuletzt gezogen')!.querySelectorAll<HTMLButtonElement>('button[aria-haspopup="dialog"]')][0]!
+    button.click()
+    await flushPromises()
+
+    expectEventNotesAboveGameNotes('Event-Kart: Mirror aus', 'Kart-Notizen')
+  })
+
+  it('shows the Event notes above the Game notes in the dialog of „Gerade dran“, for a pool game and one set from the library (#732)', async () => {
+    const { slug } = serveHost(true)
+    await mount(slug)
+
+    tileButton('Gerade dran', 'Halo')!.click()
+    await flushPromises()
+    expectEventNotesAboveGameNotes('Event-Halo: nur Bo1', 'Hausregel: keine Raketen')
+    dialog()!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+    await flushPromises()
+    await vi.waitFor(() => expect(dialog()).toBeNull())
+
+    tileButton('Gerade dran', 'Schach')!.click()
+    await flushPromises()
+    expectEventNotesAboveGameNotes('Event-Schach: mit Uhr', 'Schach-Notizen')
   })
 
   it('opens from „Zuletzt gezogen“ with the drawn game\'s Tags and Notes', async () => {
@@ -148,7 +207,7 @@ describe('a Member\'s tiles on the Event page open the dialog (#444)', () => {
     expect(dialog()!.textContent).toContain('bis 4')
     expect(dialog()!.textContent).not.toContain('2 bis')
     expect(dialog()!.textContent).toContain('Teams')
-    for (const hidden of ['Koop-Halo', 'Retro-Pong', 'Rennen-Kart', 'Denken-Schach', 'Hausregel: keine Raketen', 'Kart-Notizen', 'Schach-Notizen', 'Notizen']) expect(dialog()!.textContent).not.toContain(hidden)
+    for (const hidden of ['Koop-Halo', 'Retro-Pong', 'Rennen-Kart', 'Denken-Schach', 'Hausregel: keine Raketen', 'Kart-Notizen', 'Schach-Notizen', 'Notizen', 'Notizen für dieses Event', 'Event-Halo', 'Event-Kart', 'Event-Schach']) expect(dialog()!.textContent).not.toContain(hidden)
     expect(dialog()!.querySelector('a')).toBeNull()
     expect(dialog()!.querySelector('footer')).toBeNull()
   }

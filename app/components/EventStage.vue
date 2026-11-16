@@ -201,6 +201,7 @@ watch(() => ({ kind: props.pageState.kind, blocks: props.pageState.blocks, count
           :enter-result="actions.enterResult"
           :end="view.end"
           :host-games="view.hostGames"
+          :event-notes="view.eventNotes"
         />
 
         <Leaderboard
@@ -304,6 +305,7 @@ watch(() => ({ kind: props.pageState.kind, blocks: props.pageState.blocks, count
             :locked="started"
             :host-name="hostName"
             :host-games="view.hostGames"
+            :event-notes="view.eventNotes"
           />
         </div>
       </div>

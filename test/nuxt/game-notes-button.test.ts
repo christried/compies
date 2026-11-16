@@ -97,7 +97,7 @@ describe('the Notes button of a game (#436)', () => {
       expect(document.querySelector(TRIGGER)).not.toBeNull()
       await open()
 
-      expect(before(label(popover()!), paragraph(popover(), 'Heute nur Bo1'))).toBe(true)
+      expect(before(label(popover()!), paragraph(popover()!, 'Heute nur Bo1'))).toBe(true)
       expect(lines(popover())).toEqual(['Heute nur Bo1'])
     })
 
@@ -106,7 +106,7 @@ describe('the Notes button of a game (#436)', () => {
       await mount({ notes: null, eventNotes: notesFromLines(['Heute nur Bo1']) })
       await open()
 
-      expect(before(label(sheet()!), paragraph(sheet(), 'Heute nur Bo1'))).toBe(true)
+      expect(before(label(sheet()!), paragraph(sheet()!, 'Heute nur Bo1'))).toBe(true)
       expect(sheet()!.querySelector('h2')!.textContent).toBe('Mario Kart')
     })
 

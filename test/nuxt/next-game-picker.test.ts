@@ -314,7 +314,7 @@ describe('the Notes button of a game in the picker (#436)', () => {
   })
 
   it('shows it on a pool game that has only Event notes, next to its ✓, and not on one without a key (#732)', async () => {
-    await mount({ pool: [poolWithout, { ...halo, notes: null }], eventNotes: { 'g-halo': notesFromLines(['Heute nur Bo1']) } })
+    await mount({ pool: [poolWithout, { ...halo, notes: null }], eventNotes: { 'g-halo': notesFromLines(['Heute nur Bo1'])! } })
 
     expect(notesButtons(rowOf(poolList(), 'Halo'))).toHaveLength(1)
     expect(rowOf(poolList(), 'Halo').querySelector('button[aria-label="Halo auswählen"]')).not.toBeNull()
@@ -327,7 +327,7 @@ describe('the Notes button of a game in the picker (#436)', () => {
   })
 
   it('shows the Event notes above the Game notes in a pool game\'s popover (#732)', async () => {
-    await mount({ pool: [poolWithNotes], eventNotes: { 'g-halo': notesFromLines(['Heute nur Bo1']) } })
+    await mount({ pool: [poolWithNotes], eventNotes: { 'g-halo': notesFromLines(['Heute nur Bo1'])! } })
 
     notesButtons(poolList())[0]!.click()
     await flushPromises()
@@ -339,7 +339,7 @@ describe('the Notes button of a game in the picker (#436)', () => {
 
   it('follows the same map on the library cards (#732)', async () => {
     const schach = '00000000-0000-4000-8000-000000000002'
-    await mount({ pool: [poolWithout], eventNotes: { [schach]: notesFromLines(['Heute nur Bo1']) } })
+    await mount({ pool: [poolWithout], eventNotes: { [schach]: notesFromLines(['Heute nur Bo1'])! } })
     await vi.waitFor(() => expect(libraryList().querySelectorAll('li')).toHaveLength(2))
 
     expect(notesButtons(rowOf(libraryList(), 'Schach'))).toHaveLength(1)
