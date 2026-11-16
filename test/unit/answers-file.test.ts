@@ -151,7 +151,7 @@ describe('changedSince', () => {
   ]
 
   it('reports nothing when every text is still what was swept', () => {
-    expect(changedSince(filled(), now)).toEqual([])
+    expect(changedSince(filled(), now, [{ id: 'offline.title', text: 'Du bist offline' }])).toEqual([])
   })
 
   it('reports a message reworded since the sweep, with what was swept, the replacement and today’s text', () => {
@@ -176,9 +176,19 @@ describe('changedSince', () => {
     expect(changedSince(answers, [{ key: 'save', text: 'Sichern' }])).toHaveLength(1)
   })
 
-  it('does not look at fixed texts, which live outside the locale file', () => {
+  it('reports a fixed text reworded since the sweep under its step id, and a replacement applied since is not a change', () => {
+    let answers = answerText(base, 'fixed:offline.title', { text: 'Du bist offline', answer: 'passt' })
+    answers = answerText(answers, 'fixed:offline.button', { text: 'Neu laden', answer: 'ersetzt', replacement: 'Nochmal' })
+    const same = [{ id: 'offline.title', text: 'Du bist offline' }, { id: 'offline.button', text: 'Nochmal' }]
+    expect(changedSince(answers, [], same)).toEqual([])
+    expect(changedSince(answers, [], [{ id: 'offline.title', text: 'Keine Verbindung' }, same[1]!])).toEqual([
+      { id: 'fixed:offline.title', swept: 'Du bist offline', replacement: null, now: 'Keine Verbindung' },
+    ])
+  })
+
+  it('reports a fixed text the files no longer hold with now null', () => {
     const answers = answerText(base, 'fixed:offline.title', { text: 'Du bist offline', answer: 'passt' })
-    expect(changedSince(answers, [])).toEqual([])
+    expect(changedSince(answers, [], [])).toEqual([{ id: 'fixed:offline.title', swept: 'Du bist offline', replacement: null, now: null }])
   })
 })
 

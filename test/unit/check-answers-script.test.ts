@@ -1,7 +1,7 @@
 import { spawnSync } from 'node:child_process'
 import { copyFileSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { answerText, emptyAnswers, serializeAnswers } from '../../scripts/wording/answers.mjs'
@@ -10,7 +10,10 @@ import { answerText, emptyAnswers, serializeAnswers } from '../../scripts/wordin
 // `node scripts/wording/check-answers.mjs`. It runs as a Node process on a copy of the scripts folder in a temporary checkout with a small
 // locale, so its default paths (docs/reviews, i18n/locales/de.json, found from import.meta.url) are tested too, like session-start-note-script.test.ts.
 const wordingDir = fileURLToPath(new URL('../../scripts/wording/', import.meta.url))
-const MODULES = ['check-answers.mjs', 'answers.mjs', 'check-replacement.mjs', 'messages.mjs', 'retired-words.mjs']
+const MODULES = ['check-answers.mjs', 'answers.mjs', 'check-replacement.mjs', 'messages.mjs', 'retired-words.mjs', 'where.mjs']
+// The fixed texts are read out of the real files, as the walk does (where.mjs fixedTexts).
+const FIXED_FILES = ['public/offline.html', 'nuxt.config.ts', 'app/utils/changelog.ts', 'shared/changelog.ts']
+const repoRoot = fileURLToPath(new URL('../../', import.meta.url))
 
 const locale = {
   common: { save: 'Speichern' },
@@ -27,6 +30,10 @@ beforeEach(() => {
   mkdirSync(join(root, 'i18n', 'locales'), { recursive: true })
   writeFileSync(join(root, 'i18n', 'locales', 'de.json'), JSON.stringify(locale))
   mkdirSync(join(root, 'docs', 'reviews'), { recursive: true })
+  for (const file of FIXED_FILES) {
+    mkdirSync(dirname(join(root, file)), { recursive: true })
+    copyFileSync(join(repoRoot, file), join(root, file))
+  }
 })
 
 afterEach(() => {
@@ -103,12 +110,25 @@ describe('scripts/wording/check-answers.mjs', { timeout: 30_000 }, () => {
     expect(code).toBe(0)
   })
 
-  it('says it did not check the fixed texts', () => {
-    let answers = answerText(base, 'fixed:offline.title', { text: 'Du bist offline', answer: 'passt' })
-    answers = answerText(answers, 'fixed:manifest.description', { text: 'Gemeinsam Spiele planen', answer: 'passt' })
+  it('passes fixed texts that are still what the files hold', () => {
+    let answers = answerText(base, 'fixed:offline.title', { text: 'Compies', answer: 'passt' })
+    answers = answerText(answers, 'fixed:manifest.description', { text: 'Spieleabende mit Glücksrad, Vetos und Siegerehrung.', answer: 'passt' })
     writeAnswers('wording_2026-11-20.json', serializeAnswers(answers))
     const { code, lines } = run()
-    expect(lines.at(-1)).toBe('answered 2, refused 0, changed 0, NOT CHECKED 2 fixed texts')
+    expect(lines).toEqual(['answered 2, refused 0, changed 0'])
+    expect(code).toBe(0)
+  })
+
+  it('reports a fixed text reworded since the sweep as CHANGED under its step id, and one the files no longer hold as gone', () => {
+    let answers = answerText(base, 'fixed:offline.title', { text: 'Du bist offline', answer: 'passt' })
+    answers = answerText(answers, 'fixed:offline.gone', { text: 'Weg', answer: 'passt' })
+    writeAnswers('wording_2026-11-20.json', serializeAnswers(answers))
+    const { code, lines } = run()
+    expect(lines).toEqual([
+      'CHANGED fixed:offline.gone was „Weg“ now gone',
+      'CHANGED fixed:offline.title was „Du bist offline“ now „Compies“',
+      'answered 2, refused 0, changed 2',
+    ])
     expect(code).toBe(0)
   })
 

@@ -3,7 +3,7 @@
 // The file defaults to the newest wording_<date>.json in docs/reviews/, the locale to i18n/locales/de.json (both found from this
 // file's place, not the working directory). Prints one line per finding and exits 1 when a replacement is refused or the file has a problem:
 //   REFUSED <key> <code> <reason>   a replacement or alternative the app would break on (a lost placeholder or plural form, bad syntax)
-//   CHANGED <key> was „…“ now „…“   the message was reworded since the sweep: a finding, not a failure, and its replacement is not checked
+//   CHANGED <key> was „…“ now „…“   the message (or `fixed:<id>`, a fixed text of the files) was reworded since the sweep: a finding, not a failure, and its replacement is not checked
 //   WARN <key> <code>               a copy rule the user may overrule; never changes the exit code
 //   PROBLEM <text>                  the file itself is wrong
 // An alternative is named `<key> alternative <n>`. The last line counts what was answered, refused and changed.
@@ -12,6 +12,7 @@ import { fileURLToPath } from 'node:url'
 import { answersFileName, changedSince, newestAnswersName, parseAnswers } from './answers.mjs'
 import { checkReplacement } from './check-replacement.mjs'
 import { flattenMessages } from './messages.mjs'
+import { fixedTexts } from './where.mjs'
 
 const root = fileURLToPath(new URL('../../', import.meta.url))
 const reviewsDir = `${root}docs/reviews/`
@@ -101,10 +102,16 @@ for (const [key, entry] of Object.entries(answers.texts)) {
   entry.alternatives.forEach((alternative, i) => check(`${key} alternative ${i + 1}`, now, alternative))
 }
 
-const changed = changedSince(answers, messages)
+// The fixed texts are read out of the real files, as the walk does (where.mjs, #629), so a reworded one is a CHANGED like a message (#620).
+const fixedNow = fixedTexts({
+  offline: read(`${root}public/offline.html`, 'FIXED TEXT FILE'),
+  nuxtConfig: read(`${root}nuxt.config.ts`, 'FIXED TEXT FILE'),
+  utilsChangelog: read(`${root}app/utils/changelog.ts`, 'FIXED TEXT FILE'),
+  sharedChangelog: read(`${root}shared/changelog.ts`, 'FIXED TEXT FILE'),
+})
+const changed = changedSince(answers, messages, fixedNow)
 for (const { id, swept, now } of changed) console.log(`CHANGED ${id} was „${swept}“ now ${now === null ? 'gone' : `„${now}“`}`)
 
 const answered = [...Object.values(answers.texts), ...Object.values(answers.fixed)].filter(entry => entry.answer !== null).length
-const fixedCount = Object.keys(answers.fixed).length
-console.log(`answered ${answered}, refused ${refused}, changed ${changed.length}${fixedCount > 0 ? `, NOT CHECKED ${fixedCount} fixed texts` : ''}`)
+console.log(`answered ${answered}, refused ${refused}, changed ${changed.length}`)
 process.exit(refused > 0 || problems.length > 0 ? 1 : 0)

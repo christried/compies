@@ -14,10 +14,38 @@
  */
 /** @typedef {{ id: string, swept: string, replacement: string | null, now: string | null }} Changed */
 
-const ANSWERS = ['passt', 'ersetzt', 'alternativen']
-const UNUSED_ANSWERS = ['loeschen', 'behalten']
+export const ANSWERS = ['passt', 'ersetzt', 'alternativen']
+export const UNUSED_ANSWERS = ['loeschen', 'behalten']
 const NAME = /^wording_\d{4}-\d{2}-\d{2}\.json$/
-const FIXED_PREFIX = 'fixed:'
+// The one home of the step-id prefixes (#620): a step's id is a message key, or one of these kinds' prefix and a name. Served to the
+// review page with this file, so the page, the model, the server and the recording all say them the same way.
+const STEP_PREFIX = { mono: 'mono:', fixed: 'fixed:', unused: 'unused:' }
+
+/**
+ * @param {'mono' | 'fixed' | 'unused'} kind
+ * @param {string} name a component path, a fixed id or a top-level group
+ * @returns {string} the step id
+ */
+export function stepId(kind, name) {
+  return `${STEP_PREFIX[kind]}${name}`
+}
+
+/**
+ * @param {string} id a step id
+ * @param {'mono' | 'fixed' | 'unused'} kind
+ */
+export function isStepId(id, kind) {
+  return id.startsWith(STEP_PREFIX[kind])
+}
+
+/**
+ * The name of a step id of that kind (the id without its prefix).
+ * @param {string} id
+ * @param {'mono' | 'fixed' | 'unused'} kind
+ */
+export function stepName(id, kind) {
+  return id.slice(STEP_PREFIX[kind].length)
+}
 
 /**
  * @param {unknown} value
@@ -178,9 +206,9 @@ export function parseAnswers(text) {
  * @returns {AnswersFile}
  */
 export function answerText(answers, id, patch) {
-  const fixed = id.startsWith(FIXED_PREFIX)
+  const fixed = isStepId(id, 'fixed')
   const section = fixed ? 'fixed' : 'texts'
-  const key = fixed ? id.slice(FIXED_PREFIX.length) : id
+  const key = fixed ? stepName(id, 'fixed') : id
   /** @type {TextAnswer} */
   const empty = { text: '', answer: null, replacement: null, comment: '', alternatives: [] }
   const merged = { ...empty, ...answers[section][key], ...patch }
@@ -209,20 +237,34 @@ export function answerMono(answers, component, comment) {
 }
 
 /**
- * The `texts` entries whose message today is neither what was swept nor its replacement: someone reworded it since. A key the
- * locale no longer has has `now: null`. Fixed texts live outside the locale file and are not checked here.
+ * Whether a text today (null: it is gone) is neither what was swept nor its replacement: someone reworded it since.
+ * @param {{ text: string, replacement: string | null }} entry
+ * @param {string | null} now
+ */
+export function isReworded(entry, now) {
+  return now !== entry.text && (now === null || now !== entry.replacement)
+}
+
+/**
+ * The `texts` and `fixed` entries whose text today is neither what was swept nor its replacement: someone reworded it since. A
+ * key the locale (or a fixed text the files) no longer has has `now: null`. A fixed text's `id` is its step id, `fixed:<id>`.
  * @param {AnswersFile} answers
  * @param {{ key: string, text: string }[]} messagesNow
+ * @param {{ id: string, text: string }[]} [fixedNow] `fixedTexts` of where.mjs, as the walk reads them from the real files
  * @returns {Changed[]}
  */
-export function changedSince(answers, messagesNow) {
+export function changedSince(answers, messagesNow, fixedNow = []) {
   const today = new Map(messagesNow.map(({ key, text }) => [key, text]))
+  const fixedToday = new Map(fixedNow.map(({ id, text }) => [id, text]))
   /** @type {Changed[]} */
   const changed = []
   for (const [id, entry] of Object.entries(answers.texts)) {
     const now = today.get(id) ?? null
-    if (now === entry.text || (now !== null && now === entry.replacement)) continue
-    changed.push({ id, swept: entry.text, replacement: entry.replacement, now })
+    if (isReworded(entry, now)) changed.push({ id, swept: entry.text, replacement: entry.replacement, now })
+  }
+  for (const [id, entry] of Object.entries(answers.fixed)) {
+    const now = fixedToday.get(id) ?? null
+    if (isReworded(entry, now)) changed.push({ id: stepId('fixed', id), swept: entry.text, replacement: entry.replacement, now })
   }
   return changed
 }
