@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, sql } from 'drizzle-orm'
+import { and, asc, desc, eq, isNull, sql } from 'drizzle-orm'
 import { bonusVetoes, coinTosses, draws, eventMembers, eventPoolGames, eventTeams, games, roundPlaces, rounds, users, vetoes } from '../db/schema'
 import { numberedSessions } from '../domain/session'
 import { countSeats, composeTeamName, moveRejection, placeOf, teamChoiceOpen, type MoveRejection, type Place, type Zone } from '../../shared/board'
@@ -250,14 +250,16 @@ async function readBonusTeams(db: Db, eventId: string): Promise<number[]> {
 
 /**
  * The ids of the games in the Game pool, in the order of their names (the order the pools show them in). Only games of the Event's Host's library
- * count (#722, ADR 0018): a foreign pool row is on no wheel, in no count and in no draw.
+ * count (#722, ADR 0018): a foreign pool row is on no wheel, in no count and in no draw. An Archived game is the same (#725, spec #717 § B):
+ * on no wheel, in no count and in no draw, whatever reads the games left (the spin, the pool warning, the picker). The pool rows are not touched, so a
+ * restore needs no write. A Round or a Draw that already holds the game keeps it: they do not read the pool.
  */
 async function readPool(db: Db, eventId: string, hostId: string): Promise<string[]> {
   const found = await db
     .select({ id: games.id })
     .from(eventPoolGames)
     .innerJoin(games, eq(eventPoolGames.gameId, games.id))
-    .where(and(eq(eventPoolGames.eventId, eventId), eq(games.createdBy, hostId)))
+    .where(and(eq(eventPoolGames.eventId, eventId), eq(games.createdBy, hostId), isNull(games.archivedAt)))
     .orderBy(asc(sql`lower(${games.name})`), asc(games.id))
   return found.map(row => row.id)
 }

@@ -24,13 +24,16 @@ export function assertNoOldPools(body: Record<string, unknown>): void {
  * Only the Host gets the games whole; every other Member gets picture, name, Price, players and Suitabilities (#224, #338, #444).
  * Only games of the Event's Host's library are in it (`games.created_by = events.host_id`, #722, ADR 0018): a pool row of another Host's game,
  * which the 0.15 code could still write while a migration ran (ADR 0007), reaches no list.
+ * The two reads differ in the Archived games (#725, spec #717 § B): the Host's list carries every pool game, since it is the list a pool change sends
+ * back whole and the Host sees what is archived (the flag is #726's); a Member's leaves them out, as it leaves out the wheel's slices. A Member's list is the only
+ * Member surface that names the pool, and every count a Member sees comes from the games left (the state), which has no Archived game either.
  */
 export async function eventPool(db: Db, eventId: string, hostId: string, isHost: boolean): Promise<(PoolGame | PoolGameFace)[]> {
   const rows = await db
     .select({ game: games })
     .from(eventPoolGames)
     .innerJoin(games, eq(eventPoolGames.gameId, games.id))
-    .where(and(eq(eventPoolGames.eventId, eventId), eq(games.createdBy, hostId)))
+    .where(and(eq(eventPoolGames.eventId, eventId), eq(games.createdBy, hostId), isHost ? undefined : isNull(games.archivedAt)))
     .orderBy(asc(sql`lower(${games.name})`), asc(games.id))
   return rows.map(row => (isHost ? poolGameView(row.game) : poolGameFace(row.game)))
 }
