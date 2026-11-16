@@ -9,7 +9,7 @@ import { existsSync, mkdirSync, readdirSync, readFileSync, renameSync, writeFile
 import { basename, dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { OUT } from '../browser/chrome.mjs'
-import { answersFileName, answerMono, answerText, answerUnused, emptyAnswers, newestAnswersName, parseAnswers, serializeAnswers } from './answers.mjs'
+import { ANSWERS, answersFileName, answerMono, answerText, answerUnused, emptyAnswers, newestAnswersName, parseAnswers, serializeAnswers, stepName, UNUSED_ANSWERS } from './answers.mjs'
 import { checkReplacement } from './check-replacement.mjs'
 import { flattenMessages } from './messages.mjs'
 import { RETIRED } from './retired-words.mjs'
@@ -23,8 +23,6 @@ const HERE = dirname(fileURLToPath(import.meta.url))
 const ROOT = join(HERE, '../..')
 const PAGE_DIR = join(HERE, 'review-page')
 const MAX_BODY = 64 * 1024
-const ANSWERS = ['passt', 'ersetzt', 'alternativen']
-const UNUSED_ANSWERS = ['loeschen', 'behalten']
 // The modules the page imports (page.mjs) and, through them, each other; nothing else of scripts/wording/ is served.
 const MODULES = ['answers', 'review-model', 'check-replacement', 'messages', 'retired-words']
 const TYPES = {
@@ -286,7 +284,7 @@ export async function createReviewServer({
     else if (step.kind === 'mono') {
       if (answer !== undefined) return sendJson(response, 400, { error: 'Ein Mono-Schritt nimmt nur einen Kommentar' })
       if (typeof comment !== 'string') return sendJson(response, 400, { error: 'comment fehlt' })
-      next = answerMono(next, step.id.slice('mono:'.length), comment)
+      next = answerMono(next, stepName(step.id, 'mono'), comment)
     }
     else {
       const text = step.text ?? ''
@@ -310,7 +308,7 @@ export async function createReviewServer({
       }
       if (typeof comment === 'string') patch.comment = comment
       // A comment alone does not re-stamp an entry: its answer is still about the text it was given for.
-      const entry = step.kind === 'fixed' ? next.fixed[step.id.slice('fixed:'.length)] : next.texts[step.id]
+      const entry = step.kind === 'fixed' ? next.fixed[stepName(step.id, 'fixed')] : next.texts[step.id]
       if (!entry && patch.text === undefined) patch.text = text
       next = answerText(next, step.id, patch)
     }

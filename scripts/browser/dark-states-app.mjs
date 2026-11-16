@@ -33,7 +33,7 @@ export async function until(tab, expression, what, ms = 10_000) {
 }
 
 /** A state that opens `address(ctx)` as `account` and waits for `waitFor`. */
-function page(name, group, account, address, { waitFor = 'h1', after, ...rest } = {}) {
+export function page(name, group, account, address, { waitFor = 'h1', after, ...rest } = {}) {
   return {
     name,
     group,

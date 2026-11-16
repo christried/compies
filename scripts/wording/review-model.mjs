@@ -1,7 +1,8 @@
 // The wording review's model (#628, spec #620 § The review page and § The answers file): which steps there are and in what order,
-// the filters, resume, and what is new since the last sitting. Pure, no dependency; the page (#631) and the walk (#629) conform to
+// the filters, resume, and what is new since the last sitting. Pure, its one import is answers.mjs; the page (#631) and the walk (#629) conform to
 // the typedefs below. The recording holds no answer and no message text: the message is read from de.json each time, so a text
 // reworded since the walk shows today's.
+import { isReworded, stepId, stepName } from './answers.mjs'
 
 /** @typedef {'host' | 'member' | 'admin' | 'member2' | null} Account null: signed out */
 /** @typedef {'text' | 'aria-label' | 'title' | 'alt' | 'placeholder' | 'server'} Via 'server': copy the server reads (calendar file, Share image), the picture is the image */
@@ -53,8 +54,6 @@
 const MARKS = /** @type {const} */ (['mono', 'sr-only'])
 const ACCOUNTS = ['host', 'member', 'admin', 'member2']
 const VIAS = ['text', 'aria-label', 'title', 'alt', 'placeholder', 'server']
-const MONO_PREFIX = 'mono:'
-const FIXED_PREFIX = 'fixed:'
 
 /**
  * @param {unknown} value
@@ -269,7 +268,7 @@ export function stepsOf({ messages, recording, unused }) {
   const monoStep = (entry) => {
     const sightings = bySeq(entry.sightings)
     return {
-      id: `${MONO_PREFIX}${entry.component}`,
+      id: stepId('mono', entry.component),
       kind: 'mono',
       section: sightings.length > 0 ? 'walk' : 'unpictured',
       group: 'mono',
@@ -286,7 +285,7 @@ export function stepsOf({ messages, recording, unused }) {
   const fixedStep = (entry) => {
     const sightings = bySeq(entry.sightings)
     return {
-      id: `${FIXED_PREFIX}${entry.id}`,
+      id: stepId('fixed', entry.id),
       kind: 'fixed',
       section: sightings.length > 0 ? 'walk' : 'unpictured',
       group: 'fest',
@@ -316,7 +315,7 @@ export function stepsOf({ messages, recording, unused }) {
 
   /** @type {Step[]} */
   const unusedSteps = unusedGroups.map(({ group, keys }) => ({
-    id: `unused:${group}`,
+    id: stepId('unused', group),
     kind: 'unused',
     section: 'unused',
     group,
@@ -352,10 +351,10 @@ export function sightingToShow(step, filters) {
  * @param {Step} step
  * @param {AnswersFile} file
  */
-function textEntry(step, file) {
+export function textEntry(step, file) {
   if (step.kind === 'message') return Object.hasOwn(file.texts, step.id) ? file.texts[step.id] : undefined
   if (step.kind === 'fixed') {
-    const id = step.id.slice(FIXED_PREFIX.length)
+    const id = stepName(step.id, 'fixed')
     return Object.hasOwn(file.fixed, id) ? file.fixed[id] : undefined
   }
   return undefined
@@ -373,7 +372,7 @@ export function isNewSince(step, baseline) {
   if (!baseline) return true
   const entry = textEntry(step, baseline)
   if (!entry) return true
-  return step.text !== entry.text && step.text !== entry.replacement
+  return isReworded(entry, step.text)
 }
 
 /**
@@ -382,7 +381,7 @@ export function isNewSince(step, baseline) {
  * @param {AnswersFile} answers
  */
 export function isAnswered(step, answers) {
-  if (step.kind === 'mono') return Object.hasOwn(answers.mono, step.id.slice(MONO_PREFIX.length))
+  if (step.kind === 'mono') return Object.hasOwn(answers.mono, stepName(step.id, 'mono'))
   if (step.kind === 'unused') return Object.hasOwn(answers.unused, step.group)
   return (textEntry(step, answers)?.answer ?? null) !== null
 }

@@ -1,5 +1,6 @@
 // What the wording walk makes of what it read (#629, spec #620 § The walk): the items of each reading in, #628's `Recording` out. Pure and without
 // Chrome, so it is unit-tested; scripts/wording/walk.mjs does what needs a browser (the page scripts, the pictures) and calls these.
+import { stepId } from './answers.mjs'
 
 /** @typedef {import('./review-model.mjs').Sighting} Sighting */
 /** @typedef {import('./review-model.mjs').Recording} Recording */
@@ -14,8 +15,6 @@
 
 /** At most this many sightings per key (and per mono component) over a walk: the first six in walk order (#629 O3). */
 export const SIGHTINGS_PER_KEY = 6
-const MONO_PREFIX = 'mono:'
-const FIXED_PREFIX = 'fixed:'
 
 /**
  * What an item counts under for the cap of `SIGHTINGS_PER_KEY`: its key, `fixed:<id>` or `mono:<component>`. A message's mono use counts per component
@@ -34,8 +33,8 @@ export function budgetId(item) {
  * @param {Item} item
  */
 function idOf(item) {
-  if (item.fixedId !== undefined) return `${FIXED_PREFIX}${item.fixedId}`
-  if (item.key === null) return `${MONO_PREFIX}${item.component ?? item.element}`
+  if (item.fixedId !== undefined) return stepId('fixed', item.fixedId)
+  if (item.key === null) return stepId('mono', item.component ?? item.element)
   return item.key
 }
 
@@ -50,7 +49,7 @@ export function dedupeItems(items) {
   const seen = new Set()
   return items.filter((item) => {
     const same = item.key === null && item.fixedId === undefined
-      ? `${MONO_PREFIX}${item.component}|${item.element}`
+      ? `${stepId('mono', String(item.component))}|${item.element}`
       : `${idOf(/** @type {Item} */ (item))}|${item.via}|${item.marks.join(',')}`
     if (seen.has(same)) return false
     seen.add(same)
