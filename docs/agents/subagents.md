@@ -8,13 +8,13 @@ The orchestrating session (Opus) plans, briefs, supervises and decides; subagent
 
 Pass `model` and `effort: "high"` on every Agent call. `CLAUDE_CODE_SUBAGENT_MODEL=haiku` in `.claude/settings.json` only catches a spawn that leaves the model out.
 
-Rate each task by the hardest thing it asks, the way `/implement-spec-max` § Model tiers does, against the work this repository realistically has. The harder half of that work runs on Sonnet, the easier half on Haiku, both at high effort (the user, 2026-11-10; before, Haiku was the default and Sonnet the exception):
+Rate each task by the hardest thing it asks, the way `/christried-implement-spec-max` § Model tiers does, against the work this repository realistically has. The harder half of that work runs on Sonnet, the easier half on Haiku, both at high effort (the user, 2026-11-10; before, Haiku was the default and Sonnet the exception):
 
 - **`sonnet`**: a task that section rates Fable (a risk a green test run can hide), or a feature with its own edge cases that the brief can't all settle in advance (#274, #333, #335, #337). Also both `code-review` sub-agents (Standards and Spec) and the three Release reviewers, since a review has to reason about correctness.
 - **`haiku`**: a task that section rates Sonnet (the brief settles every decision), work built to a reference such as motion to `04-motion.md` and an artboard (#276, #340, #348), a review follow-up that merges or splits components (#362 to #366), and the review report merger.
 - A ticket's brief drafter (§ Briefs, `docs/agents/drafter-frame.md`), implementer and merge job run on the ticket's model. Rate the ticket from its text and the spec before the drafter, and again from the brief: a brief that names a risk raises it. A browser check runs on `haiku` for layout on one account, on `sonnet` for motion or the two-account check.
 - In doubt between the two, take Sonnet.
-- Implementers and reviewers never run on `opus`, with one exception: under `/implement-spec-max` (`.claude/skills/implement-spec-max/SKILL.md`) every subagent, from the brief drafter to the Release reviewers, runs on the tier its task rates in that skill's § Model tiers: `fable`, or `opus` or `sonnet` with `effort: "high"`. The rest of this document applies there unchanged.
+- Implementers and reviewers never run on `opus`, with one exception: under `/christried-implement-spec-max` (`.claude/skills/christried-implement-spec-max/SKILL.md`) every subagent, from the brief drafter to the Release reviewers, runs on the tier its task rates in that skill's § Model tiers: `fable`, or `opus` or `sonnet` with `effort: "high"`. The rest of this document applies there unchanged.
 
 Reviewers, the `code-review` sub-agents and the Release review alike, brief drafters and merge jobs run with `isolation: "worktree"`, so none of them touches the main checkout: a reviewer told to stay read-only still checked out a detached head there (0.5.1), and a merge there landed on another session's branch (2026-11-10).
 

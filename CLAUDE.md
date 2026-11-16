@@ -4,7 +4,7 @@
 
 ### Issue tracker
 
-Issues and specs live in GitHub Issues on christried/compies (via `gh`). An idea that isn't grilled yet is an `Idea: …` issue (`enhancement`, `needs-triage`), captured with `/capture-idea`, never a roadmap line. See `docs/agents/issue-tracker.md`.
+Issues and specs live in GitHub Issues on christried/compies (via `gh`). An idea that isn't grilled yet is an Idea issue (`enhancement`, `needs-triage`, no title prefix), captured with `/christried-capture-idea`. See `docs/agents/issue-tracker.md`.
 
 ### Triage labels
 
@@ -14,9 +14,9 @@ Default vocabulary: needs-triage, needs-info, ready-for-agent, ready-for-human, 
 
 Single-context: `GLOSSARY.md` + `docs/adr/` at the repo root. See `docs/agents/domain.md`.
 
-### Roadmap
+### Planning
 
-Which release comes next and what each one holds: `docs/roadmap.md`. It replaces the 1.0 ticket order in the design hand-off.
+Every idea lives in GitHub Issues, and the user picks from the open Idea issues what to grill next; there is no roadmap file any more (the user, 2026-11-16). See `docs/agents/issue-tracker.md` § Ideas.
 
 ### Release workflow
 
@@ -28,7 +28,7 @@ Set auto-merge on PRs into `staging` yourself; merges into `main` and production
 
 ### Subagents
 
-Pass `model` and `effort: "high"` on every spawn: `sonnet` for the harder half of this repository's tasks and for reviewers, `haiku` for the easier half. See `docs/agents/subagents.md`. `/implement-spec-max` is `/implement-spec` with every subagent on `fable`, or on `opus` or `sonnet` at high effort, by how hard its task is.
+Pass `model` and `effort: "high"` on every spawn: `sonnet` for the harder half of this repository's tasks and for reviewers, `haiku` for the easier half. See `docs/agents/subagents.md`. `/christried-implement-spec-max` is `/implement-spec` with every subagent on `fable`, or on `opus` or `sonnet` at high effort, by how hard its task is.
 
 ### Design hand-off
 
