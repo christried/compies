@@ -23,3 +23,17 @@ export function rerunDecision(run, jobCount, alreadyRerun, newerHead = null) {
   if (result !== 'start-failure') return result
   return alreadyRerun || (run.attempt ?? 1) > 1 ? 'twice' : 'rerun'
 }
+
+/**
+ * What `ci-wait.mjs --deployed <sha>` does with a commit's statuses (retro 0.14, #780). Vercel reports each deployment
+ * of `staging` and `main` as a commit status with the context „Vercel“: first `pending`, then `success`, `failure` or
+ * `error`. `statuses` is what `GET /repos/…/commits/<sha>/statuses` returns, newest first, so the first one of Vercel decides.
+ *
+ * Returns { kind: 'none' } | { kind: 'pending' } | { kind: 'deployed' | 'failed', description, url }.
+ */
+export function deployDecision(statuses) {
+  const newest = statuses.find(status => status.context === 'Vercel')
+  if (!newest) return { kind: 'none' }
+  if (newest.state === 'pending') return { kind: 'pending' }
+  return { kind: newest.state === 'success' ? 'deployed' : 'failed', description: newest.description, url: newest.target_url }
+}

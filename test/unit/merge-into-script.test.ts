@@ -240,4 +240,97 @@ describe('scripts/merge-into.mjs', { timeout: 30_000 }, () => {
     expect(result.output.toLowerCase()).toContain('usage')
     expect(originRefs()).toBe(before)
   })
+
+  // The changelog line rides in the merge commit (#780): one commit moves the integration tip, not two.
+  describe('--changelog', () => {
+    const RELEASED = '## [0.1.0] - 2026-01-01 – Erste\n\n### Neu\n\n- Alt. ([#1](https://example.invalid/1))\n'
+    let lineFile: string
+
+    /** Puts a CHANGELOG.md with this Unreleased section on the integration branch and returns the new tip. */
+    function changelogOnTarget(unreleased: string) {
+      const dev = join(root, 'dev-changelog')
+      git(root, 'clone', origin, dev)
+      identify(dev)
+      git(dev, 'checkout', 'integration')
+      writeFileSync(join(dev, 'CHANGELOG.md'), `# Changelog\n\n## [Unreleased]\n${unreleased}\n${RELEASED}`)
+      git(dev, 'add', '.')
+      git(dev, 'commit', '-m', 'changelog')
+      git(dev, 'push', 'origin', 'integration')
+      return git(dev, 'rev-parse', 'HEAD')
+    }
+
+    const line = (text: string) => {
+      writeFileSync(lineFile, text)
+      return lineFile
+    }
+    const changelog = () => git(origin, 'show', 'integration:CHANGELOG.md')
+    const unreleasedOf = (text: string) => text.slice(text.indexOf('## [Unreleased]'), text.indexOf('## [0.1.0]')).trim()
+
+    beforeEach(() => {
+      lineFile = join(root, 'line.md')
+    })
+
+    it('writes the line into its group in the merge commit itself, and moves the tip by one commit', () => {
+      const newTip = changelogOnTarget('\n### Neu\n\n- Eins. ([#2](https://example.invalid/2))\n')
+
+      const result = run(['integration', 'ticket-clean', '--changelog', 'Neu', line('- Zwei. ([#3](https://example.invalid/3))\n'), ...MESSAGE])
+
+      expect(result.code).toBe(0)
+      expect(git(origin, 'rev-parse', 'integration^1', 'integration^2').split('\n')).toEqual([newTip, cleanHead])
+      expect(unreleasedOf(changelog())).toBe('## [Unreleased]\n\n### Neu\n\n- Eins. ([#2](https://example.invalid/2))\n- Zwei. ([#3](https://example.invalid/3))')
+      expect(changelog()).toContain(RELEASED.trim())
+      expect(git(origin, 'show', 'integration:ticket.txt')).toBe('x')
+      expect(result.output.trim().split(/\s+/).at(-1)).toBe(originTip('integration'))
+    })
+
+    it('opens a missing group in the order Neu, Geändert, Behoben, Entfernt, Sicherheit', () => {
+      changelogOnTarget('\n### Neu\n\n- Eins.\n\n### Behoben\n\n- Drei.\n')
+
+      const result = run(['integration', 'ticket-clean', '--changelog', 'Geändert', line('- Zwei.'), ...MESSAGE])
+
+      expect(result.code).toBe(0)
+      expect(unreleasedOf(changelog())).toBe('## [Unreleased]\n\n### Neu\n\n- Eins.\n\n### Geändert\n\n- Zwei.\n\n### Behoben\n\n- Drei.')
+    })
+
+    it('opens the first group of an empty Unreleased section and keeps the Releases below as they were', () => {
+      changelogOnTarget('')
+
+      const result = run(['integration', 'ticket-clean', '--changelog', 'Behoben', line('- Eins.\n  - Mit einer zweiten Ebene.\r\n'), ...MESSAGE])
+
+      expect(result.code).toBe(0)
+      expect(changelog()).toBe(`# Changelog\n\n## [Unreleased]\n\n### Behoben\n\n- Eins.\n  - Mit einer zweiten Ebene.\n\n${RELEASED.trim()}`)
+    })
+
+    it.each([
+      ['a group that is not one of the five', 'Neues', '- Eins.', 'group'],
+      ['a line that is no bullet', 'Neu', 'Eins.', '- '],
+    ])('exits 2 for %s and writes nothing', (_name, group, text, word) => {
+      const newTip = changelogOnTarget('')
+
+      const result = run(['integration', 'ticket-clean', '--changelog', group, line(text), ...MESSAGE])
+
+      expect(result.code).toBe(2)
+      expect(result.output).toContain(word)
+      expect(originTip('integration')).toBe(newTip)
+    })
+
+    it('exits 2 when the target has no CHANGELOG.md with an Unreleased section, and writes nothing', () => {
+      const result = run(['integration', 'ticket-clean', '--changelog', 'Neu', line('- Eins.'), ...MESSAGE])
+
+      expect(result.code).toBe(2)
+      expect(result.output).toContain('CHANGELOG.md')
+      expect(originTip('integration')).toBe(tip)
+    })
+
+    it('leaves the calling checkout as it was', () => {
+      changelogOnTarget('')
+      writeFileSync(join(work, 'a.txt'), 'dirty\n')
+      const before = snapshot()
+
+      const result = run(['integration', 'ticket-clean', '--changelog', 'Neu', line('- Eins.'), ...MESSAGE])
+
+      expect(result.code).toBe(0)
+      expect(snapshot()).toEqual(before)
+    })
+  })
 })
