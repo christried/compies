@@ -1,4 +1,4 @@
-import { and, eq } from 'drizzle-orm'
+import { and, eq, isNull } from 'drizzle-orm'
 import { draws, events, games, rounds, vetoes } from '../db/schema'
 import { WHEEL_PLACEHOLDERS, drawSpin } from '../domain/wheel'
 import type { RoundSpun, VetoCast } from '../../shared/stage'
@@ -58,7 +58,7 @@ async function insertDraw(tx: Db, roundId: string, now: Date, fields: Omit<typeo
  * Host allowed a Veto (#232, „Veto erlauben“) and some Party has one left (opensWindow): then the draw carries a Veto window from
  * now, the Round gets no game until it settles (settleDue), and everyone sees the game from now on. A Veto allowed in a Selection
  * mode without a wheel is `no_wheel`. A Round that waits for a respin takes the game itself (#231). Refused with the reason of
- * setReason, `no_wheel`, or `unknown_game`.
+ * setReason, `no_wheel`, or `unknown_game`; an Archived game answers as an absent one (#725).
  */
 export async function setNextGame({ tx, eventRow, user, publish, now }: ChangeCore, gameId: string, vetoAllowed: boolean): Promise<{ roundId: string }> {
   const state = await readEventState(tx, eventRow, now, ['sessions', 'members', 'rounds', 'pool'])
@@ -66,7 +66,7 @@ export async function setNextGame({ tx, eventRow, user, publish, now }: ChangeCo
   if (rejection) throw apiError(rejection)
   // The rules above refused an Event without settings. Host pick has no Vetoes (spec #218 § Vetoes).
   if (vetoAllowed && !hasWheel(state.settings!.selectionMode)) throw apiError('no_wheel')
-  const [game] = await tx.select({ id: games.id, youtubeId: games.youtubeId, clipLength: games.clipLength }).from(games).where(and(eq(games.id, gameId), eq(games.createdBy, eventRow.hostId)))
+  const [game] = await tx.select({ id: games.id, youtubeId: games.youtubeId, clipLength: games.clipLength }).from(games).where(and(eq(games.id, gameId), eq(games.createdBy, eventRow.hostId), isNull(games.archivedAt)))
   if (!game) throw apiError('unknown_game')
   const roundRows = roundRowsOf(state)
   // A retried „Setzen“ would open a second Round of the same game, and a vetoed game stays vetoed, library or pool (review 0.7, F14).

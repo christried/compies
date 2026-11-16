@@ -10,7 +10,7 @@ import { useDb, type Db } from '../../utils/db'
 import { apiError } from '../../utils/errors'
 import { addMember } from '../../utils/invite'
 import { inviteUrl } from '../../utils/links'
-import { assertGamesExist, assertNoOldPools } from '../../utils/pools'
+import { assertNoOldPools, assertPoolGames } from '../../utils/pools'
 import { requireUser } from '../../utils/user'
 import type { CreatedEvent } from '../../../shared/event'
 import { asRecord } from '../../../shared/record'
@@ -53,7 +53,7 @@ export default defineEventHandler(async (event): Promise<CreatedEvent> => {
   // load by slug, and no one is in its room to tell (#183).
   // eslint-disable-next-line no-restricted-syntax -- creating an Event has no Event to load and no one to publish to
   await db.transaction(async (tx) => {
-    await assertGamesExist(tx, user.id, pool)
+    await assertPoolGames(tx, user.id, null, pool)
     const [row] = await tx
       .insert(events)
       .values({ slug, inviteToken, hostId: user.id, name: input.name, phase, ...settings })

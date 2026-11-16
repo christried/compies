@@ -8,7 +8,7 @@ import type { Db } from './db'
 import { apiError } from './errors'
 import type { EventChange, EventRow } from './event-access'
 import { floorsOf, readEventState, roundBeingDrawnOf, seatOf, type EventState } from './event-state'
-import { assertGamesExist, assertNoOldPools } from './pools'
+import { assertNoOldPools, assertPoolGames } from './pools'
 import { asRecord } from '../../shared/record'
 
 const STANDS: Place = { zone: 'stands' }
@@ -63,7 +63,7 @@ export async function applySettingsChange(
   else if (before === null) throw apiError('invalid_settings')
   else after = before
 
-  if (pool !== undefined) await assertGamesExist(tx, eventRow.hostId, pool)
+  if (pool !== undefined) await assertPoolGames(tx, eventRow.hostId, eventRow.id, pool)
   if (change !== undefined) await tx.update(events).set(after).where(eq(events.id, eventRow.id))
   if (pool !== undefined) {
     await tx.delete(eventPoolGames).where(eq(eventPoolGames.eventId, eventRow.id))
