@@ -31,7 +31,7 @@ function note(text) {
 }
 
 /** Polls a page expression until it is true, at most `ms`. */
-async function until(tab, expression, what, ms = 10_000) {
+export async function until(tab, expression, what, ms = 10_000) {
   for (const end = Date.now() + ms; Date.now() < end;) {
     if (await tab.evaluate(expression).catch(() => false)) return
     await sleep(200)
@@ -58,7 +58,7 @@ async function quiet(tab) {
 
 /** The accounts that have signed in during this run: the others are signed in once, by their first `park`. */
 const signedIn = new Set()
-async function signIn(ctx, account) {
+export async function signIn(ctx, account) {
   if (signedIn.has(account)) return
   await open(ctx.tabs[account], '/impressum', 1440, 900, 'body', { appearance: ctx.appearance })
   signedIn.add(account)
@@ -128,7 +128,7 @@ function dialogGames(ctx) {
 }
 
 /** A pool of `n` games in a fixed order, so both Appearances draw the same DOM; `long` swaps the second for the 60-character game. */
-async function pool(ctx, n, { long = false } = {}) {
+export async function pool(ctx, n, { long = false } = {}) {
   const list = (await games(ctx)).slice(0, n)
   if (long) list.splice(n === 1 ? 0 : 1, 1, ctx.data.longGame)
   return list
@@ -137,7 +137,7 @@ async function pool(ctx, n, { long = false } = {}) {
 /** What has been made in this pass, by key; a new Appearance is a new pass: the Events of the last one are deleted first. */
 const memo = new Map()
 let pass = null
-async function made(ctx, key, build) {
+export async function made(ctx, key, build) {
   if (pass !== ctx.appearance) {
     await purge(ctx.tabs.host, ctx.data.prefix)
     memo.clear()
@@ -147,12 +147,12 @@ async function made(ctx, key, build) {
   return memo.get(key)
 }
 
-const host = ctx => ctx.tabs.host
-const member = ctx => ctx.tabs.member
-const admin = ctx => ctx.tabs.admin
+export const host = ctx => ctx.tabs.host
+export const member = ctx => ctx.tabs.member
+export const admin = ctx => ctx.tabs.admin
 
 /** The Dev Host and the Dev Member as two Parties, the Session started, `set` pool games set. `settings` go over the scenario's. */
-async function running(ctx, kind, { n = 4, long = false, settings = {}, set = 0, list } = {}) {
+export async function running(ctx, kind, { n = 4, long = false, settings = {}, set = 0, list } = {}) {
   await signIn(ctx, 'member')
   const given = list ?? await pool(ctx, n, { long })
   // The Game count leaves room for the Vetoes, so only `pool-warnung` shows the Host's pool warning.
@@ -184,7 +184,7 @@ async function ceremonyOver(ctx, slug) {
 }
 
 /** The Event of each `key`: the poll, the dated Event, Team choice, a Running Session in its situations, the finished pages. */
-const BUILDS = {
+export const BUILDS = {
   async poll(ctx) {
     await signIn(ctx, 'member')
     await signIn(ctx, 'admin')
@@ -351,7 +351,7 @@ const BUILDS = {
 // Opening and closing what a stop opens
 
 /** The sheet or dialog that is open goes away by its own button (the focus is on the page after a reading, so Escape would not reach it). */
-async function closeLayer(tab) {
+export async function closeLayer(tab) {
   const layer = `document.querySelector('[role=dialog], [role=menu]')`
   if (!await tab.evaluate(`!!${layer}`)) return
   const closed = await tab.evaluate(`(() => {
@@ -368,14 +368,14 @@ async function closeLayer(tab) {
 }
 
 /** One click on a visible button, by its text or aria-label. */
-async function press(tab, selector, text) {
+export async function press(tab, selector, text) {
   if (!await clickText(tab, selector, text)) throw new Error(`no ${selector} „${text}“ on the page`)
 }
 
-const dock = (tab, label) => press(tab, '[role=toolbar] button', label)
+export const dock = (tab, label) => press(tab, '[role=toolbar] button', label)
 
 /** An entry of the dock's „Mehr“ menu, which opens first. */
-async function moreEntry(tab, label) {
+export async function moreEntry(tab, label) {
   await press(tab, '[role=toolbar] button[aria-haspopup=menu]', COPY.dock.more)
   await until(tab, `!!document.querySelector('[role=menu]')`, 'the Mehr menu')
   await sleep(300)
@@ -383,17 +383,17 @@ async function moreEntry(tab, label) {
 }
 
 /** A sheet or dialog is open. */
-const layerOpen = (tab, what) => until(tab, `!!document.querySelector('[role=dialog]')`, what).then(() => sleep(400))
+export const layerOpen = (tab, what) => until(tab, `!!document.querySelector('[role=dialog]')`, what).then(() => sleep(400))
 
 /** A success or info toast leaves after 4 s, shorter than a reading: a delay of exactly 4000 ms is never scheduled from now on (an error toast stays by itself). */
-const keepToasts = tab => tab.evaluate(`(() => {
+export const keepToasts = tab => tab.evaluate(`(() => {
   if (window.__toastsKept) return
   window.__toastsKept = true
   const real = window.setTimeout
   window.setTimeout = (fn, ms, ...rest) => (ms === 4000 ? 0 : real(fn, ms, ...rest))
 })()`)
 
-const toastShown = (tab, text) => until(tab, `[...document.querySelectorAll('[role=status], [role=alert]')].some(el => el.textContent.includes(${JSON.stringify(text)}))`, `the toast „${text}“`).then(() => sleep(300))
+export const toastShown = (tab, text) => until(tab, `[...document.querySelectorAll('[role=status], [role=alert]')].some(el => el.textContent.includes(${JSON.stringify(text)}))`, `the toast „${text}“`).then(() => sleep(300))
 
 /**
  * The name button of the game tile named \`game\` in the block under the heading or label \`anchor\` („Gerade dran“, „Zuletzt gezogen“, „Spielepool“),
@@ -416,10 +416,10 @@ async function openTile(tab, anchor, game) {
 }
 
 /** The library in a picker has a sentinel that loads the next 40 cards while the reader scrolls: it goes, so only the first batch of the 1598 games is read. */
-const noAutoLoad = tab => tab.evaluate(`document.querySelectorAll('div[aria-hidden="true"].h-px').forEach(el => el.remove())`)
+export const noAutoLoad = tab => tab.evaluate(`document.querySelectorAll('div[aria-hidden="true"].h-px').forEach(el => el.remove())`)
 
 /** `navigator.clipboard.writeText` answers as `outcome` says. */
-const clipboard = (tab, outcome) => tab.evaluate(`Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: () => ${outcome === 'ok' ? 'Promise.resolve()' : 'Promise.reject(new Error("denied"))'} } })`)
+export const clipboard = (tab, outcome) => tab.evaluate(`Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: () => ${outcome === 'ok' ? 'Promise.resolve()' : 'Promise.reject(new Error("denied"))'} } })`)
 
 // ---------------------------------------------------------------------------------------------------------------------------------
 // States
@@ -430,7 +430,7 @@ const clipboard = (tab, outcome) => tab.evaluate(`Object.defineProperty(navigato
  * `hostStops` and `spielerStops` are the stops of each viewer, `hostWidths` the Host's widths (default 1440 only), `only` leaves one of them out, `prepare(ctx)` runs after the page
  * is quiet, `after(ctx)` after the Spieler's read, the last of the pair.
  */
-function pair({ name, group, key = name, fresh = false, waitFor = 'h1', hostStops = [], spielerStops = [], hostWidths = [1440], only, viewport, differs, stillHolds, prepare, after }) {
+export function pair({ name, group, key = name, fresh = false, waitFor = 'h1', hostStops = [], spielerStops = [], hostWidths = [1440], only, viewport, differs, stillHolds, prepare, after }) {
   const sides = [
     { suffix: 'host', account: 'host', widths: hostWidths, stops: hostStops },
     { suffix: 'spieler', account: 'member', widths: [390], stops: spielerStops },
@@ -456,7 +456,7 @@ function pair({ name, group, key = name, fresh = false, waitFor = 'h1', hostStop
 }
 
 /** A stop closes what the last one opened, then goes on; `keep`: it works inside that layer (the Invite sheet's two toasts). */
-const stop = (name, go, { keep = false, ...rest } = {}) => ({
+export const stop = (name, go, { keep = false, ...rest } = {}) => ({
   name,
   async go(ctx) {
     if (!keep) {

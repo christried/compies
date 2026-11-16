@@ -8,13 +8,13 @@
 /** @type {Section[]} */
 export const SECTIONS = [
   { id: 'signed-out', groups: ['signed-out'] },
-  { id: 'setup', names: ['einrichten'] },
+  { id: 'setup', names: ['einrichten', 'einrichten-fehler'] },
   { id: 'home', names: ['home-leer', 'home', 'home-menue', 'was-ist-neu'] },
   { id: 'library', groups: ['library'] },
   { id: 'stepper', groups: ['stepper'] },
   // 0.12's states were appended at the end of dark-states-event.mjs: the groups, not the file order, put them where the Event shows them.
   { id: 'event', groups: ['event-poll', 'event-board', 'event-live', 'event-finished'] },
-  { id: 'profil', names: ['profil', 'baustelle-archiv', 'baustelle-admin', 'baustelle-allgemein', 'baustelle-event'] },
+  { id: 'profil', names: ['profil', 'profil-fehler', 'profil-gespeichert', 'baustelle-archiv', 'baustelle-admin', 'baustelle-allgemein', 'baustelle-event'] },
 ]
 
 /**
