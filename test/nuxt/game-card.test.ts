@@ -1,8 +1,9 @@
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import { flushPromises, type VueWrapper } from '@vue/test-utils'
 import { h } from 'vue'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 import GameCard from '~/components/GameCard.vue'
+import { build, parse, themeBlock } from '../unit/css-tokens'
 import { GAME_NAME_MAX, TAG_MAX, type GameView } from '~~/shared/game'
 
 // The card's structure (#351): the actions sit in the card's last child, and the body grows, so in a stretched grid row the
@@ -230,6 +231,15 @@ describe('the „+N“ button and its popover (#614)', () => {
     expect(popover()).not.toBeNull()
   })
 
+  it('has a 44 px hit area, and keeps its own height, font and line (#658, #614)', async () => {
+    await mount({ name: 'Mario Kart', tags: FIVE }, 'card')
+
+    const classes = moreButton()!.classList
+    expect(classes.contains('hit-44')).toBe(true)
+    // What #614 built stays: the hit area is a pseudo-element, so the button's look and the card's layout do not change.
+    for (const kept of ['h-6', 'px-1.5', 'text-[12px]', 'leading-5', 'font-bold']) expect(classes.contains(kept)).toBe(true)
+  })
+
   it('closes on Esc and keeps the focus on „+N“, which the focus opened', async () => {
     const container = document.createElement('div')
     document.body.append(container)
@@ -442,6 +452,74 @@ describe('the lift on a card that can be clicked (#608)', () => {
 
     await mountClickable('tile', { opens: true, to: '/bibliothek/g-1' })
     expect(root().classList.contains('lift')).toBe(true)
+  })
+
+  // The press (#658): `:active` matches the pressed element and every ancestor of it, so a button inside the card would press the card
+  // too. jsdom has no `:active`, so the compiled rule is read for its selector and `:active` is swapped for an attribute that the
+  // test sets on the pressed element and on each of its ancestors, as the browser does.
+  describe('presses only for its own click (#658)', () => {
+    const FIVE = [{ key: 'a', label: 'Retro' }, { key: 'b', label: 'Koop' }, { key: 'c', label: 'Party' }, { key: 'd', label: 'Horror' }, { key: 'e', label: 'Indie' }]
+    const NAME = 'Mario Kart'
+
+    let pressSelector: string
+    beforeAll(async () => {
+      const css = await build(`${themeBlock(/@utility tint/)}\n${themeBlock(/@utility lift/)}`, ['lift'])
+      const flat = parse(css).find(rule => rule.decls.includes('box-shadow: none') && rule.chain.at(-1)!.startsWith('&:active'))
+      pressSelector = flat!.chain.at(-1)!.replace(/^&/, '.lift').replaceAll(':active', '[data-down]')
+    })
+
+    /** Whether the card presses while `target` is held down: the target and its ancestors carry `data-down`, as `:active` does. */
+    function pressedBy(target: HTMLElement) {
+      const down: HTMLElement[] = []
+      for (let el: HTMLElement | null = target; el; el = el.parentElement) {
+        el.setAttribute('data-down', '')
+        down.push(el)
+      }
+      const presses = root().matches(pressSelector)
+      for (const el of down) el.removeAttribute('data-down')
+      return presses
+    }
+
+    async function mountCard(props: { to?: string, opens?: boolean }, layout: Layout = 'card') {
+      page = await mountSuspended(GameCard, {
+        props: { game: { id: 'g-1', name: NAME, imageUrl: null, youtubeId: null, price: null, playersMin: null, playersMax: null, suitabilities: [], tags: FIVE }, layout, ...props },
+        slots: { actions: () => [h('button', { type: 'button' }, 'Wählen'), h('a', { href: '/x' }, 'Notizen')] },
+      })
+    }
+    const name = () => root().querySelector<HTMLElement>('a[href="/bibliothek/g-1"], [data-lift-owner]')!
+
+    it('presses when the name link is pressed', async () => {
+      await mountCard({ to: '/bibliothek/g-1' })
+
+      expect(name().textContent!.trim()).toBe(NAME)
+      expect(pressedBy(name())).toBe(true)
+    })
+
+    it('presses when the tile’s name button is pressed', async () => {
+      await mountCard({ opens: true }, 'tile')
+
+      expect(name().tagName).toBe('BUTTON')
+      expect(pressedBy(name())).toBe(true)
+    })
+
+    it('presses when the card is pressed anywhere else on it, where no control is', async () => {
+      await mountCard({ to: '/bibliothek/g-1' })
+
+      expect(pressedBy(root().querySelector('[data-cover]')!)).toBe(true)
+    })
+
+    it('stays still when „+N“ is pressed', async () => {
+      await mountCard({ to: '/bibliothek/g-1' })
+
+      expect(pressedBy(root().querySelector<HTMLElement>('[role="group"] > button')!)).toBe(false)
+    })
+
+    it('stays still when a button or a link in the actions is pressed', async () => {
+      await mountCard({ to: '/bibliothek/g-1' })
+
+      expect(pressedBy(root().querySelector<HTMLElement>('button:not([aria-haspopup])')!)).toBe(false)
+      expect(pressedBy(root().querySelector<HTMLElement>('a[href="/x"]')!)).toBe(false)
+    })
   })
 
   it('keeps a static card still: a tile without opens, a card and a row without a link, and an empty link', async () => {

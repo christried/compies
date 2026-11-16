@@ -302,6 +302,13 @@ describe('the edges', () => {
     expect(slicesOf(page)[0]).toContain('A180,180')
   })
 
+  it('draws a wheel of one game as the exact full circle, not as an arc (#659)', async () => {
+    page = await mount(restOf(1))
+
+    // Two half arcs from the top to the bottom and back: the path of pathOf's own full-circle branch, which an arc of 359.95° never takes.
+    expect(slicesOf(page)).toEqual(['M200,20A180,180 0 1 1 200,380A180,180 0 1 1 200,20Z'])
+  })
+
   it('cuts the long name of a game put back on a wheel of 30 as before', async () => {
     page = await mount(restOf(30))
     const ids = Array.from({ length: 30 }, (_, index) => `s${index}`)

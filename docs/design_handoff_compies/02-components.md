@@ -235,6 +235,7 @@ Big choice cards (format, mode, points preset, date mode).
 - **Desktop / mobile:** Same; full width on mobile.
 - **Accessibility:** `role="radiogroup"` with radios (or buttons with `aria-pressed` for filters).
 - **Motion:** selection fill `dur-fast`.
+- **Deviation (0.14, #621):** `arrows="horizontal"` leaves ArrowUp and ArrowDown to the parent, for a row inside a menu that walks its items with them (#617).
 
 ## NumberStepper
 **Scope:** [1.0] · **Ref:** DS Scoring
@@ -430,6 +431,7 @@ Layout frame: header, stage, side panel, mobile tab bar, host dock slot.
 - **Desktop / mobile:** ≥ 980: header 64, stage max 1100 centred, panel 340 right (Event only), dock floating. < 980: header 56, content, bottom TabBar, crown button 56 bottom-right for hosts.
 - **Accessibility:** Landmarks: `header`, `nav`, `main`, `aside`. Skip link „Zur Bühne springen“.
 - **Motion:** —
+- **Deviation (0.14, #621):** while a Clip shows on a device, the backdrop (#587) covers the page's regions: the header, the stage, the side panel, the footer and the tab bar are `inert`; the Clip, the Veto bar, the Host dock, sheets and toasts stay usable. Details: § ClipPlayer.
 
 ## AppHeader
 **Scope:** [MVP] · **Ref:** AppFrame
@@ -875,6 +877,7 @@ A game in library, pool, wheel lists, pick & ban.
 - **Motion:** ban: stamp `scale 2.2→1, rotate −8°` 0.4 s; pick: slap into order strip (Flip).
 - **Deviation (0.12, #425):** on the Event page (Spielepool in „So wird gespielt“, „Zuletzt gezogen“ under the wheel, „Gerade dran“ on the open Rounds) a game is a tile with picture and name only, for the Host too; the pool's tiles sit side by side in a grid. A tap opens the game dialog (a sheet below md, a dialog from md up): the library entry, read-only. The Host sees players, Suitabilities, all Tags, the Price, the Notes and „In der Bibliothek öffnen“; a Member sees picture, name, players, Suitabilities and the Price, never Tags or Notes. No Clip in the dialog. On „Gerade dran“ the Host's Notes stay open under the tile. In the compact game browser (both pool pickers, „Nächstes Spiel setzen“) and on the chosen games of step „Spiele“, a game with Notes gets a Notes button that opens them in a popover from md up and a sheet below.
 - **Deviation (0.14, #608):** a card lifts where the card itself can be clicked: the library's cards (the name is a link stretched over the card) and the Event's game tiles (the name is a button that opens the game dialog). A card in a picker, in the Veto window and in the Clip stays still.
+- **Deviation (0.14, #621):** the name reserves two lines, in the tile and from md in the library card (#612). The Tags sit on one line at the card's bottom, so every card of a row shares their top edge; „+N“ is a button whose popover lists every Tag (#614).
 
 ## LuckyWheel
 **Scope:** [1.0] · **Ref:** GameWheel, App Spielrunde 11
