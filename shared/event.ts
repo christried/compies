@@ -5,12 +5,17 @@ import { characterCount } from './text'
 import { beforeFinish, PHASES, type Phase } from './phase'
 import type { EventSettings, SettingsFloors } from './settings'
 import type { HostGameFacts, PoolGame, PoolGameFace } from './game'
+import type { NotesDoc } from './notes-doc'
 import type { BonusVetoView, CeremonyView, ClipView, CoinView, CountdownView, EndView, ResultView, RoundView, SetGameView, StandingView, WheelView } from './stage'
 
 // Event limits shared by the create form and the server (#1 § Domain rules).
 
 /** Event name: 1 to this many characters after trimming (an emoji counts as one, as the User sees it (characterCount)). */
 export const EVENT_NAME_MAX = 60
+/** The longest Event notes for one game, in visible characters (#731): the notes module counts them as it does the Game notes' limit. */
+export const EVENT_NOTES_MAX = 2000
+/** The answer of a save of Event notes (#731): the game and the stored document, `null` after a clear. */
+export interface EventNotesSaved { gameId: string, notes: NotesDoc | null }
 /** Slots in a Date poll. */
 export const SLOTS_MAX = 16
 /** Sessions of one Event (ADR 0011, #49). */
@@ -175,6 +180,11 @@ export interface EventView {
    * the Game pool, the open Rounds' games and the latest spin's game. Only the Host gets it; null for every other Member, so no Tag and no Game notes reach one here.
    */
   hostGames: Record<string, HostGameFacts> | null
+  /**
+   * The Host's Event notes (#731, GLOSSARY: Event notes): the stored document of every game the Host wrote notes for in this Event, by game id (lower-case uuid). A key exists only for
+   * a document with visible text. Only the Host gets it (`{}` when there are none); null for every other Member: no note reaches a Member, the feed or the room.
+   */
+  eventNotes: Record<string, NotesDoc> | null
   /** The Event's Sessions (ADR 0011): dated ones in Date order first. Each has its Date, and the Date a Reopen withdrew until the next Date is set. */
   sessions: SessionView[]
   /** The removed Sessions that had a Date, earliest first (#65): only for the notice with that Date; they count nowhere else. */
