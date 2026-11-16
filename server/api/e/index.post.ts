@@ -53,7 +53,7 @@ export default defineEventHandler(async (event): Promise<CreatedEvent> => {
   // load by slug, and no one is in its room to tell (#183).
   // eslint-disable-next-line no-restricted-syntax -- creating an Event has no Event to load and no one to publish to
   await db.transaction(async (tx) => {
-    await assertGamesExist(tx, pool)
+    await assertGamesExist(tx, user.id, pool)
     const [row] = await tx
       .insert(events)
       .values({ slug, inviteToken, hostId: user.id, name: input.name, phase, ...settings })

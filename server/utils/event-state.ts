@@ -1,4 +1,4 @@
-import { asc, desc, eq, sql } from 'drizzle-orm'
+import { and, asc, desc, eq, sql } from 'drizzle-orm'
 import { bonusVetoes, coinTosses, draws, eventMembers, eventPoolGames, eventTeams, games, roundPlaces, rounds, users, vetoes } from '../db/schema'
 import { numberedSessions } from '../domain/session'
 import { countSeats, composeTeamName, moveRejection, placeOf, teamChoiceOpen, type MoveRejection, type Place, type Zone } from '../../shared/board'
@@ -174,7 +174,7 @@ async function readRows<P extends StatePart>(db: Db, eventRow: EventRow, parts: 
   if (wanted.has('rounds')) reads.rounds = run(readRounds(db, eventRow.id))
   if (wanted.has('vetoes')) reads.vetoes = run(readVetoes(db, eventRow.id))
   if (wanted.has('bonus')) reads.bonus = run(readBonusTeams(db, eventRow.id))
-  if (wanted.has('pool')) reads.pool = run(readPool(db, eventRow.id))
+  if (wanted.has('pool')) reads.pool = run(readPool(db, eventRow.id, eventRow.hostId))
   if (wanted.has('toss')) reads.toss = (reads.sessions ?? Promise.resolve(known!)).then(sessions => readToss(db, sessions))
   const found: Partial<PartRows> = {}
   await Promise.all([
@@ -248,13 +248,16 @@ async function readBonusTeams(db: Db, eventId: string): Promise<number[]> {
   return found.map(row => row.team)
 }
 
-/** The ids of the games in the Game pool, in the order of their names (the order the pools show them in). */
-async function readPool(db: Db, eventId: string): Promise<string[]> {
+/**
+ * The ids of the games in the Game pool, in the order of their names (the order the pools show them in). Only games of the Event's Host's library
+ * count (#722, ADR 0018): a foreign pool row is on no wheel, in no count and in no draw.
+ */
+async function readPool(db: Db, eventId: string, hostId: string): Promise<string[]> {
   const found = await db
     .select({ id: games.id })
     .from(eventPoolGames)
     .innerJoin(games, eq(eventPoolGames.gameId, games.id))
-    .where(eq(eventPoolGames.eventId, eventId))
+    .where(and(eq(eventPoolGames.eventId, eventId), eq(games.createdBy, hostId)))
     .orderBy(asc(sql`lower(${games.name})`), asc(games.id))
   return found.map(row => row.id)
 }

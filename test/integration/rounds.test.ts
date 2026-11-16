@@ -1,6 +1,6 @@
 import { and, eq } from 'drizzle-orm'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
-import { activity, draws, events, rounds } from '../../server/db/schema'
+import { activity, draws, eventPoolGames, events, games, rounds } from '../../server/db/schema'
 import { SPIN_MAX_MS, SPIN_MIN_MS, clipLengthOf } from '../../shared/draw-timeline'
 import { testClock } from '../../server/utils/clock'
 import { memoryRoomNotifier } from '../../server/utils/room-notifier'
@@ -8,7 +8,7 @@ import type { ActivityPage } from '../../shared/activity'
 import { SPIN, windowMsFor } from '../draw-offsets'
 import { createTestApp, errorOf, sendVia, type TestRequest } from './app'
 import { createTestDb, resetDatabase } from './harness'
-import { readEvent, readFeed, readFeedText, startRunningEvent, type Rig } from './scenario'
+import { readEvent, readFeed, readFeedText, signInAs, startRunningEvent, type Rig } from './scenario'
 import { stubAuthEnv } from './sign-in'
 import { spinAnswer } from './spin-length'
 
@@ -23,6 +23,8 @@ const players = {
   three: { provider: 'twitch', id: '4', name: 'Drei', email: 'three@example.com', image: undefined },
   four: { provider: 'twitch', id: '5', name: 'Vier', email: 'four@example.com', image: undefined },
 } as const
+
+const otherHost = { provider: 'discord', id: '30', name: 'Zweiter', email: 'host2@example.com', image: undefined } as const
 
 const SLOTS = ['2090-10-30T20:30', '2090-10-31T19:00']
 const T0 = '2090-10-30T10:00:00.000Z'
@@ -221,6 +223,72 @@ describe('Rounds', () => {
 
       expect(await errorOf(await set(game, '00000000-0000-4000-8000-000000000999'))).toEqual({ status: 400, code: 'unknown_game' })
       expect(await roundRows(game)).toEqual([])
+    })
+  })
+
+  // An Event only refers to games of its own Host's library (#722, ADR 0018). A request that names another Host's game answers as an
+  // absent one; a pool row of one that the 0.15 code wrote in the migration window (ADR 0007) is put in straight here, and reaches
+  // no count, no list, no draw.
+  describe('another Host\'s game (#722)', () => {
+    /** A game of another Host's library, optionally in the Event's Game pool through a row written straight in the database. */
+    async function foreignGame(game: Game, { pooled }: { pooled: boolean }) {
+      const other = await signInAs(rig, otherHost)
+      const [row] = await testDb.db.insert(games).values({ name: 'Fremdes Spiel', notes: 'Fremde Notizen', createdBy: other.id }).returning()
+      if (pooled) await testDb.db.insert(eventPoolGames).values({ eventId: game.eventId, gameId: row!.id })
+      return row!
+    }
+
+    it.each([{ pooled: false }, { pooled: true }])('refuses to set it with 400 unknown_game, as for an absent game, and writes no Round, Draw or entry (in this pool: $pooled)', async ({ pooled }) => {
+      const game = await running()
+      const foreign = await foreignGame(game, { pooled })
+      const absent = await set(game, '00000000-0000-4000-8000-000000000999')
+
+      const answer = await set(game, foreign.id)
+
+      expect(await errorOf(answer)).toEqual({ status: 400, code: 'unknown_game' })
+      expect(answer.status).toBe(absent.status)
+      expect(answer.statusText).toBe(absent.statusText)
+      expect(await roundRows(game)).toEqual([])
+      expect(await drawRows()).toEqual([])
+      expect(await testDb.db.select().from(activity)).toEqual([])
+    })
+
+    it('still sets the Host\'s own library game that is in no pool, beside the foreign one', async () => {
+      const game = await running()
+      await foreignGame(game, { pooled: false })
+
+      expect((await set(game, game.schach.id)).status).toBe(200)
+
+      expect(await drawRows()).toMatchObject([{ gameId: game.schach.id, source: 'library' }])
+    })
+
+    it('leaves a foreign pool row out of the Host\'s games left and pool warning, and out of a Member\'s wheel and its count', async () => {
+      const game = await running({ wheel: true })
+      const foreign = await foreignGame(game, { pooled: true })
+
+      const view = await read(game)
+      expect(view.setGame?.left.sort()).toEqual([game.halo.id, game.kart.id].sort())
+      expect(view.setGame?.poolWarning).toEqual({ needed: 10, have: 2 })
+      expect(view.wheel).toMatchObject({ count: 2, slices: [{ id: game.halo.id }, { id: game.kart.id }] })
+      expect(view.pool?.map(poolGame => poolGame.name)).toEqual(['Halo', 'Kart'])
+      const raw = await (await request(`/api/e/${game.slug}`, { headers: { cookie: game.cookies.three } })).text()
+      const memberView = JSON.parse(raw) as Awaited<ReturnType<typeof read>>
+      expect(memberView.wheel).toMatchObject({ count: 2, slices: [{ id: game.halo.id, name: 'Halo' }, { id: game.kart.id, name: 'Kart' }] })
+      expect(memberView.pool?.map(poolGame => poolGame.name)).toEqual(['Halo', 'Kart'])
+      expect(raw).not.toContain('Fremdes Spiel')
+      expect(raw).not.toContain(foreign.id)
+    })
+
+    it('draws a spin from the own games only: with one own game and the foreign row the slice list and the drawn game are the own one', async () => {
+      const game = await running({ wheel: true })
+      const foreign = await foreignGame(game, { pooled: true })
+      await testDb.db.delete(eventPoolGames).where(eq(eventPoolGames.gameId, game.kart.id))
+
+      expect((await send('POST', `/api/e/${game.slug}/rounds/spin`, game.hostCookie)).status).toBe(200)
+
+      const [row] = await drawRows()
+      expect(row).toMatchObject({ gameId: game.halo.id, sliceGameIds: [game.halo.id] })
+      expect(JSON.stringify(row)).not.toContain(foreign.id)
     })
   })
 
