@@ -159,10 +159,17 @@ describe('the game dialog for the Host (#443)', () => {
   })
 
   it('shows the link to a Platform admin', async () => {
-    signInAs({ ...kitty, canHost: false, isAdmin: true })
+    signInAs({ ...kitty, canHost: true, isAdmin: true })
     await open()
 
     expect(link()).not.toBeNull()
+  })
+
+  it('shows no link to a Platform admin without the Host permission (#455)', async () => {
+    signInAs({ ...kitty, canHost: false, isAdmin: true })
+    await open()
+
+    expect(link()).toBeNull()
   })
 
   it('takes the new name when the game prop changes', async () => {

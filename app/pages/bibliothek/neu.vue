@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { canSeeLibrary, type GameView } from '~~/shared/game'
 
-// Create a game (screen 24, `?s=edit`, #141). Only Users with the Host permission and the Platform admin get the
+// Create a game (screen 24, `?s=edit`, #141). Only Users with the Host permission (#455) get the
 // form; everyone else sees the Construction page, like for any missing route.
 const { t } = useI18n()
 useHead({ title: () => t('gameEdit.title') })

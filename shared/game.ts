@@ -65,14 +65,14 @@ export const GAME_IMAGE_MAX_BYTES = 200_000
 export const GAME_IMAGE_WIDTH = 512
 export const GAME_IMAGE_HEIGHT = 320
 
-/** Library viewers: the Host permission or the Platform admin (spec #138 § API contracts). Shared so the server uses the same rule as the navigation. */
-export function canSeeLibrary(viewer: { canHost: boolean, isAdmin: boolean } | null): boolean {
-  return Boolean(viewer?.canHost || viewer?.isAdmin)
+/** Library viewers: the Host permission alone (#455, ADR 0018). The Platform admin holds it through the allowlist, so they have a library of their own and no right over another User's. Shared so the server uses the same rule as the navigation. */
+export function canSeeLibrary(viewer: { canHost: boolean } | null): boolean {
+  return Boolean(viewer?.canHost)
 }
 
-/** Library editors of one game: its creator or the Platform admin (#142 uses it; #141 already fills GameView.canEdit). */
-export function canEditGame(viewer: { id: string, isAdmin: boolean }, game: { createdBy: string }): boolean {
-  return viewer.isAdmin || viewer.id === game.createdBy
+/** The editor of one game: the User who made it (#455, ADR 0018). The library routes only find the viewer's own games, so this is true for every game they answer. */
+export function canEditGame(viewer: { id: string }, game: { createdBy: string }): boolean {
+  return viewer.id === game.createdBy
 }
 
 /** What GameCard shows of a game: the part of a library game that an Event's pools carry too (#146). */

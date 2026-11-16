@@ -53,13 +53,12 @@ describe('parseClipTime', () => {
 })
 
 describe('canSeeLibrary', () => {
-  it('lets Hosts and the Platform admin in', () => {
-    expect(canSeeLibrary({ canHost: true, isAdmin: false })).toBe(true)
-    expect(canSeeLibrary({ canHost: false, isAdmin: true })).toBe(true)
+  it('lets a Host in', () => {
+    expect(canSeeLibrary({ canHost: true })).toBe(true)
   })
 
-  it('keeps out Members without rights and signed-out visitors', () => {
-    expect(canSeeLibrary({ canHost: false, isAdmin: false })).toBe(false)
+  it('keeps out everyone without the Host permission, and signed-out visitors (#455)', () => {
+    expect(canSeeLibrary({ canHost: false })).toBe(false)
     expect(canSeeLibrary(null)).toBe(false)
   })
 })
@@ -67,13 +66,12 @@ describe('canSeeLibrary', () => {
 describe('canEditGame', () => {
   const game = { createdBy: 'u1' }
 
-  it('lets the creator and the Platform admin edit', () => {
-    expect(canEditGame({ id: 'u1', isAdmin: false }, game)).toBe(true)
-    expect(canEditGame({ id: 'u9', isAdmin: true }, game)).toBe(true)
+  it('lets the creator edit', () => {
+    expect(canEditGame({ id: 'u1' }, game)).toBe(true)
   })
 
-  it('keeps every other User out', () => {
-    expect(canEditGame({ id: 'u2', isAdmin: false }, game)).toBe(false)
+  it('keeps every other User out (#455)', () => {
+    expect(canEditGame({ id: 'u2' }, game)).toBe(false)
   })
 })
 

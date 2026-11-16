@@ -35,7 +35,6 @@ describe('canSeeImage (#143, #148)', () => {
 
   it('lets library viewers see it', () => {
     expect(canSeeImage({ viewer: libraryViewer, gameEvents: [] })).toBe(true)
-    expect(canSeeImage({ viewer: { canHost: false, isAdmin: true }, gameEvents: [] })).toBe(true)
     expect(canSeeImage({ viewer: libraryViewer, gameEvents: [{ isHost: false, poolPreview: false, set: false }] })).toBe(true)
   })
 

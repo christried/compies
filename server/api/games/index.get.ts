@@ -6,10 +6,10 @@ import { loadTagsInUse } from '../../utils/game-tags'
 import { creatorNameOf, gameWithCreator, readGameViews, requireLibraryViewer } from '../../utils/library'
 import type { GameList } from '../../../shared/game'
 
-// The Game library (#141): every game, by name without regard to case. Only Hosts and the Platform admin
+// The Game library (#141): the viewer's own games (#455), by name without regard to case. Only Users with the Host permission
 // may ask; everyone else gets the answer of a missing route. There are no search parameters: the browser filters
 // the whole list (`filterGames`, #173), so the library and the pool pickers search the same way and instantly. Each game
-// carries its Tags, and the list the Tags in use (#335).
+// carries its Tags, and the list the Tags in use (#335), both of the viewer's games only.
 export default defineEventHandler(async (event): Promise<GameList> => {
   const viewer = await requireLibraryViewer(event)
 
@@ -19,8 +19,9 @@ export default defineEventHandler(async (event): Promise<GameList> => {
       .select(gameWithCreator)
       .from(games)
       .innerJoin(users, eq(games.createdBy, users.id))
+      .where(eq(games.createdBy, viewer.id))
       .orderBy(asc(sql`lower(${games.name})`), asc(games.id)),
-    loadTagsInUse(db),
+    loadTagsInUse(db, viewer.id),
   ])
 
   return { games: await readGameViews(db, rows.map(row => ({ game: row.game, creatorName: creatorNameOf(row) })), viewer), tagsInUse }

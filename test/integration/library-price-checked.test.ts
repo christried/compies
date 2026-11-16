@@ -188,11 +188,12 @@ describe('„Preis stimmt noch“ sends only the flag (#360)', () => {
     expect(await storedPrice(id)).toEqual({ cents: null, source: 'free_to_play', checkedAt: new Date(T2).toISOString() })
   })
 
-  it('applies the edit rules before the body: another Host, a Member, a stranger and an unknown id get no restamp', async () => {
+  it('applies the ownership rule before the body: another Host, the Platform admin, a Member, a stranger and an unknown id get no restamp (#455)', async () => {
     const { id } = await created(await cookieOf(host), { name: 'Mario Kart', price: steam })
 
     const refusals = [
-      { cookie: await cookieOf(otherHost), status: 403, statusText: 'not_game_editor' },
+      { cookie: await cookieOf(otherHost), status: 404, statusText: 'Not Found' },
+      { cookie: await cookieOf(admin), status: 404, statusText: 'Not Found' },
       { cookie: await cookieOf(member), status: 404, statusText: 'Not Found' },
       { cookie: undefined, status: 404, statusText: 'Not Found' },
     ]
@@ -211,11 +212,12 @@ describe('„Preis stimmt noch“ sends only the flag (#360)', () => {
     expect(await storedPrice(id)).toMatchObject({ checkedAt: T1 })
   })
 
-  it('lets the Platform admin restamp a game', async () => {
-    const { id } = await created(await cookieOf(host), { name: 'Mario Kart', price: steam })
+  it('lets the Platform admin restamp a game of their own library (#455)', async () => {
+    const adminCookie = await cookieOf(admin)
+    const { id } = await created(adminCookie, { name: 'Mario Kart', price: steam })
 
     clock.set(T2)
-    const response = await edit(await cookieOf(admin), id, { priceChecked: true })
+    const response = await edit(adminCookie, id, { priceChecked: true })
 
     expect(response.status).toBe(200)
     expect(await storedPrice(id)).toMatchObject({ checkedAt: new Date(T2).toISOString() })

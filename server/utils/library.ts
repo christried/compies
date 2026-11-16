@@ -1,4 +1,4 @@
-import { eq, inArray } from 'drizzle-orm'
+import { and, eq, inArray } from 'drizzle-orm'
 import type { H3Event } from 'h3'
 import type { EventView } from '../../shared/event'
 import { canEditGame, canSeeLibrary, type GamePrice, type GamePriceInput, type GameTag, type GameView, type HostGameFacts, type PoolGame, type PoolGameFace, type RoundGame } from '../../shared/game'
@@ -12,12 +12,12 @@ import { getUser } from './user'
 
 // Shared parts of the Game library routes (#141).
 
-/** The answer a missing route gets; the library gives it to everyone who may not see it (spec #138). */
+/** The answer a missing route gets; the library gives it to everyone who may not see it, and for a game that is not the viewer's own (#455). */
 export function libraryNotFound() {
   return apiNotFound()
 }
 
-/** The signed-in User who may see the library: a Host or the Platform admin. Everyone else gets libraryNotFound. */
+/** The signed-in User who may see the library: a User with the Host permission. Everyone else gets libraryNotFound. */
 export async function requireLibraryViewer(event: H3Event): Promise<AuthUser> {
   const user = await getUser(event)
   if (!user || !canSeeLibrary(user)) throw libraryNotFound()
@@ -32,14 +32,17 @@ export function creatorNameOf({ creatorName, creatorDisplayName }: { creatorName
   return shownName({ name: creatorName, displayName: creatorDisplayName })
 }
 
-/** One game with its creator's name; libraryNotFound for text that is no uuid (it never reaches the database) and for an unknown id. */
-export async function loadGame(db: Db, id: string): Promise<{ game: typeof games.$inferSelect, creatorName: string }> {
+/**
+ * One game of `ownerId`'s library with its creator's name (#455, ADR 0018). libraryNotFound for text that is no uuid (it never reaches the
+ * database), for an unknown id and for a game of another User: the three answer alike, the Platform admin's request included.
+ */
+export async function loadGame(db: Db, id: string, ownerId: string): Promise<{ game: typeof games.$inferSelect, creatorName: string }> {
   if (!isUuid(id)) throw libraryNotFound()
   const [row] = await db
     .select(gameWithCreator)
     .from(games)
     .innerJoin(users, eq(games.createdBy, users.id))
-    .where(eq(games.id, id))
+    .where(and(eq(games.id, id), eq(games.createdBy, ownerId)))
   if (!row) throw libraryNotFound()
   return { game: row.game, creatorName: creatorNameOf(row) }
 }

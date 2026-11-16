@@ -7,16 +7,15 @@ import { useDb } from '../../../utils/db'
 import { apiError } from '../../../utils/errors'
 import { useImageStore } from '../../../utils/image-store'
 import { loadGame, readGameViews, requireLibraryViewer } from '../../../utils/library'
-import { GAME_IMAGE_MAX_BYTES, canEditGame, type GameView } from '../../../../shared/game'
+import { GAME_IMAGE_MAX_BYTES, type GameView } from '../../../../shared/game'
 
-// Gives a game its image (#143): one WebP of up to GAME_IMAGE_MAX_BYTES as the raw body, from whoever may
-// edit the game. Every upload gets a new key, so the old URL stops working and nothing serves stale; the
+// Gives a game its image (#143): one WebP of up to GAME_IMAGE_MAX_BYTES as the raw body, from the game's
+// creator (#455: another User's game answers as a missing one). Every upload gets a new key, so the old URL stops working and nothing serves stale; the
 // replaced object is deleted from the store once the new one is in the database.
 export default defineEventHandler(async (event): Promise<GameView> => {
   const viewer = await requireLibraryViewer(event)
   const db = useDb(event)
-  const { game, creatorName } = await loadGame(db, getRouterParam(event, 'id') ?? '')
-  if (!canEditGame(viewer, game)) throw apiError('not_game_editor')
+  const { game, creatorName } = await loadGame(db, getRouterParam(event, 'id') ?? '', viewer.id)
 
   // The announced length is checked before the body is read, so a huge upload is not buffered; a body
   // without a length is read through a counter that stops at the maximum.

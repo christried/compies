@@ -71,7 +71,7 @@ describe('the library page', () => {
   })
 
   it('shows the Platform admin the library', async () => {
-    signInAs({ ...kitty, isAdmin: true })
+    signInAs({ ...kitty, canHost: true, isAdmin: true })
 
     const page = await mountSuspended(LibraryPage, { route: '/bibliothek' })
     await settle(page)
