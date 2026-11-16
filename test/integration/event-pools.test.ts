@@ -3,6 +3,7 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } 
 import { eventPoolGames, events } from '../../server/db/schema'
 import type { CreatedEvent, EventView } from '../../shared/event'
 import type { GameView } from '../../shared/game'
+import { notesFromLines } from '../../shared/notes-doc'
 import { createTestApp, type TestRequest } from './app'
 import { TEST_SETTINGS } from './fixtures'
 import { createTestDb, resetDatabase } from './harness'
@@ -227,7 +228,7 @@ describe('the pool of an Event (#146, #286)', () => {
     })
 
     it('gives a Member who may see the pool only the picture, name, players, Suitabilities and Price of each game, even when it has notes (#224, #444)', async () => {
-      const kart = await newGame('Mario Kart', { notes: 'Settings: 3 Runden\nWarmup: Lobby', playersMin: 2, playersMax: 4, suitabilities: ['teams'] })
+      const kart = await newGame('Mario Kart', { notes: notesFromLines(['Settings: 3 Runden', 'Warmup: Lobby']), playersMin: 2, playersMax: 4, suitabilities: ['teams'] })
       const pong = await newGame('Pong')
       const { slug, inviteUrl } = await createdEvent({ pool: [kart.id, pong.id] })
       const { cookie } = await signIn(testDb.db, member)
@@ -243,11 +244,11 @@ describe('the pool of an Event (#146, #286)', () => {
     })
 
     it('gives the Host every field of a pool game, the notes too (#224)', async () => {
-      const kart = await newGame('Mario Kart', { notes: 'Settings: 3 Runden', playersMin: 2, playersMax: 4 })
+      const kart = await newGame('Mario Kart', { notes: notesFromLines(['Settings: 3 Runden']), playersMin: 2, playersMax: 4 })
       const { slug } = await createdEvent({ pool: [kart.id] })
 
       expect((await read(hostCookie, slug)).pool!).toEqual([
-        { id: kart.id, name: 'Mario Kart', imageUrl: null, youtubeId: null, clipStart: 0, clipLength: 30, playersMin: 2, playersMax: 4, suitabilities: [], notes: 'Settings: 3 Runden', price: null },
+        { id: kart.id, name: 'Mario Kart', imageUrl: null, youtubeId: null, clipStart: 0, clipLength: 30, playersMin: 2, playersMax: 4, suitabilities: [], notes: notesFromLines(['Settings: 3 Runden']), price: null },
       ])
     })
 

@@ -8,6 +8,7 @@ import { GAME_NAME_MAX, type PoolGame, type PoolGameFace } from '~~/shared/game'
 import { defaultSettings, type EventSettings } from '~~/shared/settings'
 import { kitty, signInAs } from './auth'
 import { serve, view, viewWithSessions } from './event-page'
+import { notesFromLines } from '~~/shared/notes-doc'
 
 // „So wird gespielt“ (#148): the settings of the Event for every Member, and the pool as names; under a Hidden
 // wheel a Player sees nothing about them (#222).
@@ -81,7 +82,7 @@ describe('HowWePlayCard (#148)', () => {
     const card = await mountCard({
       settings: wheel,
       isHost: true,
-      pool: [poolGame('Mario Kart', { notes: 'Settings: 3 Runden' }), poolGame('Pong')],
+      pool: [poolGame('Mario Kart', { notes: notesFromLines(['Settings: 3 Runden']) }), poolGame('Pong')],
     })
 
     const [withNotes, withoutNotes] = card.findAll('ul')[0]!.findAll('li')
@@ -107,7 +108,7 @@ describe('HowWePlayCard (#148)', () => {
   })
 
   it('shows a Member of a visible pool picture and name of each game, and no player count, Suitabilities or Notizen (#224)', async () => {
-    const kart = poolGame('Mario Kart', { imageUrl: '/api/images/kart.webp', playersMin: 2, playersMax: 4, suitabilities: ['teams'], notes: 'Settings: 3 Runden' })
+    const kart = poolGame('Mario Kart', { imageUrl: '/api/images/kart.webp', playersMin: 2, playersMax: 4, suitabilities: ['teams'], notes: notesFromLines(['Settings: 3 Runden']) })
     const pong = poolGame('Pong', { youtubeId: 'dQw4w9WgXcQ' })
     const card = await mountCard({ settings: wheel, pool: [faceOf(kart), faceOf(pong)] })
 
@@ -122,7 +123,7 @@ describe('HowWePlayCard (#148)', () => {
   })
 
   it('shows the Host a pool game as a tile: no player count and no Suitabilities, as for a Member (#435)', async () => {
-    const kart = poolGame('Mario Kart', { playersMin: 2, playersMax: 4, suitabilities: ['teams'], notes: 'Settings: 3 Runden' })
+    const kart = poolGame('Mario Kart', { playersMin: 2, playersMax: 4, suitabilities: ['teams'], notes: notesFromLines(['Settings: 3 Runden']) })
     const card = await mountCard({ settings: wheel, isHost: true, pool: [kart] })
 
     expect(card.get('li').text()).toBe('Mario Kart')
@@ -336,7 +337,7 @@ describe('the pool tile carries no Price (#435)', () => {
   })
 
   it('shows a Member no Price line under a pool tile, and no count or Notizen with it', async () => {
-    const kart = poolGame('Mario Kart', { price: steam, playersMin: 2, playersMax: 4, suitabilities: ['teams'], notes: 'Settings: 3 Runden' })
+    const kart = poolGame('Mario Kart', { price: steam, playersMin: 2, playersMax: 4, suitabilities: ['teams'], notes: notesFromLines(['Settings: 3 Runden']) })
     const card = await mountCard({ settings: wheel, pool: [faceOf(kart), faceOf(poolGame('Pong'))] })
 
     const [first, second] = card.findAll('ul')[0]!.findAll('li')
@@ -390,7 +391,7 @@ describe('the game dialog from the pool tiles (#443)', () => {
   })
 
   const hostGames = {
-    'id-Mario Kart': { tags: [{ key: 'retro', label: 'Retro' }, { key: 'koop', label: 'Koop' }], notes: 'Settings: 3 Runden' },
+    'id-Mario Kart': { tags: [{ key: 'retro', label: 'Retro' }, { key: 'koop', label: 'Koop' }], notes: notesFromLines(['Settings: 3 Runden']) },
     'id-Pong': { tags: [{ key: 'klassiker', label: 'Klassiker' }], notes: null },
   }
   const dialog = () => document.querySelector('[role="dialog"]') as HTMLElement
@@ -442,7 +443,7 @@ describe('the game dialog from the pool tiles (#443)', () => {
     ['one game', ['Mario Kart']],
     ['two games', ['Mario Kart', 'Pong']],
   ])('opens a Member\'s pool tile as a dialog with the facts and without Tags and Notes, though hostGames were handed in: a pool of %s (#444)', async (_size, names) => {
-    const games = names.map(name => poolGame(name, { playersMin: 2, playersMax: 4, suitabilities: ['teams'], price: { cents: 1999, source: 'steam', checkedAt: '2026-11-03T10:00:00.000Z' }, notes: 'Settings: 3 Runden' }))
+    const games = names.map(name => poolGame(name, { playersMin: 2, playersMax: 4, suitabilities: ['teams'], price: { cents: 1999, source: 'steam', checkedAt: '2026-11-03T10:00:00.000Z' }, notes: notesFromLines(['Settings: 3 Runden']) }))
     const card = await mountCard({ settings: wheel, pool: games.map(faceOf), hostGames })
 
     expect(card.findAll('button').map(button => button.text())).toEqual(names)

@@ -7,6 +7,7 @@ import EditPage from '~/pages/bibliothek/[id]/bearbeiten.vue'
 import LibraryPage from '~/pages/bibliothek/index.vue'
 import NewGamePage from '~/pages/bibliothek/neu.vue'
 import { GAME_NAME_MAX, type GameTag, type GameView } from '~~/shared/game'
+import { notesFromLines } from '~~/shared/notes-doc'
 import { kitty, signInAs } from './auth'
 import { game, host, settle } from './helpers/library'
 
@@ -230,7 +231,7 @@ describe('the game page', () => {
   })
 
   it('shows the notes under „Notizen“ with their line breaks, as the Host wrote them (#223)', async () => {
-    detail = { ...withClip, notes: 'Settings: 3 Runden\nWarmup: Lobby\n\nWin: meiste Punkte' }
+    detail = { ...withClip, notes: notesFromLines(['Settings: 3 Runden', 'Warmup: Lobby', '', 'Win: meiste Punkte']) }
 
     const page = await mountSuspended(DetailPage, { route: `/bibliothek/${withClip.id}` })
     await vi.waitFor(() => expect(page.find('h1').exists()).toBe(true))
@@ -242,7 +243,7 @@ describe('the game page', () => {
   })
 
   it('shows notes as plain text: no formatting and no links', async () => {
-    detail = { ...withClip, notes: 'Hausregel: <b>nur Teams</b> und https://example.com' }
+    detail = { ...withClip, notes: notesFromLines(['Hausregel: <b>nur Teams</b> und https://example.com']) }
 
     const page = await mountSuspended(DetailPage, { route: `/bibliothek/${withClip.id}` })
     await vi.waitFor(() => expect(page.find('h1').exists()).toBe(true))

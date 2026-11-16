@@ -253,6 +253,13 @@
       "when": 1794838223825,
       "tag": "0035_game_copies_per_host",
       "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "7",
+      "when": 1794851684707,
+      "tag": "0037_game_notes_document",
+      "breakpoints": true
     }
   ]
 }

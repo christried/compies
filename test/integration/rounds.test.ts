@@ -5,6 +5,7 @@ import { SPIN_MAX_MS, SPIN_MIN_MS, clipLengthOf } from '../../shared/draw-timeli
 import { testClock } from '../../server/utils/clock'
 import { memoryRoomNotifier } from '../../server/utils/room-notifier'
 import type { ActivityPage } from '../../shared/activity'
+import { notesFromLines } from '../../shared/notes-doc'
 import { SPIN, windowMsFor } from '../draw-offsets'
 import { createTestApp, errorOf, sendVia, type TestRequest } from './app'
 import { createTestDb, resetDatabase } from './harness'
@@ -73,9 +74,9 @@ describe('Rounds', () => {
       slots: SLOTS,
       settings: { teamSize: 2, gameCount, ...(wheel ? { selectionMode: 'lucky_wheel', vetoAllowance } : {}), ...(poolPreview === undefined ? {} : { poolPreview }) },
       games: [
-        { key: 'halo', values: { name: 'Halo', notes: 'Hausregel Halo', imageKey: 'halo-key', youtubeId: 'aaaaaaaaaaa', playersMin: 2, playersMax: 4, priceCents: 1999, priceSource: 'steam', priceCheckedAt: new Date('2026-11-03T10:00:00.000Z') }, pool: true },
-        { key: 'kart', values: { name: 'Kart', notes: 'Hausregel Kart' }, pool: true },
-        { key: 'schach', values: { name: 'Schach', notes: 'Hausregel Schach', playersMin: 2, playersMax: 2 }, pool: false },
+        { key: 'halo', values: { name: 'Halo', notes: notesFromLines(['Hausregel Halo']), imageKey: 'halo-key', youtubeId: 'aaaaaaaaaaa', playersMin: 2, playersMax: 4, priceCents: 1999, priceSource: 'steam', priceCheckedAt: new Date('2026-11-03T10:00:00.000Z') }, pool: true },
+        { key: 'kart', values: { name: 'Kart', notes: notesFromLines(['Hausregel Kart']) }, pool: true },
+        { key: 'schach', values: { name: 'Schach', notes: notesFromLines(['Hausregel Schach']), playersMin: 2, playersMax: 2 }, pool: false },
       ],
       quiet: 'room-and-feed',
     })
@@ -161,7 +162,7 @@ describe('Rounds', () => {
       const asPlayer = await read(game, game.cookies.three)
 
       const price = { cents: 1999, source: 'steam', checkedAt: '2026-11-03T10:00:00.000Z' }
-      expect(asHost.rounds).toMatchObject([{ game: { id: game.halo.id, name: 'Halo', imageUrl: '/api/images/halo-key', youtubeId: 'aaaaaaaaaaa', playersMin: 2, playersMax: 4, price }, notes: 'Hausregel Halo' }])
+      expect(asHost.rounds).toMatchObject([{ game: { id: game.halo.id, name: 'Halo', imageUrl: '/api/images/halo-key', youtubeId: 'aaaaaaaaaaa', playersMin: 2, playersMax: 4, price }, notes: notesFromLines(['Hausregel Halo']) }])
       expect(asPlayer.rounds).toMatchObject([{ game: { id: game.halo.id, name: 'Halo', imageUrl: '/api/images/halo-key', playersMin: 2, playersMax: 4, price } }])
       expect(asPlayer.rounds[0]).not.toHaveProperty('notes')
       expect(asPlayer.rounds[0]!.game).not.toHaveProperty('notes')
@@ -233,7 +234,7 @@ describe('Rounds', () => {
     /** A game of another Host's library, optionally in the Event's Game pool through a row written straight in the database. */
     async function foreignGame(game: Game, { pooled }: { pooled: boolean }) {
       const other = await signInAs(rig, otherHost)
-      const [row] = await testDb.db.insert(games).values({ name: 'Fremdes Spiel', notes: 'Fremde Notizen', createdBy: other.id }).returning()
+      const [row] = await testDb.db.insert(games).values({ name: 'Fremdes Spiel', notes: notesFromLines(['Fremde Notizen']), createdBy: other.id }).returning()
       if (pooled) await testDb.db.insert(eventPoolGames).values({ eventId: game.eventId, gameId: row!.id })
       return row!
     }

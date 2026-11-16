@@ -10,6 +10,7 @@ import {
   gameNotesProblem, parseGameInput, parsePlayerCount, type GameTag,
   type GameView, type Suitability,
 } from '~~/shared/game'
+import { notesFromLines, notesPlainText } from '~~/shared/notes-doc'
 import { parseYouTubeId } from '~~/shared/youtube'
 
 // Create or edit a game (screen 24, `?s=edit`, #141, #142, #171): name, YouTube link, start and length, with a live
@@ -53,7 +54,9 @@ const suitabilities = ref<Suitability[]>([...(props.game?.suitabilities ?? [])])
 const tags = ref<GameTag[]>([...(props.game?.tags ?? [])])
 const tagInput = useTemplateRef('tagInput')
 const nameField = useTemplateRef('nameField')
-const notes = ref(props.game?.notes ?? '')
+// The notes stay a textarea until the editor (#454): its text is the document's plain text, and the document the form sends is one paragraph per line (#727).
+const notes = ref(notesPlainText(props.game?.notes ?? null))
+const notesDoc = computed(() => notesFromLines(notes.value.trim().split(/\r\n|\n/)))
 // The Price (#337, #361): the Price the field writes as the User types, and the one blocker the field reports.
 const price = ref<PriceDraft>(props.game?.price ? { cents: props.game.price.cents, source: props.game.price.source } : null)
 const priceError = ref<string | null>(null)
@@ -122,7 +125,7 @@ const fromError = computed(() => (fromInvalid.value ? t('error.playersInvalid') 
 const toError = computed(() => (toInvalid.value || rangeInverted.value ? t('error.playersInvalid') : undefined))
 
 // Game notes (#223): the shared rule says when they are too long; the message shows at once, like the name's.
-const notesError = computed(() => (gameNotesProblem(notes.value) === 'too_long' ? t('gameEdit.notesTooLong', { max: GAME_NOTES_MAX }) : undefined))
+const notesError = computed(() => (gameNotesProblem(notesDoc.value) === 'too_long' ? t('gameEdit.notesTooLong', { max: GAME_NOTES_MAX }) : undefined))
 
 /** Why the CTA is blocked, in the words of the field that is wrong, or null when no field is. */
 const blocker = computed<string | null>(() => {
@@ -152,8 +155,8 @@ const draft = computed(() => ({
   suitabilities: SUITABILITIES.filter(suitability => suitabilities.value.includes(suitability)),
   // The labels: the server normalises them again and takes over the spelling in use (#335).
   tags: tags.value.map(tag => tag.label),
-  // The raw text: the shared rules trim it, and refuse it when it is too long.
-  notes: notes.value,
+  // The lines as a document (#727); the shared rules rebuild it and refuse it when it is too long.
+  notes: notesDoc.value,
   // null when neither the amount nor the source is set; the field keeps the shape the shared rules read (#337, #361).
   price: price.value,
 }))

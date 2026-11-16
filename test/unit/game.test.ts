@@ -3,9 +3,10 @@ import {
   CLIP_END_MAX, CLIP_LENGTH_MAX, CLIP_LENGTH_MIN, CLIP_START_MAX, GAME_NAME_MAX, NO_FILTERS, SUITABILITIES, canEditGame, canSeeLibrary, clipTime, filterGames, gameNameProblem,
   isClipLength, normaliseTag, parseClipLength, parseClipTime, parseGameInput, parsePlayerCount, parseTags, sortTagsByLabel, tagProblem,
   formatPriceAmount, isPriceCheckOnly, parsePrice, parsePriceAmount, priceTakesAmount,
-  FREE_TO_PLAY_TAG, tagsWithFreeToPlay,
+  FREE_TO_PLAY_TAG, tagsWithFreeToPlay, GAME_NOTES_MAX, gameNotesProblem,
   type GameFilters, type GameView, type Suitability,
 } from '../../shared/game'
+import { notesFromLines } from '../../shared/notes-doc'
 
 describe('clipTime', () => {
   it.each([
@@ -285,6 +286,36 @@ describe('parseGameInput', () => {
       [null],
     ])('refuses %j with invalid_tags', (tags) => {
       expect(parseGameInput({ ...valid, tags })).toEqual({ ok: false, error: 'invalid_tags' })
+    })
+  })
+
+  describe('notes (#727)', () => {
+    const doc = { type: 'doc', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Notiz', marks: [{ type: 'bold' }] }] }] }
+
+    it('allows 2000 characters', () => {
+      expect(GAME_NOTES_MAX).toBe(2000)
+    })
+
+    it('gives a document back', () => {
+      expect(parseGameInput({ ...valid, notes: doc })).toMatchObject({ ok: true, game: { notes: doc } })
+    })
+
+    it.each([
+      ['a plain string', 'Notiz'],
+      ['a link that is not http', { type: 'doc', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'x', marks: [{ type: 'link', attrs: { href: 'javascript:alert(1)' } }] }] }] }],
+      ['2001 characters', { type: 'doc', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'a'.repeat(2001) }] }] }],
+    ])('refuses %s with invalid_game_notes', (_label, notes) => {
+      expect(parseGameInput({ ...valid, notes })).toEqual({ ok: false, error: 'invalid_game_notes' })
+    })
+
+    it.each([[undefined], [null], ['']])('takes %j as none', (notes) => {
+      expect(parseGameInput({ ...valid, notes })).toMatchObject({ ok: true, game: { notes: null } })
+    })
+
+    it('has a live check for the form: too long past 2000 characters, none before', () => {
+      expect(gameNotesProblem(notesFromLines(['a'.repeat(2000)]))).toBeNull()
+      expect(gameNotesProblem(notesFromLines(['a'.repeat(2001)]))).toBe('too_long')
+      expect(gameNotesProblem(null)).toBeNull()
     })
   })
 })

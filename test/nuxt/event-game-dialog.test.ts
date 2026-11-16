@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import EventPage from '~/pages/e/[slug]/index.vue'
 import type { PoolGame, RoundGame } from '~~/shared/game'
 import type { RoundView, SpinView, WheelView } from '~~/shared/stage'
+import { notesFromLines, type NotesDoc } from '~~/shared/notes-doc'
 import { defaultSettings } from '~~/shared/settings'
 import { kitty, signInAs } from './auth'
 import { serve, viewWithSessions } from './event-page'
@@ -16,18 +17,18 @@ const STOP = '2026-10-30T19:45:10.000Z'
 const iso = (ms: number) => new Date(ms).toISOString()
 
 const PRICE = { cents: 1999, source: 'steam' as const, checkedAt: '2026-11-03T10:00:00.000Z' }
-const base: PoolGame = { id: 'g-halo', name: 'Halo', imageUrl: null, youtubeId: null, clipStart: 0, clipLength: 30, playersMin: 2, playersMax: 4, suitabilities: ['teams'], notes: 'Hausregel: keine Raketen', price: null }
+const base: PoolGame = { id: 'g-halo', name: 'Halo', imageUrl: null, youtubeId: null, clipStart: 0, clipLength: 30, playersMin: 2, playersMax: 4, suitabilities: ['teams'], notes: notesFromLines(['Hausregel: keine Raketen']), price: null }
 const pong: PoolGame = { ...base, id: 'g-pong', name: 'Pong', notes: null }
-const kart: PoolGame = { ...base, id: 'g-kart', name: 'Kart', notes: 'Kart-Notizen', price: PRICE }
+const kart: PoolGame = { ...base, id: 'g-kart', name: 'Kart', notes: notesFromLines(['Kart-Notizen']), price: PRICE }
 // A game set from the library: it is in no pool.
-const schach: PoolGame = { ...base, id: 'g-schach', name: 'Schach', notes: 'Schach-Notizen' }
+const schach: PoolGame = { ...base, id: 'g-schach', name: 'Schach', notes: notesFromLines(['Schach-Notizen']) }
 const pool = [base, pong, kart]
 
 const roundGame = (game: PoolGame): RoundGame => {
   const { notes: _notes, ...shown } = game
   return shown
 }
-const round = (id: string, game: PoolGame, notes?: string): RoundView => ({ id, startedAt: STARTED, setAt: STARTED, game: roundGame(game), ...(notes ? { notes } : {}) })
+const round = (id: string, game: PoolGame, notes?: NotesDoc): RoundView => ({ id, startedAt: STARTED, setAt: STARTED, game: roundGame(game), ...(notes ? { notes } : {}) })
 
 // The Tags and Notes the Host's read carries for every game its tiles show: the pool, the open Rounds and the spin.
 const hostGames = {

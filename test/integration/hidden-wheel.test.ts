@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { eventPoolGames, events, users } from '../../server/db/schema'
 import type { Db } from '../../server/utils/db'
 import type { CreatedEvent, EventView } from '../../shared/event'
+import { notesFromLines } from '../../shared/notes-doc'
 import { expectNoGameFacts, hiddenWheelWorld, HIDDEN_WHEEL, playersTraces, stranger, webp, type Secret } from './hidden-wheel-world'
 import { signIn } from './sign-in'
 
@@ -63,7 +64,7 @@ describe('Hidden wheel secrecy (#148)', () => {
     const raw = await rawRead(hostCookie, slug)
 
     for (const trace of secrets.slice(0, 2).flatMap(traces)) expect(raw).toContain(trace)
-    expect((JSON.parse(raw) as EventView).pool).toMatchObject([{ name: 'Alpha Arena', notes: 'Hausregel fuer Alpha Arena' }, { name: 'Beta Bowling', notes: 'Hausregel fuer Beta Bowling' }])
+    expect((JSON.parse(raw) as EventView).pool).toMatchObject([{ name: 'Alpha Arena', notes: notesFromLines(['Hausregel fuer Alpha Arena']) }, { name: 'Beta Bowling', notes: notesFromLines(['Hausregel fuer Beta Bowling']) }])
   })
 
   it('gives the Host the Tags and Notes of the pool\'s games in hostGames, and none of a game the library holds alone (#443)', async () => {
@@ -73,8 +74,8 @@ describe('Hidden wheel secrecy (#148)', () => {
     const read = JSON.parse(await rawRead(hostCookie, slug)) as EventView
 
     expect(read.hostGames).toEqual({
-      [alpha.id]: { tags: [{ key: alpha.tag, label: alpha.tag }], notes: alpha.notes },
-      [beta.id]: { tags: [{ key: beta.tag, label: beta.tag }], notes: beta.notes },
+      [alpha.id]: { tags: [{ key: alpha.tag, label: alpha.tag }], notes: alpha.notesDoc },
+      [beta.id]: { tags: [{ key: beta.tag, label: beta.tag }], notes: beta.notesDoc },
     })
     expect(Object.keys(read.hostGames!)).not.toContain(gamma.id)
   })

@@ -129,7 +129,7 @@ export const STATES = [
       }),
       step('zahlen', async (tab) => {
         await setField(tab, GAME.playersFrom, 'x')
-        await setField(tab, GAME.notes, 'x'.repeat(1001))
+        await setField(tab, GAME.notes, 'x'.repeat(2001))
         await setField(tab, GAME.tags, 'x'.repeat(21))
         await setField(tab, GAME.priceAmount, 'abc')
         await sleep(300)

@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import GameForm from '~/components/GameForm.vue'
 import { FINE_POINTER_QUERY } from '~/composables/useMediaQuery'
 import type { GameTag, GameView } from '~~/shared/game'
+import { notesFromLines } from '~~/shared/notes-doc'
 import { teamVar } from '~/utils/team-style'
 import { colorTags } from '~~/shared/tag-colors'
 import { kitty, signInAs } from './auth'
@@ -337,7 +338,7 @@ describe('the game form', () => {
       await page.get('form').trigger('submit')
 
       await vi.waitFor(() => expect(posted).toHaveBeenCalledWith({
-        name: 'Mario Kart', youtubeUrl: '', clipStart: 60, clipLength: 60, playersMin: null, playersMax: null, suitabilities: [], tags: [], notes: '', price: null,
+        name: 'Mario Kart', youtubeUrl: '', clipStart: 60, clipLength: 60, playersMin: null, playersMax: null, suitabilities: [], tags: [], notes: null, price: null,
       }))
     })
 
@@ -412,7 +413,7 @@ describe('the game form', () => {
     await page.get('form').trigger('submit')
 
     await vi.waitFor(() => expect(page.emitted('saved')).toEqual([[saved]]))
-    expect(posted).toHaveBeenCalledWith({ name: 'Mario Kart', youtubeUrl: LINK, clipStart: 72, clipLength: 30, playersMin: null, playersMax: null, suitabilities: [], tags: [], notes: '', price: null })
+    expect(posted).toHaveBeenCalledWith({ name: 'Mario Kart', youtubeUrl: LINK, clipStart: 72, clipLength: 30, playersMin: null, playersMax: null, suitabilities: [], tags: [], notes: null, price: null })
   })
 
   it('saves a game without a link and without a clip', async () => {
@@ -422,7 +423,7 @@ describe('the game form', () => {
     await page.get('form').trigger('submit')
 
     await vi.waitFor(() => expect(posted).toHaveBeenCalled())
-    expect(posted).toHaveBeenCalledWith({ name: 'Brettspiel', youtubeUrl: '', clipStart: 0, clipLength: 30, playersMin: null, playersMax: null, suitabilities: [], tags: [], notes: '', price: null })
+    expect(posted).toHaveBeenCalledWith({ name: 'Brettspiel', youtubeUrl: '', clipStart: 0, clipLength: 30, playersMin: null, playersMax: null, suitabilities: [], tags: [], notes: null, price: null })
   })
 
   describe('player count and Suitabilities (#142, #171)', () => {
@@ -504,7 +505,7 @@ describe('the game form', () => {
   })
 
   describe('game notes (#223)', () => {
-    const NOTES_MAX = 1000
+    const NOTES_MAX = 2000
 
     function notesField(page: Page) {
       return field(page, 'Notizen')
@@ -514,71 +515,72 @@ describe('the game form', () => {
       const page = await mountSuspended(GameForm)
       await field(page, 'Name').setValue('Mario Kart')
       const notes = 'Settings: 3 Runden\nWarmup: Lobby\n\nWin: meiste Punkte'
+      const document = notesFromLines(['Settings: 3 Runden', 'Warmup: Lobby', '', 'Win: meiste Punkte'])
 
       expect(notesField(page).element.tagName).toBe('TEXTAREA')
       await notesField(page).setValue(notes)
       await page.get('form').trigger('submit')
 
-      await vi.waitFor(() => expect(posted).toHaveBeenCalledWith(expect.objectContaining({ notes })))
+      await vi.waitFor(() => expect(posted).toHaveBeenCalledWith(expect.objectContaining({ notes: document })))
     })
 
-    it('shows no counter while the notes are short, and the counter from 800 characters', async () => {
+    it('shows no counter while the notes are short, and the counter from 1600 characters', async () => {
       const page = await mountSuspended(GameForm)
 
-      await notesField(page).setValue('a'.repeat(799))
+      await notesField(page).setValue('a'.repeat(1599))
       expect(page.text()).not.toContain(`/${NOTES_MAX}`)
 
-      await notesField(page).setValue('a'.repeat(800))
-      expect(page.text()).toContain(`800/${NOTES_MAX}`)
+      await notesField(page).setValue('a'.repeat(1600))
+      expect(page.text()).toContain(`1600/${NOTES_MAX}`)
     })
 
-    it('accepts exactly 1000 characters without a message', async () => {
+    it('accepts exactly 2000 characters without a message', async () => {
       const page = await mountSuspended(GameForm)
       await field(page, 'Name').setValue('Mario Kart')
 
       await notesField(page).setValue('a'.repeat(NOTES_MAX))
 
-      expect(page.text()).not.toContain('Höchstens 1000 Zeichen.')
+      expect(page.text()).not.toContain('Höchstens 2000 Zeichen.')
       expect(cta(page).attributes('aria-disabled')).not.toBe('true')
     })
 
-    it('shows the red message for 1001 characters, blocks saving with the same reason and sends nothing', async () => {
+    it('shows the red message for 2001 characters, blocks saving with the same reason and sends nothing', async () => {
       const page = await mountSuspended(GameForm)
       await field(page, 'Name').setValue('Mario Kart')
 
       await notesField(page).setValue('a'.repeat(NOTES_MAX + 1))
 
-      const message = page.findAll('span').find(el => el.text() === 'Höchstens 1000 Zeichen.')
+      const message = page.findAll('span').find(el => el.text() === 'Höchstens 2000 Zeichen.')
       expect(message).toBeDefined()
       expect(message!.classes()).toContain('text-error-fg')
       expect(notesField(page).attributes('aria-invalid')).toBe('true')
       expect(cta(page).attributes('aria-disabled')).toBe('true')
-      expect(page.get(`[id="${cta(page).attributes('aria-describedby')}"]`).text()).toBe('Höchstens 1000 Zeichen.')
+      expect(page.get(`[id="${cta(page).attributes('aria-describedby')}"]`).text()).toBe('Höchstens 2000 Zeichen.')
 
       await page.get('form').trigger('submit')
 
       expect(posted).not.toHaveBeenCalled()
     })
 
-    it('counts an emoji once: 999 letters and one family emoji are no problem', async () => {
+    it('counts an emoji once: 1999 letters and one family emoji are no problem', async () => {
       const page = await mountSuspended(GameForm)
       await field(page, 'Name').setValue('Mario Kart')
 
-      await notesField(page).setValue(`${'a'.repeat(999)}\u{1F468}‍\u{1F469}‍\u{1F467}`)
+      await notesField(page).setValue(`${'a'.repeat(1999)}\u{1F468}‍\u{1F469}‍\u{1F467}`)
 
-      expect(page.text()).not.toContain('Höchstens 1000 Zeichen.')
+      expect(page.text()).not.toContain('Höchstens 2000 Zeichen.')
       expect(cta(page).attributes('aria-disabled')).not.toBe('true')
     })
 
     it('shows the notes of a game being edited and saves them with PATCH', async () => {
       patchedWith.mockClear()
-      const page = await mountSuspended(GameForm, { props: { game: { ...saved, notes: 'Settings: 3 Runden\nWin: Punkte' } } })
+      const page = await mountSuspended(GameForm, { props: { game: { ...saved, notes: notesFromLines(['Settings: 3 Runden', 'Win: Punkte']) } } })
 
       expect((notesField(page).element as HTMLTextAreaElement).value).toBe('Settings: 3 Runden\nWin: Punkte')
 
       await page.get('form').trigger('submit')
 
-      await vi.waitFor(() => expect(patchedWith).toHaveBeenCalledWith(expect.objectContaining({ notes: 'Settings: 3 Runden\nWin: Punkte' })))
+      await vi.waitFor(() => expect(patchedWith).toHaveBeenCalledWith(expect.objectContaining({ notes: notesFromLines(['Settings: 3 Runden', 'Win: Punkte']) })))
     })
 
     it('marks the notes field as one that grows with its text', async () => {
@@ -1287,7 +1289,7 @@ describe('the game form', () => {
 
     it('„Preis stimmt noch“ sends exactly the flag for a game with no link and every other field set', async () => {
       patchPrice = { cents: 1999, source: 'steam', checkedAt: '2026-11-09T08:00:00.000Z' }
-      const full: GameView = { ...stored, youtubeId: null, playersMin: 2, playersMax: 8, suitabilities: ['teams'], notes: 'Notiz' }
+      const full: GameView = { ...stored, youtubeId: null, playersMin: 2, playersMax: 8, suitabilities: ['teams'], notes: notesFromLines(['Notiz']) }
       const page = await mountSuspended(GameForm, { props: { game: full } })
 
       await confirmButton(page)!.trigger('click')
