@@ -82,3 +82,12 @@ export function reportOf(input) {
   for (const note of input.notes) lines.push(note)
   return lines
 }
+
+/**
+ * Whether the walk's base URL is the local dev server: http, the loopback name and a port, nothing after it. The walk makes a Host and
+ * Events and signs in through /api/dev/sign-in, so it never runs against staging or production (spec #620: Hell only, the local database).
+ * @param {string} base
+ */
+export function isLocalBase(base) {
+  return /^http:\/\/(localhost|127\.0\.0\.1):\d+\/?$/.test(base)
+}

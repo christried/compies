@@ -5,7 +5,7 @@
 import { sleep } from './chrome.mjs'
 
 // On a dev server started with `--wording` every translated text and attribute carries invisible key-tag characters (shared/key-tag.ts, #627), so a page
-// expression that compares a text with `===` strips them first. The backslashes are written doubled: the string holds `⁠` as text, which the page's regex reads.
+// expression that compares a text with `===` strips them first. The backslashes are written doubled: the string holds `\u2060` as text, which the page's regex reads.
 export const UNTAG = '/[\\u2060\\u2062\\u2063]/g'
 
 /** The page expression for the input a `<label>` with this text points at: the label's text after `UNTAG`, then `document.getElementById(label.htmlFor)` (Vue's ids hold characters a selector does not take). */

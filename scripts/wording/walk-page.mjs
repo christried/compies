@@ -1,6 +1,6 @@
 // The page scripts of the wording walk (#629): expressions the walk evaluates in the page, as strings, like read-keys.mjs's. They share the
 // page's `window.__wordingNodes` (set by `findCandidates`: entry `i` is a text node, or the element for an attribute) and add
-// `window.__wordingExtra` (the untagged texts `UNTAGGED` finds). A string literal here is a template literal: `\\u2060` is the page's `⁠`.
+// `window.__wordingExtra` (the untagged texts `UNTAGGED` finds). A string literal here is a template literal: `\\u2060` is the page's `\u2060`.
 
 /**
  * Per entry of `window.__wordingNodes`, the element's `mono`, `srOnly` and `component`, in the same order, plus the mono family read from the token.

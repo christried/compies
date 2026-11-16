@@ -3,7 +3,8 @@
 // shown and the check of a typed replacement are the tested modules of scripts/wording/, imported from /modules/.
 // Letters start a replacement, so every other action is a non-letter key or Alt+key (event.code). Every save is an awaited POST.
 import { checkReplacement } from '/modules/check-replacement.mjs'
-import { filterSteps, isAnswered, progressOf, sightingToShow } from '/modules/review-model.mjs'
+import { isReworded, isStepId, stepId, stepName } from '/modules/answers.mjs'
+import { filterSteps, isAnswered, progressOf, sightingToShow, textEntry } from '/modules/review-model.mjs'
 
 document.documentElement.dataset.page = 'compies-wording-review'
 
@@ -73,7 +74,7 @@ const ui = {
 }
 
 /** The skip key of a step: its top-level group; an unused group is only itself. @param {Step} step */
-const skipKey = step => (step.kind === 'unused' ? `unused:${step.group}` : step.group)
+const skipKey = step => (step.kind === 'unused' ? stepId('unused', step.group) : step.group)
 const current = () => state.list[state.index] ?? null
 
 function notice(/** @type {string} */ text, ok = false) {
@@ -151,7 +152,9 @@ async function save(body, moveOn = true) {
     if (result.status === 422) showIssues(result.json.refusals ?? [], result.json.warnings ?? [])
     notice(result.status === 404
       ? 'Die Aufnahme hat sich geändert, bitte neu laden'
-      : result.status === 422 ? 'Der Text wurde nicht gespeichert' : `Speichern fehlgeschlagen (${result.json.error ?? result.status})`)
+      : result.status === 409
+        ? 'Speichern ist aus, bis die Antwortdatei in Ordnung ist (siehe Hinweise), dann die Seite neu laden'
+        : result.status === 422 ? 'Der Text wurde nicht gespeichert' : `Speichern fehlgeschlagen (${result.json.error ?? result.status})`)
     return false
   }
   state.answers = result.json.answers
@@ -164,17 +167,10 @@ async function save(body, moveOn = true) {
   return true
 }
 
-function stepEntry(/** @type {Step} */ step) {
-  if (step.kind === 'message') return Object.hasOwn(state.answers.texts, step.id) ? state.answers.texts[step.id] : null
-  if (step.kind === 'fixed') {
-    const id = step.id.slice('fixed:'.length)
-    return Object.hasOwn(state.answers.fixed, id) ? state.answers.fixed[id] : null
-  }
-  return null
-}
+const stepEntry = (/** @type {Step} */ step) => textEntry(step, state.answers)
 
 function storedComment(/** @type {Step} */ step) {
-  if (step.kind === 'mono') return state.answers.mono[step.id.slice('mono:'.length)]?.comment ?? ''
+  if (step.kind === 'mono') return state.answers.mono[stepName(step.id, 'mono')]?.comment ?? ''
   return stepEntry(step)?.comment ?? ''
 }
 
@@ -452,7 +448,7 @@ function renderBar() {
   $('recording').textContent = `Aufnahme ${state.data.recording.commit}, ${state.data.recording.recordedAt}`
   $('baseline').textContent = state.data.baselineName ? `Früherer Durchgang: ${state.data.baselineName}` : 'Kein früherer Durchgang: alles ist neu'
   for (const [name, button] of Object.entries(ui.filterButtons)) button.setAttribute('aria-pressed', String(state.filters.has(name)))
-  const skipped = [...state.skipped].map(key => key.replace('unused:', 'ungenutzt '))
+  const skipped = [...state.skipped].map(key => (isStepId(key, 'unused') ? `ungenutzt ${stepName(key, 'unused')}` : key))
   const skippedBox = $('skipped')
   skippedBox.replaceChildren()
   if (skipped.length > 0) {
@@ -555,7 +551,7 @@ function renderAnswer(/** @type {Step} */ step) {
     const warnings = checkReplacement(step.text ?? '', entry.replacement).warnings
     answer.append(': ', h('strong', { text: entry.replacement }), ...warnings.map(({ reason }) => h('div', { class: 'warning', text: `Warnung: ${reason}` })))
   }
-  if (entry && step.text !== entry.text && step.text !== entry.replacement) {
+  if (entry && isReworded(entry, step.text)) {
     changed.textContent = `Der Text hat sich seit dem Durchgang geändert (war: „${entry.text}“)`
   }
   if (entry?.alternatives?.length > 0) {
@@ -625,7 +621,7 @@ function render() {
 
   $('kind').textContent = { message: 'Text', fixed: 'Fester Text', mono: 'Mono-Element', unused: 'Ungenutzte Texte' }[step.kind] + `, ${step.id}`
   const textBox = $('text')
-  textBox.replaceChildren(...(step.text === null ? [step.what ? `${step.what} (${step.id.slice('mono:'.length)})` : ''] : withPlaceholders(step.text)))
+  textBox.replaceChildren(...(step.text === null ? [step.what ? `${step.what} (${stepName(step.id, 'mono')})` : ''] : withPlaceholders(step.text)))
   $('marks').replaceChildren(...step.marks.map(mark => h('span', { class: 'badge', text: MARK_LABELS[mark] })))
   const isText = step.kind === 'message' || step.kind === 'fixed'
   $('rendered-label').parentElement.hidden = !isText
@@ -702,7 +698,11 @@ async function load() {
   state.baseline = state.data.baseline
   buildBar()
   renderRules()
-  const hints = [...state.data.answerProblems.map((/** @type {string} */ problem) => `Antwortdatei: ${problem}`), ...state.data.problems]
+  const hints = [
+    ...state.data.answerProblems.map((/** @type {string} */ problem) => `Antwortdatei: ${problem}`),
+    ...(state.data.answerProblems.length > 0 ? ['Speichern ist aus, bis die Antwortdatei in Ordnung ist: den Eintrag in der Datei reparieren, dann die Seite neu laden'] : []),
+    ...state.data.problems,
+  ]
   if (hints.length > 0) {
     $('problems').hidden = false
     $('problems').querySelector('summary').textContent = `Hinweise (${hints.length})`

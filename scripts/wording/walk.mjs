@@ -14,7 +14,7 @@ import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, wri
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { closeAll, colorScheme, launchAll, OUT, sleep } from '../browser/chrome.mjs'
-import { api, ok, open, results } from '../browser/kit.mjs'
+import { api, BASE, ok, open, results } from '../browser/kit.mjs'
 import { HEIGHTS, loadStates, makeData, settle } from '../browser/states.mjs'
 import de from '../../i18n/locales/de.json' with { type: 'json' }
 import { decodeTags } from '../../shared/key-tag.ts'
@@ -25,7 +25,7 @@ import { checkRecording, stepsOf } from './review-model.mjs'
 import { firstReferences } from './unused-scan.mjs'
 import { orderStates, sectionOf } from './walk-order.mjs'
 import { CLEAR_FRAME, DESCRIBE, pictureScript, untaggedScript } from './walk-page.mjs'
-import { monoUseSightings, reportOf } from './walk-report.mjs'
+import { isLocalBase, monoUseSightings, reportOf } from './walk-report.mjs'
 import { fixedTexts, locationOf, MONTH_PATTERN } from './where.mjs'
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '../..')
@@ -39,6 +39,13 @@ const only = typeof args.only === 'string' ? args.only.split(',') : null
 const sections = typeof args.section === 'string' ? args.section.split(',') : null
 const onlyWidth = args.width ? Number(args.width) : null
 const partial = Boolean(only || sections || onlyWidth)
+
+// The walk makes a Host and Events and signs in as a dev account, so it runs against the local dev server only (BASE_URL may name staging):
+// refused before anything is wiped or opened.
+if (!isLocalBase(BASE)) {
+  console.error(`Der Walk läuft nur gegen den lokalen Dev-Server (http://localhost:<port>), nicht gegen ${BASE}: BASE_URL entfernen, COMPIES_SLOT=2 node scripts/wording/walk.mjs`)
+  process.exit(1)
+}
 
 /** Which components get a mono entry whatever the walk sees, and what the review calls them (a component not here is labelled by its file name and reported). No User's data in a label. */
 const MONO_WHAT = {
@@ -66,7 +73,7 @@ const MONO_USES = [
 /**
  * The server-drawn pictures: a row per picture whose copy the server reads, so #630 can add rows. `keys(ctx)` names the messages the picture shows,
  * and the picture is the `element`, framed, in the stop of the states. The Share image's keys depend on the Event: they would come from running
- * `shareImageModel` over a copy whose every leaf is its own key, and Node cannot import `shared/share-image.ts` (extensionless imports), so no key is claimed (QUESTION O2).
+ * `shareImageModel` over a copy whose every leaf is its own key, and Node cannot import `shared/share-image.ts` (extensionless imports), so no key is claimed (decided on #629, O2).
  */
 const SERVER_SIGHTINGS = [
   { stop: 'teilen', states: /^fertig(-gleichstand)?-(host|spieler)$/, element: '[role=dialog] img[src^="blob:"]', keys: async () => /** @type {string[]} */ ([]) },
@@ -133,7 +140,7 @@ rmSync(PICTURES, { recursive: true, force: true })
 rmSync(join(FOLDER, 'recording.json'), { force: true })
 mkdirSync(PICTURES, { recursive: true })
 if (partial) log.note(`partial recording: ${[only && `--only=${only.join(',')}`, sections && `--section=${sections.join(',')}`, onlyWidth && `--width=${onlyWidth}`].filter(Boolean).join(' ')}`)
-log.note('QUESTION O2: shared/share-image.ts cannot be imported by Node (extensionless imports), so the Share image\'s keys are not claimed: fertig-*/teilen has no `server` sighting')
+log.note('decided on #629 (O2): shared/share-image.ts cannot be imported by Node (extensionless imports), so the Share image\'s keys are not claimed: fertig-*/teilen has no `server` sighting')
 
 /** What the walk has kept, and what it counted on the way. */
 const readings = []

@@ -8,7 +8,7 @@ import { describe, expect, it } from 'vitest'
 const OUTPUT = resolve(import.meta.dirname, '../../.output')
 const TEXT = /\.(mjs|js|json|html|map)$/
 // The opening of a tag: the frame, then at least the seven bits of one key character. A bare U+2060 can sit in a vendor chunk's own tables.
-const TAG_OPENING = /⁠[⁢⁣]{7}/
+const TAG_OPENING = /\u2060[\u2062\u2063]{7}/
 
 const carriers = (matches: (text: string) => boolean) => readdirSync(OUTPUT, { recursive: true, encoding: 'utf8' })
   .map(file => file.replaceAll('\\', '/'))

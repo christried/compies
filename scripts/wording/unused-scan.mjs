@@ -1,5 +1,6 @@
 // The scan for unused texts (#626, spec #620): which messages of the locale file does no code refer to. Pure: strings and
 // objects in, objects and strings out; scripts/wording/unused.mjs reads the files and writes the result.
+import { lineAt } from './where.mjs'
 
 /**
  * @typedef {{ key: string, text: string }} Message
@@ -104,11 +105,10 @@ export function firstReferences(sources) {
   /** @type {Map<string, { file: string, line: number }>} */
   const first = new Map()
   for (const { file, text } of sources) {
-    const lineAt = (/** @type {number} */ index) => text.slice(0, index).split('\n').length
     /** @param {RegExpMatchArray} match @param {number} drop */
     const note = (match, drop = 0) => {
       const name = (match[1] ?? '').slice(drop)
-      if (!first.has(name)) first.set(name, { file, line: lineAt(match.index ?? 0) })
+      if (!first.has(name)) first.set(name, { file, line: lineAt(text, match.index ?? 0) })
     }
     for (const m of text.matchAll(LITERAL)) note(m)
     for (const m of text.matchAll(BUILT)) note(m)

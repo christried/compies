@@ -21,9 +21,9 @@ export interface Tag {
   partial: boolean
 }
 
-const FRAME = '⁠'
-const BITS = ['⁢', '⁣']
-const TAG_CHARACTERS = /[⁠⁢⁣]/g
+const FRAME = '\u2060'
+const BITS = ['\u2062', '\u2063']
+const TAG_CHARACTERS = /[\u2060\u2062\u2063]/g
 const ASCII_KEY = /^[A-Za-z0-9._-]{1,128}$/
 
 export function tagKey(key: string, text: string): string {

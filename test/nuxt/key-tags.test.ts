@@ -8,7 +8,7 @@ import { decodeTags, stripTags } from '~~/shared/key-tag'
 // The key tags on a real vue-i18n composer (app/dev/key-tags.ts, #627): the proof that one handler on the global composer reaches the
 // texts a page shows, the `<i18n-t>` ones included. Each case reads the DOM the way scripts/wording/read-keys.mjs does: every text node
 // and attribute that holds a tag gives its key and its visible text.
-const TAG_CHARACTER = /[⁠⁢⁣]/u
+const TAG_CHARACTER = /[\u2060\u2062\u2063]/u
 
 const Probe = defineComponent({
   setup() {

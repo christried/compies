@@ -10,8 +10,8 @@ const MANIFEST_FILE = 'nuxt.config.ts'
 const MONTHS_FILE = 'app/utils/changelog.ts'
 const GROUPS_FILE = 'shared/changelog.ts'
 
-/** @param {string} text @param {number} index */
-const lineAt = (text, index) => text.slice(0, index).split('\n').length
+/** The 1-based line of the character at `index`. @param {string} text @param {number} index */
+export const lineAt = (text, index) => text.slice(0, index).split('\n').length
 
 /** @param {string} text */
 const unescape = text => text.replace(/\\(.)/g, '$1')

@@ -3,12 +3,13 @@
 // and a POST writes a repo file, so a request with a foreign Host (DNS rebinding) or a body that is not JSON is refused.
 // Files are read per request (no cache): the walk or an agent may change them while the page is open. The page reads the model, it
 // does not reshape it: the steps are computed here with `stepsOf`, and the page imports the same modules from /modules/.
+import { execFileSync } from 'node:child_process'
 import { createServer } from 'node:http'
 import { existsSync, mkdirSync, readdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs'
 import { basename, dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { OUT } from '../browser/chrome.mjs'
-import { answersFileName, answerMono, answerText, answerUnused, emptyAnswers, newestAnswersName, parseAnswers, serializeAnswers } from './answers.mjs'
+import { ANSWERS, answersFileName, answerMono, answerText, answerUnused, emptyAnswers, newestAnswersName, parseAnswers, serializeAnswers, stepName, UNUSED_ANSWERS } from './answers.mjs'
 import { checkReplacement } from './check-replacement.mjs'
 import { flattenMessages } from './messages.mjs'
 import { RETIRED } from './retired-words.mjs'
@@ -22,8 +23,6 @@ const HERE = dirname(fileURLToPath(import.meta.url))
 const ROOT = join(HERE, '../..')
 const PAGE_DIR = join(HERE, 'review-page')
 const MAX_BODY = 64 * 1024
-const ANSWERS = ['passt', 'ersetzt', 'alternativen']
-const UNUSED_ANSWERS = ['loeschen', 'behalten']
 // The modules the page imports (page.mjs) and, through them, each other; nothing else of scripts/wording/ is served.
 const MODULES = ['answers', 'review-model', 'check-replacement', 'messages', 'retired-words']
 const TYPES = {
@@ -153,16 +152,36 @@ export function chooseAnswersFile(names, steps, answersOf, today = new Date()) {
 }
 
 /**
+ * The files of `dir` that git tracks, by name; null when git cannot say (not a repo, no git, no folder). The baseline of a sweep is
+ * a committed one: an answers file the operator has not committed yet is no earlier sweep (#620).
+ * @param {string} dir
+ * @returns {string[] | null}
+ */
+function gitTrackedNames(dir) {
+  try {
+    return execFileSync('git', ['ls-files', '--', '.'], { cwd: dir, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] })
+      .split('\n').map(line => line.trim()).filter(line => line !== '' && !line.includes('/'))
+  }
+  catch {
+    return null
+  }
+}
+
+/**
  * Not listening yet: a test listens on port 0, the command on its port. Rejects with a sentence when there is no recording, when the
  * recording fails its check, or when the answers file cannot be read (never saved over, #628). `server.info` says which file it fills.
- * @param {{ recordingDir?: string, answersPath?: string, answersDir?: string, localePath?: string, rulesPath?: string }} [options]
- *   `answersDir` is where an answers file is looked for when `answersPath` is not given (default docs/reviews)
+ * @param {{ recordingDir?: string, answersPath?: string, answersDir?: string, newSweep?: boolean, trackedAnswers?: (dir: string) => string[] | null, localePath?: string, rulesPath?: string }} [options]
+ *   `answersDir` is where an answers file is looked for when `answersPath` is not given (default docs/reviews). `newSweep` starts (or
+ *   resumes) today's file whatever the older ones hold: the sweep before a cut (release.md step 3). `trackedAnswers` says which files
+ *   of a folder git tracks (null: it cannot say, so every file counts); the baseline is the newest of those, a seam for tests.
  * @returns {Promise<import('node:http').Server & { info: ReviewInfo }>}
  */
 export async function createReviewServer({
   recordingDir = join(OUT, 'wording'),
   answersPath,
   answersDir = join(ROOT, 'docs/reviews'),
+  newSweep = false,
+  trackedAnswers = gitTrackedNames,
   localePath = join(ROOT, 'i18n/locales/de.json'),
   rulesPath = join(ROOT, 'docs/design_handoff_compies/06-copy.md'),
 } = {}) {
@@ -170,8 +189,9 @@ export async function createReviewServer({
 
   let answersFile = answersPath
   if (!answersFile) {
-    const names = namesIn(answersDir)
-    answersFile = join(answersDir, chooseAnswersFile(names, start.steps, name => readAnswers(join(answersDir, name)).answers))
+    answersFile = join(answersDir, newSweep
+      ? answersFileName(new Date())
+      : chooseAnswersFile(namesIn(answersDir), start.steps, name => readAnswers(join(answersDir, name)).answers))
   }
   const target = answersFile
   const first = readAnswers(target)
@@ -179,9 +199,12 @@ export async function createReviewServer({
 
   /** @returns {{ name: string | null, answers: AnswersFile | null }} */
   const baselineOf = () => {
-    const name = newestAnswersName(namesIn(dirname(target)), { except: basename(target) })
+    const folder = dirname(target)
+    const tracked = trackedAnswers(folder)
+    const present = namesIn(folder)
+    const name = newestAnswersName(tracked ? present.filter(candidate => tracked.includes(candidate)) : present, { except: basename(target) })
     if (!name) return { name: null, answers: null }
-    const answers = readAnswers(join(dirname(target), name)).answers
+    const answers = readAnswers(join(folder, name)).answers
     return { name: answers ? name : null, answers }
   }
 
@@ -247,6 +270,8 @@ export async function createReviewServer({
     if (comment !== undefined && typeof comment !== 'string') return sendJson(response, 400, { error: 'comment ist kein Text' })
     const disk = readAnswers(target)
     if (!disk.answers) return sendJson(response, 500, { error: `Die Antwortdatei ist nicht lesbar: ${disk.problems.join('; ')}` })
+    // An entry the reader cannot parse is left out of `disk.answers`, so a save would drop it from the file: refuse until it is fixed.
+    if (disk.problems.length > 0) return sendJson(response, 409, { error: 'Die Antwortdatei hat Einträge, die nicht lesbar sind; Speichern ist aus, bis sie in Ordnung ist', problems: disk.problems })
     let next = disk.answers
     /** @type {{ code: string, reason: string }[]} */
     let warnings = []
@@ -259,7 +284,7 @@ export async function createReviewServer({
     else if (step.kind === 'mono') {
       if (answer !== undefined) return sendJson(response, 400, { error: 'Ein Mono-Schritt nimmt nur einen Kommentar' })
       if (typeof comment !== 'string') return sendJson(response, 400, { error: 'comment fehlt' })
-      next = answerMono(next, step.id.slice('mono:'.length), comment)
+      next = answerMono(next, stepName(step.id, 'mono'), comment)
     }
     else {
       const text = step.text ?? ''
@@ -283,7 +308,7 @@ export async function createReviewServer({
       }
       if (typeof comment === 'string') patch.comment = comment
       // A comment alone does not re-stamp an entry: its answer is still about the text it was given for.
-      const entry = step.kind === 'fixed' ? next.fixed[step.id.slice('fixed:'.length)] : next.texts[step.id]
+      const entry = step.kind === 'fixed' ? next.fixed[stepName(step.id, 'fixed')] : next.texts[step.id]
       if (!entry && patch.text === undefined) patch.text = text
       next = answerText(next, step.id, patch)
     }

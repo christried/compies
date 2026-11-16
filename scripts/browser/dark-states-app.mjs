@@ -20,7 +20,7 @@ function note(text) {
 
 // On a dev server started with `--wording` every translated text and attribute carries invisible key-tag characters (shared/key-tag.ts, #627),
 // so a page expression that compares a text with `===` strips them first, and a selector matches an attribute with `*=` (the text is contiguous).
-// Without tags both are what they were (#629). The backslashes are written doubled: the string holds `⁠` as text, which the page's regex reads.
+// Without tags both are what they were (#629). The backslashes are written doubled: the string holds `\u2060` as text, which the page's regex reads.
 const UNTAG = '/[\\u2060\\u2062\\u2063]/g'
 
 /** Polls a page expression until it is true, at most `ms`. */
@@ -33,7 +33,7 @@ export async function until(tab, expression, what, ms = 10_000) {
 }
 
 /** A state that opens `address(ctx)` as `account` and waits for `waitFor`. */
-function page(name, group, account, address, { waitFor = 'h1', after, ...rest } = {}) {
+export function page(name, group, account, address, { waitFor = 'h1', after, ...rest } = {}) {
   return {
     name,
     group,

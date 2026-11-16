@@ -7,7 +7,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { answerMono, answersFileName, answerText, answerUnused, emptyAnswers, serializeAnswers } from '../../scripts/wording/answers.mjs'
 import { flattenMessages } from '../../scripts/wording/messages.mjs'
 import { RETIRED } from '../../scripts/wording/retired-words.mjs'
-import { progressOf, stepsOf } from '../../scripts/wording/review-model.mjs'
+import { isNewSince, progressOf, stepsOf } from '../../scripts/wording/review-model.mjs'
 import { chooseAnswersFile, createReviewServer } from '../../scripts/wording/review-server.mjs'
 
 // What the operator's review page asks of its server (#631, spec #620 § The review page): the state it shows, the answer it saves,
@@ -280,6 +280,28 @@ describe('POST /api/answer', () => {
     expect(JSON.parse(onDisk()).texts['common.save'].text).toBe('Speichern')
   })
 
+  it('refuses with 409 while the file on disk has an entry it cannot read, names it and writes nothing (#631)', async () => {
+    const broken = JSON.parse(expectedFile(file => answerText(file, 'common.save', { text: 'Speichern', answer: 'passt' })))
+    broken.texts['home.hello'] = { text: 'Hallo {name}', answer: 'vielleicht', replacement: null, comment: 'meine Notiz', alternatives: [] }
+    writeFileSync(answersPath, `${JSON.stringify(broken, null, 2)}\n`)
+    const before = onDisk()
+    const { post, state } = await start()
+    const response = await post({ id: 'home.hello', answer: 'passt' })
+    expect(response.status).toBe(409)
+    expect((await response.json()).problems).toEqual([expect.stringContaining('texts.home.hello')])
+    // The entry the reader cannot parse is still in the file, with its comment.
+    expect(onDisk()).toBe(before)
+    expect((await state()).answerProblems).toEqual([expect.stringContaining('texts.home.hello')])
+  })
+
+  it('saves again once the entry problem is fixed by hand', async () => {
+    writeFileSync(answersPath, `${JSON.stringify({ ...JSON.parse(expectedFile(file => file)), texts: { 'home.hello': { text: 5 } } })}\n`)
+    const { post } = await start()
+    expect((await post({ id: 'common.save', answer: 'passt' })).status).toBe(409)
+    writeFileSync(answersPath, expectedFile(file => file))
+    expect((await post({ id: 'common.save', answer: 'passt' })).status).toBe(200)
+  })
+
   it('keeps a key no step has', async () => {
     writeFileSync(answersPath, expectedFile(file => answerText(file, 'gone.key', { text: 'Weg', answer: 'passt' })))
     const { post } = await start()
@@ -338,6 +360,54 @@ describe('the answers file', () => {
     await post({ id: 'common.save', answer: 'passt' })
     got = await state()
     expect(got.baselineName).toBe('wording_2026-01-01.json')
+  })
+
+  describe('a new sweep (--new, #620)', () => {
+    const older = 'wording_2026-01-01.json'
+    // An older sweep that still has open steps: without --new it would be resumed for good.
+    const writeOlder = () => writeFileSync(join(root, 'reviews', older), expectedFile(file => answerText(file, 'common.save', { text: 'Speichern', answer: 'passt' })))
+    const startNew = async (trackedAnswers: (dir: string) => string[] | null) => {
+      const server: Server = await createReviewServer({ recordingDir, newSweep: true, answersDir: join(root, 'reviews'), localePath, rulesPath, trackedAnswers } as Parameters<typeof createReviewServer>[0])
+      servers.push(server)
+      await new Promise<void>(listening => server.listen(0, '127.0.0.1', listening))
+      const base = `http://127.0.0.1:${(server.address() as { port: number }).port}`
+      return { info: (server as Server & { info: { answersName: string, baselineName: string | null } }).info, state: async () => (await fetch(`${base}/api/state`)).json() }
+    }
+
+    it('fills today\'s file whatever an older open file holds, with the older file as the baseline', async () => {
+      writeOlder()
+      const { info, state } = await startNew(() => [older])
+      expect(info.answersName).toBe(answersFileName(new Date()))
+      expect(info.baselineName).toBe(older)
+      const got = await state()
+      const step = (got.steps as { id: string, kind: string, text: string }[]).find(candidate => candidate.id === 'common.save')!
+      // The key the older sweep holds unchanged is not new; one it does not hold is.
+      expect(isNewSince(step as Parameters<typeof isNewSince>[0], got.baseline)).toBe(false)
+      expect(isNewSince(got.steps.find((candidate: { id: string }) => candidate.id === 'home.hello'), got.baseline)).toBe(true)
+    })
+
+    it('resumes today\'s file when it already exists', async () => {
+      writeOlder()
+      const today = join(root, 'reviews', answersFileName(new Date()))
+      writeFileSync(today, expectedFile(file => answerText(file, 'home.hello', { text: 'Hallo {name}', answer: 'passt' })))
+      const { info, state } = await startNew(() => [older, answersFileName(new Date())])
+      expect(info.answersName).toBe(answersFileName(new Date()))
+      expect((await state()).answers.texts['home.hello']).toBeDefined()
+    })
+
+    it('takes only the files git tracks as the baseline, so an uncommitted file is no earlier sweep', async () => {
+      writeOlder()
+      writeFileSync(join(root, 'reviews', 'wording_2026-03-01.json'), serializeAnswers(emptyAnswers('2026-03-01')))
+      const { info } = await startNew(() => [older])
+      expect(info.baselineName).toBe(older)
+    })
+
+    it('takes every file of the folder when git cannot say', async () => {
+      writeOlder()
+      writeFileSync(join(root, 'reviews', 'wording_2026-03-01.json'), serializeAnswers(emptyAnswers('2026-03-01')))
+      const { info } = await startNew(() => null)
+      expect(info.baselineName).toBe('wording_2026-03-01.json')
+    })
   })
 
   it('has no baseline when there is no other file', async () => {

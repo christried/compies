@@ -8,7 +8,7 @@ import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { sleep } from './chrome.mjs'
 import { api, BASE, clickText, inDays, open, openSignedOut, stepperNext } from './kit.mjs'
-import { closeSheet, next, noAutoLoad, step, until } from './dark-states-app.mjs'
+import { closeSheet, next, noAutoLoad, page, step, until } from './dark-states-app.mjs'
 import { clipboard, keepToasts, stop, toastShown } from './dark-states-event.mjs'
 import { fieldByLabel, setField, stepBy, toLimit, typeDateTime, UNTAG } from './walk-kit.mjs'
 
@@ -16,20 +16,6 @@ const COPY = JSON.parse(readFileSync(join(dirname(fileURLToPath(import.meta.url)
 
 const invalid = `!!document.querySelector('[aria-invalid="true"]')`
 const exactly = text => `const same = el => el.textContent.replace(${UNTAG}, '').trim() === ${JSON.stringify(text)}`
-
-/** A state that opens `address(ctx)` as `account` and waits for `waitFor`, then runs `ready`. */
-function page(name, group, account, address, { waitFor = 'h1', ready, ...rest } = {}) {
-  return {
-    name,
-    group,
-    account,
-    async open(ctx) {
-      await open(ctx.tab, address(ctx), ctx.width, ctx.height, waitFor, { appearance: ctx.appearance })
-      await ready?.(ctx)
-    },
-    ...rest,
-  }
-}
 
 /** The page expression for the radio whose text is `text` (a card of a RadioCardGroup, a segment of a SegmentedControl). */
 const radioClicked = (tab, text) => tab.evaluate(`(() => { ${exactly(text)}; const el = [...document.querySelectorAll('[role=radio]')].find(e => e.getBoundingClientRect().width > 0 && [...e.querySelectorAll('*'), e].some(same)); if (!el) return false; el.scrollIntoView({ block: 'center', behavior: 'instant' }); el.click(); return true })()`)
@@ -101,7 +87,7 @@ export const STATES = [
   },
   // F2: Profil with the name field emptied; nothing is sent.
   page('profil-fehler', 'hub', 'host', () => '/profil', {
-    async ready(ctx) {
+    async after(ctx) {
       await setField(ctx.tab, displayName, '')
       await until(ctx.tab, invalid, 'the name error')
     },
@@ -109,7 +95,7 @@ export const STATES = [
   // F3: the one state that writes a dev User's data: the name gets ` W`, is saved, and `after` (or the file's `cleanup`) puts it back.
   {
     ...page('profil-gespeichert', 'hub', 'host', () => '/profil', {
-      async ready(ctx) {
+      async after(ctx) {
         const { tab } = ctx
         renamed = await tab.evaluate(`${displayName}.value`)
         await keepToasts(tab)
@@ -159,7 +145,7 @@ export const STATES = [
   page('bibliothek-bearbeiten-gespeichert', 'library', 'host', ctx => `/bibliothek/${ctx.data.game.id}/bearbeiten`, {
     waitFor: 'form',
     widths: [1440],
-    async ready(ctx) {
+    async after(ctx) {
       await keepToasts(ctx.tab)
       if (!await clickText(ctx.tab, 'button[type=submit]', COPY.gameEdit.saveChanges)) throw new Error('no save button on the edit form')
       await toastShown(ctx.tab, COPY.library.saveDone)
@@ -250,7 +236,7 @@ export const STATES = [
   page('einstellungen-gespeichert', 'stepper', 'host', ctx => `/e/${ctx.data.slug}/einstellungen`, {
     waitFor: 'form h1',
     widths: [1440],
-    async ready(ctx) {
+    async after(ctx) {
       const { tab } = ctx
       for (let i = 0; i < 4; i++) await next(tab)
       await until(tab, `!!document.querySelector('ul[aria-label*=${JSON.stringify(COPY.library.title)}] li')`, 'the library in the pool step', 30_000)
