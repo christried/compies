@@ -36,8 +36,18 @@ export default defineEventHandler(async (event): Promise<GameView> => {
     await store.delete(key).catch(failure => console.error('Image cleanup failed', key, failure))
     throw error
   }
-  // A failed delete only leaves an orphan behind; the Host's save went through.
-  if (game.imageKey) await store.delete(game.imageKey).catch(failure => console.error('Image cleanup failed', game.imageKey, failure))
+  // The replaced object goes only when no other game row names its key: copies share one (#723, ADR 0018). The lookup runs after the update, so
+  // this row no longer counts. A failed lookup or delete only leaves an orphan behind; the Host's save went through.
+  if (game.imageKey) {
+    const oldKey = game.imageKey
+    try {
+      const [stillUsed] = await db.select({ id: games.id }).from(games).where(eq(games.imageKey, oldKey)).limit(1)
+      if (!stillUsed) await store.delete(oldKey)
+    }
+    catch (failure) {
+      console.error('Image cleanup failed', oldKey, failure)
+    }
+  }
   const [view] = await readGameViews(db, [{ game: updated!, creatorName }], viewer)
   return view!
 })
