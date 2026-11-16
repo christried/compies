@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Geändert
+
+- **Deine eigene Bibliothek:** Jeder Host hat jetzt eine eigene Bibliothek. Du siehst und bearbeitest nur die Spiele, die du selbst angelegt hast, und niemand sonst sieht deine, auch die Plattform-Admin nicht. Spiele anderer Hosts, die in deinen Events vorkamen, hast du als eigene Kopie bekommen. Tags und Tag-Vorschläge kommen nur noch aus deinen eigenen Spielen. ([#455](https://github.com/christried/compies/issues/455))
+
 ## [0.14.0] - 2026-11-16 – Politur
 
 Viele kleine Verbesserungen an dem, was schon da ist: Läuft ein Clip, wird der Rest der Eventseite dunkel. Deine Darstellung änderst du jetzt von jeder Seite aus, und Karten, Knöpfe und Hinweise sind aufgeräumt.
