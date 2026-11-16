@@ -39,9 +39,14 @@ export function useAppearance(options?: { toast?: boolean }) {
   const { toast } = useToast()
   const user = useAuthUser()
   const state = useState<SaveState>('appearance-save', () => ({ saved: 'light', sending: false, latest: 0, failedFor: 0 }))
-  const id = ++controls
-  if (options?.toast) onFailure.set(id, () => toast({ tone: 'error', text: t('settings.appearanceSaveFailed') }))
-  onScopeDispose(() => onFailure.delete(id))
+  // Only the browser registers: a choice and its failure happen there, and on the server a component's scope is never disposed,
+  // so every request would leave its closure (and through it its app) in the module-level Map for good. The server render
+  // writes no module-level state; its id (-1) matches no `failedFor`.
+  const id = import.meta.client ? ++controls : -1
+  if (import.meta.client) {
+    if (options?.toast) onFailure.set(id, () => toast({ tone: 'error', text: t('settings.appearanceSaveFailed') }))
+    onScopeDispose(() => onFailure.delete(id))
+  }
 
   /** The Appearance the page shows, by the one render rule (light for a User state without a valid one). */
   const appearance = computed(() => renderedAppearance({ user: user.value }))
