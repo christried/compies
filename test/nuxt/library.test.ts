@@ -17,7 +17,7 @@ const withoutClip = game({ id: '00000000-0000-4000-8000-0000000000a3', name: 'Br
 
 // One endpoint per path for the file (a second registration is not replaced); each test sets what it returns.
 // The list is every game; the browser filters it (#173), so the tests look at the rendered cards.
-let list: { games: GameView[], tagsInUse?: GameTag[] } = { games: [] }
+let list: { games: GameView[], tagsInUse?: GameTag[], eventCounts?: Record<string, number> } = { games: [] }
 let listMode: 'ok' | 'hang' = 'ok'
 let detail: GameView | null = withClip
 const patched = vi.fn()
@@ -26,7 +26,7 @@ registerEndpoint('/api/games', {
   method: 'GET',
   handler: () => {
     if (listMode === 'hang') return new Promise(() => {})
-    return { games: list.games, tagsInUse: list.tagsInUse ?? [] }
+    return { games: list.games, tagsInUse: list.tagsInUse ?? [], eventCounts: list.eventCounts ?? {} }
   },
 })
 registerEndpoint(`/api/games/${withClip.id}`, {
@@ -97,6 +97,43 @@ describe('the library page', () => {
     expect(cards[0]!.find('[data-cover="placeholder"]').exists()).toBe(true)
     // The card can be clicked, so it lifts on hover (#608); the card's root, not the buttons inside it.
     expect(cards.map(card => card.element.firstElementChild!.classList.contains('lift'))).toEqual([true, true])
+  })
+
+  describe('the „in N Events“ marker (#733)', () => {
+    async function openLibrary() {
+      const page = await mountSuspended(LibraryPage, { route: '/bibliothek' })
+      await settle(page)
+      return page
+    }
+
+    it('shows no marker on a card whose game has no count, and none when the list carries no counts', async () => {
+      list = { games: [withClip] }
+
+      const page = await openLibrary()
+
+      expect(page.get('main li').text()).toBe('Counter-Strike 2')
+    })
+
+    it('shows „in 1 Event“ and „in 2 Events“ on the card of a game with that count', async () => {
+      for (const [count, text] of [[1, 'in 1 Event'], [2, 'in 2 Events']] as const) {
+        list = { games: [withClip], eventCounts: { [withClip.id]: count } }
+        await clearNuxtData('games')
+        useState('game-library').value = null
+
+        const page = await openLibrary()
+
+        expect(page.get('main li').text()).toBe(`Counter-Strike 2${text}`)
+        page.unmount()
+      }
+    })
+
+    it('marks only the card of the game that has a count', async () => {
+      list = { games: [withoutClip, withClip], eventCounts: { [withClip.id]: 2 } }
+
+      const page = await openLibrary()
+
+      expect(page.findAll('main li').map(card => card.text())).toEqual(['Brettspiel', 'Counter-Strike 2in 2 Events'])
+    })
   })
 
   it('shows the uploaded image on the card, over the YouTube thumbnail (#143)', async () => {

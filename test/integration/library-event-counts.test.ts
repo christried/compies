@@ -177,7 +177,7 @@ describe('the live Event count of the library (#733)', () => {
       await newEvent([kart])
       const memberCookie = (await signIn(counted, member)).cookie
 
-      for (const headers of [{ cookie: memberCookie }, {}]) {
+      for (const headers of [{ cookie: memberCookie }, {}] as Record<string, string>[]) {
         const response = await request('/api/games', { headers })
         expect(response.status).toBe(404)
         expect(await response.text()).not.toContain('eventCounts')

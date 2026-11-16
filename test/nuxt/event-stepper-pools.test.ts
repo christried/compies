@@ -42,10 +42,11 @@ const fresh = game(99, 'Frisch Angelegt')
 
 // One endpoint per path and method for the file; each test sets the library and what the game form gets back.
 let library: GameView[] = []
+let libraryEventCounts: Record<string, number> = {}
 const postedGame = vi.fn()
 registerEndpoint('/api/games', {
   method: 'GET',
-  handler: () => ({ games: library, tagsInUse: [{ key: 'retro', label: 'Retro' }] }),
+  handler: () => ({ games: library, tagsInUse: [{ key: 'retro', label: 'Retro' }], eventCounts: libraryEventCounts }),
 })
 // The game form's suggestions come from the Tags in use (#365), the same Tag the list answers.
 registerEndpoint('/api/games/tags', { method: 'GET', handler: () => [{ key: 'retro', label: 'Retro' }] })
@@ -623,6 +624,16 @@ describe('the game browser in the pool steps (#173)', () => {
     expect(all.compareDocumentPosition(tag.element) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
     expect(page.find('select[aria-label="Spielerzahl"]').exists()).toBe(false)
     expect(page.find('select[aria-label="Passt zu"]').exists()).toBe(false)
+  })
+
+  it('shows no „in 2 Events“ on a card: the marker is the library page\'s (#733)', async () => {
+    libraryEventCounts = { [kart.id]: 2 }
+    const page = await mountCreate()
+    await toPoolStep(page)
+
+    expect(picker(page).text()).toContain('Mario Kart')
+    expect(page.text()).not.toContain('in 2 Events')
+    libraryEventCounts = {}
   })
 
   it('picks a Tag and shows only the cards of the games carrying it, a ＋ still adds a hidden game, and „Alle“ resets the Tag (#336)', async () => {

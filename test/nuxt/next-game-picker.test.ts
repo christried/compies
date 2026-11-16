@@ -142,9 +142,10 @@ function libraryGame(n: number, name: string, overrides: Partial<GameView> = {})
 
 let libraryGames: GameView[] = []
 let libraryTags: GameTag[] = []
+let libraryEventCounts: Record<string, number> = {}
 registerEndpoint('/api/games', {
   method: 'GET',
-  handler: () => ({ games: libraryGames, tagsInUse: libraryTags }),
+  handler: () => ({ games: libraryGames, tagsInUse: libraryTags, eventCounts: libraryEventCounts }),
 })
 
 describe('the Tag filter of the library list (#336)', () => {
@@ -203,6 +204,16 @@ describe('the Tag filter of the library list (#336)', () => {
     const check = dialog()!.querySelector<HTMLButtonElement>('button[aria-label="Retro Kart auswählen"]')!
     const card = check.closest('ul[aria-label="Bibliothek"] > li')!.firstElementChild as HTMLElement
     expect(card.lastElementChild!.contains(check)).toBe(true)
+  })
+
+  it('shows no „in 2 Events“ on a library card: the marker is the library page\'s (#733)', async () => {
+    libraryEventCounts = { [retroKart.id]: 2 }
+    await mount()
+    await vi.waitFor(() => expect(libraryCards()).toHaveLength(3))
+
+    expect(dialog()!.textContent).not.toContain('Events')
+    expect(dialog()!.textContent).not.toContain('in 2')
+    libraryEventCounts = {}
   })
 
   it('starts each opening of the sheet without a Tag', async () => {

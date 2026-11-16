@@ -932,6 +932,7 @@
     "tags": "Tags",
     "moreTags": "+{n}",
     "moreTagsLabel": "{n} weiterer Tag | {n} weitere Tags",
+    "inEvents": "in {n} Event | in {n} Events",
     "loadMore": "Mehr laden",
     "shownOf": "{shown} von {total} Spielen"
   },
