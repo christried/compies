@@ -1,6 +1,6 @@
 # Skills
 
-Every folder here except `thermo-nuclear-code-quality-review`, `implement-spec-max`, `capture-idea` and `christried-tag-review` (COMPIES's own: an Idea issue in two minutes, `docs/agents/issue-tracker.md` § Ideas) is a copy of [mattpocock/skills](https://github.com/mattpocock/skills) **1.3.1** (commit `49dd158`): the skills its `.claude-plugin/plugin.json` ships, without the Codex-only `agents/openai.yaml` files.
+Four folders here are COMPIES's own: `thermo-nuclear-code-quality-review` (an extremely strict maintainability review), `implement-spec-max` (`implement-spec` with every subagent on a model by how hard its task is, below), `capture-idea` (an Idea issue in two minutes, `docs/agents/issue-tracker.md` § Ideas) and `christried-tag-review` (the recurring Tag review of the production Game library, #424). Every other folder is a copy of [mattpocock/skills](https://github.com/mattpocock/skills) **1.3.1** (commit `49dd158`): the skills its `.claude-plugin/plugin.json` ships, without the Codex-only `agents/openai.yaml` files.
 
 They're committed because cloud sessions load a repo's `.claude/skills/` but no plugins. `.claude/settings.json` turns the `mattpocock-skills` plugin off in this repo, so local sessions load these copies too, under the same names. `code-review` here replaces Claude Code's built-in `/code-review`; the built-in stays reachable as `/review`. The operator's own skill carries the prefix `christried-` so that it is told from the vendored skills; the other own skills keep their names.
 
