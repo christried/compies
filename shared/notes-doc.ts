@@ -24,7 +24,7 @@ export type NotesBlock = NotesParagraph | NotesHeading | NotesList
 export interface NotesDoc { type: 'doc', content: NotesBlock[] }
 
 /** A link's address when it is an http or https one (the URL parser lowercases the scheme), as the parser writes it; null otherwise. */
-function linkHref(raw: unknown): string | null {
+export function notesLinkHref(raw: unknown): string | null {
   if (typeof raw !== 'string') return null
   try {
     const url = new URL(raw)
@@ -48,7 +48,7 @@ function parseMarks(raw: unknown): NotesMark[] | null {
       marks.push({ type: mark.type })
     }
     else if (mark.type === 'link') {
-      const href = linkHref(asRecord(mark.attrs).href)
+      const href = notesLinkHref(asRecord(mark.attrs).href)
       if (href === null) return null
       if (seen.has('link')) continue
       seen.add('link')
@@ -155,8 +155,13 @@ export function parseNotes(raw: unknown, max: number): NotesDoc | null | undefin
   }
   const doc: NotesDoc = { type: 'doc', content }
   if (JSON.stringify(doc).length > NOTES_JSON_MAX) return undefined
-  if (!content.flatMap(textblocks).some(block => /\S/.test(textOf(block)))) return null
+  if (!notesHasText(doc)) return null
   return notesLength(doc) > max ? undefined : doc
+}
+
+/** Whether the document shows a visible character (any textblock whose text has a non-space one); null has none. The one rule for „are there notes“: the parser, the renderer's callers (no button, no section for blank notes) (#728). */
+export function notesHasText(doc: NotesDoc | null): boolean {
+  return doc !== null && doc.content.flatMap(textblocks).some(block => /\S/.test(textOf(block)))
 }
 
 /** The notes as plain lines: a block per line, an empty paragraph an empty line, a list item `- ` or `1. ` before its text (the numbering restarts per list), the later paragraphs of an item without a prefix. Marks and links show their text only. */
