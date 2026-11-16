@@ -7,6 +7,7 @@ import { GAME_NAME_MAX, GAME_NOTES_MAX, TAG_MAX, TAGS_PER_GAME_MAX, type HostGam
 import { notesFromLines } from '~~/shared/notes-doc'
 import { colorTags } from '~~/shared/tag-colors'
 import { kitty, signInAs } from './auth'
+import { BLANK_NOTES, FORMATTED_HREF, FORMATTED_NOTES, readFormatted } from './helpers/formatted-notes'
 
 // The game dialog (#443, #444): the library entry's parts in the sheet shell, read-only. The Host gets everything the library knows but a Clip;
 // a Member's audience gets picture, name, players, Suitabilities and Price, never Tags, Notes or the link, whatever the caller hands it. The sheet is teleported, so the tests read the document.
@@ -25,7 +26,17 @@ const FULL: PoolGameFace = {
 const longTag = (n: number) => `${String.fromCharCode(65 + n)}`.repeat(TAG_MAX)
 const EIGHT_TAGS = Array.from({ length: TAGS_PER_GAME_MAX }, (_, n) => ({ key: longTag(n).toLowerCase(), label: longTag(n) }))
 const NOTES = 'Erste Zeile\nZweite Zeile\n\nDritte Zeile nach Leerzeile'
-const FACTS: HostGameFacts = { tags: EIGHT_TAGS, notes: notesFromLines(NOTES.split('\n')) }
+// The first line is bold, so the Member tests prove that formatted notes stay out of a Member's read (#728). No list in it: pills() counts the dialog's lists.
+const FACTS: HostGameFacts = {
+  tags: EIGHT_TAGS,
+  notes: {
+    type: 'doc',
+    content: [
+      { type: 'paragraph', content: [{ type: 'text', text: 'Erste Zeile', marks: [{ type: 'bold' }] }] },
+      ...notesFromLines(NOTES.split('\n').slice(1))!.content,
+    ],
+  },
+}
 
 let wrapper: VueWrapper | undefined
 
@@ -76,15 +87,37 @@ describe('the game dialog for the Host (#443)', () => {
     expect(dialog().querySelector('ul[aria-label="Tags"]')).not.toBeNull()
   })
 
-  it('keeps the Notes\' line breaks and renders them as text, not as markup or links', async () => {
+  it('keeps the Notes\' lines, one paragraph each, and renders them as text, not as markup or links', async () => {
     await open({ facts: { tags: [], notes: notesFromLines(['Zeile eins', 'Zeile <b>zwei</b>', 'https://example.com/x']) } })
 
-    const notes = [...dialog().querySelectorAll('p')].find(p => p.textContent?.includes('Zeile eins'))!
-    expect(notes.textContent).toBe('Zeile eins\nZeile <b>zwei</b>\nhttps://example.com/x')
-    expect(notes.className).toContain('whitespace-pre-wrap')
+    const section = [...dialog().querySelectorAll('section')].find(s => s.textContent?.includes('Zeile eins'))!
+    expect([...section.querySelectorAll('p')].map(p => p.textContent)).toEqual(['Zeile eins', 'Zeile <b>zwei</b>', 'https://example.com/x'])
     expect(dialog().querySelector('b')).toBeNull()
     expect(dialog().querySelector('a[href^="https://example.com"]')).toBeNull()
-    expect(notes.closest('section')?.querySelector('h3')?.textContent).toBe('Notizen')
+    expect(section.querySelector('h3')?.textContent).toBe('Notizen')
+  })
+
+  it('shows formatted Notes: the heading is an h4 under the h3 „Notizen“, the list, the bold text and the link open in a new tab (#728)', async () => {
+    await open({ facts: { tags: [], notes: FORMATTED_NOTES } })
+
+    const section = [...dialog().querySelectorAll('section')].find(s => s.textContent?.includes('Vorab'))!
+    expect(section.querySelector('h3')?.textContent).toBe('Notizen')
+    expect(readFormatted(section)).toEqual({
+      heading: 'h4',
+      headingText: 'Regeln',
+      items: ['Erstens', 'Zweitens'],
+      bold: 'Wichtig',
+      link: { text: 'nachlesen', href: FORMATTED_HREF, target: '_blank', rel: 'noopener noreferrer' },
+    })
+  })
+
+  it('shows no „Notizen“ section for notes without a visible character (#728)', async () => {
+    for (const blank of BLANK_NOTES) {
+      await open({ facts: { tags: [], notes: blank } })
+
+      expect(text()).not.toContain('Notizen')
+      wrapper!.unmount()
+    }
   })
 
   it('plays no Clip: no iframe and no Clip fact, for a game with a Clip', async () => {
@@ -147,7 +180,7 @@ describe('the game dialog for the Host (#443)', () => {
 
     expect(dialog().querySelector('h2')?.textContent).toBe(name)
     expect(dialog().querySelector('h2')?.className).toContain('[overflow-wrap:anywhere]')
-    expect(text()).toContain(notes)
+    expect([...dialog().querySelectorAll('p')].map(p => p.textContent)).toContain(notes)
     expect(notes).toHaveLength(GAME_NOTES_MAX)
   })
 
@@ -204,6 +237,7 @@ describe('the game dialog for a Member (#443, #444)', () => {
     for (const tag of EIGHT_TAGS) expect(text()).not.toContain(tag.label)
     expect(text()).not.toContain('Notizen')
     expect(text()).not.toContain('Erste Zeile')
+    expect(dialog().querySelector('strong')).toBeNull()
     expect(link()).toBeNull()
     expect(dialog().querySelector('footer')).toBeNull()
   })
@@ -355,6 +389,7 @@ describe('the game tile with its dialog (#443, #444)', () => {
     expect(dialog().querySelector('ul[aria-label="Tags"]')).toBeNull()
     expect(text()).not.toContain('Notizen')
     expect(text()).not.toContain('Erste Zeile')
+    expect(dialog().querySelector('strong')).toBeNull()
     expect(dialog().querySelector('a[href^="/bibliothek/"]')).toBeNull()
     expect(dialog().querySelector('footer')).toBeNull()
   })

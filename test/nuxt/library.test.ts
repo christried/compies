@@ -9,6 +9,7 @@ import NewGamePage from '~/pages/bibliothek/neu.vue'
 import { GAME_NAME_MAX, type GameTag, type GameView } from '~~/shared/game'
 import { notesFromLines } from '~~/shared/notes-doc'
 import { kitty, signInAs } from './auth'
+import { BLANK_NOTES, FORMATTED_HREF, FORMATTED_NOTES, readFormatted } from './helpers/formatted-notes'
 import { game, host, settle } from './helpers/library'
 
 const withClip = game({ id: '00000000-0000-4000-8000-0000000000a2', name: 'Counter-Strike 2', youtubeId: 'dQw4w9WgXcQ', clipStart: 72, clipLength: 30 })
@@ -238,8 +239,34 @@ describe('the game page', () => {
 
     const heading = page.findAll('h2').find(el => el.text() === 'Notizen')
     expect(heading).toBeDefined()
-    const notesEl = page.findAll('p').find(el => el.text().includes('Settings'))
-    expect(notesEl!.element.textContent).toBe('Settings: 3 Runden\nWarmup: Lobby\n\nWin: meiste Punkte')
+    const section = page.findAll('section').find(el => el.text().includes('Settings'))!
+    expect(section.findAll('p').map(el => el.element.textContent)).toEqual(['Settings: 3 Runden', 'Warmup: Lobby', '', 'Win: meiste Punkte'])
+  })
+
+  it('shows formatted notes: an h3 under the h2 „Notizen“, the list, the bold text and a link that opens a new tab (#728)', async () => {
+    detail = { ...withClip, notes: FORMATTED_NOTES }
+
+    const page = await mountSuspended(DetailPage, { route: `/bibliothek/${withClip.id}` })
+    await vi.waitFor(() => expect(page.find('h1').exists()).toBe(true))
+
+    const section = page.findAll('section').find(el => el.text().includes('Vorab'))!
+    expect(section.get('h2').text()).toBe('Notizen')
+    expect(readFormatted(section.element)).toEqual({
+      heading: 'h3',
+      headingText: 'Regeln',
+      items: ['Erstens', 'Zweitens'],
+      bold: 'Wichtig',
+      link: { text: 'nachlesen', href: FORMATTED_HREF, target: '_blank', rel: 'noopener noreferrer' },
+    })
+  })
+
+  it.each(BLANK_NOTES)('shows no „Notizen“ section for notes without a visible character (#728)', async (blank) => {
+    detail = { ...withClip, notes: blank }
+
+    const page = await mountSuspended(DetailPage, { route: `/bibliothek/${withClip.id}` })
+    await vi.waitFor(() => expect(page.find('h1').exists()).toBe(true))
+
+    expect(page.findAll('h2').some(el => el.text() === 'Notizen')).toBe(false)
   })
 
   it('shows notes as plain text: no formatting and no links', async () => {
