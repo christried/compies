@@ -1,8 +1,8 @@
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import { describe, expect, it } from 'vitest'
 import GameNotesDisclosure from '~/components/GameNotesDisclosure.vue'
-import { notesFromLines } from '~~/shared/notes-doc'
-import { BLANK_NOTES } from './helpers/formatted-notes'
+import { notesFromLines, type NotesDoc } from '~~/shared/notes-doc'
+import { BLANK_NOTES, FORMATTED_HREF, FORMATTED_NOTES, readFormatted } from './helpers/formatted-notes'
 
 // The Game notes under a game in „So wird gespielt“ (#224): a disclosure that starts collapsed, announces whether it is
 // open, and shows the notes formatted, a line per paragraph (#728).
@@ -81,6 +81,56 @@ describe('GameNotesDisclosure (#224)', () => {
 
     expect(disclosure.get('li').text()).toBe('Eine Stimme')
     expect(disclosure.find('p').exists()).toBe(false)
+  })
+
+  describe('with Event notes (#732)', () => {
+    const EVENT_LABEL = 'Notizen für dieses Event'
+    const opened = async (props: { notes: NotesDoc | null, eventNotes: NotesDoc | null }) => {
+      const disclosure = await mountSuspended(GameNotesDisclosure, { props: { ...props, startOpen: true } })
+      return disclosure.get(`[id="${disclosure.get('button').attributes('aria-controls')}"]`)
+    }
+
+    it('shows the label and the Event notes above the Game notes, in the opened panel', async () => {
+      const panel = await opened({ notes: notesFromLines(['Game-Zeile']), eventNotes: notesFromLines(['Heute nur Bo1']) })
+
+      const label = panel.findAll('h3').find(h => h.text() === EVENT_LABEL)!.element
+      const eventText = panel.findAll('p').find(p => p.text() === 'Heute nur Bo1')!.element
+      const gameText = panel.findAll('p').find(p => p.text() === 'Game-Zeile')!.element
+      expect(label.compareDocumentPosition(eventText) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+      expect(eventText.compareDocumentPosition(gameText) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+      expect(panel.text().split(EVENT_LABEL)).toHaveLength(2)
+    })
+
+    it('shows its button for a game with only Event notes, and no Game notes block', async () => {
+      const disclosure = await mountSuspended(GameNotesDisclosure, { props: { notes: null, eventNotes: notesFromLines(['Heute nur Bo1']), startOpen: true } })
+
+      expect(disclosure.get('button').text()).toBe('Notizen')
+      expect(lines(disclosure)).toEqual(['Heute nur Bo1'])
+    })
+
+    it('shows the Event notes only when the Game notes are blank', async () => {
+      const panel = await opened({ notes: BLANK_NOTES[0]!, eventNotes: notesFromLines(['Heute nur Bo1']) })
+
+      expect(lines(panel)).toEqual(['Heute nur Bo1'])
+    })
+
+    it('renders no button for blank Event notes beside no Game notes: that is not the slot use', async () => {
+      const disclosure = await mountSuspended(GameNotesDisclosure, { props: { notes: null, eventNotes: BLANK_NOTES[0]! } })
+
+      expect(disclosure.find('button').exists()).toBe(false)
+    })
+
+    it('reads the formatted Event notes back', async () => {
+      const panel = await opened({ notes: null, eventNotes: FORMATTED_NOTES })
+
+      expect(readFormatted(panel.element)).toEqual({
+        heading: 'h4',
+        headingText: 'Regeln',
+        items: ['Erstens', 'Zweitens'],
+        bold: 'Wichtig',
+        link: { text: 'nachlesen', href: FORMATTED_HREF, target: '_blank', rel: 'noopener noreferrer' },
+      })
+    })
   })
 
   it('shows markup in the notes as text, never as an element or a link', async () => {

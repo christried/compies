@@ -14,13 +14,16 @@ const props = withDefaults(defineProps<{
   name: string
   /** The game's notes as a document (#727); null = none, and then there is no button (a document is never an empty one, parseNotes makes those null). */
   notes: NotesDoc | null
+  /** The Host's Event notes of the game (#732, GLOSSARY: Event notes); null = none. A game with only these still has the button. */
+  eventNotes?: NotesDoc | null
   /** The button's visual diameter: the picker's rows are 36, its cards 40. */
   size?: 36 | 40
-}>(), { size: 40 })
+}>(), { size: 40, eventNotes: null })
 
 const { t } = useI18n()
 // The document to show: null for none or for blank notes, so the template narrows on it.
 const doc = computed(() => notesHasText(props.notes) ? props.notes : null)
+const eventDoc = computed(() => notesHasText(props.eventNotes) ? props.eventNotes : null)
 const wide = useMediaQuery(MD_QUERY)
 const narrow = computed(() => wide.value === false)
 const titleId = useId()
@@ -90,7 +93,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <template v-if="doc">
+  <template v-if="doc || eventDoc">
     <IconButton
       ref="trigger"
       :icon="NotebookText"
@@ -106,10 +109,17 @@ onBeforeUnmount(() => {
       :title="name"
       @close="close"
     >
-      <RichNotes
-        :doc="doc"
-        class="text-[14px] leading-[1.45] text-ink"
-      />
+      <div class="flex flex-col gap-3">
+        <EventNotes
+          v-if="eventDoc"
+          :notes="eventDoc"
+        />
+        <RichNotes
+          v-if="doc"
+          :doc="doc"
+          class="text-[14px] leading-[1.45] text-ink"
+        />
+      </div>
     </AppSheet>
     <Teleport
       v-else
@@ -140,7 +150,12 @@ onBeforeUnmount(() => {
             @click="close"
           />
         </header>
+        <EventNotes
+          v-if="eventDoc"
+          :notes="eventDoc"
+        />
         <RichNotes
+          v-if="doc"
           :doc="doc"
           class="text-[14px] leading-[1.45] text-ink"
         />
