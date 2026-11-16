@@ -42,7 +42,9 @@ GitHub shares one number space across issues and PRs, so a bare `#42` may be eit
 
 ## Ideas
 
-An idea that isn't grilled yet is an **Idea issue**, never a line in `docs/roadmap.md` (the user, 2026-11-10). The roadmap holds only what a grilling has given a Release, and since 2026-11-16 the user picks from the open Idea issues what to grill next (`CLAUDE.md` § Roadmap). `/christried-capture-idea` files one in about two minutes: a few quick questions, a draft, the user's OK.
+An idea that isn't grilled yet is an **Idea issue** (the user, 2026-11-10). `/christried-capture-idea` files one in about two minutes: a few quick questions, a draft, the user's OK.
+
+Every plan lives in GitHub Issues (the user, 2026-11-16): the user picks from the open Idea issues what to grill next, and `docs/roadmap.md` is gone; older specs, issues and reviews that cite it read [its last version](https://github.com/christried/compies/blob/34281e4621a9b46d0d5313c2a3058ac9e8eab9e6/docs/roadmap.md). What a grilling picks becomes one Release: one spec, usable on its own, grilled, specced and ticketed in one session once the code it builds on exists, never several Releases up front, because a spec names real modules and seams.
 
 - **Title**: `<the idea in a few words>`, without an `Idea:` prefix: the `needs-triage` label already says it is a placeholder, not a ticket (the user, 2026-11-16; older titles lost the prefix the same day).
 - **Labels**: `enhancement` + `needs-triage`, where `needs-triage` means "not grilled yet". An Idea issue waits for a grilling, not for `/triage`: it is the user's own.

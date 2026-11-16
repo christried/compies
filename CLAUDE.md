@@ -4,7 +4,7 @@
 
 ### Issue tracker
 
-Issues and specs live in GitHub Issues on christried/compies (via `gh`). An idea that isn't grilled yet is an Idea issue (`enhancement`, `needs-triage`, no title prefix), captured with `/christried-capture-idea`, never a roadmap line. See `docs/agents/issue-tracker.md`.
+Issues and specs live in GitHub Issues on christried/compies (via `gh`). An idea that isn't grilled yet is an Idea issue (`enhancement`, `needs-triage`, no title prefix), captured with `/christried-capture-idea`. See `docs/agents/issue-tracker.md`.
 
 ### Triage labels
 
@@ -14,9 +14,9 @@ Default vocabulary: needs-triage, needs-info, ready-for-agent, ready-for-human, 
 
 Single-context: `GLOSSARY.md` + `docs/adr/` at the repo root. See `docs/agents/domain.md`.
 
-### Roadmap
+### Planning
 
-Planning moves away from the roadmap (the user, 2026-11-16): every idea lives in GitHub Issues, and the user picks from the open Idea issues what to grill next. `docs/roadmap.md` holds the Releases up to 0.15 and the rules their grillings gave them; it takes no new ideas. It replaced the 1.0 ticket order in the design hand-off.
+Every idea lives in GitHub Issues, and the user picks from the open Idea issues what to grill next; there is no roadmap file any more (the user, 2026-11-16). See `docs/agents/issue-tracker.md` § Ideas.
 
 ### Release workflow
 

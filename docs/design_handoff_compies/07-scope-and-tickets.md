@@ -1,6 +1,6 @@
 # 07 Scope & tickets
 
-> **Superseded for everything after the MVP:** `docs/roadmap.md` holds the Release order, what each Release ships and which of the tickets below stay out. The ticket numbers (T…) and labels here are still referenced from there.
+> **Superseded for everything after the MVP:** each Release's spec issue holds what it ships, and the tickets below that were not built are Idea issues (§ Post-1.0 issues, and #663 to #697). The Release order lived in `docs/roadmap.md` until 2026-11-16 ([its last version](https://github.com/christried/compies/blob/34281e4621a9b46d0d5313c2a3058ac9e8eab9e6/docs/roadmap.md)). The ticket numbers (T…) and labels here are still referenced from the specs.
 
 ## Labels
 
