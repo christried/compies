@@ -306,6 +306,7 @@ describe('filterGames (#173)', () => {
       canEdit: true,
       notes: null,
       tags: [],
+      archived: false,
       price: null,
       ...overrides,
     }
@@ -375,6 +376,35 @@ describe('filterGames (#173)', () => {
     expect(by({ players: 3, suitability: 'ffa', q: 'counter' })).toEqual([])
   })
 
+  describe('Archived games (#467)', () => {
+    const found = (games: GameView[], filters: Partial<GameFilters>) => filterGames(games, { ...NO_FILTERS, ...filters }, 'me').map(item => item.name)
+    const old = game('Alt Kart', { archived: true, playersMin: 2, playersMax: 4, tags: [{ key: 'retro', label: 'Retro' }] })
+    const old2 = game('Alt Halo', { archived: true })
+    const fresh = game('Neu Kart', { playersMin: 2, playersMax: 4, tags: [{ key: 'retro', label: 'Retro' }] })
+
+    it('NO_FILTERS is the normal list', () => {
+      expect(NO_FILTERS.archived).toBe(false)
+    })
+
+    it('leaves Archived games out of the normal list and keeps only them when the filter is on, at 0, 1 and 2', () => {
+      expect(found([], { archived: false })).toEqual([])
+      expect(found([], { archived: true })).toEqual([])
+      expect(found([fresh, old], { archived: false })).toEqual(['Neu Kart'])
+      expect(found([fresh, old], { archived: true })).toEqual(['Alt Kart'])
+      expect(found([old, old2], { archived: false })).toEqual([])
+      expect(found([old, old2, fresh], { archived: true })).toEqual(['Alt Kart', 'Alt Halo'])
+    })
+
+    it('combines with the search, the player count and the Tag by AND', () => {
+      const all = [fresh, old, old2]
+      expect(found(all, { archived: true, q: 'kart' })).toEqual(['Alt Kart'])
+      expect(found(all, { archived: true, players: 3 })).toEqual(['Alt Kart'])
+      expect(found(all, { archived: true, tag: 'retro' })).toEqual(['Alt Kart'])
+      expect(found(all, { archived: false, tag: 'retro', q: 'kart' })).toEqual(['Neu Kart'])
+      expect(found(all, { archived: true, q: 'neu' })).toEqual([])
+    })
+  })
+
   describe('the Tag filter and the search over Tags (#336)', () => {
     const tag = (label: string) => ({ key: label.toLocaleLowerCase('de'), label })
     const found = (games: GameView[], filters: Partial<GameFilters>) => filterGames(games, { ...NO_FILTERS, ...filters }, 'me').map(item => item.name)
@@ -386,7 +416,7 @@ describe('filterGames (#173)', () => {
 
     it('NO_FILTERS carries no Tag', () => {
       expect(NO_FILTERS.tag).toBeNull()
-      expect(NO_FILTERS).toEqual({ q: '', players: null, suitability: null, tag: null, mine: false })
+      expect(NO_FILTERS).toEqual({ q: '', players: null, suitability: null, tag: null, mine: false, archived: false })
     })
 
     it('keeps the games carrying the Tag key, in the given order, and any one of several Tags does', () => {

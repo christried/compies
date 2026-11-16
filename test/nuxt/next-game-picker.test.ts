@@ -134,6 +134,7 @@ function libraryGame(n: number, name: string, overrides: Partial<GameView> = {})
     canEdit: true,
     notes: null,
     tags: [],
+    archived: false,
     price: null,
     ...overrides,
   }

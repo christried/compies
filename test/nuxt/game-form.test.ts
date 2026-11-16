@@ -22,6 +22,7 @@ const saved: GameView = {
   canEdit: true,
   notes: null,
   tags: [],
+  archived: false,
   price: null,
 }
 
