@@ -180,12 +180,15 @@ describe('game images (#143)', () => {
     vi.restoreAllMocks()
   })
 
-  it('lets the Platform admin replace the image of a game someone else made', async () => {
+  it('answers the Platform admin as for a missing route for a game someone else made, and stores nothing (#455)', async () => {
     const { id } = await newGame(await cookieOf(host))
 
     const response = await upload(id, await cookieOf(admin), webp())
 
-    expect(response.status).toBe(200)
+    expect(response.status).toBe(404)
+    expect(response.statusText).toBe('Not Found')
+    expect(store.keys()).toEqual([])
+    expect((await testDb.db.select().from(games))[0]!.imageKey).toBeNull()
   })
 
   describe('what it refuses', () => {
@@ -235,10 +238,10 @@ describe('game images (#143)', () => {
       await refusal(response, 413, 'image_too_large')
     })
 
-    it('refuses another Host, who may see the game but not edit it', async () => {
+    it('answers another Host as for a missing route: it is not their game (#455)', async () => {
       const { id } = await newGame(await cookieOf(host))
 
-      await refusal(await upload(id, await cookieOf(otherHost), webp()), 403, 'not_game_editor')
+      await refusal(await upload(id, await cookieOf(otherHost), webp()), 404, 'Not Found')
     })
 
     it('answers as for a missing route to a Member, to someone signed out and for an unknown game', async () => {

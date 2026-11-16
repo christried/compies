@@ -6,11 +6,11 @@ import { apiError } from '../../utils/errors'
 import { loadTags, saveTags } from '../../utils/game-tags'
 import { loadGame, priceColumns, priceOf, readGameViews, requireLibraryViewer } from '../../utils/library'
 import { useClock } from '../../utils/clock'
-import { canEditGame, isPriceCheckOnly, parseGameInput, tagsWithFreeToPlay, type GameView } from '../../../shared/game'
+import { isPriceCheckOnly, parseGameInput, tagsWithFreeToPlay, type GameView } from '../../../shared/game'
 
 // Edits a game of the library (#142). The body is the whole game, as the form sends it, except that `{ priceChecked: true }`
-// alone restamps the Price day and nothing else (#360). Only the creator and the Platform admin may edit; another Host
-// gets not_game_editor, and a Member or an unknown game the answer of a missing route. The image and the creator stay as
+// alone restamps the Price day and nothing else (#360). Only the creator may edit (#455): another User's game, the Platform
+// admin's request included, and an unknown game get the answer of a missing route. The image and the creator stay as
 // they are. A body without `tags` keeps the game's Tags (a 0.9 tab never sends them, #335); a list, even an empty one,
 // replaces them. The Price (#337) follows the same rule for `price` (absent keeps it); the day is stamped by the server's
 // clock when the Price changes or `priceChecked` is sent. The Price day is decided on the row read inside the transaction,
@@ -18,8 +18,7 @@ import { canEditGame, isPriceCheckOnly, parseGameInput, tagsWithFreeToPlay, type
 export default defineEventHandler(async (event): Promise<GameView> => {
   const viewer = await requireLibraryViewer(event)
   const db = useDb(event)
-  const { game, creatorName } = await loadGame(db, getRouterParam(event, 'id') ?? '')
-  if (!canEditGame(viewer, game)) throw apiError('not_game_editor')
+  const { game, creatorName } = await loadGame(db, getRouterParam(event, 'id') ?? '', viewer.id)
 
   const body = await readBody(event)
   // The flag alone writes nothing but the Price day: no columns, no Tags, no Price (#360).
@@ -38,7 +37,7 @@ export default defineEventHandler(async (event): Promise<GameView> => {
     const stored = (await loadTags(tx, [game.id])).get(game.id) ?? []
     const next = tagsWithFreeToPlay(tags ?? stored, priceOf(row!))
     const changed = tags !== undefined || next.length !== stored.length || next.some((tag, index) => tag.key !== stored[index]!.key)
-    if (changed) await saveTags(tx, game.id, next)
+    if (changed) await saveTags(tx, game.id, next, viewer.id)
     const [built] = await readGameViews(tx, [{ game: row!, creatorName }], viewer)
     return built!
   })

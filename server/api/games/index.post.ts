@@ -21,7 +21,7 @@ export default defineEventHandler(async (event): Promise<GameView> => {
   const priceCols = priceColumns({ price, priceChecked }, null, useClock(event).now())
   const view = await useDb(event).transaction(async (tx) => {
     const [inserted] = await tx.insert(games).values({ ...columns, ...priceCols, createdBy: viewer.id }).returning()
-    await saveTags(tx, inserted!.id, tagsWithFreeToPlay(tags ?? [], price ?? null))
+    await saveTags(tx, inserted!.id, tagsWithFreeToPlay(tags ?? [], price ?? null), viewer.id)
     const creatorName = creatorNameOf({ creatorName: viewer.name, creatorDisplayName: viewer.displayName })
     const [built] = await readGameViews(tx, [{ game: inserted!, creatorName }], viewer)
     return built!

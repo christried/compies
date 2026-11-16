@@ -48,7 +48,7 @@ describe('HubNav', () => {
   })
 
   it('gives every item the hover tint, so the Dunkel fix of the utility reaches the nav (#406)', async () => {
-    const viewers = [undefined, { canHost: false, isAdmin: true }]
+    const viewers = [undefined, { canHost: true, isAdmin: true }]
     for (const layout of ['header', 'tabs'] as const) {
       for (const viewer of viewers) {
         const nav = await mountSuspended(HubNav, { props: { layout, viewer }, route: '/' })
@@ -66,16 +66,16 @@ describe('HubNav', () => {
   })
 
   it('shows Bibliothek and Admin to the Platform admin', async () => {
-    const nav = await mountSuspended(HubNav, { props: { layout: 'header', viewer: { canHost: false, isAdmin: true } }, route: '/' })
+    const nav = await mountSuspended(HubNav, { props: { layout: 'header', viewer: { canHost: true, isAdmin: true } }, route: '/' })
 
     expect(labels(nav)).toEqual(['Events', 'Archiv', 'Bibliothek', 'Profil', 'Admin'])
     expect(link(nav, 'Admin').attributes('href')).toBe('/admin')
   })
 
-  it('shows Bibliothek to the Platform admin even when the Host flag is not set', async () => {
+  it('does not show Bibliothek to a Platform admin without the Host permission, and shows Admin (#455)', async () => {
     const nav = await mountSuspended(HubNav, { props: { layout: 'header', viewer: { canHost: false, isAdmin: true } }, route: '/' })
 
-    expect(labels(nav)).toContain('Bibliothek')
+    expect(labels(nav)).toEqual(['Events', 'Archiv', 'Profil', 'Admin'])
   })
 })
 
@@ -153,7 +153,7 @@ describe('HubNav on an Event page', () => {
   it.each([
     ['a signed-out User or a Member', undefined, ['Events', 'Archiv', 'Profil']],
     ['a Host', HOST, ['Events', 'Archiv', 'Bibliothek', 'Profil']],
-    ['the Platform admin', { canHost: false, isAdmin: true }, ['Events', 'Archiv', 'Bibliothek', 'Profil', 'Admin']],
+    ['the Platform admin', { canHost: true, isAdmin: true }, ['Events', 'Archiv', 'Bibliothek', 'Profil', 'Admin']],
   ])('lists the items of %s with the context, by the same rules as without', async (_who, viewer, expected) => {
     const nav = await mountSuspended(HubNav, { props: { layout: 'header', viewer, context: context() }, route: EVENT })
 

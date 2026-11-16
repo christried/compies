@@ -186,13 +186,13 @@ describe('the Game library API (#141)', () => {
       expect(listed.map(game => game.name)).toEqual(['apex', 'Banjo', 'Mario Kart', 'zelda', 'Zombies'])
     })
 
-    it('shows every Host the games of all Hosts', async () => {
+    it('shows another Host none of the games of Hostess (#455)', async () => {
       await created(await cookieOf(host), { name: 'Von Hostess' })
       const cookie = await cookieOf(otherHost)
 
       const { games: listed } = await (await list(cookie)).json() as GameList
 
-      expect(listed.map(game => game.name)).toEqual(['Von Hostess'])
+      expect(listed).toEqual([])
     })
   })
 
@@ -219,14 +219,15 @@ describe('the Game library API (#141)', () => {
       expect(response.statusText).toBe('Not Found')
     })
 
-    it('lets the creator and the Platform admin edit, another Host not', async () => {
+    it('lets the creator edit, and answers the Platform admin and another Host as for a missing route (#455)', async () => {
       const game = await created(await cookieOf(host), { name: 'Mario Kart' })
 
       const asCreator = await (await read(game.id, await cookieOf(host))).json() as GameView
-      const asAdmin = await (await read(game.id, await cookieOf(admin))).json() as GameView
-      const asOther = await (await read(game.id, await cookieOf(otherHost))).json() as GameView
+      const asAdmin = await read(game.id, await cookieOf(admin))
+      const asOther = await read(game.id, await cookieOf(otherHost))
 
-      expect([asCreator.canEdit, asAdmin.canEdit, asOther.canEdit]).toEqual([true, true, false])
+      expect(asCreator.canEdit).toBe(true)
+      expect([asAdmin.status, asOther.status]).toEqual([404, 404])
     })
   })
 
@@ -380,23 +381,24 @@ describe('the Game library API (#141)', () => {
       expect(row!.notes).toBeNull()
     })
 
-    it('lets the Platform admin change the notes of another Host\'s game', async () => {
+    it('answers the Platform admin as for a missing route and keeps the notes of another Host\'s game (#455)', async () => {
       const { id } = await created(await cookieOf(host), { name: 'Mario Kart', notes: 'Alt' })
 
       const response = await edit(await cookieOf(admin), id, { name: 'Mario Kart', notes: 'Vom Admin' })
 
-      expect(response.status).toBe(200)
+      expect(response.status).toBe(404)
+      expect(response.statusText).toBe('Not Found')
       const [row] = await testDb.db.select().from(games)
-      expect(row!.notes).toBe('Vom Admin')
+      expect(row!.notes).toBe('Alt')
     })
 
-    it('refuses another Host with not_game_editor and keeps the notes', async () => {
+    it('answers another Host as for a missing route and keeps the notes (#455)', async () => {
       const { id } = await created(await cookieOf(host), { name: 'Mario Kart', notes: 'Alt' })
 
       const response = await edit(await cookieOf(otherHost), id, { name: 'Mario Kart', notes: 'Fremd' })
 
-      expect(response.status).toBe(403)
-      expect(response.statusText).toBe('not_game_editor')
+      expect(response.status).toBe(404)
+      expect(response.statusText).toBe('Not Found')
       const [row] = await testDb.db.select().from(games)
       expect(row!.notes).toBe('Alt')
     })
@@ -413,14 +415,18 @@ describe('the Game library API (#141)', () => {
       expect(row!.notes).toBe('Alt')
     })
 
-    it('returns the notes to every Host, on the game and in the list', async () => {
+    it('returns the notes to the creator, on the game and in the list, and another Host does not find the game (#455)', async () => {
       const notes = 'Settings: 3 Runden\nWin: Punkte'
-      const { id } = await created(await cookieOf(host), { name: 'Mario Kart', notes })
+      const creatorCookie = await cookieOf(host)
+      const { id } = await created(creatorCookie, { name: 'Mario Kart', notes })
       const otherCookie = await cookieOf(otherHost)
 
-      expect(await (await read(id, otherCookie)).json()).toMatchObject({ id, notes })
-      const list = await (await request('/api/games', { headers: { cookie: otherCookie } })).json() as GameList
-      expect(list.games.find(game => game.id === id)).toMatchObject({ notes })
+      expect(await (await read(id, creatorCookie)).json()).toMatchObject({ id, notes })
+      const own = await (await request('/api/games', { headers: { cookie: creatorCookie } })).json() as GameList
+      expect(own.games.find(game => game.id === id)).toMatchObject({ notes })
+      expect((await read(id, otherCookie)).status).toBe(404)
+      const theirs = await (await request('/api/games', { headers: { cookie: otherCookie } })).json() as GameList
+      expect(theirs.games.find(game => game.id === id)).toBeUndefined()
     })
   })
 
@@ -448,22 +454,24 @@ describe('the Game library API (#141)', () => {
       expect(row!.createdBy).toBe(createdBy.id)
     })
 
-    it('lets the Platform admin edit a game of another Host', async () => {
+    it('answers the Platform admin as for a missing route and changes nothing of another Host\'s game (#455)', async () => {
       const { id } = await created(await cookieOf(host), { name: 'Mario Kart' })
 
       const response = await edit(await cookieOf(admin), id, edited)
 
-      expect(response.status).toBe(200)
-      expect(await response.json()).toMatchObject({ name: 'Mario Kart 8', canEdit: true })
+      expect(response.status).toBe(404)
+      expect(response.statusText).toBe('Not Found')
+      const [row] = await testDb.db.select().from(games)
+      expect(row!.name).toBe('Mario Kart')
     })
 
-    it('refuses another Host with not_game_editor and changes nothing', async () => {
+    it('answers another Host as for a missing route and changes nothing (#455)', async () => {
       const { id } = await created(await cookieOf(host), { name: 'Mario Kart' })
 
       const response = await edit(await cookieOf(otherHost), id, edited)
 
-      expect(response.status).toBe(403)
-      expect(response.statusText).toBe('not_game_editor')
+      expect(response.status).toBe(404)
+      expect(response.statusText).toBe('Not Found')
       const [row] = await testDb.db.select().from(games)
       expect(row!.name).toBe('Mario Kart')
     })
@@ -496,7 +504,7 @@ describe('the Game library API (#141)', () => {
       const { id, createdBy } = await created(await cookieOf(host), { name: 'Mario Kart' })
       await testDb.db.update(games).set({ imageKey: 'games/abc.webp' }).where(eq(games.id, id))
 
-      await edit(await cookieOf(admin), id, edited)
+      await edit(await cookieOf(host), id, edited)
 
       const [row] = await testDb.db.select().from(games)
       expect(row).toMatchObject({ imageKey: 'games/abc.webp', createdBy: createdBy.id })
@@ -526,7 +534,7 @@ describe('the Game library API (#141)', () => {
   })
 
   describe('GET /api/games without filters (#173)', () => {
-    // The browser filters (filterGames); the server answers every visible game, whatever the query string says.
+    // The browser filters (filterGames); the server answers every game of the viewer's library, whatever the query string says.
     async function seed() {
       const hostCookie = await cookieOf(host)
       await created(hostCookie, { name: 'Mario Kart', playersMin: 1, playersMax: 12, suitabilities: ['teams', 'ffa'] })
@@ -535,13 +543,13 @@ describe('the Game library API (#141)', () => {
       await created(await cookieOf(otherHost), { name: 'Brettspiel' })
     }
 
-    it('returns every game, by name without regard to case, and no total', async () => {
+    it('returns the viewer\'s games, by name without regard to case, and no total (#455: not the other Host\'s Brettspiel)', async () => {
       await seed()
       const cookie = await cookieOf(host)
 
       const body = await (await request('/api/games', { headers: { cookie } })).json() as GameList
 
-      expect(body.games.map(game => game.name)).toEqual(['Brettspiel', 'Counter-Strike 2', 'Halo', 'Mario Kart'])
+      expect(body.games.map(game => game.name)).toEqual(['Counter-Strike 2', 'Halo', 'Mario Kart'])
       expect(body).not.toHaveProperty('total')
     })
 
@@ -553,7 +561,7 @@ describe('the Game library API (#141)', () => {
       const queried = await (await request('/api/games?q=x&suitability=teams&players=3&mine=1', { headers: { cookie } })).json() as GameList
 
       expect(queried).toEqual(plain)
-      expect(queried.games).toHaveLength(4)
+      expect(queried.games).toHaveLength(3)
     })
   })
 
@@ -717,14 +725,14 @@ describe('the Game library API (#141)', () => {
       expect((await tagsInUse(cookie)).map(tag => tag.key)).toEqual(['retro'])
     })
 
-    it('refuses another Host\'s edit of the Tags, and answers a Member as for a missing route', async () => {
+    it('answers another Host\'s and a Member\'s edit of the Tags as for a missing route (#455)', async () => {
       const { id } = await created(await cookieOf(host), { price: { cents: 1999, source: 'steam' }, name: 'Mario Kart', tags: ['Co-op'] })
 
       const other = await edit(await cookieOf(otherHost), id, { name: 'Mario Kart', tags: [] })
       const guest = await edit(await cookieOf(member), id, { name: 'Mario Kart', tags: [] })
 
-      expect(other.status).toBe(403)
-      expect(other.statusText).toBe('not_game_editor')
+      expect(other.status).toBe(404)
+      expect(other.statusText).toBe('Not Found')
       expect(guest.status).toBe(404)
       expect(await tagRows(id)).toEqual([{ key: 'co-op', label: 'Co-op', position: 0 }])
     })
@@ -964,12 +972,12 @@ describe('the Game library API (#141)', () => {
       expect(await saved.json()).toMatchObject({ name: 'Mario Kart 8', tags: [{ key: 'co-op', label: 'Co-op' }], price: { cents: 2499, source: 'gog', checkedAt: T2 } })
     })
 
-    it('lets the Platform admin change the Price of another Host\'s game, and refuses another Host with not_game_editor and keeps it', async () => {
+    it('answers the Platform admin, another Host and a Member as for a missing route and keeps the Price (#455)', async () => {
       const { id } = await created(await cookieOf(host), { name: 'Mario Kart', price: steam })
 
       const other = await edit(await cookieOf(otherHost), id, { name: 'Mario Kart', price: null })
-      expect(other.status).toBe(403)
-      expect(other.statusText).toBe('not_game_editor')
+      expect(other.status).toBe(404)
+      expect(other.statusText).toBe('Not Found')
       expect(await storedPrice(id)).toEqual({ cents: 1999, source: 'steam', checkedAt: T1 })
 
       const guest = await edit(await cookieOf(member), id, { name: 'Mario Kart', price: null })
@@ -977,8 +985,8 @@ describe('the Game library API (#141)', () => {
       expect(await storedPrice(id)).toEqual({ cents: 1999, source: 'steam', checkedAt: T1 })
 
       const superAdmin = await edit(await cookieOf(admin), id, { name: 'Mario Kart', price: { cents: 2499, source: 'steam' } })
-      expect(superAdmin.status).toBe(200)
-      expect(await storedPrice(id)).toEqual({ cents: 2499, source: 'steam', checkedAt: T1 })
+      expect(superAdmin.status).toBe(404)
+      expect(await storedPrice(id)).toEqual({ cents: 1999, source: 'steam', checkedAt: T1 })
     })
   })
 })
