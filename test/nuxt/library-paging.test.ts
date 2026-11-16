@@ -8,10 +8,10 @@ import { game, host, settle } from './helpers/library'
 import { stubInView } from './in-view'
 
 // The library list drawn 40 cards a page (#369): the search and the filters run over every game.
-let list: { games: GameView[] } = { games: [] }
+let list: { games: GameView[], tagsInUse?: { key: string, label: string }[] } = { games: [] }
 registerEndpoint('/api/games', {
   method: 'GET',
-  handler: () => ({ games: list.games, tagsInUse: [] }),
+  handler: () => ({ games: list.games, tagsInUse: list.tagsInUse ?? [] }),
 })
 
 describe('the library paging (#369)', () => {
@@ -181,11 +181,13 @@ describe('the library paging (#369)', () => {
     expect(status(page).exists()).toBe(false)
   })
 
-  it('counts „Von mir“ over every game, not only the cards drawn so far', async () => {
-    list = { games: library(176, i => (i < 100 ? { createdBy: { id: 'anna', name: 'Anna' } } : {})) }
+  const retro = { key: 'retro', label: 'Retro' }
+
+  it('counts the Tag over every game, not only the cards drawn so far', async () => {
+    list = { games: library(176, i => (i >= 100 ? { tags: [retro] } : {})), tagsInUse: [retro] }
     const page = await mountLibrary()
 
-    await chip(page, 'Von mir').trigger('click')
+    await page.get('select[aria-label="Tag"]').setValue('retro')
 
     expect(names(page)).toEqual(listed(176).slice(100, 140))
     expect(status(page).text()).toBe('40 von 76 Spielen')
@@ -210,7 +212,7 @@ describe('the library paging (#369)', () => {
   })
 
   it('starts at 40 cards again when a filter leaves more than one page', async () => {
-    list = { games: library(176, i => (i < 76 ? { createdBy: { id: 'anna', name: 'Anna' } } : {})) }
+    list = { games: library(176, i => (i >= 76 ? { tags: [retro] } : {})), tagsInUse: [retro] }
     const page = await mountLibrary()
     await moreButton(page)!.trigger('click')
     await flushPromises()
@@ -218,7 +220,7 @@ describe('the library paging (#369)', () => {
     await flushPromises()
     expect(names(page)).toHaveLength(120)
 
-    await chip(page, 'Von mir').trigger('click')
+    await page.get('select[aria-label="Tag"]').setValue('retro')
     await flushPromises()
 
     expect(names(page)).toHaveLength(40)

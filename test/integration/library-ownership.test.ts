@@ -178,8 +178,7 @@ describe('one library per User (#455, ADR 0018)', () => {
       expect((await listOf(adminCookie)).games).toEqual([])
 
       const own = await created(adminCookie, { name: 'Adminspiel' })
-      const [adminRow] = await testDb.db.select().from(users).where(eq(users.name, 'Admin'))
-      expect(own.createdBy.id).toBe(adminRow!.id)
+      expect(own).not.toHaveProperty('createdBy')
       expect((await listOf(adminCookie)).games.map(game => game.id)).toEqual([own.id])
 
       expect((await listOf(hostCookie)).games.map(game => game.id)).toEqual([hostGame.id])
