@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Prüfseite</title>
+  <link rel="stylesheet" href="/page.css">
+</head>
+<body>
+  <header id="bar">
+    <span id="progress"></span>
+    <span id="position"></span>
+    <span id="recording"></span>
+    <span id="baseline"></span>
+    <span id="sections"></span>
+    <span id="filters"></span>
+    <button type="button" id="rules-button">Regeln (Alt+R)</button>
+    <span id="skipped"></span>
+    <details id="problems" hidden><summary></summary><ul></ul></details>
+  </header>
+  <div id="notice" role="alert"></div>
+  <div id="layout">
+    <main id="step"></main>
+    <aside id="rules" hidden></aside>
+  </div>
+  <script type="module" src="/page.mjs"></script>
+</body>
+</html>

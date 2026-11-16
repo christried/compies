@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import de from '~~/i18n/locales/de.json'
+import { RETIRED } from '../../scripts/wording/retired-words.mjs'
 
 // Copy rules (06-copy § Rules for developers): the app is „Compies“ in every text, Compibert is never
 // named, and the calendar is about the Date, not the file (no „.ics“ outside the legal texts and the
@@ -112,18 +113,6 @@ describe('counted copy', () => {
     expect(stale).toEqual([])
   })
 })
-
-// The words of GLOSSARY.md (#175). A UI word the glossary replaces goes into RETIRED with its successor
-// (docs/agents/domain.md), so neither the copy nor the changelog falls back to it.
-const RETIRED: Record<string, string> = {
-  'Lucky Wheel': 'Glücksrad',
-  'Admin-Wahl': 'Host-Wahl',
-  'Passende Formate': 'Passt zu',
-  'Tiebreaker': 'Unentschieden',
-  'Lobby': 'Event',
-  'Bench': 'Tribüne',
-  'Zuschauer': 'Tribüne',
-}
 
 // The changelog lines that announce a removal name the removed feature by its old word, so they are the one place a retired word may stay: the
 // lines of the issues that removed it, found by the link they end with (#279 took out the Tiebreaker pool, #280 its mention in the privacy text,

@@ -26,24 +26,23 @@
 //             stillHolds?(ctx): Promise<void>,       // called once after the page and its stops were read; throws when what the state shows ended meanwhile (a Veto window, a Clip)
 //             stops?: { name, widths?, viewport?, go(ctx): Promise<void> }[] }   // further states on the same page load, in order
 //   ctx = { tab, tabs, width, height, appearance, data, signOut(how) }   // 390 × 844 and 1440 × 900; `tabs` = { host, member, admin }, the other accounts for the API
-//   data = { slug, invitePath, game, longGame }                      // made once by this runner
+//   data = { slug, invitePath, game, longGame, prefix }              // made once by this runner (`makeData` of states.mjs); `prefix` names the Events the state files make
 //
 // `open` signs in (`open`, `openSignedOut`) with `ctx.appearance` and loads the page; a state that opens signed out reports how its
 // sign-out went through `ctx.signOut`. A state that cannot be reached throws, and is one FAIL line. Personal data: the
 // log, findings.json and report.md reach a public issue, so a text is named only when `label()` says so.
 import { execFileSync } from 'node:child_process'
-import { readdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { readFileSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
-import { fileURLToPath, pathToFileURL } from 'node:url'
+import { fileURLToPath } from 'node:url'
 import { closeAll, colorScheme, launchAll } from './chrome.mjs'
 import { cut, judgeBox, judgeRing, judgeSurface, judgeText, label, lines, same } from './contrast.mjs'
 import { keysOf, READ, READ_RINGS } from './dark-read.mjs'
-import { api, createEvent, createGame, eventView, ok, open, pressKey, results } from './kit.mjs'
+import { open, pressKey, results } from './kit.mjs'
 import { portsOf, slotOf } from './ports.mjs'
+import { HEIGHTS, loadStates, makeData, settle } from './states.mjs'
 
 const HERE = dirname(fileURLToPath(import.meta.url))
-const GAME_NAME_MAX = 60
-const HEIGHTS = { 390: 844, 1440: 900 }
 const SCHEMES = { dark: 'light', system: 'dark' } // the device's scheme per pass: Dunkel must not lean on the device
 
 const args = Object.fromEntries(process.argv.slice(2).map(arg => arg.replace(/^--/, '').split('=')).map(([key, value]) => [key, value ?? true]))
@@ -70,13 +69,8 @@ const flatten = (value, out = []) => {
 }
 const COPY = flatten(JSON.parse(readFileSync(join(HERE, '../../i18n/locales/de.json'), 'utf8')))
 
-const states = []
-const cleanups = []
-for (const file of readdirSync(HERE).filter(name => /^dark-states-.*\.mjs$/.test(name)).sort()) {
-  const loaded = await import(pathToFileURL(join(HERE, file)).href)
-  states.push(...loaded.STATES)
-  if (loaded.cleanup) cleanups.push(loaded.cleanup)
-}
+// The lists come from states.mjs, which the wording walk reads too (#629).
+const { states, cleanups } = await loadStates()
 const chosen = states.filter(state => (!only || only.includes(state.name)) && (!groups || groups.includes(state.group)))
 if (!chosen.length) throw new Error(`No state matches ${[only && `--only=${only}`, groups && `--group=${groups}`].filter(Boolean).join(' ')}; the states are ${states.map(state => state.name).join(', ')}`)
 
@@ -151,23 +145,6 @@ const detail = (line) => {
   return `${line.fg} on ${line.bg} ${cut(line.ratio)}:1, needs ${line.need}:1`
 }
 
-/**
- * Waits for fonts and for every animation with a finite run to end, at most 3 s. Before that the page is scrolled through
- * once: what lands when it comes into view (the stamp on Neuigkeiten) starts then, not in the middle of the reading,
- * where it would show in one reading and not in the other.
- */
-const settle = tab => tab.evaluate(`(async () => {
-  await document.fonts.ready
-  for (let y = 0; y < document.documentElement.scrollHeight; y += Math.max(200, innerHeight / 2)) {
-    scrollTo(0, y)
-    await new Promise(resolve => setTimeout(resolve, 30))
-  }
-  scrollTo(0, 0)
-  await new Promise(resolve => setTimeout(resolve, 700))
-  const end = Date.now() + 3000
-  while (Date.now() < end && document.getAnimations().some(a => a.playState === 'running' && Number.isFinite(a.effect?.getComputedTiming().iterations ?? 1))) await new Promise(resolve => setTimeout(resolve, 100))
-})()`)
-
 /** What one reading of one state turned into: the counts and the items `same` compares. */
 const readings = new Map()
 
@@ -221,19 +198,6 @@ async function measure({ tab, state, name, width, appearance, first, viewport = 
   const leave = state.differs ? await tab.evaluate(keysOf(state.differs)) : []
   readings.set(`${name}|${width}|${appearance}`, { items, state, leave })
   return true
-}
-
-/** The games and the Event every state may need, as the Dev Host: reused when the dev database has them. */
-async function makeData(host) {
-  const games = (await ok(api(host, 'GET', '/api/games'), 'GET /api/games')).games
-  const gameNamed = async (name, fields = {}) => games.find(game => game.name === name) ?? await createGame(host, { name, playersMin: 1, playersMax: 8, ...fields })
-  const game = await gameNamed('R011 Dunkel-Check Spiel')
-  const longGame = await gameNamed(`R011${'W'.repeat(GAME_NAME_MAX - 4)}`)
-  const home = await ok(api(host, 'GET', '/api/e'), 'GET /api/e')
-  const known = home.events.find(event => event.name === 'R011 Dunkel-Check')
-  const slug = known?.slug ?? (await createEvent(host, { name: 'R011 Dunkel-Check', pool: [game.id, longGame.id] })).slug
-  const { inviteUrl } = await eventView(host, slug)
-  return { slug, invitePath: new URL(inviteUrl, 'http://x').pathname, game, longGame }
 }
 
 /** One state at one width and Appearance: the page, then its stops, then whether what it shows still held. */
