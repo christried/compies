@@ -30,3 +30,13 @@ From the 0.7 Release review (standards S5, #260), written after 0.8 deleted the 
 - `activity.added` is the one message with game data: an Activity entry that names a game everyone may already know. An entry that waits for its instant (a draw's stop, the Vetoes' reveal, the coin's landing) is not published; the Event read shows it from that instant on.
 - No message carries the wheel's placeholder labels, a timed instant or the coin's side: 0.8 deleted `round.set`, `round.putBack`, `round.spun`, `countdown.changed` and `coin.tossed`, which no client read. The Event read still carries the coin's side (`coin.side`) before the landing, by decision; the UI hides it until `landsAt`.
 - The named send (`{ to, direct }` in `RoomPublishBody`, used by `veto.cast`) has its own shape so that it fails closed: a Worker older than the shape answers 400 (no `messages` array) and sends nothing, where `messages` plus `to` would have reached every Party.
+
+## Amendment, 2026-11-16: the room relays Emotes itself
+
+Settled in the grilling for 0.18 „Chat“ (Idea issues #667 and #668). It adds one exception to „every change is an HTTP call to Nuxt“; nothing else above changes.
+
+- An Emote is the one thing a Member sends over the socket that the room passes on to the others without Nuxt. It is not Event state: nothing stores it, no rule of the Event depends on it, and a Member who opens the Event later never sees it.
+- The room enforces the Emote's own two rules, because only the room sees every Emote of an Event in one place: one Emote per Member every two seconds, and at most three Emotes a second that carry a sound. They are the first rules the room holds. It still keeps no Event state and no schedule, so a Worker deploy still loses nothing.
+- A Message of the Chat is Event state and goes the usual way: an HTTP call to Nuxt, stored in Postgres, then relayed with its text, like an Activity entry.
+
+Considered: Emotes through Nuxt as well. Rejected, because the two-second rule would need either a database write for every Emote or a counter in the memory of one of several Vercel instances, which does not hold, and because the hop (about 100–300 ms) is felt on a reaction.

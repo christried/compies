@@ -9,7 +9,7 @@ Anyone who has signed in with Discord or Twitch.
 _Avoid_: Account, profile (a profile is what a User edits, not the User)
 
 **Platform admin**:
-The operator, who grants and revokes the host permission and maintains the game library.
+The operator, who grants and revokes the Host permission. In the app they have no rights over another User's Game library.
 _Avoid_: Admin (ambiguous with the session admin role a Host has)
 
 **Host**:
@@ -17,7 +17,7 @@ The User who created an Event and has full rights inside it. Each Event has exac
 _Avoid_: Organiser, owner, session admin
 
 **Host permission**:
-The platform-wide right to create Events and to see the Game library. Losing it does not stop a User from being the Host of Events they already created.
+The platform-wide right to create Events and to have a Game library. Losing it does not stop a User from being the Host of Events they already created.
 _Avoid_: Host role, canHost (that is a column, not the concept)
 
 **Display name**:
@@ -149,7 +149,7 @@ How an Event forms its Parties: Teams (2 to 8 teams of equal size) or free-for-a
 _Avoid_: Mode, game type
 
 **Game pool**:
-The games an Event's Host picked from the Game library for drawing, picking and banning.
+The games an Event's Host picked from their Game library for drawing, picking and banning.
 _Avoid_: Game list, playlist
 
 **Selection mode**:
@@ -201,19 +201,23 @@ What kind of play a game in the Game library works for: Teams, free-for-all or o
 _Avoid_: Format (an Event has a Format, a game has Suitabilities), game mode
 
 **Game notes**:
-The free text on a game in the Game library, such as its settings, warm-up and win condition; the game's editors write it, and only Hosts read it, in the library and as the Host of an Event whose pool holds the game (UI: Notizen).
-_Avoid_: Note (a Note belongs to a Vote), description, rules
+The free text on a game in a Game library, such as its settings, warm-up and win condition, with simple formatting (bold, lists, links). Only the User whose game it is writes and reads it, in their library and as the Host of their Events (UI: Notizen).
+_Avoid_: Note (a Note belongs to a Vote), description, rules, general notes
 
 **Tag**:
-A short word a game's editors attach to it in the Game library, such as a genre or „Co-op“, to find and filter games by; free, shared across the library, and never shown to Members (UI: Tag).
+A short word a User attaches to a game in their Game library, such as a genre or „Co-op“, to find and filter games by; free, shared across that one library, and never shown to Members (UI: Tag).
 _Avoid_: Label, category, keyword, genre (a genre is one kind of Tag)
 
 **Price**:
-What a game costs, as its editors last noted it: an amount in euros, where it is bought (Steam, Epic, GOG, the publisher, a Steam key, free-to-play or a subscription) and the day that was checked; a Member sees it wherever they may see the game (UI: Preis).
+What a game costs, as the User whose game it is last noted it: an amount in euros, where it is bought (Steam, Epic, GOG, the publisher, a Steam key, free-to-play or a subscription) and the day that was checked; a Member sees it wherever they may see the game (UI: Preis).
 _Avoid_: Cost, fee
 
+**Event notes**:
+The free text a Host adds to one game for one Event, such as „heute nur Bo1“, beside the Game notes and with the same formatting. Only the Host writes and reads it; it stays if the game leaves the Game pool, and it is read-only once the Event is finished (UI: „Notizen für dieses Event“).
+_Avoid_: Note (a Note belongs to a Vote), pool notes, session notes
+
 **Archived game**:
-A game in the Game library that whoever may edit it has put away because it can no longer be played, such as when its servers are gone. It leaves the library's list, every place a game is picked from and the Lucky Wheel of every Event that has not finished; the Rounds it was played in keep showing it, and it can be restored at any time. No game is ever deleted (UI: „Archiviert“).
+A game the User it belongs to has put away because it can no longer be played, such as when its servers are gone. It leaves the library's list, every place a game is picked from and the Lucky Wheel of every Event that has not finished; the Rounds it was played in keep showing it, and it can be restored at any time. No game is ever deleted (UI: „Archiviert“).
 _Avoid_: Deleted game, hidden game, retired game
 
 **Activity feed**:
@@ -223,6 +227,20 @@ _Avoid_: History, log, timeline
 **Award ceremony**:
 The show of a finished Event's Winners. The Host starts it after the Finish, and every Member with the Event open sees it at the same moment, a late joiner from where it has got to; each viewer can skip or close it for themselves, any Member can watch it again alone, and the Host can start it again for everyone. Until the Host first starts it, the finished Event shows that it is pending instead of its Standings and Winners (UI: Siegerehrung).
 _Avoid_: Ceremony screen, finale, results screen, podium
+
+## Chat and emotes
+
+**Chat**:
+The Event's one conversation: every Member, the Stands included, writes Messages that every Member reads, from the day the Event exists until its Finish; after that it stays readable. What happens in the game goes to the Activity feed, never into the Chat (UI: Chat).
+_Avoid_: Comments, thread, channel
+
+**Message**:
+One text a Member writes in the Chat, at most 500 characters. The Member who wrote it and the Host can delete it; a deleted Message loses its text for good and leaves a line that says so (UI: Nachricht).
+_Avoid_: Comment, post, Note (a Note belongs to a Vote)
+
+**Emote**:
+One of four fixed pictures a Member sends with a tap. It rises above their avatar on the Game board for every Member who has the Event open at that moment, and it is never stored. A Member can send one every two seconds (UI: Emote).
+_Avoid_: Emoji, reaction, sticker
 
 ## During a Session
 
@@ -307,8 +325,8 @@ A short guided look at an Event page for a User who opens an Event they do not h
 _Avoid_: Onboarding, tutorial, walkthrough, guide
 
 **Game library**:
-The platform-wide collection of games that Hosts fill their Events from; only Users with the Host permission and the Platform admin see it (UI: Bibliothek).
-_Avoid_: Game list, catalogue
+A User's own collection of games that they fill their Events from. Every User with the Host permission has one, and nobody else sees it, the Platform admin included; a game belongs to the User who created it (UI: Bibliothek).
+_Avoid_: Game list, catalogue, shared library, global library
 
 **Release**:
 A version of COMPIES that reaches Users, numbered by semantic versioning: a new feature raises the minor number; fixes, small additions and the further parts of a Release that was split raise the patch number. Releases count from 0.1 while COMPIES is being built; 1.0 is the Release the operator declares ready.
@@ -319,5 +337,5 @@ The public list of Releases, newest first, saying in plain words what changed fo
 _Avoid_: Release notes, news, patch notes
 
 **Compibert**:
-The app's mascot; it appears on screen but is never named in UI copy. A hat (the hard hat, the party hat) is an accessory, never one of its states.
+The app's mascot; it appears on screen but is never named in UI copy. Its voice is wordless sounds: it never speaks a word aloud, and what it says in the Tour is text. A hat (the hard hat, the party hat) is an accessory, never one of its states.
 _Avoid_: CompiBeard, Compi, mascot
