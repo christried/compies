@@ -467,6 +467,76 @@ describe('GameBoard', () => {
 
       expect(posted).toEqual([])
     })
+
+    it('puts a plate behind a lifted person\'s name', async () => {
+      layOutBoard()
+      const { page } = await mountBoard({ viewerId: SANNE, isHost: true })
+
+      await person(page, LARSI).trigger('pointerdown', { button: 0, pointerId: 1, pointerType: 'mouse', clientX: 20, clientY: 340 })
+      pointer('pointermove', 50, 390)
+      await nextTick()
+
+      const plates = person(page, LARSI).findAll('[data-testid="name-plate"]')
+      expect(plates).toHaveLength(1)
+      expect(page.findAll('[data-testid="name-plate"]')).toHaveLength(1)
+      expect(plates[0]!.element.parentElement?.textContent).toContain('Larsi')
+      pointer('pointerup', 20, 340)
+      await settle()
+    })
+
+    it('puts the plate on a finger\'s lift after the long press', async () => {
+      layOutBoard()
+      vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+      const { page } = await mountBoard()
+
+      await person(page, kitty.id).trigger('pointerdown', { button: 0, pointerId: 1, pointerType: 'touch', clientX: 20, clientY: 340 })
+      await nextTick()
+      expect(page.findAll('[data-testid="name-plate"]')).toHaveLength(0)
+
+      vi.advanceTimersByTime(300)
+      pointer('pointermove', 50, 390)
+      await nextTick()
+      vi.useRealTimers()
+
+      expect(person(page, kitty.id).findAll('[data-testid="name-plate"]')).toHaveLength(1)
+      pointer('pointerup', 20, 340)
+      await settle()
+    })
+
+    it('shows no plate behind a resting name', async () => {
+      layOutBoard()
+      const { page } = await mountBoard()
+
+      expect(page.findAll('[data-testid="name-plate"]')).toHaveLength(0)
+    })
+
+    it('puts no plate behind a Player\'s pick of somebody else', async () => {
+      layOutBoard()
+      const { page } = await mountBoard()
+
+      await person(page, SANNE).trigger('pointerdown', { button: 0, pointerId: 1, pointerType: 'mouse', clientX: 20, clientY: 340 })
+      pointer('pointermove', 50, 390)
+      await nextTick()
+
+      expect(page.findAll('[data-testid="name-plate"]')).toHaveLength(0)
+      pointer('pointerup', 20, 340)
+      await settle()
+    })
+
+    it('puts the plate behind „Du“ for the viewer\'s own lift', async () => {
+      layOutBoard()
+      const { page } = await mountBoard()
+
+      await person(page, kitty.id).trigger('pointerdown', { button: 0, pointerId: 1, pointerType: 'mouse', clientX: 20, clientY: 340 })
+      pointer('pointermove', 50, 390)
+      await nextTick()
+
+      const plates = person(page, kitty.id).findAll('[data-testid="name-plate"]')
+      expect(plates).toHaveLength(1)
+      expect(plates[0]!.element.parentElement?.textContent).toContain('Du')
+      pointer('pointerup', 20, 340)
+      await settle()
+    })
   })
 
   describe('picking up by the avatar (#207)', () => {

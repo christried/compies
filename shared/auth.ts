@@ -1,3 +1,4 @@
+import type { Appearance } from './appearance'
 import { characterCount } from './text'
 
 // Sign-in facts the app and the server share.
@@ -8,23 +9,6 @@ export type SignInProvider = typeof SIGN_IN_PROVIDERS[number]
 
 export function isSignInProvider(value: unknown): value is SignInProvider {
   return (SIGN_IN_PROVIDERS as readonly unknown[]).includes(value)
-}
-
-/** A User's Appearance (GLOSSARY): Hell, Dunkel or System; light unless they choose otherwise (#401). */
-export const APPEARANCES = ['light', 'dark', 'system'] as const
-
-export type Appearance = typeof APPEARANCES[number]
-
-export function isAppearance(value: unknown): value is Appearance {
-  return (APPEARANCES as readonly unknown[]).includes(value)
-}
-
-/** The cookie that keeps a device's Appearance for the signed-out pages (#403): `dark` or `system`, never `light`. */
-export const APPEARANCE_COOKIE = 'compies-appearance'
-
-/** What the cookie holds for an Appearance: its value for Dunkel and System, none for Hell (#403). */
-export function appearanceCookieValue(appearance: Appearance): 'dark' | 'system' | null {
-  return appearance === 'light' ? null : appearance
 }
 
 /** A Display name has 1–32 characters after trimming; an emoji counts as one. */

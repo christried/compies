@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { ChevronLeft, ChevronRight, CircleHelp } from '@lucide/vue'
+import { QuestionMark } from '~/utils/question-mark-icon'
 
 // The layout of the guided Event setup (02-components § EventStepper, screen 05). It knows no step: the
 // parent says which steps there are (the wizard's `steps`, 8 on /neu and 6 in the settings editor) and which one is
 // current, and puts the step's form in the default slot and its explanation in the `info` slot.
 // Desktop (md+): step list left (230 px), form centre, info column right (340 px). Phones: a progress bar,
-// the info behind an „Info“ button in a bottom sheet. Zurück and Weiter sit in a sticky dock at the bottom right
-// on both (#174). A blocked Weiter is aria-disabled with its reason right above the dock, as on the old create form (#49).
+// the info behind an „Info“ button in a bottom sheet. Zurück and Weiter sit in a pill fixed at the window's bottom,
+// its right edge on the form column's, on both (#174, #613). A blocked Weiter is aria-disabled with its reason right above the dock, as on the old create form (#49).
 const props = defineProps<{
   steps: { key: string, label: string }[]
   /** Index of the current step. */
@@ -95,7 +96,9 @@ function next() {
       class="flex min-w-0 flex-1 flex-col self-stretch"
       @submit.prevent="next"
     >
-      <div class="flex flex-1 flex-col gap-[18px] md:px-3 md:py-2">
+      <!-- pb-40: room for the fixed pill (16 + 72 px) and a blocked reason of up to three lines, so the last field is never
+           under them and the content does not jump when the reason appears (#613). -->
+      <div class="flex flex-1 flex-col gap-[18px] pb-40 md:px-3 md:py-2">
         <div
           data-testid="progress"
           aria-hidden="true"
@@ -121,7 +124,7 @@ function next() {
           </h1>
           <IconButton
             v-if="$slots.info"
-            :icon="CircleHelp"
+            :icon="QuestionMark"
             :label="t('stepper.info')"
             class="md:hidden"
             @click="infoOpen = true"
@@ -131,44 +134,53 @@ function next() {
         <slot />
       </div>
 
-      <!-- A dock as wide as its buttons, bottom right on every screen (like HostDock, #174). The blocked reason is
-           not in it: it sits right above it. -->
-      <div class="sticky bottom-4 layer-sticky mt-4 ml-auto flex w-fit flex-none flex-col items-end gap-2">
-        <span
-          v-if="nextBlocked"
-          :id="blockedId"
-          class="text-right text-small font-bold text-pretty text-ink-2"
-        >{{ nextBlocked }}</span>
-        <div
-          data-testid="stepper-footer"
-          class="ml-auto flex w-fit items-center gap-2 rounded-pill border-(length:--cp-bw) border-line bg-surface p-1.5 shadow-card"
-        >
-          <AppButton
-            v-if="current > 0"
-            variant="secondary"
-            class="border-transparent shadow-none"
-            @click="emit('back')"
+      <!-- A dock as wide as its buttons, fixed at the window's bottom on every step, so Weiter keeps one place (#613;
+           it sat in a sticky dock before, which only sticks while its natural place is below the window). The anchor
+           is a zero-height row at the form's end; the fixed box has no left/right, so it keeps its static position:
+           the anchor's right edge, which is the form column's. On a step without the info column the anchor is inset
+           by that column (340 px) and the gap (16 px), so Weiter does not move between steps. The blocked reason is
+           not in the pill: it sits right above it, capped so a long one stays inside the form. -->
+      <div
+        class="flex h-0 justify-end"
+        :class="!$slots.info && 'md:mr-[356px]'"
+      >
+        <div class="fixed bottom-4 layer-sticky flex w-fit flex-col items-end gap-2">
+          <span
+            v-if="nextBlocked"
+            :id="blockedId"
+            class="max-w-80 text-right text-small font-bold text-pretty text-ink-2"
+          >{{ nextBlocked }}</span>
+          <div
+            data-testid="stepper-footer"
+            class="ml-auto flex w-fit items-center gap-2 rounded-pill border-(length:--cp-bw) border-line bg-surface pt-1.5 pl-1.5 pr-2 pb-2 shadow-card"
           >
-            <template #icon>
+            <AppButton
+              v-if="current > 0"
+              variant="secondary"
+              class="border-transparent shadow-none"
+              @click="emit('back')"
+            >
+              <template #icon>
+                <AppIcon
+                  :icon="ChevronLeft"
+                  :size="18"
+                />
+              </template>
+              {{ t('stepper.back') }}
+            </AppButton>
+            <AppButton
+              type="submit"
+              size="lg"
+              :aria-disabled="nextBlocked !== null || busy ? 'true' : undefined"
+              :aria-describedby="nextBlocked ? blockedId : undefined"
+            >
+              {{ nextLabel }}
               <AppIcon
-                :icon="ChevronLeft"
+                :icon="ChevronRight"
                 :size="18"
               />
-            </template>
-            {{ t('stepper.back') }}
-          </AppButton>
-          <AppButton
-            type="submit"
-            size="lg"
-            :aria-disabled="nextBlocked !== null || busy ? 'true' : undefined"
-            :aria-describedby="nextBlocked ? blockedId : undefined"
-          >
-            {{ nextLabel }}
-            <AppIcon
-              :icon="ChevronRight"
-              :size="18"
-            />
-          </AppButton>
+            </AppButton>
+          </div>
         </div>
       </div>
     </form>

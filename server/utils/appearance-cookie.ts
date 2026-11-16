@@ -1,5 +1,5 @@
 import { deleteCookie, getCookie, setCookie, type H3Event } from 'h3'
-import { APPEARANCE_COOKIE, appearanceCookieValue, type Appearance } from '../../shared/auth'
+import { APPEARANCE_COOKIE, appearanceCookieValue, type Appearance } from '../../shared/appearance'
 import { useAuth } from './auth'
 
 // The Appearance cookie (#403, GLOSSARY: Appearance): mirrors a signed-in User's Dunkel or System on this device, so the

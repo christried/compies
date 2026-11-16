@@ -55,15 +55,23 @@ const label = computed(() => t(props.online === undefined ? 'board.personAria' :
       :online="online"
     />
     <span
-      class="flex max-w-full items-center gap-0.5 text-[12px] leading-tight"
+      class="relative flex max-w-full items-center gap-0.5 text-[12px] leading-tight"
       :class="you ? 'font-extrabold' : 'font-semibold'"
     >
+      <!-- The plate behind a lifted name (#609): the avatar's lift shadow falls on the name row below it, and a positioned row paints over that shadow. Absolute, so the row keeps its size. -->
+      <span
+        v-if="lifted"
+        data-testid="name-plate"
+        aria-hidden="true"
+        class="absolute inset-x-[-4px] inset-y-0 rounded-xs bg-surface"
+      />
       <AppIcon
         v-if="isHost"
+        class="relative"
         :icon="Crown"
         :size="11"
       />
-      <span class="truncate">{{ shown }}</span>
+      <span class="relative truncate">{{ shown }}</span>
     </span>
   </button>
 </template>

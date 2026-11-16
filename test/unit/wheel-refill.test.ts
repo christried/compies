@@ -189,6 +189,7 @@ describe('the edges', () => {
     expect([first[0]!.start, first[0]!.end]).toEqual([0, 360])
     expect(refillAt(closing, 300).slices[0]!.end).toBeCloseTo(180, 6)
     expect(refillAt(closing, 600).slices).toEqual([])
+    for (let ms = 0; ms <= 600; ms += 50) expect(finite(refillAt(closing, ms).slices)).toBe(true)
   })
 
   it('goes from 1 to 2 and from 2 to 1 games', () => {

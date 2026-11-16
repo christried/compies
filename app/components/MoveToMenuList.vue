@@ -45,7 +45,7 @@ defineExpose({ focusFirst: () => list.value?.querySelector<HTMLElement>('[role="
     role="menu"
     :aria-label="label"
     tabindex="-1"
-    class="m-0 flex list-none flex-col gap-1 p-0"
+    class="m-0 flex list-none flex-col gap-1.5 p-0"
     @keydown="onKeydown"
   >
     <li

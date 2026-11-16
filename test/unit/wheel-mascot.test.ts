@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { mascotBox, mascotMoments, mascotPhase } from '../../app/utils/wheel-mascot'
+import { OVERHANG_PX, WHEEL_CARD_PADDING_PX, mascotBox, mascotMoments, mascotPhase, mascotWidthFor } from '../../app/utils/wheel-mascot'
 import { revealStage, removalEnd, removalEase } from '../../app/utils/wheel'
 
 // Compibert at the wheel (#526, hand-off note 16 § Lucky Wheel · Compibert): his place in a spin as a pure function of the server's time and the
@@ -162,6 +162,40 @@ describe('mascotBox', () => {
   it('travels along the radius from behind the rim: 130 left and 100 down from md up, 100 and 80 below', () => {
     expect(mascotBox('md').travel).toEqual({ x: -130, y: 100 })
     expect(mascotBox('sm').travel).toEqual({ x: -100, y: 80 })
+  })
+})
+
+// The width follows the wheel card's content width (#604): the big bust only when the card holds the wheel and its overhang inside the border.
+describe('the width from the card', () => {
+  it('is md only when the card is at least the wheel plus 192 px: 612 px from md up (wheel 420), 532 px below (wheel 340)', () => {
+    expect(mascotWidthFor(611, 420)).toBe('sm')
+    expect(mascotWidthFor(612, 420)).toBe('md')
+    expect(mascotWidthFor(531, 340)).toBe('sm')
+    expect(mascotWidthFor(532, 340)).toBe('md')
+  })
+
+  it('is sm while the card has not been measured', () => {
+    expect(mascotWidthFor(null, 420)).toBe('sm')
+    expect(mascotWidthFor(null, 340)).toBe('sm')
+  })
+
+  it('is sm on a card narrower than the wheel, where the wheel itself gives way', () => {
+    expect(mascotWidthFor(400, 420)).toBe('sm')
+    expect(mascotWidthFor(300, 340)).toBe('sm')
+  })
+
+  it('keeps the overhangs of the note, 112 and 8 px, and the card\'s padding at 16 px', () => {
+    expect(OVERHANG_PX).toEqual({ md: 112, sm: 8 })
+    expect(WHEEL_CARD_PADDING_PX).toBe(16)
+  })
+
+  it('keeps the big bust inside the border at the threshold: its right edge is 0 px past the padding edge at 612, 0.5 px past at 611', () => {
+    // The card's content box runs from 0 to C; the disc is W wide and centred in it; the padding's inner edge is C + 16.
+    const overhangPast = (card: number, wheel: number) => (card + Math.min(card, wheel)) / 2 + OVERHANG_PX.md - (card + WHEEL_CARD_PADDING_PX)
+    expect(overhangPast(612, 420)).toBe(0)
+    expect(overhangPast(611, 420)).toBe(0.5)
+    expect(overhangPast(532, 340)).toBe(0)
+    expect(overhangPast(531, 340)).toBe(0.5)
   })
 })
 

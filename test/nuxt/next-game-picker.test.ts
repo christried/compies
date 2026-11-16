@@ -61,6 +61,15 @@ describe('the Veto switch of the picker', () => {
     expect(button.className).toContain('disabled:bg-paper-2')
   })
 
+  it('keeps its pool rows still on hover: a row with buttons has no `to` and does not open (#608)', async () => {
+    await mount()
+
+    const rows = [...dialog()!.querySelectorAll('li')].map(row => row.firstElementChild as HTMLElement)
+    expect(rows.length).toBeGreaterThan(0)
+    // The root of the card, not the picker's own ＋ and ✕ buttons: they lift, the row does not.
+    for (const row of rows) expect(row.classList.contains('lift')).toBe(false)
+  })
+
   it('sends the game with no Veto allowed when the switch stays off', async () => {
     await mount({ vetoSwitch: true })
     await pickHalo()

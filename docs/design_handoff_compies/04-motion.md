@@ -130,6 +130,7 @@ Server sends `{startAt, durationMs (3–10 s host setting; reduced clients still
 ### Clip overlay [1.0]
 - Open at `clip.startAt`: `scale .96→1, opacity`, 0.36 `EASE.out`. Auto-close at startAt + 30 s: 0.22 `EASE.in` + `veto-clip-close`.
 - Reduced: fade.
+- **Deviation (0.14, #621):** the Clip's backdrop (#587) fades in with the Clip over 0.36 `EASE.out` (opacity only, no scale: a full-viewport layer scaled to .96 would show a strip of page at its edge) and out over 0.22 `EASE.in`. Reduced: `cp-fade-in` in `dur-fast`, the fade the Clip already uses. It has no instant of its own: it starts with the read that carries the Clip, ends with the Clip's ticker, ends with the next read after a skip, and goes at once on „Für mich schließen“.
 
 ### Veto window [1.0]
 Times from `round.determined`: `determinedAt`, `vetoEndsAt = determinedAt + 60 s`.

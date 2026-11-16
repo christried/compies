@@ -2,7 +2,7 @@
 import { Volume2, VolumeX } from '@lucide/vue'
 import type { EventContext } from '~/utils/event-page'
 
-// Logo (Compibert head), then the hub nav (on the Event page from md up, with the Event under its current tab, #426) or, on a phone, the event title area, then sound toggle and
+// Logo (Compibert head), then the hub nav (on the Event page from md up, with the Event under its current tab, #426) or, on a phone, the event title area, then the Appearance button (signed in, from md up, #617), the sound toggle and
 // the avatar menu when signed in. The `actions` slot is the page's own buttons (the Event page's Einladen, #166).
 // Full-width pages (sign-in, setup) stretch the header edge to edge, so the logo sits at the left edge.
 // `accessory` is the head's party hat on the Event page (#38); the hub and the other pages pass none.
@@ -69,6 +69,7 @@ const user = useAuthUser()
 
       <slot name="actions" />
 
+      <AppearanceMenu />
       <IconButton
         :icon="sound.enabled.value ? Volume2 : VolumeX"
         :label="t('common.sound')"

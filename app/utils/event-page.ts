@@ -1,7 +1,6 @@
 import { hasStarted, nextSession, noSessionLeft, runningOf, sessionState, type SessionState } from '~~/shared/session-state'
 import type { EventView, Phase, SessionView } from '~~/shared/event'
 import { leadingTeams } from '~~/shared/finish'
-import { teamNameAt } from './board'
 import { stageBlocks, type Block, type PageKind, type StageCounted, type StageInput } from './event-stage'
 import type { Translate } from './settings-summary'
 
@@ -128,18 +127,6 @@ export function pagePill(state: Pick<EventPageState, 'kind' | 'next'>): { phase:
     case 'finished': return { phase: 'finished', noDate: false }
     default: return null
   }
-}
-
-/**
- * The Host's seat note (teams only, #160): where the Host sits does not change the dock, and the note says so. null for a Member,
- * or in a Team the note has no word for.
- */
-export function seatNote(view: Pick<EventView, 'members' | 'viewerId' | 'teams'> & { event: Pick<EventView['event'], 'isHost'> }, t: Translate): string | null {
-  const me = view.members.find(member => member.id === view.viewerId)
-  if (!view.event.isHost || !me) return null
-  if (me.zone === 'stands') return t('event.notice.seatStands')
-  if (me.zone !== 'team' || me.team === null) return null
-  return t('event.notice.seatTeam', { team: teamNameAt(view.teams, me.team, t) })
 }
 
 /**

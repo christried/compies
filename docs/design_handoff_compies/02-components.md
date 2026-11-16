@@ -9,12 +9,14 @@ Common rules for every component:
 - Hit area ≥ 44 px.
 - Disabled = `aria-disabled="true"` + visible reason.
 - Motion respects `--cp-motion`; the reduced twin is listed per component.
+- A shadowed element that can be clicked lifts on hover (`lift`: 2 px up and the card shadow, `dur-instant` `ease-snap`, only where the device hovers) and moves onto its shadow when pressed; a static card never lifts, so a lift always means a click. Reduced motion: the hover tint, no movement, no growing shadow.
 - Copy only via i18n keys (`06-copy.md`).
 
 ## Index
 - [`AppButton`](#appbutton) [MVP]
 - [`IconButton`](#iconbutton) [MVP]
 - [`HintElement`](#hintelement) [0.13.1]
+- [`RevealPopover`](#revealpopover) [0.14]
 - [`RangeSlider`](#rangeslider) [0.13.1]
 - [`HoldToConfirmButton`](#holdtoconfirmbutton) [MVP]
 - [`TextField`](#textfield) [MVP]
@@ -111,20 +113,21 @@ Common rules for every component:
 
 The button. One `primary` per view.
 
-- **Props / variants:** `variant: primary | secondary | ghost | hot`, `size: sm (36) | md (44) | lg (52)`, `icon?: string`, `iconRight?: string`, `loading?: boolean`, `disabled?: boolean`, `disabledReason?: string`, `to?: RouteLocation` (renders `<NuxtLink>`), `block?: boolean`
+- **Props / variants:** `variant: primary | secondary | ghost | hot`, `size: sm (36) | md (44) | lg (52)`, `icon?: string`, `iconRight?: string`, `loading?: boolean`, `disabled?: boolean`, `disabledReason?: string`, `to?: RouteLocation` (renders `<NuxtLink>`), `block?: boolean`, `aura?: boolean` (the aura, see Motion)
 - **States:** default · hover (lift −2 px, shadow +1) · active (translate by shadow offset, shadow none) · focus-visible · loading (spinner replaces icon, label stays, `aria-busy`) · disabled (dashed border, paper-2 fill, ink-2 text, `aria-disabled="true"`, reason rendered next to it or via `aria-describedby`)
 - **Slots:** default (label), `#icon`
 - **Desktop / mobile:** Same on both. `block` on mobile for sheet/footer CTAs.
 - **Card size (#49):** `size: card` is 48 px with 15 px / 700 text, and it is the same set on a Session card: „Verschieben“, „Einladen“, „Session hinzufügen“, „Neue Terminsuche“, „Entfernen“ and „In den Kalender“. Only „In den Kalender“ is filled (primary); the others are secondary. Text size and weight do not depend on the variant at this size.
 - **Accessibility:** Native `<button>`/`<a>`. Disabled keeps focus (aria-disabled, click handler no-ops). Hot variant is only for destructive actions and is usually wrapped by HoldToConfirmButton; no hot button sits on a Session card (#49).
-- **Motion:** hover/press `dur-instant` `ease-snap`. Reduced: no lift, colour change only.
+- **Aura:** the one button in a page's head that starts something new. Never two on a page; never a form's submit. Home's „Neue Terminumfrage“ and the library's „Spiel anlegen“ have it; the empty state's button does not.
+- **Motion:** hover/press `dur-instant` `ease-snap`. Reduced: no lift, colour change only. Aura: the ring's light turns (cp-aura-spin, 4 s, linear, infinite). Reduced: it stands still, the ring stays at 70 % of --cp-hot.
 
 ## IconButton
 **Scope:** [MVP] · **Ref:** DS Basics
 
 Round icon-only button (sound toggle, close, remove slot).
 
-- **Props / variants:** `icon`, `label` (required → `aria-label`), `size: 32 | 36 | 40` (default 40), `tone?: success | error` (solid fill: `bg-success text-on-success` / `bg-error text-on-error`, `shadow-sm`; none = surface), `variant: outline | solid | ghost`, `pressed?: boolean`
+- **Props / variants:** `icon`, `label` (required → `aria-label`), `size: 32 | 36 | 40` (default 40), `tone?: success | error` (solid fill: `bg-success text-on-success` / `bg-error text-on-error`, `shadow-sm`; none = surface), `variant: outline | solid | ghost`, `pressed?: boolean`, `tooltip?: boolean` (default `true`: the label is also the native `title`; `false` leaves it out, for a button whose popover opens on hover: the HintElement, #616)
 - **States:** as AppButton; `pressed` shows ink fill (toggle)
 - **Slots:** —
 - **Desktop / mobile:** Visual 32–40 px, hit area always ≥ 44 (`hit-44`). The Note editor's ✓ and ✗ are 36 px with an 8 px gap, so their 44 px hit areas touch (#124).
@@ -136,12 +139,25 @@ Round icon-only button (sound toggle, close, remove slot).
 
 A small round „?“ that opens a popover with a short hint. Used first by the game form (#465), where its caller hides it on devices without a fine pointer.
 
-- **Props / variants:** `label?` (the button's accessible name, default „Hinweis anzeigen“), `text?` (the short text), `size: 32 | 36 | 40` (default 32, passed on to IconButton). The icon is lucide `CircleHelp`, as the Event stepper's info button.
-- **States:** closed · open (popover in the Notes popover's look: `rounded-[18px]`, line border, `bg-surface`, `shadow-modal`, on `layer-popover`, so above a Sheet). A click toggles; Esc, a press outside, a scroll outside the popover and a window resize close it.
+- **Props / variants:** `label?` (the button's accessible name, default „Hinweis anzeigen“), `text?` (the short text), `size: 32 | 36 | 40` (default 32, passed on to IconButton). The icon is the bare „?“ (`QuestionMark`, `app/utils/question-mark-icon.ts`: lucide's `circle-question-mark` without its circle, its paths scaled 1.5 about the centre): the IconButton's border is the one circle (#616). The native tooltip is off (`tooltip: false`; the label stays the `aria-label`): it would show beside the popover. This is the exception to § IconButton's „tooltip on hover/focus“.
+- **States:** closed · open (popover in the Notes popover's look: `rounded-[18px]`, line border, `bg-surface`, `shadow-modal`, on `layer-popover`, so above a Sheet). It opens by the shared behaviour of § RevealPopover: on mouse hover, and closes 120 ms after the mouse left the button and the popover (the pointer may move onto the popover); it opens on focus too, also for a tap. A click or tap pins it open until a click outside, a second click on the button or Esc. Esc, a press outside, a scroll outside the popover and a window resize close it.
+- **Deviation (0.14, #621):** 0.13.1 said „click or tap“ opens it; it now opens by the shared reveal behaviour (hover, focus, click pins).
 - **Slots:** default (replaces `text` for a richer hint)
 - **Desktop / mobile:** A popover at every width, no sheet. As wide as its content up to 288 px; placed by `placeNotePopover`: above the button with a 12 px gap, below when there is no room, 12 px inside the window's edges, and capped to the roomier side with its own scroll when it fits on neither (#494). The component does no media query and takes its place in the page from its caller's class.
-- **Accessibility:** the button carries `aria-expanded` at all times and `aria-controls` while open; the popover is `role="note"` and holds no control, so the focus stays on the button. Esc and a press outside close it and return the focus to the button; a scroll or a window resize close it and leave the focus where it was. Esc stops at the hint: it does not close a Sheet around it, the next Esc does.
+- **Accessibility:** the button carries `aria-expanded` at all times and `aria-controls` while open; the popover is `role="note"` and holds no control, so the focus stays on the button. Esc and a press outside close it and return the focus to the button; a scroll or a window resize close it and leave the focus where it was. Esc stops at the hint: it does not close a Sheet around it, the next Esc does. The focus-open is exempt from a scroll for two frames, so the browser's scroll of a focused button into view does not close what it just opened.
 - **Motion:** the popover enters with `animate-enter` (04-motion § UI enters; reduced motion handled there). Nothing else moves.
+
+## RevealPopover
+**Scope:** [0.14] · **Ref:** none, the behaviour of the HintElement (#515) made shared (#616)
+
+„A trigger opens a popover“: one behaviour and one box, used by HintElement, and by the game card's Tags popover (#614).
+
+- **Props / variants:** the composable `useRevealPopover(trigger: Ref<HTMLElement | null>)` (`app/composables/useRevealPopover.ts`) returns `{ open, popoverId, triggerAttrs, popoverAttrs, close }`: `triggerAttrs` (to `v-bind` on the trigger: the hover and focus handlers, `onClick`, `aria-expanded`, and `aria-controls` while open) and `popoverAttrs` (to `v-bind` on the component: `id`, `data-reveal-popover`, the hover handlers). The caller keeps its own `type`, name and class. The component `RevealPopover` takes `open` and `anchor` (the trigger's element), and passes its attrs on to the box. It stands beside `useNoteReveal` and shares nothing with it but the placement (`placeNotePopover`).
+- **States:** closed · open (hover or focus, unpinned) · pinned. A mouse (not touch or pen) entering the trigger or the popover opens it; leaving both closes it after 120 ms, whatever holds the focus; only a popover that was opened by focus stays while the trigger holds it. Focus opens it, blur closes it unless pinned. A click on the trigger pins an open popover, opens and pins a closed one, and closes a pinned one. Esc, a press on neither trigger nor popover, a scroll outside the popover (not for two frames after a focus-open) and a window resize close it and unpin it.
+- **Slots:** default (the content)
+- **Desktop / mobile:** the box is the Notes popover's look in a Teleport to `body` (`layer-popover`, `max-w-72`, scrolls past 60 vh), placed by `placeNotePopover` as § HintElement says. No media query: a tap arrives as focus and click, so a touch screen opens and pins it by a tap.
+- **Accessibility:** `role="note"`, no control inside, the focus stays on the trigger and the popover is not focusable. Esc stops there and does not close a Sheet around it; it returns the focus to the trigger when it is on the page background, the popover or the trigger, and leaves it in a field. A press outside on the page background returns the focus to the trigger when the popover was pinned. The listeners on the document and the window exist only while it is open.
+- **Motion:** `animate-enter` (04-motion § UI enters).
 
 ## HoldToConfirmButton
 **Scope:** [MVP] · **Ref:** DS Basics, VetoWindow, DS Game
@@ -153,7 +169,7 @@ Irreversible or destructive actions: veto, ban, pick, rotate link, end/delete Ev
 - **Slots:** default (label)
 - **Desktop / mobile:** Desktop pointer hold; mobile touch hold with `drag-longpress` haptic tick (`navigator.vibrate(10)`) at start. Mobile action bar version is full-width 56 px.
 - **Accessibility:** `<button>`; Space/Enter **held** for 1 s works the same (keydown starts, keyup cancels; ignore key repeat). Live region announces „Veto eingelegt“. Help text „1 Sekunde halten“ always visible on first use.
-- **Motion:** GSAP `fill.scaleX 0→1`, `duration 1`, `ease none`; release: `scaleX → 0`, `0.2 s power2.out`. Confirm: button `scale 1→0.96→1` 0.18 s + sound `ui-hold-done`. Reduced: same fill (it is information), no scale.
+- **Motion:** GSAP `fill.scaleX 0→1`, `duration 1`, `ease none`; release: `scaleX → 0`, `0.2 s power2.out`. Confirm: button `scale 1→0.96→1` 0.18 s + sound `ui-hold-done`. Reduced: same fill (it is information), no scale. Hover: lift −2 px and the card shadow only where the device hovers; reduced: the tint, no lift, no growing shadow (#608).
 
 ## TextField
 **Scope:** [MVP] · **Ref:** DS Basics, M2
@@ -219,6 +235,7 @@ Big choice cards (format, mode, points preset, date mode).
 - **Desktop / mobile:** Same; full width on mobile.
 - **Accessibility:** `role="radiogroup"` with radios (or buttons with `aria-pressed` for filters).
 - **Motion:** selection fill `dur-fast`.
+- **Deviation (0.14, #621):** `arrows="horizontal"` leaves ArrowUp and ArrowDown to the parent, for a row inside a menu that walks its items with them (#617).
 
 ## NumberStepper
 **Scope:** [1.0] · **Ref:** DS Scoring
@@ -304,6 +321,7 @@ Inline notices (team selection locked, uneven teams, pool warning).
 - **Desktop / mobile:** Same.
 - **Accessibility:** `role="status"` when it appears live, else plain text.
 - **Motion:** enter fade `dur-base`.
+- **Deviation (0.14, #621):** a Host-only notice shows „Nur du siehst das“ as a small bold line with a divider under it, above the text, at every width; its action sits below the text. 0.12 drew it as a chip beside the text.
 
 ## AppIcon
 **Scope:** [MVP] · **Ref:** Icon
@@ -413,6 +431,7 @@ Layout frame: header, stage, side panel, mobile tab bar, host dock slot.
 - **Desktop / mobile:** ≥ 980: header 64, stage max 1100 centred, panel 340 right (Event only), dock floating. < 980: header 56, content, bottom TabBar, crown button 56 bottom-right for hosts.
 - **Accessibility:** Landmarks: `header`, `nav`, `main`, `aside`. Skip link „Zur Bühne springen“.
 - **Motion:** —
+- **Deviation (0.14, #621):** while a Clip shows on a device, the backdrop (#587) covers the page's regions: the header, the stage, the side panel, the footer and the tab bar are `inert`; the Clip, the Veto bar, the Host dock, sheets and toasts stay usable. Details: § ClipPlayer.
 
 ## AppHeader
 **Scope:** [MVP] · **Ref:** AppFrame
@@ -653,7 +672,8 @@ Guided 8-step setup: Name, Format, Anzahl Spiele, Punktetabelle, Auswahlmodus, S
 - **Props / variants:** `event`, `step`
 - **States:** per step; error per step; done
 - **Slots:** one per step, `#info`
-- **Desktop / mobile:** Desktop: step list left (230), form centre, InfoSheet right (340) on format/mode/tie steps. Mobile: progress bar (8 segments), form, info via button + bottom sheet, sticky footer Zurück/Weiter.
+- **Desktop / mobile:** Desktop: step list left (230), form centre, InfoSheet right (340) on format/mode/tie steps. Mobile: progress bar (8 segments), form, info via button + bottom sheet, sticky footer Zurück/Weiter. The info button's glyph is the bare „?“ (`QuestionMark`, as § HintElement), the circle being the button's own (#616); the desktop info column's heading keeps `CircleHelp`.
+- **Deviation (0.14, #621):** „Mobile: … sticky footer Zurück/Weiter“ became one rule for every width: the footer is a pill fixed at the window's bottom (`bottom-4`, `layer-sticky`) on every step, its right edge on the form column's right edge; on a step without the info column (from 980 px) it is inset by that column's width and gap (356 px), so Weiter does not move between steps. „Zurück“ appears left of „Weiter“ from step 2. The form reserves the pill's height (`pb-40`), and a blocked reason above the pill is capped at 320 px (#613).
 - **Accessibility:** Step list `aria-current="step"`; „Schritt n von 8“ in the heading.
 - **Motion:** step change crossfade `dur-base`.
 
@@ -856,6 +876,8 @@ A game in library, pool, wheel lists, pick & ban.
 - **Accessibility:** Card is not a button unless selectable (then `aria-pressed`).
 - **Motion:** ban: stamp `scale 2.2→1, rotate −8°` 0.4 s; pick: slap into order strip (Flip).
 - **Deviation (0.12, #425):** on the Event page (Spielepool in „So wird gespielt“, „Zuletzt gezogen“ under the wheel, „Gerade dran“ on the open Rounds) a game is a tile with picture and name only, for the Host too; the pool's tiles sit side by side in a grid. A tap opens the game dialog (a sheet below md, a dialog from md up): the library entry, read-only. The Host sees players, Suitabilities, all Tags, the Price, the Notes and „In der Bibliothek öffnen“; a Member sees picture, name, players, Suitabilities and the Price, never Tags or Notes. No Clip in the dialog. On „Gerade dran“ the Host's Notes stay open under the tile. In the compact game browser (both pool pickers, „Nächstes Spiel setzen“) and on the chosen games of step „Spiele“, a game with Notes gets a Notes button that opens them in a popover from md up and a sheet below.
+- **Deviation (0.14, #608):** a card lifts where the card itself can be clicked: the library's cards (the name is a link stretched over the card) and the Event's game tiles (the name is a button that opens the game dialog). A card in a picker, in the Veto window and in the Clip stays still.
+- **Deviation (0.14, #621):** the name reserves two lines, in the tile and from md in the library card (#612). The Tags sit on one line at the card's bottom, so every card of a row shares their top edge; „+N“ is a button whose popover lists every Tag (#614).
 
 ## LuckyWheel
 **Scope:** [1.0] · **Ref:** GameWheel, App Spielrunde 11
@@ -884,6 +906,7 @@ A game in library, pool, wheel lists, pick & ban.
 - **Motion:** open `scale .96→1, fade` `dur-slow`; close `dur-base`.
 - **Deviation (0.13):** `length` is 10 to 120 s (default 30). In a Session the player takes no pointer and no keyboard input from anyone; nothing is laid over it and nothing is cropped, so YouTube's title shows for the first seconds. A player that pauses for any other reason resumes at the synced second. Mute and „Für mich schließen“ stay with every Member, „Clip überspringen“ with the Host (`docs/roadmap.md` § 0.13.0).
 - **Deviation (0.13.2, #550, #584):** on a phone held sideways (below md = 980 px, at least 656 px wide and at most 480 px high: the `sideways` variant in `compies-theme.css`) the player is the left column and the Veto bar the right one (`--cp-veto-side-w`, 16.5rem), so no fixed element lies over the video. The two labels „Ton aktivieren“ and „läuft für alle“ are visually hidden there, their names kept. For a viewer who gets no Veto bar (the Stands, a Host outside the Parties) the Clip is centred, as upright.
+- **Deviation (0.14, #621):** while a Clip shows on a device, a backdrop (`ClipBackdrop`, `layer-backdrop`, `bg-backdrop`) darkens the page. The header, the stage, the side panel, the footer and the tab bar are `inert`: they take no click, tap or key. The Clip, the Veto bar, the Host dock (on a phone the crown button), sheets and toasts stay usable. The backdrop shows exactly while the Clip does (the page reads `ClipOverlay`'s `shown`: the read that carries the Clip starts it, the Clip's ticker ends it, the read after a skip ends it, „Für mich schließen“ ends it at once). A click on it does nothing, the page behind does not scroll, and nothing is laid over the player. The card of a game without a video and the card after a failed player count as the Clip.
 
 ## VetoWindow
 **Scope:** [1.0] · **Ref:** VetoWindow

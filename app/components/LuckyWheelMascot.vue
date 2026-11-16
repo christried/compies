@@ -10,7 +10,7 @@ import { buildMascotTravel } from '~/utils/wheel-mascot-run'
 // GSAP timeline moved by that clock (`utils/wheel-mascot-run.ts`, ADR 0015); the rig is the bust. He is told the spin's two instants and
 // nothing of the draw, so he cannot show it (CODING_STANDARDS § Secrecy), and he says nothing to a screen reader.
 const props = defineProps<{
-  /** From the wheel's breakpoint (`MD_QUERY`), not from `useRoomy`: the bust's size. */
+  /** From the wheel card's content width (`mascotWidthFor`, #604), not from the viewport: the bust's size. */
   width: MascotWidth
   spin: MascotSpin
   /** The Event's Hidden wheel setting: his cheer waits for the reveal, for every viewer alike. */

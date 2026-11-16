@@ -140,27 +140,14 @@ describe('the stage of the Event page', () => {
     const notices = (page: Awaited<ReturnType<typeof mount>>) => page.findAll('[role="status"]').map(element => element.text())
     const has = (page: Awaited<ReturnType<typeof mount>>, text: string) => notices(page).some(notice => notice.includes(text))
 
-    it('tells the Host in a team that the dock stays the same, and the Host on the Tribüne too, without „spielst nicht mit“', async () => {
+    it('tells neither the Host nor a Member where they sit, the Host in a team and on the Tribüne alike', async () => {
       const inTeam = serveState({ sessions: [SESSION(1, FIRST)], missing: 0, host: true, phase: 'date_set', teamChoiceOpen: true, overrides: { members: members({ kitty: { zone: 'team', team: 2 } }) } })
       const onStands = serveState({ sessions: [SESSION(1, FIRST)], missing: 0, host: true, phase: 'date_set', teamChoiceOpen: true, overrides: { members: members({ kitty: { zone: 'stands' } }) } })
-
-      expect(has(await mount(inTeam.slug), 'Du spielst mit, in Team Orange. Das Host-Dock bleibt genau gleich.')).toBe(true)
-      expect(has(await mount(onStands.slug), 'Du sitzt auf der Tribüne. Das Host-Dock bleibt genau gleich.')).toBe(true)
-      expect(has(await mount(onStands.slug), 'spielst nicht mit')).toBe(false)
-    })
-
-    it('shows the seat note only to the Host, with their role badge, and lets them close it', async () => {
       const member = serveState({ sessions: [SESSION(1, FIRST)], missing: 0, phase: 'date_set', teamChoiceOpen: true, overrides: { members: members({ kitty: { zone: 'team', team: 1 } }) } })
-      const host = serveState({ sessions: [SESSION(1, FIRST)], missing: 0, host: true, phase: 'date_set', teamChoiceOpen: true, overrides: { members: members({ kitty: { zone: 'stands' } }) } })
 
+      expect(has(await mount(inTeam.slug), 'Host-Dock')).toBe(false)
+      expect(has(await mount(onStands.slug), 'Host-Dock')).toBe(false)
       expect(has(await mount(member.slug), 'Host-Dock')).toBe(false)
-      const hostPage = await mount(host.slug)
-      const seat = hostPage.findAll('[role="status"]').find(element => element.text().includes('Host-Dock'))!
-      expect(seat.text()).toContain('Nur du siehst das')
-
-      await seat.get('button[aria-label="Schließen"]').trigger('click')
-
-      expect(has(hostPage, 'Host-Dock')).toBe(false)
     })
 
     it('tells a Player which team looks for somebody while Team choice is open, and the Host that the start waits', async () => {
