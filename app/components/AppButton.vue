@@ -32,7 +32,7 @@ const weight = computed(() => (props.variant === 'primary' && props.size !== 'ca
     :is="to ? NuxtLink : 'button'"
     :to="to"
     :type="to ? undefined : 'button'"
-    class="outline-memphis inline-flex items-center justify-center gap-2 rounded-pill shadow-btn whitespace-nowrap no-underline lift reduced:transition-colors reduced:active:translate-0 motion-reduce:transition-colors motion-reduce:active:translate-0 disabled:pointer-events-none aria-disabled:border-dashed aria-disabled:border-ink-3 aria-disabled:bg-paper-2 aria-disabled:text-ink-3 aria-disabled:shadow-none aria-disabled:hover:translate-y-0 aria-disabled:hover:shadow-none aria-disabled:hover:bg-none aria-disabled:active:translate-0"
+    class="outline-memphis inline-flex items-center justify-center gap-2 rounded-pill shadow-btn whitespace-nowrap no-underline lift reduced:transition-colors motion-reduce:transition-colors disabled:pointer-events-none aria-disabled:border-dashed aria-disabled:border-ink-3 aria-disabled:bg-paper-2 aria-disabled:text-ink-3 aria-disabled:shadow-none aria-disabled:hover:translate-y-0 aria-disabled:hover:shadow-none aria-disabled:hover:bg-none aria-disabled:active:translate-0"
     :class="[SIZE[size], VARIANT[variant], weight, { aura: props.aura }]"
   >
     <slot name="icon" />
