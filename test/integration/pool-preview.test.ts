@@ -4,6 +4,7 @@ import { memoryImageStore } from '../../server/utils/image-store'
 import { memoryRoomNotifier } from '../../server/utils/room-notifier'
 import type { CreatedEvent, EventView } from '../../shared/event'
 import type { GamePrice, GameView } from '../../shared/game'
+import { notesFromLines, type NotesDoc } from '../../shared/notes-doc'
 import { TEST_SETTINGS } from './fixtures'
 import { createTestApp, type TestRequest } from './app'
 import { createTestDb, resetDatabase } from './harness'
@@ -65,7 +66,7 @@ describe('Pool preview secrecy (#225)', () => {
     vi.unstubAllEnvs()
   })
 
-  interface PoolGame { id: string, name: string, videoId: string, imageUrl: string, imageKey: string, notes: string, tag: string, cents: number, price: GamePrice | null, playersMin: number, playersMax: number }
+  interface PoolGame { id: string, name: string, videoId: string, imageUrl: string, imageKey: string, notes: string, notesDoc: NotesDoc, tag: string, cents: number, price: GamePrice | null, playersMin: number, playersMax: number }
 
   async function newGame(name: string, videoId: string): Promise<PoolGame> {
     // Lower case, so the key and the label are one string (#335). The Price's cents are distinct per game (#338): the amount names its game in a read.
@@ -77,7 +78,7 @@ describe('Pool preview secrecy (#225)', () => {
     const created = await request('/api/games', {
       method: 'POST',
       headers: { 'content-type': 'application/json', 'cookie': hostCookie },
-      body: JSON.stringify({ name, youtubeUrl: `https://youtu.be/${videoId}`, notes: `Hausregel zu ${name}`, tags: [tag], price: { cents, source: 'steam' }, playersMin, playersMax, suitabilities: ['teams'] }),
+      body: JSON.stringify({ name, youtubeUrl: `https://youtu.be/${videoId}`, notes: notesFromLines([`Hausregel zu ${name}`]), tags: [tag], price: { cents, source: 'steam' }, playersMin, playersMax, suitabilities: ['teams'] }),
     })
     expect(created.status).toBe(200)
     const { id, price } = await created.json() as GameView
@@ -88,7 +89,7 @@ describe('Pool preview secrecy (#225)', () => {
     })
     expect(uploaded.status).toBe(200)
     const view = await uploaded.json() as GameView
-    return { id, name, videoId, imageUrl: view.imageUrl!, imageKey: view.imageUrl!.slice('/api/images/'.length), notes: view.notes!, tag, cents, price, playersMin, playersMax }
+    return { id, name, videoId, imageUrl: view.imageUrl!, imageKey: view.imageUrl!.slice('/api/images/'.length), notes: `Hausregel zu ${name}`, notesDoc: view.notes!, tag, cents, price, playersMin, playersMax }
   }
 
   /** A, B in the Game pool, C in the library only (#279: there is no Tiebreaker pool); the Player has joined. */
@@ -183,8 +184,8 @@ describe('Pool preview secrecy (#225)', () => {
       expect((JSON.parse(raw) as EventView).pool).toMatchObject([{ name: 'Alpha Arena' }, { name: 'Beta Bowling' }])
       // With the Pool preview off too, the Host's hostGames holds the Tags and Notes of Alpha and Beta, and nothing of Gamma (#443).
       expect((JSON.parse(raw) as EventView).hostGames).toEqual({
-        [pool[0]!.id]: { tags: [{ key: pool[0]!.tag, label: pool[0]!.tag }], notes: pool[0]!.notes },
-        [pool[1]!.id]: { tags: [{ key: pool[1]!.tag, label: pool[1]!.tag }], notes: pool[1]!.notes },
+        [pool[0]!.id]: { tags: [{ key: pool[0]!.tag, label: pool[0]!.tag }], notes: pool[0]!.notesDoc },
+        [pool[1]!.id]: { tags: [{ key: pool[1]!.tag, label: pool[1]!.tag }], notes: pool[1]!.notesDoc },
       })
       expect(raw).not.toContain(pool[2]!.tag)
       for (const game of pool) {
@@ -249,7 +250,7 @@ describe('Pool preview secrecy (#225)', () => {
     // The control: the Host's game carries every field, the notes and the Price too.
     const hostPool = (JSON.parse(await rawRead(hostCookie, slug)) as EventView).pool!
     expect(Object.keys(hostPool[0]!).sort()).toEqual(['clipLength', 'clipStart', 'id', 'imageUrl', 'name', 'notes', 'playersMax', 'playersMin', 'price', 'suitabilities', 'youtubeId'])
-    expect(hostPool[0]).toMatchObject({ notes: pool[0]!.notes, price: pool[0]!.price })
+    expect(hostPool[0]).toMatchObject({ notes: pool[0]!.notesDoc, price: pool[0]!.price })
   })
 
   it.each([
@@ -514,7 +515,7 @@ describe('Pool preview secrecy (#225)', () => {
 
       const view = JSON.parse(await rawRead(hostCookie, slug)) as EventView
       expect(Object.keys(view.hostGames!).sort()).toEqual([alpha.id, beta.id, library.id].sort())
-      expect(view.hostGames![library.id]).toEqual({ tags: [{ key: library.tag, label: library.tag }], notes: library.notes })
+      expect(view.hostGames![library.id]).toEqual({ tags: [{ key: library.tag, label: library.tag }], notes: library.notesDoc })
     })
 
     it('reveals nothing more when the Round is put back', async () => {

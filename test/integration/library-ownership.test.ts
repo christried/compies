@@ -3,6 +3,7 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } 
 import { gameTags, games, users } from '../../server/db/schema'
 import { memoryImageStore } from '../../server/utils/image-store'
 import { GAME_NAME_MAX, type GameList, type GameTag, type GameView } from '../../shared/game'
+import { notesFromLines } from '../../shared/notes-doc'
 import { createTestApp, type TestRequest } from './app'
 import { createTestDb, resetDatabase } from './harness'
 import { setAllowlist, signIn, stubAuthEnv } from './sign-in'
@@ -98,14 +99,14 @@ describe('one library per User (#455, ADR 0018)', () => {
 
     it.each(askers)('answers %s as it answers an unknown id, for read, edit and image upload, and writes nothing', async (_name, asker) => {
       const owner = await cookieOf(host)
-      const game = await created(owner, { name: 'Mario Kart', notes: 'geheim', tags: ['Co-op'] })
+      const game = await created(owner, { name: 'Mario Kart', notes: notesFromLines(['geheim']), tags: ['Co-op'] })
       const before = await rowOf(game.id)
       const tagsBefore = await tagRows()
       const cookie = asker ? await cookieOf(asker) : undefined
 
       const attempts: [string, (id: string) => Promise<Response>][] = [
         ['read', id => get(`/api/games/${id}`, cookie)],
-        ['edit with the whole game', id => patch(id, cookie, { name: 'Gekapert', notes: 'neu', tags: ['Racing'] })],
+        ['edit with the whole game', id => patch(id, cookie, { name: 'Gekapert', notes: notesFromLines(['neu']), tags: ['Racing'] })],
         ['edit with the Price flag', id => patch(id, cookie, { priceChecked: true })],
         ['image upload', id => upload(id, cookie)],
       ]

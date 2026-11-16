@@ -156,7 +156,7 @@ describe('Hidden wheel secrecy (#148)', () => {
 
       const view = JSON.parse(await rawRead(hostCookie, slug)) as EventView
 
-      expect(view.rounds).toMatchObject([{ game: { name: 'Alpha Arena' }, notes: a.notes }])
+      expect(view.rounds).toMatchObject([{ game: { name: 'Alpha Arena' }, notes: a.notesDoc }])
       expect(view.pool?.map(game => game.name)).toEqual(['Alpha Arena', 'Beta Bowling'])
     })
 
@@ -169,7 +169,7 @@ describe('Hidden wheel secrecy (#148)', () => {
 
       const view = JSON.parse(await rawRead(hostCookie, slug)) as EventView
       expect(Object.keys(view.hostGames!).sort()).toEqual([a.id, b.id, epsilon.id].sort())
-      expect(view.hostGames![epsilon.id]).toEqual({ tags: [{ key: epsilon.tag, label: epsilon.tag }], notes: epsilon.notes })
+      expect(view.hostGames![epsilon.id]).toEqual({ tags: [{ key: epsilon.tag, label: epsilon.tag }], notes: epsilon.notesDoc })
     })
 
     it('keeps the Tags and Notes of a game in hostGames while its Round shows it, after the game left the pool (#443)', async () => {
@@ -181,7 +181,7 @@ describe('Hidden wheel secrecy (#148)', () => {
 
       expect(view.pool?.map(game => game.id)).toEqual([b.id])
       expect(view.rounds).toMatchObject([{ game: { id: a.id } }])
-      expect(view.hostGames![a.id]).toEqual({ tags: [{ key: a.tag, label: a.tag }], notes: a.notes })
+      expect(view.hostGames![a.id]).toEqual({ tags: [{ key: a.tag, label: a.tag }], notes: a.notesDoc })
     })
 
     it('reveals nothing more when the Host puts the Round back: the pools stay hidden, the games not set stay unknown', async () => {
@@ -357,7 +357,7 @@ describe('Hidden wheel secrecy (#148)', () => {
 
       expect(view.wheel?.spin?.game).toMatchObject({ id: drawn.id })
       expect(Object.keys(view.hostGames!).sort()).toEqual([a.id, b.id].sort())
-      expect(view.hostGames![drawn.id]).toEqual({ tags: [{ key: drawn.tag, label: drawn.tag }], notes: drawn.notes })
+      expect(view.hostGames![drawn.id]).toEqual({ tags: [{ key: drawn.tag, label: drawn.tag }], notes: drawn.notesDoc })
     })
 
     it('lays a Hidden wheel out in an order of its own, not that of the pool, and the drawn game is the slice at the result index (F2)', async () => {
