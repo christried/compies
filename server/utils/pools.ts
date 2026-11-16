@@ -47,16 +47,18 @@ export async function assertGamesExist(tx: Db, hostId: string, ...lists: string[
 }
 
 /**
- * The live Events `userId` is a Member of whose Game pool holds the game, or in which a Round has set it, with whether
+ * The live Events `userId` is a Member of whose Game pool holds a game with the image key, or in which a Round has set one, with whether
  * they host it, whether their Pool preview is on and whether a Round set the game: what the image route needs (#148,
- * #225, #228). One query, deleted Events left out. A Round that was put back still counts as set: everyone saw it.
+ * #225, #228). Copies of a game share a key (ADR 0018), so it asks by key, not by game (#723). One query, deleted Events left out.
+ * A Round that was put back still counts as set: everyone saw it.
  */
-export async function gameEventsOf(db: Db, userId: string, gameId: string, now: Date): Promise<GameFacts[]> {
-  const inPool = exists(db.select({ one: sql`1` }).from(eventPoolGames).where(and(eq(eventPoolGames.eventId, events.id), eq(eventPoolGames.gameId, gameId))))
+export async function gameEventsOf(db: Db, userId: string, imageKey: string, now: Date): Promise<GameFacts[]> {
+  const withKey = db.select({ id: games.id }).from(games).where(eq(games.imageKey, imageKey))
+  const inPool = exists(db.select({ one: sql`1` }).from(eventPoolGames).where(and(eq(eventPoolGames.eventId, events.id), inArray(eventPoolGames.gameId, withKey))))
   // A game is set once a Round has it, or a draw of the Event has it and stopped (#229): a draw whose stop has passed but nobody has
   // read since is not settled yet, and its image must not wait for that.
-  const stopped = exists(db.select({ one: sql`1` }).from(draws).innerJoin(rounds, eq(draws.roundId, rounds.id)).where(and(stoppedDraws(events.id, now), eq(draws.gameId, gameId))))
-  const wasSet = or(exists(db.select({ one: sql`1` }).from(rounds).where(and(eq(rounds.eventId, events.id), eq(rounds.gameId, gameId)))), stopped)
+  const stopped = exists(db.select({ one: sql`1` }).from(draws).innerJoin(rounds, eq(draws.roundId, rounds.id)).where(and(stoppedDraws(events.id, now), inArray(draws.gameId, withKey))))
+  const wasSet = or(exists(db.select({ one: sql`1` }).from(rounds).where(and(eq(rounds.eventId, events.id), inArray(rounds.gameId, withKey)))), stopped)
   const found = await db
     .selectDistinct({ isHost: sql<boolean>`${events.hostId} = ${userId}`, hiddenWheel: events.hiddenWheel, poolPreview: events.poolPreview, set: sql<boolean>`${wasSet}` })
     .from(events)
