@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { HostGameFacts, PoolGameFace } from '~~/shared/game'
+import type { NotesDoc } from '~~/shared/notes-doc'
 
 // A game as a tile with its dialog (#443, #444): the tile (#435) is a button that opens the game dialog, for every Member, and the dialog lives in its tile, so it goes
 // with the tile when the tile leaves the page (a Round settled from another tab, a game that left the pool). `audience` only decides what the dialog shows: the Host's
@@ -9,6 +10,8 @@ defineProps<{
   audience: 'host' | 'member'
   /** The Tags and Notes of the game from the Host's read; null for a Member and where the read has none. */
   facts?: HostGameFacts | null
+  /** The Host's Event notes of this game (#732), from `eventNotes` of the Event read; null for a Member and where the game has none. */
+  eventNotes?: NotesDoc | null
 }>()
 
 const dialogOpen = ref(false)
@@ -26,6 +29,7 @@ const dialogOpen = ref(false)
     :game="game"
     :audience="audience"
     :facts="facts"
+    :event-notes="eventNotes"
     @close="dialogOpen = false"
   />
 </template>

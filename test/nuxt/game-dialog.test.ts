@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import GameDialog from '~/components/GameDialog.vue'
 import GameTile from '~/components/GameTile.vue'
 import { GAME_NAME_MAX, GAME_NOTES_MAX, TAG_MAX, TAGS_PER_GAME_MAX, type HostGameFacts, type PoolGameFace } from '~~/shared/game'
-import { notesFromLines } from '~~/shared/notes-doc'
+import { notesFromLines, type NotesDoc } from '~~/shared/notes-doc'
 import { colorTags } from '~~/shared/tag-colors'
 import { kitty, signInAs } from './auth'
 import { BLANK_NOTES, FORMATTED_HREF, FORMATTED_NOTES, readFormatted } from './helpers/formatted-notes'
@@ -40,7 +40,7 @@ const FACTS: HostGameFacts = {
 
 let wrapper: VueWrapper | undefined
 
-async function open(props: { game?: PoolGameFace, audience?: 'host' | 'member', facts?: HostGameFacts | null } = {}) {
+async function open(props: { game?: PoolGameFace, audience?: 'host' | 'member', facts?: HostGameFacts | null, eventNotes?: NotesDoc | null } = {}) {
   wrapper = await mountSuspended(GameDialog, { props: { open: true, game: FULL, audience: 'host', facts: FACTS, ...props } })
   await flushPromises()
   return wrapper
@@ -116,6 +116,35 @@ describe('the game dialog for the Host (#443)', () => {
       await open({ facts: { tags: [], notes: blank } })
 
       expect(text()).not.toContain('Notizen')
+      wrapper!.unmount()
+    }
+  })
+
+  it('shows the Event notes under their label above the Game notes (#732)', async () => {
+    await open({ eventNotes: notesFromLines(['Heute nur Bo1']) })
+
+    const label = [...dialog().querySelectorAll('h3')].find(h => h.textContent === 'Notizen für dieses Event')!
+    const gameLabel = [...dialog().querySelectorAll('h3')].find(h => h.textContent === 'Notizen')!
+    expect(label).toBeDefined()
+    expect(text()).toContain('Heute nur Bo1')
+    expect(label.compareDocumentPosition(gameLabel) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  })
+
+  it('shows the Event notes alone for a game without Game notes (#732)', async () => {
+    await open({ facts: { tags: [], notes: null }, eventNotes: notesFromLines(['Heute nur Bo1']) })
+
+    expect(text()).toContain('Heute nur Bo1')
+    expect([...dialog().querySelectorAll('h3')].map(h => h.textContent)).toEqual(['Notizen für dieses Event'])
+  })
+
+  it('shows no label for a game without Event notes, null or blank (#732)', async () => {
+    await open({ eventNotes: null })
+    expect(text()).not.toContain('Notizen für dieses Event')
+    wrapper!.unmount()
+
+    for (const blank of BLANK_NOTES) {
+      await open({ eventNotes: blank })
+      expect(text()).not.toContain('Notizen für dieses Event')
       wrapper!.unmount()
     }
   })
@@ -227,9 +256,11 @@ describe('the game dialog for the Host (#443)', () => {
 
 describe('the game dialog for a Member (#443, #444)', () => {
   it('shows picture, name, players, Suitabilities and the Price, and never Tags, Notes or the link, even when handed the facts', async () => {
-    await open({ audience: 'member', facts: FACTS })
+    await open({ audience: 'member', facts: FACTS, eventNotes: notesFromLines(['Heute nur Bo1']) })
 
     expect(dialog().querySelector('h2')?.textContent).toBe('Mario Kart')
+    expect(text()).not.toContain('Notizen für dieses Event')
+    expect(text()).not.toContain('Heute nur Bo1')
     expect(dialog().querySelector('img')?.getAttribute('src')).toBe('/api/images/kart.webp')
     expect(pills()).toHaveLength(3)
     expect(pills()[2]).toContain('19,99 €')
