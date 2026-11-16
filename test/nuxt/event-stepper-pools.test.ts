@@ -1,11 +1,12 @@
 import { mountSuspended, registerEndpoint } from '@nuxt/test-utils/runtime'
-import type { VueWrapper } from '@vue/test-utils'
+import { flushPromises, type VueWrapper } from '@vue/test-utils'
 import { createError, readBody } from 'h3'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import CreatePage from '~/pages/neu.vue'
 import type { GameView } from '~~/shared/game'
 import { notesFromLines } from '~~/shared/notes-doc'
 import { kitty, signInAs } from './auth'
+import { FORMATTED_HREF, FORMATTED_NOTES, readFormatted } from './helpers/formatted-notes'
 
 // Step 6 of the stepper, the Game pool (#146, #173; the Tiebreaker pool is gone, #279): the game browser over the library,
 // the hint under the Game pool, „Neues Spiel anlegen“ in a sheet, and what is sent. The other steps have their own
@@ -802,6 +803,18 @@ describe('the Notes button of a game in the pool steps (#436)', () => {
     expect(notesButtons(page)).toHaveLength(0)
     expect(maybeToggle(page, 'Schach in den Pool').exists()).toBe(true)
     expect(maybeToggle(page, 'Pong aus dem Pool nehmen').exists()).toBe(true)
+  })
+
+  it('shows the formatted notes of a library game when the Notes button is pressed (#728)', async () => {
+    library = [game(1, 'Mario Kart', { notes: FORMATTED_NOTES }), pong, chess]
+    const page = await mountCreate()
+    await toPoolStep(page)
+
+    ;(notesButtons(picker(page))[0] as HTMLButtonElement).click()
+    await flushPromises()
+
+    expect(readFormatted(document.body).bold).toBe('Wichtig')
+    expect(document.querySelector(`a[href="${FORMATTED_HREF}"]`)?.getAttribute('target')).toBe('_blank')
   })
 
   it('shows the Notes button in the browser while the pool is empty', async () => {

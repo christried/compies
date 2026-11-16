@@ -2,12 +2,12 @@
 import { NotebookText, X } from '@lucide/vue'
 import { MD_QUERY } from '~/composables/useMediaQuery'
 import { placeNotePopover } from '~/utils/note-popover'
-import { notesPlainText, type NotesDoc } from '~~/shared/notes-doc'
+import { notesHasText, type NotesDoc } from '~~/shared/notes-doc'
 
 // The Notes of a game in a picker (#436, 02-components § GameCard, deviation 0.12): a Notes button that opens the game's notes read-only,
-// line breaks kept. From md up a popover beside the button, below it a sheet from the bottom (the pattern of the Sessions card's „Mehr“,
+// formatted (#728). From md up a popover beside the button, below it a sheet from the bottom (the pattern of the Sessions card's „Mehr“,
 // #349). It is not a menu: MoveToMenu holds menu targets, so it stays out. Esc, a press outside and a scroll that would move the popover
-// away from its button close it; the focus goes back to the button. No notes, no button. The popover sits where placeNotePopover puts it
+// away from its button close it; the focus goes back to the button. No notes, no button (a document without a visible character is none). The popover sits where placeNotePopover puts it
 // (above or below the button, inside the window), measured once it is drawn (#488). When it fits on neither side it is capped to the
 // roomier one and scrolls (#494).
 const props = withDefaults(defineProps<{
@@ -19,7 +19,8 @@ const props = withDefaults(defineProps<{
 }>(), { size: 40 })
 
 const { t } = useI18n()
-const text = computed(() => notesPlainText(props.notes))
+// The document to show: null for none or for blank notes, so the template narrows on it.
+const doc = computed(() => notesHasText(props.notes) ? props.notes : null)
 const wide = useMediaQuery(MD_QUERY)
 const narrow = computed(() => wide.value === false)
 const titleId = useId()
@@ -89,7 +90,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <template v-if="notes">
+  <template v-if="doc">
     <IconButton
       ref="trigger"
       :icon="NotebookText"
@@ -105,9 +106,10 @@ onBeforeUnmount(() => {
       :title="name"
       @close="close"
     >
-      <p class="m-0 text-[14px] leading-[1.45] whitespace-pre-wrap text-ink [overflow-wrap:anywhere]">
-        {{ text }}
-      </p>
+      <RichNotes
+        :doc="doc"
+        class="text-[14px] leading-[1.45] text-ink"
+      />
     </AppSheet>
     <Teleport
       v-else
@@ -138,9 +140,10 @@ onBeforeUnmount(() => {
             @click="close"
           />
         </header>
-        <p class="m-0 text-[14px] leading-[1.45] whitespace-pre-wrap text-ink [overflow-wrap:anywhere]">
-          {{ text }}
-        </p>
+        <RichNotes
+          :doc="doc"
+          class="text-[14px] leading-[1.45] text-ink"
+        />
       </div>
     </Teleport>
   </template>
