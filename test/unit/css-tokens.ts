@@ -42,6 +42,31 @@ export const themeBlock = (header: RegExp) => clean(theme).match(new RegExp(`${h
 /** The `dark` variant the app compiles its `dark:` utilities from. */
 export const darkVariant = themeBlock(/@custom-variant dark/)
 
+export type Rule = { chain: string[], decls: string[] }
+
+/** Every block of a compiled stylesheet, with the headers around it (outermost first) and its own declarations. The output keeps its nesting. */
+export function parse(css: string): Rule[] {
+  const rules: Rule[] = []
+  const stack: Rule[] = []
+  let buffer = ''
+  for (const char of css) {
+    if (char === '{') {
+      stack.push({ chain: [...(stack.at(-1)?.chain ?? []), buffer.trim()], decls: [] })
+      buffer = ''
+    }
+    else if (char === ';' || char === '}') {
+      if (buffer.trim()) stack.at(-1)?.decls.push(buffer.trim())
+      buffer = ''
+      if (char === '}') {
+        const closed = stack.pop()
+        if (closed) rules.push(closed)
+      }
+    }
+    else buffer += char
+  }
+  return rules
+}
+
 /** What Tailwind emits for the candidates, from the dark variant plus `source` (a `@theme` or `@utility` text), normalised. */
 export async function build(source: string, candidates: string[]) {
   const compiler = await compile(`${darkVariant}\n${source}\n@tailwind utilities;`)

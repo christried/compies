@@ -1,36 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { build, theme, themeBlock } from './css-tokens'
+import { build, parse, theme, themeBlock, type Rule } from './css-tokens'
 
 // The lift on hover (#33, #608). Like the hover tint, it is pinned at Tailwind's compiler: jsdom computes no cascade, so no
-// test can read the transform or the shadow of a rendered element. The output keeps its nesting, so the helper below reads
-// it as a tree and hands back every rule with the chain of at-rules and selectors around it.
+// test can read the transform or the shadow of a rendered element. The output keeps its nesting, so `parse` reads it as a
+// tree and hands back every rule with the chain of at-rules and selectors around it.
 const tint = themeBlock(/@utility tint/)
 const lift = themeBlock(/@utility lift/)
-
-type Rule = { chain: string[], decls: string[] }
-
-/** Every block of a compiled stylesheet, with the headers around it (outermost first) and its own declarations. */
-function parse(css: string): Rule[] {
-  const rules: Rule[] = []
-  const stack: Rule[] = []
-  let buffer = ''
-  for (const char of css) {
-    if (char === '{') {
-      stack.push({ chain: [...(stack.at(-1)?.chain ?? []), buffer.trim()], decls: [] })
-      buffer = ''
-    }
-    else if (char === ';' || char === '}') {
-      if (buffer.trim()) stack.at(-1)?.decls.push(buffer.trim())
-      buffer = ''
-      if (char === '}') {
-        const closed = stack.pop()
-        if (closed) rules.push(closed)
-      }
-    }
-    else buffer += char
-  }
-  return rules
-}
 
 const header = (rule: Rule) => rule.chain.join(' | ')
 const sets = (rule: Rule, declaration: string) => rule.decls.includes(declaration)
@@ -43,8 +18,17 @@ describe('lift', () => {
     const press = all.find(rule => header(rule).includes('&:active') && rule.decls.some(decl => decl.startsWith('translate')))
     expect(press?.decls).toContain('translate: var(--spacing) var(--spacing)')
     // The shadow goes at every motion setting: it is a visual change, not motion.
-    const flat = all.find(rule => header(rule).endsWith('&:active') && !header(rule).includes('@media') && rule.decls.includes('box-shadow: none'))
+    const flat = all.find(rule => header(rule).includes('&:active') && !header(rule).includes('@media') && rule.decls.includes('box-shadow: none'))
     expect(flat).toBeDefined()
+  })
+
+  it('presses only for its own click: a control inside it that is pressed leaves it still, except the one marked as its owner (#658)', async () => {
+    const all = await rules()
+    const pressing = all.filter(rule => header(rule).includes('&:active') && rule.decls.some(decl => decl.startsWith('translate') || decl === 'box-shadow: none'))
+    expect(pressing.length).toBeGreaterThanOrEqual(2)
+    for (const rule of pressing) {
+      expect(header(rule)).toMatch(/:not\(:has\(:active:is\(a, button, [^)]*\):not\(\[data-lift-owner\]\)\)\)/)
+    }
   })
 
   it('moves a pressed element only where motion is not reduced, in the OS and in the app (#608)', async () => {

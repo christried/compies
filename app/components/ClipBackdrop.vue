@@ -10,12 +10,23 @@ const props = defineProps<{
 
 // The page does not scroll behind the backdrop, as the Clip's own box would not let it either. No sheet locks scroll, so this is the
 // one place that does; the class goes at the start of the fade-out, so the page is usable again at once.
+// `overflow-hidden` takes a classic scrollbar away (Windows), and the page and every fixed element would move by its width at the
+// Clip's start and back at its end (#658). So a page that scrolls, which shows that scrollbar, keeps its place as a gutter while locked
+// (`scroll-gutter`). It is read before the lock; a page that does not scroll, or a device with overlay scrollbars, has none to keep.
+const LOCK = ['overflow-hidden', 'scroll-gutter']
 watch(() => props.shown, (value) => {
-  if (import.meta.client) document.documentElement.classList.toggle('overflow-hidden', value)
+  if (!import.meta.client) return
+  const root = document.documentElement
+  if (value) {
+    const scrolls = window.innerWidth > root.clientWidth
+    root.classList.add('overflow-hidden')
+    root.classList.toggle('scroll-gutter', scrolls)
+  }
+  else root.classList.remove(...LOCK)
 }, { immediate: true, flush: 'post' })
 
 onBeforeUnmount(() => {
-  if (import.meta.client) document.documentElement.classList.remove('overflow-hidden')
+  if (import.meta.client) document.documentElement.classList.remove(...LOCK)
 })
 </script>
 
