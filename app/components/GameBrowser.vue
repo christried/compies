@@ -11,12 +11,14 @@ import { CHIP_OFF, CHIP_ON, CHIP_SHAPE } from '~/utils/chip-look'
 // (#369: 40 cards a page over the filtered list, more by a sentinel or „Mehr laden“). What differs is handed in: the
 // filter state (`v-model:filters`, the library binds it to the address, the picker keeps it local), `compact` (only the
 // search, „Alle“ and the Tag; the library page also has „Archiviert“, #467), `to` (the card links to the game), `#card-actions` (the picker's ＋ and ✕) and `#toolbar`
-// („Neues Spiel anlegen“, on the search row). The filtering is client side (`filterGames`), so it follows every
+// („Neues Spiel anlegen“, on the search row), `marksEvents` (#733, the library page's „in 2 Events“ on each card). The filtering is client side (`filterGames`), so it follows every
 // keystroke. The grid from md up and the rows below are CSS (GameCard `responsive`), not `matchMedia`.
 const props = defineProps<{
   compact?: boolean
   /** Where a card leads; without it the cards are plain. */
   to?: (game: GameView) => RouteLocationRaw
+  /** Each card says in how many live Events its game sits (#733): the library page only, the pickers leave it off. */
+  marksEvents?: boolean
 }>()
 const filters = defineModel<GameFilters>('filters', { required: true })
 
@@ -28,7 +30,7 @@ defineSlots<{
 }>()
 
 const { t } = useI18n()
-const { games, tagsInUse, error, refresh } = useGameLibrary()
+const { games, tagsInUse, eventCounts, error, refresh } = useGameLibrary()
 const { setArchived } = useGameArchive()
 
 const PLAYER_CHOICES = Array.from({ length: 24 }, (_, index) => index + 1)
@@ -265,6 +267,7 @@ const CHIP = `inline-flex ${CHIP_SHAPE} items-center gap-1.5 px-4 text-small`
           :game="game"
           layout="responsive"
           :to="to?.(game)"
+          :in-events="marksEvents ? eventCounts[game.id] ?? 0 : 0"
           class="h-full"
         >
           <template

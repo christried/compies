@@ -133,6 +133,11 @@ export interface GameList {
   games: GameView[]
   /** Every Tag some game carries, once per key with the label of its earliest row, by key (#335): the form's suggestions and the filter. */
   tagsInUse: GameTag[]
+  /**
+   * Game id to the number of the viewer's own Events that hold the game in their Game pool and are live: not finished, not deleted (#733, „in 2 Events“
+   * on the library card). Only games with a count above 0 have a key; a missing key means 0.
+   */
+  eventCounts: Record<string, number>
 }
 
 /** What the game browser filters by (#142, #171, #173). Empty, null and false mean no filter. */

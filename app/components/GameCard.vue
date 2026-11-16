@@ -13,7 +13,8 @@ import { colorTags } from '~~/shared/tag-colors'
 // without it the card is a plain element, not a button. #146 and #148 reuse it; a game with no player count and no Suitabilities shows neither. `layout="responsive"` (#173) is a row
 // below md and a card from md up, decided in CSS, so the game browser needs no `matchMedia`. A library game shows its first
 // three Tags and „+N“ (#335), each in the colour the game's whole Tag order gives it (#427, as on its page) and its Price line under the meta line (#337, #338: a pool and a Round game carry the Price too); only a wheel slice carries neither. „+N“ is a button above the link, and its popover lists every Tag (#614). They are
-// spans, not a list: the tests count the cards as `li`. The picker's rows are these cards too, so they show the Price as well.
+// spans, not a list: the tests count the cards as `li`. The picker's rows are these cards too, so they show the Price as well. With `inEvents` (#733) a neutral pill „in 2 Events“
+// sits between the Price line and the Tags; it is a count, no Tag, so it is not a `TagChip`, and no control, so it adds no tab stop.
 // The `tile` layout (#435) is the cover and the name only, on the Event page: no players, Suitabilities, Tags or Price, and no link. With `opens` (#443) the
 // name is a button that emits `open` (a tile opens the game dialog, #443, #444) and stretches over the tile like the link does; a tile without it stays plain.
 const props = withDefaults(defineProps<{
@@ -22,7 +23,9 @@ const props = withDefaults(defineProps<{
   to?: RouteLocationRaw
   /** The name is a button that asks for the game's dialog (#443). Without it, or with `to`, nothing changes. */
   opens?: boolean
-}>(), { layout: 'card', to: undefined, opens: false })
+  /** In how many of the Host's live Events the game sits in the pool (#733): „in 2 Events“ in a pill of its own; 0 draws nothing. */
+  inEvents?: number
+}>(), { layout: 'card', to: undefined, opens: false, inEvents: 0 })
 
 const emit = defineEmits<{ open: [] }>()
 
@@ -164,6 +167,10 @@ const look = computed(() => LAYOUT[props.layout])
         class="text-[12px] font-bold text-ink-2"
         :class="layout === 'card' ? '' : layout === 'row' ? 'truncate' : 'truncate md:whitespace-normal'"
       >{{ priceText }}</span>
+      <span
+        v-if="showMeta && inEvents > 0"
+        class="w-fit max-w-full truncate rounded-pill border-2 border-line bg-paper-2 px-2 text-[11px] leading-5 font-bold text-ink-2"
+      >{{ t('library.inEvents', { n: inEvents }, inEvents) }}</span>
       <div
         v-if="showMeta && shownTags.length > 0"
         role="group"

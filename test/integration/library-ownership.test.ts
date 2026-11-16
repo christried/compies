@@ -149,7 +149,7 @@ describe('one library per User (#455, ADR 0018)', () => {
       await created(owner, { name: 'Alpha', tags: ['Co-op'] })
       await created(owner, { name: 'Beta' })
 
-      expect(await listOf(viewer)).toEqual({ games: [], tagsInUse: [] })
+      expect(await listOf(viewer)).toEqual({ games: [], tagsInUse: [], eventCounts: {} })
 
       const mine = await created(viewer, { name: 'zebra' })
       expect((await listOf(viewer)).games.map(game => game.id)).toEqual([mine.id])
@@ -232,7 +232,7 @@ describe('one library per User (#455, ADR 0018)', () => {
       const memberCookie = await cookieOf(member)
       await setCanHost('Gast', true)
 
-      expect(await listOf(memberCookie)).toEqual({ games: [], tagsInUse: [] })
+      expect(await listOf(memberCookie)).toEqual({ games: [], tagsInUse: [], eventCounts: {} })
       expect(await (await get('/api/games/tags', memberCookie)).json()).toEqual([])
     })
   })

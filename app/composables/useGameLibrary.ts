@@ -26,6 +26,8 @@ export function useGameLibrary() {
     games: computed(() => current.value?.games ?? null),
     // No Tags in use before the first answer; every answer carries them (GameList).
     tagsInUse: computed(() => current.value?.tagsInUse ?? []),
+    // Game id to the number of live Events that hold it (#733); a missing key means 0, and there is none before the first answer.
+    eventCounts: computed(() => current.value?.eventCounts ?? {}),
     status,
     error,
     refresh,
