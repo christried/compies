@@ -24,7 +24,14 @@ describe('tourRun', () => {
   it('drops a step whose own rule says no and hands it the page', () => {
     const seen: TourPage[] = []
     const run = tourRun([
-      { id: 'a', target: null, applies: (given) => { seen.push(given); return false } },
+      {
+        id: 'a',
+        target: null,
+        applies: (given) => {
+          seen.push(given)
+          return false
+        },
+      },
       { id: 'b', target: null, applies: () => true },
     ], page)
 

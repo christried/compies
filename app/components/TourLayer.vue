@@ -1,4 +1,3 @@
-
 <script setup lang="ts">
 import { tourMove, type TourStep } from '~~/shared/tour'
 

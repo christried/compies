@@ -123,6 +123,11 @@ const { wide, panelTab, activeView, tabs, panelTabs, selectView } = useEventTabs
 // What is new on the Standings (#276): a Result the page has not seen. One owner for the stage block and the panel's tab, which are mounted
 // together, and for the live region below.
 const { news } = useStandingsNews(data, slug)
+
+// The Tour (#647, spec #622): a Member who has not seen it gets it once the page is calm; only this page has one. It makes the page behind inert like the Clip's backdrop does, without
+// drawing one: `covered` is the one flag for both, since the Tour's layer, like the Clip, stays usable in the `layers` slot.
+const tour = useTour({ view: () => data.value, clipShown: () => clipShown.value, wide: () => wide.value === true })
+const covered = computed(() => clipShown.value || tour.shown.value)
 </script>
 
 <template>
@@ -130,7 +135,7 @@ const { news } = useStandingsNews(data, slug)
     kind="event"
     :accessory="accessory"
     :event="data ? { name: data.event.name, ...pill } : undefined"
-    :covered="clipShown"
+    :covered="covered"
   >
     <template
       v-if="data"
@@ -175,10 +180,10 @@ const { news } = useStandingsNews(data, slug)
       v-if="data"
       #banner
     >
-      <!-- Under the Clip's backdrop too (#587): AppShell cannot wrap a slot, so the wrapper takes the `inert` itself. -->
+      <!-- Under the Clip's backdrop and the Tour too (#587, #647): AppShell cannot wrap a slot, so the wrapper takes the `inert` itself. -->
       <div
         class="px-3.5 pt-3 empty:hidden md:px-6"
-        :inert="clipShown || undefined"
+        :inert="covered || undefined"
       >
         <ConnectionBanner
           :state="connection"
@@ -383,6 +388,14 @@ const { news } = useStandingsNews(data, slug)
         :server-now="serverClock.now"
         :cast="actions.castVeto"
         @shown="vetoBarShown = $event"
+      />
+
+      <!-- The Tour (#647): its own box on the popover layer, no backdrop; the page behind is inert through `covered`. Mounted always (it watches `open`). -->
+      <TourLayer
+        v-if="data"
+        :open="tour.shown.value"
+        :steps="tour.run.value"
+        @over="tour.over"
       />
 
       <!-- The Host has the dock in every Phase; in a finished Event it holds Siegerehrung starten and Einladen (#277, #309). -->
