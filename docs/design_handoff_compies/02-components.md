@@ -1199,6 +1199,7 @@ Global library; create/edit games with YouTube preview and duplicate hint.
 - **Desktop / mobile:** —
 - **Accessibility:** Preview player labelled.
 - **Motion:** —
+- **Deviation (0.16, #455):** the library is per User, not global (ADR 0018, Release 0.16). A Host sees and edits only their own games; an Event refers only to games of its own Host's library. Two Hosts having the same game each is intended, so the duplicate hint is no longer a check across Hosts.
 
 ## AdminUserTable
 **Scope:** [1.0] · **Ref:** App Bibliothek & Profil 26
