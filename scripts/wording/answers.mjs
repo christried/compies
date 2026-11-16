@@ -8,7 +8,8 @@
  * @typedef {{ text: string, answer: Answer | null, replacement: string | null, comment: string, alternatives: string[] }} TextAnswer
  */
 /**
- * `texts` is by message key, `fixed` by fixed id (no `fixed:` prefix), `unused` by top-level group, `mono` by component path.
+ * `texts` is by message key, `fixed` by fixed id (no `fixed:` prefix), `unused` by top-level group, `mono` by component path. A `mono`
+ * entry with an empty comment means „seen, no remark“ (the step is answered by existing).
  * @typedef {{ version: 1, sweptAt: string, texts: Record<string, TextAnswer>, fixed: Record<string, TextAnswer>, unused: Record<string, 'loeschen' | 'behalten'>, mono: Record<string, { comment: string }> }} AnswersFile
  */
 /** @typedef {{ id: string, swept: string, replacement: string | null, now: string | null }} Changed */

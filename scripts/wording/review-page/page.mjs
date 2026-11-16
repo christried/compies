@@ -151,7 +151,9 @@ async function save(body, moveOn = true) {
     if (result.status === 422) showIssues(result.json.refusals ?? [], result.json.warnings ?? [])
     notice(result.status === 404
       ? 'Die Aufnahme hat sich geändert, bitte neu laden'
-      : result.status === 422 ? 'Der Text wurde nicht gespeichert' : `Speichern fehlgeschlagen (${result.json.error ?? result.status})`)
+      : result.status === 409
+        ? 'Speichern ist aus, bis die Antwortdatei in Ordnung ist (siehe Hinweise), dann die Seite neu laden'
+        : result.status === 422 ? 'Der Text wurde nicht gespeichert' : `Speichern fehlgeschlagen (${result.json.error ?? result.status})`)
     return false
   }
   state.answers = result.json.answers
@@ -702,7 +704,11 @@ async function load() {
   state.baseline = state.data.baseline
   buildBar()
   renderRules()
-  const hints = [...state.data.answerProblems.map((/** @type {string} */ problem) => `Antwortdatei: ${problem}`), ...state.data.problems]
+  const hints = [
+    ...state.data.answerProblems.map((/** @type {string} */ problem) => `Antwortdatei: ${problem}`),
+    ...(state.data.answerProblems.length > 0 ? ['Speichern ist aus, bis die Antwortdatei in Ordnung ist: den Eintrag in der Datei reparieren, dann die Seite neu laden'] : []),
+    ...state.data.problems,
+  ]
   if (hints.length > 0) {
     $('problems').hidden = false
     $('problems').querySelector('summary').textContent = `Hinweise (${hints.length})`
