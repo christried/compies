@@ -1,5 +1,5 @@
 ---
-name: capture-idea
+name: christried-capture-idea
 description: Capture an idea as an Idea issue for a later grilling, in about two minutes - a few quick questions, a draft, the user's OK. Use when the user asks to note an idea for later.
 ---
 

@@ -42,7 +42,7 @@ GitHub shares one number space across issues and PRs, so a bare `#42` may be eit
 
 ## Ideas
 
-An idea that isn't grilled yet is an **Idea issue**, never a line in `docs/roadmap.md` (the user, 2026-11-10). The roadmap holds only what a grilling has given a Release, and since 2026-11-16 the user picks from the open Idea issues what to grill next (`CLAUDE.md` § Roadmap). `/capture-idea` files one in about two minutes: a few quick questions, a draft, the user's OK.
+An idea that isn't grilled yet is an **Idea issue**, never a line in `docs/roadmap.md` (the user, 2026-11-10). The roadmap holds only what a grilling has given a Release, and since 2026-11-16 the user picks from the open Idea issues what to grill next (`CLAUDE.md` § Roadmap). `/christried-capture-idea` files one in about two minutes: a few quick questions, a draft, the user's OK.
 
 - **Title**: `<the idea in a few words>`, without an `Idea:` prefix: the `needs-triage` label already says it is a placeholder, not a ticket (the user, 2026-11-16; older titles lost the prefix the same day).
 - **Labels**: `enhancement` + `needs-triage`, where `needs-triage` means "not grilled yet". An Idea issue waits for a grilling, not for `/triage`: it is the user's own.
