@@ -19,7 +19,7 @@ const run = process.argv.slice(2).find(arg => arg.startsWith('--run='))?.slice('
 /** The games' names: library data, the same in the dark check and in the walk (#629). The Events' names come from `ctx.data.prefix` (`R011 Dunkel-Check ` in the dark check, `W<run> ` in the walk). */
 const GAME_PREFIX = 'R011 Dunkel-Check '
 // On a dev server started with `--wording` a text carries invisible key-tag characters (shared/key-tag.ts, #627): a page expression strips them before it compares
-// with `===`, a selector matches an attribute with `*=`. The backslashes are written doubled: the string holds `⁠` as text, which the page's regex reads.
+// with `===`, a selector matches an attribute with `*=`. The backslashes are written doubled: the string holds `\u2060` as text, which the page's regex reads.
 const UNTAG = '/[\\u2060\\u2062\\u2063]/g'
 /** The Coin flip's lead and flight (`shared/coin.ts`), plus a second. */
 const COIN_WAIT_MS = 1500 + 3600 + 1000

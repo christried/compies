@@ -7,7 +7,7 @@ import { decodeTags, stripTags, tagKey } from '~~/shared/key-tag'
 // reader gets, not how the characters are laid out.
 // Word joiner, invisible times and invisible separator: the frame and the two bits of the tag. Plane 14 Tag characters were measured first and
 // added one letter-spacing to a tagged text's element (m627 B4), so the tag is made of these, which add nothing.
-const TAG_CHARACTER = /[⁠⁢⁣]/u
+const TAG_CHARACTER = /[\u2060\u2062\u2063]/u
 
 function leaves(node: unknown, path: string[] = []): Array<{ key: string, value: string }> {
   if (typeof node === 'string') return [{ key: path.join('.'), value: node }]
@@ -34,7 +34,7 @@ describe('a tagged text', () => {
     'Größe ändern: Ärger über „Öl“ und Füße',
     'Es ist ’ne Falle',
     'Los geht’s 🎉🎲',
-    'Zero​width stays',
+    'Zero\u200bwidth stays',
   ])('keeps %j as it is', (text) => {
     const decoded = decodeTags(tagKey('some.key', text))
 
@@ -44,7 +44,7 @@ describe('a tagged text', () => {
   })
 
   it('stripTags removes the tag characters only, other zero-width characters stay', () => {
-    expect(stripTags(`${tagKey('a', 'x​y')}‍`)).toBe('x​y‍')
+    expect(stripTags(`${tagKey('a', 'x\u200by')}\u200d`)).toBe('x\u200by\u200d')
   })
 
   it('keeps the placeholder as rendered', () => {
@@ -129,15 +129,15 @@ describe('edges', () => {
   })
 
   it('a lone close is ignored and the visible text stays intact', () => {
-    const lone = '⁠'
+    const lone = '\u2060'
     const decoded = decodeTags(`Ende${lone}`)
 
     expect(decoded).toEqual({ text: 'Ende', tags: [] })
   })
 
   it('a key that does not decode is dropped, the tag around it stays', () => {
-    const broken = '⁠⁢⁠'
-    const raw = tagKey('outer', `Hallo ${broken}Welt⁠!`)
+    const broken = '\u2060\u2062\u2060'
+    const raw = tagKey('outer', `Hallo ${broken}Welt\u2060!`)
     const decoded = decodeTags(raw)
 
     expect(decoded.text).toBe('Hallo Welt!')
