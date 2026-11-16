@@ -208,6 +208,14 @@ export const STATES = [
         await next(tab)
         await libraryLoaded(tab)
       }),
+      // With no Vetos the pool's hint is the Host pick's; one step back, one Veto, and it is the wheel's.
+      step('pool-leer-rad', async (tab) => {
+        if (!await clickText(tab, '[data-testid=stepper-footer] button', COPY.stepper.back)) throw new Error('no „Zurück“ in the stepper')
+        await until(tab, `!!document.querySelector('[role=switch]')`, 'the mode step')
+        await stepBy(tab, COPY.setup.mode.vetoes, 'mehr', 1)
+        await next(tab)
+        await libraryLoaded(tab)
+      }),
       step('sessions-vergangenheit', async (tab) => {
         await next(tab)
         await typeDateTime(tab, '[role=group]', '01012020', '1900')

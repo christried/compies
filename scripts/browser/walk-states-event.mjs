@@ -152,7 +152,7 @@ export const STATES = [
       stop('panel-tabelle', tab => press(tab, '[role=tab]', COPY.nav.tabs.table)),
       stop('korrigieren', async (tab) => {
         await press(tab, 'button', COPY.history.correct.split('{n}')[1].trim())
-        await dialogWith(tab, COPY.result.cancelCorrection, 'the correction sheet')
+        await dialogWith(tab, COPY.result.saveCorrection, 'the correction sheet')
       }),
     ],
   }),
@@ -248,6 +248,27 @@ export const STATES = [
         await keepToasts(tab)
         await press(tab, '[role=dialog] button', COPY.team.word.resetConfirm)
         await toastShown(tab, before(COPY.team.word.resetDone).slice(0, 15))
+      }, { keep: true }),
+    ],
+  }),
+
+  // The optional state: the Invite sheet's „Link erneuern“, its question and the held answer. `fresh`: the Event's link is another one afterwards.
+  ...pair({
+    name: 'einladen-erneuern',
+    group: 'event-board',
+    key: 'teamwahl',
+    fresh: true,
+    only: 'host',
+    hostStops: [
+      stop('frage', async (tab) => {
+        await press(tab, 'button', COPY.common.invite)
+        await layerOpen(tab, 'the Invite sheet')
+        await press(tab, '[role=dialog] button', COPY.invite.renew)
+        await dialogWith(tab, COPY.invite.renewTitle, 'the renew question')
+      }),
+      stop('erneuert', async (tab) => {
+        await holdPress(tab, '[role=dialog] button', COPY.invite.renew)
+        await dialogWith(tab, COPY.invite.renewed, 'the renewed notice')
       }, { keep: true }),
     ],
   }),
