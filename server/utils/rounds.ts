@@ -77,7 +77,7 @@ export async function setNextGame({ tx, eventRow, user, publish, now }: ChangeCo
   const source = gamesLeftOf(state).includes(game.id) ? 'pool' : 'library'
   // With a window the Round takes its game when the draw settles, so it stays without one (and without `setAt`) until then.
   const roundId = await roundForDraw(tx, eventRow.id, roundRows, state.draws, now, windowOpens ? {} : { gameId: game.id, setAt: now })
-  const instants = drawInstants({ kind: 'set', commitAt: now, windowOpens, clipLength: clipLengthOf(game), spinLengthMs: null })
+  const instants = drawInstants({ kind: 'set', commitAt: now, windowOpens, clipLength: clipLengthOf(game) })
   const timing = windowOpens
     ? { stopAt: instants.stopAt, vetoEndsAt: instants.vetoEndsAt }
     : { stopAt: instants.stopAt, outcome: 'set' as const, settledAt: settleAt(instants) }
