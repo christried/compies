@@ -941,6 +941,12 @@
   "eventNotes": {
     "title": "Notizen für dieses Event"
   },
+  "gameEvents": {
+    "title": "Deine Events mit diesem Spiel",
+    "inPool": "im Pool",
+    "none": "Dieses Spiel ist noch in keinem deiner Events.",
+    "failed": "Die Events dieses Spiels lassen sich gerade nicht laden."
+  },
   "hint": {
     "open": "Hinweis anzeigen"
   },
