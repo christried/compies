@@ -1,7 +1,7 @@
 import { NO_FILTERS, SUITABILITIES, normaliseTag, parsePlayerCount, type GameFilters } from '~~/shared/game'
 
 /**
- * The game browser's filters kept in the address (`q`, `players`, `suitability`, `tag` (the Tag's key, #336), `mine=1`),
+ * The game browser's filters kept in the address (`q`, `players`, `suitability`, `tag` (the Tag's key, #336), `mine=1`, `archived=1`),
  * for the library page: reload and back keep them (#142, #173). The state is local, so the list follows every keystroke and every chip at once; the
  * address follows it: a chip writes it at once (push), the search after a short pause (replace, no history entry per
  * letter). Back and forward change the address, and the state follows it.
@@ -24,6 +24,7 @@ export function useRouteFilters() {
       // Normalised like a typed Tag, so `?tag=Co-op` finds the key `co-op`; nothing left is no filter (#336).
       tag: normaliseTag(param('tag'))?.key ?? null,
       mine: param('mine') === '1',
+      archived: param('archived') === '1',
     }
   }
 
@@ -56,6 +57,7 @@ export function useRouteFilters() {
       if (next.suitability !== was.suitability) changes.suitability = next.suitability ?? undefined
       if (next.tag !== was.tag) changes.tag = next.tag ?? undefined
       if (next.mine !== was.mine) changes.mine = next.mine ? '1' : undefined
+      if (next.archived !== was.archived) changes.archived = next.archived ? '1' : undefined
       const q = next.q.trim() || undefined
 
       if (Object.keys(changes).length > 0) {
