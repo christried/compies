@@ -260,6 +260,21 @@ export const gameTags = pgTable('game_tags', {
   index('game_tags_key_idx').on(table.key),
 ])
 
+// The Host's Event notes (#731, GLOSSARY: Event notes): one document per Event and game, in the editor's document format (ADR 0019). It belongs to the Event
+// and the game, not to the Game pool row, so it stays when the game leaves the pool and exists for a game the Host set directly. A cleared note has no row.
+// The game is in the Event's Host's library (the route checks, ADR 0018); games are never deleted, so the key has no cascade. Rows go with their Event.
+export const eventGameNotes = pgTable('event_game_notes', {
+  eventId: uuid('event_id').notNull().references(() => events.id, { onDelete: 'cascade' }),
+  gameId: uuid('game_id').notNull().references(() => games.id),
+  notes: jsonb('notes').$type<NotesDoc>().notNull(),
+  createdAt: createdAt(),
+  updatedAt: updatedAt(),
+}, table => [
+  primaryKey({ columns: [table.eventId, table.gameId] }),
+  // Lookups by game (#656's game page). The primary key serves the lookups by Event.
+  index('event_game_notes_game_id_idx').on(table.gameId),
+])
+
 export const activityType = pgEnum('activity_type', ACTIVITY_TYPES)
 
 // The Activity feed (#159, GLOSSARY: Activity feed): what happened in an Event, written in the same transaction as the
