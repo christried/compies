@@ -33,6 +33,7 @@ const created: GameView = {
   canEdit: true,
   notes: null,
   tags: [],
+  archived: false,
   price: null,
 }
 const withImage: GameView = { ...created, imageUrl: '/api/images/c1-abc.webp' }

@@ -249,7 +249,8 @@ describe('the game page', () => {
     await vi.waitFor(() => expect(page.find('h1').exists()).toBe(true))
 
     expect(page.text()).toContain('Hausregel: <b>nur Teams</b> und https://example.com')
-    expect(page.find('b').exists()).toBe(false)
+    // The switch „Archiviert“ (#467) has a `<b>` label of its own: only a bold „nur Teams“ would be the notes' markup.
+    expect(page.findAll('b').some(bold => bold.text() === 'nur Teams')).toBe(false)
     expect(page.find('a[href="https://example.com"]').exists()).toBe(false)
   })
 

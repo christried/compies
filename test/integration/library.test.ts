@@ -115,7 +115,7 @@ describe('the Game library API (#141)', () => {
       expect(game).toEqual({
         id: row!.id, name: 'Mario Kart', imageUrl: null, youtubeId: 'dQw4w9WgXcQ', clipStart: 72, clipLength: 45,
         playersMin: null, playersMax: null, suitabilities: [], tags: [{ key: 'free-to-play', label: 'Free-to-play' }], price: null,
-        createdBy: { id: row!.createdBy, name: 'Hostess' }, createdAt: row!.createdAt.toISOString(), canEdit: true, notes: null,
+        createdBy: { id: row!.createdBy, name: 'Hostess' }, createdAt: row!.createdAt.toISOString(), canEdit: true, notes: null, archived: false,
       })
     })
 
