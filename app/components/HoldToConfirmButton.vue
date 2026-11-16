@@ -11,7 +11,8 @@ import { Check } from '@lucide/vue'
 // The hint „1 Sekunde halten“ is a line below the button, or with `hint="badge"` a small „1 s halten“ badge inside it
 // (the HostDock, #164); the badge is hidden from screen readers, which hear the full hint through aria-describedby.
 // As a menu item (`menuitem`, #607) it is a flat row like the plain entries of the menu: no pill look, no shadow, no
-// dock size. It keeps the fill and the badge, and the variant's background and size do not apply.
+// dock size. Its icon and gap are the plain rows' (20 px, `gap-3`, #659). It keeps the fill and the badge; the variant's
+// fill and text colour and its size do not apply, whatever the variant.
 const props = withDefaults(defineProps<{
   label: string
   holdingLabel?: string
@@ -112,6 +113,9 @@ function onKeyup(event: KeyboardEvent) {
   cancel()
 }
 
+/** A menu row's icon is the plain rows' 20 px (MoveToMenuList, #659); the pill's is 18 px. */
+const iconSize = computed(() => (props.menuitem ? 20 : 18))
+
 const visibleLabel = computed(() => {
   if (done.value) return props.doneLabel ?? props.label
   if (holding.value || running.value) return props.holdingLabel ?? props.label
@@ -133,8 +137,8 @@ const visibleLabel = computed(() => {
           ? 'min-h-11 rounded-md px-3 py-1.5 text-left text-[15px] font-semibold text-ink hover:bg-surface-2'
           : 'outline-memphis rounded-pill border-(length:--cp-bw) border-line shadow-btn hover:-translate-y-0.5 hover:shadow-card reduced:hover:translate-y-0 reduced:hover:shadow-btn reduced:hover:tint motion-reduce:hover:translate-y-0 motion-reduce:hover:shadow-btn motion-reduce:hover:tint active:scale-[0.97] reduced:active:scale-100 motion-reduce:active:scale-100',
         {
-          'bg-hot text-on-hot': variant === 'hot',
-          'bg-primary text-on-primary': variant === 'primary',
+          'bg-hot text-on-hot': variant === 'hot' && !menuitem,
+          'bg-primary text-on-primary': variant === 'primary' && !menuitem,
           'bg-surface text-ink': variant === 'secondary' && !menuitem,
           'h-12 px-5 text-body font-bold': size === 'card' && !menuitem,
           'h-control-lg px-5 font-extrabold': size === 'lg' && !menuitem,
@@ -164,18 +168,18 @@ const visibleLabel = computed(() => {
         }"
       />
       <span
-        class="relative flex items-center gap-2"
-        :class="{ 'w-full': block }"
+        class="relative flex items-center"
+        :class="[menuitem ? 'gap-3' : 'gap-2', { 'w-full': block }]"
       >
         <AppIcon
           v-if="done"
           :icon="Check"
-          :size="18"
+          :size="iconSize"
         />
         <AppIcon
           v-else-if="icon"
           :icon="icon"
-          :size="18"
+          :size="iconSize"
         />
         {{ visibleLabel }}
         <span

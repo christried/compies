@@ -1,7 +1,10 @@
+import { Check } from '@lucide/vue'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import { flushPromises } from '@vue/test-utils'
+import type { DOMWrapper } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import HoldToConfirmButton from '~/components/HoldToConfirmButton.vue'
+import MoveToMenuList from '~/components/MoveToMenuList.vue'
 
 describe('HoldToConfirmButton', () => {
   beforeEach(() => {
@@ -176,5 +179,37 @@ describe('HoldToConfirmButton', () => {
 
     expect(page.get('button').classes()).toContain('reduced:hover:shadow-btn')
     expect(page.get('button').classes()).toContain('motion-reduce:hover:shadow-btn')
+  })
+
+  it('as a menu item it has no variant fill, even with the default variant (#659)', async () => {
+    for (const variant of [undefined, 'primary', 'hot'] as const) {
+      const menuItem = await mountSuspended(HoldToConfirmButton, {
+        props: { label: 'Entfernen', menuitem: true, block: true, variant, size: 'dock', hint: 'badge' },
+      })
+
+      const classes = menuItem.get('[role="menuitem"]').classes()
+      for (const name of ['bg-primary', 'bg-hot', 'text-on-primary', 'text-on-hot']) expect(classes, `${variant} ${name}`).not.toContain(name)
+    }
+  })
+
+  it('as a menu item its icon and gap are the plain rows\' of the same menu (#659)', async () => {
+    const menu = await mountSuspended(MoveToMenuList, {
+      props: {
+        label: 'Mehr',
+        targets: [
+          { key: 'plain', label: 'Neue Terminsuche', icon: Check, reason: null },
+          { key: 'hold', label: 'Entfernen', icon: Check, reason: null, hold: () => Promise.resolve(true) },
+        ],
+      },
+    })
+
+    // The icon's size, and the class of the element that spaces it from the label: the plain row's button and the hold row's inner span.
+    const iconAndGap = (row: DOMWrapper<Element>) => {
+      const icon = row.get('svg')
+      const gap = icon.element.parentElement!.parentElement!
+      return { size: icon.attributes('width'), gap: [...gap.classList].filter(name => name.startsWith('gap-')) }
+    }
+    const [plain, hold] = menu.findAll('[role="menuitem"]')
+    expect(iconAndGap(hold!)).toEqual(iconAndGap(plain!))
   })
 })
