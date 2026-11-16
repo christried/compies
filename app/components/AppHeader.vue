@@ -15,7 +15,11 @@ const user = useAuthUser()
 </script>
 
 <template>
-  <header class="sticky top-0 layer-header flex-none border-b-(length:--cp-bw) border-line bg-surface">
+  <!-- `data-tour-edge` (#460): sticky chrome the Tour never scrolls; its bottom edge is the top of the usable area. -->
+  <header
+    data-tour-edge="header"
+    class="sticky top-0 layer-header flex-none border-b-(length:--cp-bw) border-line bg-surface"
+  >
     <div
       class="flex h-14 flex-nowrap items-center gap-3 px-3.5 md:h-header"
       :class="flush ? 'w-full' : 'mx-auto max-w-shell'"

@@ -86,8 +86,10 @@ const user = useAuthUser()
       :inert="covered || undefined"
       class="sticky bottom-0 layer-sticky md:hidden"
     />
+    <!-- `data-tour-edge` (#460): the Tour's bottom edge of the usable area, where the tab bar shows. -->
     <div
       v-if="$slots.tabs"
+      data-tour-edge="tabs"
       :inert="covered || undefined"
       class="sticky bottom-0 layer-sticky md:hidden"
     >

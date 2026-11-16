@@ -86,7 +86,11 @@ const jump = computed(() => {
 </script>
 
 <template>
-  <div class="flex flex-col gap-0.5">
+  <!-- `data-tour="head"` (#460): the Tour's first pointing step. `w-fit` shrinks the hole to the kicker and the heading. -->
+  <div
+    data-tour="head"
+    class="flex w-fit max-w-full flex-col gap-0.5"
+  >
     <span class="text-[13px] font-bold text-pretty text-ink-2">{{ copy.kicker }}</span>
     <!-- `tabindex="-1"`: where focus goes when the sheet that a save emptied has nothing else to return to (EventRounds, #274). -->
     <h1

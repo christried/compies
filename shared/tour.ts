@@ -33,12 +33,22 @@ export interface TourStep {
   target: string | null
   /** A further rule beyond the target being on the page (#648 uses it for the phone's tabs against the panel). */
   applies?: (page: TourPage) => boolean
+  /** Compibert's face at the bubble (#460): `hello` waves, `points` looks at the thing, `cheers` hops. Default: see `tourFace`. */
+  face?: TourFace
 }
 
-/** The Member's Tour. #648 adds its pointing steps between these two; the Host tour (#462) is a second list. */
+export type TourFace = 'hello' | 'points' | 'cheers'
+
+/** The face a step shows: its own, else pointing when it has a thing and hello when it has none. */
+export function tourFace(step: TourStep): TourFace {
+  return step.face ?? (step.target === null ? 'hello' : 'points')
+}
+
+/** The Member's Tour: the greeting, the head (#460), then #648's pointing steps, then the end; the Host tour (#462) is a second list. */
 export const MEMBER_TOUR: readonly TourStep[] = [
   { id: 'greeting', target: null },
-  { id: 'end', target: null },
+  { id: 'head', target: 'head' },
+  { id: 'end', target: null, face: 'cheers' },
 ]
 
 /** The steps of this run, in list order: a step stays when what it points at is on the page and its own rule agrees. */
