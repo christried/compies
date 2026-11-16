@@ -11,6 +11,7 @@ import { GAME_NAME_MAX, type GameView, type PoolGame } from '~~/shared/game'
 import { notesFromLines, type NotesDoc } from '~~/shared/notes-doc'
 import { defaultSettings } from '~~/shared/settings'
 import { kitty, signInAs } from './auth'
+import { FORMATTED_HREF, FORMATTED_NOTES, readFormatted } from './helpers/formatted-notes'
 import { clickButton, clickHostAction, dialog, hostActionElement, regionHeadings, serve, shownToasts, viewWithSessions, type Mounted, type Wrapper } from './event-page'
 
 // The open Rounds on the stage and „Nächstes Spiel setzen“ (#228, 11-event-seite § EventPage, screen 15): the Round card with
@@ -129,6 +130,22 @@ describe('the open Rounds on the stage', () => {
     expect(disclosure.text()).toBe('Notizen')
     expect(disclosure.attributes('aria-expanded')).toBe('true')
     expect(stage.get('[aria-label="Offene Spiele"]').text()).toContain('Hausregel: keine Raketen')
+  })
+
+  it('shows the Host the formatted Game notes of the Round: heading, list, bold text and link (#728)', async () => {
+    const { slug } = serveRunning({ host: true, rounds: [round('r1', halo, FORMATTED_NOTES)] })
+
+    const stage = await mount(slug)
+
+    const rounds = stage.get('[aria-label="Offene Spiele"]')
+    expect(rounds.get('button[aria-expanded]').attributes('aria-expanded')).toBe('true')
+    expect(readFormatted(rounds.element)).toEqual({
+      heading: 'h3',
+      headingText: 'Regeln',
+      items: ['Erstens', 'Zweitens'],
+      bold: 'Wichtig',
+      link: { text: 'nachlesen', href: FORMATTED_HREF, target: '_blank', rel: 'noopener noreferrer' },
+    })
   })
 
   it('shows a Member the Round without any Game notes, as the server leaves them out', async () => {

@@ -4,7 +4,7 @@ import { asRecord } from '~~/shared/record'
 import { notesLinkHref, type NotesDoc } from '~~/shared/notes-doc'
 
 // The renderer of a notes document (#728, ADR 0019): every place that shows notes calls it. It walks the document into the app's own elements and
-// never builds HTML: no v-html, no innerHTML (also not as a prop of h()), no sanitiser. A text node's string is a child, so Vue escapes it.
+// never builds HTML (ADR 0019): no raw-HTML directive or property, also not as a prop of h(), and no sanitiser. A text node's string is a child, so Vue escapes it.
 // The server hands over a document parseNotes rebuilt (#727), and this walker still checks what it renders: a link whose address is not http or
 // https shows its text only, a mark or node outside the list shows its text only. The caller sets the text size and colour through its class
 // (fallthrough), so each place keeps its own.

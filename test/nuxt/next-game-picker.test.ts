@@ -6,6 +6,7 @@ import type { GameTag, GameView, PoolGame } from '~~/shared/game'
 import { kitty, signInAs } from './auth'
 import { clickButton, dialog, restoreScreen, stubScreen } from './event-page'
 import { notesFromLines } from '~~/shared/notes-doc'
+import { FORMATTED_NOTES, readFormatted } from './helpers/formatted-notes'
 
 // The switch „Veto erlauben“ in the picker for the next game (#232, spec #218 § „Nächstes Spiel setzen“, stories 50 and 53): off every
 // time the sheet opens, there only in a Selection mode with a wheel, and its value goes out with the game that is picked.
@@ -309,6 +310,15 @@ describe('the Notes button of a game in the picker (#436)', () => {
     expect(notesButtons(rowOf(libraryList(), 'Retro Kart'))).toHaveLength(1)
     expect(notesButtons(rowOf(libraryList(), 'Schach'))).toHaveLength(0)
     expect(notesButtons(poolList())).toHaveLength(0)
+  })
+
+  it('shows the formatted notes of a pool game in the popover (#728)', async () => {
+    await mount({ pool: [{ ...halo, notes: FORMATTED_NOTES }] })
+
+    notesButtons(poolList())[0]!.click()
+    await flushPromises()
+
+    expect(readFormatted(popover()!)).toMatchObject({ bold: 'Wichtig', items: ['Erstens', 'Zweitens'] })
   })
 
   it('closes its popover on Escape, keeps the picker sheet open and gives the focus back to the button', async () => {
