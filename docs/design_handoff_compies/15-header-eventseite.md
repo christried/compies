@@ -20,6 +20,7 @@ Entscheidung: Der Event-Kontext steht als **Unterzeile im Events-Tab** (Name + P
   - Kein Trennstrich und kein Event-Titel mehr neben dem Logo ab md (beides wandert in den Events-Tab).
   - < 768: unverändert (Kopf 30, Name 15/700 + PhasePill md, Ton, UserMenu; Bottom-Tabs Event / Aktivität).
   - „Einladen“ nur bei `canInvite`.
+  - **Deviation (0.14, #621):** from md a signed-in User's header has an Appearance button (IconButton 40, icon Sun, Moon or Monitor by the Appearance, opens a menu with three radio items) between the actions and Ton; below md it is absent and the avatar menu holds the choice (#617).
 - **Accessibility:** genau ein `<nav aria-label="Hauptnavigation">` im Banner. Logo-Link `aria-label="COMPIES Startseite"`.
 - **Motion:** Logo-Compibert wie bisher (CompibertBus). Sonst siehe HubNav.
 

@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { Sun, Volume2 } from '@lucide/vue'
-import type { Appearance } from '~~/shared/auth'
 
 // The card „Einstellungen“ on the Profil page (screen 25, shipped trimmed, #400): one SettingsRow per setting. Ton is the device's Sound
 // (GLOSSARY § Sound), the same state as the header's button, stored as before. Darstellung is the User's Appearance (GLOSSARY § Appearance,
@@ -8,11 +7,6 @@ import type { Appearance } from '~~/shared/auth'
 const { t } = useI18n()
 const sound = useSound()
 const appearance = useAppearance()
-const appearanceOptions = computed<{ value: Appearance, label: string }[]>(() => [
-  { value: 'light', label: t('settings.light') },
-  { value: 'dark', label: t('settings.dark') },
-  { value: 'system', label: t('settings.system') },
-])
 </script>
 
 <template>
@@ -51,7 +45,7 @@ const appearanceOptions = computed<{ value: Appearance, label: string }[]>(() =>
         <template #default="{ descriptionId }">
           <SegmentedControl
             :model-value="appearance.appearance.value"
-            :options="appearanceOptions"
+            :options="appearance.choices.value"
             :label="t('settings.appearance')"
             :aria-describedby="descriptionId"
             @update:model-value="appearance.choose"

@@ -5,6 +5,7 @@ import { reducedMotion } from '~/utils/motion'
 import { SCRAMBLE_FRAME_MS, finalAngle, removalEase, removalEnd, revealStage, scramble, sliceSpans, wheelAngle, type WheelTiming } from '~/utils/wheel'
 import { BULB_RADIUS, FLAPPER_HINGE, FLAPPER_PLACEMENT, PIN_RADIUS, PIN_RING_RADIUS, WHEEL_COLOURS, WHEEL_FILLS, bulbPoints, pinAngles, wheelPoint } from '~/utils/wheel-look'
 import { bulbsLit, nextBulbChange } from '~/utils/wheel-bulbs'
+import { WHEEL_MAX_PX, mascotWidthFor } from '~/utils/wheel-mascot'
 import { flapperKick, pinCrossings } from '~/utils/wheel-pins'
 import { cardPop, labelPop, popOver } from '~/utils/wheel-stop'
 import { stopReached } from '~~/shared/draw-timeline'
@@ -217,9 +218,22 @@ const crossings = computed(() => (timing.value && !reduced.value ? pinCrossings(
 /** The flapper's angle in degrees about its hinge, SVG sense (positive turns clockwise): a kick at every pin that passes, a function of the server's clock alone (#522). */
 const flapperAngle = computed((): number => (running.value && clock.value !== null ? flapperKick(crossings.value, clock.value, reduced.value) : 0))
 
-/** Compibert at the wheel (#526): told the spin's two instants and the width of this wheel (the theme's md, not `useRoomy`'s narrower one), nothing of the draw. */
+/**
+ * Compibert at the wheel (#526): told the spin's two instants and his width, nothing of the draw. His width follows the wheel card's own content
+ * width, not the window (#604): the big bust only where the card holds it inside its border. The disc's cap is the theme's md, not `useRoomy`'s
+ * narrower one, which is why `wide` still picks the cap.
+ */
 const wide = useMediaQuery(MD_QUERY)
-const mascotWidth = computed(() => (wide.value ? 'md' : 'sm'))
+/** The card's content width, observed on the section; null until the first report, and where there is no ResizeObserver (the server, happy-dom). */
+const cardWidth = ref<number | null>(null)
+let cardObserver: ResizeObserver | undefined
+onMounted(() => {
+  if (typeof ResizeObserver === 'undefined' || !rootEl.value) return
+  cardObserver = new ResizeObserver(entries => (cardWidth.value = entries[0]?.contentRect.width ?? null))
+  cardObserver.observe(rootEl.value)
+})
+onBeforeUnmount(() => cardObserver?.disconnect())
+const mascotWidth = computed(() => mascotWidthFor(cardWidth.value, wide.value ? WHEEL_MAX_PX.md : WHEEL_MAX_PX.sm))
 const mascotSpin = computed(() => (timing.value ? { spinStartAt: timing.value.spinStartAt, stopAt: timing.value.stopAt } : null))
 
 /** The drawn slice has its outline from the stop on, until it leaves. */

@@ -205,7 +205,7 @@ The free text on a game in a Game library, such as its settings, warm-up and win
 _Avoid_: Note (a Note belongs to a Vote), description, rules, general notes
 
 **Tag**:
-A short word a User attaches to a game in their Game library, such as a genre or „Co-op“, to find and filter games by; free, shared across that one library, and never shown to Members (UI: Tag).
+A short word a User attaches to a game in their Game library, such as a genre or „Co-op“, to find and filter games by; free, shared across that one library, and never shown to Members (UI: Tag). Each Tag chip wears one of the eight Team colours, chosen by the Tag's key, so a word has the same colour in every library; the Tags of one game never share one until all eight are in use.
 _Avoid_: Label, category, keyword, genre (a genre is one kind of Tag)
 
 **Price**:

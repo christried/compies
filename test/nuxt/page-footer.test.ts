@@ -5,6 +5,7 @@ import SignInPage from '~/pages/anmelden.vue'
 import ImpressumPage from '~/pages/impressum.vue'
 import NeuigkeitenPage from '~/pages/neuigkeiten.vue'
 import { useHostDock } from '~/composables/useHostDock'
+import { useStepperPill } from '~/composables/useStepperPill'
 import { RELEASES } from '~/utils/changelog'
 import { kitty, signInAs } from './auth'
 
@@ -81,6 +82,18 @@ describe('page footer', () => {
 
     const plain = await mountSuspended(SignInPage, { route: '/anmelden' })
     expect(plain.get('footer').find('span.h-32').exists()).toBe(false)
+  })
+
+  // The stepper's pill is fixed over the window's bottom, where a short step's footer sits (#701).
+  it('reserves room for the stepper\'s pill only while one is attached, and keeps the plain footer without', async () => {
+    signInAs(null)
+    const detach = useStepperPill().attach()
+    const pilled = await mountSuspended(SignInPage, { route: '/anmelden' })
+    expect(pilled.get('footer').find('span.h-40').exists()).toBe(true)
+    detach()
+
+    const plain = await mountSuspended(SignInPage, { route: '/anmelden' })
+    expect(plain.get('footer').find('span.h-40').exists()).toBe(false)
   })
 
   it('scrolls to the top when the version link is clicked on Neuigkeiten', async () => {

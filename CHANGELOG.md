@@ -2,6 +2,38 @@
 
 ## [Unreleased]
 
+## [0.14.0] - 2026-11-16 – Politur
+
+Viele kleine Verbesserungen an dem, was schon da ist: Läuft ein Clip, wird der Rest der Eventseite dunkel. Deine Darstellung änderst du jetzt von jeder Seite aus, und Karten, Knöpfe und Hinweise sind aufgeräumt.
+
+### Neu
+
+- Du kannst jetzt über das Menü an deinem Avatar mit einem Klick zu deinem Profil. ([#618](https://github.com/christried/compies/issues/618))
+- **Abdunkeln um den Clip:** Läuft ein Clip, wird der Rest der Eventseite fast schwarz und nimmt keine Eingabe mehr an. Hell bleiben der Clip mit seiner Leiste, die Veto-Leiste und für den Host das Host-Dock. Schließt du den Clip nur für dich, ist die Seite sofort wieder da. ([#587](https://github.com/christried/compies/issues/587))
+- Du kannst jetzt deine Darstellung (Hell, Dunkel oder System) von jeder Seite aus ändern: mit dem neuen Knopf im Header, auf dem Handy im Menü an deinem Avatar. ([#617](https://github.com/christried/compies/issues/617))
+- **Alle Tags auf der Spielkarte:** „+2“ öffnet eine Liste aller Tags des Spiels, mit Maus, Tastatur oder Finger, ohne das Spiel zu öffnen. ([#614](https://github.com/christried/compies/issues/614))
+
+### Geändert
+
+- **Spielkacheln gleich groß:** Jede Spielkachel auf der Eventseite lässt dem Namen jetzt Platz für zwei Zeilen, so sind alle gleich groß; ein längerer Name wird mit „…“ gekürzt und steht im Spiel-Fenster ganz. Die Karten der Bibliothek tun das in einem breiten Fenster auch. ([#612](https://github.com/christried/compies/issues/612))
+- **Hinweis ohne Doppelkreis:** Der Hinweis im Spiele-Formular ist jetzt ein Kreis mit einem Fragezeichen und öffnet sich, wenn du mit der Maus darauffährst oder ihn mit der Tastatur erreichst; ein Klick hält ihn offen. Auf dem Handy zeigt der Info-Knopf im Event-Assistenten dasselbe Fragezeichen. ([#616](https://github.com/christried/compies/issues/616))
+- Die Knöpfe im Host-Dock und in der Stepper-Leiste haben mehr Platz für ihren Schatten. Die Einträge „Neue Terminsuche“ und „Entfernen“ im Menü „Mehr“ einer Session sind flache Zeilen wie die übrigen, mit etwas mehr Abstand dazwischen. ([#607](https://github.com/christried/compies/issues/607))
+- **„Weiter“ bleibt stehen:** Im Event-Assistenten und in den Einstellungen sitzt die Leiste mit „Zurück“ und „Weiter“ auf jedem Schritt am unteren Fensterrand, und „Weiter“ wandert nicht mehr. ([#613](https://github.com/christried/compies/issues/613))
+- **Spiel anlegen** in der Spielbibliothek leuchtet jetzt wie „Neue Terminumfrage“ auf der Startseite. ([#471](https://github.com/christried/compies/issues/471))
+- Hinweise, die nur du als Host siehst, zeigen „Nur du siehst das“ jetzt als kleine fette Zeile über dem Text, getrennt durch einen Strich. Die Schaltfläche steht unter dem Text. ([#611](https://github.com/christried/compies/issues/611))
+- **Karten heben sich unter der Maus:** Eine Spielkarte in der Bibliothek und eine Spielkachel auf der Eventseite heben sich jetzt leicht an und zeigen einen größeren Schatten, wenn du mit der Maus darauffährst, so wie die Knöpfe. Ein gedrückter Knopf rückt jetzt nach rechts und nach unten auf seinen Schatten. Wenn dein Gerät weniger Bewegung wünscht, bekommt ein Knopf unter der Maus nur eine Tönung, keinen wachsenden Schatten, und rückt auch beim Drücken nicht. ([#608](https://github.com/christried/compies/issues/608))
+
+### Behoben
+
+- Die App-Figur am Glücksrad ragt in mittleren Fensterbreiten nicht mehr über den Rahmen der Rad-Karte. ([#604](https://github.com/christried/compies/issues/604))
+- **Name beim Ziehen:** Wer eine Person auf dem Spielbrett zieht, liest ihren Namen jetzt auch während des Ziehens, in Hell und Dunkel. ([#609](https://github.com/christried/compies/issues/609))
+- Startet oder endet ein Clip, springt die Seite am Computer nicht mehr zur Seite. Auf einer Spielkarte bewegt sich die Karte nur noch, wenn du ihren Namen drückst, nicht mehr beim Drücken von „+N“ oder einem Knopf auf der Karte, und „+N“ lässt sich sicher antippen. ([#658](https://github.com/christried/compies/issues/658))
+- Im Menü „Mehr“ einer Session stehen „Neue Terminsuche“ und „Entfernen“ jetzt bündig unter den anderen Einträgen. ([#659](https://github.com/christried/compies/issues/659))
+
+### Entfernt
+
+- Als Host siehst du keinen Hinweis mehr darüber, wo du sitzt. ([#610](https://github.com/christried/compies/issues/610))
+
 ## [0.13.3] - 2026-11-15 – Ton
 
 Das Glücksrad und das Veto-Fenster sind jetzt zu hören, auf allen Geräten im selben Moment. Der Schalter „Ton“ schaltet Clip und Geräusche auf deinem Gerät gemeinsam aus.

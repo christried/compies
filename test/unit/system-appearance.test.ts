@@ -112,6 +112,18 @@ describe('the System twin of the dark tokens (#402)', () => {
   })
 })
 
+describe('the Clip\'s backdrop colour (#587)', () => {
+  const BACKDROP = '--cp-backdrop: rgba(8,5,12,.85);'
+  const { dark, system } = tokenBlocks(tokens)
+
+  it('is the same literal in Hell, Dunkel and System, and the sheets\' scrim stays as it is', () => {
+    expect(tokens.split(BACKDROP)).toHaveLength(4)
+    expect(dark['--cp-backdrop']).toBe('rgba(8,5,12,.85)')
+    expect(system?.['--cp-backdrop']).toBe(dark['--cp-backdrop'])
+    expect(dark['--cp-overlay']).toBe('rgba(8,5,12,.66)')
+  })
+})
+
 describe('twinGaps', () => {
   it('reports a dark rule without a twin', () => {
     expect(twinGaps('[data-theme=dark] .x { color: red; }')).toEqual(['[data-theme=dark] .x'])

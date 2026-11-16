@@ -1,6 +1,7 @@
 // The colour of each Tag chip (#427, GLOSSARY: Tag): one of the eight Team colours, so the Tags of a game are told apart at a
-// glance. A Tag's own colour comes from its key (the label's spelling does not matter), so it is the same on every game, page
-// and load; a Tag whose colour an earlier Tag of the same game already wears takes the next free one.
+// glance. A Tag's own colour comes from its key (the label's spelling does not matter), so a Tag keeps its colour on every game
+// and page unless it clashes: within one game, a Tag whose own colour an earlier Tag of that game already wears takes the next
+// free one.
 
 import type { GameTag } from './game'
 import { TEAM_COUNT_MAX } from './team-position'
@@ -13,7 +14,7 @@ const COLOR_COUNT = TEAM_COUNT_MAX
  * low bits see only the low bits of each character, so Murmur3's finaliser mixes the high bits down before the remainder.
  * Changing this recolours every library: `tag-colors.test.ts` pins a few keys.
  */
-function ownColour(key: string): number {
+function ownColor(key: string): number {
   let hash = 0x811C9DC5
   for (let index = 0; index < key.length; index++) {
     hash ^= key.charCodeAt(index)
@@ -36,10 +37,10 @@ export function tagColors(keys: readonly string[]): number[] {
   const used = new Set<number>()
   return keys.map((key) => {
     if (used.size === COLOR_COUNT) used.clear()
-    let colour = ownColour(key)
-    while (used.has(colour)) colour = (colour % COLOR_COUNT) + 1
-    used.add(colour)
-    return colour
+    let color = ownColor(key)
+    while (used.has(color)) color = (color % COLOR_COUNT) + 1
+    used.add(color)
+    return color
   })
 }
 
