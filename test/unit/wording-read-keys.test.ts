@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { flatten, lineOf, rowsFrom, summaryOf } from '../../scripts/wording/read-keys.mjs'
+import { findCandidates, flatten, lineOf, measureCandidates, readKeys, rowsFrom, summaryOf } from '../../scripts/wording/read-keys.mjs'
 import { tagKey } from '~~/shared/key-tag'
 
 // What the wording command prints about a page (scripts/wording/read-keys.mjs, #627): rows from the tags the page carries, the line of
@@ -90,5 +90,32 @@ describe('flatten', () => {
   it('names each leaf of the messages by its dotted path', () => {
     expect(messages['auth.title']).toBe('Anmelden')
     expect(Object.keys(messages)).toEqual(['auth.title', 'auth.intro', 'board.slotsFree'])
+  })
+})
+
+// `readKeys` is the two steps the walk uses on their own (#629): find the candidates, measure them; over a stub tab it still gives `rowsFrom`'s rows.
+describe('readKeys', () => {
+  const candidates = [{ i: 0, kind: 'text' as const, element: 'h1', raw: tagKey('auth.title', 'Anmelden') }]
+  const stub = () => ({ tab: { evaluate: async (expression: string) => (expression.includes('createTreeWalker') ? { candidates, untagged: 3 } : [[BOX]]) } })
+
+  it('returns the rows rowsFrom makes of what the page gave, and the untagged count', async () => {
+    const { tab } = stub()
+
+    expect(await readKeys(tab)).toEqual({ rows: rowsFrom(candidates, [[BOX]]), untagged: 3 })
+  })
+
+  it('is findCandidates then measureCandidates', async () => {
+    const { tab } = stub()
+    const found = await findCandidates(tab)
+
+    expect(found).toEqual({ candidates, untagged: 3 })
+    expect(await measureCandidates(tab, found.candidates)).toEqual([[BOX]])
+  })
+
+  it('measures nothing on a page without a candidate', async () => {
+    const tab = { evaluate: async () => ({ candidates: [], untagged: 5 }) }
+
+    expect(await measureCandidates(tab, [])).toEqual([])
+    expect(await readKeys(tab)).toEqual({ rows: [], untagged: 5 })
   })
 })
