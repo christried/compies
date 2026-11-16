@@ -19,7 +19,7 @@ const item = (text: string) => ({ type: 'listItem', content: [paragraph(text)] }
 describe('the Tag review of one library (#730)', () => {
   let testDb: Awaited<ReturnType<typeof createTestDb>>
   let client: PGlite
-  let session: Parameters<typeof exportLibrary>[0]
+  let session: Parameters<typeof applyPlan>[0]
 
   beforeAll(async () => {
     testDb = await createTestDb()
