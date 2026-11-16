@@ -1095,7 +1095,12 @@
     "light": "Hell",
     "dark": "Dunkel",
     "system": "System",
-    "appearanceSaveFailed": "Das hat nicht geklappt, die Darstellung ist wieder wie vorher. Versuch’s nochmal."
+    "appearanceSaveFailed": "Das hat nicht geklappt, die Darstellung ist wieder wie vorher. Versuch’s nochmal.",
+    "tour": "Rundgang",
+    "tourHelp": "Zeigt dir die Event-Seite noch einmal.",
+    "tourAgain": "Wiederholen",
+    "tourResetDone": "Der Rundgang startet beim nächsten Event, das du nicht hostest.",
+    "tourResetFailed": "Das hat nicht geklappt, der Rundgang ist wie vorher. Versuch’s nochmal."
   },
   "eventSettings": {
     "kicker": "Einstellungen",
