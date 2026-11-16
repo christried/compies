@@ -131,7 +131,7 @@ const visibleLabel = computed(() => {
       :class="[
         menuitem
           ? 'min-h-11 rounded-md px-3 py-1.5 text-left text-[15px] font-semibold text-ink hover:bg-surface-2'
-          : 'outline-memphis rounded-pill border-(length:--cp-bw) border-line shadow-btn hover:-translate-y-0.5 hover:shadow-card reduced:hover:translate-y-0 reduced:hover:tint motion-reduce:hover:translate-y-0 motion-reduce:hover:tint active:scale-[0.97] reduced:active:scale-100 motion-reduce:active:scale-100',
+          : 'outline-memphis rounded-pill border-(length:--cp-bw) border-line shadow-btn hover:-translate-y-0.5 hover:shadow-card reduced:hover:translate-y-0 reduced:hover:shadow-btn reduced:hover:tint motion-reduce:hover:translate-y-0 motion-reduce:hover:shadow-btn motion-reduce:hover:tint active:scale-[0.97] reduced:active:scale-100 motion-reduce:active:scale-100',
         {
           'bg-hot text-on-hot': variant === 'hot',
           'bg-primary text-on-primary': variant === 'primary',

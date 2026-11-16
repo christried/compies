@@ -300,6 +300,16 @@ describe('the game tile with its dialog (#443, #444)', () => {
     expect(memberName).toBe(hostName)
   })
 
+  it('lifts on hover, the same for the Host and for a Member: the tile opens a dialog (#608)', async () => {
+    const host = await mountTile('host')
+    expect(host.get('button').element.closest('.lift')).not.toBeNull()
+    host.unmount()
+
+    signInAs({ ...kitty, canHost: false })
+    const member = await mountTile('member')
+    expect(member.get('button').element.closest('.lift')).not.toBeNull()
+  })
+
   it('moves focus into the dialog, closes on Escape and returns focus to the tile', async () => {
     const tile = await mountTile('host')
     const button = tile.get('button').element as HTMLButtonElement
