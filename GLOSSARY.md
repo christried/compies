@@ -212,6 +212,10 @@ _Avoid_: Label, category, keyword, genre (a genre is one kind of Tag)
 What a game costs, as its editors last noted it: an amount in euros, where it is bought (Steam, Epic, GOG, the publisher, a Steam key, free-to-play or a subscription) and the day that was checked; a Member sees it wherever they may see the game (UI: Preis).
 _Avoid_: Cost, fee
 
+**Archived game**:
+A game in the Game library that whoever may edit it has put away because it can no longer be played, such as when its servers are gone. It leaves the library's list, every place a game is picked from and the Lucky Wheel of every Event that has not finished; the Rounds it was played in keep showing it, and it can be restored at any time. No game is ever deleted (UI: „Archiviert“).
+_Avoid_: Deleted game, hidden game, retired game
+
 **Activity feed**:
 The Event's automatic log of what happened, with times, readable by every Member; it names each Party by the Team name the Party had at that moment, and never names a game before everyone may know it (UI: Aktivität).
 _Avoid_: History, log, timeline
