@@ -17,7 +17,7 @@ The User who created an Event and has full rights inside it. Each Event has exac
 _Avoid_: Organiser, owner, session admin
 
 **Host permission**:
-The platform-wide right to create Events and to have a Game library. Losing it does not stop a User from being the Host of Events they already created.
+The platform-wide right to create Events and to have a Game library. Losing it does not stop a User from being the Host of Events they already created; they no longer see their Game library, but its games stay stored and return with the permission.
 _Avoid_: Host role, canHost (that is a column, not the concept)
 
 **Display name**:
