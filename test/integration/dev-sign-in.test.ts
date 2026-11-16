@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import devSignIn from '../../server/dev/sign-in'
 import { users } from '../../server/db/schema'
 import type { MeView } from '../../shared/auth'
+import { TOUR_VERSION } from '../../shared/tour'
 import { version as current } from '../../package.json'
 import { createTestApp } from './app'
 import { createTestDb } from './harness'
@@ -74,6 +75,38 @@ describe('dev sign-in', { timeout: 20_000 }, () => {
     await signInAs('?as=host', db)
     const later = await signInAs('?as=host&news=unseen', db)
     expect(later.user).toMatchObject({ newsSeen: null })
+  })
+
+  // The Dev Users have seen the Tour on every sign-in, so no check or wizard walk opens it; `?tour=unseen` is the one check
+  // that wants it (#646).
+  it('marks the Tour seen on every sign-in, so it never opens on the dev server', async () => {
+    const { db } = await createTestDb()
+    const first = await signInAs('?as=host', db)
+    expect(first.user).toMatchObject({ tourSeen: TOUR_VERSION })
+    await db.update(users).set({ tourSeen: 0 }).where(eq(users.email, 'host@dev.compies.invalid'))
+
+    const { user } = await signInAs('?as=host', db)
+
+    expect(user).toMatchObject({ tourSeen: TOUR_VERSION })
+  })
+
+  it('leaves the Tour unseen with `?tour=unseen`, on the first sign-in and on a later one', async () => {
+    const { db } = await createTestDb()
+    const first = await signInAs('?as=host&tour=unseen', db)
+    expect(first.user).toMatchObject({ tourSeen: 0 })
+
+    await signInAs('?as=host', db)
+    const later = await signInAs('?as=host&tour=unseen', db)
+    expect(later.user).toMatchObject({ tourSeen: 0 })
+  })
+
+  it('marks the Tour seen again on a plain sign-in after `?tour=unseen`', async () => {
+    const { db } = await createTestDb()
+    await signInAs('?as=host&tour=unseen', db)
+
+    const { user } = await signInAs('?as=host', db)
+
+    expect(user).toMatchObject({ tourSeen: TOUR_VERSION })
   })
 
   // `?name=unset` stores no Display name, the one way to see Profile setup (#407): on the first sign-in and on one

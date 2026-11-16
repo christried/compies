@@ -30,6 +30,8 @@ export const users = pgTable('users', {
   isAdmin: boolean('is_admin').default(false).notNull(),
   // The newest Release the User has seen in „Was ist neu“ (#184); null for a User who has seen none.
   newsSeen: text('news_seen_version'),
+  // The Tour version the User last saw, 0 for never (#646, GLOSSARY: Tour). Better Auth's insert gets the default (ADR 0004).
+  tourSeen: integer('tour_seen_version').default(0).notNull(),
   // The User's Appearance (#401, GLOSSARY): light unless they choose otherwise. Better Auth's insert gets the default (ADR 0004).
   appearance: text('appearance', { enum: APPEARANCES }).default('light').notNull(),
 }, table => [
