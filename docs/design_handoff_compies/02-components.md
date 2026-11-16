@@ -9,6 +9,7 @@ Common rules for every component:
 - Hit area ≥ 44 px.
 - Disabled = `aria-disabled="true"` + visible reason.
 - Motion respects `--cp-motion`; the reduced twin is listed per component.
+- A shadowed element that can be clicked lifts on hover (`lift`: 2 px up and the card shadow, `dur-instant` `ease-snap`, only where the device hovers) and moves onto its shadow when pressed; a static card never lifts, so a lift always means a click. Reduced motion: the hover tint, no movement, no growing shadow.
 - Copy only via i18n keys (`06-copy.md`).
 
 ## Index
@@ -168,7 +169,7 @@ Irreversible or destructive actions: veto, ban, pick, rotate link, end/delete Ev
 - **Slots:** default (label)
 - **Desktop / mobile:** Desktop pointer hold; mobile touch hold with `drag-longpress` haptic tick (`navigator.vibrate(10)`) at start. Mobile action bar version is full-width 56 px.
 - **Accessibility:** `<button>`; Space/Enter **held** for 1 s works the same (keydown starts, keyup cancels; ignore key repeat). Live region announces „Veto eingelegt“. Help text „1 Sekunde halten“ always visible on first use.
-- **Motion:** GSAP `fill.scaleX 0→1`, `duration 1`, `ease none`; release: `scaleX → 0`, `0.2 s power2.out`. Confirm: button `scale 1→0.96→1` 0.18 s + sound `ui-hold-done`. Reduced: same fill (it is information), no scale.
+- **Motion:** GSAP `fill.scaleX 0→1`, `duration 1`, `ease none`; release: `scaleX → 0`, `0.2 s power2.out`. Confirm: button `scale 1→0.96→1` 0.18 s + sound `ui-hold-done`. Reduced: same fill (it is information), no scale. Hover: lift −2 px and the card shadow only where the device hovers; reduced: the tint, no lift, no growing shadow (#608).
 
 ## TextField
 **Scope:** [MVP] · **Ref:** DS Basics, M2
@@ -873,6 +874,7 @@ A game in library, pool, wheel lists, pick & ban.
 - **Accessibility:** Card is not a button unless selectable (then `aria-pressed`).
 - **Motion:** ban: stamp `scale 2.2→1, rotate −8°` 0.4 s; pick: slap into order strip (Flip).
 - **Deviation (0.12, #425):** on the Event page (Spielepool in „So wird gespielt“, „Zuletzt gezogen“ under the wheel, „Gerade dran“ on the open Rounds) a game is a tile with picture and name only, for the Host too; the pool's tiles sit side by side in a grid. A tap opens the game dialog (a sheet below md, a dialog from md up): the library entry, read-only. The Host sees players, Suitabilities, all Tags, the Price, the Notes and „In der Bibliothek öffnen“; a Member sees picture, name, players, Suitabilities and the Price, never Tags or Notes. No Clip in the dialog. On „Gerade dran“ the Host's Notes stay open under the tile. In the compact game browser (both pool pickers, „Nächstes Spiel setzen“) and on the chosen games of step „Spiele“, a game with Notes gets a Notes button that opens them in a popover from md up and a sheet below.
+- **Deviation (0.14, #608):** a card lifts where the card itself can be clicked: the library's cards (the name is a link stretched over the card) and the Event's game tiles (the name is a button that opens the game dialog). A card in a picker, in the Veto window and in the Clip stays still.
 
 ## LuckyWheel
 **Scope:** [1.0] · **Ref:** GameWheel, App Spielrunde 11

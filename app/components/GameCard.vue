@@ -36,6 +36,8 @@ const showMeta = computed(() => props.layout !== 'tile')
 const cover = computed(() => gameCover(props.game))
 /** What the name is: the link, else the button that opens the dialog (#443), else a plain element. */
 const asButton = computed(() => props.opens && !props.to)
+/** Whether the card itself can be clicked: only then it lifts on hover, so a lift always means a click (#608). */
+const clickable = computed(() => Boolean(props.to) || props.opens)
 // The compact player count and the Suitabilities („Passt zu“, #171: „Teams, 1 gegen 1“).
 const description = computed(() => describeGame({
   playersMin: props.game.playersMin ?? null,
@@ -96,7 +98,7 @@ const look = computed(() => LAYOUT[props.layout])
 <template>
   <div
     class="relative flex min-w-0 border-(length:--cp-bw) border-line bg-surface shadow-sm"
-    :class="look.box"
+    :class="[look.box, { lift: clickable }]"
   >
     <div
       :data-cover="cover ? 'image' : 'placeholder'"
