@@ -72,8 +72,8 @@ room.on('veto.cast', () => void refresh())
 /** Whether the Veto bar covers the bottom of the page: the stage then gets room under its last block (F4), and the Clip shares the width with it held sideways (#584). */
 const vetoBarShown = ref(false)
 
-/** The Clip shows on this device (#587): the overlay says so. The backdrop is `clipShown`, which also needs the read to still carry the Clip: a skip drops it, and an overlay that left says nothing. */
-const clipOpen = ref(false)
+/** The Clip shows on this device (#587): the overlay says so, and it is open in its first render whenever the read carries a Clip, so the page starts from the read (the server's HTML has the backdrop, #699) and the overlay corrects it (closed on this device, ended). The backdrop is `clipShown`, which also needs the read to still carry the Clip: a skip drops it, and an overlay that left says nothing. */
+const clipOpen = ref(!!data.value?.clip)
 const clipShown = computed(() => clipOpen.value && !!data.value?.clip)
 
 /** Why "Termin festlegen" cannot set a Date right now, or null (#52): the dock's action says so. */
