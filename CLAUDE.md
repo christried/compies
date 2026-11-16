@@ -4,7 +4,7 @@
 
 ### Issue tracker
 
-Issues and specs live in GitHub Issues on christried/compies (via `gh`). An idea that isn't grilled yet is an Idea issue (`enhancement`, `needs-triage`, no title prefix), captured with `/capture-idea`, never a roadmap line. See `docs/agents/issue-tracker.md`.
+Issues and specs live in GitHub Issues on christried/compies (via `gh`). An idea that isn't grilled yet is an Idea issue (`enhancement`, `needs-triage`, no title prefix), captured with `/christried-capture-idea`, never a roadmap line. See `docs/agents/issue-tracker.md`.
 
 ### Triage labels
 
@@ -28,7 +28,7 @@ Set auto-merge on PRs into `staging` yourself; merges into `main` and production
 
 ### Subagents
 
-Pass `model` and `effort: "high"` on every spawn: `sonnet` for the harder half of this repository's tasks and for reviewers, `haiku` for the easier half. See `docs/agents/subagents.md`. `/implement-spec-max` is `/implement-spec` with every subagent on `fable`, or on `opus` or `sonnet` at high effort, by how hard its task is.
+Pass `model` and `effort: "high"` on every spawn: `sonnet` for the harder half of this repository's tasks and for reviewers, `haiku` for the easier half. See `docs/agents/subagents.md`. `/christried-implement-spec-max` is `/implement-spec` with every subagent on `fable`, or on `opus` or `sonnet` at high effort, by how hard its task is.
 
 ### Design hand-off
 
