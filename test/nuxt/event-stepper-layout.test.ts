@@ -1,6 +1,7 @@
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import { afterEach, describe, expect, it } from 'vitest'
 import EventStepper from '~/components/stepper/EventStepper.vue'
+import { useStepperPill } from '~/composables/useStepperPill'
 
 // The stepper's layout (#144): step list on desktop, progress bar, sticky footer and info sheet on phones. Both
 // layouts are in the markup; CSS shows one of them, so the tests read each by its own landmark.
@@ -117,6 +118,15 @@ describe('EventStepper', () => {
       expect(dialog?.textContent).toContain('Erklärung')
     })
 
+    // The phone's Info button is the button's circle with a bare „?“ (#616); the desktop heading's icon is no button and keeps its circle.
+    it('draws the Info button\'s „?“ without a circle, and keeps the circle on the desktop heading\'s icon', async () => {
+      const page = await mountStepper({ infoTitle: 'Teams' }, { default: '<p>Formular</p>', info: '<p>Erklärung</p>' })
+
+      expect(page.find('button[aria-label="Info"] svg').exists()).toBe(true)
+      expect(page.find('button[aria-label="Info"] svg circle').exists()).toBe(false)
+      expect(page.find('aside h2 svg circle').exists()).toBe(true)
+    })
+
     it('has no Info button without an info slot', async () => {
       const page = await mountStepper()
 
@@ -142,17 +152,67 @@ describe('EventStepper', () => {
       expect(page.emitted('next')).toBeUndefined()
     })
 
-    // The dock is a pill as wide as its buttons, at the bottom right on every screen, not a full-width bar (#174).
-    it('is a dock as wide as its buttons, sticky at the bottom right', async () => {
+    // The dock is a pill as wide as its buttons, fixed at the window's bottom on every step, so Weiter keeps one
+    // place (#613). Geometry cannot be measured here: the markup that decides it is pinned.
+    it('is a pill as wide as its buttons, in a box fixed at the window\'s bottom', async () => {
       const page = await mountStepper()
 
       const dock = page.get('[data-testid="stepper-footer"]')
-      expect(dock.classes()).toEqual(expect.arrayContaining(['w-fit', 'ml-auto', 'rounded-pill']))
+      expect(dock.classes()).toEqual(expect.arrayContaining(['w-fit', 'rounded-pill']))
       expect(dock.classes()).not.toContain('w-full')
-      expect(dock.classes()).not.toContain('-mx-3.5')
-      const column = dock.element.parentElement!
-      expect(column.className).toContain('sticky')
-      expect(column.className).toContain('layer-sticky')
+      const box = dock.element.parentElement!
+      expect(box.className.split(' ')).toEqual(expect.arrayContaining(['fixed', 'bottom-4', 'layer-sticky']))
+      expect(box.className.split(' ')).not.toContain('sticky')
+    })
+
+    it('anchors the box at the end of the form, in a zero-height row that pushes it to the form\'s right edge', async () => {
+      const page = await mountStepper()
+
+      const anchor = page.get('[data-testid="stepper-footer"]').element.parentElement!.parentElement!
+      expect(anchor.parentElement).toBe(page.get('form').element)
+      expect(page.get('form').element.lastElementChild).toBe(anchor)
+      expect(anchor.className.split(' ')).toEqual(expect.arrayContaining(['flex', 'h-0', 'justify-end']))
+    })
+
+    it.each([[0, false], [3, true]])('keeps the same fixed box on step %i, with Zurück only when there is a step before', async (current, hasBack) => {
+      const page = await mountStepper({ current, reached: current })
+
+      const dock = page.get('[data-testid="stepper-footer"]')
+      expect(dock.element.parentElement!.className.split(' ')).toEqual(expect.arrayContaining(['fixed', 'bottom-4', 'layer-sticky']))
+      const labels = dock.findAll('button').map(button => button.text())
+      expect(labels[0]).toBe(hasBack ? 'Zurück' : 'Weiter')
+      expect(labels.at(-1)).toBe('Weiter')
+      expect(labels.includes('Zurück')).toBe(hasBack)
+    })
+
+    // 340 px info column + gap-4: a step without the info column keeps Weiter where it is on one with it (#613).
+    it('insets the anchor by the info column\'s width and gap on a step without an info slot, not on one with it', async () => {
+      const withInfo = await mountStepper({ infoTitle: 'Teams' }, { default: '<p>Formular</p>', info: '<p>Erklärung</p>' })
+      const without = await mountStepper()
+
+      const anchorOf = (page: typeof withInfo) => page.get('[data-testid="stepper-footer"]').element.parentElement!.parentElement!
+      expect(anchorOf(withInfo).className.split(' ')).not.toContain('md:mr-[356px]')
+      expect(anchorOf(without).className.split(' ')).toContain('md:mr-[356px]')
+    })
+
+    // The fixed pill covers the form's end: the form's content reserves its height plus a blocked reason of up to three lines.
+    it('reserves the height of the fixed pill at the form\'s end', async () => {
+      const page = await mountStepper()
+
+      expect(page.get('form > div').classes()).toContain('pb-40')
+    })
+
+    // The page footer makes room for the pill while it is on screen (#701, PageFooter): the stepper counts itself in while mounted.
+    it('tells the page footer about its pill while mounted, and not after', async () => {
+      const { shown } = useStepperPill()
+      expect(shown.value).toBe(false)
+
+      const page = await mountStepper()
+      expect(shown.value).toBe(true)
+
+      page.unmount()
+      mounted.splice(mounted.indexOf(page), 1)
+      expect(shown.value).toBe(false)
     })
 
     it('keeps the blocker reason out of the dock, right above it, and still describes Weiter with it', async () => {
@@ -162,7 +222,10 @@ describe('EventStepper', () => {
       const next = dock.findAll('button').find(button => button.text().includes('Weiter'))!
       const reason = page.get(`[id="${next.attributes('aria-describedby')}"]`)
       expect(reason.text()).toBe('Gib dem Event einen Namen.')
-      expect(reason.classes()).toEqual(expect.arrayContaining(['text-right', 'text-ink-2']))
+      // max-w-80: a fixed box shrinks to the window, not the form, so a long reason must not widen it past the form's left edge (#613).
+      expect(reason.classes()).toEqual(expect.arrayContaining(['text-right', 'text-ink-2', 'max-w-80']))
+      expect(reason.element.parentElement).toBe(dock.element.parentElement)
+      expect(reason.element.parentElement!.className.split(' ')).toContain('fixed')
       expect(dock.element.contains(reason.element)).toBe(false)
       expect(dock.text()).not.toContain('Gib dem Event einen Namen.')
       expect(reason.element.compareDocumentPosition(dock.element) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()

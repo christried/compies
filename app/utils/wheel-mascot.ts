@@ -50,6 +50,13 @@ export function mascotPhase(spin: MascotSpin, hidden: boolean, reduced: boolean,
   return { stage, state: nowMs < idleAt ? 'cheer' : 'idle' }
 }
 
+/** How far past the wheel's right edge each bust stands (`mascotBox`); the big one's 112 px is the note's. */
+export const OVERHANG_PX = { md: 112, sm: 8 } as const
+/** The wheel card's padding on each side (`p-4`: 4 × `--cp-space`, 4 px): the overhang may use it, not cross the border beyond it (#604). */
+export const WHEEL_CARD_PADDING_PX = 16
+/** The disc's largest width at each width of the theme: the `max-w` classes of the wheel's disc in `LuckyWheel.vue`. */
+export const WHEEL_MAX_PX = { sm: 340, md: 420 } as const
+
 /**
  * Where his box stands, relative to the wheel's square (its origin is the square's top left; `left` is CSS because it depends on the wheel's width):
  * `size` px square and `top`; it stands `overhang` px past the wheel's right edge (112 from md up, 8 below), which only `left` needs. `left` puts the box's right edge at the wheel's edge plus the overhang, but never
@@ -59,8 +66,19 @@ export function mascotPhase(spin: MascotSpin, hidden: boolean, reduced: boolean,
  */
 export function mascotBox(width: MascotWidth) {
   const box = width === 'md'
-    ? { size: 232, top: 18, overhang: 112, travel: { x: -130, y: 100 } }
-    : { size: 150, top: -20, overhang: 8, travel: { x: -100, y: 80 } }
+    ? { size: 232, top: 18, overhang: OVERHANG_PX.md, travel: { x: -130, y: 100 } }
+    : { size: 150, top: -20, overhang: OVERHANG_PX.sm, travel: { x: -100, y: 80 } }
   const { overhang, ...place } = box
   return { ...place, left: `max(50% + 24px, 100% - ${box.size - overhang}px)` }
+}
+
+/**
+ * The bust's width from the wheel card's content width `cardWidth` (#604, the operator's decision): the big bust only when the card holds the
+ * wheel and the big bust's overhang inside the card's border. The disc is `min(C, wheelMax)` wide and centred, so its right edge is at
+ * `(C + W) / 2`, and the overhang must reach no further than the padding's inner edge at `C + padding`: that is `C >= W + 192` with `W` at its
+ * largest. A card narrower than the wheel fails it too. `null` (not measured yet) is the small bust.
+ */
+export function mascotWidthFor(cardWidth: number | null, wheelMax: number): MascotWidth {
+  if (cardWidth === null) return 'sm'
+  return cardWidth >= wheelMax + 2 * OVERHANG_PX.md - 2 * WHEEL_CARD_PADDING_PX ? 'md' : 'sm'
 }

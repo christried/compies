@@ -1,0 +1,25 @@
+Copyright © 2026 christried. All rights reserved.
+
+COMPIES is not open-source software. This repository is public so that its
+code can be read. No licence is granted to use, copy, modify, merge, publish,
+distribute, sublicense or sell the software, its documentation, its design
+documents, its sounds or the mascot Compibert, in whole or in part, except
+for what GitHub's Terms of Service allow every user of a public repository
+(viewing and forking it on GitHub).
+
+For any other use, ask for written permission first. The contact address is
+in the app's Impressum.
+
+Parts of this repository that keep their own licence:
+
+- The font files in server/assets/share/fonts/ (Bricolage Grotesque, Bungee,
+  Lilita One) are under the SIL Open Font License 1.1; the LICENSE-*.txt
+  files beside them hold the texts.
+- The skills in .claude/skills/ that were copied from mattpocock/skills are
+  under the MIT license; .claude/skills/README.md names them and holds the
+  text.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED. IN NO EVENT SHALL THE COPYRIGHT HOLDER BE LIABLE FOR ANY CLAIM,
+DAMAGES OR OTHER LIABILITY ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+SOFTWARE.

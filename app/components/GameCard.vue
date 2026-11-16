@@ -12,7 +12,7 @@ import { colorTags } from '~~/shared/tag-colors'
 // the name is the link and stretches over the whole card (so `#actions` can hold buttons of their own);
 // without it the card is a plain element, not a button. #146 and #148 reuse it; a game with no player count and no Suitabilities shows neither. `layout="responsive"` (#173) is a row
 // below md and a card from md up, decided in CSS, so the game browser needs no `matchMedia`. A library game shows its first
-// three Tags and „+N“ (#335), each in the colour the game's whole Tag order gives it (#427, as on its page) and its Price line under the meta line (#337, #338: a pool and a Round game carry the Price too); only a wheel slice carries neither. They are
+// three Tags and „+N“ (#335), each in the colour the game's whole Tag order gives it (#427, as on its page) and its Price line under the meta line (#337, #338: a pool and a Round game carry the Price too); only a wheel slice carries neither. „+N“ is a button above the link, and its popover lists every Tag (#614). They are
 // spans, not a list: the tests count the cards as `li`. The picker's rows are these cards too, so they show the Price as well.
 // The `tile` layout (#435) is the cover and the name only, on the Event page: no players, Suitabilities, Tags or Price, and no link. With `opens` (#443) the
 // name is a button that emits `open` (a tile opens the game dialog, #443, #444) and stretches over the tile like the link does; a tile without it stays plain.
@@ -36,6 +36,9 @@ const showMeta = computed(() => props.layout !== 'tile')
 const cover = computed(() => gameCover(props.game))
 /** What the name is: the link, else the button that opens the dialog (#443), else a plain element. */
 const asButton = computed(() => props.opens && !props.to)
+/** Whether the card itself can be clicked: only then it lifts on hover, so a lift always means a click (#608). It presses only for the
+ *  click of its name (`data-lift-owner` below), not for a control inside it (#658): `lift` leaves the card still while one of those is pressed. */
+const clickable = computed(() => Boolean(props.to) || props.opens)
 // The compact player count and the Suitabilities („Passt zu“, #171: „Teams, 1 gegen 1“).
 const description = computed(() => describeGame({
   playersMin: props.game.playersMin ?? null,
@@ -45,8 +48,13 @@ const description = computed(() => describeGame({
 const players = computed(() => description.value.playersCompact)
 const suitabilities = computed(() => description.value.suitabilities)
 const TAGS_SHOWN = 3
-const shownTags = computed(() => colorTags(props.game.tags ?? []).slice(0, TAGS_SHOWN))
+const allTags = computed(() => colorTags(props.game.tags ?? []))
+const shownTags = computed(() => allTags.value.slice(0, TAGS_SHOWN))
 const moreTags = computed(() => Math.max(0, (props.game.tags ?? []).length - TAGS_SHOWN))
+// „+N“ opens the popover of every Tag by the shared behaviour (#614, #616). It is a sibling of the link, so using it never follows the link.
+const more = useTemplateRef<HTMLElement>('more')
+const moreEl = computed(() => more.value ?? null)
+const { open, triggerAttrs, popoverAttrs } = useRevealPopover(moreEl)
 
 // One class set per layout; Tailwind needs the strings whole. The responsive set is the row's, undone from md up.
 // The body grows, so the actions sit on the card's bottom edge in a stretched grid row (#351).
@@ -57,27 +65,32 @@ const LAYOUT = {
     body: 'flex-1',
     name: 'truncate',
     actions: '',
+    tags: 'flex-nowrap',
   },
   card: {
     box: 'flex-col overflow-hidden rounded-[14px]',
     cover: 'aspect-[16/10] w-full border-b-2',
     body: 'flex-auto px-3 pt-2.5 pb-3',
-    name: 'line-clamp-2',
+    name: 'line-clamp-2 min-h-[2lh]',
     actions: 'px-3 pb-3',
+    // The Tags sit on the card's bottom edge, one line, so every card of a row shares their top edge (#614).
+    tags: 'mt-auto flex-nowrap',
   },
   tile: {
     box: 'flex-col overflow-hidden rounded-[14px]',
     cover: 'aspect-[16/10] w-full border-b-2',
     body: 'px-3 pt-2.5 pb-3',
-    name: 'line-clamp-2 break-words',
+    name: 'line-clamp-2 break-words min-h-[2lh]',
     actions: '',
+    tags: '',
   },
   responsive: {
     box: 'min-h-15 items-center gap-3 rounded-[12px] py-1.5 pr-2.5 pl-1.5 md:min-h-0 md:flex-col md:items-stretch md:gap-0 md:overflow-hidden md:rounded-[14px] md:p-0',
     cover: 'size-[46px] rounded-[9px] border-2 md:aspect-[16/10] md:size-auto md:w-full md:rounded-none md:border-0 md:border-b-2',
     body: 'flex-1 md:flex-auto md:px-3 md:pt-2.5 md:pb-3',
-    name: 'truncate md:line-clamp-2 md:whitespace-normal',
+    name: 'truncate md:line-clamp-2 md:min-h-[2lh] md:whitespace-normal',
     actions: 'md:px-3 md:pb-3',
+    tags: 'flex-nowrap md:mt-auto',
   },
 }
 const look = computed(() => LAYOUT[props.layout])
@@ -86,7 +99,7 @@ const look = computed(() => LAYOUT[props.layout])
 <template>
   <div
     class="relative flex min-w-0 border-(length:--cp-bw) border-line bg-surface shadow-sm"
-    :class="look.box"
+    :class="[look.box, { lift: clickable }]"
   >
     <div
       :data-cover="cover ? 'image' : 'placeholder'"
@@ -118,6 +131,7 @@ const look = computed(() => LAYOUT[props.layout])
         :to="to"
         :type="asButton ? 'button' : undefined"
         :aria-haspopup="asButton ? 'dialog' : undefined"
+        :data-lift-owner="to || asButton ? '' : undefined"
         class="leading-tight font-bold text-ink no-underline"
         :class="[
           to || asButton ? 'focus-visible:focus-ring after:absolute after:inset-0 after:block after:content-[\'\']' : '',
@@ -155,7 +169,7 @@ const look = computed(() => LAYOUT[props.layout])
         role="group"
         :aria-label="t('library.tags')"
         class="flex gap-1"
-        :class="layout === 'card' ? 'flex-wrap' : layout === 'row' ? 'flex-nowrap overflow-hidden' : 'flex-nowrap overflow-hidden md:flex-wrap'"
+        :class="look.tags"
       >
         <TagChip
           v-for="tag in shownTags"
@@ -165,13 +179,38 @@ const look = computed(() => LAYOUT[props.layout])
         >
           {{ tag.label }}
         </TagChip>
-        <span
+        <button
           v-if="moreTags > 0"
-          :title="t('library.moreTagsLabel', { n: moreTags }, moreTags)"
+          ref="more"
+          type="button"
+          class="hit-44 inline-flex h-6 flex-none items-center rounded-pill border-2 border-transparent px-1.5 text-[12px] leading-5 font-bold text-ink-2 focus-visible:focus-ring"
           :aria-label="t('library.moreTagsLabel', { n: moreTags }, moreTags)"
-          class="flex-none rounded-pill px-1 text-[11px] leading-5 font-bold text-ink-2"
-        >{{ t('library.moreTags', { n: moreTags }) }}</span>
+          v-bind="triggerAttrs"
+        >
+          {{ t('library.moreTags', { n: moreTags }) }}
+        </button>
       </div>
+      <RevealPopover
+        v-if="showMeta && moreTags > 0"
+        :open="open"
+        :anchor="moreEl"
+        v-bind="popoverAttrs"
+      >
+        <div
+          role="group"
+          :aria-label="t('library.tags')"
+          class="flex flex-wrap gap-1"
+        >
+          <TagChip
+            v-for="tag in allTags"
+            :key="tag.key"
+            :color="tag.color"
+            class="px-2 text-[11px] leading-5"
+          >
+            {{ tag.label }}
+          </TagChip>
+        </div>
+      </RevealPopover>
     </div>
 
     <div

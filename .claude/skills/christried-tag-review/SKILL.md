@@ -10,7 +10,7 @@ Work files (the export, your research, the plan) go in your scratchpad, never in
 
 ## 1. Export
 
-You never hold the production `DATABASE_URL` (`docs/agents/delivery.md` § Production data). Ask the user to put it in `.env.prod` at the repo root (git ignores it) and run:
+You never hold the production `DATABASE_URL` (`docs/agents/delivery.md` § Production data). Ask the user to put it in `.env.prod` at the repo root (git ignores it, and the § names this skill as its one exception) for this run, to delete it when the run ends, and to run:
 
 ```
 ! node --env-file=.env.prod .claude/skills/christried-tag-review/library-tags.mjs export "<scratchpad>/library.json"

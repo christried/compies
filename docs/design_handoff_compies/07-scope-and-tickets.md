@@ -1,6 +1,6 @@
 # 07 Scope & tickets
 
-> **Superseded for everything after the MVP:** `docs/roadmap.md` holds the Release order, what each Release ships and which of the tickets below stay out. The ticket numbers (T…) and labels here are still referenced from there.
+> **Superseded for everything after the MVP:** each Release's spec issue holds what it ships, and the tickets below that were not built are Idea issues (§ Post-1.0 issues, and #663 to #697). The Release order lived in `docs/roadmap.md` until 2026-11-16 ([its last version](https://github.com/christried/compies/blob/34281e4621a9b46d0d5313c2a3058ac9e8eab9e6/docs/roadmap.md)). The ticket numbers (T…) and labels here are still referenced from the specs.
 
 ## Labels
 
@@ -95,6 +95,8 @@ Adjustable. Strikethrough parts are already done in the MVP.
 With each ticket, delete the matching construction routes and BaustelleZone usages, and remove the tape marker from that nav item.
 
 ## Post-1.0 issues (one issue each)
+
+Filed as Idea issues on 2026-11-16: Crews with the founding permission [#692](https://github.com/christried/compies/issues/692), tournament bracket [#693](https://github.com/christried/compies/issues/693), league [#694](https://github.com/christried/compies/issues/694), reported Results [#695](https://github.com/christried/compies/issues/695), the Stands [#696](https://github.com/christried/compies/issues/696), English [#679](https://github.com/christried/compies/issues/679), kick or ban [#697](https://github.com/christried/compies/issues/697). The chat proposals are open questions of [#667](https://github.com/christried/compies/issues/667), custom emotes of [#668](https://github.com/christried/compies/issues/668). A comment per Slot is the Note of a Vote (`GLOSSARY.md`), already built.
 
 | Issue | Mockup | Notes |
 |---|---|---|

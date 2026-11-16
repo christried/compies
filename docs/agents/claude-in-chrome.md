@@ -1,0 +1,15 @@
+# Claude in Chrome
+
+The limits of Claude in Chrome (`claude --chrome`), each met in a check on staging or in a walk-through. Read them before the first `javascript_tool` call of a session. When Chrome serves which check is `docs/agents/delivery.md` § Issues; a check at 390 px or by numbers runs through `scripts/browser/` instead (`docs/agents/browser-frame.md`). They sat in `delivery.md` until 0.14, where every orchestrator read them and neither local session of that Release used Chrome (#780).
+
+- `javascript_tool` masks strings shaped like a version (`0.5.1`) in what it returns, so return comparisons (`seen === '0.5.0'`) or counts;
+- a long name without spaces comes back from `javascript_tool` masked as „Base64 encoded data“, so return a comparison or a count for it too;
+- `javascript_tool` gives up after 45 s, so a wait across a Veto window (up to 150 s) is split into several calls;
+- it can't resize the window („Bounds must be at least 50 % within visible screen space“), and a popup from `javascript_tool` (`window.open(url, '', 'width=390')`) is blocked for want of a user gesture (tried 2026-11-08), so the 390 and 1440 px checks run through `scripts/browser/`: on `pnpm dev`, or against staging itself with `BASE_URL` and the Vercel bypass secret (`scripts/browser/README.md` § Staging);
+- the window was 958 px wide in three sessions and 1920 px in the fourth: read `innerWidth` first, before any check that depends on the width;
+- a motion ticket's check reads one of its animations with `document.getAnimations()` (duration and easing): the deployed CSS is minified and `pnpm dev`'s is not, and every local check of 0.5 to 0.10 passed while every Web Animation ran near 0 ms on staging and production (#370);
+- motion is read through a spy on `Element.prototype.animate`, installed in one `javascript_tool` call before the trigger (the pattern `scripts/browser/kit.mjs` installs), then `document.getAnimations()` for durations, delays, easings and `currentTime`, never by sampling frames: in the #363 check (2026-11-09) `requestAnimationFrame` ran at about 18 fps and timers jittered by up to 400 ms, so the first frame that read „0:00“ already showed finished animations, while the spy gave all seven burst tracks exactly;
+- return counts, booleans and short numbers, not class lists or CSS text: a result that carried class and CSS strings was blocked by the extension's filter („Cookie/query string data“, 2026-11-09);
+- keep one call's result under about 3 KB and use several calls for more: a larger result is cut with `[TRUNCATED]` (2026-11-09);
+- it can't change the OS settings. Dark comes with the sign-in address (`…/api/dev/sign-in?as=member&appearance=dark&to=…`, `appearance=system` for System), because `data-theme` belongs to the head since #401 and an attribute set by hand is set back on the next head update. Reduced motion is still one `javascript_tool` line: the app reads `data-motion="reduced"` on `<html>` (`app/assets/css/compies-theme.css`; the 0.9 check left it to the local run for nothing);
+- a hold button takes a dispatched `pointerdown`, then a `pointerup` 1.4 s later.

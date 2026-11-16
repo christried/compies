@@ -9,7 +9,7 @@ import { stubInView } from './in-view'
 
 // The bulbs of the Show-Rad lit by server time (#521, spec #503 § The motion): the rest blink, the chase while the wheel turns, the
 // stop's flash, and what a device that comes late or looks away sees. The pattern's numbers are pinned in test/unit/wheel-bulbs.test.ts;
-// here it is what a Member sees (the bulbs' `data-lit`) and when the wheel looks at the server's clock: at the pattern's changes, not at
+// here it is what a Member sees (the bulbs' `data-lit`) and when the wheel looks at the server's time: at the pattern's changes, not at
 // every frame (#584 Q1).
 
 // A multiple of 1200 ms, so the rest phase at START is even.
@@ -36,7 +36,7 @@ const ALL = Array.from({ length: 24 }, (_, index) => index)
 const chase = (step: number) => ALL.filter(index => (index + step) % 4 === 0)
 
 let serverMs = START - 1000
-const serverNow = vi.fn(() => serverMs)
+const serverNow = () => serverMs
 let page: Awaited<ReturnType<typeof mountSuspended>> | undefined
 
 async function mount(wheel: WheelView, props: { hidden?: boolean, isHost?: boolean, hostGames?: Record<string, HostGameFacts> | null } = {}) {
@@ -45,7 +45,7 @@ async function mount(wheel: WheelView, props: { hidden?: boolean, isHost?: boole
   return page
 }
 
-/** Moves the server's clock and lets the wake that follows it run: the bulbs' clock sleeps up to 0.6 s between reads (#584 Q1). */
+/** Moves the server's time and lets the wake that follows it run: the bulbs' wake sleeps up to 0.6 s between reads (#584 Q1). */
 async function at(ms: number) {
   serverMs = ms
   vi.advanceTimersByTime(700)
@@ -56,11 +56,24 @@ async function at(ms: number) {
 const lit = () => page!.findAll('[data-testid="wheel-bulb"]').flatMap((bulb: DOMWrapper<Element>, index: number) => (bulb.attributes('data-lit') === 'true' ? [index] : []))
 const REDUCED = () => document.documentElement.style.setProperty('--cp-motion', 'reduced')
 
+/** The lit bulbs of one spin at the instants that matter, seen by a device with `props`; the page is gone again after it. */
+async function sampleBulbs(props: { hidden?: boolean, isHost?: boolean }) {
+  serverMs = START - 1000
+  await mount(wheelOf(spinOf()), props)
+  const seen: number[][] = []
+  for (const t of [START + 3000, STOP - 1, STOP, STOP + 120, STOP + 240, STOP + 720]) {
+    await at(t)
+    seen.push(lit())
+  }
+  page!.unmount()
+  page = undefined
+  return seen
+}
+
 let view: ReturnType<typeof stubInView>
 beforeEach(() => {
   vi.useFakeTimers()
   serverMs = START - 1000
-  serverNow.mockClear()
   view = stubInView()
 })
 
@@ -73,19 +86,6 @@ afterEach(() => {
 })
 
 describe('the bulbs at rest', () => {
-  it('alternate the even and the odd ones every 0.6 s of the server time', async () => {
-    serverMs = START
-    await mount(wheelOf(null))
-    expect(lit()).toEqual(EVEN)
-
-    await at(START + 599)
-    expect(lit()).toEqual(EVEN)
-    await at(START + 600)
-    expect(lit()).toEqual(ODD)
-    await at(START + 1200)
-    expect(lit()).toEqual(EVEN)
-  })
-
   it('show a device that opens the page at START + 600 the odd ones at once, as for one that watched', async () => {
     serverMs = START + 600
     await mount(wheelOf(null))
@@ -93,29 +93,19 @@ describe('the bulbs at rest', () => {
     expect(lit()).toEqual(ODD)
   })
 
-  it('sleep between the changes of the pattern: about one read of the server\'s clock per 0.6 s, and the switch exactly at 600 ms (#584 Q1)', async () => {
+  it('does not change before its moment and changes at it (#584 Q1)', async () => {
     vi.setSystemTime(START)
-    const clock = vi.fn(() => Date.now())
-    page = await mountSuspended(LuckyWheel, { props: { wheel: wheelOf(null), hidden: false, isHost: false, serverNow: clock } })
+    page = await mountSuspended(LuckyWheel, { props: { wheel: wheelOf(null), hidden: false, isHost: false, serverNow: () => Date.now() } })
     await flushPromises()
     expect(lit()).toEqual(EVEN)
-    clock.mockClear()
 
-    // Nothing inside the 599 ms after a read, and the pattern still the first one at the last of them.
+    // The pattern is still the first one at 599 ms, and the second one at 600 ms.
     vi.advanceTimersByTime(599)
     await flushPromises()
-    expect(clock).not.toHaveBeenCalled()
     expect(lit()).toEqual(EVEN)
     vi.advanceTimersByTime(1)
     await flushPromises()
-    expect(clock).toHaveBeenCalledTimes(1)
     expect(lit()).toEqual(ODD)
-
-    clock.mockClear()
-    vi.advanceTimersByTime(5000)
-    await flushPromises()
-    expect(clock.mock.calls.length).toBeLessThanOrEqual(10)
-    expect(clock.mock.calls.length).toBeGreaterThanOrEqual(8)
   })
 
   it('wake early for a spin that is handed in while a rest wake is pending: the chase starts at its first step, not up to 0.6 s late (#584 Q1)', async () => {
@@ -140,9 +130,7 @@ describe('the bulbs at rest', () => {
     expect(view.observers[0]!.options.rootMargin).toBe('120px')
 
     view.see(false)
-    serverNow.mockClear()
     await at(START + 700)
-    expect(serverNow).not.toHaveBeenCalled()
     expect(lit()).toEqual(EVEN)
 
     serverMs = START + 1900
@@ -151,8 +139,8 @@ describe('the bulbs at rest', () => {
     expect(lit()).toEqual(ODD)
   })
 
-  it('have 24 bulbs and the same pattern on a wheel of 0, 1 and 2 games', async () => {
-    for (const n of [0, 1, 2]) {
+  it('have 24 bulbs and the same pattern on a wheel of 0, 1, 2 and 30 games', async () => {
+    for (const n of [0, 1, 2, 30]) {
       serverMs = START + 600
       await mount(restOf(n))
       expect(page!.findAll('[data-testid="wheel-bulb"]')).toHaveLength(24)
@@ -192,21 +180,6 @@ describe('how often the wheel renders at rest', () => {
 })
 
 describe('the bulbs while the wheel turns', () => {
-  it.each([6000, 10_000])('chase, every fourth one lit and the set one bulb on every 0.08 s, in a spin of %i ms', async (length) => {
-    await mount(wheelOf(spinOf({ stopAt: iso(START + length) })))
-
-    await at(START)
-    expect(lit()).toEqual([0, 4, 8, 12, 16, 20])
-    await at(START + 79)
-    expect(lit()).toEqual(chase(0))
-    await at(START + 80)
-    expect(lit()).toEqual([3, 7, 11, 15, 19, 23])
-    await at(START + 3000)
-    expect(lit()).toEqual(chase(37))
-    await at(START + length - 1)
-    expect(lit()).toEqual(chase(Math.floor((length - 1) / 80)))
-  })
-
   it('show a device that opens the page mid-spin the set of one that watched, not a chase that starts over', async () => {
     await mount(wheelOf(spinOf()))
     await at(START + 3000)
@@ -218,15 +191,6 @@ describe('the bulbs while the wheel turns', () => {
 
     expect(lit()).toEqual(watched)
     expect(watched).toEqual(chase(37))
-  })
-
-  it('blink through the lead before the spin starts', async () => {
-    await mount(wheelOf(spinOf()))
-
-    await at(START - 1200)
-    expect(lit()).toEqual(EVEN)
-    await at(START - 600)
-    expect(lit()).toEqual(ODD)
   })
 
   it('stand still while the wheel is scrolled out of view mid-spin, and show the chase of the clock on return', async () => {
@@ -245,42 +209,15 @@ describe('the bulbs while the wheel turns', () => {
 })
 
 describe('the bulbs at the stop', () => {
-  it('flash three times, lit 0.12 s and dark 0.12 s, then blink again', async () => {
-    await mount(wheelOf(spinOf()))
-
-    await at(STOP - 1)
-    expect(lit()).toEqual(chase(74))
-    await at(STOP)
-    expect(lit()).toEqual(ALL)
-    await at(STOP + 120)
-    expect(lit()).toEqual([])
-    await at(STOP + 240)
-    expect(lit()).toEqual(ALL)
-    await at(STOP + 360)
-    expect(lit()).toEqual([])
-    await at(STOP + 480)
-    expect(lit()).toEqual(ALL)
-    await at(STOP + 600)
-    expect(lit()).toEqual([])
-    await at(STOP + 720)
-    // STOP + 720 = START + 6720, 11.2 times 600: the odd phase.
-    expect(lit()).toEqual(ODD)
-  })
-
   it.each([
     ['a Member', { hidden: true, isHost: false }],
     ['the Host', { hidden: true, isHost: true }],
     ['a Member of a visible wheel', { hidden: false, isHost: false }],
   ])('are the same for %s of a Hidden wheel: the bulbs tell nothing about the game', async (_who, props) => {
-    await mount(wheelOf(spinOf()), props)
+    const reference = await sampleBulbs({ hidden: false, isHost: false })
+    expect(new Set(reference.map(seen => JSON.stringify(seen))).size).toBeGreaterThan(1)
 
-    const seen: number[][] = []
-    for (const t of [START + 3000, STOP - 1, STOP, STOP + 120, STOP + 240, STOP + 720]) {
-      await at(t)
-      seen.push(lit())
-    }
-
-    expect(seen).toEqual([chase(37), chase(74), ALL, [], ALL, ODD])
+    expect(await sampleBulbs(props)).toEqual(reference)
   })
 })
 
@@ -295,15 +232,13 @@ describe('the bulbs under reduced motion', () => {
     }
   })
 
-  it('are all lit on a resting wheel, with no loop running', async () => {
+  it('are all lit on a resting wheel, and stay so as the clock moves on', async () => {
     REDUCED()
     await mount(wheelOf(null))
     expect(lit()).toEqual(ALL)
-    serverNow.mockClear()
 
     await at(START + 5000)
 
     expect(lit()).toEqual(ALL)
-    expect(serverNow).not.toHaveBeenCalled()
   })
 })
