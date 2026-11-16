@@ -1,7 +1,5 @@
 <script setup lang="ts">
-import { Check, Monitor, Moon, Sun } from '@lucide/vue'
-import type { Component } from 'vue'
-import { APPEARANCES } from '~~/shared/appearance'
+import { Check } from '@lucide/vue'
 import type { Appearance } from '~~/shared/appearance'
 
 // The header's Appearance button (#617, 15 § AppHeader): from md up, a round button whose icon shows the signed-in User's
@@ -9,11 +7,7 @@ import type { Appearance } from '~~/shared/appearance'
 // holds the choice. A choice shows at once, closes the menu and gives the focus back; a failed save is said in a toast.
 const { t } = useI18n()
 const user = useAuthUser()
-const { toast } = useToast()
-const appearance = useAppearance({ onFailed: () => toast({ tone: 'error', text: t('settings.appearanceSaveFailed') }) })
-
-const ICONS: Record<Appearance, Component> = { light: Sun, dark: Moon, system: Monitor }
-const options = computed(() => APPEARANCES.map(value => ({ value, label: t(`settings.${value}`), icon: ICONS[value] })))
+const appearance = useAppearance({ toast: true })
 
 // A freshly opened menu focuses the ticked item.
 const { open, toggle, close, move, menuItems } = useDropdownMenu({
@@ -38,7 +32,7 @@ function choose(value: Appearance) {
     @keydown.up="move(-1, $event)"
   >
     <IconButton
-      :icon="ICONS[appearance.appearance.value]"
+      :icon="appearance.icons[appearance.appearance.value]"
       :label="t('settings.appearance')"
       aria-haspopup="menu"
       :aria-expanded="open"
@@ -52,7 +46,7 @@ function choose(value: Appearance) {
       class="outline-memphis absolute top-full right-0 mt-2.5 flex w-[200px] flex-col rounded-[16px] bg-surface p-2 shadow-card"
     >
       <button
-        v-for="option in options"
+        v-for="option in appearance.choices.value"
         :key="option.value"
         type="button"
         role="menuitemradio"
@@ -60,7 +54,7 @@ function choose(value: Appearance) {
         class="flex h-11 items-center gap-2.5 rounded-md px-3 text-left text-[15px] font-bold text-ink hover:bg-paper-2"
         @click="choose(option.value)"
       >
-        <AppIcon :icon="option.icon" />
+        <AppIcon :icon="appearance.icons[option.value]" />
         {{ option.label }}
         <AppIcon
           v-if="option.value === appearance.appearance.value"

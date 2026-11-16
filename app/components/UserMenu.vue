@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { LogOut, User } from '@lucide/vue'
-import type { Appearance } from '~~/shared/appearance'
 import { shownName } from '~~/shared/auth'
 
 // Avatar menu in the header (09 § UserMenu, 10 § UserMenu): who is signed in and „Abmelden“. Below md the
@@ -10,13 +9,7 @@ import { shownName } from '~~/shared/auth'
 const { t } = useI18n()
 const user = useAuthUser()
 const signOut = useSignOut()
-const { toast } = useToast()
-const appearance = useAppearance({ onFailed: () => toast({ tone: 'error', text: t('settings.appearanceSaveFailed') }) })
-const appearanceOptions = computed<{ value: Appearance, label: string }[]>(() => [
-  { value: 'light', label: t('settings.light') },
-  { value: 'dark', label: t('settings.dark') },
-  { value: 'system', label: t('settings.system') },
-])
+const appearance = useAppearance({ toast: true })
 
 // A freshly opened menu focuses „Profil“, not the row above it.
 const { open, toggle, close, move, menuItems } = useDropdownMenu({
@@ -85,7 +78,7 @@ const name = computed(() => (user.value ? shownName(user.value) : ''))
         >{{ t('settings.appearance') }}</span>
         <SegmentedControl
           :model-value="appearance.appearance.value"
-          :options="appearanceOptions"
+          :options="appearance.choices.value"
           :label="t('settings.appearance')"
           arrows="horizontal"
           @update:model-value="appearance.choose"
