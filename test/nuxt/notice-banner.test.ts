@@ -53,15 +53,51 @@ describe('NoticeBanner tones (#172)', () => {
     expect(closable.emitted('close')).toHaveLength(1)
   })
 
-  it('keeps an action in the column of the text, under it below sm, and adds no empty wrapper without one (#166)', async () => {
-    const withAction = await mountSuspended(NoticeBanner, { props: { hostOnly: true }, slots: { default: 'Lange Nachricht.', action: '<button type="button">Jetzt</button>' } })
-    const button = withAction.get('button').element
-    const textColumn = [...withAction.element.children].find(child => child.textContent?.includes('Lange Nachricht.'))!
-    expect(textColumn.contains(button)).toBe(true)
-    expect(button.parentElement?.className).toContain('max-sm:self-start')
-    expect(withAction.get('[role]').text()).toContain('Nur du siehst das')
+  it('shows a Host-only notice as label, divider, text and action in that order, with the ✕ kept (#611)', async () => {
+    const page = await mountSuspended(NoticeBanner, { props: { hostOnly: true, closable: true }, slots: { default: 'Lange Nachricht.', action: '<button type="button">Jetzt</button>' } })
+    const root = page.element
+    const label = [...root.querySelectorAll('span')].find(el => el.textContent?.trim() === 'Nur du siehst das')
+    const divider = root.querySelector('hr')
+    const text = [...root.querySelectorAll('span')].find(el => el.textContent?.trim() === 'Lange Nachricht.')
+    const action = page.get('button:not([aria-label])').element
+    expect(label, 'label').toBeTruthy()
+    expect(divider, 'divider').toBeTruthy()
+    expect(text, 'text').toBeTruthy()
+
+    const follows = (a: Element, b: Element) => (a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING) !== 0
+    expect(follows(label!, divider!)).toBe(true)
+    expect(follows(divider!, text!)).toBe(true)
+    expect(follows(text!, action)).toBe(true)
+
+    await page.get('button[aria-label="Schließen"]').trigger('click')
+    expect(page.emitted('close')).toHaveLength(1)
+  })
+
+  it('shows a Host-only notice without an action as label, divider and text, with no button (#611)', async () => {
+    const page = await mountSuspended(NoticeBanner, { props: { hostOnly: true }, slots: { default: 'Nur Text.' } })
+    const root = page.element
+    const label = [...root.querySelectorAll('span')].find(el => el.textContent?.trim() === 'Nur du siehst das')
+    const divider = root.querySelector('hr')
+    const text = [...root.querySelectorAll('span')].find(el => el.textContent?.trim() === 'Nur Text.')
+    expect(label, 'label').toBeTruthy()
+    expect(divider, 'divider').toBeTruthy()
+    expect(text, 'text').toBeTruthy()
+
+    const follows = (a: Element, b: Element) => (a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING) !== 0
+    expect(follows(label!, divider!)).toBe(true)
+    expect(follows(divider!, text!)).toBe(true)
+    expect(page.findAll('button')).toHaveLength(0)
+  })
+
+  it('draws neither label nor divider without hostOnly, and keeps the action under sm wrapper (#166, #611)', async () => {
+    const withAction = await mountSuspended(NoticeBanner, { slots: { default: 'Text.', action: '<button type="button">Jetzt</button>' } })
+    expect(withAction.text()).not.toContain('Nur du siehst das')
+    expect(withAction.find('hr').exists()).toBe(false)
+    expect(withAction.get('button').element.parentElement?.className).toContain('max-sm:self-start')
 
     const without = await mountSuspended(NoticeBanner, { slots: { default: 'Nur Text.' } })
+    expect(without.text()).not.toContain('Nur du siehst das')
+    expect(without.find('hr').exists()).toBe(false)
     expect(without.element.querySelectorAll('.max-sm\\:self-start')).toHaveLength(0)
   })
 

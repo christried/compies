@@ -13,6 +13,7 @@ Each concern below has one home. New code calls it; a second copy is a finding e
 | A rule both sides enforce (name length, clip, player count, points table, settings) | a pure function in `shared/`, called by the form and by the server parser |
 | Request input | `unknown` until a domain parser has checked it; `asRecord`/`isRecord` from `shared/record.ts`, no casts (lint) |
 | A User's visible name | `shownName` in `shared/auth.ts` (lint) |
+| What an Appearance is (the list, the guard, the cookie's name and value rule); the users table's CHECK is built from the list | `shared/appearance.ts` (#603) |
 | Text length | `characterCount` in `shared/text.ts` |
 | Dates and times shown to Users | `app/utils/berlin-time.ts`, `shared/time.ts` |
 | An API error shown to Users | `reasonKey` / `apiErrorKey` and their table in `app/utils/api-error.ts` (a screen's own words are a screen entry there, not an override at the call site; `test/unit/api-error.test.ts` checks every code × screen); Event page actions through `useEventMutation` |

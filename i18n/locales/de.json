@@ -175,8 +175,6 @@
       "setup": "Für dieses Event fehlt noch, wie gespielt wird. Leg Format, Spiele und Punkte fest, dann öffnet die Teamwahl.",
       "setupAction": "Jetzt einrichten",
       "setupMember": "{host} richtet das Event noch ein. Bis dahin bleibst du auf der Tribüne.",
-      "seatTeam": "Du spielst mit, in {team}. Das Host-Dock bleibt genau gleich.",
-      "seatStands": "Du sitzt auf der Tribüne. Das Host-Dock bleibt genau gleich.",
       "teamsStay": "Die Teams bleiben fürs ganze Event. Wer bei Session {n} fehlt, ersetzt du von der Tribüne.",
       "teamsStayNext": "Die Teams bleiben fürs ganze Event. Wer bei der nächsten Session fehlt, ersetzt du von der Tribüne.",
       "teamsStayMember": "Die Teams bleiben fürs ganze Event. Wenn du bei Session {n} nicht kannst, setz dich auf die Tribüne.",

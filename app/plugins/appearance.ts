@@ -1,4 +1,4 @@
-import { APPEARANCE_COOKIE } from '~~/shared/auth'
+import { APPEARANCE_COOKIE } from '~~/shared/appearance'
 
 // The page's Appearance (#401): `data-theme` on <html> and the browser bar's colour, from the User the auth middleware loaded,
 // or signed out from the device's `compies-appearance` cookie (#403).

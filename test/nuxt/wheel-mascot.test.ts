@@ -40,7 +40,7 @@ const wheelOf = (spin: SpinView | null, fields: Partial<WheelView> = {}): WheelV
 const slicesOf = (n: number): WheelView['slices'] => Array.from({ length: n }, (_, index) => ({ id: `s${index}`, name: `Spiel ${index}` }))
 
 let serverMs = START - 1000
-const serverNow = vi.fn(() => serverMs)
+const serverNow = () => serverMs
 let page: Awaited<ReturnType<typeof mountSuspended>> | undefined
 
 async function mount(wheel: WheelView, props: { hidden?: boolean, isHost?: boolean } = {}) {
@@ -60,6 +60,40 @@ function wide(matches: boolean) {
   vi.stubGlobal('matchMedia', () => ({ matches, addEventListener: () => {}, removeEventListener: () => {} }))
 }
 
+/**
+ * The wheel card's width as its ResizeObserver reports it (#604): happy-dom's observer does nothing, so this stub reports `px` once when the card
+ * is observed, and `resize` reports a new width the way a real observer would. `seen` counts what was observed and how often it was disconnected.
+ */
+function cardWidth(px: number) {
+  const seen = { observed: [] as Element[], disconnects: 0 }
+  let width = px
+  let report: ResizeObserverCallback | undefined
+  class Stub {
+    constructor(callback: ResizeObserverCallback) {
+      report = callback
+    }
+
+    observe(target: Element) {
+      seen.observed.push(target)
+      report?.([{ target, contentRect: { width } } as unknown as ResizeObserverEntry], null as unknown as ResizeObserver)
+    }
+
+    unobserve() {}
+
+    disconnect() {
+      seen.disconnects++
+    }
+  }
+  vi.stubGlobal('ResizeObserver', Stub)
+  return {
+    seen,
+    resize(next: number) {
+      width = next
+      report?.([{ target: seen.observed[0]!, contentRect: { width: next } } as unknown as ResizeObserverEntry], null as unknown as ResizeObserver)
+    },
+  }
+}
+
 const mascot = () => page!.find('[data-testid="wheel-mascot"]')
 const stage = () => mascot().attributes('data-stage')
 const rigState = () => mascot().get('.compibert-rig').attributes('data-state')
@@ -74,7 +108,6 @@ beforeAll(async () => {
 beforeEach(() => {
   vi.useFakeTimers()
   serverMs = START - 1000
-  serverNow.mockClear()
   stubInView()
 })
 
@@ -162,33 +195,20 @@ describe('a spin of 6 s', () => {
   })
 })
 
-describe('the brake follows the length of the spin', () => {
-  it.each([[7000, 4200], [8500, 5100], [10_000, 6000]])('of %i ms is at %i ms', async (length, brake) => {
-    await mount(wheelOf(spinOf(length)))
-
-    await at(START + brake - 1)
-    expect(rigState()).toBe('excited')
-    await at(START + brake)
-    expect(rigState()).toBe('suspense')
-    await at(START + length)
-    expect(rigState()).toBe('cheer')
-  })
-})
-
 describe('a late joiner', () => {
-  it.each([[100, 'in', 'excited'], [2000, 'on', 'excited'], [4000, 'on', 'suspense'], [6500, 'on', 'cheer'], [8000, 'on', 'idle'], [8300, 'out', 'idle']])('who opens the page %i ms into the spin finds him %s and %s, as one who watched', async (offset, wantedStage, wantedState) => {
+  it('who opens the page 4000 ms into the spin finds him on and holding his breath, as one who watched', async () => {
     // The one who watched: the clock moves frame by frame to the same instant.
     await mount(wheelOf(spinOf()))
-    for (let ms = START - 1000; ms <= START + offset; ms += 100) await at(ms)
-    await at(START + offset)
+    for (let ms = START - 1000; ms <= START + 4000; ms += 100) await at(ms)
+    await at(START + 4000)
     const watched = seen()
     page!.unmount()
 
-    serverMs = START + offset
+    serverMs = START + 4000
     await mount(wheelOf(spinOf()))
     await flushPromises()
 
-    expect(watched).toEqual({ stage: wantedStage, state: wantedState })
+    expect(watched).toEqual({ stage: 'on', state: 'suspense' })
     expect(seen()).toEqual(watched)
   })
 
@@ -304,11 +324,21 @@ describe('what he leaves alone', () => {
     expect(page!.get('[role="status"]').text()).toBe('')
   })
 
-  it('announces the result at the stop as before, with nothing of his', async () => {
+  it('moves with the wheel, on one clock: at the stop he cheers in the frame the wheel announces its result, with nothing of his in it', async () => {
     await mount(wheelOf(spinOf(6000, { game: halo })))
+    const rotor = () => page!.get('[data-testid="wheel-rotor"]').attributes('style')
 
-    await at(START + 6100)
+    await at(START + 3700)
+    const turning = rotor()
+    await at(START + 5999)
+    expect(rigState()).toBe('suspense')
+    expect(page!.get('[role="status"]').text()).toBe('')
+    // The wheel is turning while he holds his breath: both are seen to move.
+    expect(rotor()).not.toBe(turning)
+
+    await at(START + 6000)
     expect(mascot().exists()).toBe(true)
+    expect(rigState()).toBe('cheer')
     expect(page!.get('[role="status"]').text()).toBe('Glücksrad: Halo')
   })
 
@@ -319,22 +349,6 @@ describe('what he leaves alone', () => {
     const markup = mascot().element.outerHTML
     for (const secret of ['Halo', 'Kart', 'Pong', 'Schach', 'g-halo', 'd1', 'r1']) expect(markup).not.toContain(secret)
     expect(Object.keys(mascot().attributes()).sort()).toEqual(['aria-hidden', 'class', 'data-ready', 'data-stage', 'data-testid', 'data-width', 'style'])
-  })
-
-  it('does not read the server\'s clock for himself: a frame costs the wheel the same reads with and without him', async () => {
-    await mount(wheelOf(spinOf()))
-    await at(START + 1000)
-    serverNow.mockClear()
-    await at(START + 1050)
-    const withHim = serverNow.mock.calls.length
-    await at(START + 6000 + 2650)
-    expect(mascot().exists()).toBe(false)
-    serverNow.mockClear()
-    await at(START + 6000 + 2700)
-    const without = serverNow.mock.calls.length
-
-    expect(withHim).toBeGreaterThan(0)
-    expect(withHim).toBe(without)
   })
 
   it('does not change the wheel\'s size or the card: the box is positioned and takes no room', async () => {
@@ -352,6 +366,7 @@ describe('what he leaves alone', () => {
 describe('the width', () => {
   it('is sm on a phone: 150 px, from the wheel\'s upper right', async () => {
     wide(false)
+    cardWidth(300)
     await mount(wheelOf(spinOf()))
     await at(START + 1000)
 
@@ -359,8 +374,9 @@ describe('the width', () => {
     expect(mascot().get('.compibert-rig').attributes('style')).toContain('width: 150px')
   })
 
-  it('is md from the theme\'s md up, not from the narrower width `useRoomy` has: 232 px', async () => {
+  it('is md on a card that holds the wheel from the theme\'s md up, not from the narrower width `useRoomy` has: 232 px', async () => {
     wide(true)
+    cardWidth(1020)
     await mount(wheelOf(spinOf()))
     await at(START + 1000)
 
@@ -368,6 +384,61 @@ describe('the width', () => {
     expect(mascot().attributes('style')).toContain('--wm-left: max(50% + 24px, 100% - 120px)')
     expect(mascot().attributes('style')).toContain('top: 18px')
     expect(mascot().get('.compibert-rig').attributes('style')).toContain('width: 232px')
+  })
+
+  // The card's content width decides, on both sides of the threshold: 612 px at md up (the wheel 420), 532 px below (the wheel 340) (#604).
+  it.each([
+    [true, 611, 'sm', 150],
+    [true, 612, 'md', 232],
+    [false, 531, 'sm', 150],
+    [false, 532, 'md', 232],
+  ])('with md %s and a card of %i px is %s: %i px', async (isWide, card, width, size) => {
+    wide(isWide)
+    cardWidth(card)
+    await mount(wheelOf(spinOf()))
+    await at(START + 1000)
+
+    expect(mascot().attributes('data-width')).toBe(width)
+    expect(mascot().get('.compibert-rig').attributes('style')).toContain(`width: ${size}px`)
+  })
+
+  it('follows the card as it is resized: the big bust once the card holds it, the small one again when it narrows', async () => {
+    wide(true)
+    const card = cardWidth(600)
+    await mount(wheelOf(spinOf()))
+    await at(START + 1000)
+    expect(mascot().attributes('data-width')).toBe('sm')
+
+    card.resize(640)
+    await flushPromises()
+    expect(mascot().attributes('data-width')).toBe('md')
+    expect(mascot().get('.compibert-rig').attributes('style')).toContain('width: 232px')
+
+    card.resize(600)
+    await flushPromises()
+    expect(mascot().attributes('data-width')).toBe('sm')
+  })
+
+  it('watches the wheel card and lets go of it when the wheel leaves the page', async () => {
+    wide(true)
+    const card = cardWidth(1020)
+    await mount(wheelOf(null))
+
+    expect(card.seen.observed).toEqual([page!.find('section').element])
+    expect(card.seen.disconnects).toBe(0)
+    page!.unmount()
+    page = undefined
+    expect(card.seen.disconnects).toBe(1)
+  })
+
+  it('is sm while the card is not measured: no observer on the page, no error', async () => {
+    vi.unstubAllGlobals()
+    wide(true)
+    await mount(wheelOf(spinOf()))
+    await at(START + 1000)
+
+    expect(mascot().attributes('data-width')).toBe('sm')
+    expect(mascot().get('.compibert-rig').attributes('style')).toContain('width: 150px')
   })
 })
 

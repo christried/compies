@@ -158,6 +158,18 @@ describe('the settings editor', () => {
     expect(nav.get(`#${events.attributes('aria-describedby')}`).text()).toBe('Event: Freitags-Zocken, Phase: Terminumfrage')
   })
 
+  it('keeps Zurück and Weiter in the pill fixed at the window\'s bottom on a later step too (#613)', async () => {
+    const { slug } = setUp()
+
+    const page = await mountEditor(slug)
+    await goTo(page, 'Punkte')
+
+    const dock = page.get('[data-testid="stepper-footer"]')
+    expect(dock.element.parentElement!.className.split(' ')).toEqual(expect.arrayContaining(['fixed', 'bottom-4']))
+    expect(dock.text()).toContain('Zurück')
+    expect(dock.text()).toContain('Weiter')
+  })
+
   it('calls itself Event einrichten while the Event has no settings, and starts from the defaults', async () => {
     const { slug } = setUp({ settings: null })
 

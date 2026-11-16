@@ -72,6 +72,10 @@ room.on('veto.cast', () => void refresh())
 /** Whether the Veto bar covers the bottom of the page: the stage then gets room under its last block (F4), and the Clip shares the width with it held sideways (#584). */
 const vetoBarShown = ref(false)
 
+/** The Clip shows on this device (#587): the overlay says so. The backdrop is `clipShown`, which also needs the read to still carry the Clip: a skip drops it, and an overlay that left says nothing. */
+const clipOpen = ref(false)
+const clipShown = computed(() => clipOpen.value && !!data.value?.clip)
+
 /** Why "Termin festlegen" cannot set a Date right now, or null (#52): the dock's action says so. */
 const setBlocked = computed(() => {
   const key = dateBlockedKey(slots.value)
@@ -126,6 +130,7 @@ const { news } = useStandingsNews(data, slug)
     kind="event"
     :accessory="accessory"
     :event="data ? { name: data.event.name, ...pill } : undefined"
+    :covered="clipShown"
   >
     <template
       v-if="data"
@@ -170,7 +175,11 @@ const { news } = useStandingsNews(data, slug)
       v-if="data"
       #banner
     >
-      <div class="px-3.5 pt-3 empty:hidden md:px-6">
+      <!-- Under the Clip's backdrop too (#587): AppShell cannot wrap a slot, so the wrapper takes the `inert` itself. -->
+      <div
+        class="px-3.5 pt-3 empty:hidden md:px-6"
+        :inert="clipShown || undefined"
+      >
         <ConnectionBanner
           :state="connection"
           @retry="room.retry"
@@ -294,42 +303,6 @@ const { news } = useStandingsNews(data, slug)
       :error="error"
     />
 
-    <!-- The synced clip (#230) over the stage; keyed by the draw, so a clip closed on this device shows again with the next draw. The Transition
-         is the fade of a skip (#261): the Host's skip removes the whole overlay, and its own leave would not run then. The overlay's inner
-         Transition keeps the fade of a clip that ends or is closed on this device. -->
-    <Transition
-      leave-active-class="transition-opacity dur-base ease-in"
-      leave-to-class="opacity-0"
-    >
-      <ClipOverlay
-        v-if="data?.clip"
-        :key="data.clip.drawId"
-        :clip="data.clip"
-        :server-now="serverClock.now"
-        :is-host="data.event.isHost"
-        :veto-bar-shown="vetoBarShown"
-        :skip="actions.skipClip"
-      />
-    </Transition>
-
-    <!-- The Veto bar (F4): the window's hold button in a fixed layer above the clip, for a Player of a Party while the window is open. -->
-    <VetoBar
-      v-if="data?.wheel"
-      :wheel="data.wheel"
-      :teams="data.teams"
-      :solo="data.settings?.teamSize === 1"
-      :server-now="serverClock.now"
-      :cast="actions.castVeto"
-      @shown="vetoBarShown = $event"
-    />
-
-    <!-- The Host has the dock in every Phase; in a finished Event it holds Siegerehrung starten and Einladen (#277, #309). -->
-    <HostDock
-      v-if="data?.event.isHost"
-      :actions="hostActions"
-      panel
-    />
-
     <!-- The Award ceremony (#309): mounted always, it opens itself at the start instant of the read's ceremony, for every Member. -->
     <CeremonyLayer
       v-if="data"
@@ -376,5 +349,48 @@ const { news } = useStandingsNews(data, slug)
       :view="data"
       @close="shareOpen = false"
     />
+
+    <!-- Fixed layers (#587): outside <main>, so they stay usable while the backdrop makes the rest of the page inert. The backdrop comes first,
+         it lies under the Clip and the Veto bar by its layer. -->
+    <template #layers>
+      <ClipBackdrop :shown="clipShown" />
+
+      <!-- The synced clip (#230) over the stage; keyed by the draw, so a clip closed on this device shows again with the next draw. The Transition
+           is the fade of a skip (#261): the Host's skip removes the whole overlay, and its own leave would not run then. The overlay's inner
+           Transition keeps the fade of a clip that ends or is closed on this device. -->
+      <Transition
+        leave-active-class="transition-opacity dur-base ease-in"
+        leave-to-class="opacity-0"
+      >
+        <ClipOverlay
+          v-if="data?.clip"
+          :key="data.clip.drawId"
+          :clip="data.clip"
+          :server-now="serverClock.now"
+          :is-host="data.event.isHost"
+          :veto-bar-shown="vetoBarShown"
+          :skip="actions.skipClip"
+          @shown="clipOpen = $event"
+        />
+      </Transition>
+
+      <!-- The Veto bar (F4): the window's hold button in a fixed layer above the clip, for a Player of a Party while the window is open. -->
+      <VetoBar
+        v-if="data?.wheel"
+        :wheel="data.wheel"
+        :teams="data.teams"
+        :solo="data.settings?.teamSize === 1"
+        :server-now="serverClock.now"
+        :cast="actions.castVeto"
+        @shown="vetoBarShown = $event"
+      />
+
+      <!-- The Host has the dock in every Phase; in a finished Event it holds Siegerehrung starten and Einladen (#277, #309). -->
+      <HostDock
+        v-if="data?.event.isHost"
+        :actions="hostActions"
+        panel
+      />
+    </template>
   </AppShell>
 </template>

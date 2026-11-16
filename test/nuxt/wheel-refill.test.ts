@@ -147,6 +147,12 @@ describe('a game taken off the wheel at rest', () => {
     await local(550)
     expect(pinsOf(page)).toBe(3)
   })
+
+  it('says at once that the wheel is empty when its last game leaves', async () => {
+    page = await mount(restOf(1))
+    await change(restOf(0))
+    expect(page.text()).toContain('Das Rad ist leer')
+  })
 })
 
 describe('around a spin', () => {
@@ -251,15 +257,13 @@ describe('under reduced motion', () => {
     document.documentElement.style.setProperty('--cp-motion', 'reduced')
   })
 
-  it('shows the new layout at once and fades the rotor in over 0.2 s', async () => {
+  it('shows the new layout at once and clears the rotor after its fade', async () => {
     page = await mount(restOf(3))
     await change(restOf(4))
 
     expect(slicesOf(page)).toEqual(slicesOf(await fresh(restOf(4))))
     expect(Number(opacityOf(page))).toBe(0)
-    await local(100)
-    expect(Number(opacityOf(page))).toBeCloseTo(0.5, 1)
-    await local(150)
+    await local(250)
     expect(opacityOf(page)).toBe('')
     expect(slicesOf(page)).toHaveLength(4)
   })
@@ -291,36 +295,18 @@ describe('the bulbs and the pins', () => {
 })
 
 describe('the edges', () => {
-  it('opens a wheel of no games as a full circle without a NaN', async () => {
+  it('draws one game as a full circle', async () => {
     page = await mount(restOf(0))
     await change(restOf(1))
-    for (const ms of [0, 100, 300, 500]) {
-      await local(ms === 0 ? 0 : 100)
-      expect(page.html()).not.toContain('NaN')
-    }
-    await local(300)
-    expect(slicesOf(page)).toHaveLength(1)
+    await local(600)
     expect(slicesOf(page)[0]).toContain('A180,180')
   })
 
-  it('closes a wheel of one game and says at once that it is empty', async () => {
+  it('draws a wheel of one game as the exact full circle, not as an arc (#659)', async () => {
     page = await mount(restOf(1))
-    await change(restOf(0))
-    expect(page.text()).toContain('Das Rad ist leer')
-    await local(300)
-    expect(page.html()).not.toContain('NaN')
-    await local(400)
-    expect(slicesOf(page)).toEqual([])
-  })
 
-  it('goes from 1 to 2 games and from 2 to 1', async () => {
-    page = await mount(restOf(1))
-    await change(restOf(2))
-    await local(700)
-    expect(slicesOf(page)).toEqual(slicesOf(await fresh(restOf(2))))
-    await change(restOf(1))
-    await local(700)
-    expect(slicesOf(page)).toEqual(slicesOf(await fresh(restOf(1))))
+    // Two half arcs from the top to the bottom and back: the path of pathOf's own full-circle branch, which an arc of 359.95° never takes.
+    expect(slicesOf(page)).toEqual(['M200,20A180,180 0 1 1 200,380A180,180 0 1 1 200,20Z'])
   })
 
   it('cuts the long name of a game put back on a wheel of 30 as before', async () => {

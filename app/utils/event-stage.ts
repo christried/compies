@@ -15,12 +15,12 @@ export type PageKind = 'setup' | 'poll' | 'teams' | 'running' | 'between' | 'don
 
 /**
  * The blocks of the stage (#166, #228). `head`: kicker and title. `reopen`: the notices of reopened Dates. `actions`: the finished stage's row of buttons (#313). `tie`: the banner „Gleichstand auf Platz 1“.
- * `sessionNeeded`: the Host's notice that the last game needs a new Session. `setup`: the Event is not set up. `seat`: where the Host sits. `poll`: the Date poll. `pool`: the Host's live pool warning (#234).
+ * `sessionNeeded`: the Host's notice that the last game needs a new Session. `setup`: the Event is not set up. `poll`: the Date poll. `pool`: the Host's live pool warning (#234).
  * `wheel`: the Lucky Wheel (#229). `rounds`: the open Rounds. `standings`: the Standings (#274). `history`: the Spielverlauf of the finished stage (#277). `countdown`: the Countdown (#236). `coin`: the Coin flip (#235).
  * `board`: the Game board. `cards`: the Sessions and „So wird gespielt“. `stay`: the teams stay between two Sessions.
  * `pending`: the finished stage's card that says the Award ceremony is still to come (#445).
  */
-export type Block = 'head' | 'reopen' | 'actions' | 'tie' | 'sessionNeeded' | 'setup' | 'seat' | 'poll' | 'pool' | 'wheel' | 'rounds' | 'standings' | 'history' | 'countdown' | 'coin' | 'board' | 'cards' | 'stay' | 'pending'
+export type Block = 'head' | 'reopen' | 'actions' | 'tie' | 'sessionNeeded' | 'setup' | 'poll' | 'pool' | 'wheel' | 'rounds' | 'standings' | 'history' | 'countdown' | 'coin' | 'board' | 'cards' | 'stay' | 'pending'
 
 // `end` is required: the page reads it for the Standings and the finish (#274, #288). `rounds` and `results` are optional: the Host dock has neither, and a missing list counts as none (#278, #441). `ceremonyShown` is optional too, and a view without it counts as shown (#445); `ceremonyHeld` is the viewer's own hold, set by the page only.
 export type StageInput = Pick<EventView, 'settings' | 'sessions' | 'missingDates' | 'setGame' | 'wheel' | 'countdown' | 'coin' | 'end'> & Partial<Pick<EventView, 'rounds' | 'results' | 'ceremonyShown'>> & { ceremonyHeld?: boolean, event: Pick<EventView['event'], 'phase' | 'isHost'> }
@@ -97,8 +97,6 @@ const PIECES: StagePiece[] = [
   },
   // The Event is not set up.
   { block: 'setup', at: { setup: 3 } },
-  // Where the Host sits (teams only, #160).
-  { block: 'seat', at: { teams: 3 } },
   // The Date poll, while a Session waits for a Date. It is the quiet one below the board as soon as the page is about something else than the Date; `done` has none, as no Session polls any more.
   { block: 'poll', at: { setup: 4, poll: 3, teams: 5, running: 11, between: 9 }, present: (_view, ctx) => ctx.pollOpen },
   // The Lucky Wheel (#229), on top of the open Rounds. Its stop and the end of its Veto window are the instants (the Draw timeline's), and a read taken a hair before one
