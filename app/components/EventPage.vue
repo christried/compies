@@ -390,7 +390,7 @@ const covered = computed(() => clipShown.value || tour.shown.value)
         @shown="vetoBarShown = $event"
       />
 
-      <!-- The Tour (#647): its own box on the popover layer, no backdrop; the page behind is inert through `covered`. Mounted always (it watches `open`). -->
+      <!-- The Tour (#647, #460): its own layer (the scrim, the spotlight, the bubble) on the modal step; the page behind is inert through `covered`. Mounted always (it watches `open`). -->
       <TourLayer
         v-if="data"
         :open="tour.shown.value"

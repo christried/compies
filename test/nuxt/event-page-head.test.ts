@@ -28,6 +28,14 @@ describe('EventPageHead', () => {
     document.body.innerHTML = ''
   })
 
+  it.each([false, true])('is the Tour\'s head (#460) for a Member and for the Host: marked `data-tour="head"`, shrunk to the kicker and the heading', async (isHost) => {
+    const head = await mountHead([undated('a')], {}, isHost)
+
+    expect(head.attributes('data-tour')).toBe('head')
+    expect(head.classes()).toContain('w-fit')
+    expect(head.classes()).toContain('max-w-full')
+  })
+
   it('says the poll runs: Session n of total, and „Wann zocken wir?“', async () => {
     const head = await mountHead([undated('a'), undated('b')])
 

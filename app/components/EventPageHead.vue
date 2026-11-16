@@ -10,7 +10,8 @@ import type { BoardTeam } from '~~/shared/event'
 // `<h1>` says what is on now, and while another Session still polls a link jumps to that poll. The copy follows the
 // page state (eventPageState), a union by `kind`: each kind reads what it guarantees, with no assertion (review 1.4 N10). The
 // Event's name is in the header, not here. A finished Event (#277) names its winner: `winners` are the team positions on rank 1 and `teams` the
-// Event's Teams for their Team names; the other states need neither.
+// Event's Teams for their Team names; the other states need neither. `data-tour="head"` (#460) is the Tour's first pointing step: `w-fit` shrinks
+// its hole to the kicker and the heading.
 const props = withDefaults(defineProps<{
   state: EventPageState
   isHost: boolean
@@ -86,7 +87,6 @@ const jump = computed(() => {
 </script>
 
 <template>
-  <!-- `data-tour="head"` (#460): the Tour's first pointing step. `w-fit` shrinks the hole to the kicker and the heading. -->
   <div
     data-tour="head"
     class="flex w-fit max-w-full flex-col gap-0.5"

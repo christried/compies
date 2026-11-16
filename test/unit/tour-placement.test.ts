@@ -123,6 +123,21 @@ describe('placeTour: invariants', () => {
     expect(placed.anchor).toEqual({ x: 100, y: 800 - 612 })
   })
 
+  it('follows a page the User scrolled: with keepScroll the hole and the bubble stand where the thing is at that scroll', () => {
+    const placed = placeTour({ ...WIDE, keepScroll: 300, thing: thing(24, 700, 600, 300, 14) })
+
+    expect(placed.scroll).toBe(300)
+    // The thing is at 700 - 300 = 400 in the window: the hole is its rect plus 8.
+    expect([placed.hole.y, placed.hole.h]).toEqual([392, 316])
+  })
+
+  it('has no ring and no height where the thing has scrolled out of the usable area', () => {
+    const placed = placeTour({ ...WIDE, keepScroll: 1000, thing: thing(24, 100, 600, 100, 14) })
+
+    expect(placed.hole.h).toBe(0)
+    expect(placed.hole.ring).toBe(0)
+  })
+
   it('does not scroll a page that cannot', () => {
     const placed = placeTour({ ...WIDE, maxScroll: 0, thing: thing(24, 700, 600, 300, 14) })
 

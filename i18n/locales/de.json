@@ -1187,9 +1187,16 @@
   "tour": {
     "skip": "Überspringen",
     "finish": "Fertig",
+    "count": "{n} von {total}",
+    "countLabel": "Schritt {n} von {total}",
+    "live": "Schritt {n} von {total}: {title}. {text}",
     "greeting": {
       "title": "Willkommen!",
       "text": "Ich zeige dir kurz, wie dieses Event funktioniert. Du musst nichts tun: nur schauen und auf „Weiter“ klicken."
+    },
+    "head": {
+      "title": "Das Event",
+      "text": "Hier steht, worum es geht und wann es losgeht."
     },
     "end": {
       "title": "Das war’s",

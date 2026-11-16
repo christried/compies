@@ -55,7 +55,7 @@ watch([onStage, inView], () => {
 
 // A rig that was never asked to look keeps the states' own pupils (`suspense` glances): only a look, or the return from one, touches them.
 let looked = false
-function look(instant: boolean) {
+function applyLook(instant: boolean) {
   if (props.look === null && !looked) return
   looked = props.look !== null
   rig?.lookAt(props.look, instant)
@@ -66,10 +66,10 @@ function enter(state: RigState) {
   held.value = reduced
   rig?.setState(state, reduced, { hopsFor: props.hopsFor })
   // `restTo` re-centres the face, so the look is told again after each state.
-  look(reduced)
+  applyLook(reduced)
 }
 watch(() => props.state, enter)
-watch(() => props.look, () => look(reducedMotion()))
+watch(() => props.look, () => applyLook(reducedMotion()))
 
 /** One nod of the head (the Tour's „Zeigt“); nothing under reduced motion. */
 defineExpose({ nod: () => rig?.nod() })
@@ -99,7 +99,7 @@ onMounted(async () => {
   ready.value = true
   enter(props.state)
   // The first look is set, not eased: he arrives looking at it (the reference's `look(first)`).
-  look(true)
+  applyLook(true)
   rig.setActive(onStage.value && inView.value)
 })
 

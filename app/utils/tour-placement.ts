@@ -31,6 +31,8 @@ export interface TourPlacementInput {
   /** `scrollHeight - innerHeight`, 0 or more. */
   maxScroll: number
   thing: TourThing | null
+  /** The page stands here, whatever the thing's place asks for: a User scrolled it, and the hole follows the thing instead of taking the page back. */
+  keepScroll?: number
   /** Where the tail aims, in the thing's coordinates; `scrolls` says whether it moves with the page (the thing's own flag when left out). Default: the thing's centre. */
   anchor?: { x: number, y: number, scrolls?: boolean }
   /** Measured with the same width and content. */
@@ -90,7 +92,7 @@ export function placeTour(input: TourPlacementInput): TourPlacement {
   // The hole and the anchor at a scroll: a thing in the sticky chrome does not move with it.
   const build = (scroll: number) => {
     const top = thing.scrolls ? thing.y - scroll : thing.y
-    let x = thing.x - C.pad
+    const x = thing.x - C.pad
     let y = top - C.pad
     const x2 = thing.x + thing.w + C.pad
     let y2 = top + thing.h + C.pad
@@ -102,13 +104,15 @@ export function placeTour(input: TourPlacementInput): TourPlacement {
       y2 = Math.min(y2, stageBottom)
     }
     const round = thing.radius >= Math.min(thing.w, thing.h) / 2 - 0.5
+    // A thing scrolled out of the usable area has no height left, and no ring to show.
+    const height = Math.max(0, y2 - y)
     const hole = {
       x,
       y,
       w: x2 - x,
-      h: y2 - y,
-      radius: round ? Math.round(Math.min(x2 - x, y2 - y) / 2) : thing.radius + C.pad,
-      ring: 3,
+      h: height,
+      radius: round ? Math.round(Math.min(x2 - x, height) / 2) : thing.radius + C.pad,
+      ring: height > 0 ? 3 : 0,
     }
     let anchor: { x: number, y: number }
     if (input.anchor) {
@@ -121,11 +125,12 @@ export function placeTour(input: TourPlacementInput): TourPlacement {
     return { hole, anchor }
   }
 
-  let scroll = thing.scrolls ? clamp(thing.y - (headerBottom + C.lead), 0, maxScroll) : 0
+  const kept = input.keepScroll !== undefined && thing.scrolls
+  let scroll = kept ? input.keepScroll! : thing.scrolls ? clamp(thing.y - (headerBottom + C.lead), 0, maxScroll) : 0
   let at = build(scroll)
   let side: TourPlacement['side']
   let bx = 0
-  let by = 0
+  let by: number
   const centre = (x: number) => clamp(x - bw / 2, C.margin, win.w - C.margin - C.sh - bw)
   const fitsBelow = at.hole.y + at.hole.h + C.gap + bh <= maxY
   const fitsAbove = at.hole.y - C.gap - bh >= minY
@@ -149,7 +154,7 @@ export function placeTour(input: TourPlacementInput): TourPlacement {
     // No room, or taller than the window: the bubble docks at the window's bottom over the thing, and the page scrolls on until the anchor sits above it.
     side = 'top'
     by = maxY - bh
-    if (thing.scrolls) {
+    if (thing.scrolls && !kept) {
       const limit = by - C.gap - 24
       if (at.anchor.y > limit) {
         scroll = clamp(scroll + (at.anchor.y - limit), 0, maxScroll)
