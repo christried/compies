@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { notesFromLines, notesLength, notesPlainText, parseNotes, type NotesDoc } from '../../shared/notes-doc'
+import { notesFromLines, notesHasText, notesLength, notesLinkHref, notesPlainText, parseNotes, type NotesDoc } from '../../shared/notes-doc'
 
 // The document of the Game notes (#727, ADR 0019): what the server accepts, how long it is, how it reads as plain text.
 
@@ -285,5 +285,36 @@ describe('notesFromLines', () => {
 
   it.each([[['a']], [['a', '', 'b']], [['  a ', 'b  ']]])('passes parseNotes unchanged for %j', (lines) => {
     expect(parseNotes(notesFromLines(lines), MAX)).toEqual(notesFromLines(lines))
+  })
+})
+
+describe('notesHasText (#728)', () => {
+  const asDoc = (...content: unknown[]) => doc(...content) as NotesDoc
+
+  it('is false for null and for a document without blocks', () => {
+    expect(notesHasText(null)).toBe(false)
+    expect(notesHasText(asDoc())).toBe(false)
+  })
+
+  it('is false for an empty paragraph and for one of spaces', () => {
+    expect(notesHasText(asDoc({ type: 'paragraph' }))).toBe(false)
+    expect(notesHasText(asDoc(paragraph(text('  '))))).toBe(false)
+  })
+
+  it('is true for a paragraph, a heading and a list item with text', () => {
+    expect(notesHasText(asDoc(paragraph(text('a'))))).toBe(true)
+    expect(notesHasText(asDoc({ type: 'heading', attrs: { level: 3 }, content: [text('Titel')] }))).toBe(true)
+    expect(notesHasText(asDoc({ type: 'bulletList', content: [item(paragraph(text('a')))] }))).toBe(true)
+  })
+})
+
+describe('notesLinkHref (#728)', () => {
+  it('keeps an http or https address', () => {
+    expect(notesLinkHref('https://a.de/x')).toBe('https://a.de/x')
+    expect(notesLinkHref('HTTPS://A.de')).toBe('https://a.de/')
+  })
+
+  it.each(['javascript:alert(1)', 'mailto:a@b.de', '/relativ', 42, undefined])('gives null for %j', (raw) => {
+    expect(notesLinkHref(raw)).toBeNull()
   })
 })

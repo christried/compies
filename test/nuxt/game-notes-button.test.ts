@@ -5,6 +5,7 @@ import GameNotesButton from '~/components/GameNotesButton.vue'
 import { notesFromLines, type NotesDoc } from '~~/shared/notes-doc'
 import { GAME_NAME_MAX } from '~~/shared/game'
 import { restoreScreen, stubScreen } from './event-page'
+import { BLANK_NOTES, FORMATTED_HREF, FORMATTED_NOTES, readFormatted } from './helpers/formatted-notes'
 
 // The Notes button of a game in the pickers (#436, 02-components § GameCard, deviation 0.12): a read-only popover from md up, a
 // sheet below, the notes with their line breaks. Escape or a press outside closes the popover and focus goes back to the button.
@@ -24,7 +25,7 @@ async function mount(props: { name?: string, notes: NotesDoc | null }) {
 const trigger = () => document.querySelector<HTMLButtonElement>(TRIGGER)!
 const popover = () => document.querySelector<HTMLElement>('[role="dialog"]:not([data-sheet])')
 const sheet = () => document.querySelector<HTMLElement>('[data-sheet="panel"]')
-const paragraph = (within: Element | null) => within!.querySelector('p')!
+const lines = (within: Element | null) => [...within!.querySelectorAll('p')].map(p => p.textContent)
 const open = async () => {
   trigger().click()
   await flushPromises()
@@ -51,6 +52,39 @@ describe('the Notes button of a game (#436)', () => {
     expect(document.querySelector(TRIGGER)).toBeNull()
   })
 
+  it.each(BLANK_NOTES)('renders no button for a document without a visible character (#728)', async (blank) => {
+    await mount({ notes: blank })
+
+    expect(document.querySelector(TRIGGER)).toBeNull()
+  })
+
+  it('shows formatted notes in the popover from md up, the heading as h3 under the game name (#728)', async () => {
+    await mount({ notes: FORMATTED_NOTES })
+    await open()
+
+    expect(readFormatted(popover()!)).toEqual({
+      heading: 'h3',
+      headingText: 'Regeln',
+      items: ['Erstens', 'Zweitens'],
+      bold: 'Wichtig',
+      link: { text: 'nachlesen', href: FORMATTED_HREF, target: '_blank', rel: 'noopener noreferrer' },
+    })
+  })
+
+  it('shows formatted notes in the sheet below md (#728)', async () => {
+    setWide(false)
+    await mount({ notes: FORMATTED_NOTES })
+    await open()
+
+    expect(readFormatted(sheet()!)).toEqual({
+      heading: 'h3',
+      headingText: 'Regeln',
+      items: ['Erstens', 'Zweitens'],
+      bold: 'Wichtig',
+      link: { text: 'nachlesen', href: FORMATTED_HREF, target: '_blank', rel: 'noopener noreferrer' },
+    })
+  })
+
   it('is a button named „Notizen ansehen“ that starts closed', async () => {
     await mount({ notes: notesFromLines(NOTES.split('\n')) })
 
@@ -69,7 +103,7 @@ describe('the Notes button of a game (#436)', () => {
     expect(sheet()).not.toBeNull()
     expect(sheet()!.getAttribute('role')).toBe('dialog')
     expect(sheet()!.querySelector('h2')!.textContent).toBe('Mario Kart')
-    expect(paragraph(sheet()).textContent).toBe(NOTES)
+    expect(lines(sheet())).toEqual(NOTES.split('\n'))
     expect(trigger().getAttribute('aria-expanded')).toBe('true')
   })
 
@@ -84,7 +118,7 @@ describe('the Notes button of a game (#436)', () => {
     expect(popover()!.classList).toContain('w-72')
     expect(popover()!.getAttribute('aria-labelledby')).toBeTruthy()
     expect(popover()!.querySelector('h2')!.textContent).toBe('Mario Kart')
-    expect(paragraph(popover()).textContent).toBe(NOTES)
+    expect(lines(popover())).toEqual(NOTES.split('\n'))
     expect(document.activeElement).toBe(popover()!.querySelector('button[aria-label="Schließen"]'))
   })
 
@@ -116,7 +150,7 @@ describe('the Notes button of a game (#436)', () => {
     await mount({ notes: notesFromLines(long.split('\n')) })
     await open()
 
-    expect(paragraph(popover()).textContent).toBe(long)
+    expect(lines(popover())).toEqual(long.split('\n'))
     expect(popover()!.classList).toContain('overflow-y-auto')
     expect(popover()!.className).toContain('max-h-[min(60vh,420px)]')
   })
