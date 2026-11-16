@@ -1,12 +1,34 @@
 <script setup lang="ts">
-import { Sun, Volume2 } from '@lucide/vue'
+import { Compass, Sun, Volume2 } from '@lucide/vue'
+import type { SavedTourSeen } from '~~/shared/auth'
 
 // The card „Einstellungen“ on the Profil page (screen 25, shipped trimmed, #400): one SettingsRow per setting. Ton is the device's Sound
 // (GLOSSARY § Sound), the same state as the header's button, stored as before. Darstellung is the User's Appearance (GLOSSARY § Appearance,
-// #404): a tap shows it at once and saves it; a failed save switches back with a notice.
+// #404): a tap shows it at once and saves it; a failed save switches back with a notice. Rundgang (GLOSSARY: Tour, #649) sets the User's
+// stored Tour version back to 0, so the Tour shows again; a failed reset changes nothing and says so.
 const { t } = useI18n()
 const sound = useSound()
 const appearance = useAppearance()
+const user = useAuthUser()
+const { toast } = useToast()
+const tourResetting = ref(false)
+const tourResetFailed = ref(false)
+
+async function resetTour() {
+  tourResetFailed.value = false
+  tourResetting.value = true
+  try {
+    const saved = await $fetch<SavedTourSeen>('/api/me/tour-reset', { method: 'POST' })
+    if (user.value) user.value = { ...user.value, tourSeen: saved.tourSeen }
+    toast({ tone: 'success', text: t('settings.tourResetDone') })
+  }
+  catch {
+    tourResetFailed.value = true
+  }
+  finally {
+    tourResetting.value = false
+  }
+}
 </script>
 
 <template>
@@ -52,6 +74,24 @@ const appearance = useAppearance()
           />
         </template>
       </SettingsRow>
+
+      <SettingsRow
+        :icon="Compass"
+        :title="t('settings.tour')"
+        :description="t('settings.tourHelp')"
+      >
+        <template #default="{ descriptionId }">
+          <AppButton
+            variant="secondary"
+            size="md"
+            :disabled="tourResetting"
+            :aria-describedby="descriptionId"
+            @click="resetTour"
+          >
+            {{ t('settings.tourAgain') }}
+          </AppButton>
+        </template>
+      </SettingsRow>
     </div>
 
     <div
@@ -60,6 +100,15 @@ const appearance = useAppearance()
     >
       <NoticeBanner tone="critical">
         {{ t('settings.appearanceSaveFailed') }}
+      </NoticeBanner>
+    </div>
+
+    <div
+      v-if="tourResetFailed"
+      class="px-[18px] pt-1.5 pb-3"
+    >
+      <NoticeBanner tone="critical">
+        {{ t('settings.tourResetFailed') }}
       </NoticeBanner>
     </div>
   </section>
