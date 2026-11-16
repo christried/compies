@@ -15,7 +15,7 @@ import { GAME_IMAGE_MAX_BYTES, type GameView } from '../../../../shared/game'
 export default defineEventHandler(async (event): Promise<GameView> => {
   const viewer = await requireLibraryViewer(event)
   const db = useDb(event)
-  const { game, creatorName } = await loadGame(db, getRouterParam(event, 'id') ?? '', viewer.id)
+  const game = await loadGame(db, getRouterParam(event, 'id') ?? '', viewer.id)
 
   // The announced length is checked before the body is read, so a huge upload is not buffered; a body
   // without a length is read through a counter that stops at the maximum.
@@ -48,6 +48,6 @@ export default defineEventHandler(async (event): Promise<GameView> => {
       console.error('Image cleanup failed', oldKey, failure)
     }
   }
-  const [view] = await readGameViews(db, [{ game: updated!, creatorName }], viewer)
+  const [view] = await readGameViews(db, [updated!])
   return view!
 })

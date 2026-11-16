@@ -4,7 +4,6 @@ import { BERLIN_ZONE, berlinDay } from '~~/shared/time'
 
 const timeFormat = new Intl.DateTimeFormat('de-DE', { timeZone: BERLIN_ZONE, hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })
 const longDayFormat = new Intl.DateTimeFormat('de-DE', { timeZone: BERLIN_ZONE, weekday: 'long', day: 'numeric', month: 'long' })
-const monthFormat = new Intl.DateTimeFormat('de-DE', { timeZone: BERLIN_ZONE, month: 'long', year: 'numeric' })
 const fullDayFormat = new Intl.DateTimeFormat('de-DE', { timeZone: BERLIN_ZONE, day: 'numeric', month: 'long', year: 'numeric' })
 const shortDayFormat = new Intl.DateTimeFormat('de-DE', { timeZone: BERLIN_ZONE, day: 'numeric', month: 'short' })
 const yearFormat = new Intl.DateTimeFormat('de-DE', { timeZone: BERLIN_ZONE, year: 'numeric' })
@@ -27,11 +26,6 @@ export function berlinYear(instant: Date): string {
 /** A Slot's day as `Sa 24.10.` (Berlin). */
 export function formatSlotDay(instant: Date): string {
   return berlinDay(instant, false)
-}
-
-/** A month and year as `Oktober 2026` (Berlin), for „angelegt im …“. */
-export function formatMonthYear(instant: Date): string {
-  return monthFormat.format(instant)
 }
 
 /** A Slot's time as `20:30` (Berlin). */

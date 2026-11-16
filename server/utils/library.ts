@@ -1,9 +1,9 @@
 import { and, eq, inArray } from 'drizzle-orm'
 import type { H3Event } from 'h3'
 import type { EventView } from '../../shared/event'
-import { canEditGame, canSeeLibrary, type GamePrice, type GamePriceInput, type GameTag, type GameView, type HostGameFacts, type PoolGame, type PoolGameFace, type RoundGame } from '../../shared/game'
-import { shownName, type AuthUser } from '../../shared/auth'
-import { games, users } from '../db/schema'
+import { canSeeLibrary, type GamePrice, type GamePriceInput, type GameTag, type GameView, type HostGameFacts, type PoolGame, type PoolGameFace, type RoundGame } from '../../shared/game'
+import type { AuthUser } from '../../shared/auth'
+import { games } from '../db/schema'
 import { isUuid } from '../domain/uuid'
 import type { Db } from './db'
 import { apiError, apiNotFound } from './errors'
@@ -24,27 +24,15 @@ export async function requireLibraryViewer(event: H3Event): Promise<AuthUser> {
   return user
 }
 
-/** A games row with its creator's names: the one select shape the library routes share. */
-export const gameWithCreator = { game: games, creatorName: users.name, creatorDisplayName: users.displayName }
-
-/** The creator's name as the library shows it: the display name when they set one. */
-export function creatorNameOf({ creatorName, creatorDisplayName }: { creatorName: string, creatorDisplayName: string | null | undefined }): string {
-  return shownName({ name: creatorName, displayName: creatorDisplayName })
-}
-
 /**
- * One game of `ownerId`'s library with its creator's name (#455, ADR 0018). libraryNotFound for text that is no uuid (it never reaches the
+ * One game of `ownerId`'s library (#455, ADR 0018). libraryNotFound for text that is no uuid (it never reaches the
  * database), for an unknown id and for a game of another User: the three answer alike, the Platform admin's request included.
  */
-export async function loadGame(db: Db, id: string, ownerId: string): Promise<{ game: typeof games.$inferSelect, creatorName: string }> {
+export async function loadGame(db: Db, id: string, ownerId: string): Promise<typeof games.$inferSelect> {
   if (!isUuid(id)) throw libraryNotFound()
-  const [row] = await db
-    .select(gameWithCreator)
-    .from(games)
-    .innerJoin(users, eq(games.createdBy, users.id))
-    .where(and(eq(games.id, id), eq(games.createdBy, ownerId)))
+  const [row] = await db.select().from(games).where(and(eq(games.id, id), eq(games.createdBy, ownerId)))
   if (!row) throw libraryNotFound()
-  return { game: row.game, creatorName: creatorNameOf(row) }
+  return row
 }
 
 /** A games row as an Event's pool shows it to a Member (#224): picture, name, Price (#338), players and Suitabilities (#444). */
@@ -79,17 +67,15 @@ export function roundGameView(row: typeof games.$inferSelect): RoundGame {
 }
 
 /**
- * A games row as the library shows it to `viewer`: the pool view plus creator, edit rights, the Tags (#335) and the Price (#337).
+ * A games row as the library shows it: the pool view plus the Tags (#335), the archive flag (#467) and the Price (#337).
  * Private (#365): a route gets its views from `readGameViews`, so none can answer a game without its Tags.
  */
-function gameView(row: typeof games.$inferSelect, creatorName: string, viewer: AuthUser, tags: GameTag[]): GameView {
+function gameView(row: typeof games.$inferSelect, tags: GameTag[]): GameView {
   return {
     ...poolGameView(row),
     tags,
     archived: row.archivedAt !== null,
-    createdBy: { id: row.createdBy, name: creatorName },
     createdAt: row.createdAt.toISOString(),
-    canEdit: canEditGame(viewer, row),
   }
 }
 
@@ -98,10 +84,10 @@ function gameView(row: typeof games.$inferSelect, creatorName: string, viewer: A
  * answers []. `db` may be a transaction, so a write answers the Tags it has just stored. No rows, no query.
  * The ids are bind parameters of one `inArray`, and Postgres takes at most about 65k of them per statement (#365).
  */
-export async function readGameViews(db: Db, rows: { game: typeof games.$inferSelect, creatorName: string }[], viewer: AuthUser): Promise<GameView[]> {
+export async function readGameViews(db: Db, rows: (typeof games.$inferSelect)[]): Promise<GameView[]> {
   if (rows.length === 0) return []
-  const tags = await loadTags(db, rows.map(row => row.game.id))
-  return rows.map(row => gameView(row.game, row.creatorName, viewer, tags.get(row.game.id) ?? []))
+  const tags = await loadTags(db, rows.map(row => row.id))
+  return rows.map(row => gameView(row, tags.get(row.id) ?? []))
 }
 
 /** The row's Price as the library shows it (#337); null when none. */

@@ -71,11 +71,6 @@ export function canSeeLibrary(viewer: { canHost: boolean } | null): boolean {
   return Boolean(viewer?.canHost)
 }
 
-/** The editor of one game: the User who made it (#455, ADR 0018). The library routes only find the viewer's own games, so this is true for every game they answer. */
-export function canEditGame(viewer: { id: string }, game: { createdBy: string }): boolean {
-  return viewer.id === game.createdBy
-}
-
 /** What GameCard shows of a game: the part of a library game that an Event's pools carry too (#146). */
 export interface PoolGame {
   id: string
@@ -130,11 +125,7 @@ export interface GameView extends PoolGame {
   tags: GameTag[]
   /** Whether the owner archived the game (#467): the library list leaves it out unless the filter „Archiviert“ is on. Only here: no Member surface carries it. */
   archived: boolean
-  /** `name` is the display name if the User set one, like Event members. */
-  createdBy: { id: string, name: string }
   createdAt: string
-  /** Whether the viewer may edit it (canEditGame). */
-  canEdit: boolean
 }
 
 /** Every game the viewer may see, by name (GET /api/games, #173). The browser filters them (`filterGames`) and knows the length. */
@@ -154,21 +145,20 @@ export interface GameFilters {
   suitability: Suitability | null
   /** A Tag the game must carry, by key (#336): one at a time. */
   tag: string | null
-  /** Only the viewer's own games („Von mir“). */
-  mine: boolean
   /** The list the filters cover (#467): false is the normal list, Archived games left out; true is only the Archived games („Archiviert“). */
   archived: boolean
 }
 
-export const NO_FILTERS: GameFilters = { q: '', players: null, suitability: null, tag: null, mine: false, archived: false }
+export const NO_FILTERS: GameFilters = { q: '', players: null, suitability: null, tag: null, archived: false }
 
 /**
  * The games the filters keep, combined with AND: a name search (trimmed, without regard to case, `%` and `_` are plain
  * characters, and the search also reads the labels of the game's Tags (#336)), a player count the recommended range covers
- * (a game without any count never matches one), a Suitability, a Tag the game must carry, the viewer's own games, and the list: the
+ * (a game without any count never matches one), a Suitability, a Tag the game must carry, and the list: the
  * normal one leaves Archived games out, the filter „Archiviert“ keeps only them (#467). One function for the library and both pool pickers (#173).
+ * The library holds only the viewer's own games (#724), so no filter asks who made one.
  */
-export function filterGames(games: GameView[], filters: GameFilters, viewerId: string): GameView[] {
+export function filterGames(games: GameView[], filters: GameFilters): GameView[] {
   const text = filters.q.trim().toLocaleLowerCase('de')
   const { players, suitability, tag } = filters
   return games.filter((game) => {
@@ -179,8 +169,7 @@ export function filterGames(games: GameView[], filters: GameFilters, viewerId: s
       if ((min === null && max === null) || (min !== null && min > players) || (max !== null && max < players)) return false
     }
     if (suitability !== null && !game.suitabilities.includes(suitability)) return false
-    if (tag !== null && !game.tags.some(item => item.key === tag)) return false
-    return !filters.mine || game.createdBy.id === viewerId
+    return tag === null || game.tags.some(item => item.key === tag)
   })
 }
 

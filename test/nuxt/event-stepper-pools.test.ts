@@ -26,9 +26,7 @@ function game(n: number, name: string, overrides: Partial<GameView> = {}): GameV
     playersMin: null,
     playersMax: null,
     suitabilities: [],
-    createdBy: { id: kitty.id, name: 'Kitty' },
     createdAt: '2026-01-15T10:00:00.000Z',
-    canEdit: true,
     notes: null,
     tags: [],
     archived: false,
@@ -612,19 +610,17 @@ describe('the game browser in the pool steps (#173)', () => {
     useState('game-library').value = null
   })
 
-  it('is the compact browser: the search, „Alle“, the Tag and „Von mir“, without the player count and „Passt zu“ (#336)', async () => {
+  it('is the compact browser: the search, „Alle“ and the Tag, without the player count and „Passt zu“ (#336, #724)', async () => {
     const page = await mountCreate()
     await toPoolStep(page)
 
     expect(page.find('input[type="search"]').exists()).toBe(true)
     const chips = picker(page).element.parentElement!.querySelectorAll('button[aria-pressed]')
-    expect([...chips].map(chip => chip.textContent!.trim())).toEqual(['Alle', 'Von mir'])
+    expect([...chips].map(chip => chip.textContent!.trim())).toEqual(['Alle'])
     const tag = page.get('select[aria-label="Tag"]')
     expect([...tag.element.querySelectorAll('option')].map(option => option.textContent!.trim())).toEqual(['Tag', 'Retro'])
     const all = [...chips].find(chip => chip.textContent!.trim() === 'Alle')!
-    const mine = [...chips].find(chip => chip.textContent!.trim() === 'Von mir')!
     expect(all.compareDocumentPosition(tag.element) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
-    expect(tag.element.compareDocumentPosition(mine) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
     expect(page.find('select[aria-label="Spielerzahl"]').exists()).toBe(false)
     expect(page.find('select[aria-label="Passt zu"]').exists()).toBe(false)
   })
@@ -686,8 +682,6 @@ describe('the game browser in the pool steps (#173)', () => {
     const before = useRouter().currentRoute.value.fullPath
 
     await searchInput(page).setValue('mario')
-    await page.findAll('button[aria-pressed]').find(button => button.text() === 'Von mir')!.trigger('click')
-
     expect(picker(page).findAll('li').map(card => card.get('b').text())).toEqual(['Mario Kart'])
     await new Promise(resolve => setTimeout(resolve, 400))
     expect(useRouter().currentRoute.value.fullPath).toBe(before)

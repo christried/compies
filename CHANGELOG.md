@@ -11,6 +11,10 @@
 
 - **Deine eigene Bibliothek:** Jeder Host hat jetzt eine eigene Bibliothek. Du siehst und bearbeitest nur die Spiele, die du selbst angelegt hast, und niemand sonst sieht deine, auch die Plattform-Admin nicht. Spiele anderer Hosts, die in deinen Events vorkamen, hast du als eigene Kopie bekommen. Tags und Tag-Vorschläge kommen nur noch aus deinen eigenen Spielen. ([#455](https://github.com/christried/compies/issues/455))
 
+### Entfernt
+
+- **„Von mir“ ist weg:** Die Bibliothek hat keinen Filter „Von mir“ mehr, denn jedes Spiel darin ist dein eigenes. Auch „Angelegt von …“ und der Hinweis, wer ein Spiel bearbeiten darf, fallen weg. ([#724](https://github.com/christried/compies/issues/724))
+
 ### Sicherheit
 
 - **Spielbilder bleiben bei ihrem Besitzer:** Das Bild eines Spiels sehen nur noch du als Besitzer des Spiels und die Mitglieder der Events, die das Spiel nutzen, nicht mehr jeder Host und nicht die Plattform-Admin. Wann Mitglieder ein Bild sehen (Pool vorher zeigen, verdecktes Rad), hat sich nicht geändert. ([#723](https://github.com/christried/compies/issues/723))

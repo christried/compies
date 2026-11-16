@@ -16,12 +16,11 @@ import type { GameView } from '../../../../shared/game'
 export default defineEventHandler(async (event): Promise<GameView> => {
   const viewer = await requireLibraryViewer(event)
   const db = useDb(event)
-  const loaded = await loadGame(db, getRouterParam(event, 'id') ?? '', viewer.id)
+  let game = await loadGame(db, getRouterParam(event, 'id') ?? '', viewer.id)
 
   const archived = asRecord(await readBody(event)).archived
   if (typeof archived !== 'boolean') throw apiError('invalid_value')
 
-  let { game } = loaded
   if ((game.archivedAt !== null) !== archived) {
     const now = useClock(event).now()
     const [changed] = await db
@@ -33,6 +32,6 @@ export default defineEventHandler(async (event): Promise<GameView> => {
     if (changed) game = changed
     else [game] = (await db.select().from(games).where(eq(games.id, game.id)).limit(1)) as [typeof game]
   }
-  const [view] = await readGameViews(db, [{ game, creatorName: loaded.creatorName }], viewer)
+  const [view] = await readGameViews(db, [game])
   return view!
 })

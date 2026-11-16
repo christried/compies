@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
-  CLIP_END_MAX, CLIP_LENGTH_MAX, CLIP_LENGTH_MIN, CLIP_START_MAX, GAME_NAME_MAX, NO_FILTERS, SUITABILITIES, canEditGame, canSeeLibrary, clipTime, filterGames, gameNameProblem,
+  CLIP_END_MAX, CLIP_LENGTH_MAX, CLIP_LENGTH_MIN, CLIP_START_MAX, GAME_NAME_MAX, NO_FILTERS, SUITABILITIES, canSeeLibrary, clipTime, filterGames, gameNameProblem,
   isClipLength, normaliseTag, parseClipLength, parseClipTime, parseGameInput, parsePlayerCount, parseTags, sortTagsByLabel, tagProblem,
   formatPriceAmount, isPriceCheckOnly, parsePrice, parsePriceAmount, priceTakesAmount,
   FREE_TO_PLAY_TAG, tagsWithFreeToPlay, GAME_NOTES_MAX, gameNotesProblem,
@@ -61,18 +61,6 @@ describe('canSeeLibrary', () => {
   it('keeps out everyone without the Host permission, and signed-out visitors (#455)', () => {
     expect(canSeeLibrary({ canHost: false })).toBe(false)
     expect(canSeeLibrary(null)).toBe(false)
-  })
-})
-
-describe('canEditGame', () => {
-  const game = { createdBy: 'u1' }
-
-  it('lets the creator edit', () => {
-    expect(canEditGame({ id: 'u1' }, game)).toBe(true)
-  })
-
-  it('keeps every other User out (#455)', () => {
-    expect(canEditGame({ id: 'u2' }, game)).toBe(false)
   })
 })
 
@@ -332,9 +320,7 @@ describe('filterGames (#173)', () => {
       playersMin: null,
       playersMax: null,
       suitabilities: [],
-      createdBy: { id: 'me', name: 'Ich' },
       createdAt: '2026-01-15T10:00:00.000Z',
-      canEdit: true,
       notes: null,
       tags: [],
       archived: false,
@@ -348,10 +334,10 @@ describe('filterGames (#173)', () => {
   const counter = game('Counter-Strike 2', { playersMin: 2, playersMax: 10, suitabilities: ['teams'] })
   const halo = game('Halo', { playersMax: 4, suitabilities: ['ffa'] })
   const open = game('Offen', { playersMin: 6 })
-  const board = game('Brettspiel', { createdBy: { id: 'other', name: 'Anna' } })
+  const board = game('Brettspiel')
   const library = [mario, counter, halo, open, board]
 
-  const by = (filters: Partial<GameFilters>, viewerId = 'me') => filterGames(library, { ...NO_FILTERS, ...filters }, viewerId).map(found => found.name)
+  const by = (filters: Partial<GameFilters>) => filterGames(library, { ...NO_FILTERS, ...filters }).map(found => found.name)
 
   it('keeps every game without filters, in the given order', () => {
     expect(by({})).toEqual(['Mario Kart', 'Counter-Strike 2', 'Halo', 'Offen', 'Brettspiel'])
@@ -365,7 +351,7 @@ describe('filterGames (#173)', () => {
 
   it('reads % and _ in the search as plain characters', () => {
     const named = [game('Rocket 100%'), game('Rocket 1000'), game('Die_Siedler'), game('Die Siedler')]
-    const found = (q: string) => filterGames(named, { ...NO_FILTERS, q }, 'me').map(item => item.name)
+    const found = (q: string) => filterGames(named, { ...NO_FILTERS, q }).map(item => item.name)
 
     expect(found('%')).toEqual(['Rocket 100%'])
     expect(found('_')).toEqual(['Die_Siedler'])
@@ -373,7 +359,7 @@ describe('filterGames (#173)', () => {
 
   it('matches umlauts whatever their case', () => {
     const named = [game('Äpfel Spiel'), game('Würfeln')]
-    const found = (q: string) => filterGames(named, { ...NO_FILTERS, q }, 'me').map(item => item.name)
+    const found = (q: string) => filterGames(named, { ...NO_FILTERS, q }).map(item => item.name)
 
     expect(found('ä')).toEqual(['Äpfel Spiel'])
     expect(found('Ä')).toEqual(['Äpfel Spiel'])
@@ -397,18 +383,17 @@ describe('filterGames (#173)', () => {
     expect(by({ suitability: 'one_v_one' as Suitability })).toEqual([])
   })
 
-  it('keeps the games the viewer created with „Von mir“', () => {
-    expect(by({ mine: true })).toEqual(['Mario Kart', 'Counter-Strike 2', 'Halo', 'Offen'])
-    expect(by({ mine: true }, 'other')).toEqual(['Brettspiel'])
+  it('keeps a Brettspiel whatever its creator: the library holds only the viewer’s games, so no filter asks who made one', () => {
+    expect(by({ q: 'brett' })).toEqual(['Brettspiel'])
   })
 
   it('combines the filters with AND', () => {
-    expect(by({ players: 3, suitability: 'teams', mine: true, q: 'counter' })).toEqual(['Counter-Strike 2'])
+    expect(by({ players: 3, suitability: 'teams', q: 'counter' })).toEqual(['Counter-Strike 2'])
     expect(by({ players: 3, suitability: 'ffa', q: 'counter' })).toEqual([])
   })
 
   describe('Archived games (#467)', () => {
-    const found = (games: GameView[], filters: Partial<GameFilters>) => filterGames(games, { ...NO_FILTERS, ...filters }, 'me').map(item => item.name)
+    const found = (games: GameView[], filters: Partial<GameFilters>) => filterGames(games, { ...NO_FILTERS, ...filters }).map(item => item.name)
     const old = game('Alt Kart', { archived: true, playersMin: 2, playersMax: 4, tags: [{ key: 'retro', label: 'Retro' }] })
     const old2 = game('Alt Halo', { archived: true })
     const fresh = game('Neu Kart', { playersMin: 2, playersMax: 4, tags: [{ key: 'retro', label: 'Retro' }] })
@@ -438,7 +423,7 @@ describe('filterGames (#173)', () => {
 
   describe('the Tag filter and the search over Tags (#336)', () => {
     const tag = (label: string) => ({ key: label.toLocaleLowerCase('de'), label })
-    const found = (games: GameView[], filters: Partial<GameFilters>) => filterGames(games, { ...NO_FILTERS, ...filters }, 'me').map(item => item.name)
+    const found = (games: GameView[], filters: Partial<GameFilters>) => filterGames(games, { ...NO_FILTERS, ...filters }).map(item => item.name)
 
     const coop = game('Pandemie', { tags: [tag('Co-op'), tag('Retro')] })
     const kart = game('Kart Rennen', { tags: [tag('Retro')] })
@@ -447,7 +432,7 @@ describe('filterGames (#173)', () => {
 
     it('NO_FILTERS carries no Tag', () => {
       expect(NO_FILTERS.tag).toBeNull()
-      expect(NO_FILTERS).toEqual({ q: '', players: null, suitability: null, tag: null, mine: false, archived: false })
+      expect(NO_FILTERS).toEqual({ q: '', players: null, suitability: null, tag: null, archived: false })
     })
 
     it('keeps the games carrying the Tag key, in the given order, and any one of several Tags does', () => {

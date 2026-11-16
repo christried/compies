@@ -28,8 +28,6 @@ export const API_ERROR_STATUS = {
   invalid_tags: 400,
   /** A game's Price is not a source with a whole amount (or none), or „Preis stimmt noch“ is no flag or has no Price to confirm (#337). */
   invalid_price: 400,
-  /** Only the creator of a game and the Platform admin may edit it (#142). */
-  not_game_editor: 403,
   /** A game image is larger than GAME_IMAGE_MAX_BYTES (#143). */
   image_too_large: 413,
   /** A game image is not a WebP file (#143). */

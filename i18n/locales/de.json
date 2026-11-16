@@ -899,7 +899,6 @@
     "filterPlayers": "Spielerzahl",
     "filterSuitability": "Passt zu",
     "filterTag": "Tag",
-    "filterMine": "Von mir",
     "filterArchived": "Archiviert",
     "restore": "Wiederherstellen",
     "restoreLabel": "{name} wiederherstellen",
@@ -909,9 +908,8 @@
     "restoredDone": "Wiederhergestellt.",
     "none": "Nichts gefunden. Vielleicht heißt es anders?",
     "create": "Spiel anlegen",
-    "editOnlyOwner": "Bearbeiten dürfen nur {name} und die Plattform-Admin.",
     "played": "{n}× gespielt",
-    "kicker": "Global, für alle Hosts",
+    "kicker": "Deine Spiele",
     "suitability": {
       "teams": "Teams",
       "ffa": "Jeder gegen jeden",
@@ -919,7 +917,6 @@
     },
     "loading": "Bibliothek lädt",
     "clipFact": "Clip {n} s",
-    "createdBy": "Angelegt von {name} im {month}",
     "listFailed": "Die Bibliothek lässt sich gerade nicht laden.",
     "saved": "{name} ist in der Bibliothek.",
     "saveDone": "Gespeichert.",
@@ -992,7 +989,7 @@
     "playersFrom": "von",
     "playersTo": "bis",
     "notes": "Notizen",
-    "notesHelp": "Einstellungen, Aufwärmen, Siegbedingung, Hausregeln. Alle Hosts können sie lesen.",
+    "notesHelp": "Einstellungen, Aufwärmen, Siegbedingung, Hausregeln. Nur du siehst sie.",
     "notesTooLong": "Höchstens {max} Zeichen.",
     "tags": "Tags",
     "tagsHelp": "Enter oder Komma fügt einen Tag hinzu.",
@@ -1712,7 +1709,6 @@
     "gameNotesInvalid": "Die Notizen sind zu lang.",
     "tagsInvalid": "Höchstens 8 Tags mit je höchstens 20 Zeichen, keiner doppelt.",
     "priceInvalid": "Der Preis braucht eine Quelle und einen Betrag von 0,01 € bis 999,99 €. Bei Free-to-play und Abo gibt es keinen Betrag.",
-    "notGameEditor": "Bearbeiten dürfen nur die Person, die das Spiel angelegt hat, und die Plattform-Admin.",
     "imageTooLarge": "Das Bild ist zu groß.",
     "imageNotWebp": "Das Bild muss ein WebP sein.",
     "poolsInvalid": "Die Spieleauswahl stimmt nicht.",
@@ -1804,7 +1800,7 @@
     },
     "library": {
       "title": "Die Bibliothek ist leer.",
-      "text": "Leg das erste Spiel an. Alle Hosts profitieren davon."
+      "text": "Leg das erste Spiel an. Danach holst du es in jedes deiner Events."
     },
     "search": {
       "title": "Nix gefunden.",

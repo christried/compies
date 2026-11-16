@@ -115,17 +115,18 @@ describe('the Game library API (#141)', () => {
       expect(game).toEqual({
         id: row!.id, name: 'Mario Kart', imageUrl: null, youtubeId: 'dQw4w9WgXcQ', clipStart: 72, clipLength: 45,
         playersMin: null, playersMax: null, suitabilities: [], tags: [{ key: 'free-to-play', label: 'Free-to-play' }], price: null,
-        createdBy: { id: row!.createdBy, name: 'Hostess' }, createdAt: row!.createdAt.toISOString(), canEdit: true, notes: null, archived: false,
+        createdAt: row!.createdAt.toISOString(), notes: null, archived: false,
       })
     })
 
-    it('shows the creator under the display name when they set one', async () => {
+    it('answers no creator and no edit right: every game in the library is the viewer’s own (#724)', async () => {
       const cookie = await cookieOf(host)
-      await testDb.db.update(users).set({ displayName: 'Kitty' }).where(eq(users.name, 'Hostess'))
 
       const game = await created(cookie, { name: 'Mario Kart' })
 
-      expect(game.createdBy.name).toBe('Kitty')
+      expect(game).not.toHaveProperty('createdBy')
+      expect(game).not.toHaveProperty('canEdit')
+      expect(game).toHaveProperty('createdAt')
     })
 
     it('stores a game without a link as a game without a clip', async () => {
@@ -227,7 +228,7 @@ describe('the Game library API (#141)', () => {
       const asAdmin = await read(game.id, await cookieOf(admin))
       const asOther = await read(game.id, await cookieOf(otherHost))
 
-      expect(asCreator.canEdit).toBe(true)
+      expect(asCreator).not.toHaveProperty('canEdit')
       expect([asAdmin.status, asOther.status]).toEqual([404, 404])
     })
   })
@@ -489,15 +490,16 @@ describe('the Game library API (#141)', () => {
 
     it('lets the creator edit the game and answers with the new view', async () => {
       const cookie = await cookieOf(host)
-      const { id, createdBy } = await created(cookie, { name: 'Mario Kart' })
+      const { id } = await created(cookie, { name: 'Mario Kart' })
 
       const response = await edit(cookie, id, edited)
 
       expect(response.status).toBe(200)
-      expect(await response.json()).toMatchObject({ id, name: 'Mario Kart 8', youtubeId: 'dQw4w9WgXcQ', clipStart: 72, clipLength: 45, playersMin: 2, playersMax: 8, suitabilities: ['teams'], canEdit: true })
+      expect(await response.json()).toMatchObject({ id, name: 'Mario Kart 8', youtubeId: 'dQw4w9WgXcQ', clipStart: 72, clipLength: 45, playersMin: 2, playersMax: 8, suitabilities: ['teams'] })
       const [row] = await testDb.db.select().from(games)
       expect(row).toMatchObject({ name: 'Mario Kart 8', youtubeId: 'dQw4w9WgXcQ', clipStart: 72, clipLength: 45, playersMin: 2, playersMax: 8, suitabilities: ['teams'] })
-      expect(row!.createdBy).toBe(createdBy.id)
+      const [hostRow] = await testDb.db.select().from(users).where(eq(users.name, 'Hostess'))
+      expect(row!.createdBy).toBe(hostRow!.id)
     })
 
     it('answers the Platform admin as for a missing route and changes nothing of another Host\'s game (#455)', async () => {
@@ -547,13 +549,14 @@ describe('the Game library API (#141)', () => {
     })
 
     it('keeps the image and the creator when the game is edited', async () => {
-      const { id, createdBy } = await created(await cookieOf(host), { name: 'Mario Kart' })
+      const { id } = await created(await cookieOf(host), { name: 'Mario Kart' })
+      const [hostRow] = await testDb.db.select().from(users).where(eq(users.name, 'Hostess'))
       await testDb.db.update(games).set({ imageKey: 'games/abc.webp' }).where(eq(games.id, id))
 
       await edit(await cookieOf(host), id, edited)
 
       const [row] = await testDb.db.select().from(games)
-      expect(row).toMatchObject({ imageKey: 'games/abc.webp', createdBy: createdBy.id })
+      expect(row).toMatchObject({ imageKey: 'games/abc.webp', createdBy: hostRow!.id })
     })
 
     it('refuses an invalid body with its code and changes nothing', async () => {
@@ -599,7 +602,7 @@ describe('the Game library API (#141)', () => {
       expect(body).not.toHaveProperty('total')
     })
 
-    it('ignores a query string', async () => {
+    it('ignores a query string, the old ?mine=1 too (#724)', async () => {
       await seed()
       const cookie = await cookieOf(host)
 

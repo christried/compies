@@ -34,7 +34,7 @@ registerEndpoint(`/api/games/${withClip.id}`, {
   handler: async (event) => {
     const body = await readBody(event)
     patched(body)
-    return { ...withClip, name: body.name, canEdit: true }
+    return { ...withClip, name: body.name }
   },
 })
 registerEndpoint(`/api/games/${withClip.id}`, {
@@ -88,7 +88,7 @@ describe('the library page', () => {
     await settle(page)
 
     expect(page.get('h1').text()).toBe('Bibliothek')
-    expect(page.text()).toContain('Global, für alle Hosts')
+    expect(page.text()).toContain('Deine Spiele')
     const cards = page.findAll('main li')
     expect(cards.map(card => card.text())).toEqual(['Brettspiel', 'Counter-Strike 2'])
     expect(cards[1]!.get('a').attributes('href')).toBe(`/bibliothek/${withClip.id}`)
@@ -179,13 +179,13 @@ describe('the game page', () => {
     await clearNuxtData(`game-${withClip.id}`)
   })
 
-  it('shows the name, the creator and month, the clip length and the excerpt of the clip', async () => {
+  it('shows the name, the clip length and the excerpt of the clip, and no creator line (#724)', async () => {
     const page = await mountSuspended(DetailPage, { route: `/bibliothek/${withClip.id}` })
     await vi.waitFor(() => expect(page.find('h1').exists()).toBe(true))
 
     expect(page.get('h1').text()).toBe('Counter-Strike 2')
     expect(page.text()).toContain('Clip 30 s')
-    expect(page.text()).toContain('Angelegt von Sanne im Januar 2026')
+    expect(page.text()).not.toContain('Angelegt von')
     expect(page.text()).toContain('Ausschnitt 1:12 – 1:42')
     expect(page.get('a[href="/bibliothek"]').text()).toContain('Bibliothek')
   })
@@ -342,7 +342,7 @@ describe('the new game page', () => {
 
 const tagged = (n: number) => Array.from({ length: n }, (_, index) => ({ key: `tag ${index + 1}`, label: `Tag ${index + 1}` }))
 
-const withPlayers = game({ id: '00000000-0000-4000-8000-0000000000a4', name: 'Halo', playersMin: 2, playersMax: 10, suitabilities: ['teams', 'ffa'], canEdit: false, createdBy: { id: 'someone-else', name: 'Sanne' } })
+const withPlayers = game({ id: '00000000-0000-4000-8000-0000000000a4', name: 'Halo', playersMin: 2, playersMax: 10, suitabilities: ['teams', 'ffa'] })
 
 describe('the library cards and filters (#142, #173)', () => {
   beforeEach(async () => {
@@ -412,7 +412,8 @@ describe('the library cards and filters (#142, #173)', () => {
 
     expect(page.get('input[type="search"]').attributes('placeholder')).toBe('3 Spiele durchsuchen')
     const chips = page.findAll('main button, main select').map(item => item.text())
-    expect(chips).toEqual(expect.arrayContaining(['Alle', 'Von mir']))
+    expect(chips).toEqual(expect.arrayContaining(['Alle']))
+    expect(chips).not.toContain('Von mir')
     expect(page.find('select[aria-label="Spielerzahl"]').exists()).toBe(true)
     expect(page.find('select[aria-label="Passt zu"]').exists()).toBe(true)
     expect(page.find('select[aria-label="Tag"]').exists()).toBe(true)
@@ -430,16 +431,13 @@ describe('the library cards and filters (#142, #173)', () => {
     await vi.waitFor(() => expect(query().q).toBe('counter'), { timeout: 5000 })
   })
 
-  it('keeps only the games of the viewer with „Von mir“, shows it pressed and puts it in the address', async () => {
+  it('has no „Von mir“ chip: every game in the library is the viewer’s own (#724)', async () => {
     list = { games: [withClip, withPlayers] }
     const page = await mountSuspended(LibraryPage, { route: '/bibliothek' })
     await settle(page)
 
-    await chip(page, 'Von mir').trigger('click')
-
-    expect(names(page)).toEqual(['Counter-Strike 2'])
-    expect(chip(page, 'Von mir').attributes('aria-pressed')).toBe('true')
-    await vi.waitFor(() => expect(query().mine).toBe('1'))
+    expect(page.findAll('main button').map(item => item.text())).not.toContain('Von mir')
+    expect(names(page)).toEqual(['Counter-Strike 2', 'Halo'])
   })
 
   it('keeps the games of the Passt zu picked in its menu', async () => {
@@ -465,16 +463,17 @@ describe('the library cards and filters (#142, #173)', () => {
     await vi.waitFor(() => expect(query().players).toBe('3'))
   })
 
-  it('takes the filters from the address, so reload and back keep them', async () => {
+  it('takes the filters from the address, so reload and back keep them, and ignores a mine=1 from an old address (#724)', async () => {
     list = { games: [withClip, withPlayers, withoutClip] }
 
     const page = await mountSuspended(LibraryPage, { route: '/bibliothek?q=halo&players=3&suitability=ffa&mine=1' })
     await settle(page)
 
-    expect(names(page)).toEqual([])
+    expect(names(page)).toEqual(['Halo'])
     expect((page.get('input[type="search"]').element as HTMLInputElement).value).toBe('halo')
-    expect(chip(page, 'Von mir').attributes('aria-pressed')).toBe('true')
     expect((page.get('select[aria-label="Passt zu"]').element as HTMLSelectElement).value).toBe('ffa')
+    expect(page.findAll('main button').map(item => item.text())).not.toContain('Von mir')
+    expect(query().mine).toBe('1')
   })
 
   it('follows the address when back changes the search', async () => {
@@ -650,9 +649,8 @@ describe('the Tag filter (#336)', () => {
     await vi.waitFor(() => expect(query()).toEqual({}))
   })
 
-  it('combines the Tag with „Von mir“ in the address', async () => {
-    const fremd = game({ id: '00000000-0000-4000-8000-0000000000b4', name: 'Fremd', tags: [coopTag], createdBy: { id: 'someone-else', name: 'Anna' } })
-    list = { games: [pandemie, fremd], tagsInUse: [coopTag] }
+  it('keeps the Tag of the address and reads no mine=1 in it (#724)', async () => {
+    list = { games: [pandemie, kart], tagsInUse: [coopTag, retro] }
 
     const page = await mountSuspended(LibraryPage, { route: '/bibliothek?tag=co-op&mine=1' })
     await settle(page)
@@ -854,24 +852,14 @@ describe('the game page for its editors (#142)', () => {
     await clearNuxtData(`game-${withClip.id}`)
   })
 
-  it('shows the Host who created the game the „Bearbeiten“ button to the edit page', async () => {
-    detail = { ...withClip, canEdit: true }
+  it('shows the Host the „Bearbeiten“ button of their own game, to the edit page (#724)', async () => {
+    detail = withClip
 
     const page = await mountSuspended(DetailPage, { route: `/bibliothek/${withClip.id}` })
     await vi.waitFor(() => expect(page.find('h1').exists()).toBe(true))
 
     await vi.waitFor(() => expect(page.find(`a[href="/bibliothek/${withClip.id}/bearbeiten"]`).exists()).toBe(true))
     expect(page.get(`a[href="/bibliothek/${withClip.id}/bearbeiten"]`).text()).toContain('Bearbeiten')
-  })
-
-  it('shows another Host the reason instead of a button', async () => {
-    detail = { ...withClip, canEdit: false, createdBy: { id: 'someone-else', name: 'Sanne' } }
-
-    const page = await mountSuspended(DetailPage, { route: `/bibliothek/${withClip.id}` })
-    await vi.waitFor(() => expect(page.find('h1').exists()).toBe(true))
-
-    expect(page.text()).toContain('Bearbeiten dürfen nur Sanne und die Plattform-Admin.')
-    expect(page.find(`a[href="/bibliothek/${withClip.id}/bearbeiten"]`).exists()).toBe(false)
   })
 
   it('shows the player count and the Suitabilities as facts', async () => {
@@ -889,7 +877,7 @@ describe('the game page for its editors (#142)', () => {
 describe('the edit page (#142)', () => {
   beforeEach(async () => {
     signInAs(host)
-    detail = { ...withClip, canEdit: true }
+    detail = withClip
     patched.mockClear()
     await clearNuxtData(`game-${withClip.id}`)
     await clearNuxtData('games')
@@ -902,7 +890,7 @@ describe('the edit page (#142)', () => {
     return page.get(`[id="${labelEl.attributes('for')}"]`)
   }
 
-  it('opens the form for the creator under „Bearbeiten“, prefilled with the game', async () => {
+  it('opens the form under „Bearbeiten“ for the viewer’s own game, prefilled with the game (#724)', async () => {
     const page = await mountSuspended(EditPage, { route: `/bibliothek/${withClip.id}/bearbeiten` })
     await vi.waitFor(() => expect(page.find('h1').exists()).toBe(true))
 
@@ -910,15 +898,6 @@ describe('the edit page (#142)', () => {
     expect(page.text()).toContain('Bearbeiten')
     expect((field(page, 'Name').element as HTMLInputElement).value).toBe('Counter-Strike 2')
     expect(page.get('button[type="submit"]').text()).toContain('Änderungen speichern')
-  })
-
-  it('shows another Host the reason and no form', async () => {
-    detail = { ...withClip, canEdit: false, createdBy: { id: 'someone-else', name: 'Sanne' } }
-
-    const page = await mountSuspended(EditPage, { route: `/bibliothek/${withClip.id}/bearbeiten` })
-    await vi.waitFor(() => expect(page.text()).toContain('Bearbeiten dürfen nur Sanne und die Plattform-Admin.'), { timeout: 5000 })
-
-    expect(page.find('form').exists()).toBe(false)
   })
 
   it('saves the changes, says so and goes back to the game', async () => {

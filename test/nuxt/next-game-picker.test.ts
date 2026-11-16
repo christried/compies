@@ -131,9 +131,7 @@ function libraryGame(n: number, name: string, overrides: Partial<GameView> = {})
     playersMin: null,
     playersMax: null,
     suitabilities: [],
-    createdBy: { id: kitty.id, name: 'Kitty' },
     createdAt: '2026-01-15T10:00:00.000Z',
-    canEdit: true,
     notes: null,
     tags: [],
     archived: false,
@@ -172,7 +170,7 @@ describe('the Tag filter of the library list (#336)', () => {
     libraryTags = [{ key: 'retro', label: 'Retro' }, { key: 'co-op', label: 'Co-op' }]
   })
 
-  it('offers the Tags in use by label, next to „Alle“ and „Von mir“, and no player count or „Passt zu“', async () => {
+  it('offers the Tags in use by label, and no player count or „Passt zu“', async () => {
     await mount()
     await vi.waitFor(() => expect(libraryCards()).toHaveLength(3))
 

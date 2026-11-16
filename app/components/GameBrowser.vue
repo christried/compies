@@ -10,7 +10,7 @@ import { CHIP_OFF, CHIP_ON, CHIP_SHAPE } from '~/utils/chip-look'
 // states, loading, error, empty library, no match and results, as one state machine, and the paging of the results
 // (#369: 40 cards a page over the filtered list, more by a sentinel or „Mehr laden“). What differs is handed in: the
 // filter state (`v-model:filters`, the library binds it to the address, the picker keeps it local), `compact` (only the
-// search, „Alle“ and the Tag; the library page also has „Von mir“ and „Archiviert“, #467), `to` (the card links to the game), `#card-actions` (the picker's ＋ and ✕) and `#toolbar`
+// search, „Alle“ and the Tag; the library page also has „Archiviert“, #467), `to` (the card links to the game), `#card-actions` (the picker's ＋ and ✕) and `#toolbar`
 // („Neues Spiel anlegen“, on the search row). The filtering is client side (`filterGames`), so it follows every
 // keystroke. The grid from md up and the rows below are CSS (GameCard `responsive`), not `matchMedia`.
 const props = defineProps<{
@@ -28,7 +28,6 @@ defineSlots<{
 }>()
 
 const { t } = useI18n()
-const viewerId = useAuthUser().value?.id ?? ''
 const { games, tagsInUse, error, refresh } = useGameLibrary()
 const { setArchived } = useGameArchive()
 
@@ -50,7 +49,7 @@ const tagChoices = computed(() => [
   ...(strayTag.value ? [{ value: strayTag.value, label: strayTag.value }] : []),
 ])
 
-const shown = computed(() => filterGames(games.value ?? [], filters.value, viewerId))
+const shown = computed(() => filterGames(games.value ?? [], filters.value))
 // Loading means no list yet: a revalidation of a list we already hold shows no skeleton.
 const state = computed(() => {
   if (!games.value) return error.value ? 'error' : 'loading'
@@ -58,8 +57,8 @@ const state = computed(() => {
   return shown.value.length === 0 ? 'noMatch' : 'results'
 })
 const anyFilter = computed(() => {
-  const { q, players, suitability, tag, mine, archived } = filters.value
-  return Boolean(q.trim() || players !== null || suitability || tag !== null || mine || archived)
+  const { q, players, suitability, tag, archived } = filters.value
+  return Boolean(q.trim() || players !== null || suitability || tag !== null || archived)
 })
 
 // The paging (#369): the search and the filters run over the whole library, only the cards drawn are cut. The dev
@@ -186,14 +185,6 @@ const CHIP = `inline-flex ${CHIP_SHAPE} items-center gap-1.5 px-4 text-small`
           :aria-label="t('library.filterTag')"
           @update:model-value="set({ tag: $event || null })"
         />
-        <button
-          type="button"
-          :aria-pressed="filters.mine ? 'true' : 'false'"
-          :class="[CHIP, filters.mine ? CHIP_ON : CHIP_OFF]"
-          @click="set({ mine: !filters.mine })"
-        >
-          {{ t('library.filterMine') }}
-        </button>
         <button
           v-if="!compact"
           type="button"
