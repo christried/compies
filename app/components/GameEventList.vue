@@ -5,7 +5,7 @@ import { notesHasText } from '~~/shared/notes-doc'
 
 // The Events of a game on its library page (#656, spec #717 § F): every Event of the game's User that holds the game in its pool or played it,
 // newest first, as the server sends them. A row links to the Event, says „im Pool“ or „n× gespielt“ and shows the Host's Event notes for the game
-// read-only in a disclosure (RichNotes only, ADR 0019): its headings are h3, below this section's h2.
+// read-only in the Round card's disclosure (#729, Q8: no design of its own): the Event block at sm, its title an h3 below this section's h2 (RichNotes only, ADR 0019).
 defineProps<{ events: GameEventRow[] }>()
 
 const { t } = useI18n()
@@ -52,14 +52,10 @@ const headingId = useId()
         </div>
         <GameNotesDisclosure
           v-if="notesHasText(row.notes)"
+          :event-notes="row.notes"
           :label="t('eventNotes.title')"
-        >
-          <RichNotes
-            :doc="row.notes!"
-            heading-level="h3"
-            class="text-[14px] leading-[1.45] text-ink"
-          />
-        </GameNotesDisclosure>
+          variant="round"
+        />
       </li>
     </ul>
   </section>

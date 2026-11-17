@@ -36,7 +36,10 @@ const props = withDefaults(defineProps<{
   hostGames?: Record<string, HostGameFacts> | null
   /** The Host's Event notes by game id (#732); null for every Member. Each game's tile and Notizen disclosure read their entry. */
   eventNotes?: Record<string, NotesDoc> | null
-}>(), { hostGames: null, eventNotes: null })
+  /** The Event's name and whether it is finished (#729): the Event notes block's sub (where both blocks show) and its finished look. */
+  eventName?: string
+  eventFinished?: boolean
+}>(), { hostGames: null, eventNotes: null, eventName: undefined, eventFinished: false })
 
 const { t } = useI18n()
 const headingId = useId()
@@ -106,12 +109,17 @@ watch(resultFor, async (id, was) => {
             :audience="isHost ? 'host' : 'member'"
             :facts="hostGames?.[round.game.id] ?? null"
             :event-notes="eventNotes?.[round.game.id] ?? null"
+            :event-name="eventName"
+            :event-finished="eventFinished"
           />
         </div>
         <GameNotesDisclosure
           v-if="round.notes || eventNotes?.[round.game.id]"
           :notes="round.notes ?? null"
           :event-notes="eventNotes?.[round.game.id] ?? null"
+          :event-name="eventName"
+          :event-finished="eventFinished"
+          variant="round"
           start-open
         />
         <div

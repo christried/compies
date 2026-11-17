@@ -55,7 +55,7 @@ function renderLink(nodes: unknown[], href: string, newTab: string): VNodeChild 
   return h('a', { href, target: '_blank', rel: 'noopener noreferrer', title: href }, [
     ...nodes.map(node => renderText(node, shown ?? textOf(node))),
     '⁠',
-    h(ArrowUpRight, { class: 'cp-note-arrow', 'aria-hidden': 'true' }),
+    h(ArrowUpRight, { 'class': 'cp-note-arrow', 'aria-hidden': 'true' }),
     h('span', { class: 'cp-note-new-tab sr-only' }, ` ${newTab}`),
   ])
 }

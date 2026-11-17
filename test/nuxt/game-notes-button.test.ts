@@ -16,7 +16,7 @@ const NOTES = 'Zeile eins\n\nZeile drei'
 let page: Awaited<ReturnType<typeof mountSuspended>> | undefined
 let setWide: (next: boolean) => void
 
-async function mount(props: { name?: string, notes: NotesDoc | null, eventNotes?: NotesDoc | null }) {
+async function mount(props: { name?: string, notes: NotesDoc | null, eventNotes?: NotesDoc | null, eventName?: string, eventFinished?: boolean }) {
   page = await mountSuspended(GameNotesButton, { props: { name: 'Mario Kart', ...props }, attachTo: document.body })
   await flushPromises()
   return page
@@ -170,7 +170,7 @@ describe('the Notes button of a game (#436)', () => {
     expect(trigger().getAttribute('aria-expanded')).toBe('true')
   })
 
-  it('opens a popover from md up, fixed and 288 px wide, with focus on its close button', async () => {
+  it('opens a popover from md up, fixed and 320 px wide, with focus on its close button (#729)', async () => {
     await mount({ notes: notesFromLines(NOTES.split('\n')) })
 
     await open()
@@ -178,11 +178,80 @@ describe('the Notes button of a game (#436)', () => {
     expect(sheet()).toBeNull()
     expect(popover()).not.toBeNull()
     expect(popover()!.classList).toContain('fixed')
-    expect(popover()!.classList).toContain('w-72')
-    expect(popover()!.getAttribute('aria-labelledby')).toBeTruthy()
-    expect(popover()!.querySelector('h2')!.textContent).toBe('Mario Kart')
+    expect(popover()!.classList).toContain('w-80')
     expect(lines(popover())).toEqual(NOTES.split('\n'))
     expect(document.activeElement).toBe(popover()!.querySelector('button[aria-label="Schließen"]'))
+  })
+
+  it('heads the popover with the game name as the kicker and „Notizen“ as its h2, and stays labelled „Notizen zu {game}“ (#729)', async () => {
+    await mount({ notes: notesFromLines(NOTES.split('\n')) })
+
+    await open()
+
+    const title = popover()!.querySelector('h2')!
+    expect(title.textContent).toBe('Notizen')
+    expect(title.className).toContain('font-display')
+    expect(title.className).toContain('text-[22px]')
+    const kicker = [...popover()!.querySelectorAll('header span')].find(span => span.textContent === 'Mario Kart')!
+    expect(kicker.className).toContain('text-[12px]')
+    expect(kicker.className).toContain('font-bold')
+    expect(kicker.className).toContain('text-ink-2')
+    expect(popover()!.getAttribute('aria-label')).toBe('Notizen zu Mario Kart')
+    expect(popover()!.hasAttribute('aria-labelledby')).toBe(false)
+  })
+
+  it('shows the notes at sm in the popover and at md in the sheet, with no „Bearbeiten“ footer (#729)', async () => {
+    await mount({ notes: FORMATTED_NOTES })
+    await open()
+    expect(popover()!.querySelector('.cp-note')!.classList).toContain('cp-note--sm')
+    expect(popover()!.querySelector('.cp-note--md')).toBeNull()
+    expect(popover()!.textContent).not.toContain('Bearbeiten')
+    page!.unmount()
+
+    setWide(false)
+    await mount({ notes: FORMATTED_NOTES })
+    await open()
+    expect(sheet()!.querySelector('.cp-note')!.classList).toContain('cp-note--md')
+    expect(sheet()!.textContent).not.toContain('Bearbeiten')
+  })
+
+  it('shows the Event block and the game block with their subs when both are there, at sm in the popover (#729)', async () => {
+    await mount({ notes: notesFromLines(['Game-Zeile']), eventNotes: notesFromLines(['Heute nur Bo1']), eventName: 'Spieleabend bei Sanne' })
+    await open()
+
+    const blocks = [...popover()!.querySelectorAll('.cp-note')]
+    expect(blocks.map(block => block.textContent)).toEqual(['Heute nur Bo1', 'Game-Zeile'])
+    expect(blocks.every(block => block.classList.contains('cp-note--sm'))).toBe(true)
+    expect(popover()!.textContent).toContain('Spieleabend bei Sanne')
+    expect(popover()!.textContent).toContain('aus deiner Bibliothek')
+    // The game block has its title: „Notizen“ as an h3 below the popover's h2.
+    expect([...popover()!.querySelectorAll('h3')].map(h => h.textContent)).toEqual(['Notizen für dieses Event', 'Notizen'])
+  })
+
+  it('shows a finished Event block with the chip in the popover (#729)', async () => {
+    await mount({ notes: null, eventNotes: notesFromLines(['Heute nur Bo1']), eventFinished: true })
+    await open()
+
+    expect(popover()!.textContent).toContain('Event beendet')
+    expect(popover()!.querySelector('.border-dashed')).not.toBeNull()
+  })
+
+  it('draws a 2 px line-soft rule under the header once the body has scrolled, and not before (#729)', async () => {
+    await mount({ notes: FORMATTED_NOTES })
+    await open()
+    const header = popover()!.querySelector('header')!
+    const body = popover()!.querySelector<HTMLElement>('[data-notes-body]')!
+
+    expect(header.className).toContain('border-transparent')
+    expect(header.className).not.toContain('border-line-soft')
+
+    body.scrollTop = 30
+    body.dispatchEvent(new Event('scroll'))
+    await flushPromises()
+
+    expect(header.className).toContain('border-line-soft')
+    expect(header.className).not.toContain('border-transparent')
+    expect(popover()).not.toBeNull()
   })
 
   it('closes on Escape and gives the focus back to the button', async () => {
@@ -214,17 +283,26 @@ describe('the Notes button of a game (#436)', () => {
     await open()
 
     expect(lines(popover())).toEqual(long.split('\n'))
-    expect(popover()!.classList).toContain('overflow-y-auto')
-    expect(popover()!.className).toContain('max-h-[min(60vh,420px)]')
+    // The body scrolls under a header that stays; two blocks get more height (#729).
+    expect(popover()!.querySelector('[data-notes-body]')!.classList).toContain('overflow-y-auto')
+    expect(popover()!.className).toContain('max-h-[min(70vh,440px)]')
   })
 
-  it('keeps a game name of the longest allowed length in full', async () => {
+  it('lets two blocks have a taller popover (#729)', async () => {
+    await mount({ notes: notesFromLines(['a']), eventNotes: notesFromLines(['b']) })
+    await open()
+
+    expect(popover()!.className).toContain('max-h-[min(80vh,520px)]')
+  })
+
+  it('keeps a game name of the longest allowed length in full, in the kicker', async () => {
     const name = 'W'.repeat(GAME_NAME_MAX)
     await mount({ name, notes: notesFromLines(NOTES.split('\n')) })
     await open()
 
-    expect(popover()!.querySelector('h2')!.textContent).toBe(name)
-    expect(popover()!.querySelector('h2')!.className).toContain('[overflow-wrap:anywhere]')
+    const kicker = [...popover()!.querySelectorAll('header span')].find(span => span.textContent === name)!
+    expect(kicker).toBeDefined()
+    expect(kicker.className).toContain('[overflow-wrap:anywhere]')
   })
   it('stays inside the window for a button low in the picker (#488)', async () => {
     const realHeight = window.innerHeight

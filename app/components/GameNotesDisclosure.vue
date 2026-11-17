@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ChevronDown } from '@lucide/vue'
+import { ChevronDown, Lock, StickyNote } from '@lucide/vue'
 import { notesHasText, type NotesDoc } from '~~/shared/notes-doc'
 
 // The Game notes of a game (#224, GLOSSARY: Game notes) as a disclosure: collapsed by default, announced as open or
@@ -8,17 +8,98 @@ import { notesHasText, type NotesDoc } from '~~/shared/notes-doc'
 // open (`startOpen`, #228): the notes are what the Host needs while the game is played. The Session rows reuse it for the Notes
 // on a Slot's Votes (#349): the `label` names it with the count, and its default slot is the panel's content instead of the text.
 // The Host's Event notes of the game (#732) come above the Game notes in the same panel: a game with only Event notes shows the disclosure too.
-const props = withDefaults(defineProps<{ notes?: NotesDoc | null, eventNotes?: NotesDoc | null, label?: string, startOpen?: boolean }>(), { notes: null, eventNotes: null, label: undefined, startOpen: false })
+// The Round card has its own look (#729, hand-off 18-notizen.md § RoundCard „Notizen“): `variant="round"`, a 44 px button with the sticky note, „Notizen“, the
+// lock and „Nur du siehst das“ and a chevron at the right, and a paper-2 panel that opens in a height run: the Event block (sm, framed), a rule, the game block
+// (bare). Every other place keeps the default look: „Alle Tags“ (#615) and the Session notes (#349).
+const props = withDefaults(defineProps<{
+  notes?: NotesDoc | null
+  eventNotes?: NotesDoc | null
+  label?: string
+  startOpen?: boolean
+  variant?: 'default' | 'round'
+  /** The Event's name, the sub of its block where both blocks show (#729); the page that holds it gives it. */
+  eventName?: string
+  eventFinished?: boolean
+}>(), { notes: null, eventNotes: null, label: undefined, startOpen: false, variant: 'default', eventName: undefined, eventFinished: false })
 
 const { t } = useI18n()
 const panelId = useId()
 const open = ref(props.startOpen)
 const shown = computed(() => (props.notes === null && props.eventNotes === null) || notesHasText(props.notes) || notesHasText(props.eventNotes))
+const gameDoc = computed(() => notesHasText(props.notes) ? props.notes : null)
+const eventDoc = computed(() => notesHasText(props.eventNotes) ? props.eventNotes : null)
+const both = computed(() => gameDoc.value !== null && eventDoc.value !== null)
 </script>
 
 <template>
   <div
-    v-if="shown"
+    v-if="shown && variant === 'round'"
+    class="flex flex-col gap-2"
+  >
+    <button
+      type="button"
+      class="flex h-11 w-full items-center gap-2 px-1 text-left text-ink"
+      :aria-expanded="open"
+      :aria-controls="open ? panelId : undefined"
+      @click="open = !open"
+    >
+      <AppIcon
+        :icon="StickyNote"
+        :size="18"
+      />
+      <span class="text-[15px] font-extrabold">{{ label ?? t('howWePlay.notes') }}</span>
+      <span class="inline-flex min-w-0 items-center gap-1 text-[12px] font-semibold text-ink-2">
+        <AppIcon
+          :icon="Lock"
+          :size="12"
+        />
+        {{ t('common.hostOnly') }}
+      </span>
+      <AppIcon
+        :icon="ChevronDown"
+        :size="20"
+        class="ml-auto transition-transform dur-base ease-snap motion-reduce:transition-none reduced:transition-none"
+        :class="open && 'rotate-180'"
+      />
+    </button>
+    <Transition
+      :css="false"
+      @enter="disclosureEnter"
+      @leave="disclosureLeave"
+    >
+      <div
+        v-if="open"
+        :id="panelId"
+        class="overflow-hidden rounded-[12px] bg-paper-2"
+      >
+        <div class="flex flex-col gap-3.5 px-3.5 pt-3 pb-3.5">
+          <EventNotes
+            v-if="eventDoc"
+            :notes="eventDoc"
+            size="sm"
+            :sub="both ? eventName : undefined"
+            :finished="eventFinished"
+          />
+          <div
+            v-if="both"
+            data-notes-rule
+            class="h-0.5 flex-none rounded-[1px] bg-line-soft"
+            aria-hidden="true"
+          />
+          <NoteBlock
+            v-if="gameDoc"
+            kind="game"
+            :doc="gameDoc"
+            size="sm"
+            :sub="both ? t('notes.from_library') : undefined"
+            bare
+          />
+        </div>
+      </div>
+    </Transition>
+  </div>
+  <div
+    v-else-if="shown"
     class="flex flex-col gap-2"
   >
     <button
@@ -45,11 +126,12 @@ const shown = computed(() => (props.notes === null && props.eventNotes === null)
           <EventNotes
             v-if="eventNotes"
             :notes="eventNotes"
+            size="sm"
           />
           <RichNotes
             v-if="notes && notesHasText(notes)"
             :doc="notes"
-            class="text-[14px] leading-[1.45] text-ink"
+            size="sm"
           />
         </div>
       </slot>

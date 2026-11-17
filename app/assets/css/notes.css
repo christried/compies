@@ -98,4 +98,20 @@
   .cp-note > :last-child {
     margin-bottom: 0;
   }
+
+  /* The notes popover opens from its button's corner: opacity and scale .96 → 1, `--cp-dur-base` (04-motion § Notizen). The caller sets transform-origin. */
+  .cp-note-pop {
+    animation: cp-note-pop var(--cp-dur-base) var(--cp-ease-out) both;
+  }
 }
+@keyframes cp-note-pop {
+  from { opacity: 0; transform: scale(0.96); }
+}
+@keyframes cp-note-pop-reduced {
+  from { opacity: 0; }
+}
+/* Reduced motion (the OS setting, or data-motion=reduced): opacity only. */
+@media (prefers-reduced-motion: reduce) {
+  .cp-note-pop { animation: cp-note-pop-reduced var(--cp-dur-fast) linear both; }
+}
+[data-motion=reduced] .cp-note-pop { animation: cp-note-pop-reduced var(--cp-dur-fast) linear both; }

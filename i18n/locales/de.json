@@ -945,6 +945,7 @@
   },
   "notes": {
     "from_library": "aus deiner Bibliothek",
+    "open_a11y": "Notizen zu {game}",
     "link": {
       "new_tab": "(öffnet in neuem Tab)"
     },

@@ -18,7 +18,11 @@ const props = withDefaults(defineProps<{
   eventNotes?: NotesDoc | null
   /** The button's visual diameter: the picker's rows are 36, its cards 40. */
   size?: 36 | 40
-}>(), { size: 40, eventNotes: null })
+  /** The Event's name, the sub of the Event block where both blocks show (#729); given by the page that holds it. */
+  eventName?: string
+  /** The Event is finished (#729): its block shows the dashed frame and the chip. */
+  eventFinished?: boolean
+}>(), { size: 40, eventNotes: null, eventName: undefined, eventFinished: false })
 
 const { t } = useI18n()
 // The document to show: null for none or for blank notes, so the template narrows on it.
@@ -26,14 +30,16 @@ const doc = computed(() => notesHasText(props.notes) ? props.notes : null)
 const eventDoc = computed(() => notesHasText(props.eventNotes) ? props.eventNotes : null)
 const wide = useMediaQuery(MD_QUERY)
 const narrow = computed(() => wide.value === false)
-const titleId = useId()
 const open = ref(false)
-const position = ref<{ top: number, left: number, maxHeight?: number }>({ top: 0, left: 0 })
+const position = ref<{ top: number, left: number, maxHeight?: number, origin?: string }>({ top: 0, left: 0 })
+// The body scrolls under a header that stays; a 2 px rule shows under the header once it has (#729). Nothing is kept: it is the scroll position, read.
+const scrolled = ref(false)
 const trigger = useTemplateRef<{ $el: HTMLElement }>('trigger')
 const popover = useTemplateRef<HTMLElement>('popover')
 const closeButton = useTemplateRef<{ $el: HTMLElement }>('close')
 
 function show() {
+  scrolled.value = false
   open.value = true
 }
 
@@ -42,12 +48,13 @@ function place() {
   const cell = trigger.value?.$el.getBoundingClientRect()
   const box = popover.value?.getBoundingClientRect()
   if (!cell || !box) return
-  const { top, left, maxHeight } = placeNotePopover({
+  const { top, left, maxHeight, side, arrowLeft } = placeNotePopover({
     cell,
     size: { width: box.width, height: box.height },
     viewport: { width: window.innerWidth, height: window.innerHeight },
   })
-  position.value = { top, left, maxHeight }
+  // The opening grows from the corner of the button's side (04-motion § Notizen): the arrow's foot, on the edge facing the button.
+  position.value = { top, left, maxHeight, origin: `${arrowLeft}px ${side === 'above' ? '100%' : '0'}` }
 }
 
 function close() {
@@ -109,17 +116,13 @@ onBeforeUnmount(() => {
       :title="name"
       @close="close"
     >
-      <div class="flex flex-col gap-3">
-        <EventNotes
-          v-if="eventDoc"
-          :notes="eventDoc"
-        />
-        <RichNotes
-          v-if="doc"
-          :doc="doc"
-          class="text-[14px] leading-[1.45] text-ink"
-        />
-      </div>
+      <GameNotesStack
+        :notes="doc"
+        :event-notes="eventDoc"
+        size="md"
+        :event-name="eventName"
+        :event-finished="eventFinished"
+      />
     </AppSheet>
     <Teleport
       v-else
@@ -130,35 +133,43 @@ onBeforeUnmount(() => {
         v-if="open"
         ref="popover"
         role="dialog"
-        :aria-labelledby="titleId"
-        class="animate-enter layer-popover fixed flex max-h-[min(60vh,420px)] w-72 flex-col gap-2 overflow-y-auto rounded-[18px] border-(length:--cp-bw) border-line bg-surface p-3 text-ink shadow-modal"
-        :style="{ top: `${position.top}px`, left: `${position.left}px`, maxHeight: position.maxHeight === undefined ? undefined : `${position.maxHeight}px` }"
+        :aria-label="t('notes.open_a11y', { game: name })"
+        class="cp-note-pop layer-popover fixed flex w-80 flex-col overflow-hidden rounded-[18px] border-(length:--cp-bw) border-line bg-surface text-ink shadow-modal"
+        :class="eventDoc && doc ? 'max-h-[min(80vh,520px)]' : 'max-h-[min(70vh,440px)]'"
+        :style="{ top: `${position.top}px`, left: `${position.left}px`, maxHeight: position.maxHeight === undefined ? undefined : `${position.maxHeight}px`, transformOrigin: position.origin }"
         @keydown.esc.stop="close"
       >
-        <header class="flex items-start gap-2">
-          <h2
-            :id="titleId"
-            class="m-0 flex-1 font-display text-[18px] leading-tight font-normal [overflow-wrap:anywhere]"
-          >
-            {{ name }}
-          </h2>
+        <header
+          class="flex flex-none items-start gap-2 border-b-2 pt-3 pr-2 pb-2 pl-4"
+          :class="scrolled ? 'border-line-soft' : 'border-transparent'"
+        >
+          <div class="flex min-w-0 flex-1 flex-col gap-0.5">
+            <span class="text-[12px] leading-tight font-bold text-ink-2 [overflow-wrap:anywhere]">{{ name }}</span>
+            <h2 class="m-0 font-display text-[22px] leading-tight font-normal">
+              {{ t('library.notes') }}
+            </h2>
+          </div>
           <IconButton
             ref="close"
             :icon="X"
             :label="t('common.close')"
-            :size="32"
+            :size="36"
             @click="close"
           />
         </header>
-        <EventNotes
-          v-if="eventDoc"
-          :notes="eventDoc"
-        />
-        <RichNotes
-          v-if="doc"
-          :doc="doc"
-          class="text-[14px] leading-[1.45] text-ink"
-        />
+        <div
+          data-notes-body
+          class="min-h-0 overflow-y-auto px-4 pt-1 pb-4"
+          @scroll.passive="scrolled = ($event.currentTarget as HTMLElement).scrollTop > 0"
+        >
+          <GameNotesStack
+            :notes="doc"
+            :event-notes="eventDoc"
+            size="sm"
+            :event-name="eventName"
+            :event-finished="eventFinished"
+          />
+        </div>
       </div>
     </Teleport>
   </template>
