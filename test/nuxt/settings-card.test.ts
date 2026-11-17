@@ -67,31 +67,40 @@ describe('the Rundgang row on the Profil card', () => {
     await flushPromises()
     expect(shownToasts()).toEqual([])
     expect(useAuthUser().value?.tourSeen).toBe(kitty.tourSeen)
-    expect(resetButton(card).attributes('disabled')).toBeUndefined()
+    expect(resetButton(card).attributes('aria-disabled')).toBeUndefined()
     card.unmount()
   })
 
-  it('is disabled while the reset is on its way, and answers once it lands', async () => {
+  it('is aria-disabled, not disabled, and keeps the focus while the reset is on its way; a second click sends nothing (#785)', async () => {
     let release!: () => void
     const gate = new Promise<void>((resolve) => {
       release = resolve
     })
+    let requests = 0
     registerEndpoint('/api/me/tour-reset', {
       method: 'POST',
       handler: async () => {
+        requests += 1
         await gate
         return { tourSeen: 0 }
       },
     })
-    const card = await mountSuspended(SettingsCard)
+    const card = await mountSuspended(SettingsCard, { attachTo: document.body })
+
+    resetButton(card).element.focus()
+    await resetButton(card).trigger('click')
+    await vi.waitFor(() => expect(resetButton(card).attributes('aria-disabled')).toBe('true'))
+    expect(resetButton(card).attributes('disabled')).toBeUndefined()
+    expect(document.activeElement).toBe(resetButton(card).element)
 
     await resetButton(card).trigger('click')
-    await vi.waitFor(() => expect(resetButton(card).attributes('disabled')).toBeDefined())
+    expect(requests).toBe(1)
 
     release()
     await vi.waitFor(() => expect(shownToasts()).toHaveLength(1))
     expect(shownToasts()[0]).toMatchObject({ tone: 'success', text: DONE })
-    expect(resetButton(card).attributes('disabled')).toBeUndefined()
+    expect(resetButton(card).attributes('aria-disabled')).toBeUndefined()
+    expect(requests).toBe(1)
     card.unmount()
   })
 })

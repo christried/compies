@@ -15,6 +15,8 @@ const tourResetting = ref(false)
 const tourResetFailed = ref(false)
 
 async function resetTour() {
+  // The button is aria-disabled while this runs (a native `disabled` would drop the focus, AppButton): a click still arrives, so it is turned away here (#785).
+  if (tourResetting.value) return
   tourResetFailed.value = false
   tourResetting.value = true
   try {
@@ -84,7 +86,7 @@ async function resetTour() {
           <AppButton
             variant="secondary"
             size="md"
-            :disabled="tourResetting"
+            :aria-disabled="tourResetting || undefined"
             :aria-describedby="descriptionId"
             @click="resetTour"
           >
