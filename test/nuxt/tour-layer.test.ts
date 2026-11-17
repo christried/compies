@@ -472,6 +472,74 @@ describe('the spotlight', () => {
     await vi.waitFor(() => expect(holeOf()).toMatchObject({ left: 92, top: 22, width: 276, height: 106 }))
   })
 
+  // happy-dom has no ResizeObserver. The stub is a browser's in one point: every `observe()` delivers a first callback. An open Tour on a page that does not change
+  // must settle on it (#785); a place is one read of the hidden twin's height, which is what the count takes.
+  describe('with a ResizeObserver that calls back on every observe (#785)', () => {
+    const observers: { fire: () => void, observed: Element[] }[] = []
+    let reads = 0
+
+    beforeEach(() => {
+      observers.length = 0
+      reads = 0
+      vi.stubGlobal('ResizeObserver', class {
+        private readonly entry: { fire: () => void, observed: Element[] }
+        private pending: ReturnType<typeof setTimeout>[] = []
+        constructor(callback: () => void) {
+          this.entry = { fire: callback, observed: [] }
+          observers.push(this.entry)
+        }
+
+        observe(target: Element) {
+          this.entry.observed.push(target)
+          this.pending.push(setTimeout(() => this.entry.fire(), 0))
+        }
+
+        unobserve(target: Element) {
+          this.entry.observed = this.entry.observed.filter(element => element !== target)
+        }
+
+        // As a browser's: what was observed is dropped with its undelivered callbacks, and the observer works again after the next observe().
+        disconnect() {
+          for (const timer of this.pending) clearTimeout(timer)
+          this.pending = []
+          this.entry.observed = []
+        }
+      })
+      Object.defineProperty(HTMLElement.prototype, 'offsetHeight', { configurable: true, get: () => (reads += 1, 160) })
+    })
+
+    const pause = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
+
+    it('places a bounded number of times on an unchanged page, and none once it has settled', async () => {
+      host({ left: 40, top: 20, width: 300, height: 80 })
+      await mount(true, THREE)
+      await click('Weiter')
+      await vi.waitFor(() => expect(holeOf().left).toBe(32))
+      await pause(300)
+
+      const settled = reads
+      await pause(500)
+
+      expect(reads).toBe(settled)
+      expect(settled).toBeLessThan(15)
+    })
+
+    it('still places again on a real size change of the thing or of the page', async () => {
+      const { move } = host({ left: 40, top: 20, width: 300, height: 80 })
+      await mount(true, THREE)
+      await click('Weiter')
+      await vi.waitFor(() => expect(holeOf().left).toBe(32))
+      await pause(300)
+      const settled = reads
+
+      move({ left: 100, top: 30, width: 260, height: 90 })
+      observers.at(-1)!.fire()
+
+      await vi.waitFor(() => expect(holeOf()).toMatchObject({ left: 92, top: 22, width: 276, height: 106 }))
+      expect(reads).toBeGreaterThan(settled)
+    })
+  })
+
   it('follows the thing when the page is scrolled by the User', async () => {
     const { move } = host({ left: 40, top: 20, width: 300, height: 80 })
     await mount(true, THREE)

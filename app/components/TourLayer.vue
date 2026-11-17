@@ -318,13 +318,22 @@ function onScroll() {
 }
 
 let observer: ResizeObserver | undefined
-/** Watches the thing and the page for a change of size. */
+let watched: HTMLElement | null = null
+/**
+ * Watches the page for a change of size once per open Tour, and the step's thing: only the thing's element is swapped when the step's thing changes.
+ * Every `observe()` delivers a first callback, which asks for a re-place that commits and comes back here: disconnecting and observing again on each
+ * commit re-placed once per frame for as long as the Tour was open (#785).
+ */
 function watchThing() {
   if (typeof ResizeObserver === 'undefined') return
-  observer ??= new ResizeObserver(() => replace(true))
-  observer.disconnect()
-  observer.observe(document.body)
+  if (!observer) {
+    observer = new ResizeObserver(() => replace(true))
+    observer.observe(document.body)
+  }
   const element = findThing(step.value)
+  if (element === watched) return
+  if (watched) observer.unobserve(watched)
+  watched = element
   if (element) observer.observe(element)
 }
 
@@ -343,6 +352,7 @@ function unlisten() {
   window.removeEventListener('scroll', onScroll)
   observer?.disconnect()
   observer = undefined
+  watched = null
   cancelAnimationFrame(frame)
   frame = 0
 }
