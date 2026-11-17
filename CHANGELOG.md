@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+## [0.15.0] - 2026-11-17 – Tour
+
+Ein kurzer Rundgang zeigt dir, was auf der Eventseite wichtig ist, wenn du zum ersten Mal ein Event öffnest, das du nicht hostest.
+
 ### Neu
 
 - **Rundgang:** Öffnest du zum ersten Mal ein Event, das du nicht hostest, zeigt dir ein kurzer Rundgang, was auf der Seite wichtig ist. Du kannst ihn jederzeit überspringen und auf deinem Profil neu starten. ([#460](https://github.com/christried/compies/issues/460))
