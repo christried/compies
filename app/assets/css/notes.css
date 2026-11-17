@@ -1,0 +1,101 @@
+/* =====================================================================
+   COMPIES · the look of formatted notes (#729, hand-off 18-notizen.md § NoteContent, reference/notizen.js SZ and ST)
+   One stylesheet for every place that shows a notes document: `.cp-note` with one size modifier. RichNotes (#728) wears `--sm`, `--md`
+   or `--lg`; #454's editor wears `--edit` (16 px, no ↗, nothing is clickable while editing). New tokens: none, the sizes are the
+   hand-off's numbers as `--note-*` properties of the modifier. Pinned by test/unit/notes-css.test.ts.
+   ===================================================================== */
+@layer components {
+  .cp-note {
+    --note-fs: 15px; --note-lh: 1.5; --note-p: 8px; --note-h: 18px; --note-hm: 14px; --note-pl: 22px; --note-li: 3px; --note-ic: 13px;
+    color: var(--cp-ink);
+    font-size: var(--note-fs);
+    line-height: var(--note-lh);
+    font-weight: 500;
+    text-wrap: pretty;
+    overflow-wrap: break-word;
+  }
+  /* sm: popover, Round card · md: sheet, dialog, library below 980 · lg: library from 980 · edit: the editor */
+  .cp-note--sm { --note-fs: 14px; --note-lh: 1.45; --note-p: 6px; --note-h: 17px; --note-hm: 12px; --note-pl: 20px; --note-li: 2px; --note-ic: 12px; }
+  .cp-note--md { --note-fs: 15px; --note-lh: 1.5; --note-p: 8px; --note-h: 18px; --note-hm: 14px; --note-pl: 22px; --note-li: 3px; --note-ic: 13px; }
+  .cp-note--lg { --note-fs: 16px; --note-lh: 1.55; --note-p: 10px; --note-h: 20px; --note-hm: 16px; --note-pl: 24px; --note-li: 3px; --note-ic: 14px; }
+  .cp-note--edit { --note-fs: 16px; --note-lh: 1.5; --note-p: 8px; --note-h: 20px; --note-hm: 14px; --note-pl: 24px; --note-li: 3px; --note-ic: 14px; }
+
+  .cp-note p {
+    margin: 0 0 var(--note-p);
+  }
+  .cp-note :is(h3, h4) {
+    margin: var(--note-hm) 0 4px;
+    font-family: var(--cp-font-display);
+    font-weight: 400;
+    font-size: var(--note-h);
+    line-height: 1.15;
+    color: var(--cp-ink);
+    text-wrap: balance;
+  }
+  .cp-note ul {
+    margin: 0 0 var(--note-p);
+    padding-left: var(--note-pl);
+    list-style-type: square;
+  }
+  .cp-note ol {
+    margin: 0 0 var(--note-p);
+    padding-left: calc(var(--note-pl) + 2px);
+    list-style-type: decimal;
+    font-variant-numeric: tabular-nums;
+  }
+  .cp-note li {
+    margin: var(--note-li) 0;
+    padding-left: 2px;
+  }
+  /* A list item holds paragraphs (the document's shape): they sit flush, the item's margin is the gap. */
+  .cp-note li > p {
+    margin: 0;
+  }
+  .cp-note li > :not(:first-child) {
+    margin-top: var(--note-li);
+  }
+  .cp-note li > :first-child {
+    margin-top: 0;
+  }
+  .cp-note li > :last-child {
+    margin-bottom: 0;
+  }
+  .cp-note strong {
+    font-weight: 800;
+  }
+  /* Bricolage has no italic: the browser slants it. */
+  .cp-note em {
+    font-style: italic;
+    font-synthesis: style;
+  }
+  .cp-note a {
+    color: var(--cp-info-fg);
+    font-weight: 650;
+    text-decoration: underline;
+    text-decoration-thickness: 2px;
+    text-underline-offset: 3px;
+    overflow-wrap: anywhere;
+  }
+  .cp-note a:hover {
+    color: var(--cp-ink);
+    text-decoration-thickness: 3px;
+  }
+  /* The ↗ follows the text after a word joiner, so it never wraps alone. */
+  .cp-note-arrow {
+    display: inline-block;
+    width: var(--note-ic);
+    height: var(--note-ic);
+    margin-left: 2px;
+    vertical-align: -0.08em;
+    stroke-width: 2.75;
+  }
+  .cp-note--edit .cp-note-arrow, .cp-note--edit .cp-note-new-tab {
+    display: none;
+  }
+  .cp-note > :first-child {
+    margin-top: 0;
+  }
+  .cp-note > :last-child {
+    margin-bottom: 0;
+  }
+}
