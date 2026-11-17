@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Geändert
+
+- **Neue Namen am verdeckten Glücksrad:** Beim verdeckten Rad tragen die Felder jetzt 30 neue Platzhalter-Namen. Das Rad nimmt sie in fester Reihenfolge und mischt sie dann; hat es mehr als 30 Felder, steht auf den übrigen „???“. ([#784](https://github.com/christried/compies/issues/784))
+
 ## [0.14.0] - 2026-11-16 – Politur
 
 Viele kleine Verbesserungen an dem, was schon da ist: Läuft ein Clip, wird der Rest der Eventseite dunkel. Deine Darstellung änderst du jetzt von jeder Seite aus, und Karten, Knöpfe und Hinweise sind aufgeräumt.
