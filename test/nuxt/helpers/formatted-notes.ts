@@ -37,6 +37,8 @@ export const BLANK_NOTES: NotesDoc[] = [
 /** What a place shows of FORMATTED_NOTES, as a list of the elements a User sees. */
 export function readFormatted(root: ParentNode) {
   const link = root.querySelector('a')
+  // A link's text is what comes before its arrow: the hidden „(öffnet in neuem Tab)“ is no part of it (#729).
+  const linkText = link ? [...link.childNodes].filter(node => node.nodeType === Node.TEXT_NODE || (node as Element).tagName === 'STRONG' || (node as Element).tagName === 'EM').map(node => node.textContent).join('').replace('⁠', '') : undefined
   // The notes' own heading: a place's „Notizen“ or name heading is not it.
   const heading = [...root.querySelectorAll('h2, h3, h4')].find(el => el.textContent === 'Regeln')
   return {
@@ -44,6 +46,6 @@ export function readFormatted(root: ParentNode) {
     headingText: heading?.textContent,
     items: [...root.querySelectorAll('ul > li')].map(li => li.textContent),
     bold: root.querySelector('strong')?.textContent,
-    link: link ? { text: link.textContent, href: link.getAttribute('href'), target: link.getAttribute('target'), rel: link.getAttribute('rel') } : null,
+    link: link ? { text: linkText, href: link.getAttribute('href'), target: link.getAttribute('target'), rel: link.getAttribute('rel') } : null,
   }
 }

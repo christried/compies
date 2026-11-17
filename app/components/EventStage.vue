@@ -202,6 +202,8 @@ watch(() => ({ kind: props.pageState.kind, blocks: props.pageState.blocks, count
           :end="view.end"
           :host-games="view.hostGames"
           :event-notes="view.eventNotes"
+          :event-name="view.event.name"
+          :event-finished="view.event.phase === 'finished'"
         />
 
         <Leaderboard

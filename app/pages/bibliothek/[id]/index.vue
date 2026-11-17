@@ -117,7 +117,7 @@ const { setArchived } = useGameArchive()
         <SkeletonCard />
       </div>
 
-      <!-- Game notes (#223): plain text with the line breaks the Host wrote. -->
+      <!-- Game notes (#223): the formatted document (#728), in the designed look (#729). -->
       <GameNotes
         v-if="game?.notes"
         :notes="game.notes"

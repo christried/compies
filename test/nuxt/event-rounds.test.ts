@@ -128,9 +128,12 @@ describe('the open Rounds on the stage', () => {
     const stage = await mount(slug)
 
     const disclosure = stage.get('[aria-label="Offene Spiele"]').get('button[aria-expanded]')
-    expect(disclosure.text()).toBe('Notizen')
+    // The Round card's variant (#729): 44 px, the lock line, open for the running Round.
+    expect(disclosure.text()).toBe('Notizen Nur du siehst das')
+    expect(disclosure.classes()).toContain('h-11')
     expect(disclosure.attributes('aria-expanded')).toBe('true')
     expect(stage.get('[aria-label="Offene Spiele"]').text()).toContain('Hausregel: keine Raketen')
+    expect(stage.get('[aria-label="Offene Spiele"]').get('.cp-note--sm').exists()).toBe(true)
   })
 
   it('shows the Host the formatted Game notes of the Round: heading, list, bold text and link (#728)', async () => {
@@ -140,8 +143,10 @@ describe('the open Rounds on the stage', () => {
 
     const rounds = stage.get('[aria-label="Offene Spiele"]')
     expect(rounds.get('button[aria-expanded]').attributes('aria-expanded')).toBe('true')
+    // The game block's title „Notizen“ is an h3 (#729), a heading in the notes an h4.
+    expect(rounds.get('h3').text()).toBe('Notizen')
     expect(readFormatted(rounds.element)).toEqual({
-      heading: 'h3',
+      heading: 'h4',
       headingText: 'Regeln',
       items: ['Erstens', 'Zweitens'],
       bold: 'Wichtig',
@@ -158,6 +163,17 @@ describe('the open Rounds on the stage', () => {
     expect(rounds.get('button[aria-expanded]').attributes('aria-expanded')).toBe('true')
     expect(rounds.findAll('h3').map((heading: Wrapper) => heading.text())).toEqual(['Notizen für dieses Event'])
     expect(rounds.text()).toContain('Heute nur Bo1')
+  })
+
+  it('names the Event under its notes block when both blocks show, and shows no chip while it runs (#729; the finished look is pinned at the block, the dialog and the popover)', async () => {
+    const { slug } = serveRunning({ host: true, rounds: [round('r1', halo, halo.notes!)], eventNotes: { 'g-halo': notesFromLines(['Heute nur Bo1'])! } })
+
+    const stage = await mount(slug)
+
+    const text = stage.get('[aria-label="Offene Spiele"]').text()
+    expect(text).toContain('Freitags-Zocken')
+    expect(text).toContain('aus deiner Bibliothek')
+    expect(text).not.toContain('Event beendet')
   })
 
   it('shows the Event notes first, then the Game notes, and the label once (#732)', async () => {
