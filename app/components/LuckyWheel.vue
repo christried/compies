@@ -43,7 +43,12 @@ const props = withDefaults(defineProps<{
   hostGames?: Record<string, HostGameFacts> | null
   /** The Host's Event notes by game id (#732); null for every Member. Each game's tile reads its entry for the dialog. */
   eventNotes?: Record<string, NotesDoc> | null
-}>(), { hostGames: null, eventNotes: null })
+  /** The Event's name and whether it is finished (#729): the dialog's Event notes block shows its sub and its finished look (#464 threads them here). */
+  eventName?: string
+  eventFinished?: boolean
+  /** Saves the Host's Event notes of a game from the drawn game's dialog (#464); resolves to whether the server took it. */
+  saveEventNotes?: ((gameId: string, notes: NotesDoc | null) => Promise<boolean>) | null
+}>(), { hostGames: null, eventNotes: null, eventName: undefined, eventFinished: false, saveEventNotes: null })
 
 const { t } = useI18n()
 
@@ -519,6 +524,9 @@ const headingId = useId()
           :audience="isHost ? 'host' : 'member'"
           :facts="hostGames?.[card.id] ?? null"
           :event-notes="eventNotes?.[card.id] ?? null"
+          :event-name="eventName"
+          :event-finished="eventFinished"
+          :save-event-notes="saveEventNotes"
         />
       </div>
     </div>

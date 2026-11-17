@@ -941,7 +941,9 @@
     "open": "Notizen ansehen"
   },
   "eventNotes": {
-    "title": "Notizen für dieses Event"
+    "title": "Notizen für dieses Event",
+    "edit": "Notizen für dieses Event bearbeiten",
+    "add": "Notizen für dieses Event hinzufügen"
   },
   "notesEditor": {
     "label": "Notizen",

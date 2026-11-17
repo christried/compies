@@ -9,6 +9,7 @@
 - **Wo ein Spiel gerade drin ist:** Auf der Karte eines Spiels in der Bibliothek steht jetzt „in 2 Events“, wenn es im Spielepool von Events liegt, die noch nicht beendet sind. ([#733](https://github.com/christried/compies/issues/733))
 - **Die Events eines Spiels:** Auf der Seite eines Spiels in der Bibliothek stehen jetzt alle deine Events, in denen es im Pool liegt oder gespielt wurde, neueste zuerst, auch beendete. Jede Zeile führt zum Event, sagt „im Pool“ oder „1× gespielt“ und zeigt deine Notizen für dieses Event. ([#656](https://github.com/christried/compies/issues/656))
 - **Notizen formatieren:** Notizen zu einem Spiel lassen sich jetzt formatieren: fett, kursiv, eine Überschrift, Listen und Links. ([#454](https://github.com/christried/compies/issues/454))
+- **Notizen für dieses Event:** Im Dialog eines Spiels auf der Eventseite schreibst du jetzt Notizen nur für dieses Event, zum Beispiel „heute nur Bo1“, mit denselben Formaten wie bei den Notizen eines Spiels. Nur du siehst sie, und nach dem Ende des Events bleiben sie so stehen. ([#464](https://github.com/christried/compies/issues/464))
 
 ### Geändert
 

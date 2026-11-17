@@ -125,6 +125,13 @@ One read-only note with its header; used in the card popover/sheet, the Round ca
 - View mode (default): dialog 600 (≥ 980) / bottom sheet (< 980), header cover 56 + kicker + title Lilita 30 + meta. Body: Event NoteBlock (`md`, pencil) then game NoteBlock (`md`, pencil, sub „aus deiner Bibliothek“).
 - Edit mode (pencil, or „Bearbeiten“ from the card popover): both NoteEditors, Event first (min 96, max 200) then game (max 260 / 240), footer „Abbrechen“ · „Speichern“ (one save for both; saves only what changed). Sheet in edit mode: 90 % high.
 - Finished Event: Event NoteBlock `finished` (view) / NoteEditor `readonly` (edit); game note unchanged.
+- **Built in 0.16 (#464), where it differs from the above:**
+  - Event notes only. The game's own notes stay read-only in the dialog and are edited in the library („In der Bibliothek öffnen“): the library's `PATCH /api/games/[id]` takes the whole game, so a notes-only save would need a new branch and a second request. The one save, „saves only what changed“ and „game note stays editable in a finished Event“ wait for a follow-up ticket.
+  - A game without Event notes shows a text button „Notizen für dieses Event hinzufügen“ (`Plus`, where the Event block would sit): the design draws the pencil only on an existing block, so the Host would have no way to write the first note.
+  - The view ↔ edit swap is a 0.14 s fade of the entering content (`riseFade`), with no height Flip (04-motion § Notizen: GSAP loads on the Event page only before a run, ADR 0015); under reduced motion it is the same fade.
+  - Esc, ✗ and the scrim cancel the edit and only then close the dialog; „Abbrechen“ shows from md up (the phone's footer is „Speichern“ alone).
+  - The edit entry shows in the three places a tile opens the dialog from (the Spielepool, the wheel's result card, „Gerade dran“), for the Host of a running Event. It is not in the notes popover or sheet of „Nächstes Spiel setzen“ (no „Bearbeiten“ footer there: it would open a dialog over a sheet) and not on the Round card's disclosure (the tile above it opens the dialog).
+  - The dialog stays the 400 px side sheet from md up (0.12), not the 600 px dialog; in edit mode the cover and the facts give way to the editor, and the sheet is 90 % high below md.
 
 ## GameLibrary / GameForm (change)
 - Form: the „Notizen“ multiline TextField becomes NoteEditor (`variant="game"`), same position. Over the limit blocks „Speichern“ with the reason.

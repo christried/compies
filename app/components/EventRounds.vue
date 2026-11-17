@@ -39,7 +39,9 @@ const props = withDefaults(defineProps<{
   /** The Event's name and whether it is finished (#729): the Event notes block's sub (where both blocks show) and its finished look. */
   eventName?: string
   eventFinished?: boolean
-}>(), { hostGames: null, eventNotes: null, eventName: undefined, eventFinished: false })
+  /** Saves the Host's Event notes of a game from its tile's dialog (#464); resolves to whether the server took it. */
+  saveEventNotes?: ((gameId: string, notes: NotesDoc | null) => Promise<boolean>) | null
+}>(), { hostGames: null, eventNotes: null, eventName: undefined, eventFinished: false, saveEventNotes: null })
 
 const { t } = useI18n()
 const headingId = useId()
@@ -111,6 +113,7 @@ watch(resultFor, async (id, was) => {
             :event-notes="eventNotes?.[round.game.id] ?? null"
             :event-name="eventName"
             :event-finished="eventFinished"
+            :save-event-notes="saveEventNotes"
           />
         </div>
         <GameNotesDisclosure

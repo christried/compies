@@ -379,14 +379,7 @@ function onShortcut(event: KeyboardEvent) {
             @invalid="notesOver = $event"
           />
           <template #fallback>
-            <div
-              class="flex flex-col gap-1.5"
-              aria-hidden="true"
-            >
-              <span class="min-h-[26px] text-[14px] leading-[26px] font-bold">{{ t('notesEditor.label') }}</span>
-              <div class="min-h-[190px] rounded-md border-(length:--cp-bw) border-line bg-surface sm:min-h-[226px]" />
-              <span class="text-[13px] leading-[1.35] font-medium text-ink-2">{{ t('notesEditor.help') }}</span>
-            </div>
+            <RichNotesEditorFallback variant="game" />
           </template>
         </ClientOnly>
       </div>

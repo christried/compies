@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Lock } from '@lucide/vue'
+import { Lock, Pencil } from '@lucide/vue'
 import { notesHasText, type NotesDoc } from '~~/shared/notes-doc'
 
 // One note read-only with its header (#729, hand-off 18-notizen.md § NoteBlock): the disc, the title (13 / 800, a real heading), the optional sub under it, for
@@ -18,7 +18,12 @@ const props = withDefaults(defineProps<{
   bare?: boolean
   /** The title's heading level; the notes' headings are the next one. */
   level?: 'h2' | 'h3'
-}>(), { sub: undefined, finished: false, bare: false, level: 'h3' })
+  /** The Host may edit this block (#464): the header ends in a pencil named `editLabel` that emits `edit`. Never on a frozen block. */
+  editable?: boolean
+  editLabel?: string
+}>(), { sub: undefined, finished: false, bare: false, level: 'h3', editable: false, editLabel: undefined })
+
+const emit = defineEmits<{ edit: [] }>()
 
 const { t } = useI18n()
 const titleId = useId()
@@ -62,6 +67,14 @@ const padding = computed(() => (props.size === 'sm' ? 'px-3 py-2.5' : 'px-3.5 py
         />
         {{ t('notes.finished.chip') }}
       </span>
+      <IconButton
+        v-else-if="editable && editLabel"
+        :icon="Pencil"
+        :label="editLabel"
+        :size="36"
+        data-event-notes-edit
+        @click="emit('edit')"
+      />
     </div>
     <div
       class="min-w-0 rounded-[12px]"
