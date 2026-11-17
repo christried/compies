@@ -171,6 +171,11 @@ describe('Event notes are in no read but the Host\'s (#731)', () => {
       expect(swept.members.length).toBeGreaterThan(20)
       for (const [place, body] of Object.entries(bodiesOf(swept.members, HOST))) {
         if (place === 'GET /api/e/:slug as the Host') expect(body, place).toContain(TRACE)
+        // The second read of the Host's notes (#656): the game's page lists the Events of its owner, here the Host, with the note of each game that has one.
+        // A game that is neither in the pool nor played has no row there, so only Alpha's note (a pool game) is asserted.
+        else if (place.startsWith('GET /api/games/:id/events ')) {
+          if (place.includes(a.id)) expect(body, place).toContain(TRACE)
+        }
         else expect(body, place).not.toContain(TRACE)
       }
       expect(Object.keys(bodiesOf(swept.members, HOST)), 'the Host\'s sweep reads the Event').toContain('GET /api/e/:slug as the Host')

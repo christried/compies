@@ -1,17 +1,23 @@
 <script setup lang="ts">
 import { Pencil } from '@lucide/vue'
+import type { GameEvents } from '~~/shared/game-events'
 
 // One game of the library (screen 23, `?s=detail`, #141, #142): the clip preview from the start second for the
 // set length, the facts (player count, Suitabilities, clip length, the Price (#337)) and the Tags (#335, each in its colour, #427). The cover, the facts with the Tags and the Notes
 // are components of their own (#443), which the Host's game dialog on the Event page uses too. „Bearbeiten“ is always there: the library
 // holds only the viewer's own games (#724). A game that does not exist
 // looks like any missing page; so does the page for Users who may not see the library. The switch „Archiviert“ (#467) is the owner's: the route answers
-// only own games, and an Archived game keeps its page and stays editable.
+// only own games, and an Archived game keeps its page and stays editable. Below the Game notes the page lists the game's Events (#656) from a read of
+// its own: a failing read shows a notice and never hides the game.
 const { t } = useI18n()
 const route = useRoute()
 const id = computed(() => String(route.params.id))
 
 const { viewer, game, status, error, refresh, missing } = useLibraryGame(id)
+const { data: gameEvents, error: eventsError } = useFetch<GameEvents>(() => `/api/games/${id.value}/events`, {
+  key: `game-events-${id.value}`,
+  immediate: viewer.value,
+})
 useHead({ title: () => game.value?.name ?? t('nav.library') })
 
 const { setArchived } = useGameArchive()
@@ -116,6 +122,20 @@ const { setArchived } = useGameArchive()
         v-if="game?.notes"
         :notes="game.notes"
       />
+
+      <!-- The Events of this game (#656): shown once the game is, nothing while they load, a notice when their read fails (the game stays). -->
+      <template v-if="game && !error">
+        <NoticeBanner
+          v-if="eventsError"
+          tone="warning"
+        >
+          {{ t('gameEvents.failed') }}
+        </NoticeBanner>
+        <GameEventList
+          v-else-if="gameEvents"
+          :events="gameEvents.events"
+        />
+      </template>
     </div>
   </AppShell>
 </template>

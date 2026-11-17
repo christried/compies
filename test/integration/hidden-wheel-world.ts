@@ -114,6 +114,7 @@ export const EXPECTED_STATUS: Readonly<Record<string, Readonly<Record<string, nu
   // `requireLibraryViewer`: only Hosts and the Admin, the others get the missing-route answer.
   '/api/games': answers(404, 404, 200),
   '/api/games/:id': answers(404, 404, 200),
+  '/api/games/:id/events': answers(404, 404, 200),
   '/api/games/tags': answers(404, 404, 200),
   // Reads `events`, no viewer.
   '/api/health': answers(200, 200, 200),

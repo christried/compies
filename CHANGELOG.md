@@ -7,6 +7,7 @@
 - **Spiele archivieren:** Ein Spiel, das du nicht mehr spielen kannst, legst du auf seiner Seite in der Bibliothek ins Archiv. Dort verschwindet es aus der Liste und bleibt im Filter „Archiviert“, aus dem du es jederzeit zurückholst. Bearbeiten kannst du es weiter. Aus dem Glücksrad und dem Spielepool deiner Events, die noch nicht beendet sind, fällt es damit ebenfalls heraus; Runden, in denen es schon gespielt wurde, zeigen es weiter. ([#467](https://github.com/christried/compies/issues/467))
 - **Alle Tags im Spiele-Formular:** Unter dem Tag-Feld klappst du jetzt „Alle Tags“ auf und siehst alle Tags deiner Bibliothek. Ein Klick fügt einen Tag dem Spiel hinzu, ein zweiter Klick nimmt ihn wieder weg. ([#615](https://github.com/christried/compies/issues/615))
 - **Wo ein Spiel gerade drin ist:** Auf der Karte eines Spiels in der Bibliothek steht jetzt „in 2 Events“, wenn es im Spielepool von Events liegt, die noch nicht beendet sind. ([#733](https://github.com/christried/compies/issues/733))
+- **Die Events eines Spiels:** Auf der Seite eines Spiels in der Bibliothek stehen jetzt alle deine Events, in denen es im Pool liegt oder gespielt wurde, neueste zuerst, auch beendete. Jede Zeile führt zum Event, sagt „im Pool“ oder „1× gespielt“ und zeigt deine Notizen für dieses Event. ([#656](https://github.com/christried/compies/issues/656))
 
 ### Geändert
 
