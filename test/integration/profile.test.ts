@@ -53,7 +53,7 @@ describe('the signed-in User and profile setup', () => {
 
       expect(user).toEqual({
         id: expect.any(String), name: 'Kitty', image: expect.any(String),
-        displayName: null, canHost: true, isAdmin: false, newsSeen: expect.any(String), appearance: 'light',
+        displayName: null, canHost: true, isAdmin: false, newsSeen: expect.any(String), appearance: 'light', tourSeen: 0,
       })
     })
 

@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&amp;family=Lilita+One&amp;family=Bungee&amp;family=JetBrains+Mono:wght@500;700&amp;display=swap">
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+</helmet>
+<div style="display:flex;flex-direction:column;gap:12px;width:{{ W }}px">
+<sc-if value="{{ live }}">
+  <div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px;font-family:var(--cp-font-mono);font-size:13px;color:#151515">
+    <span style="display:inline-flex;align-items:center;height:30px;padding:0 12px;border-radius:999px;border:2px solid #151515;background:#ffd23f;font-weight:700">Live · {{ liveLabel }}</span>
+    <button type="button" onClick="{{ restart }}" style="display:inline-flex;align-items:center;height:30px;padding:0 12px;border-radius:999px;border:2px solid #151515;background:#fffdf8;font:inherit;font-weight:700;cursor:pointer">Neu starten</button>
+    <span style="color:#5d5650">Klick „Weiter“, „Zurück“ oder „Überspringen“ in der Sprechblase.</span>
+  </div>
+</sc-if>
+<div ref="{{ fr }}" data-theme="{{ theme }}" lang="de" style="position:relative;width:{{ W }}px;height:{{ H }}px;overflow:hidden;contain:layout paint;border-radius:{{ D.frameR }}px;outline:2px solid rgba(21,21,21,.22);background-color:var(--cp-paper);background-image:var(--cp-tex-image);background-size:var(--cp-tex-size);color:var(--cp-ink);font-family:var(--cp-font-sans);font-weight:500;font-size:15px;line-height:1.45">
+<sc-if value="{{ on }}" hint-placeholder-val="{{ false }}">
+
+  <sc-if value="{{ wide }}">
+  <header style="position:absolute;left:0;top:0;right:0;height:64px;z-index:10;box-sizing:border-box;display:flex;align-items:center;gap:12px;padding:0 24px;border-bottom:var(--cp-bw) solid var(--cp-line);background:var(--cp-surface)">
+    <span style="flex:none;display:flex;align-items:center;gap:8px"><img src="{{ logo }}" alt="" width="34" height="34" style="display:block"></img><span style="font-family:var(--cp-font-display);font-size:22px;line-height:1">COMPIES</span></span>
+    <nav aria-label="Hauptnavigation" style="flex:0 1 auto;min-width:0;display:flex;gap:2px;margin-left:14px">
+      <span style="flex:0 1 auto;min-width:130px;max-width:340px;display:flex;flex-direction:column;justify-content:center;align-items:flex-start;gap:3px;height:61px;padding:0 11px;box-sizing:border-box;border-bottom:3px solid var(--cp-hot)">
+        <span style="display:flex;align-items:center;gap:6px;font-weight:800;font-size:14px;line-height:16px"><span aria-hidden="true" style="display:block;flex:none;width:16px;height:16px;background:currentColor;-webkit-mask:{{ I.house }};mask:{{ I.house }}"></span>Events</span>
+        <span aria-hidden="true" style="display:flex;align-items:center;gap:6px;max-width:100%;min-width:0"><span style="min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font-size:12px;line-height:16px;font-weight:600;color:var(--cp-ink-2)">Freitags-Zocken</span><span style="flex:none;display:inline-flex;align-items:center;gap:5px;height:18px;padding:0 7px;box-sizing:border-box;border-radius:999px;border:2px solid var(--cp-line);background:var(--cp-surface);font-size:11px;line-height:1;font-weight:800;white-space:nowrap"><span style="width:6px;height:6px;border-radius:50%;background:var(--cp-info);border:1.5px solid var(--cp-line)"></span>Terminumfrage</span></span>
+      </span>
+      <span style="flex:none;display:flex;align-items:center;gap:6px;height:61px;padding:0 11px;box-sizing:border-box;border-bottom:3px solid transparent;color:var(--cp-ink-2);font-weight:600;font-size:14px"><span aria-hidden="true" style="display:block;flex:none;width:16px;height:16px;background:currentColor;-webkit-mask:{{ I.archive }};mask:{{ I.archive }}"></span>Archiv</span>
+      <span style="flex:none;display:flex;align-items:center;gap:6px;height:61px;padding:0 11px;box-sizing:border-box;border-bottom:3px solid transparent;color:var(--cp-ink-2);font-weight:600;font-size:14px"><span aria-hidden="true" style="display:block;flex:none;width:16px;height:16px;background:currentColor;-webkit-mask:{{ I.user }};mask:{{ I.user }}"></span>Profil</span>
+    </nav>
+    <span style="flex:1 1 0;min-width:8px"></span>
+    <span style="flex:none;display:grid;place-items:center;width:44px;height:44px"><span data-tour="ton" style="display:grid;place-items:center;width:40px;height:40px;box-sizing:border-box;border-radius:50%;border:2px solid var(--cp-line);background:var(--cp-surface)"><span aria-hidden="true" style="display:block;width:18px;height:18px;background:currentColor;-webkit-mask:{{ I.vol }};mask:{{ I.vol }}"></span></span></span>
+    <span style="flex:none;display:grid;place-items:center;width:44px;height:44px"><span ref="{{ avRef }}" style="display:grid;place-items:center;width:32px;height:32px;box-sizing:border-box;border-radius:50%;border:2px solid var(--cp-line);background:#cfe9da;font-weight:800;font-size:14px;line-height:1;color:#151515">N</span></span>
+  </header>
+  </sc-if>
+
+  <sc-if value="{{ narrow }}">
+  <header style="position:absolute;left:0;top:0;right:0;height:56px;z-index:10;box-sizing:border-box;display:flex;align-items:center;gap:6px;padding:0 12px;border-bottom:var(--cp-bw) solid var(--cp-line);background:var(--cp-surface)">
+    <img src="{{ logo }}" alt="" width="30" height="30" style="flex:none;display:block"></img>
+    <div style="flex:1;min-width:0;display:flex;align-items:center;gap:0 8px;flex-wrap:wrap;line-height:1.2"><b style="font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%">Freitags-Zocken</b><span style="display:inline-flex;align-items:center;gap:6px;height:22px;padding:0 8px;box-sizing:border-box;border-radius:999px;border:2px solid var(--cp-line);background:var(--cp-surface);font-size:12px;font-weight:800;white-space:nowrap"><span style="width:7px;height:7px;border-radius:50%;background:var(--cp-info);border:1.5px solid var(--cp-line)"></span>Terminumfrage</span></div>
+    <span style="flex:none;display:grid;place-items:center;width:44px;height:44px"><span data-tour="ton" style="display:grid;place-items:center;width:40px;height:40px;box-sizing:border-box;border-radius:50%;border:2px solid var(--cp-line);background:var(--cp-surface)"><span aria-hidden="true" style="display:block;width:18px;height:18px;background:currentColor;-webkit-mask:{{ I.vol }};mask:{{ I.vol }}"></span></span></span>
+    <span style="flex:none;display:grid;place-items:center;width:44px;height:44px"><span ref="{{ avRef }}" style="display:grid;place-items:center;width:32px;height:32px;box-sizing:border-box;border-radius:50%;border:2px solid var(--cp-line);background:#cfe9da;font-weight:800;font-size:14px;line-height:1;color:#151515">N</span></span>
+  </header>
+  </sc-if>
+
+  <div style="position:absolute;left:0;right:0;top:{{ D.hh }}px;bottom:{{ D.bodyB }}px;display:flex">
+    <div ref="{{ sc }}" style="flex:1;min-width:0;overflow:hidden;position:relative">
+      <main ref="{{ mainRef }}" style="width:100%;max-width:1100px;margin:0 auto;box-sizing:border-box;padding:{{ D.mainPad }};display:flex;flex-direction:column;gap:{{ D.gap }}px">
+
+        <div data-tour="head" style="align-self:flex-start;display:flex;flex-direction:column;gap:2px">
+          <span style="font-size:13px;font-weight:700;color:var(--cp-ink-2)">Session 1 von 2 · Terminumfrage läuft</span>
+          <h1 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:{{ D.h1 }}px;line-height:1">Wann zocken wir?</h1>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:16px">
+          <div data-tour="poll" style="display:flex;flex-direction:column;gap:6px">
+            <div style="display:flex;align-items:baseline;flex-wrap:wrap;gap:4px 12px"><h2 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:{{ D.h2 }}px;line-height:1">Termin für Session 1</h2><span style="font-size:13px;font-weight:700;color:var(--cp-ink-2)">7 von 11 haben abgestimmt</span></div>
+            <div style="display:grid;grid-template-columns:{{ D.slotCols }};gap:14px;padding-top:12px">
+              <sc-for list="{{ slots }}" as="p" hint-placeholder-count="4">
+                <div data-tour="{{ p.tour }}" style="position:relative;display:flex;flex-direction:column;gap:10px;padding:16px 14px 14px;border:{{ p.bd }};border-radius:14px;background:var(--cp-surface);box-shadow:{{ p.sh }}">
+                  <sc-if value="{{ p.best }}"><span style="position:absolute;top:-13px;left:12px;display:inline-flex;align-items:center;gap:4px;height:24px;box-sizing:border-box;padding:0 9px;border-radius:999px;border:2px solid var(--cp-line);background:var(--cp-primary);color:var(--cp-on-primary);font-size:12px;font-weight:800"><span aria-hidden="true" style="display:block;width:12px;height:12px;background:currentColor;-webkit-mask:{{ I.spark }};mask:{{ I.spark }}"></span>Bester Termin</span></sc-if>
+                  <div style="display:flex;align-items:baseline;justify-content:space-between;gap:8px"><b style="font-size:15px">{{ p.day }}</b><span style="font-family:var(--cp-font-num);font-size:24px;line-height:1">{{ p.time }}</span></div>
+                  <div aria-hidden="true" style="display:flex;height:10px;box-sizing:border-box;border-radius:999px;border:1.5px solid var(--cp-line);overflow:hidden;background:var(--cp-paper-2)"><span style="width:{{ p.yW }};background:var(--cp-success)"></span><span style="width:{{ p.mW }};background:var(--cp-warning)"></span></div>
+                  <span style="font-size:13px"><b>{{ p.y }} Ja</b>, {{ p.m }} Meh, {{ p.n }} Nein</span>
+                  <div data-tour="{{ p.vtour }}" style="display:grid;grid-template-columns:repeat(3,1fr);border:2px solid var(--cp-line);border-radius:999px;overflow:hidden">
+                    <sc-for list="{{ voteOpts }}" as="o" hint-placeholder-count="3"><span style="display:flex;align-items:center;justify-content:center;gap:4px;height:44px;box-shadow:{{ o.sep }};font-size:13px;font-weight:700"><span aria-hidden="true" style="display:block;width:13px;height:13px;background:currentColor;-webkit-mask:{{ o.m }};mask:{{ o.m }}"></span>{{ o.n }}</span></sc-for>
+                  </div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <h3 style="margin:0;font-size:17px;font-weight:800">Wer kann wann?</h3>
+            <div style="overflow:hidden;border:var(--cp-bw) solid var(--cp-line);border-radius:14px;background:var(--cp-surface)">
+              <table style="width:100%;border-collapse:separate;border-spacing:0">
+                <thead><tr><th style="width:{{ D.mxName }};min-width:{{ D.mxName }};padding:8px 12px;border-bottom:2px solid var(--cp-line-soft);border-right:2px solid var(--cp-line-soft);text-align:left;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--cp-ink-2)">Wer</th><sc-for list="{{ mxHead }}" as="h" hint-placeholder-count="4"><th style="min-width:{{ D.mxCol }};padding:8px 4px;border-bottom:2px solid var(--cp-line-soft);text-align:center;line-height:1.2"><span style="display:block;font-size:12px;font-weight:800">{{ h.d }}</span><span style="display:block;margin-top:3px;font-family:var(--cp-font-num);font-weight:400;font-size:13px">{{ h.t }}</span></th></sc-for></tr></thead>
+                <tbody><sc-for list="{{ mxRows }}" as="r" hint-placeholder-count="8"><tr><th style="padding:3px 12px;border-bottom:1.5px solid var(--cp-line-soft);border-right:2px solid var(--cp-line-soft);text-align:left;font-size:13px;font-weight:{{ r.w }}"><span style="display:flex;align-items:center;gap:8px;white-space:nowrap"><span style="display:grid;place-items:center;flex:none;width:24px;height:24px;box-sizing:border-box;border-radius:50%;border:2px solid var(--cp-line);background:{{ r.tint }};font-size:11px;font-weight:800;color:#151515">{{ r.ini }}</span>{{ r.label }}</span></th><sc-for list="{{ r.c }}" as="c" hint-placeholder-count="4"><td style="padding:3px 4px;border-bottom:1.5px solid var(--cp-line-soft);text-align:center"><span style="display:inline-grid;place-items:center;width:24px;height:24px;box-sizing:border-box;border-radius:{{ c.r }};border:2px {{ c.bs }} var(--cp-line);background:{{ c.bg }};color:{{ c.fg }};vertical-align:middle"><span aria-hidden="true" style="display:block;width:{{ c.is }}px;height:{{ c.is }}px;background:currentColor;-webkit-mask:{{ c.m }};mask:{{ c.m }}"></span></span></td></sc-for></tr></sc-for></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <div data-tour="board" style="display:flex;flex-direction:column;gap:12px">
+          <div style="display:flex;align-items:baseline;flex-wrap:wrap;gap:4px 12px"><h2 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:{{ D.h2 }}px;line-height:1">Spielbrett</h2><span style="font-size:13px;font-weight:700;color:var(--cp-ink-2)">4 Teams à 2 · Teamwahl noch zu</span></div>
+          <div style="display:flex;align-items:center;gap:10px;font-size:14px;font-weight:700;text-wrap:pretty"><span aria-hidden="true" style="flex:none;display:grid;place-items:center;width:28px;height:28px;box-sizing:border-box;border-radius:50%;border:2px solid var(--cp-line);background:var(--cp-info);color:var(--cp-on-info)"><span style="display:block;width:14px;height:14px;background:currentColor;-webkit-mask:{{ I.lock }};mask:{{ I.lock }}"></span></span>Teamwahl öffnet, sobald der Termin steht. Bis dahin: Bench oder Tribüne.</div>
+          <div style="display:grid;grid-template-columns:{{ D.teamCols }};gap:{{ D.teamGap }}px">
+            <sc-for list="{{ teams }}" as="t" hint-placeholder-count="4">
+              <div style="border:var(--cp-bw) solid var(--cp-line);border-radius:14px;background:var(--cp-surface);overflow:hidden">
+                <div style="display:flex;align-items:center;gap:8px;padding:{{ D.thPad }};background-color:var(--cp-team-{{ t.n }});background-image:var(--cp-team-{{ t.n }}-pattern);border-bottom:2px solid var(--cp-line)"><span aria-hidden="true" style="display:inline-grid;place-items:center;flex:none;width:{{ D.tm }}px;height:{{ D.tm }}px;border-radius:50%;box-sizing:border-box;border:2px solid var(--cp-line);background:var(--cp-team-{{ t.n }})"><svg viewBox="0 0 24 24" width="{{ D.tmi }}" height="{{ D.tmi }}" style="display:block"><path d="{{ t.d }}" fill="var(--cp-team-{{ t.n }}-ink)"></path></svg></span><span style="min-width:0;padding:1px 8px;border-radius:6px;background:var(--cp-team-{{ t.n }});color:var(--cp-team-{{ t.n }}-ink);font-family:var(--cp-font-display);font-size:{{ D.tnS }}px;line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ t.name }}</span><span style="margin-left:auto;flex:none;padding:0 7px;border-radius:999px;background:var(--cp-surface);border:2px solid var(--cp-line);font-weight:800;font-size:12px">0/2</span></div>
+                <div style="display:flex;gap:{{ D.avGap }}px;padding:{{ D.tbPad }};min-height:{{ D.tbMin }}px">
+                  <sc-for list="{{ zu }}" as="z" hint-placeholder-count="2"><div style="display:flex;flex-direction:column;align-items:center;gap:4px;width:{{ D.cell }}px"><span style="width:{{ D.av }}px;height:{{ D.av }}px;border-radius:50%;border:2.5px dashed var(--cp-ink-3);box-sizing:border-box;display:grid;place-items:center;color:var(--cp-ink-2)"><span aria-hidden="true" style="display:block;width:16px;height:16px;background:currentColor;-webkit-mask:{{ I.lock }};mask:{{ I.lock }}"></span></span><span style="font-size:12px;font-weight:600;color:var(--cp-ink-2)">Zu</span></div></sc-for>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+          <div style="display:grid;grid-template-columns:{{ D.zoneCols }};gap:12px">
+            <sc-for list="{{ zones }}" as="z" hint-placeholder-count="2">
+              <div style="display:flex;flex-direction:column;gap:10px;padding:12px;border:var(--cp-bw) solid var(--cp-line);border-radius:14px;background:var(--cp-surface)">
+                <div style="display:flex;align-items:center;gap:8px"><span aria-hidden="true" style="display:block;width:18px;height:18px;background:currentColor;-webkit-mask:{{ z.m }};mask:{{ z.m }}"></span><b>{{ z.n }}</b><span style="font-size:12px;color:var(--cp-ink-2)">{{ z.d }}</span><span style="margin-left:auto;padding:0 8px;border-radius:999px;border:2px solid var(--cp-line);font-weight:800;font-size:12px">{{ z.count }}</span></div>
+                <div style="display:flex;gap:{{ D.avGap }}px;flex-wrap:wrap">
+                  <sc-for list="{{ z.ppl }}" as="p" hint-placeholder-count="3">
+                    <div style="display:flex;flex-direction:column;align-items:center;gap:3px;width:{{ D.cell }}px">
+                      <span data-tour="{{ p.tour }}" style="position:relative;display:grid;place-items:center;flex:none;width:{{ D.zav }}px;height:{{ D.zav }}px;box-sizing:border-box;border-radius:50%;border:2.5px solid var(--cp-line);background:{{ p.tint }};font-weight:800;font-size:{{ D.zfs }}px;line-height:1;color:#151515;filter:{{ p.filt }}">{{ p.ini }}<sc-if value="{{ p.host }}"><span style="position:absolute;right:-4px;top:-4px;display:grid;place-items:center;width:16px;height:16px;box-sizing:border-box;border-radius:50%;border:2px solid var(--cp-line);background:var(--cp-primary);color:var(--cp-on-primary)"><span aria-hidden="true" style="display:block;width:9px;height:9px;background:currentColor;-webkit-mask:{{ I.crown }};mask:{{ I.crown }}"></span></span></sc-if></span>
+                      <span style="font-size:12px;font-weight:{{ p.w }};white-space:nowrap">{{ p.l }}</span>
+                    </div>
+                  </sc-for>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:{{ D.cardCols }};gap:16px;align-items:start">
+          <div style="display:flex;flex-direction:column;gap:4px;padding:16px 16px 8px;border:var(--cp-bw) solid var(--cp-line);border-radius:16px;background:var(--cp-surface)">
+            <div style="display:flex;align-items:baseline;gap:10px"><h2 style="margin:0;font-size:18px;font-weight:800">Sessions</h2><span style="font-size:13px;font-weight:600;color:var(--cp-ink-2)">2 Sessions</span></div>
+            <sc-for list="{{ sessions }}" as="r" hint-placeholder-count="2">
+              <div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;min-height:60px;padding:8px 0;border-top:{{ r.bt }}">
+                <span aria-hidden="true" style="flex:none;display:grid;place-items:center;width:36px;height:36px;box-sizing:border-box;border-radius:50%;border:2px solid var(--cp-line);font-family:var(--cp-font-num);font-size:15px">{{ r.no }}</span>
+                <div style="flex:1;min-width:120px;display:flex;flex-direction:column;line-height:1.3"><b style="font-size:15px">Session {{ r.no }}</b><span style="font-size:13px;font-weight:600;color:var(--cp-ink-2)">{{ r.sub }}</span></div>
+                <span style="flex:none;display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 9px;box-sizing:border-box;border-radius:999px;border:2px solid var(--cp-line);background:var(--cp-surface);font-size:12px;font-weight:800;white-space:nowrap"><span aria-hidden="true" style="width:7px;height:7px;border-radius:50%;border:1.5px solid var(--cp-line);background:{{ r.dot }}"></span>{{ r.pill }}</span>
+              </div>
+            </sc-for>
+          </div>
+          <div data-tour="how" style="display:flex;flex-direction:column;gap:12px;padding:16px;border:var(--cp-bw) solid var(--cp-line);border-radius:16px;background:var(--cp-surface)">
+            <h2 style="margin:0;font-size:18px;font-weight:800">So wird gespielt</h2>
+            <dl style="margin:0;display:grid;grid-template-columns:auto minmax(0,1fr);gap:8px 16px;font-size:14px;line-height:1.35"><sc-for list="{{ how }}" as="r" hint-placeholder-count="4"><div style="display:contents"><dt style="font-weight:700;color:var(--cp-ink-2)">{{ r.k }}</dt><dd style="margin:0;font-weight:700;text-wrap:pretty">{{ r.v }}</dd></div></sc-for></dl>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <sc-if value="{{ wide }}">
+    <aside data-tour="panel" style="flex:none;width:340px;box-sizing:border-box;border-left:var(--cp-bw) solid var(--cp-line);background:var(--cp-surface);display:flex;flex-direction:column">
+      <div style="flex:none;display:flex;gap:4px;padding:6px 10px 0;border-bottom:2px solid var(--cp-line-soft)">
+        <span data-tour="panel-tab" style="display:flex;align-items:center;gap:8px;height:46px;padding:0 12px;box-shadow:inset 0 -3px 0 var(--cp-hot);margin-bottom:-2px;font-weight:800"><span aria-hidden="true" style="display:block;width:18px;height:18px;background:currentColor;-webkit-mask:{{ I.hist }};mask:{{ I.hist }}"></span>Aktivität</span>
+      </div>
+      <div style="flex:1;min-height:0;overflow:hidden;padding:0 12px 12px;display:flex;flex-direction:column">
+        <div style="padding:12px 0 6px;font-size:12px;font-weight:800;color:var(--cp-ink-2);text-transform:uppercase;letter-spacing:.04em">Vor dem Start</div>
+        <sc-for list="{{ feed }}" as="e" hint-placeholder-count="8">
+          <div style="display:flex;gap:10px;align-items:flex-start;padding:6px 0"><span aria-hidden="true" style="flex:none;display:grid;place-items:center;width:28px;height:28px;box-sizing:border-box;border-radius:50%;border:2px solid var(--cp-line);background:{{ e.bg }};color:var(--cp-ink)"><span style="display:block;width:14px;height:14px;background:currentColor;-webkit-mask:{{ e.m }};mask:{{ e.m }}"></span></span><span style="flex:1;min-width:0;font-size:14px;line-height:1.4;text-wrap:pretty;padding-top:3px"><b>{{ e.who }}</b> {{ e.t }}</span><span style="flex:none;font-size:12px;color:var(--cp-ink-2);padding-top:5px">{{ e.at }}</span></div>
+        </sc-for>
+      </div>
+    </aside>
+    </sc-if>
+  </div>
+
+  <sc-if value="{{ narrow }}">
+  <nav style="position:absolute;left:0;right:0;bottom:0;height:79px;z-index:10;box-sizing:border-box;display:grid;grid-template-columns:1fr 1fr;padding:0 4px 18px;border-top:var(--cp-bw) solid var(--cp-line);background:var(--cp-surface)">
+    <span style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;height:58px;border-top:3px solid var(--cp-ink);margin-top:-3px;font-size:12px;font-weight:800"><span aria-hidden="true" style="display:block;width:22px;height:22px;background:currentColor;-webkit-mask:{{ I.grid }};mask:{{ I.grid }}"></span>Event</span>
+    <span data-tour="tab-feed" style="position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;height:58px;color:var(--cp-ink-2);font-size:12px;font-weight:600"><span aria-hidden="true" style="display:block;width:22px;height:22px;background:currentColor;-webkit-mask:{{ I.hist22 }};mask:{{ I.hist22 }}"></span>Aktivität<span style="position:absolute;top:6px;left:50%;margin-left:6px;display:grid;place-items:center;min-width:18px;height:18px;padding:0 5px;box-sizing:border-box;border-radius:999px;border:1.5px solid var(--cp-surface);background:var(--cp-ink);color:var(--cp-paper);font-size:10px;font-weight:800">8</span></span>
+  </nav>
+  </sc-if>
+
+  <div ref="{{ ovRef }}" style="position:absolute;inset:0;z-index:50;pointer-events:{{ ovPE }};opacity:{{ ovOp }}">
+    <div ref="{{ holeRef }}" style="position:absolute;left:{{ hole.x }}px;top:{{ hole.y }}px;width:{{ hole.w }}px;height:{{ hole.h }}px;border-radius:{{ hole.r }}px;box-shadow:{{ holeSh }};outline:{{ holeOl }};outline-offset:0;pointer-events:none"></div>
+    <sc-if value="{{ showGuides }}">
+      <div style="position:absolute;left:{{ gT.x }}px;top:{{ gT.y }}px;width:{{ gT.w }}px;height:{{ gT.h }}px;box-sizing:border-box;border:2px dashed var(--cp-focus);pointer-events:none"></div>
+      <span style="position:absolute;left:{{ gA.x }}px;top:{{ gA.y }}px;width:12px;height:12px;margin:-6px 0 0 -6px;box-sizing:border-box;border-radius:50%;border:2px solid #fffdf8;background:var(--cp-focus);pointer-events:none"></span>
+      <span style="position:absolute;left:{{ gL.x }}px;top:{{ gL.y }}px;display:inline-flex;align-items:center;height:24px;padding:0 9px;border-radius:6px;background:var(--cp-focus);color:#fffdf8;font-family:var(--cp-font-mono);font-size:11px;font-weight:700;white-space:nowrap;pointer-events:none">{{ gLabel }}</span>
+    </sc-if>
+    <div ref="{{ bubRef }}" role="dialog" aria-modal="true" aria-labelledby="{{ ids.t }}" aria-describedby="{{ ids.b }}" style="position:absolute;left:{{ bub.x }}px;top:{{ bub.y }}px;width:{{ bw }}px;visibility:{{ bubVis }};opacity:{{ bubOp }};transform:{{ bubTf }};transform-origin:{{ bubTo }}">
+      <div style="position:relative;filter:drop-shadow(10px 10px 0 {{ shCol }})">
+        <div style="position:relative;box-sizing:border-box;border:var(--cp-bw) solid var(--cp-line);border-radius:18px;background:var(--cp-surface);padding:{{ D.bPad }}">
+          <div style="display:flex;align-items:flex-start;gap:10px;min-height:{{ D.tRow }}px;padding-left:{{ D.tInd }}px"><h2 id="{{ ids.t }}" style="flex:1;min-width:0;margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:{{ D.bT }}px;line-height:1.05;text-wrap:balance;padding-top:2px">{{ bc.title }}</h2><span aria-label="{{ bc.countA }}" style="flex:none;padding-top:4px;font-size:13px;font-weight:700;color:var(--cp-ink-2);font-variant-numeric:tabular-nums;white-space:nowrap">{{ bc.count }}</span></div>
+          <p id="{{ ids.b }}" style="margin:8px 0 0;font-size:{{ D.bB }}px;line-height:1.45;text-wrap:pretty">{{ bc.body }}</p>
+          <div style="display:flex;align-items:center;gap:8px;margin-top:16px">
+            <sc-if value="{{ bc.skip }}"><button type="button" onClick="{{ onSkip }}" style="flex:none;display:inline-flex;align-items:center;height:44px;margin-left:-8px;padding:0 8px;border:0;border-radius:999px;background:transparent;color:var(--cp-ink-2);font:inherit;font-size:{{ D.bBtn }}px;font-weight:700;text-decoration:underline;text-decoration-thickness:2px;text-decoration-color:var(--cp-line-soft);text-underline-offset:4px;cursor:pointer">Überspringen</button></sc-if>
+            <span style="flex:1"></span>
+            <sc-if value="{{ bc.back }}"><button type="button" onClick="{{ onBack }}" style="flex:none;display:inline-flex;align-items:center;height:44px;padding:0 16px;box-sizing:border-box;border:var(--cp-bw) solid var(--cp-line);border-radius:999px;background:var(--cp-surface);color:var(--cp-ink);box-shadow:var(--cp-shadow-btn);font:inherit;font-size:{{ D.bBtn }}px;font-weight:800;cursor:pointer">Zurück</button></sc-if>
+            <button type="button" onClick="{{ onNext }}" style="flex:none;display:inline-flex;align-items:center;height:44px;padding:0 18px;box-sizing:border-box;border:var(--cp-bw) solid var(--cp-line);border-radius:999px;background:var(--cp-primary);color:var(--cp-on-primary);box-shadow:var(--cp-shadow-btn);font:inherit;font-size:{{ D.bBtn }}px;font-weight:800;cursor:pointer">{{ bc.next }}</button>
+          </div>
+        </div>
+        <sc-if value="{{ hasTail }}"><span style="position:absolute;left:{{ tl.l }}px;top:{{ tl.t }}px;width:{{ C.tail }}px;height:{{ C.tail }}px;box-sizing:border-box;background:var(--cp-surface);border-top:{{ tl.bt }};border-right:{{ tl.br }};border-bottom:{{ tl.bb }};border-left:{{ tl.bl }};border-radius:{{ tl.rad }};transform:rotate(45deg)"></span></sc-if>
+      </div>
+      <div style="position:absolute;left:{{ C.faceL }}px;top:{{ C.faceT }}px;width:{{ C.S }}px;height:{{ C.S }}px;will-change:transform">
+        <dc-import name="RundgangFace" size="{{ C.S }}" expr="{{ face.expr }}" dir="{{ face.dir }}" opt="{{ opt }}" reduced="{{ reduced }}" cue="{{ face.cue }}" loop="{{ faceLoop }}" hint-size="72px,72px"></dc-import>
+      </div>
+    </div>
+  </div>
+
+  <div aria-hidden="true" style="position:absolute;left:0;top:0;width:{{ bw }}px;visibility:hidden;pointer-events:none;z-index:-1">
+    <sc-for list="{{ measure }}" as="m" hint-placeholder-count="1">
+      <div data-measure="{{ m.i }}" style="position:absolute;left:0;top:0;width:100%;box-sizing:border-box;border:var(--cp-bw) solid transparent;padding:{{ D.bPad }}">
+        <div style="display:flex;align-items:flex-start;gap:10px;min-height:{{ D.tRow }}px;padding-left:{{ D.tInd }}px"><span style="flex:1;min-width:0;font-family:var(--cp-font-display);font-size:{{ D.bT }}px;line-height:1.05;text-wrap:balance;padding-top:2px">{{ m.title }}</span><span style="flex:none;padding-top:4px;font-size:13px;font-weight:700;white-space:nowrap">{{ m.count }}</span></div>
+        <p style="margin:8px 0 0;font-size:{{ D.bB }}px;line-height:1.45;text-wrap:pretty">{{ m.body }}</p>
+        <div style="height:44px;margin-top:16px"></div>
+      </div>
+    </sc-for>
+  </div>
+</sc-if>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1440,&quot;height&quot;:900},&quot;w&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[1440,390],&quot;default&quot;:1440,&quot;tsType&quot;:&quot;number&quot;},&quot;h&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:900,&quot;tsType&quot;:&quot;number&quot;},&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;light&quot;,&quot;dark&quot;],&quot;default&quot;:&quot;light&quot;,&quot;tsType&quot;:&quot;'light'|'dark'&quot;},&quot;step&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:3,&quot;min&quot;:1,&quot;max&quot;:8,&quot;tsType&quot;:&quot;number&quot;},&quot;opt&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;A&quot;,&quot;B&quot;],&quot;default&quot;:&quot;B&quot;,&quot;tsType&quot;:&quot;'A'|'B'&quot;},&quot;reduced&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;},&quot;live&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;},&quot;guides&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;},&quot;edge&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;ring&quot;,&quot;glow&quot;,&quot;none&quot;],&quot;default&quot;:&quot;ring&quot;,&quot;tsType&quot;:&quot;'ring'|'glow'|'none'&quot;},&quot;faceLoop&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;},&quot;transT&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;number&quot;},&quot;title&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;string&quot;},&quot;body&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;string&quot;}}">
+const STEPS=[
+  {k:'hallo',title:'Neu hier?',body:'Hallo! Ich zeig dir kurz, wie das hier läuft.',expr:'hallo'},
+  {k:'head',title:'Das Event',body:'Hier steht, worum es geht und wann es losgeht.',t:'head'},
+  {k:'poll',title:'Terminumfrage',body:'Stimm für jeden Termin ab: Ja, Meh oder Nein.',t:'poll',tn:'poll-1',a:'poll-vote'},
+  {k:'board',title:'Spielbrett',body:'Du sitzt erst mal auf der Tribüne. Sobald der Termin steht, suchst du dir ein Team aus.',t:'board',a:'me'},
+  {k:'how',title:'So wird gespielt',body:'Hier siehst du, wie gespielt wird und was es mit den Vetos auf sich hat.',t:'how'},
+  {k:'feed',title:'Aktivität',body:'Hier siehst du, was im Event passiert.',t:'panel',tn:'tab-feed',a:'panel-tab'},
+  {k:'ton',title:'Ton',body:'Hier schaltest du den Ton an oder aus.',t:'ton'},
+  {k:'ende',title:'Viel Spaß!',body:'Das war’s. Den Rundgang findest du jederzeit in deinem Profil.',expr:'freut'}
+];
+const CFG={wide:{pad:8,gap:24,margin:24,S:72,faceL:14,faceT:-20,faceZone:92,tail:20,lead:24,sh:10,safe:0},narrow:{pad:6,gap:20,margin:12,S:56,faceL:8,faceT:-16,faceZone:70,tail:16,lead:16,sh:10,safe:18}};
+const WIDE={wide:true,hh:64,bodyB:0,mainPad:'24px 24px 40px',gap:22,h1:44,h2:30,slotCols:'repeat(4,minmax(0,1fr))',teamCols:'repeat(4,minmax(0,1fr))',teamGap:12,zoneCols:'1fr 1fr',cardCols:'minmax(0,1fr) minmax(0,1fr)',thPad:'8px 10px',tm:24,tmi:13,tnS:17,tbPad:'12px',tbMin:76,avGap:12,cell:56,av:44,zav:40,zfs:17,mxName:'180px',mxCol:'92px',frameR:14,bPad:'18px 20px 18px',tRow:34,tInd:72,bT:23,bB:16,bBtn:15};
+const NARROW={wide:false,hh:56,bodyB:79,mainPad:'16px 14px 28px',gap:18,h1:34,h2:24,slotCols:'1fr',teamCols:'1fr 1fr',teamGap:8,zoneCols:'1fr',cardCols:'1fr',thPad:'6px 8px',tm:20,tmi:11,tnS:14,tbPad:'10px 8px',tbMin:64,avGap:6,cell:46,av:36,zav:34,zfs:14,mxName:'120px',mxCol:'64px',frameR:30,bPad:'16px 16px 16px',tRow:30,tInd:54,bT:20,bB:15,bBtn:14};
+const TMP=['M12 4a8 8 0 1 1 0 16a8 8 0 1 1 0-16Z','M12 3.5 21 19.5H3Z','M5 5h14v14H5Z','M12 2.5 21.5 12 12 21.5 2.5 12Z','M9 3h6v6h6v6h-6v6H9v-6H3V9h6Z','M3 8.5h18v7H3Z','M3 17a9 9 0 0 1 18 0Z','M12 2 14.6 9.4 22 12 14.6 14.6 12 22 9.4 14.6 2 12 9.4 9.4Z'];
+const TINT=['#f6d3c4','#e3d8f6','#cfe9da','#f6e3a8','#d2e3f3','#f3d0e1','#e9dcc8','#d6ecec'];
+const tint=w=>{let h=0;for(const c of w)h=(h*31+c.charCodeAt(0))>>>0;return TINT[h%TINT.length];};
+const ICACHE={};
+const icm=(name,size,sw)=>{const w=sw||(size<=16?2:2.5),k=name+'|'+w;let m=ICACHE[k];
+  if(!m&&window.CP_ICONS){const raw=window.CP_ICONS[name]||[];const body=raw.map(([t,a])=>'<'+t+' '+Object.entries(a).map(([q,v])=>q+'="'+v+'"').join(' ')+'/>').join('');
+    m=ICACHE[k]='url("data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="'+w+'" stroke-linecap="round" stroke-linejoin="round">'+body+'</svg>')+'") center / contain no-repeat';}
+  return m||'none';};
+const SLOTS=[['Fr 24.10.','20:00'],['Sa 25.10.','20:30'],['So 26.10.','18:00'],['Fr 31.10.','20:00']];
+const VOTES={Sanne:'YYMY',Kitty:'MYNY',Larsi:'NYYM',Olli:'YYNN',Tom:'MYYY',Ben:'YYMN',Bea:'NMNY',Nele:'----'};
+const BENCH=['Kitty','Larsi','Olli','Tom','Jo','Ben','Ida','Bea','Mia'];
+const HOW=[{k:'Format',v:'4 Teams à 2'},{k:'Spiele',v:'6 pro Session'},{k:'Auswahl',v:'Lucky Wheel, 1 Veto pro Team und Spiel'},{k:'Punkte',v:'4 · 3 · 2 · 1 pro Spiel'}];
+const FEED=[['sparkles','p','Sanne','hat das Event erstellt','Mo 18:02'],['calendar','s','Sanne','schlägt 4 Termine für Session 1 vor','Mo 18:04'],['user-plus','s','Kitty','ist dabei','Mo 18:20'],['circle-check','s','Kitty','hat abgestimmt','Mo 18:21'],['user-plus','s','Larsi, Olli und Tom','sind dabei','Mo 19:47'],['eye','s','Chris','sitzt jetzt auf der Tribüne','Di 08:12'],['circle-check','s','Ben und Bea','haben abgestimmt','Di 21:30'],['user-plus','s','Nele','ist dabei','gerade']];
+function bez(x1,y1,x2,y2){const cx=3*x1,bx=3*(x2-x1)-cx,ax=1-cx-bx,cy=3*y1,by=3*(y2-y1)-cy,ay=1-cy-by;
+  const sx=t=>((ax*t+bx)*t+cx)*t,sy=t=>((ay*t+by)*t+cy)*t;
+  return x=>{if(x<=0)return 0;if(x>=1)return 1;let lo=0,hi=1,t=x;for(let i=0;i<24;i++){const v=sx(t);if(Math.abs(v-x)<1e-5)break;if(v<x)lo=t;else hi=t;t=(lo+hi)/2;}return sy(t);};}
+const EZ={io:bez(.65,0,.35,1),out:bez(.16,1,.3,1),in:bez(.7,0,.84,0)};
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const lerp=(a,b,p)=>a+(b-a)*p;
+
+class Component extends DCLogic {
+  fr=React.createRef(); sc=React.createRef(); mainRef=React.createRef(); holeRef=React.createRef(); bubRef=React.createRef(); ovRef=React.createRef(); avRef=React.createRef();
+  state={M:null,step:1,hole:null,cue:0,ended:false,on:false};
+  componentDidMount(){
+    const H=document.head;
+    if(!getComputedStyle(document.documentElement).getPropertyValue('--cp-paper').trim()&&!document.querySelector('link[data-rg-tokens]')){ const l=document.createElement('link'); l.rel='stylesheet'; l.href='./tokens/compies-tokens.css'; l.dataset.rgTokens='1'; H.appendChild(l); }
+    if(!window.CP_ICONS&&!document.querySelector('script[data-rg-icons]')){ const sc=document.createElement('script'); sc.src='./tokens/lucide-subset.js'; sc.dataset.rgIcons='1'; H.appendChild(sc); }
+    if(!window.CP_ICONS){this._ih=()=>{ this._Lc={}; if(this.state.on) this.forceUpdate(); };window.addEventListener('cp-icons',this._ih);}
+    const q=window.__rgQ||Promise.resolve();
+    window.__rgQ=q.then(()=>new Promise(res=>{ if(this._dead) return res(); this.setState({on:true},()=>{ setTimeout(res,50); this.afterOn(); }); }));
+  }
+  afterOn(){
+    this._n=0;
+    const tick=()=>{ if(this._dead) return; if(this.measure()){ if(++this._n<2) this._t=setTimeout(tick,700); } else this._t=setTimeout(tick,150); };
+    const ready=(document.fonts&&document.fonts.ready)?document.fonts.ready:Promise.resolve();
+    ready.then(()=>{ this._t=setTimeout(tick,60); });
+  }
+  componentWillUnmount(){ this._dead=true; clearTimeout(this._t); this._ih&&window.removeEventListener('cp-icons',this._ih); this.tl&&this.tl.kill(); }
+  measure(){
+    const fr=this.fr.current, sc=this.sc.current, mn=this.mainRef.current; if(!fr||!sc||!mn) return false;
+    let ap=0; try{ ap=-new DOMMatrix(getComputedStyle(mn).transform).m42||0; }catch(e){}
+    const fb=fr.getBoundingClientRect(), k=fb.width/this.W; if(!k||!isFinite(k)) return false;
+    const els={};
+    fr.querySelectorAll('[data-tour]').forEach(el=>{ const key=el.getAttribute('data-tour'); if(!key) return; const b=el.getBoundingClientRect(), inSc=sc.contains(el), w=b.width/k, h=b.height/k; let r=getComputedStyle(el).borderTopLeftRadius||'0';
+      r=r.indexOf('%')>-1?Math.min(w,h)*parseFloat(r)/100:(parseFloat(r)||0);
+      els[key]={x:Math.round((b.left-fb.left)/k),y:Math.round((b.top-fb.top)/k+(inSc?ap:0)),w:Math.round(w),h:Math.round(h),r,sc:inSc}; });
+    const bh={}; fr.querySelectorAll('[data-measure]').forEach(el=>{ bh[el.getAttribute('data-measure')]=el.offsetHeight; });
+    if(!Object.keys(bh).length) return false;
+    const M={els,bh,max:Math.max(0,mn.offsetHeight-sc.clientHeight)};
+    const s=JSON.stringify(M); if(s!==this._ms){ this._ms=s; this._Lc={}; this.setState({M}); }
+    return true;
+  }
+  geom(){ const p=this.props, W=p.w||1440, wide=W>=600, H=p.h||(wide?900:844); return {W,H,wide,D:wide?WIDE:NARROW,C:wide?CFG.wide:CFG.narrow,bw:wide?400:W-24}; }
+  lay(i){
+    const M=this.state.M; if(!M) return null;
+    this._Lc=this._Lc||{}; if(this._Lc[i]) return this._Lc[i];
+    const {W,H,wide,D,C,bw}=this.geom(), s=STEPS[i-1], hh=D.hh, usBot=H-D.bodyB;
+    const bh=M.bh[i]||M.bh[String(i)]||200;
+    const minY=hh+C.margin, maxY=H-C.margin-C.safe;
+    const fin=o=>{ const fx=o.bub.x+C.faceL+C.S/2, fy=o.bub.y+C.faceT+C.S/2; o.dir=o.A?Math.round(Math.atan2(o.A.y-fy,o.A.x-fx)*180/Math.PI):0; o.bh=bh; this._Lc[i]=o; return o; };
+    if(!s.t){ return fin({none:true,side:'none',scroll:null,bub:{x:Math.round((W-bw)/2),y:Math.round((H-bh)*.46)},hole:{x:W/2-1,y:H/2-1,w:2,h:2,r:1,ring:0},rule:'ohne Ding · Mitte'}); }
+    const key=(!wide&&s.tn&&M.els[s.tn])?s.tn:s.t, g=M.els[key]; if(!g) return null;
+    const ga=s.a&&M.els[s.a]&&(wide||s.tn!=='tab-feed')?M.els[s.a]:null;
+    const at=(e,sc)=>({x:e.x,y:e.sc?e.y-sc:e.y,w:e.w,h:e.h,r:e.r});
+    const build=sc=>{ const T=at(g,sc), pad=C.pad; let x=T.x-pad,y=T.y-pad,x2=T.x+T.w+pad,y2=T.y+T.h+pad;
+      if(!g.sc&&Math.abs(T.y-hh)<=1) y=T.y;
+      if(g.sc){ y=Math.max(y,hh); y2=Math.min(y2,usBot); }
+      const r=T.r>=Math.min(T.w,T.h)/2-.5?999:T.r+pad;
+      const hole={x,y,w:x2-x,h:y2-y,r:r===999?Math.round(Math.min(x2-x,y2-y)/2):r,ring:p_ring(this.props.edge)};
+      const A=ga?(()=>{const a=at(ga,sc);return {x:a.x+a.w/2,y:a.y+a.h/2};})():{x:T.x+T.w/2,y:T.h>(usBot-hh)/2?T.y+48:T.y+T.h/2};
+      return {T,hole,A}; };
+    let scroll=g.sc?clamp(g.y-(hh+C.lead),0,M.max):0, B=build(scroll), side, bx, by, rule;
+    const hx=c=>clamp(c-bw/2,C.margin,W-C.margin-C.sh-bw);
+    const fitsBelow=B.hole.y+B.hole.h+C.gap+bh<=maxY, fitsAbove=B.hole.y-C.gap-bh>=minY;
+    const roomL=B.hole.x-C.gap-C.margin, roomR=W-(B.hole.x+B.hole.w)-C.gap-C.margin-C.sh;
+    if(fitsBelow){ side='top'; by=B.hole.y+B.hole.h+C.gap; rule='unter dem Ding'; }
+    else if(fitsAbove){ side='bottom'; by=B.hole.y-C.gap-bh; rule='über dem Ding'; }
+    else if(wide&&(roomL>=bw||roomR>=bw)){ side=roomL>=roomR?'right':'left'; bx=side==='right'?B.hole.x-C.gap-bw:B.hole.x+B.hole.w+C.gap; by=clamp(B.A.y-40,minY,maxY-bh); rule=side==='right'?'daneben, links vom Ding':'daneben, rechts vom Ding'; }
+    else { side='top'; by=maxY-bh; rule='kein Platz · überlappt, unten angedockt';
+      if(g.sc){ const lim=by-C.gap-24; if(B.A.y>lim){ scroll=clamp(scroll+(B.A.y-lim),0,M.max); B=build(scroll); } } }
+    if(side==='top'||side==='bottom'){ bx=hx(B.A.x); if(side==='top'&&B.A.x-bx<C.faceZone+14) bx=clamp(B.A.x-C.faceZone-14,C.margin,W-C.margin-C.sh-bw); }
+    const tmin=18+C.tail*.7;
+    let tail;
+    if(side==='top') tail={x:clamp(B.A.x-bx,C.faceZone+C.tail*.7,bw-tmin),y:0};
+    else if(side==='bottom') tail={x:clamp(B.A.x-bx,tmin,bw-tmin),y:bh};
+    else tail={x:side==='left'?0:bw,y:clamp(B.A.y-by,side==='left'?Math.max(tmin,C.faceT+C.S+8):tmin,bh-tmin)};
+    return fin({none:false,side,scroll,bub:{x:Math.round(bx),y:Math.round(by)},hole:B.hole,T:B.T,A:B.A,tail,rule});
+  }
+  cur(){ return this.props.live?(this.state.step||1):(this.props.step||1); }
+  off(side,d){ return side==='top'?[0,d]:side==='bottom'?[0,-d]:side==='right'?[-d,0]:side==='left'?[d,0]:[0,0]; }
+  componentDidUpdate(){
+    const mn=this.mainRef.current; if(!mn||!this.state.M) return;
+    if(this.props.live){
+      if(!this._booted&&window.gsap){ this._booted=true; gsap.set(mn,{y:0}); this.intro(); }
+      return;
+    }
+    const want=this._scroll||0, tf='translateY('+(-want).toFixed(2)+'px)'; if(mn.style.transform!==tf) mn.style.transform=tf;
+  }
+  intro(){
+    const g=window.gsap, ov=this.ovRef.current, bub=this.bubRef.current; if(!g||!ov||!bub) return;
+    const red=!!this.props.reduced;
+    g.killTweensOf([ov,bub]);
+    g.fromTo(ov,{opacity:0},{opacity:1,duration:red?.14:.22,ease:red?'none':EZ.out});
+    g.fromTo(bub,{opacity:0,scale:red?1:.96,x:0,y:0},{opacity:1,scale:1,duration:red?.14:.22,ease:red?'none':EZ.out,delay:red?0:.06});
+  }
+  go(next){
+    if(this.busy||this.state.ended||!this.state.M) return; const cur=this.cur(); if(next<1||next>8||next===cur) return;
+    const A=this.lay(cur), B=this.lay(next), g=window.gsap; if(!A||!B) return;
+    const bub=this.bubRef.current, hole=this.holeRef.current, mn=this.mainRef.current, red=!!this.props.reduced;
+    const sA=A.none?-(g?g.getProperty(mn,'y'):0):A.scroll, sB=B.none?sA:B.scroll;
+    if(!g){ this.setState({step:next,hole:null}); return; }
+    this.busy=true;
+    this.setState({hole:{...A.hole}},()=>{
+      if(red){
+        g.set(hole,{left:B.hole.x,top:B.hole.y,width:B.hole.w,height:B.hole.h,borderRadius:B.hole.r,outlineWidth:B.hole.ring});
+        g.set(mn,{y:-sB});
+        this.setState({step:next,hole:{...B.hole},cue:this.state.cue+1},()=>{ g.fromTo(bub,{opacity:0,x:0,y:0,scale:1},{opacity:1,duration:.14,ease:'none',onComplete:()=>{this.busy=false;}}); });
+        return;
+      }
+      const tl=this.tl=g.timeline({onComplete:()=>{ this.busy=false; this.setState({hole:{...B.hole}}); }});
+      tl.to(bub,{opacity:0,scale:.98,duration:.14,ease:EZ.in},0);
+      let H1=B.hole, dur=.36, ez=EZ.io;
+      if(A.none&&!B.none){ g.set(hole,{left:B.hole.x+B.hole.w/2-1,top:B.hole.y+B.hole.h/2-1,width:2,height:2,borderRadius:1,outlineWidth:0}); ez=EZ.out; }
+      if(B.none&&!A.none){ H1={x:A.hole.x+A.hole.w/2-1,y:A.hole.y+A.hole.h/2-1,w:2,h:2,r:1,ring:0}; dur=.22; ez=EZ.in; }
+      if(!(A.none&&B.none)) tl.to(hole,{left:H1.x,top:H1.y,width:H1.w,height:H1.h,borderRadius:H1.r,outlineWidth:H1.ring,duration:dur,ease:ez},0);
+      if(sB!==sA) tl.to(mn,{y:-sB,duration:.36,ease:EZ.io},0);
+      tl.call(()=>this.setState({step:next,cue:this.state.cue+1}),null,.15);
+      const o=this.off(B.side,8);
+      tl.fromTo(bub,{opacity:0,scale:B.none?.96:1,x:o[0],y:o[1]},{opacity:1,scale:1,x:0,y:0,duration:.22,ease:EZ.out,immediateRender:false},.30);
+    });
+  }
+  end(){
+    if(this.busy||this.state.ended) return; const g=window.gsap; if(!g){ this.setState({ended:true}); return; }
+    this.busy=true; const red=!!this.props.reduced, bub=this.bubRef.current, ov=this.ovRef.current, av=this.avRef.current;
+    const tl=this.tl=g.timeline({onComplete:()=>{ this.busy=false; this.setState({ended:true}); }});
+    tl.to(bub,{opacity:0,scale:red?1:.96,duration:.14,ease:red?'none':EZ.in},0).to(ov,{opacity:0,duration:red?.14:.22,ease:red?'none':EZ.in},red?0:.06);
+    if(!red&&av) tl.fromTo(av,{scale:1},{scale:1.14,duration:.11,ease:'power2.out',yoyo:true,repeat:1},'>');
+  }
+  restart(){
+    const g=window.gsap; this.tl&&this.tl.kill(); this.busy=false;
+    const mn=this.mainRef.current; if(g&&mn) g.set(mn,{y:0});
+    this.setState({step:1,hole:null,ended:false,cue:this.state.cue+1},()=>{ if(g&&this.holeRef.current){ const L=this.lay(1); L&&g.set(this.holeRef.current,{left:L.hole.x,top:L.hole.y,width:2,height:2,borderRadius:1,outlineWidth:0}); } this.intro(); });
+  }
+  bc(i){ const s=STEPS[i-1], p=this.props, ov=!p.live; return {i,title:ov&&p.title?p.title:s.title,body:ov&&p.body?p.body:s.body,count:i+' von 8',countA:'Schritt '+i+' von 8',back:i>1,skip:i<8,next:i===8?'Fertig':'Weiter'}; }
+  renderVals(){
+    const p=this.props, {W,H,wide,D,C,bw}=this.geom(); this.W=W;
+    const dark=(p.theme||'light')==='dark', live=!!p.live, red=!!p.reduced, step=this.cur();
+    const transT=(!live&&p.transT!=null&&step>1)?+p.transT:null, from=transT!=null?step-1:null;
+    const I={house:icm('house',16),archive:icm('archive',16),user:icm('user',16),vol:icm('volume-2',18),spark:icm('sparkles',12),lock:icm('lock',14),crown:icm('crown',9,3),hist:icm('history',18),hist22:icm('history',22),grid:icm('layout-grid',22)};
+    const voters=Object.values(VOTES).filter(v=>v[0]!=='-').length;
+    const cnt=SLOTS.map((_,j)=>{const c={Y:0,M:0,N:0};Object.values(VOTES).forEach(v=>{if(v[j]!=='-')c[v[j]]++;});return c;});
+    let best=0; cnt.forEach((c,j)=>{if(c.Y>cnt[best].Y||(c.Y===cnt[best].Y&&c.M>cnt[best].M))best=j;});
+    const slots=SLOTS.map(([day,time],j)=>({day,time,y:cnt[j].Y,m:cnt[j].M,n:cnt[j].N,yW:(cnt[j].Y/voters*100)+'%',mW:(cnt[j].M/voters*100)+'%',best:j===best,bd:j===best?'3px solid var(--cp-focus)':'var(--cp-bw) solid var(--cp-line)',sh:j===best?'var(--cp-shadow-card)':'none',tour:j===0?'poll-1':'',vtour:j===0?'poll-vote':''}));
+    const voteOpts=[['Ja','check'],['Meh','minus'],['Nein','x']].map(([n,ic],i)=>({n,m:icm(ic,13,3),sep:i?'inset 2px 0 0 var(--cp-line)':'none'}));
+    const VC={Y:['50%','solid','var(--cp-success)','var(--cp-on-success)','check'],M:['50%','solid','var(--cp-warning)','var(--cp-on-warning)','minus'],N:['6px','solid','var(--cp-surface)','var(--cp-ink)','x'],'-':['50%','dashed','transparent','var(--cp-ink)','']};
+    const mxRows=Object.keys(VOTES).map(n=>({ini:n[0],tint:tint(n),label:n==='Nele'?'Nele (du)':n,w:n==='Nele'?800:600,c:VOTES[n].split('').map(k=>{const v=VC[k];return {r:v[0],bs:v[1],bg:v[2],fg:v[3],m:v[4]?icm(v[4],12,3):'none',is:v[4]?12:0};})}));
+    const teams=[1,2,4,8].map(n=>({n,d:TMP[n-1],name:{1:'Team Rot',2:'Team Orange',4:'Team Himmel',8:'Team Nacht'}[n]}));
+    const P=(n,o)=>Object.assign({ini:n[0],tint:tint(n),l:n,w:600,host:false,filt:'none',tour:''},o||{});
+    const zones=[{n:'Bench',m:icm('armchair',18),d:'Alle über den Link',ppl:BENCH.map(n=>P(n,n==='Mia'?{filt:'grayscale(1)'}:{}))},{n:'Tribüne',m:icm('eye',18),d:'Zuschauen',ppl:[P('Sanne',{host:true}),P('Chris'),P('Nele',{l:'Du',w:800,tour:'me'})]}].map(z=>({...z,count:String(z.ppl.length)}));
+    const sessions=[{no:1,sub:'7 von 11 haben abgestimmt',pill:'Terminumfrage',dot:'var(--cp-info)',bt:'0'},{no:2,sub:'Noch kein Termin',pill:'Kein Termin',dot:'var(--cp-ink-3)',bt:'2px solid var(--cp-line-soft)'}];
+    const feed=FEED.map(([ic,t,who,txt,at])=>({m:icm(ic,14),bg:t==='p'?'var(--cp-primary)':'var(--cp-surface)',who,t:txt,at}));
+
+    const M=this.state.M;
+    const need=live?[1,2,3,4,5,6,7,8]:(from?[from,step]:[step]);
+    const measure=need.map(i=>{const b=this.bc(i);return {i:String(i),title:b.title,body:b.body,count:b.count};});
+    let L=M?this.lay(step):null, LA=from&&M?this.lay(from):null;
+    let hole={x:W/2-1,y:H/2-1,w:2,h:2,r:1,ring:0}, bub={x:-9999,y:0}, bubVis='hidden', bubOp=1, bubTf='none', shown=step, Lsh=L, scroll=0;
+    if(L&&(transT==null||LA)){
+      bubVis='visible';
+      if(transT==null){ hole=(live&&this.state.hole)?this.state.hole:L.hole; scroll=L.none?0:L.scroll; Lsh=L; }
+      else {
+        const t=transT, sA=LA.none?0:LA.scroll, sB=L.none?sA:L.scroll;
+        if(red){ hole=L.hole; scroll=sB; Lsh=L; bubOp=clamp(t/140,0,1); }
+        else {
+          const pg=clamp(t/360,0,1);
+          if(!LA.none&&!L.none){ const e=EZ.io(pg); hole={x:lerp(LA.hole.x,L.hole.x,e),y:lerp(LA.hole.y,L.hole.y,e),w:lerp(LA.hole.w,L.hole.w,e),h:lerp(LA.hole.h,L.hole.h,e),r:lerp(LA.hole.r,L.hole.r,e),ring:L.hole.ring}; }
+          else if(LA.none&&!L.none){ const e=EZ.out(pg), c={x:L.hole.x+L.hole.w/2,y:L.hole.y+L.hole.h/2}; hole={x:lerp(c.x-1,L.hole.x,e),y:lerp(c.y-1,L.hole.y,e),w:Math.max(2,L.hole.w*e),h:Math.max(2,L.hole.h*e),r:L.hole.r*e,ring:L.hole.ring*e}; }
+          else if(!LA.none&&L.none){ const e=EZ.in(clamp(t/220,0,1)), c={x:LA.hole.x+LA.hole.w/2,y:LA.hole.y+LA.hole.h/2}; hole={x:lerp(LA.hole.x,c.x,e),y:lerp(LA.hole.y,c.y,e),w:Math.max(2,LA.hole.w*(1-e)),h:Math.max(2,LA.hole.h*(1-e)),r:LA.hole.r*(1-e),ring:LA.hole.ring*(1-e)}; }
+          else hole=L.hole;
+          scroll=lerp(sA,sB,EZ.io(pg));
+          const ds=scroll-sB;
+          if(!L.none&&!LA.none) { /* hole already in frame coords at its own scroll */ }
+          if(t<140){ shown=from; Lsh=LA; const e=EZ.in(t/140); bubOp=1-e; bubTf='scale('+(1-.02*e).toFixed(4)+')'; }
+          else if(t<300){ shown=step; Lsh=L; bubOp=0; }
+          else { shown=step; Lsh=L; const e=EZ.out(clamp((t-300)/220,0,1)), o=this.off(L.side,8*(1-e)); bubOp=e; bubTf='translate('+o[0].toFixed(1)+'px,'+o[1].toFixed(1)+'px)'+(L.none?' scale('+(.96+.04*e).toFixed(4)+')':''); }
+          if(!L.none&&!LA.none&&Math.abs(ds)>.5){ /* during scroll the hole follows the thing: already interpolated */ }
+        }
+      }
+      bub=Lsh.bub;
+    }
+    this._scroll=scroll;
+    const bc=this.bc(shown);
+    const tailOn=Lsh&&!Lsh.none, side=Lsh?Lsh.side:'none', t=C.tail, bwv=dark?2.5:3, line='var(--cp-bw) solid var(--cp-line)';
+    let tl={l:0,t:0,bt:'0',br:'0',bb:'0',bl:'0',rad:'0'};
+    if(tailOn){ const tx=Lsh.tail.x, ty=Lsh.tail.y, bh=Lsh.bh;
+      if(side==='top') tl={l:tx-t/2,t:bwv/2-t/2,bt:line,bl:line,br:'0',bb:'0',rad:'3px 0 0 0'};
+      if(side==='bottom') tl={l:tx-t/2,t:bh-bwv/2-t/2,bb:line,br:line,bt:'0',bl:'0',rad:'0 0 3px 0'};
+      if(side==='left') tl={l:bwv/2-t/2,t:ty-t/2,bl:line,bb:line,bt:'0',br:'0',rad:'0 0 0 3px'};
+      if(side==='right') tl={l:bw-bwv/2-t/2,t:ty-t/2,bt:line,br:line,bb:'0',bl:'0',rad:'0 3px 0 0'}; }
+    const edge=p.edge||'ring', ringW=hole.ring==null?3:hole.ring;
+    const spr=(W+H)+'px', holeSh=edge==='glow'?'0 0 22px 8px rgba(255,210,63,.75), 0 0 0 '+spr+' var(--cp-overlay)':'0 0 0 '+spr+' var(--cp-overlay)';
+    const holeOl=edge==='ring'?(ringW.toFixed?ringW.toFixed(2):ringW)+'px solid var(--cp-primary)':'0px solid transparent';
+    const expr=STEPS[shown-1].expr||'zeigt';
+    const showGuides=!!p.guides&&Lsh&&!Lsh.none&&transT==null;
+    const gT=showGuides?{x:Lsh.T.x,y:Lsh.T.y,w:Lsh.T.w,h:Lsh.T.h}:{x:0,y:0,w:0,h:0}, gA=showGuides?Lsh.A:{x:0,y:0};
+    const gL=showGuides?{x:clamp(Lsh.bub.x,8,W-260),y:side==='bottom'?Lsh.bub.y+Lsh.bh+18:Math.max(8,Lsh.bub.y-(side==='top'?Lsh.bh*0+52:34))}:{x:0,y:0};
+    if(showGuides&&side==='top') gL.y=Lsh.bub.y+Lsh.bh+18;
+    if(showGuides&&gL.y>H-34) gL.y=Lsh.bub.y-C.S-14;
+    const uid=this._uid||(this._uid='rg'+Math.random().toString(36).slice(2,7));
+    const lg=document.querySelector('img[data-rg-logo]'); return {logo:(lg&&lg.src)||'./assets/compibert/compibert-head.svg',on:this.state.on,fr:this.fr,sc:this.sc,mainRef:this.mainRef,holeRef:this.holeRef,bubRef:this.bubRef,ovRef:this.ovRef,avRef:this.avRef,
+      W,H,wide,narrow:!wide,D,C,bw,theme:dark?'dark':'light',I,slots,voteOpts,mxHead:SLOTS.map(([d,t])=>({d,t})),mxRows,teams,zu:[1,2],zones,sessions,how:HOW,feed,
+      measure,hole,bub,bubVis,bubOp:String(bubOp),bubTf,bubTo:side==='top'?'50% 0%':side==='bottom'?'50% 100%':'50% 50%',holeSh,holeOl,
+      shCol:dark?'var(--cp-hot)':'var(--cp-shadow-ink)',hasTail:!!tailOn,tl,bc,ids:{t:uid+'t',b:uid+'b'},
+      face:{expr,dir:Lsh&&!Lsh.none?Lsh.dir:0,cue:this.state.cue},opt:p.opt||'B',reduced:red,faceLoop:!live&&!!p.faceLoop&&transT==null,
+      showGuides,gT,gA,gL,gLabel:showGuides?Lsh.rule:'',
+      live,liveLabel:this.state.ended?'Rundgang beendet':('Schritt '+step+' von 8'),ovPE:this.state.ended?'none':'auto',ovOp:'1',
+      restart:()=>this.restart(),onNext:()=>{ if(!live) return; step===8?this.end():this.go(step+1); },onBack:()=>{ if(live) this.go(step-1); },onSkip:()=>{ if(live) this.end(); }};
+  }
+}
+function p_ring(edge){ return (edge||'ring')==='ring'?3:0; }
+</script>
+</body>
+</html>

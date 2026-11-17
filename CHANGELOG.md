@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Neu
+
+- **Rundgang:** Öffnest du zum ersten Mal ein Event, das du nicht hostest, zeigt dir ein kurzer Rundgang, was auf der Seite wichtig ist. Du kannst ihn jederzeit überspringen und auf deinem Profil neu starten. ([#460](https://github.com/christried/compies/issues/460))
+
 ### Geändert
 
 - **Neue Namen am verdeckten Glücksrad:** Beim verdeckten Rad tragen die Felder jetzt 30 neue Platzhalter-Namen. Das Rad nimmt sie in fester Reihenfolge und mischt sie dann; hat es mehr als 30 Felder, steht auf den übrigen „???“. ([#784](https://github.com/christried/compies/issues/784))
