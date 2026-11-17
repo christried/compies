@@ -136,11 +136,12 @@ describe('drawSpin', () => {
     expect([...spin.sliceLabels!].sort()).toEqual(['N1', 'N2', 'N3'])
   })
 
-  it('shuffles only the first 20 names among the slices; slices 21 to 30 take names 21 to 30 in list order', () => {
-    const spin = drawSpin(many.slice(0, 25), thirty, n => n - 1)
+  it('takes the first 25 names for 25 slices and shuffles them all on the wheel', () => {
+    // The source always answers 0: a non-identity shuffle, so names past the 20th move too.
+    const spin = drawSpin(many.slice(0, 25), thirty, () => 0)
 
-    expect([...spin.sliceLabels!.slice(0, 20)].sort()).toEqual(thirty.slice(0, 20).sort())
-    expect(spin.sliceLabels!.slice(20, 25)).toEqual(thirty.slice(20, 25))
+    expect([...spin.sliceLabels!].sort()).toEqual(thirty.slice(0, 25).sort())
+    expect(spin.sliceLabels!.slice(20)).not.toEqual(thirty.slice(20, 25))
   })
 
   it('shows ??? past the 30th name', () => {
