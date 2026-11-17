@@ -125,4 +125,28 @@ describe('drawSpin', () => {
     expect(spin.sliceLabels!.slice(0, 2).sort()).toEqual(['A', 'B'])
     expect(spin.sliceLabels!.slice(2)).toEqual(['???', '???'])
   })
+
+  // #784: the wheel takes the first names of the list, not a random subset of it.
+  const thirty = Array.from({ length: 30 }, (_, index) => `N${index + 1}`)
+  const many = Array.from({ length: 32 }, (_, index) => `G${index + 1}`)
+
+  it('takes the first names of the list when the wheel has fewer slices than names', () => {
+    const spin = drawSpin(['g1', 'g2', 'g3'], thirty, n => n - 1)
+
+    expect([...spin.sliceLabels!].sort()).toEqual(['N1', 'N2', 'N3'])
+  })
+
+  it('shuffles only the first 20 names among the slices; slices 21 to 30 take names 21 to 30 in list order', () => {
+    const spin = drawSpin(many.slice(0, 25), thirty, n => n - 1)
+
+    expect([...spin.sliceLabels!.slice(0, 20)].sort()).toEqual(thirty.slice(0, 20).sort())
+    expect(spin.sliceLabels!.slice(20, 25)).toEqual(thirty.slice(20, 25))
+  })
+
+  it('shows ??? past the 30th name', () => {
+    const spin = drawSpin(many, thirty, () => 0)
+
+    expect(spin.sliceLabels!.slice(30)).toEqual(['???', '???'])
+    expect(new Set(spin.sliceLabels!.slice(0, 30))).toEqual(new Set(thirty))
+  })
 })
