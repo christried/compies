@@ -236,7 +236,7 @@ const helpLine = computed(() => {
         class="cp-notes-content relative px-3.5 pt-3 pb-3.5 text-[16px] leading-normal"
         :class="disabled ? 'text-ink-3' : 'text-ink'"
       >
-        <EditorContent :editor="editor" />
+        <EditorContent :editor="editor ?? undefined" />
       </div>
     </div>
     <div

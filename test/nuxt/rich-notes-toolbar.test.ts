@@ -85,7 +85,7 @@ describe('the formats', () => {
     await toolbarButton(page, 'Überschrift').trigger('click')
 
     expect(editorOf(page).getJSON().content?.map(block => block.type)).toEqual(['bulletList', 'heading'])
-    expect(editorOf(page).getJSON().content?.[1]?.content?.[0]?.text).toBe('zwei')
+    expect(editorOf(page).state.doc.lastChild?.textContent).toBe('zwei')
   })
 
   it('turns a heading into a list item when the list button is used on it', async () => {

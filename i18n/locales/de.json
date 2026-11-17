@@ -1026,8 +1026,6 @@
     "playersFrom": "von",
     "playersTo": "bis",
     "notes": "Notizen",
-    "notesHelp": "Einstellungen, Aufwärmen, Siegbedingung, Hausregeln. Nur du siehst sie.",
-    "notesTooLong": "Höchstens {max} Zeichen.",
     "tags": "Tags",
     "tagsHelp": "Enter oder Komma fügt einen Tag hinzu.",
     "tagsFreeToPlayHint": "Ohne Preis bekommt das Spiel den Tag „Free-to-play“.",

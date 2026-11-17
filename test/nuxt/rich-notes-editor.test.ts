@@ -102,7 +102,7 @@ describe('the extensions', () => {
     editor.commands.insertContent('##')
     const at = editor.state.selection.from
     // The input rules run on the text input handler: the space is the one that makes the heading.
-    editor.view.someProp('handleTextInput', handle => handle(editor.view, at, at, ' '))
+    editor.view.someProp('handleTextInput', handle => handle(editor.view, at, at, ' ', () => editor.state.tr))
     expect(editor.getJSON().content?.[0]).toMatchObject({ type: 'heading', attrs: { level: 3 } })
   })
 })

@@ -2,11 +2,13 @@ import { mountSuspended, registerEndpoint } from '@nuxt/test-utils/runtime'
 import { flushPromises, type VueWrapper } from '@vue/test-utils'
 import { createError, readBody } from 'h3'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import RichNotesEditor from '~/components/RichNotesEditor.vue'
 import CreatePage from '~/pages/neu.vue'
 import type { GameView } from '~~/shared/game'
-import { notesFromLines } from '~~/shared/notes-doc'
+import { notesFromLines, type NotesDoc } from '~~/shared/notes-doc'
 import { kitty, signInAs } from './auth'
 import { FORMATTED_HREF, FORMATTED_NOTES, readFormatted } from './helpers/formatted-notes'
+import { editorOf } from './helpers/notes-editor'
 
 // Step 6 of the stepper, the Game pool (#146, #173; the Tiebreaker pool is gone, #279): the game browser over the library,
 // the hint under the Game pool, „Neues Spiel anlegen“ in a sheet, and what is sent. The other steps have their own
@@ -422,7 +424,7 @@ describe('the pool steps', () => {
     const newGameButton = (page: Page) => page.findAll('button').find(button => button.text().includes('Neues Spiel anlegen'))!
     const dialog = () => document.body.querySelector('[role="dialog"]')
 
-    async function createInSheet(page: Page, notes?: string) {
+    async function createInSheet(page: Page, notes?: NotesDoc) {
       await newGameButton(page).trigger('click')
       await vi.waitFor(() => expect(dialog()).not.toBeNull())
       const label = [...dialog()!.querySelectorAll('label')].find(element => element.textContent === 'Name')!
@@ -430,10 +432,9 @@ describe('the pool steps', () => {
       input.value = 'Frisch Angelegt'
       input.dispatchEvent(new Event('input'))
       if (notes !== undefined) {
-        const notesLabel = [...dialog()!.querySelectorAll('label')].find(element => element.textContent === 'Notizen')!
-        const area = dialog()!.querySelector<HTMLTextAreaElement>(`[id="${notesLabel.getAttribute('for')}"]`)!
-        area.value = notes
-        area.dispatchEvent(new Event('input'))
+        // The editor is a lazy chunk (#454): it mounts after the sheet is open.
+        await vi.waitFor(() => expect(dialog()!.querySelector('[role="textbox"]')).not.toBeNull())
+        editorOf(page.findComponent(RichNotesEditor)).commands.setContent(notes as never, { emitUpdate: true })
       }
       dialog()!.querySelector('form')!.dispatchEvent(new Event('submit', { cancelable: true }))
     }
@@ -548,17 +549,30 @@ describe('the pool steps', () => {
       await vi.waitFor(() => expect([...dialog()!.querySelectorAll('[role="listbox"] [role="option"]')].map(option => option.textContent?.trim())).toEqual(['Retro']))
     })
 
-    it('posts the notes typed in the sheet and puts the game in the pool (#223)', async () => {
+    it('posts the notes written in the sheet and puts the game in the pool (#223, #454)', async () => {
       const page = await mountCreate()
       await toPoolStep(page)
-      const notes = 'Settings: 3 Runden\nWin: meiste Punkte'
-      const document = notesFromLines(notes.split('\n'))
 
-      await createInSheet(page, notes)
+      await createInSheet(page, FORMATTED_NOTES)
 
       await vi.waitFor(() => expect(dialog()).toBeNull())
-      expect(postedGame).toHaveBeenCalledWith(expect.objectContaining({ name: 'Frisch Angelegt', notes: document }))
+      expect(postedGame).toHaveBeenCalledWith(expect.objectContaining({ name: 'Frisch Angelegt', notes: FORMATTED_NOTES }))
       expect(inPool(page)!.findAll('li').map(row => row.get('b').text())).toEqual(['Frisch Angelegt'])
+    })
+
+    it('closes only the link control on Esc: the sheet and the form in it stay open (#454)', async () => {
+      const page = await mountCreate()
+      await toPoolStep(page)
+      await newGameButton(page).trigger('click')
+      await vi.waitFor(() => expect(dialog()!.querySelector('[role="textbox"]')).not.toBeNull())
+
+      dialog()!.querySelector<HTMLButtonElement>('button[aria-label="Link"]')!.click()
+      await vi.waitFor(() => expect(dialog()!.querySelector('[aria-label="Link"] input[type="url"]')).not.toBeNull())
+      dialog()!.querySelector('[aria-label="Link"] input[type="url"]')!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }))
+
+      await vi.waitFor(() => expect(dialog()!.querySelector('[aria-label="Link"] input[type="url"]')).toBeNull())
+      expect(dialog()).not.toBeNull()
+      expect(dialog()!.querySelector('form')).not.toBeNull()
     })
   })
 

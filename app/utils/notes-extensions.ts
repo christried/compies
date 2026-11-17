@@ -62,7 +62,7 @@ function notesExtras(onOpenLink: () => void) {
     },
     addProseMirrorPlugins() {
       return [
-        new Plugin({
+        new Plugin<{ from: number, to: number } | null>({
           key: linkTargetKey,
           state: {
             init: () => null,

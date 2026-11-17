@@ -2,10 +2,12 @@ import { mockNuxtImport, mountSuspended, registerEndpoint } from '@nuxt/test-uti
 import { flushPromises, type VueWrapper } from '@vue/test-utils'
 import { createError, getHeader, readBody, readRawBody } from 'h3'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import RichNotesEditor from '~/components/RichNotesEditor.vue'
 import CreatePage from '~/pages/bibliothek/neu.vue'
 import type { GameView } from '~~/shared/game'
 import { kitty, signInAs } from './auth'
 import { shownToasts } from './event-page'
+import { editorOf } from './helpers/notes-editor'
 
 // The create page (#456): „Speichern und noch eins“ saves the game, toasts, and starts a fresh form with the cursor
 // in the name; „Spiel anlegen“ leads to the game's page as before. The form itself is tested in game-form.test.ts.
@@ -101,7 +103,8 @@ async function fillEverything(page: VueWrapper) {
   await field(page, 'Start ab').setValue('1:12')
   await field(page, 'Tags').setValue('Co-op')
   await field(page, 'Tags').trigger('keydown', { key: 'Enter' })
-  await field(page, 'Notizen').setValue('Hausregeln')
+  await vi.waitFor(() => expect(page.find('[role="textbox"]').exists()).toBe(true))
+  editorOf(page.findComponent(RichNotesEditor)).commands.insertContent('Hausregeln')
   await field(page, 'Betrag in €').setValue('19,99')
   await field(page, 'Wo gibt’s das Spiel?').setValue('steam')
   await button(page, 'Teams').trigger('click')
@@ -136,7 +139,7 @@ describe('the create page', () => {
     expect(field(page, 'Name').element).toBe(document.activeElement)
     expect(valueOf(page, 'Name')).toBe('')
     expect(valueOf(page, 'YouTube-Link')).toBe('')
-    expect(valueOf(page, 'Notizen')).toBe('')
+    await vi.waitFor(() => expect(page.find('[role="textbox"]')?.text()).toBe(''))
     expect(valueOf(page, 'Betrag in €')).toBe('')
     expect(valueOf(page, 'Start ab')).toBe('0:00')
     expect(valueOf(page, 'Ende')).toBe('0:30')
