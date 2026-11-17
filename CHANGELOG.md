@@ -2,13 +2,16 @@
 
 ## [Unreleased]
 
+### Neu
+
+- **Rundgang:** Öffnest du zum ersten Mal ein Event, das du nicht hostest, zeigt dir ein kurzer Rundgang, was auf der Seite wichtig ist. Du kannst ihn jederzeit überspringen und auf deinem Profil neu starten. ([#460](https://github.com/christried/compies/issues/460))
+
 ## [0.14.0] - 2026-11-16 – Politur
 
 Viele kleine Verbesserungen an dem, was schon da ist: Läuft ein Clip, wird der Rest der Eventseite dunkel. Deine Darstellung änderst du jetzt von jeder Seite aus, und Karten, Knöpfe und Hinweise sind aufgeräumt.
 
 ### Neu
 
-- **Rundgang:** Öffnest du zum ersten Mal ein Event, das du nicht hostest, zeigt dir ein kurzer Rundgang, was auf der Seite wichtig ist. Du kannst ihn jederzeit überspringen und auf deinem Profil neu starten. ([#460](https://github.com/christried/compies/issues/460))
 - Du kannst jetzt über das Menü an deinem Avatar mit einem Klick zu deinem Profil. ([#618](https://github.com/christried/compies/issues/618))
 - **Abdunkeln um den Clip:** Läuft ein Clip, wird der Rest der Eventseite fast schwarz und nimmt keine Eingabe mehr an. Hell bleiben der Clip mit seiner Leiste, die Veto-Leiste und für den Host das Host-Dock. Schließt du den Clip nur für dich, ist die Seite sofort wieder da. ([#587](https://github.com/christried/compies/issues/587))
 - Du kannst jetzt deine Darstellung (Hell, Dunkel oder System) von jeder Seite aus ändern: mit dem neuen Knopf im Header, auf dem Handy im Menü an deinem Avatar. ([#617](https://github.com/christried/compies/issues/617))
