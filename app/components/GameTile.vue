@@ -17,6 +17,8 @@ defineProps<{
   /** The Event's name and whether it is finished (#729), for the dialog's Event notes block; where the page does not hold them the block keeps no sub and no chip. */
   eventName?: string
   eventFinished?: boolean
+  /** Saves the Host's Event notes of this game from its dialog (#464); resolves to whether the server took it. The dialog's own guard decides who may use it. */
+  saveEventNotes?: ((gameId: string, notes: NotesDoc | null) => Promise<boolean>) | null
 }>()
 
 const dialogOpen = ref(false)
@@ -38,6 +40,7 @@ const dialogOpen = ref(false)
     :event-notes="eventNotes"
     :event-name="eventName"
     :event-finished="eventFinished"
+    :save-event-notes="saveEventNotes"
     @close="dialogOpen = false"
   />
 </template>

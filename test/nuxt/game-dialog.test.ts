@@ -1,13 +1,16 @@
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import { flushPromises, type VueWrapper } from '@vue/test-utils'
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import GameDialog from '~/components/GameDialog.vue'
 import GameTile from '~/components/GameTile.vue'
+import RichNotesEditor from '~/components/RichNotesEditor.vue'
+import { EVENT_NOTES_MAX } from '~~/shared/event'
 import { GAME_NAME_MAX, GAME_NOTES_MAX, TAG_MAX, TAGS_PER_GAME_MAX, type HostGameFacts, type PoolGameFace } from '~~/shared/game'
 import { notesFromLines, type NotesDoc } from '~~/shared/notes-doc'
 import { colorTags } from '~~/shared/tag-colors'
 import { kitty, signInAs } from './auth'
 import { BLANK_NOTES, FORMATTED_HREF, FORMATTED_NOTES, readFormatted } from './helpers/formatted-notes'
+import { editorOf, ensureGeometry, type } from './helpers/notes-editor'
 
 // The game dialog (#443, #444): the library entry's parts in the sheet shell, read-only. The Host gets everything the library knows but a Clip;
 // a Member's audience gets picture, name, players, Suitabilities and Price, never Tags, Notes or the link, whatever the caller hands it. The sheet is teleported, so the tests read the document.
@@ -40,7 +43,8 @@ const FACTS: HostGameFacts = {
 
 let wrapper: VueWrapper | undefined
 
-async function open(props: { game?: PoolGameFace, audience?: 'host' | 'member', facts?: HostGameFacts | null, eventNotes?: NotesDoc | null, eventName?: string, eventFinished?: boolean } = {}) {
+type Save = (gameId: string, notes: NotesDoc | null) => Promise<boolean>
+async function open(props: { game?: PoolGameFace, audience?: 'host' | 'member', facts?: HostGameFacts | null, eventNotes?: NotesDoc | null, eventName?: string, eventFinished?: boolean, saveEventNotes?: Save | null } = {}) {
   wrapper = await mountSuspended(GameDialog, { props: { open: true, game: FULL, audience: 'host', facts: FACTS, ...props } })
   await flushPromises()
   return wrapper
@@ -469,5 +473,423 @@ describe('the game tile with its dialog (#443, #444)', () => {
     await flushPromises()
 
     expect(document.activeElement).toBe(button)
+  })
+})
+
+describe('the Host writes the Event notes in the dialog (#464)', () => {
+  const EVENT_DOC = notesFromLines(['Heute nur Bo1'])!
+  const OTHER_DOC = notesFromLines(['Ganz anders'])!
+  const letters = (n: number): NotesDoc => ({ type: 'doc', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'a'.repeat(n) }] }] })
+  const EDIT = 'Notizen für dieses Event bearbeiten'
+  const ADD = 'Notizen für dieses Event hinzufügen'
+
+  // What the dialog asked its page to save, and what the page answers: by default the server took it.
+  let saved: { gameId: string, notes: NotesDoc | null }[]
+  let answer: () => Promise<boolean>
+  const saveEventNotes: Save = (gameId, notes) => {
+    saved.push({ gameId, notes })
+    return answer()
+  }
+
+  beforeEach(() => {
+    ensureGeometry()
+    saved = []
+    answer = () => Promise.resolve(true)
+  })
+
+  const pencil = () => dialog().querySelector<HTMLButtonElement>(`button[aria-label="${EDIT}"]`)
+  const addButton = () => [...dialog().querySelectorAll('button')].find(button => button.textContent?.trim() === ADD) ?? null
+  const footerButton = (label: string) => [...dialog().querySelectorAll<HTMLButtonElement>('footer button')].find(button => button.textContent?.trim() === label)
+  const textbox = () => dialog().querySelector<HTMLElement>('[role="textbox"]')
+  const editor = () => editorOf(wrapper!.findComponent(RichNotesEditor))
+  const eventLabels = () => [...dialog().querySelectorAll('h3')].filter(h => h.textContent === EVENT_LABEL)
+  const EVENT_LABEL = 'Notizen für dieses Event'
+
+  /** Presses the entry (the pencil, or the add button) and waits for the lazy editor. */
+  async function startEditing() {
+    const entry = pencil() ?? addButton()
+    expect(entry, 'the entry to edit').not.toBeNull()
+    entry!.click()
+    await vi.waitFor(() => expect(textbox()).not.toBeNull())
+    await flushPromises()
+  }
+  async function press(label: string) {
+    const button = footerButton(label)
+    expect(button, label).toBeDefined()
+    button!.click()
+    await flushPromises()
+  }
+  /** The page's answer to a save: the Event is refetched before the dialog hears whether it was taken, as `send` does. */
+  function takes(next: NotesDoc | null) {
+    answer = async () => {
+      await wrapper!.setProps({ eventNotes: next })
+      return true
+    }
+  }
+  const escape = () => dialog().dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+  function enter(init: KeyboardEventInit = { ctrlKey: true }) {
+    const event = new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true, ...init })
+    textbox()!.dispatchEvent(event)
+    return event
+  }
+
+  describe('the entry', () => {
+    it('is a pencil in the header of the Event block, named after the notes, for the Host of a running Event', async () => {
+      await open({ eventNotes: EVENT_DOC, saveEventNotes })
+
+      const button = pencil()
+      expect(button).not.toBeNull()
+      expect(button!.closest('section')!.querySelector('h3')?.textContent).toBe(EVENT_LABEL)
+      // The game's own block has none: its notes are edited in the library.
+      expect([...dialog().querySelectorAll('button')].filter(b => b.getAttribute('aria-label')?.startsWith('Notizen'))).toHaveLength(1)
+    })
+
+    it('is an add button above the Game notes for a game without Event notes', async () => {
+      await open({ eventNotes: null, saveEventNotes })
+
+      const button = addButton()
+      expect(button).not.toBeNull()
+      expect(eventLabels()).toHaveLength(0)
+      const gameLabel = [...dialog().querySelectorAll('h3')].find(h => h.textContent === 'Notizen')!
+      expect(button!.compareDocumentPosition(gameLabel) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    })
+
+    it('shows the add button, not an empty block, for stored notes without a visible character', async () => {
+      for (const blank of BLANK_NOTES) {
+        await open({ eventNotes: blank, saveEventNotes })
+
+        expect(addButton()).not.toBeNull()
+        expect(pencil()).toBeNull()
+        expect(eventLabels()).toHaveLength(0)
+        wrapper!.unmount()
+      }
+    })
+
+    it.each([
+      ['a caller that hands no function to save with', { saveEventNotes: undefined }],
+      ['a Member\'s audience, though it is handed the notes and the function', { audience: 'member' as const }],
+      ['a finished Event', { eventFinished: true }],
+    ])('is not there for %s', async (_case, extra) => {
+      for (const eventNotes of [EVENT_DOC, null]) {
+        await open({ eventNotes, saveEventNotes, ...extra })
+
+        expect(pencil()).toBeNull()
+        expect(addButton()).toBeNull()
+        expect(textbox()).toBeNull()
+        wrapper!.unmount()
+      }
+    })
+
+    it('leaves a finished Event\'s block frozen: the chip and the text, no editor', async () => {
+      await open({ eventNotes: EVENT_DOC, saveEventNotes, eventFinished: true })
+
+      expect(text()).toContain('Event beendet')
+      expect(text()).toContain('Heute nur Bo1')
+      expect(textbox()).toBeNull()
+    })
+  })
+
+  describe('edit mode', () => {
+    it('opens the editor with the stored notes, hides the cover and the facts, keeps the Game notes read-only and swaps the footer', async () => {
+      await open({ eventNotes: EVENT_DOC, saveEventNotes })
+      expect(link()).not.toBeNull()
+
+      await startEditing()
+
+      expect(editor().getJSON()).toEqual(EVENT_DOC)
+      expect(dialog().querySelector('img')).toBeNull()
+      expect(dialog().querySelector('[data-cover]')).toBeNull()
+      expect(pills()).toEqual([])
+      const gameBlock = [...dialog().querySelectorAll('section')].find(s => s.querySelector('h3')?.textContent === 'Notizen')!
+      expect(gameBlock.textContent).toContain('Erste Zeile')
+      expect(gameBlock.querySelector('[contenteditable]')).toBeNull()
+      expect([...dialog().querySelectorAll('footer button')].map(b => b.textContent?.trim())).toEqual(['Abbrechen', 'Speichern'])
+      expect(link()).toBeNull()
+      expect(dialog().querySelector('label')?.textContent).toBe(EVENT_LABEL)
+    })
+
+    it('puts the caret in the editor, and for the add button too', async () => {
+      await open({ eventNotes: EVENT_DOC, saveEventNotes })
+      await startEditing()
+      expect(document.activeElement).toBe(textbox())
+      wrapper!.unmount()
+
+      await open({ eventNotes: null, saveEventNotes })
+      await startEditing()
+      expect(editor().getJSON().content?.[0]?.content).toBeUndefined()
+      expect(document.activeElement).toBe(textbox())
+    })
+
+    it('loads no editor before the Host presses the entry', async () => {
+      await open({ eventNotes: EVENT_DOC, saveEventNotes })
+      await flushPromises()
+
+      expect(textbox()).toBeNull()
+      expect(wrapper!.findComponent(RichNotesEditor).exists()).toBe(false)
+    })
+  })
+
+  describe('saving', () => {
+    it('sends the typed document with the game\'s id, then shows the saved text and puts the focus on the pencil', async () => {
+      await open({ eventNotes: EVENT_DOC, saveEventNotes })
+      await startEditing()
+      type(wrapper!.findComponent(RichNotesEditor), ' und Mirror aus')
+      const typed = notesFromLines(['Heute nur Bo1 und Mirror aus'])!
+      takes(typed)
+
+      await press('Speichern')
+
+      await vi.waitFor(() => expect(textbox()).toBeNull())
+      expect(saved).toEqual([{ gameId: FULL.id, notes: typed }])
+      expect(text()).toContain('Heute nur Bo1 und Mirror aus')
+      expect(footerButton('Speichern')).toBeUndefined()
+      expect(link()).not.toBeNull()
+      expect(document.activeElement).toBe(pencil())
+    })
+
+    it('keeps the editor and the typed text when the server refused, and moves no focus', async () => {
+      await open({ eventNotes: EVENT_DOC, saveEventNotes })
+      await startEditing()
+      type(wrapper!.findComponent(RichNotesEditor), ' und Mirror aus')
+      answer = () => Promise.resolve(false)
+      const focused = document.activeElement
+
+      await press('Speichern')
+
+      expect(saved).toHaveLength(1)
+      expect(textbox()).not.toBeNull()
+      expect(editor().getJSON()).toEqual(notesFromLines(['Heute nur Bo1 und Mirror aus']))
+      expect(textbox()!.getAttribute('aria-disabled')).toBeNull()
+      expect(document.activeElement).toBe(focused)
+      expect(footerButton('Speichern')).toBeDefined()
+    })
+
+    it('locks the editor with „Wird gespeichert …“ while the save runs, and a second press saves nothing more', async () => {
+      await open({ eventNotes: EVENT_DOC, saveEventNotes })
+      await startEditing()
+      type(wrapper!.findComponent(RichNotesEditor), '!')
+      let release!: (taken: boolean) => void
+      answer = () => new Promise(resolve => (release = resolve))
+
+      await press('Speichern')
+      expect(textbox()!.getAttribute('aria-disabled')).toBe('true')
+      expect(text()).toContain('Wird gespeichert …')
+      await press('Speichern')
+
+      release(true)
+      await flushPromises()
+      expect(saved.map(save => save.notes)).toEqual([notesFromLines(['Heute nur Bo1!'])])
+    })
+
+    it('clears the note by saving an empty editor, and the focus lands on the add button', async () => {
+      await open({ eventNotes: EVENT_DOC, saveEventNotes })
+      await startEditing()
+      editor().commands.clearContent(true)
+      takes(null)
+
+      await press('Speichern')
+
+      await vi.waitFor(() => expect(textbox()).toBeNull())
+      expect(saved).toEqual([{ gameId: FULL.id, notes: null }])
+      expect(eventLabels()).toHaveLength(0)
+      expect(document.activeElement).toBe(addButton())
+    })
+
+    it('writes a first note through the add button', async () => {
+      await open({ eventNotes: null, saveEventNotes })
+      await startEditing()
+      type(wrapper!.findComponent(RichNotesEditor), 'Heute nur Bo1')
+      takes(EVENT_DOC)
+
+      await press('Speichern')
+
+      await vi.waitFor(() => expect(textbox()).toBeNull())
+      expect(saved).toEqual([{ gameId: FULL.id, notes: EVENT_DOC }])
+      expect(addButton()).toBeNull()
+      expect(document.activeElement).toBe(pencil())
+    })
+
+    it('leaves edit mode with no request when nothing was typed', async () => {
+      await open({ eventNotes: EVENT_DOC, saveEventNotes })
+      await startEditing()
+
+      await press('Speichern')
+
+      expect(textbox()).toBeNull()
+      expect(saved).toEqual([])
+      expect(document.activeElement).toBe(pencil())
+    })
+  })
+
+  describe('the limit', () => {
+    it('blocks Speichern at 2001 characters with the error and the reason, and saves exactly 2000', async () => {
+      await open({ eventNotes: EVENT_DOC, saveEventNotes })
+      await startEditing()
+
+      editor().commands.setContent(letters(EVENT_NOTES_MAX + 1) as never, { emitUpdate: true })
+
+      await vi.waitFor(() => expect(footerButton('Speichern')!.getAttribute('aria-disabled')).toBe('true'))
+      expect(text()).toContain('Höchstens 2000 Zeichen.')
+      expect(text()).toContain('Erst die Notizen kürzen.')
+      const reason = dialog().querySelector(`[id="${footerButton('Speichern')!.getAttribute('aria-describedby')}"]`)
+      expect(reason?.textContent).toBe('Erst die Notizen kürzen.')
+      await press('Speichern')
+      enter()
+      await flushPromises()
+      expect(saved).toEqual([])
+      expect(textbox()).not.toBeNull()
+
+      editor().commands.setContent(letters(EVENT_NOTES_MAX) as never, { emitUpdate: true })
+      takes(letters(EVENT_NOTES_MAX))
+      await vi.waitFor(() => expect(footerButton('Speichern')!.getAttribute('aria-disabled')).not.toBe('true'))
+      expect(text()).not.toContain('Erst die Notizen kürzen.')
+      await press('Speichern')
+
+      await vi.waitFor(() => expect(textbox()).toBeNull())
+      expect(saved).toEqual([{ gameId: FULL.id, notes: letters(EVENT_NOTES_MAX) }])
+    })
+
+    it('opens notes of exactly 2000 characters without a block, and saves one more character typed into 1999', async () => {
+      await open({ eventNotes: letters(EVENT_NOTES_MAX), saveEventNotes })
+      await startEditing()
+      expect(footerButton('Speichern')!.getAttribute('aria-disabled')).not.toBe('true')
+      expect(editor().getJSON()).toEqual(letters(EVENT_NOTES_MAX))
+      wrapper!.unmount()
+
+      await open({ eventNotes: letters(EVENT_NOTES_MAX - 1), saveEventNotes })
+      await startEditing()
+      type(wrapper!.findComponent(RichNotesEditor), 'b')
+      takes(letters(EVENT_NOTES_MAX))
+      await press('Speichern')
+      expect(saved).toHaveLength(1)
+      const notes = saved[0]!.notes!
+      expect(notes.content[0]).toEqual({ type: 'paragraph', content: [{ type: 'text', text: `${'a'.repeat(EVENT_NOTES_MAX - 1)}b` }] })
+    })
+  })
+
+  describe('Strg + Enter', () => {
+    it.each([
+      ['Strg + Enter', { ctrlKey: true }],
+      ['⌘ + Enter', { metaKey: true }],
+    ])('saves with %s from inside the editor and types no line break', async (_name, init) => {
+      await open({ eventNotes: EVENT_DOC, saveEventNotes })
+      await startEditing()
+      type(wrapper!.findComponent(RichNotesEditor), '!')
+      takes(notesFromLines(['Heute nur Bo1!']))
+
+      expect(enter(init).defaultPrevented).toBe(true)
+
+      await vi.waitFor(() => expect(textbox()).toBeNull())
+      expect(saved.map(save => save.notes)).toEqual([notesFromLines(['Heute nur Bo1!'])])
+    })
+
+    it('leaves a bare Enter to the editor, a Shift or Alt chord and a held key save nothing', async () => {
+      await open({ eventNotes: EVENT_DOC, saveEventNotes })
+      await startEditing()
+      type(wrapper!.findComponent(RichNotesEditor), '!')
+
+      enter({})
+      enter({ ctrlKey: true, shiftKey: true })
+      enter({ ctrlKey: true, altKey: true })
+      enter({ ctrlKey: true, isComposing: true })
+      enter({ ctrlKey: true, repeat: true })
+      await flushPromises()
+
+      expect(saved).toEqual([])
+      expect(textbox()).not.toBeNull()
+    })
+  })
+
+  describe('cancelling', () => {
+    it('goes back to view mode with „Abbrechen“, sends nothing and puts the focus on the pencil, and the draft does not come back', async () => {
+      const page = await open({ eventNotes: EVENT_DOC, saveEventNotes })
+      await startEditing()
+      type(wrapper!.findComponent(RichNotesEditor), ' weg damit')
+
+      await press('Abbrechen')
+
+      expect(textbox()).toBeNull()
+      expect(saved).toEqual([])
+      expect(page.emitted('close')).toBeUndefined()
+      expect(document.activeElement).toBe(pencil())
+      expect(text()).not.toContain('weg damit')
+      await startEditing()
+      expect(editor().getJSON()).toEqual(EVENT_DOC)
+    })
+
+    it('cancels on Escape, and only the next Escape closes the dialog', async () => {
+      const page = await open({ eventNotes: EVENT_DOC, saveEventNotes })
+      await startEditing()
+
+      escape()
+      await flushPromises()
+
+      expect(textbox()).toBeNull()
+      expect(page.emitted('close')).toBeUndefined()
+      expect(document.activeElement).toBe(pencil())
+      escape()
+      expect(page.emitted('close')).toHaveLength(1)
+    })
+
+    it('cancels on the ✕ and on the scrim while editing, and closes on them in view mode', async () => {
+      const page = await open({ eventNotes: EVENT_DOC, saveEventNotes })
+      await startEditing()
+
+      dialog().querySelector<HTMLButtonElement>('button[aria-label="Schließen"]')!.click()
+      await flushPromises()
+      expect(textbox()).toBeNull()
+      expect(page.emitted('close')).toBeUndefined()
+
+      await startEditing()
+      document.querySelector<HTMLElement>('[data-sheet="overlay"]')!.click()
+      await flushPromises()
+      expect(textbox()).toBeNull()
+      expect(page.emitted('close')).toBeUndefined()
+
+      document.querySelector<HTMLElement>('[data-sheet="overlay"]')!.click()
+      expect(page.emitted('close')).toHaveLength(1)
+    })
+
+    it('forgets the draft when the dialog closes', async () => {
+      const page = await open({ eventNotes: EVENT_DOC, saveEventNotes })
+      await startEditing()
+      type(wrapper!.findComponent(RichNotesEditor), ' weg damit')
+
+      await page.setProps({ open: false })
+      await flushPromises()
+      await page.setProps({ open: true })
+      await flushPromises()
+
+      expect(textbox()).toBeNull()
+      expect(pencil()).not.toBeNull()
+      expect(text()).not.toContain('weg damit')
+    })
+  })
+
+  describe('while the Event changes under the edit', () => {
+    it('ends the edit when the Event finishes: the frozen block shows, no editor', async () => {
+      const page = await open({ eventNotes: EVENT_DOC, saveEventNotes })
+      await startEditing()
+
+      await page.setProps({ eventFinished: true })
+      await flushPromises()
+
+      expect(textbox()).toBeNull()
+      expect(pencil()).toBeNull()
+      expect(text()).toContain('Event beendet')
+      expect(text()).toContain('Heute nur Bo1')
+    })
+
+    it('keeps the typed text when a refetch brings other notes', async () => {
+      const page = await open({ eventNotes: EVENT_DOC, saveEventNotes })
+      await startEditing()
+      type(wrapper!.findComponent(RichNotesEditor), '!')
+
+      await page.setProps({ eventNotes: OTHER_DOC })
+      await flushPromises()
+
+      expect(editor().getJSON()).toEqual(notesFromLines(['Heute nur Bo1!']))
+      expect(text()).not.toContain('Ganz anders')
+    })
   })
 })
