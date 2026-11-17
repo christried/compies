@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Plus, X } from '@lucide/vue'
-import { addPoolGame, settingsOf, togglePoolGame, type EventDraft, type StepLocks } from '~/utils/event-draft'
+import { addPoolGame, settingsOf, togglePoolGame, wheelPoolSize, type EventDraft, type StepLocks } from '~/utils/event-draft'
 import { NO_FILTERS, type GameFilters, type GameView, type PoolGame } from '~~/shared/game'
 import { hasWheel, poolHint } from '~~/shared/settings'
 
@@ -25,9 +25,11 @@ const wheel = computed(() => hasWheel(draft.value.settings.selectionMode))
 const library = computed(() => props.locks?.library !== false)
 const filters = ref<GameFilters>({ ...NO_FILTERS })
 const pooled = computed(() => new Set(games.value.map(game => game.id)))
+// The games that are on the wheel (#726): an Archived game is listed with its mark and kept, but the heading and the hint count the rest.
+const onWheel = computed(() => wheelPoolSize(draft.value))
 
 // The setup hint of the Game pool (#146), and on a running Event the Host's live warning (#234) instead: its lock is present there.
-const hint = computed(() => (props.locks?.poolWarning === undefined ? poolHint(settingsOf(draft.value), games.value.length) : null))
+const hint = computed(() => (props.locks?.poolWarning === undefined ? poolHint(settingsOf(draft.value), onWheel.value) : null))
 const liveWarning = computed(() => props.locks?.poolWarning ?? null)
 // The sentence's keys (#146, #279): the Lucky Wheel's or Host pick's, for one game or more; `Last` when a Tie adds the possible last game.
 const HINT_KEYS = {
@@ -75,7 +77,7 @@ async function onSaved(game: GameView) {
 
     <section class="flex flex-col gap-2">
       <h2 class="m-0 font-display text-[22px] leading-tight font-normal">
-        {{ t('stepper.pool.mainCount', { n: games.length }, games.length) }}
+        {{ t('stepper.pool.mainCount', { n: onWheel }, onWheel) }}
       </h2>
       <p
         v-if="games.length === 0"
@@ -95,6 +97,7 @@ async function onSaved(game: GameView) {
         >
           <GameCard
             :game="game"
+            :archived="game.archived"
             layout="row"
           >
             <template #actions>

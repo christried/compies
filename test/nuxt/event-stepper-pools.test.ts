@@ -562,6 +562,29 @@ describe('the pool steps', () => {
     })
   })
 
+  // An Archived game (#726) is never offered here, so a new Event's pool holds none: its rows carry no mark and the count is the rows.
+  describe('Archived library games (#726)', () => {
+    it('offers none, marks no game added from the library, and counts the pool on the Fertig screen', async () => {
+      library = [kart, pong, game(4, 'Altes Spiel', { archived: true })]
+      const page = await mountCreate()
+      await toPoolStep(page)
+
+      expect(picker(page).findAll('li').map(card => card.get('b').text())).toEqual(['Mario Kart', 'Pong'])
+      await toggle(page, 'Pong in den Pool').trigger('click')
+      await toggle(page, 'Mario Kart in den Pool').trigger('click')
+
+      expect(inPool(page)!.text()).not.toContain('Archiviert')
+      expect(page.text()).toContain('Im Pool: 2 Spiele')
+      await toLastStep(page)
+      await cta(page).trigger('click')
+
+      await vi.waitFor(() => expect(page.text()).toContain('Freitags-Zocken steht!'))
+      const rows = new Map(page.get('dl').findAll('dt').map((term, index) => [term.text(), page.get('dl').findAll('dd')[index]!.text()]))
+      expect(rows.get('Pool')).toBe('2 Spiele')
+      expect(page.text()).not.toContain('Altes Spiel')
+    })
+  })
+
   describe('Event erstellen', () => {
     it('sends the ids of the Game pool and shows its count on the Fertig screen', async () => {
       const page = await mountCreate()

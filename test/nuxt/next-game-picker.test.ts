@@ -11,7 +11,7 @@ import { FORMATTED_NOTES, readFormatted } from './helpers/formatted-notes'
 // The switch „Veto erlauben“ in the picker for the next game (#232, spec #218 § „Nächstes Spiel setzen“, stories 50 and 53): off every
 // time the sheet opens, there only in a Selection mode with a wheel, and its value goes out with the game that is picked.
 
-const halo: PoolGame = { id: 'g-halo', name: 'Halo', imageUrl: null, youtubeId: null, clipStart: 0, clipLength: 30, playersMin: 2, playersMax: 4, suitabilities: [], notes: null, price: null }
+const halo: PoolGame = { id: 'g-halo', name: 'Halo', imageUrl: null, youtubeId: null, clipStart: 0, clipLength: 30, playersMin: 2, playersMax: 4, suitabilities: [], notes: null, price: null, archived: false }
 
 let page: Awaited<ReturnType<typeof mountSuspended>> | undefined
 
@@ -214,6 +214,17 @@ describe('the Tag filter of the library list (#336)', () => {
     expect(dialog()!.textContent).not.toContain('Events')
     expect(dialog()!.textContent).not.toContain('in 2')
     libraryEventCounts = {}
+  })
+
+  it('marks no pool row and lists no Archived library game: the Host\'s picker has no Archived game to show (#726)', async () => {
+    libraryGames = [retroKart, coop, libraryGame(4, 'Altes Spiel', { archived: true })]
+    await mount()
+    await vi.waitFor(() => expect(libraryCards()).toHaveLength(2))
+
+    expect(libraryCards()).toEqual(['Retro Kart', 'Pandemie'])
+    expect(poolCards()).toEqual(['Halo'])
+    expect(dialog()!.textContent).not.toContain('Altes Spiel')
+    expect(dialog()!.textContent).not.toContain('Archiviert')
   })
 
   it('starts each opening of the sheet without a Tag', async () => {

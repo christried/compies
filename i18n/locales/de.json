@@ -900,6 +900,7 @@
     "filterSuitability": "Passt zu",
     "filterTag": "Tag",
     "filterArchived": "Archiviert",
+    "archivedMark": "Archiviert",
     "restore": "Wiederherstellen",
     "restoreLabel": "{name} wiederherstellen",
     "archiveSwitch": "Archiviert",

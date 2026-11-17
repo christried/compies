@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ChevronRight } from '@lucide/vue'
 import EventSetupWizard from '~/components/stepper/EventSetupWizard.vue'
-import { draftBody, newDraft, settingsOf, type EventDraft, type StepKey } from '~/utils/event-draft'
+import { draftBody, newDraft, settingsOf, wheelPoolSize, type EventDraft, type StepKey } from '~/utils/event-draft'
 import { settingsSentence } from '~/utils/settings-summary'
 import type { CreatedEvent } from '~~/shared/event'
 import { eventPath } from '~~/shared/links'
@@ -93,7 +93,7 @@ const datesLine = computed(() => (poll.value
         </section>
         <EventSettingsSummary
           :settings="settings"
-          :pool="draft.pool.length"
+          :pool="wheelPoolSize(draft)"
           :dates="datesLine"
         />
       </div>

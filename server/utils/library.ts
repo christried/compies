@@ -51,19 +51,20 @@ export function poolGameFace(row: typeof games.$inferSelect): PoolGameFace {
   }
 }
 
-/** A games row as the Host's pool shows it (#146): the face plus the clip and the notes (#224), no creator and no edit rights. */
+/** A games row as the Host's pool shows it (#146): the face plus the clip, the notes (#224) and the archive flag (#726), no creator and no edit rights. */
 export function poolGameView(row: typeof games.$inferSelect): PoolGame {
   return {
     ...poolGameFace(row),
     clipStart: row.clipStart,
     clipLength: row.clipLength,
     notes: row.notes,
+    archived: row.archivedAt !== null,
   }
 }
 
-/** A games row as an Event's Round shows its set game to every Member (#228): the Host's pool view without the notes. */
+/** A games row as an Event's Round shows its set game to every Member (#228): the Host's pool view without the notes and the archive flag (#726). */
 export function roundGameView(row: typeof games.$inferSelect): RoundGame {
-  const { notes: _notes, ...game } = poolGameView(row)
+  const { notes: _notes, archived: _archived, ...game } = poolGameView(row)
   return game
 }
 
@@ -75,7 +76,6 @@ function gameView(row: typeof games.$inferSelect, tags: GameTag[]): GameView {
   return {
     ...poolGameView(row),
     tags,
-    archived: row.archivedAt !== null,
     createdAt: row.createdAt.toISOString(),
   }
 }

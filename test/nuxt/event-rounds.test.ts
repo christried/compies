@@ -22,7 +22,7 @@ const FIRST = '2026-10-30T19:00:00.000Z'
 const STARTED = '2026-10-30T19:30:00.000Z'
 const ENDED = '2026-10-30T22:00:00.000Z'
 
-const halo: PoolGame = { id: 'g-halo', name: 'Halo', imageUrl: null, youtubeId: null, clipStart: 0, clipLength: 30, playersMin: 2, playersMax: 4, suitabilities: [], notes: notesFromLines(['Hausregel: keine Raketen']), price: null }
+const halo: PoolGame = { id: 'g-halo', name: 'Halo', imageUrl: null, youtubeId: null, clipStart: 0, clipLength: 30, playersMin: 2, playersMax: 4, suitabilities: [], notes: notesFromLines(['Hausregel: keine Raketen']), price: null, archived: false }
 const kart: PoolGame = { ...halo, id: 'g-kart', name: 'Kart', notes: null }
 const pong: PoolGame = { ...halo, id: 'g-pong', name: 'Pong', notes: null }
 const schach: GameView = { ...halo, id: 'g-schach', name: 'Schach', notes: null, createdAt: '2026-01-15T10:00:00.000Z', tags: [], archived: false, price: null }

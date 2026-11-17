@@ -12,6 +12,8 @@ defineProps<{
   facts?: HostGameFacts | null
   /** The Host's Event notes of this game (#732), from `eventNotes` of the Event read; null for a Member and where the game has none. */
   eventNotes?: NotesDoc | null
+  /** The Host's pool game is Archived (#726): the tile carries the „Archiviert“ pill. */
+  archived?: boolean
 }>()
 
 const dialogOpen = ref(false)
@@ -21,6 +23,7 @@ const dialogOpen = ref(false)
   <GameCard
     :game="game"
     layout="tile"
+    :archived="archived"
     opens
     @open="dialogOpen = true"
   />

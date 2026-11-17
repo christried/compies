@@ -88,6 +88,8 @@ export interface PoolGame {
   notes: NotesDoc | null
   /** The game's Price (#337, #338); null when it has none. It travels with the name: wherever a Member may know the game's name they get it too. */
   price: GamePrice | null
+  /** Whether the owner archived the game (#467): the library list leaves it out unless the filter „Archiviert“ is on. Only the Host's pool read and the library carry it: a Member's face and a Round's game never do (spec #717 § B, CODING_STANDARDS § Secrecy). */
+  archived: boolean
 }
 
 /**
@@ -100,7 +102,7 @@ export type PoolGameFace = Pick<PoolGame, 'id' | 'name' | 'imageUrl' | 'youtubeI
  * A set game as its Round shows it to every Member (#228): the face plus the clip, the whole PoolGame but the notes, which only the Host reads
  * (decided 2026-11-01, #217 comment). The clip is there because the Round card and the clip show it.
  */
-export type RoundGame = Omit<PoolGame, 'notes'>
+export type RoundGame = Omit<PoolGame, 'notes' | 'archived'>
 
 /** Whether a pool game came whole, as the Host gets it (the notes are there, even when null), or as the face only. */
 export function isFullPoolGame(game: PoolGame | PoolGameFace): game is PoolGame {
@@ -123,8 +125,6 @@ export interface GameView extends PoolGame {
    * PoolGameFace and RoundGame do not, so no Member's Event read, feed entry or message can name one.
    */
   tags: GameTag[]
-  /** Whether the owner archived the game (#467): the library list leaves it out unless the filter „Archiviert“ is on. Only here: no Member surface carries it. */
-  archived: boolean
   createdAt: string
 }
 
