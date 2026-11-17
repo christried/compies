@@ -943,6 +943,15 @@
   "eventNotes": {
     "title": "Notizen für dieses Event"
   },
+  "notes": {
+    "from_library": "aus deiner Bibliothek",
+    "link": {
+      "new_tab": "(öffnet in neuem Tab)"
+    },
+    "finished": {
+      "chip": "Event beendet"
+    }
+  },
   "gameEvents": {
     "title": "Deine Events mit diesem Spiel",
     "inPool": "im Pool",

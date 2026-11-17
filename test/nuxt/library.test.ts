@@ -9,6 +9,7 @@ import NewGamePage from '~/pages/bibliothek/neu.vue'
 import { GAME_NAME_MAX, type GameTag, type GameView } from '~~/shared/game'
 import { notesFromLines } from '~~/shared/notes-doc'
 import { kitty, signInAs } from './auth'
+import { restoreScreen, stubScreen } from './event-page'
 import { BLANK_NOTES, FORMATTED_HREF, FORMATTED_NOTES, readFormatted } from './helpers/formatted-notes'
 import { game, host, settle } from './helpers/library'
 
@@ -295,6 +296,47 @@ describe('the game page', () => {
       bold: 'Wichtig',
       link: { text: 'nachlesen', href: FORMATTED_HREF, target: '_blank', rel: 'noopener noreferrer' },
     })
+  })
+
+  it('draws the notes section in the designed look: a Lilita 26 h2, „Nur du siehst das“, a paper-2 panel, the notes at md below 980 (#729)', async () => {
+    stubScreen(false)
+    try {
+      detail = { ...withClip, notes: FORMATTED_NOTES }
+
+      const page = await mountSuspended(DetailPage, { route: `/bibliothek/${withClip.id}` })
+      await vi.waitFor(() => expect(page.find('h1').exists()).toBe(true))
+
+      const section = page.findAll('section').find(el => el.text().includes('Vorab'))!
+      expect(section.get('h2').classes()).toEqual(expect.arrayContaining(['font-display', 'text-[26px]']))
+      expect(section.text()).toContain('Nur du siehst das')
+      const panel = section.get('.cp-note').element.parentElement!
+      expect(panel.classList).toContain('bg-paper-2')
+      expect(panel.classList).toContain('rounded-[12px]')
+      expect(panel.className).toContain('px-[18px]')
+      expect(section.get('.cp-note').classes()).toContain('cp-note--md')
+      expect(section.get('.cp-note').classes()).not.toContain('cp-note--lg')
+    }
+    finally {
+      restoreScreen()
+    }
+  })
+
+  it('shows the notes at lg from 980 up (#729)', async () => {
+    const setWide = stubScreen(true)
+    try {
+      detail = { ...withClip, notes: FORMATTED_NOTES }
+
+      const page = await mountSuspended(DetailPage, { route: `/bibliothek/${withClip.id}` })
+      await vi.waitFor(() => expect(page.find('.cp-note--lg').exists()).toBe(true))
+
+      expect(page.findAll('.cp-note--lg')).toHaveLength(1)
+      expect(page.find('.cp-note--md').exists()).toBe(false)
+      setWide(false)
+      await vi.waitFor(() => expect(page.find('.cp-note--md').exists()).toBe(true))
+    }
+    finally {
+      restoreScreen()
+    }
   })
 
   it.each(BLANK_NOTES)('shows no „Notizen“ section for notes without a visible character (#728)', async (blank) => {

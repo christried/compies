@@ -40,7 +40,7 @@ const FACTS: HostGameFacts = {
 
 let wrapper: VueWrapper | undefined
 
-async function open(props: { game?: PoolGameFace, audience?: 'host' | 'member', facts?: HostGameFacts | null, eventNotes?: NotesDoc | null } = {}) {
+async function open(props: { game?: PoolGameFace, audience?: 'host' | 'member', facts?: HostGameFacts | null, eventNotes?: NotesDoc | null, eventName?: string, eventFinished?: boolean } = {}) {
   wrapper = await mountSuspended(GameDialog, { props: { open: true, game: FULL, audience: 'host', facts: FACTS, ...props } })
   await flushPromises()
   return wrapper
@@ -128,6 +128,37 @@ describe('the game dialog for the Host (#443)', () => {
     expect(label).toBeDefined()
     expect(text()).toContain('Heute nur Bo1')
     expect(label.compareDocumentPosition(gameLabel) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  })
+
+  it('shows both blocks at md, the Event block framed first, the game block below it with „aus deiner Bibliothek“, no pencil in view mode (#729)', async () => {
+    await open({ eventNotes: notesFromLines(['Heute nur Bo1']), eventName: 'Spieleabend bei Sanne' })
+
+    const [first, second] = [...dialog().querySelectorAll('.cp-note')]
+    expect(first!.classList).toContain('cp-note--md')
+    expect(second!.classList).toContain('cp-note--md')
+    expect(first!.textContent).toBe('Heute nur Bo1')
+    expect(first!.parentElement!.className).toContain('border-2')
+    expect(first!.parentElement!.classList).toContain('bg-surface')
+    expect(second!.parentElement!.classList).toContain('bg-paper-2')
+    expect(text()).toContain('aus deiner Bibliothek')
+    expect(text()).toContain('Spieleabend bei Sanne')
+    expect(dialog().querySelector('button[aria-label^="Notizen"]')).toBeNull()
+  })
+
+  it('shows the game block without the sub and the Event block without one when only one of them is there (#729)', async () => {
+    await open({ eventNotes: null, eventName: 'Spieleabend bei Sanne' })
+    expect(text()).not.toContain('aus deiner Bibliothek')
+    wrapper!.unmount()
+
+    await open({ facts: { tags: [], notes: null }, eventNotes: notesFromLines(['Heute nur Bo1']), eventName: 'Spieleabend bei Sanne' })
+    expect(text()).not.toContain('Spieleabend bei Sanne')
+  })
+
+  it('marks a finished Event block with the dashed frame and the chip (#729)', async () => {
+    await open({ eventNotes: notesFromLines(['Heute nur Bo1']), eventFinished: true })
+
+    expect(dialog().querySelector('.border-dashed')).not.toBeNull()
+    expect(text()).toContain('Event beendet')
   })
 
   it('shows the Event notes alone for a game without Game notes (#732)', async () => {
