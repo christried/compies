@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet><link rel="stylesheet" href="./tokens/compies-tokens.css"><script src="./tokens/lucide-subset.js"></script><script src="./notizen.js"></script></helmet>
+<div lang="de" style="display:flex;flex-direction:column;gap:6px;min-width:0;font-family:var(--cp-font-sans);font-weight:500;color:var(--cp-ink)">
+  <div style="display:flex;align-items:center;gap:8px;min-height:26px">
+    <span aria-hidden="true" style="flex:none;display:grid;place-items:center;width:26px;height:26px;box-sizing:border-box;border-radius:50%;border:2px solid var(--cp-line);background:{{ discBg }};color:{{ discFg }}"><dc-import name="Icon" icon="{{ discIcon }}" size="{{ 14 }}" hint-size="14px,14px"></dc-import></span>
+    <label id="{{ lid }}" onClick="{{ focusBody }}" style="font-size:14px;font-weight:700;line-height:1.2;color:{{ lc }}">{{ label }}</label>
+    <sc-if value="{{ ro }}"><span style="display:inline-flex;align-items:center;gap:4px;height:24px;padding:0 8px;border-radius:999px;border:2px solid var(--cp-line);background:var(--cp-paper-2);font-size:12px;font-weight:700;color:var(--cp-ink)"><dc-import name="Icon" icon="lock" size="{{ 12 }}" hint-size="12px,12px"></dc-import>Event beendet</span></sc-if>
+  </div>
+  <div ref="{{ fieldRef }}" style="position:relative;border:{{ bd }};border-radius:12px;background:{{ bg }};outline:{{ ol }};outline-offset:2px;transition:outline-color 140ms cubic-bezier(.2,0,0,1),border-color 140ms cubic-bezier(.2,0,0,1)">
+    <sc-if value="{{ hasBar }}" hint-placeholder-val="{{ true }}">
+      <div role="toolbar" aria-label="Formatierung" aria-controls="{{ bid }}" onKeyDown="{{ barKey }}" style="display:flex;flex-wrap:wrap;align-items:center;padding:4px;border-bottom:2px solid var(--cp-line-soft);border-radius:9px 9px 0 0;background:{{ bg }}">
+        <sc-for list="{{ groups }}" as="g" hint-placeholder-count="4">
+          <div role="group" style="display:flex;align-items:center">
+            <sc-if value="{{ g.sep }}"><span aria-hidden="true" style="flex:none;width:2px;height:24px;margin:0 3px;border-radius:1px;background:var(--cp-line-soft)"></span></sc-if>
+            <sc-for list="{{ g.btns }}" as="b" hint-placeholder-count="2">
+              <button type="button" data-tb="1" aria-label="{{ b.label }}" aria-pressed="{{ b.pressed }}" aria-disabled="{{ b.ad }}" aria-expanded="{{ b.exp }}" aria-haspopup="{{ b.pop }}" aria-keyshortcuts="{{ b.ks }}" tabindex="{{ b.ti }}" onClick="{{ b.act }}" onMouseDown="{{ b.down }}" onMouseEnter="{{ b.enter }}" onMouseLeave="{{ b.leave }}" onFocus="{{ b.focus }}" onBlur="{{ b.blur }}" style="flex:none;position:relative;display:grid;place-items:center;width:44px;height:44px;padding:0;border:0;background:transparent;color:{{ b.fg }};cursor:{{ b.cur }};outline:none">
+                <span style="display:grid;place-items:center;width:36px;height:36px;border-radius:8px;background:{{ b.bg }};outline:{{ b.ol }};outline-offset:0;transition:background-color 80ms cubic-bezier(.2,0,0,1),color 80ms cubic-bezier(.2,0,0,1)"><dc-import name="Icon" icon="{{ b.icon }}" size="{{ 20 }}" hint-size="20px,20px"></dc-import></span>
+                <sc-if value="{{ b.tip }}"><span role="tooltip" style="position:absolute;left:50%;top:44px;z-index:6;transform:translateX(-50%);display:inline-flex;align-items:center;gap:8px;height:32px;padding:0 10px;border-radius:8px;background:var(--cp-ink);color:var(--cp-paper);box-shadow:var(--cp-shadow-soft);font-size:13px;font-weight:700;white-space:nowrap;pointer-events:none">{{ b.label }}<sc-if value="{{ b.kb }}"><span style="font-family:var(--cp-font-mono);font-size:12px;font-weight:700;opacity:.8">{{ b.kbTxt }}</span></sc-if><sc-if value="{{ b.why }}"><span style="font-weight:500;opacity:.85">{{ b.why }}</span></sc-if></span></sc-if>
+              </button>
+            </sc-for>
+          </div>
+        </sc-for>
+      </div>
+    </sc-if>
+    <sc-if value="{{ inl }}">
+      <div role="group" aria-label="Link" style="display:flex;flex-direction:column;gap:8px;padding:10px 10px 12px;background:var(--cp-paper-2);border-bottom:2px solid var(--cp-line-soft)">
+        <label for="{{ iid }}" style="font-size:14px;font-weight:700">Adresse</label>
+        <div style="display:flex;align-items:center;gap:8px;height:48px;padding:0 12px;box-sizing:border-box;border-radius:12px;border:{{ inBd }};background:var(--cp-surface);outline:{{ inOl }};outline-offset:2px">
+          <span style="flex:none;display:grid;color:var(--cp-ink-2)"><dc-import name="Icon" icon="link" size="{{ 16 }}" hint-size="16px,16px"></dc-import></span>
+          <input id="{{ iid }}" data-link="1" type="url" inputmode="url" autocomplete="off" spellcheck="false" placeholder="https://" value="{{ linkVal }}" onChange="{{ onLinkInput }}" onKeyDown="{{ onLinkKey }}" onFocus="{{ inFocus }}" onBlur="{{ inBlur }}" aria-invalid="{{ linkInvalid }}" aria-describedby="{{ eid }}" style="flex:1;min-width:0;height:100%;padding:0;border:0;background:transparent;font:inherit;font-size:16px;color:var(--cp-ink);outline:none"></input>
+          <sc-if value="{{ linkHasErr }}"><span style="flex:none;display:grid;color:var(--cp-error-fg)"><dc-import name="Icon" icon="circle-alert" size="{{ 18 }}" hint-size="18px,18px"></dc-import></span></sc-if>
+        </div>
+        <sc-if value="{{ linkHasErr }}"><span id="{{ eid }}" role="alert" style="display:flex;gap:6px;align-items:center;font-size:13px;font-weight:700;color:var(--cp-error-fg)"><dc-import name="Icon" icon="circle-alert" size="{{ 16 }}" hint-size="16px,16px"></dc-import>{{ linkErr }}</span></sc-if>
+        <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-end;gap:4px 8px">
+          <sc-if value="{{ linkEdit }}"><button type="button" onClick="{{ removeLink }}" style="margin-right:auto;margin-left:-6px;display:inline-flex;align-items:center;gap:6px;height:44px;padding:0 8px;border:0;background:transparent;font:inherit;font-size:14px;font-weight:700;color:var(--cp-ink);cursor:pointer"><dc-import name="Icon" icon="unlink" size="{{ 16 }}" hint-size="16px,16px"></dc-import>Link entfernen</button></sc-if>
+          <button type="button" onClick="{{ cancelLink }}" style="height:44px;padding:0 10px;border:0;background:transparent;font:inherit;font-size:14px;font-weight:700;color:var(--cp-ink);cursor:pointer">Abbrechen</button>
+          <button type="button" onClick="{{ applyLink }}" style="display:inline-flex;align-items:center;height:44px;padding:0 16px;border-radius:999px;border:var(--cp-bw) solid var(--cp-line);background:var(--cp-primary);color:var(--cp-on-primary);box-shadow:var(--cp-shadow-sm);font:inherit;font-size:14px;font-weight:800;cursor:pointer">Übernehmen</button>
+        </div>
+      </div>
+    </sc-if>
+    <div style="position:relative">
+      <div ref="{{ bodyRef }}" id="{{ bid }}" role="textbox" aria-multiline="true" aria-labelledby="{{ lid }}" aria-describedby="{{ hid }}" aria-invalid="{{ invalid }}" aria-readonly="{{ roAttr }}" aria-disabled="{{ disAttr }}" onInput="{{ onInput }}" onKeyDown="{{ onKey }}" onFocus="{{ onFocus }}" onBlur="{{ onBlur }}" onPaste="{{ onPaste }}" style="min-height:{{ minH }};max-height:{{ maxH }};overflow-y:auto;overflow-x:hidden;box-sizing:border-box;padding:12px 14px 14px;font-size:16px;line-height:1.5;color:{{ fg }};outline:none;overflow-wrap:break-word;scrollbar-width:thin;cursor:text"></div>
+      <sc-if value="{{ hasThumb }}"><span aria-hidden="true" style="position:absolute;right:3px;top:{{ thT }};width:5px;height:{{ thH }};border-radius:3px;background:var(--cp-ink-3)"></span></sc-if>
+      <sc-if value="{{ showPh }}"><span aria-hidden="true" style="position:absolute;left:14px;right:14px;top:12px;pointer-events:none;font-size:16px;line-height:1.5;color:var(--cp-ink-2);text-wrap:pretty">{{ ph }}</span></sc-if>
+    </div>
+    <sc-if value="{{ pop }}">
+      <div role="dialog" aria-label="Link" style="position:absolute;left:{{ popL }};top:{{ popT }};z-index:8;width:320px;box-sizing:border-box;display:flex;flex-direction:column;gap:8px;padding:14px 14px 10px;border:var(--cp-bw) solid var(--cp-line);border-radius:18px;background:var(--cp-surface);box-shadow:var(--cp-shadow-modal)">
+        <label for="{{ iid }}" style="font-size:14px;font-weight:700">Adresse</label>
+        <div style="display:flex;align-items:center;gap:8px;height:48px;padding:0 12px;box-sizing:border-box;border-radius:12px;border:{{ inBd }};background:var(--cp-surface);outline:{{ inOl }};outline-offset:2px">
+          <span style="flex:none;display:grid;color:var(--cp-ink-2)"><dc-import name="Icon" icon="link" size="{{ 16 }}" hint-size="16px,16px"></dc-import></span>
+          <input id="{{ iid }}" data-link="1" type="url" inputmode="url" autocomplete="off" spellcheck="false" placeholder="https://" value="{{ linkVal }}" onChange="{{ onLinkInput }}" onKeyDown="{{ onLinkKey }}" onFocus="{{ inFocus }}" onBlur="{{ inBlur }}" aria-invalid="{{ linkInvalid }}" aria-describedby="{{ eid }}" style="flex:1;min-width:0;height:100%;padding:0;border:0;background:transparent;font:inherit;font-size:16px;color:var(--cp-ink);outline:none"></input>
+          <sc-if value="{{ linkHasErr }}"><span style="flex:none;display:grid;color:var(--cp-error-fg)"><dc-import name="Icon" icon="circle-alert" size="{{ 18 }}" hint-size="18px,18px"></dc-import></span></sc-if>
+        </div>
+        <sc-if value="{{ linkHasErr }}"><span id="{{ eid }}" role="alert" style="display:flex;gap:6px;align-items:center;font-size:13px;font-weight:700;color:var(--cp-error-fg)"><dc-import name="Icon" icon="circle-alert" size="{{ 16 }}" hint-size="16px,16px"></dc-import>{{ linkErr }}</span></sc-if>
+        <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-end;gap:4px 6px">
+          <sc-if value="{{ linkEdit }}"><button type="button" onClick="{{ removeLink }}" style="margin-right:auto;margin-left:-8px;display:inline-flex;align-items:center;gap:6px;height:44px;padding:0 8px;border:0;background:transparent;font:inherit;font-size:14px;font-weight:700;color:var(--cp-ink);cursor:pointer"><dc-import name="Icon" icon="unlink" size="{{ 16 }}" hint-size="16px,16px"></dc-import>Link entfernen</button></sc-if>
+          <button type="button" onClick="{{ cancelLink }}" style="height:44px;padding:0 8px;border:0;background:transparent;font:inherit;font-size:14px;font-weight:700;color:var(--cp-ink);cursor:pointer">Abbrechen</button>
+          <button type="button" onClick="{{ applyLink }}" style="display:inline-flex;align-items:center;height:40px;margin:2px 0;padding:0 14px;border-radius:999px;border:var(--cp-bw) solid var(--cp-line);background:var(--cp-primary);color:var(--cp-on-primary);box-shadow:var(--cp-shadow-sm);font:inherit;font-size:14px;font-weight:800;cursor:pointer">Übernehmen</button>
+        </div>
+      </div>
+    </sc-if>
+  </div>
+  <div id="{{ hid }}" style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;font-size:13px;line-height:1.35">
+    <span style="display:inline-flex;gap:6px;align-items:flex-start;color:{{ hc }};font-weight:{{ hw }};text-wrap:pretty"><sc-if value="{{ hIcon }}"><span style="flex:none;display:grid;margin-top:-1px"><dc-import name="Icon" icon="{{ hIcon }}" size="{{ 16 }}" hint-size="16px,16px"></dc-import></span></sc-if>{{ help }}</span>
+    <sc-if value="{{ cnt }}"><span aria-hidden="true" style="flex:none;font-variant-numeric:tabular-nums;white-space:nowrap;color:{{ cc }};font-weight:{{ cw }}">{{ cntTxt }}</span></sc-if>
+  </div>
+  <span aria-live="polite" style="position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap">{{ say }}</span>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:640,&quot;height&quot;:420},&quot;state&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;live&quot;,&quot;empty&quot;,&quot;filled&quot;,&quot;focus&quot;,&quot;heading&quot;,&quot;kbd&quot;,&quot;hover&quot;,&quot;near&quot;,&quot;over&quot;,&quot;overFocus&quot;,&quot;link&quot;,&quot;linkerr&quot;,&quot;linkedit&quot;,&quot;disabled&quot;,&quot;readonly&quot;],&quot;default&quot;:&quot;filled&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;variant&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;game&quot;,&quot;event&quot;],&quot;default&quot;:&quot;game&quot;,&quot;tsType&quot;:&quot;'game'|'event'&quot;},&quot;narrow&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;},&quot;tight&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;},&quot;doc&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;label&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;help&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;placeholder&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;roHelp&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;minH&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;maxH&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+const BTN=[[['bold','Fett','bold','B'],['italic','Kursiv','italic','I']],[['h','Überschrift','heading','']],[['ul','Liste','list',''],['ol','Nummerierte Liste','list-ordered','']],[['link','Link','link','K']]];
+const PRE={
+  live:{},
+  empty:{doc:'empty'},
+  filled:{doc:'show'},
+  focus:{doc:'focus',focus:true,pressed:{bold:1,ul:1}},
+  heading:{doc:'heading',focus:true,pressed:{h:1},dis:{bold:1}},
+  kbd:{doc:'focus',pressed:{bold:1,ul:1},kf:'bold',tip:'bold'},
+  hover:{doc:'show',hover:'italic'},
+  near:{doc:'near',focus:true,scroll:'end'},
+  over:{doc:'over',scroll:'end'},
+  overFocus:{doc:'over',scroll:'end',focus:true},
+  link:{doc:'linkNew',link:'new',linkVal:'https://docs.google.com/document/d/1x9QkHausregeln-RocketLeague-3v3/edit',pressed:{link:1},inF:true},
+  linkerr:{doc:'linkNew',link:'new',linkVal:'ftp://files.example.org/regeln.pdf',linkErr:true,pressed:{link:1},inF:true},
+  linkedit:{doc:'linkEdit',link:'edit',linkVal:'https://docs.google.com/document/d/1x9QkHausregeln-RocketLeague-3v3/edit',pressed:{link:1,bold:0}},
+  disabled:{doc:'show',disabled:true},
+  readonly:{doc:'show',readonly:true}};
+const W=(cb,t)=>{ t=t||0; if(window.NZ&&window.CP_ICONS) cb(); else if(t<200) setTimeout(()=>W(cb,t+1),40); };
+class Component extends DCLogic {
+  bodyRef=React.createRef(); fieldRef=React.createRef();
+  uid='nz'+Math.random().toString(36).slice(2,8);
+  state={count:0,empty:true,pressed:{},dis:{},focus:false,hover:null,tip:null,link:null,linkVal:'',linkErr:'',inF:false,popL:12,popT:60,say:''};
+  isLive(){ return this.props.state==='live'; }
+  pre(){ return PRE[this.props.state]||PRE.filled; }
+  docKey(){ const p=this.props, k=p.doc||this.pre().doc||'show'; if(p.variant==='event'){ if(k==='show') return 'event'; if(k==='focus') return 'eventFocus'; } return k; }
+  componentDidMount(){ W(()=>this.load()); if(this.isLive()){ this._sc=()=>this.sync(); document.addEventListener('selectionchange',this._sc); } }
+  componentWillUnmount(){ this._sc&&document.removeEventListener('selectionchange',this._sc); clearTimeout(this._tt); }
+  componentDidUpdate(pp){ if(pp.state!==this.props.state||pp.doc!==this.props.doc||pp.variant!==this.props.variant) W(()=>this.load()); }
+  load(){
+    const el=this.bodyRef.current; if(!el) return; const p=this.pre(), live=this.isLive();
+    const md=live?(window.NZ.docs[this.props.doc||'show']||''):(window.NZ.docs[this.docKey()]||'');
+    el.innerHTML=window.NZ.html(md,{mode:'edit',size:'edit'});
+    if(live){ el.contentEditable='true'; el.spellcheck=true; try{ document.execCommand('defaultParagraphSeparator',false,'p'); }catch(e){} }
+    const evF=this.props.variant==='event'&&this.props.state==='focus';
+    const st={thumb:null,count:window.NZ.count(md),empty:!window.NZ.count(md),pressed:evF?{ul:1}:(p.pressed||{}),dis:p.dis||{},hover:p.hover||null,tip:p.tip||null,link:p.link||null,linkVal:p.linkVal||'',linkErr:p.linkErr?window.NZ.ERR:'',inF:!!p.inF};
+    const kids=()=>[...el.children];
+    const fix=()=>{
+      if(p.scroll==='end'&&!live){ kids().forEach(k=>k.style.transform=''); el.style.overflowY='auto'; const sh=el.scrollHeight, ch=el.clientHeight, off=Math.max(0,sh-ch);
+        if(off>0){ el.style.overflowY='hidden'; el.scrollTop=0; kids().forEach(k=>k.style.transform='translateY(-'+off+'px)'); const th=Math.max(24,ch*ch/sh); this.setState({thumb:{top:Math.round(ch-th-4)+'px',h:Math.round(th)+'px'}}); } }
+      if(st.link&&!this.props.narrow) this.place(el.querySelector('[data-sel]')); };
+    this.setState(st,()=>{ fix(); [250,800,1600,3000].forEach(t=>setTimeout(fix,t)); });
+  }
+  place(target){
+    const f=this.fieldRef.current; if(!f||!target) return; const a=target.getBoundingClientRect(), b=f.getBoundingClientRect(); const k=(b.width/f.offsetWidth)||1;
+    let top=(a.bottom-b.top)/k+10; if(a.height===0){ const pe=(target.parentElement||target).getBoundingClientRect(); top=(pe.bottom-b.top)/k+10; }
+    this.setState({popT:Math.round(top),popL:Math.round(Math.max(8,Math.min((a.left-b.left)/k-14,f.offsetWidth-328)))});
+  }
+  sync(){
+    const el=this.bodyRef.current, sel=document.getSelection(); if(!el||!sel||!sel.rangeCount||!el.contains(sel.anchorNode)) return;
+    const q=c=>{ try{ return document.queryCommandState(c); }catch(e){ return false; } };
+    const n=sel.anchorNode.nodeType===1?sel.anchorNode:sel.anchorNode.parentElement; const inH=!!(n&&n.closest('h1,h2,h3,h4')); const a=n&&n.closest('a');
+    this.setState({pressed:{bold:!inH&&q('bold'),italic:q('italic'),h:inH,ul:q('insertUnorderedList'),ol:q('insertOrderedList'),link:!!a||!!this.state.link},dis:{bold:inH}});
+  }
+  after(){
+    const el=this.bodyRef.current; if(!el) return; window.NZ.paint(el,'edit');
+    const c=[...el.textContent].length; this.setState({count:c,empty:!el.textContent.trim()&&!el.querySelector('li')}); this.sync(); this.announce(c);
+  }
+  announce(c){
+    const N=window.NZ, mark=c>N.MAX?'over':c>=1950?'1950':c>=1900?'1900':c>=1800?'1800':c>=1600?'1600':'';
+    if(mark===this._mark) return; this._mark=mark;
+    if(mark) this.setState({say:mark==='over'?'Höchstens 2000 Zeichen.':'Noch '+(N.MAX-c)+' Zeichen'});
+  }
+  act(k){
+    if(!this.isLive()||this.pre().disabled) return; if(this.state.dis[k]) return; const el=this.bodyRef.current; el.focus();
+    if(k==='link') return this.openLink();
+    if(k==='bold'||k==='italic') document.execCommand(k);
+    else if(k==='h') document.execCommand('formatBlock',false,this.state.pressed.h?'p':'h3');
+    else if(k==='ul') document.execCommand('insertUnorderedList');
+    else if(k==='ol') document.execCommand('insertOrderedList');
+    this.after();
+  }
+  openLink(){
+    const el=this.bodyRef.current, sel=document.getSelection(); if(!sel.rangeCount||!el.contains(sel.anchorNode)){ const r=document.createRange(); r.selectNodeContents(el); r.collapse(false); sel.removeAllRanges(); sel.addRange(r); }
+    const r=sel.getRangeAt(0); this._range=r.cloneRange();
+    const n=r.startContainer.nodeType===1?r.startContainer:r.startContainer.parentElement; const a=n&&n.closest&&n.closest('a'); this._a=a&&el.contains(a)?a:null;
+    if(this._a) this._a.style.background='color-mix(in srgb,var(--cp-primary) 62%,transparent)';
+    else if(!r.collapsed){ const s=document.createElement('span'); s.setAttribute('data-sel','1'); s.style.cssText=window.NZ.SEL; s.appendChild(r.extractContents()); r.insertNode(s); this._s=s; }
+    const target=this._a||this._s;
+    this.setState({link:this._a?'edit':'new',linkVal:this._a?this._a.getAttribute('href'):'',linkErr:'',pressed:Object.assign({},this.state.pressed,{link:true})},()=>{
+      if(!this.props.narrow){ if(target) this.place(target); else { const rr=this._range.getBoundingClientRect(); const f=this.fieldRef.current.getBoundingClientRect(); const k=(f.width/this.fieldRef.current.offsetWidth)||1; this.setState({popT:Math.round((rr.bottom-f.top)/k+10)||60,popL:Math.round(Math.max(8,Math.min((rr.left-f.left)/k-14,this.fieldRef.current.offsetWidth-328)))||12}); } }
+      const i=this.fieldRef.current&&this.fieldRef.current.querySelector('input[data-link]'); i&&i.focus(); });
+  }
+  unmark(){
+    if(this._a) this._a.style.background='';
+    const s=this._s; if(s&&s.parentNode){ const p=s.parentNode, first=s.firstChild, last=s.lastChild; while(s.firstChild) p.insertBefore(s.firstChild,s); p.removeChild(s); if(first){ const r=document.createRange(); r.setStartBefore(first); r.setEndAfter(last); this._range=r; } }
+    this._s=null;
+  }
+  closeLink(){ this._a=null; this.setState({link:null,linkErr:''}); }
+  applyLink=()=>{
+    if(!this.isLive()) return; const v=window.NZ.validate(this.state.linkVal); if(!v.ok){ this.setState({linkErr:v.err||window.NZ.ERR}); return; }
+    const el=this.bodyRef.current, a=this._a; this.unmark(); el.focus(); const sel=document.getSelection(); sel.removeAllRanges();
+    if(a){ a.setAttribute('href',v.href); const r=document.createRange(); r.selectNodeContents(a); r.collapse(false); sel.addRange(r); }
+    else if(this._range&&!this._range.collapsed){ sel.addRange(this._range); document.execCommand('createLink',false,v.href); sel.collapseToEnd(); }
+    else { if(this._range) sel.addRange(this._range); document.execCommand('insertHTML',false,'<a href="'+window.NZ.esc(v.href)+'">'+window.NZ.esc(v.href)+'</a>\u00a0'); }
+    this.closeLink(); this.after();
+  };
+  removeLink=()=>{
+    if(!this.isLive()) return; const el=this.bodyRef.current, a=this._a; this.unmark(); el.focus();
+    if(a){ const r=document.createRange(); r.selectNodeContents(a); const s=document.getSelection(); s.removeAllRanges(); s.addRange(r); document.execCommand('unlink'); s.collapseToEnd(); }
+    this.closeLink(); this.after();
+  };
+  cancelLink=()=>{
+    if(!this.isLive()) return; this.unmark(); this.closeLink(); const el=this.bodyRef.current; el.focus();
+    if(this._range){ const s=document.getSelection(); s.removeAllRanges(); s.addRange(this._range); }
+  };
+  onKey=e=>{
+    if(!this.isLive()) return; const m=e.metaKey||e.ctrlKey, k=(e.key||'').toLowerCase();
+    if(m&&k==='k'){ e.preventDefault(); this.openLink(); return; }
+    if(m&&(k==='b'||k==='i')){ e.preventDefault(); this.act(k==='b'?'bold':'italic'); }
+  };
+  barKey=e=>{
+    if(e.key!=='ArrowRight'&&e.key!=='ArrowLeft'&&e.key!=='Home'&&e.key!=='End') return; e.preventDefault();
+    const bs=[...e.currentTarget.querySelectorAll('[data-tb]')]; const i=bs.indexOf(document.activeElement);
+    const n=e.key==='Home'?0:e.key==='End'?bs.length-1:(i+(e.key==='ArrowRight'?1:-1)+bs.length)%bs.length;
+    bs.forEach((b,j)=>b.tabIndex=j===n?0:-1); bs[n].focus();
+  };
+  renderVals(){
+    const p=this.props, S=this.state, pre=this.pre(), live=this.isLive(), N=window.NZ;
+    const ev=p.variant==='event', ro=!!pre.readonly, dis=!!pre.disabled, narrow=!!p.narrow;
+    const mac=live&&/Mac|iPhone|iPad/.test(navigator.platform||'');
+    const focus=live?(S.focus&&!S.link):!!pre.focus;
+    const cn=N?N.counter(S.count):null; const over=!!cn&&cn.tone==='error';
+    const groups=BTN.map((g,gi)=>({sep:gi>0&&!p.tight,btns:g.map(([k,label,icon,kb])=>{
+      const pr=!!S.pressed[k], d=dis||!!S.dis[k], hov=S.hover===k&&!d&&!pr;
+      return {k,label,icon,kb:!!kb,kbTxt:kb?(mac?'⌘'+kb:'Strg+'+kb):'',ks:kb?(mac?'Meta+':'Control+')+kb:undefined,why:d&&k==='bold'&&!dis?'· in Überschriften nicht':'',
+        pressed:k==='link'?undefined:String(pr),exp:k==='link'?String(!!S.link):undefined,pop:k==='link'?'dialog':undefined,ad:d?'true':'false',ti:k==='bold'?'0':'-1',
+        bg:pr?'var(--cp-ink)':hov?'var(--cp-paper-2)':'transparent',fg:d?'var(--cp-ink-3)':pr?'var(--cp-paper)':'var(--cp-ink)',ol:pre.kf===k||S.kf===k?'3px solid var(--cp-focus)':'none',cur:d?'default':'pointer',
+        tip:S.tip===k,
+        act:()=>this.act(k),down:e=>e.preventDefault(),
+        enter:()=>{ if(!live) return; this.setState({hover:k}); clearTimeout(this._tt); this._tt=setTimeout(()=>this.setState({tip:k}),500); },
+        leave:()=>{ if(!live) return; clearTimeout(this._tt); this.setState({hover:null,tip:null}); },
+        focus:()=>{ if(!live) return; this.setState({tip:k,kf:k}); },
+        blur:()=>{ if(!live) return; this.setState({tip:null,kf:null}); }};
+    })}));
+    let help=p.help||(ev?'Gilt nur für dieses Event. Nur du siehst das.':'Nur du siehst das.'), hIcon='', hc='var(--cp-ink-2)', hw=500;
+    if(ro){ help=p.roHelp||'Das Event ist beendet. Diese Notizen bleiben so stehen.'; hIcon='lock'; }
+    else if(dis){ help='Wird gespeichert …'; hIcon='loader-circle'; }
+    else if(over){ help='Höchstens 2000 Zeichen.'; hIcon='circle-alert'; hc='var(--cp-error-fg)'; hw=700; }
+    const linkOpen=!!S.link&&!ro&&!dis;
+    return {
+      lid:this.uid+'-l',bid:this.uid+'-b',hid:this.uid+'-h',iid:this.uid+'-i',eid:this.uid+'-e',
+      label:p.label||(ev?'Notizen für dieses Event':'Notizen'),lc:dis?'var(--cp-ink-3)':'var(--cp-ink)',
+      discBg:ro?'var(--cp-paper-2)':ev?'var(--cp-primary)':'var(--cp-surface)',discFg:ro?'var(--cp-ink-2)':ev?'var(--cp-on-primary)':'var(--cp-ink)',discIcon:ev?'calendar':'sticky-note',ro,
+      bd:over?'var(--cp-bw) solid var(--cp-error-fg)':dis?'var(--cp-bw) dashed var(--cp-ink-3)':ro?'var(--cp-bw) dashed var(--cp-line)':'var(--cp-bw) solid var(--cp-line)',
+      bg:dis?'var(--cp-paper-2)':'var(--cp-surface)',ol:focus?'3px solid var(--cp-focus)':'none',fg:dis?'var(--cp-ink-3)':'var(--cp-ink)',
+      hasBar:!ro,groups,inl:linkOpen&&narrow,pop:linkOpen&&!narrow,popL:S.popL+'px',popT:S.popT+'px',
+      linkVal:S.linkVal,linkErr:S.linkErr,linkHasErr:!!S.linkErr,linkInvalid:S.linkErr?'true':'false',linkEdit:S.link==='edit',
+      inBd:S.linkErr?'var(--cp-bw) solid var(--cp-error-fg)':'var(--cp-bw) solid var(--cp-line)',inOl:S.inF?'3px solid var(--cp-focus)':'none',
+      onLinkInput:e=>this.setState({linkVal:e.target.value,linkErr:''}),
+      onLinkKey:e=>{ if(e.key==='Enter'){ e.preventDefault(); this.applyLink(); } else if(e.key==='Escape'){ e.preventDefault(); this.cancelLink(); } },
+      inFocus:()=>live&&this.setState({inF:true}),inBlur:()=>live&&this.setState({inF:false}),
+      applyLink:this.applyLink,removeLink:this.removeLink,cancelLink:this.cancelLink,
+      minH:p.minH||(narrow?'132px':'168px'),maxH:p.maxH||(narrow?'300px':'400px'),
+      showPh:S.empty&&!ro,ph:p.placeholder||(ev?'z. B. heute nur Bo1':'z. B. Einstellungen, Aufwärmen, Siegbedingung, Hausregeln'),
+      invalid:over?'true':'false',roAttr:ro?'true':undefined,disAttr:dis?'true':undefined,
+      help,hIcon,hc,hw,cnt:!!cn&&!ro,cntTxt:cn?cn.txt:'',cc:cn?(cn.tone==='error'?'var(--cp-error-fg)':cn.tone==='warn'?'var(--cp-warning-fg)':'var(--cp-ink-2)'):'',cw:cn&&cn.tone!=='calm'?700:500,
+      say:S.say,hasThumb:!!S.thumb,thT:S.thumb?S.thumb.top:'0',thH:S.thumb?S.thumb.h:'0',
+      onInput:()=>live&&this.after(),onKey:this.onKey,barKey:this.barKey,
+      onFocus:()=>live&&this.setState({focus:true}),onBlur:()=>live&&this.setState({focus:false}),
+      onPaste:e=>{ if(!live) return; e.preventDefault(); const t=(e.clipboardData||window.clipboardData).getData('text/plain'); document.execCommand('insertText',false,t); },
+      focusBody:()=>{ const el=this.bodyRef.current; live&&el&&el.focus(); },
+      fieldRef:this.fieldRef,bodyRef:this.bodyRef};
+  }
+}
+</script>
+</body>
+</html>

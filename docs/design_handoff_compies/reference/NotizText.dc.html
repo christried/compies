@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet><link rel="stylesheet" href="./tokens/compies-tokens.css"><script src="./tokens/lucide-subset.js"></script><script src="./notizen.js"></script></helmet>
+<div ref="{{ r }}" lang="de" style="min-width:0;font-family:var(--cp-font-sans);font-weight:500;font-size:{{ fs }};line-height:{{ lh }};color:var(--cp-ink);overflow-wrap:break-word;text-wrap:pretty"></div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:360,&quot;height&quot;:360},&quot;doc&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;show&quot;,&quot;long&quot;,&quot;event&quot;,&quot;eventLong&quot;],&quot;default&quot;:&quot;show&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;size&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;sm&quot;,&quot;md&quot;,&quot;lg&quot;],&quot;default&quot;:&quot;md&quot;,&quot;tsType&quot;:&quot;'sm'|'md'|'lg'&quot;},&quot;md&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;hl&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:3,&quot;tsType&quot;:&quot;number&quot;}}">
+const W=(cb,t)=>{ t=t||0; if(window.NZ&&window.CP_ICONS) cb(); else if(t<200) setTimeout(()=>W(cb,t+1),40); };
+class Component extends DCLogic {
+  r=React.createRef();
+  componentDidMount(){ W(()=>this.paint()); }
+  componentDidUpdate(pp){ if(pp.doc!==this.props.doc||pp.size!==this.props.size||pp.md!==this.props.md) W(()=>this.paint()); }
+  paint(){ const el=this.r.current; if(!el) return; const p=this.props; const md=p.md!=null&&p.md!==''?p.md:(window.NZ.docs[p.doc||'show']||''); el.innerHTML=window.NZ.html(md,{mode:'read',size:p.size||'md',hl:p.hl||3}); }
+  renderVals(){ const z={sm:[14,1.45],md:[15,1.5],lg:[16,1.55]}[this.props.size||'md']||[15,1.5]; return {r:this.r,fs:z[0]+'px',lh:String(z[1])}; }
+}
+</script>
+</body>
+</html>

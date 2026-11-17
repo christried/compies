@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&amp;family=Lilita+One&amp;family=Bungee&amp;family=JetBrains+Mono:wght@500;700&amp;display=swap"><link rel="stylesheet" href="./tokens/compies-tokens.css"><script src="./tokens/lucide-subset.js"></script><script src="./notizen.js"></script></helmet>
+<div data-theme="{{ theme }}" lang="de" style="position:relative;width:{{ W }};height:{{ H }};overflow:hidden;display:flex;flex-direction:column;background-color:var(--cp-paper);background-image:var(--cp-tex-image);background-size:var(--cp-tex-size);font-family:var(--cp-font-sans);font-weight:500;font-size:15px;line-height:1.45;color:var(--cp-ink)">
+
+  <header style="flex:none;position:relative;display:flex;align-items:center;gap:{{ hdGap }};height:{{ hdH }};padding:0 {{ hdPad }};box-sizing:border-box;border-bottom:var(--cp-bw) solid var(--cp-line);background:var(--cp-surface)">
+    <span style="flex:none;display:grid;place-items:center;width:{{ logo }};height:{{ logo }};box-sizing:border-box;border-radius:50%;border:2px solid var(--cp-line);background:var(--cp-sticker-rim);overflow:hidden"><img src="./assets/compibert/compibert-head.svg" alt="" style="width:92%;height:92%;display:block"></img></span>
+    <sc-if value="{{ hub }}"><b style="font-family:var(--cp-font-display);font-weight:400;font-size:{{ wordSz }};line-height:1">COMPIES</b></sc-if>
+    <sc-if value="{{ hubDesk }}"><nav style="display:flex;gap:2px;margin-left:14px"><sc-for list="{{ nav }}" as="n" hint-placeholder-count="4"><span style="display:flex;align-items:center;height:64px;box-sizing:border-box;padding:0 12px;border-bottom:3px solid {{ n.bar }};font-size:15px;font-weight:{{ n.fw }};color:{{ n.c }}">{{ n.t }}</span></sc-for></nav></sc-if>
+    <sc-if value="{{ evHead }}"><span style="min-width:0;display:flex;flex-direction:column;gap:1px"><b style="font-size:{{ evTitleSz }};font-weight:800;line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Spieleabend bei Sanne</b><span style="font-size:12px;font-weight:600;color:var(--cp-ink-2)">Sa 14.11. · 20:00</span></span><span style="flex:none;display:inline-flex;align-items:center;gap:6px;height:26px;padding:0 10px;border-radius:999px;border:2px solid var(--cp-line);background:{{ pillBg }};font-size:12px;font-weight:800;color:var(--cp-ink)"><span style="width:8px;height:8px;border-radius:50%;background:{{ pillDot }};border:1.5px solid var(--cp-line)"></span>{{ pillTxt }}</span></sc-if>
+    <span style="flex:1"></span>
+    <span style="flex:none;display:grid;place-items:center;width:{{ av }};height:{{ av }};box-sizing:border-box;border-radius:50%;border:2px solid var(--cp-line);background:var(--cp-pop);color:#151515;font-family:var(--cp-font-display);font-size:16px">S</span>
+  </header>
+
+  <div style="flex:1;min-height:0;display:flex;position:relative">
+
+    <sc-if value="{{ isForm }}">
+      <main style="flex:1;min-width:0;overflow:hidden;padding:{{ mainPad }};display:flex;justify-content:center">
+        <div style="width:100%;max-width:1100px;display:flex;flex-direction:column;gap:{{ gap }}">
+          <div style="display:flex;flex-direction:column;gap:2px"><span style="font-size:13px;font-weight:700;color:var(--cp-ink-2)">Bibliothek · Bearbeiten</span><span style="font-family:var(--cp-font-display);font-size:{{ h1 }};line-height:1">Rocket League</span></div>
+          <div style="display:grid;grid-template-columns:{{ formCols }};gap:32px;align-items:start">
+            <div style="display:flex;flex-direction:column;gap:18px;min-width:0">
+              <sc-if value="{{ showName }}"><div style="display:flex;flex-direction:column;gap:6px"><span style="font-size:14px;font-weight:700">Name</span><span style="display:flex;align-items:center;height:48px;padding:0 14px;box-sizing:border-box;border-radius:12px;border:var(--cp-bw) solid var(--cp-line);background:var(--cp-surface);font-size:16px">Rocket League</span></div></sc-if>
+              <sc-if value="{{ desk }}"><div style="display:grid;grid-template-columns:1fr 1fr;gap:12px"><div style="display:flex;flex-direction:column;gap:6px"><span style="font-size:14px;font-weight:700">Spielerzahl</span><span style="display:flex;align-items:center;height:48px;padding:0 14px;box-sizing:border-box;border-radius:12px;border:var(--cp-bw) solid var(--cp-line);background:var(--cp-surface);font-family:var(--cp-font-num);font-size:15px">2 – 8</span></div><div style="display:flex;flex-direction:column;gap:6px"><span style="font-size:14px;font-weight:700">Formate</span><div style="display:flex;gap:6px"><span style="display:inline-flex;align-items:center;gap:4px;height:48px;padding:0 12px;box-sizing:border-box;border-radius:12px;border:3px solid var(--cp-line);background:var(--cp-ink);color:var(--cp-paper);font-weight:700;font-size:13px"><dc-import name="Icon" icon="check" size="{{ 13 }}" sw="{{ 3 }}" hint-size="13px,13px"></dc-import>Teams</span><span style="display:inline-flex;align-items:center;height:48px;padding:0 12px;box-sizing:border-box;border-radius:12px;border:2px solid var(--cp-line);font-weight:700;font-size:13px">Jeder gg. jeden</span></div></div></div></sc-if>
+              <dc-import name="NotizEditor" state="{{ edState }}" narrow="{{ mob }}" max-h="{{ formMaxH }}" hint-size="100%,300px"></dc-import>
+              <sc-if value="{{ mobCta }}"><div style="display:flex;flex-direction:column;gap:8px;margin-top:4px"><span style="display:flex;align-items:center;justify-content:center;height:52px;border-radius:999px;border:var(--cp-bw) {{ ctaBs }} {{ ctaBc }};background:{{ ctaBg }};color:{{ ctaFg }};box-shadow:{{ ctaSh }};font-weight:800">Speichern</span><sc-if value="{{ ctaWhy }}"><span style="font-size:13px;color:var(--cp-ink-2);text-align:center">Erst die Notizen kürzen.</span></sc-if></div></sc-if>
+            </div>
+            <sc-if value="{{ desk }}">
+              <div style="display:flex;flex-direction:column;gap:10px">
+                <b style="font-size:14px">Vorschau des Clips</b>
+                <div style="position:relative;aspect-ratio:16/9;border:var(--cp-bw) solid var(--cp-line);border-radius:14px;background:repeating-linear-gradient(135deg,var(--cp-paper-2) 0 12px,var(--cp-surface) 12px 24px);box-shadow:var(--cp-shadow-card)"><span style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);padding:6px 10px;border-radius:8px;background:var(--cp-surface);border:2px solid var(--cp-line);font-family:var(--cp-font-mono);font-size:12px;font-weight:700;white-space:nowrap">Clip-Vorschau, ab 1:12, 30 s</span></div>
+                <div style="display:flex;gap:10px;align-items:center;margin-top:10px"><span style="display:inline-flex;align-items:center;height:52px;padding:0 24px;border-radius:999px;border:var(--cp-bw) {{ ctaBs }} {{ ctaBc }};background:{{ ctaBg }};color:{{ ctaFg }};box-shadow:{{ ctaSh }};font-weight:800">Speichern</span><span style="display:inline-flex;align-items:center;height:52px;padding:0 12px;font-weight:700">Abbrechen</span></div>
+                <sc-if value="{{ ctaWhy }}"><span style="font-size:13px;color:var(--cp-ink-2)">Erst die Notizen kürzen.</span></sc-if>
+              </div>
+            </sc-if>
+          </div>
+        </div>
+      </main>
+    </sc-if>
+
+    <sc-if value="{{ isLib }}">
+      <main style="flex:1;min-width:0;overflow:hidden;padding:{{ mainPad }};display:flex;justify-content:center">
+        <div style="width:100%;max-width:1100px;display:flex;flex-direction:column;gap:{{ gap }}">
+          <span style="display:inline-flex;align-items:center;gap:4px;height:28px;font-size:13px;font-weight:700;color:var(--cp-ink-2)"><dc-import name="Icon" icon="chevron-left" size="{{ 14 }}" hint-size="14px,14px"></dc-import>Bibliothek</span>
+          <div style="display:grid;grid-template-columns:{{ libCols }};gap:28px;align-items:start">
+            <div style="position:relative;aspect-ratio:16/9;border:var(--cp-bw) solid var(--cp-line);border-radius:16px;background:repeating-linear-gradient(135deg,var(--cp-paper-2) 0 12px,var(--cp-surface) 12px 24px);box-shadow:var(--cp-shadow-card)"><span style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);padding:6px 10px;border-radius:8px;background:var(--cp-surface);border:2px solid var(--cp-line);font-family:var(--cp-font-mono);font-size:12px;font-weight:700;white-space:nowrap">Clip-Vorschau, ab 1:12, 30 s</span></div>
+            <div style="display:flex;flex-direction:column;gap:14px;min-width:0">
+              <span style="font-family:var(--cp-font-display);font-size:{{ h1 }};line-height:1">Rocket League</span>
+              <div style="display:flex;gap:8px;flex-wrap:wrap"><span style="display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 12px;border-radius:999px;border:2px solid var(--cp-line);background:var(--cp-surface);font-weight:700;font-size:13px"><dc-import name="Icon" icon="users" size="{{ 14 }}" hint-size="14px,14px"></dc-import>2–8</span><span style="display:inline-flex;align-items:center;height:32px;padding:0 12px;border-radius:999px;border:2px solid var(--cp-line);background:var(--cp-surface);font-weight:700;font-size:13px">Teams</span><span style="display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 12px;border-radius:999px;border:2px solid var(--cp-line);background:var(--cp-surface);font-weight:700;font-size:13px"><dc-import name="Icon" icon="trophy" size="{{ 14 }}" hint-size="14px,14px"></dc-import>12× gespielt</span></div>
+              <section aria-labelledby="lib-notes" style="display:flex;flex-direction:column;gap:10px;margin-top:6px">
+                <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+                  <h2 id="lib-notes" style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:26px;line-height:1.05">Notizen</h2>
+                  <span style="display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:600;color:var(--cp-ink-2)"><dc-import name="Icon" icon="lock" size="{{ 12 }}" hint-size="12px,12px"></dc-import>Nur du siehst das</span>
+                  <span style="flex:1"></span>
+                  <span style="display:inline-flex;align-items:center;gap:6px;height:44px;padding:0 16px;border-radius:999px;border:var(--cp-bw) solid var(--cp-line);background:var(--cp-surface);box-shadow:var(--cp-shadow-btn);font-weight:700;font-size:14px"><dc-import name="Icon" icon="pencil" size="{{ 16 }}" hint-size="16px,16px"></dc-import>Bearbeiten</span>
+                </div>
+                <div style="padding:16px 18px;border-radius:12px;background:var(--cp-paper-2)"><dc-import name="NotizText" doc="show" size="{{ libSize }}" hint-size="100%,220px"></dc-import></div>
+              </section>
+            </div>
+          </div>
+        </div>
+      </main>
+    </sc-if>
+
+    <sc-if value="{{ isGrid }}">
+      <main style="flex:1;min-width:0;overflow:hidden;padding:{{ mainPad }};display:flex;justify-content:center">
+        <div style="width:100%;max-width:1100px;display:flex;flex-direction:column;gap:{{ gap }}">
+          <div style="display:flex;flex-direction:column;gap:2px"><span style="font-size:13px;font-weight:700;color:var(--cp-ink-2)">Global, für alle Hosts</span><span style="font-family:var(--cp-font-display);font-size:{{ h1 }};line-height:1">Bibliothek</span></div>
+          <div style="position:relative;display:flex;align-items:center"><span style="position:absolute;left:14px;display:grid;color:var(--cp-ink-2)"><dc-import name="Icon" icon="search" size="{{ 18 }}" hint-size="18px,18px"></dc-import></span><span style="width:100%;height:46px;box-sizing:border-box;padding:0 14px 0 42px;display:flex;align-items:center;border-radius:12px;border:var(--cp-bw) solid var(--cp-line);background:var(--cp-surface);color:var(--cp-ink-2)">86 Spiele durchsuchen</span></div>
+          <div style="display:grid;grid-template-columns:{{ gridCols }};gap:12px">
+            <sc-for list="{{ libCards }}" as="c" hint-placeholder-count="5">
+              <div style="position:relative;z-index:{{ c.z }};height:{{ cardH }}">
+                <dc-import name="GameCard" dc-props="{{ c.g }}" hint-size="100%,100%"></dc-import>
+                <sc-if value="{{ c.note }}"><span aria-label="{{ c.aria }}" style="position:absolute;top:4px;right:4px;display:grid;place-items:center;width:44px;height:44px"><span style="display:grid;place-items:center;width:32px;height:32px;box-sizing:border-box;border-radius:50%;border:2px solid var(--cp-line);background:{{ c.nb }};color:{{ c.nf }};box-shadow:var(--cp-shadow-sm)"><dc-import name="Icon" icon="sticky-note" size="{{ 16 }}" hint-size="16px,16px"></dc-import></span></span></sc-if>
+                <sc-if value="{{ c.pop }}">
+                  <div role="dialog" aria-label="Notizen zu Codenames" style="position:absolute;top:54px;left:{{ popLeft }};z-index:5;width:320px;max-height:440px;box-sizing:border-box;display:flex;flex-direction:column;border:var(--cp-bw) solid var(--cp-line);border-radius:18px;background:var(--cp-surface);box-shadow:var(--cp-shadow-modal);overflow:hidden">
+                    <div style="flex:none;display:flex;align-items:flex-start;gap:8px;padding:12px 4px 10px 16px;border-bottom:2px solid {{ divC }}"><span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px"><span style="font-size:12px;font-weight:700;color:var(--cp-ink-2)">Rocket League</span><b style="font-family:var(--cp-font-display);font-weight:400;font-size:22px;line-height:1">Notizen</b></span><span aria-label="Schließen" style="flex:none;display:grid;place-items:center;width:44px;height:44px"><dc-import name="Icon" icon="x" size="{{ 20 }}" hint-size="20px,20px"></dc-import></span></div>
+                    <sc-if value="{{ hasThumb }}"><span aria-hidden="true" style="position:absolute;right:4px;top:{{ thT }};width:5px;height:{{ thH }};border-radius:3px;background:var(--cp-ink-3)"></span></sc-if><div ref="{{ popBody }}" tabindex="0" style="flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;scrollbar-width:none;padding:12px 16px 16px"><dc-import name="NotizText" doc="long" size="sm" hint-size="100%,600px"></dc-import></div>
+                    <div style="flex:none;display:flex;padding:2px 8px;border-top:2px solid var(--cp-line-soft)"><span style="display:inline-flex;align-items:center;gap:6px;height:44px;padding:0 8px;font-size:14px;font-weight:700"><dc-import name="Icon" icon="pencil" size="{{ 16 }}" hint-size="16px,16px"></dc-import>Bearbeiten</span></div>
+                  </div>
+                </sc-if>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </main>
+    </sc-if>
+
+    <sc-if value="{{ isEvent }}">
+      <main style="flex:1;min-width:0;overflow:hidden;padding:{{ mainPad }};display:flex;flex-direction:column;gap:{{ gap }}">
+        <div style="display:flex;flex-direction:column;gap:2px"><span style="font-size:13px;font-weight:700;color:var(--cp-ink-2)">{{ evKicker }}</span><span style="font-family:var(--cp-font-display);font-size:{{ evH1 }};line-height:1">{{ evTitle }}</span></div>
+        <sc-if value="{{ isRound }}">
+          <article style="max-width:760px;box-sizing:border-box;display:flex;flex-direction:column;gap:14px;padding:{{ rcPad }};border:var(--cp-bw) solid var(--cp-line);border-radius:14px;background:var(--cp-surface);box-shadow:var(--cp-shadow-card)">
+            <div style="display:flex;gap:14px;align-items:center">
+              <span aria-hidden="true" style="flex:none;display:grid;place-items:center;width:{{ rcCover }};height:{{ rcCover }};box-sizing:border-box;border-radius:10px;border:2px solid var(--cp-line);background:var(--cp-mint);font-family:var(--cp-font-display);font-size:24px;color:#151515">RL</span>
+              <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:3px"><span style="font-size:13px;font-weight:700;color:var(--cp-ink-2)">Runde 2 von 5 · läuft seit 20:41</span><b style="font-family:var(--cp-font-display);font-weight:400;font-size:{{ rcTitle }};line-height:1">Rocket League</b><span style="display:flex;gap:10px;font-size:12px;color:var(--cp-ink-2)"><span style="display:inline-flex;align-items:center;gap:4px"><dc-import name="Icon" icon="users" size="{{ 13 }}" hint-size="13px,13px"></dc-import>2–8</span><span>Teams</span><span>Vom Glücksrad</span></span></div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:6px">
+              <span role="button" aria-expanded="true" style="display:flex;align-items:center;gap:8px;height:44px;padding:0 4px 0 2px;font-size:15px;font-weight:800"><dc-import name="Icon" icon="sticky-note" size="{{ 18 }}" hint-size="18px,18px"></dc-import>Notizen<span style="display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:600;color:var(--cp-ink-2)"><dc-import name="Icon" icon="lock" size="{{ 12 }}" hint-size="12px,12px"></dc-import>Nur du siehst das</span><span style="margin-left:auto;display:grid;transform:rotate(180deg)"><dc-import name="Icon" icon="chevron-down" size="{{ 20 }}" hint-size="20px,20px"></dc-import></span></span>
+              <div style="display:flex;flex-direction:column;gap:14px;padding:12px 14px 14px;border-radius:12px;background:var(--cp-paper-2)">
+                <dc-import name="NotizBlock" kind="event" size="sm" sub="Spieleabend bei Sanne" level="{{ 4 }}" hint-size="100%,90px"></dc-import>
+                <span aria-hidden="true" style="height:2px;background:var(--cp-line-soft);border-radius:1px"></span>
+                <dc-import name="NotizBlock" kind="game" size="sm" bare="{{ true }}" sub="aus deiner Bibliothek" level="{{ 4 }}" hint-size="100%,240px"></dc-import>
+              </div>
+            </div>
+            <div style="display:flex;gap:10px;flex-wrap:wrap"><span style="display:inline-flex;align-items:center;gap:8px;height:44px;padding:0 18px;border-radius:999px;border:var(--cp-bw) solid var(--cp-line);background:var(--cp-primary);color:var(--cp-on-primary);box-shadow:var(--cp-shadow-btn);font-weight:800;font-size:14px"><dc-import name="Icon" icon="trophy" size="{{ 16 }}" hint-size="16px,16px"></dc-import>Ergebnis eintragen</span></div>
+          </article>
+        </sc-if>
+        <sc-if value="{{ isPool }}">
+          <section style="display:flex;flex-direction:column;gap:14px;padding:{{ rcPad }};border:var(--cp-bw) solid var(--cp-line);border-radius:14px;background:var(--cp-surface)">
+            <div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap"><h2 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:{{ h2 }};line-height:1.05">Spielepool</h2><span style="font-size:13px;font-weight:600;color:var(--cp-ink-2)">7 Spiele · Glücksrad</span></div>
+            <div style="display:grid;grid-template-columns:{{ gridCols }};gap:12px">
+              <sc-for list="{{ poolCards }}" as="c" hint-placeholder-count="5">
+                <div style="position:relative;z-index:{{ c.z }};height:{{ cardH }}">
+                  <dc-import name="GameCard" dc-props="{{ c.g }}" hint-size="100%,100%"></dc-import>
+                  <sc-if value="{{ c.note }}"><span aria-label="{{ c.aria }}" style="position:absolute;top:4px;right:4px;display:grid;place-items:center;width:44px;height:44px"><span style="display:grid;place-items:center;width:32px;height:32px;box-sizing:border-box;border-radius:50%;border:2px solid var(--cp-line);background:{{ c.nb }};color:{{ c.nf }};box-shadow:var(--cp-shadow-sm)"><dc-import name="Icon" icon="sticky-note" size="{{ 16 }}" hint-size="16px,16px"></dc-import></span></span></sc-if>
+                  <sc-if value="{{ c.pop }}">
+                    <div role="dialog" aria-label="Notizen zu Rocket League" style="position:absolute;top:54px;left:-6px;z-index:5;width:320px;max-height:520px;box-sizing:border-box;display:flex;flex-direction:column;border:var(--cp-bw) solid var(--cp-line);border-radius:18px;background:var(--cp-surface);box-shadow:var(--cp-shadow-modal);overflow:hidden">
+                      <div style="flex:none;display:flex;align-items:flex-start;gap:8px;padding:12px 4px 10px 16px;border-bottom:2px solid transparent"><span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px"><span style="font-size:12px;font-weight:700;color:var(--cp-ink-2)">Rocket League</span><b style="font-family:var(--cp-font-display);font-weight:400;font-size:22px;line-height:1">Notizen</b></span><span aria-label="Schließen" style="flex:none;display:grid;place-items:center;width:44px;height:44px"><dc-import name="Icon" icon="x" size="{{ 20 }}" hint-size="20px,20px"></dc-import></span></div>
+                      <div style="flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;padding:4px 16px 16px;display:flex;flex-direction:column;gap:16px;scrollbar-width:thin">
+                        <dc-import name="NotizBlock" kind="event" size="sm" sub="Spieleabend bei Sanne" hint-size="100%,90px"></dc-import>
+                        <dc-import name="NotizBlock" kind="game" size="sm" sub="aus deiner Bibliothek" hint-size="100%,260px"></dc-import>
+                      </div>
+                      <div style="flex:none;display:flex;padding:2px 8px;border-top:2px solid var(--cp-line-soft)"><span style="display:inline-flex;align-items:center;gap:6px;height:44px;padding:0 8px;font-size:14px;font-weight:700"><dc-import name="Icon" icon="pencil" size="{{ 16 }}" hint-size="16px,16px"></dc-import>Bearbeiten</span></div>
+                    </div>
+                  </sc-if>
+                </div>
+              </sc-for>
+            </div>
+          </section>
+          <section style="display:flex;flex-direction:column;gap:10px;padding:{{ rcPad }};border:var(--cp-bw) solid var(--cp-line);border-radius:14px;background:var(--cp-surface)"><h2 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:{{ h2 }};line-height:1.05">So wird gespielt</h2><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px 16px;font-size:14px"><span><b>Format</b> Teams</span><span><b>Spiele</b> 5</span><span><b>Auswahl</b> Glücksrad</span><span><b>Punkte</b> Linear</span></div></section>
+        </sc-if>
+      </main>
+      <sc-if value="{{ desk }}">
+        <aside style="flex:none;width:340px;display:flex;flex-direction:column;border-left:var(--cp-bw) solid var(--cp-line);background:var(--cp-surface)">
+          <div role="tablist" style="display:flex;padding:0 12px;border-bottom:2px solid var(--cp-line-soft)"><span role="tab" aria-selected="true" style="display:flex;align-items:center;gap:6px;height:48px;padding:0 10px;border-bottom:3px solid var(--cp-hot);margin-bottom:-2px;font-weight:800"><dc-import name="Icon" icon="history" size="{{ 16 }}" hint-size="16px,16px"></dc-import>Aktivität</span></div>
+          <div style="display:flex;flex-direction:column;gap:12px;padding:14px 16px"><sc-for list="{{ feed }}" as="f" hint-placeholder-count="4"><div style="display:flex;gap:10px;font-size:14px;line-height:1.4"><span style="flex:none;width:40px;font-family:var(--cp-font-mono);font-size:12px;color:var(--cp-ink-2);padding-top:2px">{{ f.t }}</span><span style="text-wrap:pretty">{{ f.x }}</span></div></sc-for></div>
+        </aside>
+      </sc-if>
+    </sc-if>
+  </div>
+
+  <sc-if value="{{ tabs }}"><nav style="flex:none;display:grid;grid-template-columns:repeat({{ tabN }},1fr);padding:0 4px 18px;border-top:var(--cp-bw) solid var(--cp-line);background:var(--cp-surface)"><sc-for list="{{ tabItems }}" as="t" hint-placeholder-count="4"><span style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;height:58px;font-size:11px;font-weight:{{ t.fw }};color:{{ t.c }}"><dc-import name="Icon" icon="{{ t.i }}" size="{{ 22 }}" offset="{{ t.off }}" hint-size="22px,22px"></dc-import>{{ t.t }}</span></sc-for></nav></sc-if>
+
+  <sc-if value="{{ kb }}"><div aria-hidden="true" style="position:absolute;left:0;right:0;bottom:0;z-index:30;height:291px;display:grid;place-items:center;border-top:2px solid var(--cp-line-soft);background:repeating-linear-gradient(135deg,var(--cp-paper-2) 0 10px,var(--cp-surface) 10px 20px)"><span style="padding:6px 10px;border-radius:8px;background:var(--cp-surface);border:2px solid var(--cp-line);font-family:var(--cp-font-mono);font-size:12px;font-weight:700">Bildschirmtastatur · 291 px</span></div></sc-if>
+
+  <sc-if value="{{ scrim }}"><div aria-hidden="true" style="position:absolute;inset:0;z-index:40;background:var(--cp-overlay)"></div></sc-if>
+
+  <sc-if value="{{ dlg }}">
+    <div role="dialog" aria-modal="true" aria-labelledby="dlg-t" style="position:absolute;left:50%;top:{{ dlgTop }};z-index:41;transform:translateX(-50%);width:{{ dlgW }};max-height:{{ dlgMax }};box-sizing:border-box;display:flex;flex-direction:column;border:var(--cp-bw) solid var(--cp-line);border-radius:18px;background:var(--cp-surface);box-shadow:var(--cp-shadow-modal);overflow:hidden">
+      <div style="flex:none;display:flex;gap:14px;align-items:center;padding:16px 8px 14px 20px;border-bottom:2px solid var(--cp-line-soft)">
+        <span aria-hidden="true" style="flex:none;display:grid;place-items:center;width:56px;height:56px;box-sizing:border-box;border-radius:10px;border:2px solid var(--cp-line);background:var(--cp-mint);font-family:var(--cp-font-display);font-size:22px;color:#151515">RL</span>
+        <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:3px"><span style="font-size:13px;font-weight:700;color:var(--cp-ink-2)">Spielepool · Glücksrad</span><b id="dlg-t" style="font-family:var(--cp-font-display);font-weight:400;font-size:30px;line-height:1">Rocket League</b><span style="display:flex;gap:10px;font-size:12px;color:var(--cp-ink-2)"><span style="display:inline-flex;align-items:center;gap:4px"><dc-import name="Icon" icon="users" size="{{ 13 }}" hint-size="13px,13px"></dc-import>2–8</span><span>Teams</span></span></div>
+        <span aria-label="Schließen" style="flex:none;align-self:flex-start;display:grid;place-items:center;width:44px;height:44px"><dc-import name="Icon" icon="x" size="{{ 22 }}" hint-size="22px,22px"></dc-import></span>
+      </div>
+      <sc-if value="{{ dlgView }}">
+        <div style="flex:1;min-height:0;overflow:hidden;padding:18px 20px 22px;display:flex;flex-direction:column;gap:20px">
+          <dc-import name="NotizBlock" kind="event" size="md" sub="Spieleabend bei Sanne" edit="{{ true }}" finished="{{ fin }}" hint-size="100%,100px"></dc-import>
+          <dc-import name="NotizBlock" kind="game" size="md" sub="aus deiner Bibliothek" edit="{{ true }}" hint-size="100%,280px"></dc-import>
+        </div>
+      </sc-if>
+      <sc-if value="{{ dlgEdit }}">
+        <div style="flex:1;min-height:0;overflow:hidden;padding:18px 20px 16px;display:flex;flex-direction:column;gap:22px">
+          <dc-import name="NotizEditor" variant="event" state="{{ evState }}" min-h="96px" max-h="200px" hint-size="100%,200px"></dc-import>
+          <dc-import name="NotizEditor" variant="game" state="{{ gState }}" max-h="260px" hint-size="100%,300px"></dc-import>
+        </div>
+        <div style="flex:none;display:flex;justify-content:flex-end;gap:8px;padding:12px 20px 16px;border-top:2px solid var(--cp-line-soft)"><span style="display:inline-flex;align-items:center;height:44px;padding:0 12px;font-weight:700">Abbrechen</span><span style="display:inline-flex;align-items:center;height:44px;padding:0 20px;border-radius:999px;border:var(--cp-bw) solid var(--cp-line);background:var(--cp-primary);color:var(--cp-on-primary);box-shadow:var(--cp-shadow-btn);font-weight:800">Speichern</span></div>
+      </sc-if>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ sheet }}">
+    <div role="dialog" aria-modal="true" style="position:absolute;left:0;right:0;bottom:0;z-index:41;max-height:{{ sheetMax }};height:{{ sheetH }};box-sizing:border-box;display:flex;flex-direction:column;border:var(--cp-bw) solid var(--cp-line);border-bottom:0;border-radius:20px 20px 0 0;background:var(--cp-surface)">
+      <span aria-hidden="true" style="flex:none;align-self:center;width:44px;height:5px;margin-top:8px;border-radius:3px;background:var(--cp-ink-3)"></span>
+      <div style="flex:none;display:flex;gap:12px;align-items:center;padding:6px 4px 10px 16px;border-bottom:2px solid {{ sDivC }}">
+        <sc-if value="{{ sCover }}"><span aria-hidden="true" style="flex:none;display:grid;place-items:center;width:44px;height:44px;box-sizing:border-box;border-radius:9px;border:2px solid var(--cp-line);background:var(--cp-mint);font-family:var(--cp-font-display);font-size:18px;color:#151515">RL</span></sc-if>
+        <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px"><span style="font-size:12px;font-weight:700;color:var(--cp-ink-2)">{{ sKick }}</span><b style="font-family:var(--cp-font-display);font-weight:400;font-size:24px;line-height:1">{{ sTitle }}</b></div>
+        <span aria-label="Schließen" style="flex:none;display:grid;place-items:center;width:44px;height:44px"><dc-import name="Icon" icon="x" size="{{ 22 }}" hint-size="22px,22px"></dc-import></span>
+      </div>
+      <sc-if value="{{ hasThumb }}"><span aria-hidden="true" style="position:absolute;right:4px;top:{{ thT }};width:5px;height:{{ thH }};border-radius:3px;background:var(--cp-ink-3)"></span></sc-if><div ref="{{ sheetBody }}" style="flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;scrollbar-width:none;padding:{{ sPad }};display:flex;flex-direction:column;gap:{{ sGap }}">
+        <sc-if value="{{ sNotes }}">
+          <dc-import name="NotizBlock" kind="event" size="md" sub="Spieleabend bei Sanne" edit="{{ sEditBtn }}" finished="{{ fin }}" hint-size="100%,100px"></dc-import>
+          <dc-import name="NotizBlock" kind="game" size="md" sub="aus deiner Bibliothek" edit="{{ sEditBtn }}" hint-size="100%,300px"></dc-import>
+        </sc-if>
+        <sc-if value="{{ sLong }}"><dc-import name="NotizText" doc="long" size="md" hint-size="100%,700px"></dc-import></sc-if>
+        <sc-if value="{{ sEdit }}">
+          <dc-import name="NotizEditor" variant="event" state="{{ evState }}" narrow="{{ true }}" min-h="96px" max-h="200px" hint-size="100%,200px"></dc-import>
+          <dc-import name="NotizEditor" variant="game" state="{{ gState }}" narrow="{{ true }}" max-h="240px" hint-size="100%,300px"></dc-import>
+        </sc-if>
+      </div>
+      <sc-if value="{{ sFootEdit }}"><div style="flex:none;display:flex;flex-direction:column;gap:4px;padding:10px 16px 26px;border-top:2px solid var(--cp-line-soft)"><span style="display:flex;align-items:center;justify-content:center;height:52px;border-radius:999px;border:var(--cp-bw) solid var(--cp-line);background:var(--cp-primary);color:var(--cp-on-primary);box-shadow:var(--cp-shadow-btn);font-weight:800">Speichern</span></div></sc-if>
+      <sc-if value="{{ sFootView }}"><div style="flex:none;display:flex;padding:6px 12px 24px;border-top:2px solid var(--cp-line-soft)"><span style="display:inline-flex;align-items:center;gap:6px;height:44px;padding:0 8px;font-size:15px;font-weight:700"><dc-import name="Icon" icon="pencil" size="{{ 16 }}" hint-size="16px,16px"></dc-import>Bearbeiten</span></div></sc-if>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1440,&quot;height&quot;:900},&quot;ctx&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;form&quot;,&quot;pop&quot;,&quot;round&quot;,&quot;dialog&quot;,&quot;library&quot;,&quot;edit&quot;,&quot;finished&quot;,&quot;long&quot;],&quot;default&quot;:&quot;form&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;w&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[1440,390],&quot;default&quot;:1440,&quot;tsType&quot;:&quot;number&quot;},&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;light&quot;,&quot;dark&quot;],&quot;default&quot;:&quot;light&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;state&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;filled&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;evState&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;gState&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;scroll&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;top&quot;,&quot;mid&quot;,&quot;end&quot;],&quot;default&quot;:&quot;top&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;kb&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;},&quot;h&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:null,&quot;tsType&quot;:&quot;number&quot;}}">
+class Component extends DCLogic {
+  popBody=React.createRef(); sheetBody=React.createRef();
+  componentDidMount(){ this.scroll(); [300,900,1800].forEach(t=>setTimeout(()=>this.scroll(),t)); }
+  componentDidUpdate(pp){ if(pp.scroll!==this.props.scroll||pp.ctx!==this.props.ctx) this.scroll(); }
+  state={thumb:null};
+  scroll(){
+    const mid=this.props.scroll==='mid'; let thumb=null;
+    [this.popBody.current,this.sheetBody.current].forEach(el=>{ if(!el) return; const kids=[...el.children]; kids.forEach(k=>k.style.transform=''); el.style.overflowY='auto';
+      const sh=el.scrollHeight, ch=el.clientHeight, max=Math.max(0,sh-ch); if(!max) return; const off=mid?Math.min(max,Math.round(max*.55)):0; const th=Math.max(28,ch*ch/sh);
+      if(mid){ el.style.overflowY='hidden'; el.scrollTop=0; kids.forEach(k=>k.style.transform='translateY(-'+off+'px)'); }
+      thumb={top:Math.round(el.offsetTop+4+(ch-th-8)*(off/max))+'px',h:Math.round(th)+'px'}; });
+    if(JSON.stringify(thumb)!==JSON.stringify(this.state.thumb)) this.setState({thumb});
+  }
+  renderVals(){
+    const p=this.props, w=+(p.w||1440), mob=w<600, desk=!mob, ctx=p.ctx||'form', theme=p.theme||'light';
+    const hub=['form','library','long'].includes(ctx), fin=ctx==='finished';
+    const isForm=ctx==='form', isLib=ctx==='library', isGrid=ctx==='long', isEvent=!hub, isRound=ctx==='round', isPool=isEvent&&!isRound;
+    const st=p.state||'filled', kb=!!p.kb&&mob;
+    const over=['over','overFocus'].includes(st);
+    const card=(t,players,fmt,cover,o)=>Object.assign({g:{title:t,players,fmt,cover,layout:'card'},note:false,pop:false,z:1,nb:'var(--cp-surface)',nf:'var(--cp-ink)',aria:'Notizen zu '+t},o||{});
+    const popOpen=desk&&ctx==='pop', longOpen=desk&&ctx==='long';
+    const pool=[card('Mario Kart 8','1–12','Beides',0),card('Rocket League','2–8','Teams',1,{note:true,pop:popOpen,z:popOpen?4:1,nb:popOpen?'var(--cp-ink)':'var(--cp-surface)',nf:popOpen?'var(--cp-paper)':'var(--cp-ink)'}),card('Overcooked 2','2–4','Teams',2),card('Codenames','4–8','Teams',3,{note:true}),card('Trackmania','1–16','Jeder gg. jeden',0)];
+    const lib=[card('Counter-Strike 2','2–10','Teams',3),card('Mario Kart 8','1–12','Beides',0,{note:true}),card('Rocket League','2–8','Teams',1,{note:true,pop:longOpen,z:longOpen?4:1,nb:longOpen?'var(--cp-ink)':'var(--cp-surface)',nf:longOpen?'var(--cp-paper)':'var(--cp-ink)'}),card('Overcooked 2','2–4','Teams',2),card('Codenames','4–8','Teams',3,{note:true})];
+    const ovl=['pop','dialog','edit','finished','long'].includes(ctx);
+    const dlg=desk&&['dialog','edit','finished'].includes(ctx), sheet=mob&&ovl;
+    const sNotes=sheet&&(ctx==='pop'||ctx==='dialog'), sLong=sheet&&ctx==='long', sEdit=sheet&&(ctx==='edit'||ctx==='finished');
+    const navOn=isEvent?'':'Bibliothek';
+    return {
+      theme,W:w+'px',H:(p.h||(mob?844:900))+'px',mob,desk,hub,hubDesk:hub&&desk,evHead:isEvent,
+      hdGap:mob?'10px':'14px',hdH:mob?'56px':'64px',hdPad:mob?'12px':'24px',logo:mob?'36px':'42px',av:mob?'32px':'36px',wordSz:mob?'22px':'26px',evTitleSz:mob?'15px':'17px',
+      pillBg:fin?'var(--cp-surface)':'var(--cp-primary)',pillDot:fin?'var(--cp-ink-3)':'var(--cp-hot)',pillTxt:fin?'Beendet':'Läuft',
+      nav:['Sessions','Archiv','Bibliothek','Profil'].map(t=>({t,bar:t===navOn?'var(--cp-hot)':'transparent',fw:t===navOn?800:600,c:t===navOn?'var(--cp-ink)':'var(--cp-ink-2)'})),
+      isForm,isLib,isGrid,isEvent,isRound,isPool,fin,
+      mainPad:mob?'16px 16px 24px':'28px 24px 40px',gap:mob?'16px':'20px',h1:mob?'34px':'46px',h2:mob?'22px':'26px',
+      formCols:mob?'minmax(0,1fr)':'minmax(0,1fr) 360px',edState:st,showName:!kb,formMaxH:kb?'200px':(mob?'300px':'400px'),mobCta:mob&&!kb,
+      ctaBs:over?'dashed':'solid',ctaBc:over?'var(--cp-ink-3)':'var(--cp-line)',ctaBg:over?'var(--cp-paper-2)':'var(--cp-primary)',ctaFg:over?'var(--cp-ink-2)':'var(--cp-on-primary)',ctaSh:over?'none':'var(--cp-shadow-btn)',ctaWhy:over,
+      libCols:mob?'minmax(0,1fr)':'minmax(0,1fr) minmax(0,1fr)',libSize:mob?'md':'lg',
+      gridCols:mob?'repeat(2,minmax(0,1fr))':'repeat(5,minmax(0,1fr))',cardH:mob?'176px':'210px',libCards:mob?lib.slice(0,4):lib,poolCards:mob?pool.slice(0,4):pool,popLeft:'-6px',
+      divC:p.scroll==='mid'?'var(--cp-line-soft)':'transparent',popBody:this.popBody,
+      evKicker:fin?'Event beendet · Sa 14.11., 20:00 bis 23:40':isRound?'Session 1 von 2 · läuft seit 20:34':'Session 1 von 2 läuft seit 20:34',evTitle:fin?'Gute Nacht!':isRound?'Runde 2':'Session 1 läuft',evH1:mob?'34px':'44px',
+      rcPad:mob?'14px':'18px',rcCover:mob?'52px':'64px',rcTitle:mob?'26px':'30px',
+      feed:[{t:'20:41',x:'Glücksrad: Rocket League'},{t:'20:39',x:'Team Gurken hat Runde 1 gewonnen'},{t:'20:34',x:'Sanne hat Session 1 gestartet'},{t:'20:12',x:'Bea ist dem Team Gurken beigetreten'}],
+      tabs:(hub||isRound)&&mob&&!kb&&!sheet,tabN:hub?'4':'2',
+      tabItems:hub?[['Sessions','house'],['Archiv','archive'],['Bibliothek','layout-grid'],['Profil','user']].map(([t,i])=>({t,i,fw:t==='Bibliothek'?800:600,c:t==='Bibliothek'?'var(--cp-ink)':'var(--cp-ink-2)',off:t==='Bibliothek'?'var(--cp-hot)':''})):[['Event','layout-grid'],['Aktivität','history']].map(([t,i])=>({t,i,fw:t==='Event'?800:600,c:t==='Event'?'var(--cp-ink)':'var(--cp-ink-2)',off:t==='Event'?'var(--cp-hot)':''})),
+      kb,scrim:dlg||sheet,dlg,dlgView:ctx==='dialog'||ctx==='finished',dlgEdit:ctx==='edit',dlgW:'600px',dlgTop:ctx==='edit'?'48px':'96px',dlgMax:'calc(100% - 96px)',
+      evState:p.evState||(fin?'readonly':'focus'),gState:p.gState||'filled',
+      sheet,sheetMax:sEdit?'90%':'76%',sheetH:sEdit?'90%':'auto',sCover:sEdit||ctx==='dialog',sKick:sLong?'Rocket League':(ctx==='pop'?'Rocket League':'Spielepool · Glücksrad'),sTitle:(sEdit||ctx==='dialog')?'Rocket League':'Notizen',
+      sDivC:p.scroll==='mid'?'var(--cp-line-soft)':'var(--cp-line-soft)',sPad:sEdit?'16px 16px 20px':'14px 16px 20px',sGap:sEdit?'22px':'18px',sheetBody:this.sheetBody,
+      hasThumb:!!this.state.thumb&&(ctx==='long'),thT:this.state.thumb?this.state.thumb.top:'0',thH:this.state.thumb?this.state.thumb.h:'0',
+      sNotes,sLong,sEdit,sEditBtn:ctx==='dialog',sFootEdit:sEdit,sFootView:ctx==='pop'||sLong};
+  }
+}
+</script>
+</body>
+</html>
