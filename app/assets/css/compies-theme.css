@@ -6,6 +6,7 @@
    ===================================================================== */
 @import "tailwindcss";
 @import "./compies-tokens.css";
+@import "./notes.css";
 
 /* Dunkel, and System on a device that asks for dark (#402). */
 @custom-variant dark {

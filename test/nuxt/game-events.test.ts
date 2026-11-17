@@ -108,7 +108,9 @@ describe('the Events list on the game\'s page (#656)', () => {
 
     const buttons = section(page)!.findAll('button')
     expect(buttons).toHaveLength(1)
-    expect(buttons[0]!.text()).toBe('Notizen für dieses Event')
+    // The Round card's look (#729, Q8): the label, the lock line, a 44 px button.
+    expect(buttons[0]!.text()).toBe('Notizen für dieses Event Nur du siehst das')
+    expect(buttons[0]!.classes()).toContain('h-11')
     expect(items(page)[0]!.find('button').exists()).toBe(true)
     expect(items(page)[1]!.find('button').exists()).toBe(false)
     expect(buttons[0]!.attributes('aria-expanded')).toBe('false')
@@ -120,8 +122,9 @@ describe('the Events list on the game\'s page (#656)', () => {
     const shown = readFormatted(items(page)[0]!.element)
     expect(shown.items).toEqual(['Erstens', 'Zweitens'])
     expect(shown.bold).toBe('Wichtig')
-    // The page's h1 and this section's h2 come first, so the notes' own heading is an h3.
-    expect(shown.heading).toBe('h3')
+    // The page's h1 and this section's h2 come first, the block's title is an h3 and the notes' own heading an h4 (#729).
+    expect(shown.heading).toBe('h4')
+    expect(items(page)[0]!.get('h3').text()).toBe('Notizen für dieses Event')
   })
 
   it('keeps the game on screen with a warning and no list when the Events read fails', async () => {

@@ -182,6 +182,10 @@ const helpLine = computed(() => {
     :data-variant="variant"
   >
     <div class="flex min-h-[26px] items-center gap-2">
+      <NoteDisc
+        :kind="variant"
+        :finished="readonly"
+      />
       <!-- eslint-disable-next-line vuejs-accessibility/label-has-for, vuejs-accessibility/click-events-have-key-events, vuejs-accessibility/no-static-element-interactions -- the content is a textbox, not a labelable control: a click on the label focuses it -->
       <label
         :id="labelId"
@@ -197,7 +201,7 @@ const helpLine = computed(() => {
           :icon="Lock"
           :size="12"
         />
-        {{ t('notesEditor.finishedChip') }}
+        {{ t('notes.finished.chip') }}
       </span>
     </div>
     <div

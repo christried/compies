@@ -969,8 +969,17 @@
     "linkError": "Nur Adressen mit http oder https.",
     "saving": "Wird gespeichert …",
     "saveBlocked": "Erst die Notizen kürzen.",
-    "finishedChip": "Event beendet",
     "finishedHelp": "Das Event ist beendet. Diese Notizen bleiben so stehen."
+  },
+  "notes": {
+    "from_library": "aus deiner Bibliothek",
+    "open_a11y": "Notizen zu {game}",
+    "link": {
+      "new_tab": "(öffnet in neuem Tab)"
+    },
+    "finished": {
+      "chip": "Event beendet"
+    }
   },
   "gameEvents": {
     "title": "Deine Events mit diesem Spiel",

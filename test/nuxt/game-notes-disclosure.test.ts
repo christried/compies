@@ -1,8 +1,10 @@
 import { mountSuspended } from '@nuxt/test-utils/runtime'
-import { describe, expect, it } from 'vitest'
+import { flushPromises } from '@vue/test-utils'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import GameNotesDisclosure from '~/components/GameNotesDisclosure.vue'
 import { notesFromLines, type NotesDoc } from '~~/shared/notes-doc'
 import { BLANK_NOTES, FORMATTED_HREF, FORMATTED_NOTES, readFormatted } from './helpers/formatted-notes'
+import { motion } from './motion'
 
 // The Game notes under a game in „So wird gespielt“ (#224): a disclosure that starts collapsed, announces whether it is
 // open, and shows the notes formatted, a line per paragraph (#728).
@@ -130,6 +132,136 @@ describe('GameNotesDisclosure (#224)', () => {
         bold: 'Wichtig',
         link: { text: 'nachlesen', href: FORMATTED_HREF, target: '_blank', rel: 'noopener noreferrer' },
       })
+    })
+  })
+
+  describe('the Round card variant (#729)', () => {
+    const round = (props: Record<string, unknown> = {}) => mountSuspended(GameNotesDisclosure, {
+      props: { notes: notesFromLines(['Game-Zeile']), eventNotes: notesFromLines(['Heute nur Bo1']), variant: 'round', startOpen: true, ...props },
+    })
+
+    it('is a 44 px button with a sticky note, „Notizen“, the lock with „Nur du siehst das“ and a chevron at the right', async () => {
+      const disclosure = await round()
+
+      const button = disclosure.get('button')
+      expect(button.classes()).toContain('h-11')
+      expect(button.find('svg[class*="sticky-note"]').exists()).toBe(true)
+      expect(button.text()).toContain('Notizen')
+      expect(button.text()).toContain('Nur du siehst das')
+      expect(button.find('svg[class*="lock"]').exists()).toBe(true)
+      expect(button.get('svg[class*="chevron-down"]').element.parentElement!.className).toContain('ml-auto')
+      expect(button.attributes('aria-expanded')).toBe('true')
+      expect(button.attributes('aria-controls')).toBeTruthy()
+    })
+
+    it('turns the chevron a half circle when open, and back when closed', async () => {
+      const disclosure = await round()
+      const chevron = () => disclosure.get('svg[class*="chevron-down"]').element.parentElement!
+
+      expect(chevron().classList).toContain('rotate-180')
+      await disclosure.get('button').trigger('click')
+      expect(chevron().classList).not.toContain('rotate-180')
+      expect(disclosure.get('button').attributes('aria-expanded')).toBe('false')
+    })
+
+    it('holds the panel on paper-2: the Event block at sm framed, a 2 px line-soft rule, the game block without a panel of its own', async () => {
+      const disclosure = await round()
+
+      const panel = disclosure.get(`[id="${disclosure.get('button').attributes('aria-controls')}"]`)
+      const blocks = panel.findAll('.cp-note')
+      expect(blocks.map(block => block.text())).toEqual(['Heute nur Bo1', 'Game-Zeile'])
+      expect(blocks.every(block => block.classes().includes('cp-note--sm'))).toBe(true)
+      expect(blocks[0]!.element.parentElement!.className).toContain('border-2')
+      expect(blocks[1]!.element.parentElement!.className).not.toContain('bg-paper-2')
+      expect(panel.find('hr, [data-notes-rule]').exists()).toBe(true)
+      expect(panel.get('[data-notes-rule]').classes()).toEqual(expect.arrayContaining(['h-0.5', 'bg-line-soft']))
+      expect(panel.classes()).toContain('bg-paper-2')
+      expect(panel.classes()).toContain('rounded-[12px]')
+      expect(panel.text()).toContain('aus deiner Bibliothek')
+    })
+
+    it('shows no rule and no sub when only one block is there', async () => {
+      const gameOnly = await round({ eventNotes: null })
+      const eventOnly = await round({ notes: null, eventName: 'Spieleabend bei Sanne' })
+
+      expect(gameOnly.find('[data-notes-rule]').exists()).toBe(false)
+      expect(gameOnly.text()).not.toContain('aus deiner Bibliothek')
+      expect(eventOnly.find('[data-notes-rule]').exists()).toBe(false)
+      expect(eventOnly.text()).not.toContain('Spieleabend bei Sanne')
+    })
+
+    it('gives the Event its name as the sub and the finished look when both blocks show', async () => {
+      const disclosure = await round({ eventName: 'Spieleabend bei Sanne', eventFinished: true })
+
+      expect(disclosure.text()).toContain('Spieleabend bei Sanne')
+      expect(disclosure.text()).toContain('Event beendet')
+    })
+
+    it('keeps the default look for every other place: no lock line, no sticky note, no chevron of 20 px', async () => {
+      const disclosure = await mountSuspended(GameNotesDisclosure, { props: { notes: notesFromLines(['Zeile']) } })
+
+      expect(disclosure.get('button').text()).toBe('Notizen')
+      expect(disclosure.find('svg[class*="sticky-note"]').exists()).toBe(false)
+      expect(disclosure.find('svg[class*="lock"]').exists()).toBe(false)
+    })
+  })
+
+  describe('the height run of the Round variant (#729)', () => {
+    interface Call { el: Element, keyframes: Keyframe[], options: KeyframeAnimationOptions, finish: () => void }
+    let calls: Call[]
+    const realAnimate = Element.prototype.animate
+    beforeEach(() => {
+      calls = []
+      Element.prototype.animate = function (this: Element, keyframes: Keyframe[], options: KeyframeAnimationOptions) {
+        let finish: () => void = () => {}
+        const finished = new Promise<void>((resolve) => {
+          finish = resolve
+        })
+        calls.push({ el: this, keyframes, options, finish })
+        return { finished, cancel() {} }
+      } as unknown as typeof Element.prototype.animate
+    })
+    afterEach(() => {
+      Element.prototype.animate = realAnimate
+      vi.restoreAllMocks()
+    })
+    const mountClosed = () => mountSuspended(GameNotesDisclosure, {
+      props: { notes: notesFromLines(['Game-Zeile']), variant: 'round' },
+      global: { stubs: { Transition: false } },
+      attachTo: document.body,
+    })
+
+    it('opens from height 0 in 220 ms on ease-out, and closes in 140 ms on ease-in', async () => {
+      motion('full')
+      const disclosure = await mountClosed()
+
+      await disclosure.get('button').trigger('click')
+      await flushPromises()
+      const open = calls.find(call => call.keyframes.some(frame => 'height' in frame))!
+      expect(open.keyframes[0]!.height).toBe('0px')
+      expect(open.options.duration).toBe(220)
+      expect(open.options.easing).toBe('cubic-bezier(.16,1,.3,1)')
+      open.finish()
+      await flushPromises()
+
+      calls.length = 0
+      await disclosure.get('button').trigger('click')
+      await flushPromises()
+      const close = calls.find(call => call.keyframes.some(frame => 'height' in frame))!
+      expect(close.keyframes.at(-1)!.height).toBe('0px')
+      expect(close.options.duration).toBe(140)
+      expect(close.options.easing).toBe('cubic-bezier(.7,0,.84,0)')
+    })
+
+    it('cuts under reduced motion: no height run', async () => {
+      motion('reduced')
+      const disclosure = await mountClosed()
+
+      await disclosure.get('button').trigger('click')
+      await flushPromises()
+
+      expect(calls.filter(call => call.keyframes.some(frame => 'height' in frame))).toHaveLength(0)
+      expect(disclosure.find('[id]').exists()).toBe(true)
     })
   })
 

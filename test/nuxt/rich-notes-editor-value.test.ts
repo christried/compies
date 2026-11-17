@@ -238,6 +238,7 @@ describe('the states', () => {
     expect(page.find('[role="toolbar"]').exists()).toBe(false)
     expect(page.text()).toContain('Regeln')
     expect(page.text()).toContain('Event beendet')
+    expect(page.find('span.rounded-pill.border-2.bg-paper-2').exists()).toBe(true)
     expect(page.text()).toContain('Das Event ist beendet. Diese Notizen bleiben so stehen.')
   })
 

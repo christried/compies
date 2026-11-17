@@ -14,6 +14,9 @@ defineProps<{
   eventNotes?: NotesDoc | null
   /** The Host's pool game is Archived (#726): the tile carries the „Archiviert“ pill. */
   archived?: boolean
+  /** The Event's name and whether it is finished (#729), for the dialog's Event notes block; where the page does not hold them the block keeps no sub and no chip. */
+  eventName?: string
+  eventFinished?: boolean
 }>()
 
 const dialogOpen = ref(false)
@@ -33,6 +36,8 @@ const dialogOpen = ref(false)
     :audience="audience"
     :facts="facts"
     :event-notes="eventNotes"
+    :event-name="eventName"
+    :event-finished="eventFinished"
     @close="dialogOpen = false"
   />
 </template>
