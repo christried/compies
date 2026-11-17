@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { addPoolGame, draftBody, draftFromEvent, newDraft, settingsBody, settingsOf, togglePoolGame, vetoAllowanceOf, type EventDraft } from '../../app/utils/event-draft'
+import { addPoolGame, draftBody, draftFromEvent, newDraft, settingsBody, settingsOf, togglePoolGame, vetoAllowanceOf, wheelPoolSize, type EventDraft } from '../../app/utils/event-draft'
 import type { EventView } from '../../shared/event'
 import type { PoolGame } from '../../shared/game'
 import { defaultSettings, parseSettings, type EventSettings } from '../../shared/settings'
@@ -176,6 +176,19 @@ describe('the stored settings', () => {
   })
 })
 
+// The games that stand for the wheel (#726): an Archived game is listed in the pool but is not on the wheel, so it is not counted.
+describe('wheelPoolSize', () => {
+  const pooled = (...archived: boolean[]) => ({ pool: archived.map((flag, index) => ({ ...game(`g${index}`, `Spiel ${index}`), archived: flag })) })
+
+  it('counts the games that are not Archived', () => {
+    expect(wheelPoolSize(pooled())).toBe(0)
+    expect(wheelPoolSize(pooled(false, false))).toBe(2)
+    expect(wheelPoolSize(pooled(true, false))).toBe(1)
+    expect(wheelPoolSize(pooled(true, true))).toBe(0)
+    expect(wheelPoolSize(pooled(true, false, false))).toBe(2)
+  })
+})
+
 // The settings editor (#147): a draft made from an Event that exists, and the body of its PATCH.
 describe('the editor draft', () => {
   const kart = game('a', 'Mario Kart')
@@ -252,6 +265,25 @@ describe('the editor draft', () => {
       const draft = { ...lucky(newDraft()), poolPreview: false }
 
       expect(settingsOf({ ...draft, settings: { ...draft.settings, selectionMode: 'admin_pick' } }).poolPreview).toBe(false)
+    })
+  })
+
+  describe('an Archived game in the pool (#726)', () => {
+    const old = { ...game('c', 'Zelda'), archived: true }
+
+    it('stays in the draft with its flag, and both bodies still send its id', () => {
+      const draft = draftFromEvent(view(defaultSettings(), [kart, old]))
+
+      expect(draft.pool).toEqual([kart, old])
+      expect(draft.pool[1]!.archived).toBe(true)
+      expect(settingsBody(draft).pool).toEqual(['a', 'c'])
+      expect(draftBody(draft).pool).toEqual(['a', 'c'])
+    })
+
+    it('still sends its id when another game leaves the pool', () => {
+      const draft = togglePoolGame(draftFromEvent(view(defaultSettings(), [kart, pong, old])), kart)
+
+      expect(settingsBody(draft).pool).toEqual(['b', 'c'])
     })
   })
 

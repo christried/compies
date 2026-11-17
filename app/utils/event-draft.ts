@@ -76,6 +76,11 @@ export function settingsOf(draft: EventDraft): EventSettings {
   return { ...draft.settings, hiddenWheel: draft.hiddenWheel, vetoAllowance: vetoAllowanceOf(draft), poolPreview: draft.hiddenWheel ? false : draft.poolPreview }
 }
 
+/** How many pool games stand for the wheel (#726): an Archived game is listed in the pool and kept, but it is not on the wheel, so no count of the pool includes it. */
+export function wheelPoolSize(draft: Pick<EventDraft, 'pool'>): number {
+  return draft.pool.filter(game => !game.archived).length
+}
+
 /** A game into a pool, or out of it when it is in already (the picker's toggle button, #146). */
 export function togglePoolGame(draft: EventDraft, game: PoolGame): EventDraft {
   const games = draft.pool
