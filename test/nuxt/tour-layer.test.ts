@@ -660,6 +660,47 @@ describe('the motion', () => {
     expect(move!.keyframes[0]).toMatchObject({ outlineWidth: '3px' })
   })
 
+  // The scroll glide (#785): a `requestAnimationFrame` loop, so the test plays the frames: the clock and the frame queue are its own. The expected values are the
+  // in-out curve `cubic-bezier(.65,0,.35,1)` of the CSS solved apart (bisection on x) for a scroll from 0 to 1476: .0708, .5 and .9292 of the way.
+  it.each([
+    ['the token\'s 360 ms', undefined, 360],
+    ['a token of .5s (the production CSS is minified)', '.5s', 500],
+  ])('glides the scroll along the in-out curve over --cp-dur-slow: %s', async (_name, token, ms) => {
+    if (token) document.documentElement.style.setProperty('--cp-dur-slow', token)
+    Object.defineProperty(document.documentElement, 'scrollHeight', { configurable: true, get: () => 3000 })
+    host({ left: 40, top: 1500, width: 300, height: 80 })
+    await mount(true, THREE)
+    const realFrame = window.requestAnimationFrame
+    const realCancel = window.cancelAnimationFrame
+    const frames: FrameRequestCallback[] = []
+    vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => frames.push(callback))
+    vi.stubGlobal('cancelAnimationFrame', () => {})
+    vi.spyOn(performance, 'now').mockReturnValue(1000)
+    scrollTo.mockClear()
+    try {
+      button('Weiter').click()
+      const at = (elapsed: number) => {
+        frames.splice(0).forEach(frame => frame(1000 + elapsed))
+        return scrollTo.mock.lastCall?.[1] as number | undefined
+      }
+      // The first frame is the glide's own: at the start it scrolls to where the page is.
+      await vi.waitFor(() => expect(at(0)).toBe(0))
+
+      expect(at(ms / 4)).toBeCloseTo(104.5, 0)
+      expect(at(ms / 2)).toBeCloseTo(738, 0)
+      expect(at(ms * 3 / 4)).toBeCloseTo(1371.5, 0)
+      expect(at(ms)).toBe(1476)
+      // It has landed: later frames change nothing.
+      expect(at(ms * 2)).toBe(1476)
+    }
+    finally {
+      vi.stubGlobal('requestAnimationFrame', realFrame)
+      vi.stubGlobal('cancelAnimationFrame', realCancel)
+      document.documentElement.style.removeProperty('--cp-dur-slow')
+      Reflect.deleteProperty(document.documentElement, 'scrollHeight')
+    }
+  })
+
   it('closes the hole into the thing\'s centre in 220 ms, ease in, and the ring goes to 0, when the next step has no thing', async () => {
     host({ left: 40, top: 20, width: 300, height: 80 })
     await mount(true, [{ id: 'head', target: 'head' }, { id: 'end', target: null }])
