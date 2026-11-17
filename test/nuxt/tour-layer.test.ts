@@ -215,9 +215,7 @@ describe('the focus', () => {
     motion(mode)
     const realFocus = HTMLElement.prototype.focus
     vi.spyOn(HTMLElement.prototype, 'focus').mockImplementation(function (this: HTMLElement, options?: FocusOptions) {
-      for (let element: HTMLElement | null = this; element; element = element.parentElement) {
-        if (element.style.visibility === 'hidden') return
-      }
+      if (this.closest('[style*="visibility: hidden"]')) return
       realFocus.call(this, options)
     })
     const before = document.createElement('button')
