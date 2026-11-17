@@ -37,14 +37,15 @@ function shuffled<T>(items: readonly T[], randomInt: (n: number) => number): T[]
 }
 
 /**
- * Draws a spin from the games left. `placeholders` is the list of a Hidden wheel (null on a visible wheel): shuffled per spin, so
- * a game cannot be followed from one spin to the next, one per slice and none twice; slices past the list are „???“ (06-copy).
- * `randomInt(n)` answers a whole number from 0 up to, not including, `n`.
+ * Draws a spin from the games left. `placeholders` is the list of a Hidden wheel (null on a visible wheel): a wheel of n slices takes
+ * the list's first n names, in list order (#784), and shuffles them per spin, so a game cannot be followed from one spin to the next,
+ * one per slice and none twice; slices past the list are „???“ (06-copy). `randomInt(n)` answers a whole number from 0 up to, not
+ * including, `n`.
  */
 export function drawSpin(left: readonly string[], placeholders: readonly string[] | null, randomInt: (n: number) => number): Spin {
   const resultIndex = randomInt(left.length)
   const resultOffset = 0.2 + randomInt(OFFSET_STEPS) / 1000
-  const names = placeholders === null ? null : shuffled(placeholders, randomInt)
+  const names = placeholders === null ? null : shuffled(placeholders.slice(0, left.length), randomInt)
   // A Hidden wheel lays its slices out in a fresh order too: in the pool's order the result index would name the game for anyone who knows the pool (review 0.7, F2). Drawn last, so scripted sources keep their meaning.
   const slices = placeholders === null ? [...left] : shuffled(left, randomInt)
   // The spin's length (#520), drawn after everything else for the same reason: the result does not depend on it, and it comes from the source alone, never from the pool or the result.
