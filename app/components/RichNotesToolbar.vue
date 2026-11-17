@@ -90,8 +90,10 @@ function onKeydown(event: KeyboardEvent) {
   if (!['ArrowRight', 'ArrowLeft', 'Home', 'End'].includes(event.key)) return
   event.preventDefault()
   const at = order.indexOf(stop.value)
-  const next = event.key === 'Home' ? 0
-    : event.key === 'End' ? order.length - 1
+  const next = event.key === 'Home'
+    ? 0
+    : event.key === 'End'
+      ? order.length - 1
       : (at + (event.key === 'ArrowRight' ? 1 : -1) + order.length) % order.length
   stop.value = order[next]!
   buttons.value?.[next]?.focus()
@@ -100,7 +102,7 @@ function onKeydown(event: KeyboardEvent) {
 
 <template>
   <div class="@container">
-    <!-- eslint-disable-next-line vuejs-accessibility/interactive-supports-focus -- the buttons inside carry the focus (roving tabindex) -->
+    <!-- eslint-disable-next-line vuejs-accessibility/interactive-supports-focus, vuejs-accessibility/no-static-element-interactions -- the buttons inside carry the focus (roving tabindex); the arrow keys move it -->
     <div
       role="toolbar"
       :aria-label="t('notesEditor.toolbar')"

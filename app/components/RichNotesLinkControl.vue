@@ -197,6 +197,7 @@ defineExpose({ open })
     @enter="enter"
     @leave="leave"
   >
+    <!-- eslint-disable-next-line vuejs-accessibility/no-static-element-interactions -- Esc and Tab of the control, as the dialogs of the app handle them -->
     <div
       v-if="isOpen"
       ref="root"

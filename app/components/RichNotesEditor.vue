@@ -26,7 +26,7 @@ const props = withDefaults(defineProps<{
   disabled?: boolean
 }>(), { variant: 'game', label: undefined, help: undefined, placeholder: undefined, max: GAME_NOTES_MAX, readonly: false, disabled: false })
 
-const emit = defineEmits<{ 'update:modelValue': [value: NotesDoc | null], invalid: [over: boolean] }>()
+const emit = defineEmits<{ 'update:modelValue': [value: NotesDoc | null], 'invalid': [over: boolean] }>()
 
 const { t } = useI18n()
 const id = useId()

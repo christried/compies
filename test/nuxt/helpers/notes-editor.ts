@@ -29,7 +29,7 @@ export async function mountEditor(props: Props = {}): Promise<MountedEditor> {
   const invalids: boolean[] = []
   const page = await mountSuspended(RichNotesEditor, {
     props: {
-      modelValue: null,
+      'modelValue': null,
       'onUpdate:modelValue': (value: NotesDoc | null) => {
         values.push(value)
         void page.setProps({ modelValue: value })
