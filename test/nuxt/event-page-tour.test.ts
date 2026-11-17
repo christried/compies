@@ -533,6 +533,26 @@ describe('when it does not start', () => {
     expect(tour()).toBeNull()
   })
 
+  it('waits while the „Verschieben“ popover is open on a desktop and starts one calm second after it closes (#785)', async () => {
+    const { slug } = serveEvent(s => view(s, [], { event: { phase: 'poll', isHost: false }, inviteUrl: `https://compies.test/join/${s}`, settings: defaultSettings(), teams: [team(1), team(2)], members: members() }))
+    await mount(slug)
+    page!.get(`[data-user-id="${kitty.id}"]`).element.click()
+    await flushPromises()
+    expect(document.querySelector('[role="menu"]')).not.toBeNull()
+
+    await past()
+    expect(tour()).toBeNull()
+
+    document.querySelector('[role="menu"]')!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+    await flushPromises()
+    expect(document.querySelector('[role="menu"]')).toBeNull()
+    await sleep(TOUR_CALM_MS / 2)
+    expect(tour()).toBeNull()
+
+    await shown()
+    expect(tourTitle()).toBe('Willkommen!')
+  })
+
   it('does not show while the read has not arrived, or has failed', async () => {
     const served = serveEvent()
     served.gone()
