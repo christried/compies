@@ -187,6 +187,8 @@ async function start() {
   await nextTick()
   if (mine !== run) return
   watchThing()
+  // The bubble is hidden until it is placed, so `useDialog.focusIn`, one tick after `open`, found nothing it could focus; the return element it recorded stays (#785).
+  focusForward()
   if (canAnimate() && root.value && bubble.value?.root) tourEnter(root.value, bubble.value.root)
   nodIfPointing(0)
 }

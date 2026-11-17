@@ -209,6 +209,31 @@ describe('the focus', () => {
     expect(document.activeElement).toBe(before)
   })
 
+  // A browser does not focus an element that is `visibility: hidden` (happy-dom does): the bubble is hidden until it is placed, so focusing one tick after
+  // `open` finds a bubble that refuses it (#785, measured in the browser check of 0.15).
+  it.each(['full', 'reduced'] as const)('moves onto „Weiter“ once the bubble is placed, as a browser allows it, and back on close, under %s motion (#785)', async (mode) => {
+    motion(mode)
+    const realFocus = HTMLElement.prototype.focus
+    vi.spyOn(HTMLElement.prototype, 'focus').mockImplementation(function (this: HTMLElement, options?: FocusOptions) {
+      for (let element: HTMLElement | null = this; element; element = element.parentElement) {
+        if (element.style.visibility === 'hidden') return
+      }
+      realFocus.call(this, options)
+    })
+    const before = document.createElement('button')
+    document.body.append(before)
+    before.focus()
+    await mount(false)
+
+    await page!.setProps({ open: true })
+    await flushPromises()
+    expect(document.activeElement).toBe(button('Weiter'))
+
+    await page!.setProps({ open: false })
+    await flushPromises()
+    expect(document.activeElement).toBe(before)
+  })
+
   it('stays on the forward button after a step, also where „Zurück“ has gone', async () => {
     await mount()
 
