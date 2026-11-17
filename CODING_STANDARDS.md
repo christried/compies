@@ -79,4 +79,7 @@ What a feature keeps from some Users (a sealed Veto, a Hidden wheel before its s
 
 - UI copy uses the glossary's UI word. When the glossary retires a word, it goes into `RETIRED` in `scripts/wording/retired-words.mjs` (`test/unit/copy.test.ts` and the wording review read it).
 - Copy promises only what the app does today. A string the spec prescribes word for word is decided; the review names it only when the app has changed since the spec.
+- A text says only what the screen does not already show: no kicker that repeats the page's title or place, no help line that restates its field, no pill for a state the screen already shows, no line that tells a Host what everyone will see anyway. A wink is welcome in empty states, errors, placeholders and Construction pages (the wording sweep of 2026-11-16).
+- Words for people are gender-neutral: a participle („Spielende“, „Teilnehmende“) or a neutral word („Leute“, „alle“), and the colon form („Freund:innen“) only where neither fits. A word that names a Party, not a person („Sieger“), stays (the user, 2026-11-17).
+- A form message (a validation) is red and shows only once its field was touched or a submit was tried; until then a disabled submit button says enough. Inputs that form one group (from and to, start, end and length, amount and source) share one message line under the group, as wide as the group (the user, 2026-11-17).
 - A new third party the browser or the server talks to goes into the Datenschutzerklärung; `test/unit/privacy-hosts.test.ts` names the host, and the user approves the text.
