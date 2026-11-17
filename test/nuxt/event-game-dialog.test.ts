@@ -17,7 +17,7 @@ const STOP = '2026-10-30T19:45:10.000Z'
 const iso = (ms: number) => new Date(ms).toISOString()
 
 const PRICE = { cents: 1999, source: 'steam' as const, checkedAt: '2026-11-03T10:00:00.000Z' }
-const base: PoolGame = { id: 'g-halo', name: 'Halo', imageUrl: null, youtubeId: null, clipStart: 0, clipLength: 30, playersMin: 2, playersMax: 4, suitabilities: ['teams'], notes: notesFromLines(['Hausregel: keine Raketen']), price: null }
+const base: PoolGame = { id: 'g-halo', name: 'Halo', imageUrl: null, youtubeId: null, clipStart: 0, clipLength: 30, playersMin: 2, playersMax: 4, suitabilities: ['teams'], notes: notesFromLines(['Hausregel: keine Raketen']), price: null, archived: false }
 const pong: PoolGame = { ...base, id: 'g-pong', name: 'Pong', notes: null }
 const kart: PoolGame = { ...base, id: 'g-kart', name: 'Kart', notes: notesFromLines(['Kart-Notizen']), price: PRICE }
 // A game set from the library: it is in no pool.
@@ -25,7 +25,7 @@ const schach: PoolGame = { ...base, id: 'g-schach', name: 'Schach', notes: notes
 const pool = [base, pong, kart]
 
 const roundGame = (game: PoolGame): RoundGame => {
-  const { notes: _notes, ...shown } = game
+  const { notes: _notes, archived: _archived, ...shown } = game
   return shown
 }
 const round = (id: string, game: PoolGame, notes?: NotesDoc): RoundView => ({ id, startedAt: STARTED, setAt: STARTED, game: roundGame(game), ...(notes ? { notes } : {}) })

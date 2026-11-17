@@ -108,7 +108,7 @@ describe('Archived games and the Events (#725)', () => {
       expect(asHost.setGame?.poolWarning).toEqual({ needed: 10, have: 2 })
       expect(asHost.wheel).toMatchObject({ count: 2 })
       expect(asHost.wheel?.slices?.map(slice => slice.id).sort()).toEqual([halo.id, dame.id].sort())
-      // The Host's own pool keeps every pool game (the mark is #726's).
+      // The Host's own pool keeps every pool game.
       expect(names(asHost)).toEqual(['Dame', 'Halo', 'Kart'])
       const asMember = await read(party, party.one)
       expect(names(asMember)).toEqual(['Dame', 'Halo'])
@@ -141,6 +141,56 @@ describe('Archived games and the Events (#725)', () => {
       const spin = await send('POST', `/api/e/${party.slug}/rounds/spin`, party.hostCookie)
       if (count === 3) expect(await errorOf(spin)).toEqual({ status: 409, code: 'pool_empty' })
       else expect(spin.status).toBe(200)
+    })
+
+    // The mark (#726): the flag is the Host's read alone. A Member's pool entry, a Round's game and a wheel slice have no `archived` key.
+    const archivedOf = (view: EventView) => (view.pool ?? []).map(game => ('archived' in game ? game.archived : undefined))
+
+    it.each([0, 1, 2])('flags %i archived pool games on the Host\'s pool, and none on a Member\'s', async (count) => {
+      const party = await running()
+      const ids = NEEDED_ALL.map(key => party.games[key].id)
+
+      await archive(party, ...ids.slice(0, count))
+
+      // The pool is sorted by name (Dame, Halo, Kart); the ids are in the order of NEEDED_ALL (halo, kart, dame).
+      const flagged = new Set(ids.slice(0, count))
+      const expected = [party.games.dame, party.games.halo, party.games.kart].map(game => flagged.has(game.id))
+      expect(archivedOf(await read(party))).toEqual(expected)
+      const asMember = await read(party, party.one)
+      expect(asMember.pool).toHaveLength(3 - count)
+      for (const entry of asMember.pool ?? []) expect('archived' in entry).toBe(false)
+      for (const slice of asMember.wheel?.slices ?? []) expect('archived' in slice).toBe(false)
+    })
+
+    it('drops the flag again on the restore', async () => {
+      const party = await running()
+      await archive(party, party.games.kart.id)
+      expect(archivedOf(await read(party))).toEqual([false, false, true])
+
+      await restore(party, party.games.kart.id)
+
+      expect(archivedOf(await read(party))).toEqual([false, false, false])
+    })
+
+    it('keeps the flag off a Round\'s game, even when the set game is archived afterwards', async () => {
+      const party = await running()
+      expect((await set(party, party.games.kart.id)).status).toBe(200)
+
+      await archive(party, party.games.kart.id)
+
+      for (const cookie of [party.hostCookie, party.one]) {
+        const view = await read(party, cookie)
+        expect(view.rounds).toHaveLength(1)
+        for (const round of view.rounds) expect('archived' in round.game).toBe(false)
+      }
+    })
+
+    it('puts no `archived` key into a Member\'s raw read', async () => {
+      const party = await running()
+      await archive(party, party.games.kart.id)
+
+      expect(await readEventText(rig, party.one, party.slug)).not.toContain('"archived"')
+      expect(await readEventText(rig, party.hostCookie, party.slug)).toContain('"archived":true')
     })
 
     it('never draws an Archived game: with one left every spin draws it', async () => {

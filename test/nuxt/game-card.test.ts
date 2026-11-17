@@ -376,7 +376,7 @@ describe('the „Archiviert“ mark (#726)', () => {
 
   it('is no button, link or tab stop: a tile that opens still has one button, named by the game', async () => {
     page = await mountSuspended(GameCard, {
-      props: { game: { id: 'g-1', name: 'Mario Kart', imageUrl: null, youtubeId: null }, layout: 'tile', opens: true, archived: true },
+      props: { game: { id: 'g-1', name: 'Mario Kart', imageUrl: null, youtubeId: null, price: null, playersMin: null, playersMax: null, suitabilities: [] }, layout: 'tile', opens: true, archived: true },
     })
 
     expect(mark()!.querySelector('li, a, button')).toBeNull()

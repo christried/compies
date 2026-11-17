@@ -16,7 +16,7 @@ import { notesFromLines } from '~~/shared/notes-doc'
 function poolGame(name: string, overrides: Partial<PoolGame> = {}): PoolGame {
   return {
     id: `id-${name}`, name, imageUrl: null, youtubeId: null, clipStart: 0, clipLength: 30,
-    playersMin: null, playersMax: null, suitabilities: [], notes: null, price: null, ...overrides,
+    playersMin: null, playersMax: null, suitabilities: [], notes: null, price: null, archived: false, ...overrides,
   }
 }
 
