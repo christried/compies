@@ -124,6 +124,8 @@ async function place(index: number, keepScroll?: number): Promise<TourPlacement>
 
 /** What the layer scrolled the page to itself: a scroll event that lands there is not a User's. */
 let ownScroll: number | null = null
+/** The User scrolled while a change played: the change does not take the page back to its aim. */
+let scrolledByUser = false
 function scrollNow(y: number) {
   ownScroll = y
   window.scrollTo(0, y)
@@ -163,7 +165,8 @@ function settle() {
 }
 
 function focusForward() {
-  panel.value?.querySelector<HTMLElement>('[data-autofocus]')?.focus()
+  // The bubble is fixed: a focus that scrolls the page would move it under a glide (#785).
+  panel.value?.querySelector<HTMLElement>('[data-autofocus]')?.focus({ preventScroll: true })
 }
 
 /** Opens: places the first step and plays the start. */
@@ -255,10 +258,12 @@ async function change(next: number) {
   const sweep = before ? moveHole(spotEl, before, target.hole) : null
   if (sweep) plays.push(sweep)
   hole.value = target.hole
+  scrolledByUser = false
   if (target.scroll !== null) {
     const from = window.scrollY
     ownScroll = target.scroll
-    stopGlide = glideScroll(from, target.scroll, motionMs('--cp-dur-slow', '360ms'), y => window.scrollTo(0, y))
+    // Each frame is the layer's own scroll, so a scroll event that lands on it is not a User's (and one that does not is).
+    stopGlide = glideScroll(from, target.scroll, motionMs('--cp-dur-slow', '360ms'), y => scrollNow(y))
   }
   later(150, () => {
     // Swap the content and the place while the bubble is out of sight.
@@ -276,8 +281,11 @@ async function change(next: number) {
     nodIfPointing(next)
   })
   later(520, () => {
-    // The page's scroll lands with the glide; the layer holds what it was told.
+    // The page's scroll lands with the glide; the layer holds what it was told. The glide lives on frames: one that lost them (a starved main thread) stopped
+    // half-way, and `settle()` would leave the page there, which `onScroll` then takes for the User's. A change ends on its aim unless the User scrolled meanwhile (#785).
+    const lost = target.scroll !== null && !scrolledByUser && Math.abs(window.scrollY - target.scroll) > 0.5
     settle()
+    if (lost) scrollNow(target.scroll!)
     watchThing()
   })
 }
@@ -314,6 +322,7 @@ function onResize() {
 function onScroll() {
   // The layer's own scrolling (a glide, a re-place) lands on `ownScroll`: only a User's scroll re-places.
   if (ownScroll !== null && Math.abs(window.scrollY - ownScroll) < 1) return
+  if (changing) scrolledByUser = true
   replace(true)
 }
 

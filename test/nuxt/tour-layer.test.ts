@@ -726,6 +726,46 @@ describe('the motion', () => {
     expect(move!.keyframes[0]).toMatchObject({ outlineWidth: '3px' })
   })
 
+  // A change that is cut short (#785, item 11): the glide lives on frames, and a starved main thread gave it one at the start and none after. The change still ends
+  // with the page at the scroll it aimed at and the hole on the thing, unless the User scrolled meanwhile.
+  describe('when the glide gets no frame after its first', () => {
+    async function starvedChange() {
+      Object.defineProperty(document.documentElement, 'scrollHeight', { configurable: true, get: () => 3000 })
+      host({ left: 40, top: 1500, width: 300, height: 80 })
+      await mount(true, THREE)
+      const frames: FrameRequestCallback[] = []
+      vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => frames.push(callback))
+      vi.stubGlobal('cancelAnimationFrame', () => {})
+      scrollTo.mockClear()
+      button('Weiter').click()
+      // The glide's first frame runs, and no frame after it ever does.
+      await vi.waitFor(() => expect(frames.length).toBeGreaterThan(0))
+      frames.splice(0).forEach(frame => frame(performance.now()))
+    }
+
+    afterEach(() => Reflect.deleteProperty(document.documentElement, 'scrollHeight'))
+
+    it('ends the change with the page at the aimed scroll and the hole on the thing', async () => {
+      await starvedChange()
+
+      await vi.waitFor(() => expect(scrollTo).toHaveBeenLastCalledWith(0, 1476), { timeout: 1500 })
+      await vi.waitFor(() => expect(holeOf()).toMatchObject({ left: 32, width: 316, height: 96 }), { timeout: 1500 })
+      expect(title()).toBe(HEAD)
+    })
+
+    it('leaves the page where the User scrolled it meanwhile', async () => {
+      await starvedChange()
+
+      vi.stubGlobal('scrollY', 600)
+      window.dispatchEvent(new Event('scroll'))
+      scrollTo.mockClear()
+      await new Promise(resolve => setTimeout(resolve, 800))
+
+      expect(scrollTo).not.toHaveBeenCalledWith(0, 1476)
+      expect(title()).toBe(HEAD)
+    })
+  })
+
   // The scroll glide (#785): a `requestAnimationFrame` loop, so the test plays the frames: the clock and the frame queue are its own. The expected values are the
   // in-out curve `cubic-bezier(.65,0,.35,1)` of the CSS solved apart (bisection on x) for a scroll from 0 to 1476: .0708, .5 and .9292 of the way.
   it.each([
