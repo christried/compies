@@ -3,12 +3,15 @@ import { flushPromises, type VueWrapper } from '@vue/test-utils'
 import { createError, readBody } from 'h3'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import GameForm from '~/components/GameForm.vue'
+import RichNotesEditor from '~/components/RichNotesEditor.vue'
 import { FINE_POINTER_QUERY } from '~/composables/useMediaQuery'
 import type { GameTag, GameView } from '~~/shared/game'
-import { notesFromLines } from '~~/shared/notes-doc'
+import { parseNotes, notesFromLines } from '~~/shared/notes-doc'
 import { teamVar } from '~/utils/team-style'
 import { colorTags } from '~~/shared/tag-colors'
 import { kitty, signInAs } from './auth'
+import { FORMATTED_NOTES } from './helpers/formatted-notes'
+import { editorOf } from './helpers/notes-editor'
 
 const saved: GameView = {
   id: '00000000-0000-4000-8000-0000000000a1',
@@ -503,121 +506,135 @@ describe('the game form', () => {
     })
   })
 
-  describe('game notes (#223)', () => {
+  describe('game notes (#223, #454)', () => {
     const NOTES_MAX = 2000
 
-    function notesField(page: Page) {
-      return field(page, 'Notizen')
+    /** The editor mounts after its chunk has loaded: the content element is what a User types in. */
+    async function notesEditor(page: Page) {
+      await vi.waitFor(() => expect(page.find('[role="textbox"]').exists()).toBe(true))
+      return editorOf(page.findComponent(RichNotesEditor))
     }
 
-    it('takes the notes in a textbox that keeps the line breaks the User types', async () => {
+    const letters = (n: number) => ({ type: 'doc', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'a'.repeat(n) }] }] })
+
+    it('takes formatted notes from the editor and posts the document, a fixed point of the shared parser', async () => {
       const page = await mountSuspended(GameForm)
       await field(page, 'Name').setValue('Mario Kart')
-      const notes = 'Settings: 3 Runden\nWarmup: Lobby\n\nWin: meiste Punkte'
-      const document = notesFromLines(['Settings: 3 Runden', 'Warmup: Lobby', '', 'Win: meiste Punkte'])
+      const editor = await notesEditor(page)
 
-      expect(notesField(page).element.tagName).toBe('TEXTAREA')
-      await notesField(page).setValue(notes)
+      editor.commands.setContent(FORMATTED_NOTES as never, { emitUpdate: true })
       await page.get('form').trigger('submit')
 
-      await vi.waitFor(() => expect(posted).toHaveBeenCalledWith(expect.objectContaining({ notes: document })))
+      await vi.waitFor(() => expect(posted).toHaveBeenCalledTimes(1))
+      const body = posted.mock.lastCall![0]
+      expect(body.notes).toEqual(FORMATTED_NOTES)
+      expect(parseNotes(body.notes, NOTES_MAX)).toEqual(body.notes)
     })
 
-    it('shows no counter while the notes are short, and the counter from 1600 characters', async () => {
-      const page = await mountSuspended(GameForm)
-
-      await notesField(page).setValue('a'.repeat(1599))
-      expect(page.text()).not.toContain(`/${NOTES_MAX}`)
-
-      await notesField(page).setValue('a'.repeat(1600))
-      expect(page.text()).toContain(`1600/${NOTES_MAX}`)
-    })
-
-    it('accepts exactly 2000 characters without a message', async () => {
+    it('posts no notes as null', async () => {
       const page = await mountSuspended(GameForm)
       await field(page, 'Name').setValue('Mario Kart')
+      await notesEditor(page)
 
-      await notesField(page).setValue('a'.repeat(NOTES_MAX))
+      await page.get('form').trigger('submit')
+
+      await vi.waitFor(() => expect(posted).toHaveBeenCalledWith(expect.objectContaining({ notes: null })))
+    })
+
+    it('shows the notes of a game being edited and saves them untouched with PATCH, deep-equal to what is stored', async () => {
+      patchedWith.mockClear()
+      const page = await mountSuspended(GameForm, { props: { game: { ...saved, notes: FORMATTED_NOTES } } })
+      await notesEditor(page)
+
+      expect(page.get('[role="textbox"]').text()).toContain('Regeln')
+      await page.get('form').trigger('submit')
+
+      await vi.waitFor(() => expect(patchedWith).toHaveBeenCalledTimes(1))
+      expect(patchedWith.mock.lastCall![0].notes).toEqual(FORMATTED_NOTES)
+    })
+
+    it('puts the editor after „Tags“ and „Preis“, where the field was', async () => {
+      const page = await mountSuspended(GameForm)
+      await notesEditor(page)
+
+      const box = page.get('[role="textbox"]').element
+      expect(field(page, 'Tags').element.compareDocumentPosition(box) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+      expect(page.get('label[id$="-label"]').text()).toBe('Notizen')
+    })
+
+    it('accepts exactly 2000 characters and saves them', async () => {
+      const page = await mountSuspended(GameForm)
+      await field(page, 'Name').setValue('Mario Kart')
+      const editor = await notesEditor(page)
+
+      editor.commands.setContent(letters(NOTES_MAX) as never, { emitUpdate: true })
+      await vi.waitFor(() => expect(page.text()).toContain('noch 0 Zeichen'))
 
       expect(page.text()).not.toContain('Höchstens 2000 Zeichen.')
       expect(cta(page).attributes('aria-disabled')).not.toBe('true')
+      await page.get('form').trigger('submit')
+      await vi.waitFor(() => expect(posted).toHaveBeenCalledWith(expect.objectContaining({ notes: letters(NOTES_MAX) })))
     })
 
-    it('shows the red message for 2001 characters, blocks saving with the same reason and sends nothing', async () => {
+    it('blocks saving at 2001 characters with the reason beside the CTA, and sends nothing', async () => {
       const page = await mountSuspended(GameForm)
       await field(page, 'Name').setValue('Mario Kart')
+      const editor = await notesEditor(page)
 
-      await notesField(page).setValue('a'.repeat(NOTES_MAX + 1))
+      editor.commands.setContent(letters(NOTES_MAX + 1) as never, { emitUpdate: true })
 
-      const message = page.findAll('span').find(el => el.text() === 'Höchstens 2000 Zeichen.')
-      expect(message).toBeDefined()
-      expect(message!.classes()).toContain('text-error-fg')
-      expect(notesField(page).attributes('aria-invalid')).toBe('true')
-      expect(cta(page).attributes('aria-disabled')).toBe('true')
-      expect(page.get(`[id="${cta(page).attributes('aria-describedby')}"]`).text()).toBe('Höchstens 2000 Zeichen.')
+      await vi.waitFor(() => expect(cta(page).attributes('aria-disabled')).toBe('true'))
+      expect(page.text()).toContain('Höchstens 2000 Zeichen.')
+      expect(page.get('[role="textbox"]').attributes('aria-invalid')).toBe('true')
+      expect(page.get(`[id="${cta(page).attributes('aria-describedby')}"]`).text()).toBe('Erst die Notizen kürzen.')
 
       await page.get('form').trigger('submit')
+      expect(posted).not.toHaveBeenCalled()
 
+      editor.commands.setContent(letters(NOTES_MAX) as never, { emitUpdate: true })
+      await vi.waitFor(() => expect(cta(page).attributes('aria-disabled')).not.toBe('true'))
+    })
+
+    it('blocks saving for a paste too big for the parser, though the form never got that document', async () => {
+      const page = await mountSuspended(GameForm)
+      await field(page, 'Name').setValue('Mario Kart')
+      const editor = await notesEditor(page)
+
+      editor.commands.insertContent('a'.repeat(300_000))
+
+      await vi.waitFor(() => expect(cta(page).attributes('aria-disabled')).toBe('true'))
+      await page.get('form').trigger('submit')
       expect(posted).not.toHaveBeenCalled()
     })
 
     it('counts an emoji once: 1999 letters and one family emoji are no problem', async () => {
       const page = await mountSuspended(GameForm)
       await field(page, 'Name').setValue('Mario Kart')
+      const editor = await notesEditor(page)
 
-      await notesField(page).setValue(`${'a'.repeat(1999)}\u{1F468}‍\u{1F469}‍\u{1F467}`)
+      editor.commands.setContent({ type: 'doc', content: [{ type: 'paragraph', content: [{ type: 'text', text: `${'a'.repeat(1999)}\u{1F468}‍\u{1F469}‍\u{1F467}` }] }] } as never, { emitUpdate: true })
 
+      await vi.waitFor(() => expect(page.text()).toContain('noch 0 Zeichen'))
       expect(page.text()).not.toContain('Höchstens 2000 Zeichen.')
       expect(cta(page).attributes('aria-disabled')).not.toBe('true')
     })
 
-    it('shows the notes of a game being edited and saves them with PATCH', async () => {
-      patchedWith.mockClear()
-      const page = await mountSuspended(GameForm, { props: { game: { ...saved, notes: notesFromLines(['Settings: 3 Runden', 'Win: Punkte']) } } })
-
-      expect((notesField(page).element as HTMLTextAreaElement).value).toBe('Settings: 3 Runden\nWin: Punkte')
+    it('holds the editor while the save runs, and frees it when the save fails', async () => {
+      let release = () => {}
+      holdPost = new Promise<void>((resolve) => {
+        release = resolve
+      })
+      const page = await mountSuspended(GameForm)
+      await field(page, 'Name').setValue('Mario Kart')
+      await notesEditor(page)
 
       await page.get('form').trigger('submit')
 
-      await vi.waitFor(() => expect(patchedWith).toHaveBeenCalledWith(expect.objectContaining({ notes: notesFromLines(['Settings: 3 Runden', 'Win: Punkte']) })))
-    })
-
-    it('marks the notes field as one that grows with its text', async () => {
-      const page = await mountSuspended(GameForm)
-
-      expect(notesField(page).classes()).toContain('field-sizing-content')
-    })
-
-    it('sets the height from the text where the browser cannot size the field itself', async () => {
-      vi.stubGlobal('CSS', { supports: () => false })
-      try {
-        const page = await mountSuspended(GameForm)
-        const area = notesField(page)
-        Object.defineProperty(area.element, 'scrollHeight', { value: 120, configurable: true })
-
-        await area.setValue('Zeile\nZeile\nZeile\nZeile\nZeile\nZeile')
-
-        expect((area.element as HTMLTextAreaElement).style.height).toBe('124px')
-      }
-      finally {
-        vi.unstubAllGlobals()
-      }
-    })
-
-    it('leaves the height to the browser where it sizes the field itself', async () => {
-      vi.stubGlobal('CSS', { supports: () => true })
-      try {
-        const page = await mountSuspended(GameForm)
-        const area = notesField(page)
-        Object.defineProperty(area.element, 'scrollHeight', { value: 120, configurable: true })
-
-        await area.setValue('Zeile\nZeile\nZeile\nZeile\nZeile\nZeile')
-
-        expect((area.element as HTMLTextAreaElement).style.height).toBe('')
-      }
-      finally {
-        vi.unstubAllGlobals()
-      }
+      await vi.waitFor(() => expect(page.get('[role="textbox"]').attributes('contenteditable')).toBe('false'))
+      failWith = 'invalid_clip'
+      release()
+      await vi.waitFor(() => expect(page.get('[role="textbox"]').attributes('contenteditable')).toBe('true'))
+      holdPost = null
     })
   })
 
@@ -667,7 +684,8 @@ describe('the game form', () => {
 
       const teams = page.findAll('button').find(button => button.text() === 'Teams')!.element
       const tags = tagsField(page).element
-      const notes = field(page, 'Notizen').element
+      await vi.waitFor(() => expect(page.find('[role="textbox"]').exists()).toBe(true))
+      const notes = page.get('[role="textbox"]').element
       expect(teams.compareDocumentPosition(tags) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
       expect(tags.compareDocumentPosition(notes) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
       expect(page.text()).toContain('Enter oder Komma fügt einen Tag hinzu.')
@@ -1167,7 +1185,8 @@ describe('the game form', () => {
 
       const group = priceGroup(page).element
       const tags = field(page, 'Tags').element
-      const notes = field(page, 'Notizen').element
+      await vi.waitFor(() => expect(page.find('[role="textbox"]').exists()).toBe(true))
+      const notes = page.get('[role="textbox"]').element
       expect(tags.compareDocumentPosition(group) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
       expect(group.compareDocumentPosition(notes) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
     })
@@ -1479,27 +1498,63 @@ describe('the game form', () => {
       await vi.waitFor(() => expect(page.emitted('saved')).toEqual([[saved]]))
     })
 
-    it('saves from Notizen with Ctrl + Enter and types no line break, while a bare Enter there is left alone', async () => {
-      const page = await mountSuspended(GameForm)
-      await field(page, 'Name').setValue('Mario Kart')
-      const notes = field(page, 'Notizen').element
+    describe('from inside the notes editor (#454)', () => {
+      async function content(page: Page) {
+        await vi.waitFor(() => expect(page.find('[role="textbox"]').exists()).toBe(true))
+        return page.get('[role="textbox"]').element
+      }
 
-      expect(enter(notes, {}).defaultPrevented).toBe(false)
-      await flushPromises()
-      expect(posted).not.toHaveBeenCalled()
+      it('saves with Ctrl + Enter, types no line break, and the document stays as it was', async () => {
+        const page = await mountSuspended(GameForm)
+        await field(page, 'Name').setValue('Mario Kart')
+        const box = await content(page)
+        const editor = editorOf(page.findComponent(RichNotesEditor))
+        const before = editor.getJSON()
 
-      expect(enter(notes).defaultPrevented).toBe(true)
-      await vi.waitFor(() => expect(page.emitted('saved')).toEqual([[saved]]))
-    })
+        expect(enter(box).defaultPrevented).toBe(true)
 
-    it('saves from Notizen with Meta + Enter too and types no line break', async () => {
-      const page = await mountSuspended(GameForm)
-      await field(page, 'Name').setValue('Mario Kart')
+        await vi.waitFor(() => expect(page.emitted('saved')).toEqual([[saved]]))
+        expect(posted).toHaveBeenCalledTimes(1)
+        expect(editor.getJSON()).toEqual(before)
+      })
 
-      expect(enter(field(page, 'Notizen').element, { metaKey: true }).defaultPrevented).toBe(true)
+      it('saves with Meta + Enter too', async () => {
+        const page = await mountSuspended(GameForm)
+        await field(page, 'Name').setValue('Mario Kart')
 
-      await vi.waitFor(() => expect(page.emitted('saved')).toEqual([[saved]]))
-      expect(posted).toHaveBeenCalledTimes(1)
+        expect(enter(await content(page), { metaKey: true }).defaultPrevented).toBe(true)
+
+        await vi.waitFor(() => expect(page.emitted('saved')).toEqual([[saved]]))
+        expect(posted).toHaveBeenCalledTimes(1)
+      })
+
+      it('leaves a bare Enter to the editor, which starts a paragraph and saves nothing', async () => {
+        const page = await mountSuspended(GameForm)
+        await field(page, 'Name').setValue('Mario Kart')
+        const box = await content(page)
+        const editor = editorOf(page.findComponent(RichNotesEditor))
+        editor.commands.insertContent('eins')
+
+        enter(box, {})
+        await flushPromises()
+
+        expect(editor.state.doc.childCount).toBe(2)
+        expect(posted).not.toHaveBeenCalled()
+      })
+
+      it.each([
+        ['Shift + Ctrl + Enter', { ctrlKey: true, shiftKey: true }],
+        ['Alt + Ctrl + Enter', { ctrlKey: true, altKey: true }],
+        ['a composing Enter', { ctrlKey: true, isComposing: true }],
+      ])('leaves %s alone', async (_name, init) => {
+        const page = await mountSuspended(GameForm)
+        await field(page, 'Name').setValue('Mario Kart')
+
+        enter(await content(page), init)
+        await flushPromises()
+
+        expect(posted).not.toHaveBeenCalled()
+      })
     })
 
     it('saves from the number field „von“ with Meta + Enter too', async () => {
