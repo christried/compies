@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { Compass, Sun, Volume2 } from '@lucide/vue'
-import type { SavedTourSeen } from '~~/shared/auth'
 
 // The card „Einstellungen“ on the Profil page (screen 25, shipped trimmed, #400): one SettingsRow per setting. Ton is the device's Sound
 // (GLOSSARY § Sound), the same state as the header's button, stored as before. Darstellung is the User's Appearance (GLOSSARY § Appearance,
@@ -9,7 +8,7 @@ import type { SavedTourSeen } from '~~/shared/auth'
 const { t } = useI18n()
 const sound = useSound()
 const appearance = useAppearance()
-const user = useAuthUser()
+const { reset: resetSeen } = useTourSeen()
 const { toast } = useToast()
 const tourResetting = ref(false)
 const tourResetFailed = ref(false)
@@ -20,8 +19,7 @@ async function resetTour() {
   tourResetFailed.value = false
   tourResetting.value = true
   try {
-    const saved = await $fetch<SavedTourSeen>('/api/me/tour-reset', { method: 'POST' })
-    if (user.value) user.value = { ...user.value, tourSeen: saved.tourSeen }
+    await resetSeen()
     toast({ tone: 'success', text: t('settings.tourResetDone') })
   }
   catch {
