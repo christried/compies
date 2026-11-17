@@ -24,7 +24,11 @@ Changelog lines and the version cut: `CHANGELOG.md` + `package.json`. See `docs/
 
 ### Delivery workflow
 
-Set auto-merge on PRs into `staging` yourself; merges into `main` and production migrations wait for the user's approval. Also covers verifying and closing issues, branch cleanup, and GitHub from a cloud session (no `gh pr`/`gh issue` there). See `docs/agents/delivery.md`.
+Set auto-merge on PRs into `staging` yourself; merges into `main` and production migrations wait for the user's approval. Also covers verifying and closing issues and branch cleanup. See `docs/agents/delivery.md`.
+
+### Cloud sessions
+
+No `gh pr`/`gh issue`, no browser, a scratchpad that dies with the container: read `docs/agents/cloud.md` before the first GitHub call or spawn in a cloud session (`CLAUDE_CODE_REMOTE=true`).
 
 ### Subagents
 

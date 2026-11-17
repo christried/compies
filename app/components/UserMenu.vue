@@ -29,8 +29,10 @@ const name = computed(() => (user.value ? shownName(user.value) : ''))
     @keydown.down="move(1, $event)"
     @keydown.up="move(-1, $event)"
   >
+    <!-- `data-tour-avatar` (#460): what ticks when the Tour ends, pointing at „Profil“ where it lives. -->
     <button
       type="button"
+      data-tour-avatar
       class="group hit-44 grid place-items-center rounded-pill lift aria-expanded:ring-2 aria-expanded:ring-line"
       aria-haspopup="menu"
       :aria-expanded="open"

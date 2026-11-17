@@ -96,7 +96,9 @@ function choose(value: string) {
       <CpNum :value="counts.no" /> {{ t('poll.no') }}
     </span>
     <NoteList :notes="notes" />
+    <!-- `data-tour-anchor` (#648): where the Tour's tail aims (the first card's control). -->
     <SegmentedControl
+      data-tour-anchor="vote"
       :model-value="myVote ?? ''"
       :options="options"
       :label="label"

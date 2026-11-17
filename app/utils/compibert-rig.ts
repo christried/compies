@@ -1,6 +1,7 @@
 // Compibert's rig (#311, spec #308 § Compibert's rig, ADR 0015): the animated twin of the still `Compibert`. A port of the seven states of
 // `docs/design_handoff_compies/reference/compibert-options.js` with its numbers (its timings agree with `Compibert Rig.dc.html`); `excited`
-// is the eighth, for the mascot at the wheel (#526).
+// is the eighth, for the mascot at the wheel (#526), and `wave` the ninth, for the Tour's greeting (#460). The Tour's face also looks at a point
+// (`lookAt`), nods (`nod`), idles without micro actions (`micro: false`) and lands its hops after a few seconds (`hopsFor`): the same figure, no new part.
 // Pure TS on purpose: no Nuxt auto-imports, no `~/` aliases, only erasable syntax. Node runs this file directly in `scripts/bake-compibert.mjs`,
 // and it is imported on the server too, so nothing here touches `window` or `navigator` at the top level.
 // The unit test imports this file under the node tsconfig, which has no DOM types; the DOM is what the rig works on. A triple-slash
@@ -8,7 +9,7 @@
 /// <reference lib="dom" />
 import type { Gsap } from './gsap'
 
-export const RIG_STATES = ['idle', 'run', 'suspense', 'cheer', 'confused', 'laugh', 'dance', 'excited'] as const
+export const RIG_STATES = ['idle', 'run', 'suspense', 'cheer', 'confused', 'laugh', 'dance', 'excited', 'wave'] as const
 export type RigState = typeof RIG_STATES[number]
 /** `bust` (#526) is the full asset cropped to a square from the head to the arms: it has the breath and the tail, an outline, and no place on the stage. */
 export type RigVariant = 'full' | 'head' | 'bust'
@@ -38,7 +39,14 @@ export function rigMarkup(svg: string, variant: RigVariant, prefix: string): str
 export interface Rig {
   readonly state: RigState
   /** Eases to rest in 0.25 s (0.2 s when `reduced`) while the state's own tracks start; waits for a landing (root y < -3) up to 8 x 0.04 s, as the reference. */
-  setState: (state: RigState, reduced: boolean) => void
+  setState: (state: RigState, reduced: boolean, options?: { hopsFor?: number }) => void
+  /**
+   * Turns the pupils and the neck toward `angle` (degrees from the face's centre, 0 = right, 90 = down): `x = cos a · PUPIL_REACH[0]`, `y = sin a · PUPIL_REACH[1]`,
+   * neck `sin a · 6°`; null is the centre. Eased (0.4 s and 0.7 s) or, `instant`, set. A later state change rests the face on this look, not on the centre.
+   */
+  lookAt: (angle: number | null, instant: boolean) => void
+  /** One nod of the head, `rotation 0→7` and back (the Tour's „Zeigt“); nothing while the pose is held. */
+  nod: () => void
   /** false: pause everything this rig owns (breath/tail loops, the state timeline, blink call, idle micro call, a pending landing wait); true: resume. */
   setActive: (on: boolean) => void
   /** Kills the blink and idle-micro delayed calls only (the bake needs a deterministic frame). */
@@ -60,7 +68,7 @@ const PUPIL_REACH = [24.2 * 0.42, 24.2 * 0.36] as const
 const some = (...elements: (Element | null)[]) => elements.filter(element => element !== null)
 
 /** Mounts the rig on `host`, which already holds the `<svg>` of `rigMarkup`: the server drew the still pose, GSAP takes over what is there. */
-export function mountRig(gsap: Gsap, host: HTMLElement, options: { variant: RigVariant, reduced: boolean }): Rig {
+export function mountRig(gsap: Gsap, host: HTMLElement, options: { variant: RigVariant, reduced: boolean, micro?: boolean }): Rig {
   const svg = host.querySelector('svg')
   if (!svg) throw new Error('mountRig: the host holds no <svg>')
   const random = gsap.utils.random
@@ -69,7 +77,7 @@ export function mountRig(gsap: Gsap, host: HTMLElement, options: { variant: RigV
     root: q('compibert-root'), torso: q('compibert-torso'), body: q('compibert-body'), head: q('compibert-head'),
     armL: q('compibert-arm-left'), armR: q('compibert-arm-right'), legL: q('compibert-leg-left'), legR: q('compibert-leg-right'),
     shinL: q('compibert-shin-left'), shinR: q('compibert-shin-right'), t1: q('compibert-tail-1'), t2: q('compibert-tail-2'), t3: q('compibert-tail-3'),
-    jaw: q('compibert-jaw'), browL: q('compibert-brow-left'), browR: q('compibert-brow-right'), lidL: q('compibert-lid-left'), lidR: q('compibert-lid-right'),
+    jaw: q('compibert-jaw'), neck: q('compibert-neck'), browL: q('compibert-brow-left'), browR: q('compibert-brow-right'), lidL: q('compibert-lid-left'), lidR: q('compibert-lid-right'),
     pupL: q('compibert-pupil-left'), pupR: q('compibert-pupil-right'), ballL: q('cb-ball-left'), ballR: q('cb-ball-right'),
     hapL: q('cb-happy-left'), hapR: q('cb-happy-right'), shadow: q('compibert-shadow'),
     tear: q('cb-tear'), sweat: q('cb-sweat'), q: q('cb-q'),
@@ -85,16 +93,21 @@ export function mountRig(gsap: Gsap, host: HTMLElement, options: { variant: RigV
   let ambient = true
   let destroyed = false
   let pupilsMoved = false
+  // Where `lookAt` last turned the pupils and the neck: a state change rests on it.
+  let gaze = { x: 0, y: 0, neck: 0 }
+  const micro = options.micro !== false
   const loops: Animation[] = []
   let stateTl: Timeline | undefined
   let blinkCall: Animation | undefined
   let microCall: Animation | undefined
   let pending: Animation | undefined
+  // The cheer's landing after `hopsFor` seconds (#460).
+  let landCall: Animation | undefined
   // Blinks and idle micro actions are bare tweens: kept here so that pausing and destroying reach them too.
   const blinks = new Set<Animation>()
   const micros = new Set<Animation>()
 
-  const owned = () => [...loops, stateTl, blinkCall, microCall, pending, ...blinks, ...micros].filter(animation => animation !== undefined)
+  const owned = () => [...loops, stateTl, blinkCall, microCall, pending, landCall, ...blinks, ...micros].filter(animation => animation !== undefined)
   /** Pauses or resumes everything this rig owns. Loops held at frame 0 by reduced motion stay paused whatever the rig does. */
   function apply() {
     for (const animation of owned()) {
@@ -159,7 +172,8 @@ export function mountRig(gsap: Gsap, host: HTMLElement, options: { variant: RigV
     tl.to(some(p.ballL, p.ballR), { opacity: 1, duration: 0.12 }, 0).to(some(p.hapL, p.hapR), { opacity: 0, duration: 0.12 }, 0).to(fx, { opacity: 0, duration: 0.15 }, 0)
     if (pupilsMoved) {
       pupilsMoved = false
-      tl.to(some(p.pupL, p.pupR), { x: 0, y: 0, duration }, 0)
+      tl.to(some(p.pupL, p.pupR), { x: gaze.x, y: gaze.y, duration }, 0)
+      tl.to(some(p.neck), { rotation: gaze.neck, duration }, 0)
     }
     setLids(LID_REST, duration, tl, 0)
     mouth('smile', 0.12, tl, 0)
@@ -168,17 +182,27 @@ export function mountRig(gsap: Gsap, host: HTMLElement, options: { variant: RigV
 
   const states: Record<RigState, (tl: Timeline, reduced: boolean) => void> = {
     idle(_tl, reduced) {
-      // Small random actions keep him from looking like a loop; a held pose has none.
-      if (reduced || !ambient) return
-      const micro = () => {
+      // Small random actions keep him from looking like a loop; a held pose has none, and neither has the Tour's face (`micro: false`: it nods when asked).
+      if (reduced || !ambient || !micro) return
+      const act = () => {
         if (state !== 'idle' || destroyed || !ambient) return
         const k = Math.random()
         if (k < 0.45) keep(micros, gsap.to(p.head, { rotation: random(-8, 6), duration: random(0.35, 0.6), ease: 'sine.inOut', yoyo: true, repeat: 1, repeatDelay: random(0.5, 1.4) }))
         else if (k < 0.72) keep(micros, gsap.to(p.armL, { rotation: -22, duration: 0.14, yoyo: true, repeat: 3, ease: 'sine.inOut' }))
         else keep(micros, gsap.to(p.root, { y: -10, duration: 0.14, yoyo: true, repeat: 1, ease: 'power2.out' }))
-        microCall = gsap.delayedCall(random(2.2, 5.5), micro)
+        microCall = gsap.delayedCall(random(2.2, 5.5), act)
       }
-      microCall = gsap.delayedCall(random(1, 3), micro)
+      microCall = gsap.delayedCall(random(1, 3), act)
+    },
+    wave(tl) {
+      // The greeting (the reference's `wave`): the arm up and waving in bursts, the head tilted and the brow lifted. On the head crop only the face shows.
+      mouth('grin', 0.1, tl, 0.05)
+      speed(1.8)
+      tl.to(p.armL, { rotation: -140, duration: 0.35, ease: 'back.out(2)' }, 0.05).to(p.head, { rotation: -6, duration: 0.4, ease: 'sine.out' }, 0.05)
+        .to(some(p.browL, p.browR), { opacity: 1, y: -6, rotation: 0, duration: 0.2 }, 0.05)
+      const wave = gsap.timeline({ repeat: -1, repeatDelay: 0.9 })
+      wave.to(p.armL, { rotation: -108, duration: 0.17, ease: 'sine.inOut', yoyo: true, repeat: 5 })
+      tl.add(wave, 0.4)
     },
     cheer(tl) {
       happyEyes(tl)
@@ -284,12 +308,29 @@ export function mountRig(gsap: Gsap, host: HTMLElement, options: { variant: RigV
 
   const landing = () => Number(gsap.getProperty(p.root, 'y')) < -3
 
-  function toState(next: RigState, reduced: boolean, tries: number) {
+  /** Stops the state's endless loops (the cheer's hop) and brings the figure down to rest on the arms' last pose. */
+  function land(tl: Timeline) {
+    if (destroyed || stateTl !== tl) return
+    for (const child of tl.getChildren(true, true, true)) if ('repeat' in child && child.repeat() === -1) child.kill()
+    keep(micros, gsap.to(p.root, { y: 0, scaleX: 1, scaleY: 1, duration: 0.2, ease: 'power2.in' }))
+    if (p.shadow) keep(micros, gsap.to(p.shadow, { scaleX: 1, scaleY: 1, opacity: 0.14, duration: 0.2, ease: 'power2.in' }))
+    keep(micros, gsap.to(some(p.armL), { rotation: -140, duration: 0.2 }))
+    keep(micros, gsap.to(some(p.armR), { rotation: -152, duration: 0.2 }))
+  }
+
+  /** The pupils' and the neck's resting place for an angle: the note's math, `PUPIL_REACH` and 6 degrees. */
+  const gazeAt = (angle: number | null) => {
+    if (angle === null) return { x: 0, y: 0, neck: 0 }
+    const radians = angle * Math.PI / 180
+    return { x: Math.cos(radians) * PUPIL_REACH[0], y: Math.sin(radians) * PUPIL_REACH[1], neck: Math.sin(radians) * 6 }
+  }
+
+  function toState(next: RigState, reduced: boolean, tries: number, hopsFor?: number) {
     if (destroyed) return
     pending?.kill()
     // Exit point: in the air (root y < -3) the switch waits for the landing, at most 8 x 0.04 s.
     if (tries < 8 && landing()) {
-      pending = gsap.delayedCall(0.04, () => toState(next, reduced, tries + 1))
+      pending = gsap.delayedCall(0.04, () => toState(next, reduced, tries + 1, hopsFor))
       apply()
       return
     }
@@ -298,6 +339,8 @@ export function mountRig(gsap: Gsap, host: HTMLElement, options: { variant: RigV
     stateTl?.kill()
     microCall?.kill()
     microCall = undefined
+    landCall?.kill()
+    landCall = undefined
     for (const animation of micros) animation.kill()
     micros.clear()
     const tl = gsap.timeline()
@@ -305,12 +348,13 @@ export function mountRig(gsap: Gsap, host: HTMLElement, options: { variant: RigV
     states[next](tl, reduced)
     stateTl = tl
     held = reduced
+    // The Tour's end hops twice and lands (the reference's `arrive()`, 1150 ms): the cheer's infinite loops stop and the figure comes down.
+    if (next === 'cheer' && hopsFor !== undefined && !reduced) landCall = gsap.delayedCall(hopsFor, () => land(tl))
     if (reduced) {
-      // Held pose: once the entry tweens have run, every infinite loop of the state stands at its start.
+      // Held pose: every infinite loop of the state stands at its start, from the first frame. The entry tweens are not loops and still run; a loop
+      // paused only after they had (at 0.45 s) ran from its own start at 0.3 s, and the cheer's jump lifted the face for 0.15 s (#785).
       for (const loop of loops) loop.pause(0)
-      tl.call(() => {
-        for (const child of tl.getChildren(true, true, true)) if ('repeat' in child && child.repeat() === -1) child.pause(0)
-      }, undefined, 0.45)
+      for (const child of tl.getChildren(true, true, true)) if ('repeat' in child && child.repeat() === -1) child.pause(0)
     }
     apply()
   }
@@ -319,8 +363,32 @@ export function mountRig(gsap: Gsap, host: HTMLElement, options: { variant: RigV
     get state() {
       return state
     },
-    setState(next, reduced) {
-      toState(RIG_STATES.includes(next) ? next : 'idle', reduced, 0)
+    setState(next, reduced, stateOptions) {
+      toState(RIG_STATES.includes(next) ? next : 'idle', reduced, 0, stateOptions?.hopsFor)
+    },
+    lookAt(angle, instant) {
+      if (destroyed) return
+      gaze = gazeAt(angle)
+      pupilsMoved = true
+      const pupils = some(p.pupL, p.pupR)
+      const neck = some(p.neck)
+      // The state's own pupil tweens (the restTo before it, `suspense`'s glance) give way to the look.
+      gsap.killTweensOf(pupils, 'x,y')
+      gsap.killTweensOf(neck, 'rotation')
+      if (instant) {
+        gsap.set(pupils, { x: gaze.x, y: gaze.y })
+        gsap.set(neck, { rotation: gaze.neck })
+        return
+      }
+      keep(micros, gsap.to(pupils, { x: gaze.x, y: gaze.y, duration: 0.4, ease: 'power3' }))
+      keep(micros, gsap.to(neck, { rotation: gaze.neck, duration: 0.7, ease: 'power2' }))
+      apply()
+    },
+    nod() {
+      if (destroyed || held) return
+      const nod = keep(micros, gsap.timeline())
+      nod.to(p.head, { rotation: 7, duration: 0.18, ease: 'power2.out' }).to(p.head, { rotation: 0, duration: 0.24, ease: 'sine.inOut' })
+      apply()
     },
     setActive(on) {
       active = on
