@@ -129,6 +129,33 @@ describe('HowWePlayCard (#148)', () => {
     expect(card.get('li').text()).toBe('Mario Kart')
   })
 
+  // The Host's read marks an Archived game (#726); a Member's face has no flag, and the card shows what it is given.
+  describe('the „Archiviert“ mark (#726)', () => {
+    const tiles = (card: Awaited<ReturnType<typeof mountCard>>) => card.findAll('ul')[0]!.findAll('li')
+
+    it.each([0, 1, 2])('marks the Archived game tiles of the Host and no other, with %i Archived of 2', async (count) => {
+      const pool = [poolGame('Mario Kart', { archived: count >= 1 }), poolGame('Pong', { archived: count >= 2 })]
+      const card = await mountCard({ settings: wheel, isHost: true, pool })
+
+      const [first, second] = tiles(card)
+      expect(first!.text()).toBe(count >= 1 ? 'Mario KartArchiviert' : 'Mario Kart')
+      expect(second!.text()).toBe(count >= 2 ? 'PongArchiviert' : 'Pong')
+      expect(card.text().split('Archiviert').length - 1).toBe(count)
+    })
+
+    it('adds no control: the tiles are still one button each, named by the game', async () => {
+      const card = await mountCard({ settings: wheel, isHost: true, pool: [poolGame('Mario Kart', { archived: true }), poolGame('Pong')] })
+
+      expect(card.findAll('button').map(button => button.text())).toEqual(['Mario Kart', 'Pong'])
+    })
+
+    it('shows a Member no mark: the face has no flag', async () => {
+      const card = await mountCard({ settings: wheel, pool: [faceOf(poolGame('Mario Kart')), faceOf(poolGame('Pong'))] })
+
+      expect(card.text()).not.toContain('Archiviert')
+    })
+  })
+
   it('says „Noch keine Spiele.“ for an empty pool', async () => {
     const card = await mountCard({ settings: wheel, pool: [] })
 

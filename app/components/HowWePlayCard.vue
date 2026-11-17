@@ -2,7 +2,7 @@
 import { EyeOff, Lock, Pencil } from '@lucide/vue'
 import { GAME_GRID } from '~/utils/game-grid'
 import { summaryRows } from '~/utils/settings-summary'
-import type { HostGameFacts, PoolGame, PoolGameFace } from '~~/shared/game'
+import { isFullPoolGame, type HostGameFacts, type PoolGame, type PoolGameFace } from '~~/shared/game'
 import type { NotesDoc } from '~~/shared/notes-doc'
 import { hasWheel, lockedWhenRunning, type EventSettings } from '~~/shared/settings'
 
@@ -139,6 +139,7 @@ const rows = computed(() => (props.settings === null
                 <GameTile
                   :game="game"
                   :audience="isHost ? 'host' : 'member'"
+                  :archived="isFullPoolGame(game) && game.archived"
                   :facts="hostGames?.[game.id] ?? null"
                   :event-notes="eventNotes?.[game.id] ?? null"
                 />

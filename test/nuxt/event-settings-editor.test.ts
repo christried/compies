@@ -8,7 +8,7 @@ import EventPage from '~/pages/e/[slug]/index.vue'
 import type { BoardTeam, MemberView } from '~~/shared/event'
 import type { SetGameView, SpinView, WheelView } from '~~/shared/stage'
 import type { PoolGame } from '~~/shared/game'
-import { defaultSettings, type EventSettings, type SettingsFloors } from '~~/shared/settings'
+import { defaultSettings, poolHint, type EventSettings, type SettingsFloors } from '~~/shared/settings'
 import { INSTANT_MARGIN_MS } from '~/composables/useInstantRefresh'
 import { kitty, signInAs } from './auth'
 import { LARSI, memberView, SANNE, serve, shownToasts, view } from './event-page'
@@ -551,6 +551,90 @@ describe('the settings editor', () => {
       await goTo(page, 'Spiele')
 
       expect(tieHint(page)).toBeDefined()
+    })
+  })
+
+  // An Archived game (#726, spec #717 § B): the Host's pool lists it with the mark and keeps it in a save, but it is off the wheel, so the heading
+  // and the setup hint count the games that are on it. The library below offers none (the mocked library holds unarchived games only).
+  describe('an Archived game in the pool (#726)', () => {
+    const third = poolGame(3, 'Dame')
+    const olds = [{ ...poolGame(11, 'Alt Eins'), archived: true }, { ...poolGame(12, 'Alt Zwei'), archived: true }]
+    const list = (page: Page) => page.get('ul[aria-label="Spiele im Pool"]')
+    const rowOf = (page: Page, name: string) => list(page).findAll('li').find(item => item.text().includes(name))!
+    const marked = (page: Page) => list(page).findAll('li').filter(item => item.text().includes('Archiviert')).map(item => item.get('b').text())
+    const plural = (n: number) => `${n} ${n === 1 ? 'Spiel' : 'Spiele'}`
+
+    it.each([0, 1, 2])('marks %i of three games in the list and in no library card', async (count) => {
+      const { slug } = setUp({ settings: wheel, pool: [kart, ...olds.slice(0, count), ...(count < 2 ? [pong] : []), ...(count < 1 ? [third] : [])] })
+
+      const page = await mountEditor(slug)
+      await goTo(page, 'Spielepool')
+      await settle(page)
+
+      expect(marked(page)).toEqual(olds.slice(0, count).map(game => game.name))
+      expect(list(page).findAll('li')).toHaveLength(3)
+      expect(page.get('ul[aria-label="Bibliothek"]').text()).not.toContain('Archiviert')
+    })
+
+    it.each([0, 1, 2])('counts the games that are not Archived in the heading and the setup hint, with %i Archived of 3', async (count) => {
+      const { slug } = setUp({ settings: wheel, pool: [kart, ...olds.slice(0, count), ...(count < 2 ? [pong] : []), ...(count < 1 ? [third] : [])] })
+      const have = 3 - count
+      const numbers = poolHint(wheel, have)!
+
+      const page = await mountEditor(slug)
+      await goTo(page, 'Spielepool')
+      await settle(page)
+
+      expect(page.get('h2').text()).toBe(`Im Pool: ${plural(have)}`)
+      expect(page.text()).toContain(`brauchst du ${numbers.needed} Spiele, im Pool ${have === 1 ? 'ist' : 'sind'} ${have}.`)
+    })
+
+    it('lists a pool of only Archived games, counts none of them and no more shows the empty text', async () => {
+      const { slug } = setUp({ settings: wheel, pool: olds })
+      const numbers = poolHint(wheel, 0)!
+
+      const page = await mountEditor(slug)
+      await goTo(page, 'Spielepool')
+      await settle(page)
+
+      expect(marked(page)).toEqual(['Alt Eins', 'Alt Zwei'])
+      expect(page.get('h2').text()).toBe('Im Pool: 0 Spiele')
+      expect(page.text()).toContain(`brauchst du ${numbers.needed} Spiele, im Pool sind 0.`)
+      expect(page.text()).not.toContain('Noch leer.')
+    })
+
+    it('keeps the Archived game in the pool it saves when another game is taken out, and when nothing is touched', async () => {
+      const { slug, patched } = setUp({ settings: wheel, pool: [kart, olds[0]!] })
+      const page = await mountEditor(slug)
+      await goTo(page, 'Spielepool')
+      await settle(page)
+      await cta(page).trigger('click')
+      await vi.waitFor(() => expect(patched).toHaveBeenCalledTimes(1))
+      expect(patched.mock.calls[0]![0].pool).toEqual([kart.id, olds[0]!.id])
+
+      const { slug: again, patched: patchedAgain } = setUp({ settings: wheel, pool: [kart, olds[0]!] })
+      const next = await mountEditor(again)
+      await goTo(next, 'Spielepool')
+      await settle(next)
+      await button(next, 'Mario Kart aus dem Pool nehmen').trigger('click')
+      await cta(next).trigger('click')
+
+      await vi.waitFor(() => expect(patchedAgain).toHaveBeenCalledTimes(1))
+      expect(patchedAgain.mock.calls[0]![0].pool).toEqual([olds[0]!.id])
+    })
+
+    it('lets the Host take an Archived game out with its ✕', async () => {
+      const { slug, patched } = setUp({ settings: wheel, pool: [kart, olds[0]!] })
+      const page = await mountEditor(slug)
+      await goTo(page, 'Spielepool')
+      await settle(page)
+
+      await button(page, 'Alt Eins aus dem Pool nehmen').trigger('click')
+      expect(rowOf(page, 'Alt Eins')).toBeUndefined()
+      await cta(page).trigger('click')
+
+      await vi.waitFor(() => expect(patched).toHaveBeenCalledTimes(1))
+      expect(patched.mock.calls[0]![0].pool).toEqual([kart.id])
     })
   })
 

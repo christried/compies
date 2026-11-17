@@ -216,6 +216,17 @@ describe('the Tag filter of the library list (#336)', () => {
     libraryEventCounts = {}
   })
 
+  it('marks no pool row and lists no Archived library game: the Host\'s picker has no Archived game to show (#726)', async () => {
+    libraryGames = [retroKart, coop, libraryGame(4, 'Altes Spiel', { archived: true })]
+    await mount()
+    await vi.waitFor(() => expect(libraryCards()).toHaveLength(2))
+
+    expect(libraryCards()).toEqual(['Retro Kart', 'Pandemie'])
+    expect(poolCards()).toEqual(['Halo'])
+    expect(dialog()!.textContent).not.toContain('Altes Spiel')
+    expect(dialog()!.textContent).not.toContain('Archiviert')
+  })
+
   it('starts each opening of the sheet without a Tag', async () => {
     await mount()
     await vi.waitFor(() => expect(libraryCards()).toHaveLength(3))
