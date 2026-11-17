@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { tourLayout } from '~/utils/tour-placement'
 import type { TourFace } from '~~/shared/tour'
 
 // Compibert at the Tour's bubble (#460, 17-rundgang.md § TourFace): the head crop on the bubble's top-left corner, in front of the border like a sticker,
@@ -15,7 +16,9 @@ const props = defineProps<{
 const rig = useTemplateRef<{ nod: () => void }>('rig')
 const STATE = { hello: 'wave', points: 'idle', cheers: 'cheer' } as const
 
-const size = computed(() => (props.narrow ? 56 : 72))
+// Size and place are the placement's layout (#785): its face zone and look direction use the same numbers.
+const layout = computed(() => tourLayout(props.narrow))
+const size = computed(() => layout.value.S)
 /** The end hops twice (1.15 s, the reference's `arrive()`) and lands. */
 const HOPS_FOR = 1.15
 
@@ -27,7 +30,7 @@ defineExpose({ nod: () => rig.value?.nod() })
     aria-hidden="true"
     data-tour-face
     class="pointer-events-none absolute"
-    :style="{ width: `${size}px`, left: narrow ? '8px' : '14px', top: narrow ? '-16px' : '-20px' }"
+    :style="{ width: `${size}px`, left: `${layout.faceL}px`, top: `${layout.faceT}px` }"
   >
     <!-- The head crop clips at its edge by default; the hop and the rim must not be cut. -->
     <CompibertRig

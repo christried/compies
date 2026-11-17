@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { tourLayout } from '~/utils/tour-placement'
+
 // The Tour's bubble (#460, 17-rundgang.md § TourBubble): the explaining box in the popover look, with a tail that points at the thing and Compibert's face on
 // its corner (the `face` slot). `TourLayer` sets where it stands (the fallthrough `style`) and how wide it is; its height is its content. The drop shadow is
 // a `filter` on the box and the tail together, so the tail casts it too: ink in Hell, `--cp-hot` in Dunkel (the two colours of `shadow-modal`, no new token).
@@ -33,8 +35,7 @@ const bodyId = useId()
 const root = useTemplateRef<HTMLElement>('root')
 defineExpose({ root })
 
-const TAIL_SIZE = { wide: 20, narrow: 16 }
-const size = computed(() => (props.narrow ? TAIL_SIZE.narrow : TAIL_SIZE.wide))
+const size = computed(() => tourLayout(props.narrow).tail)
 
 /**
  * The tail: a square rotated 45°, the surface's fill, the border on its two outer sides, its tip rounded to 3 px. It stands on the border's centre line,

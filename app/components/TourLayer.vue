@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { bubbleIn, bubbleOut, canAnimate, cancelQuietly, glideScroll, moveHole, tourEnter, tourExit, tourTick, type TourHole, type TourPlay } from '~/utils/tour-motion'
-import { placeTour, tourBubbleWidth, TOUR_NARROW_BELOW, type TourPlacement, type TourThing } from '~/utils/tour-placement'
+import { placeTour, TOUR_BUBBLE_WIDTH, tourBubbleWidth, TOUR_NARROW_BELOW, type TourPlacement, type TourThing } from '~/utils/tour-placement'
 import { tourFace, tourMove, tourThing, type TourStep } from '~~/shared/tour'
 
 // The Tour's layer (#647, #460, ADR 0017): the controller of the Rundgang. It measures the thing a step points at, asks `placeTour` where the hole and the
@@ -34,7 +34,7 @@ const hole = shallowRef<TourHole | null>(null)
 /** The bubble waits invisible between its exit and its entry on a step change. */
 const waiting = ref(false)
 const narrow = ref(false)
-const bubbleWidth = ref(400)
+const bubbleWidth = ref(TOUR_BUBBLE_WIDTH)
 /** The step the hidden twin holds to read its height. */
 const measuring = ref(0)
 
