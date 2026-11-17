@@ -204,6 +204,43 @@ describe('reduced motion', () => {
     expect(first[0]).toBeDefined()
   })
 
+  // The cheer's jump starts at 0.3 s and the held pose stood at 0.45 s: the face rose for 0.15 s on the Tour's end step (#785, measured 13 px in the browser check).
+  /** The root's vertical offset in every frame sampled over `ms`; the part's matrix is `matrix(a, b, c, d, e, f)`, and `f` is y. */
+  async function rootHeights(page: Page, ms: number) {
+    const heights = new Set<number>()
+    for (const end = Date.now() + ms; Date.now() < end; await pause(5)) {
+      const matrix = /matrix\(([^)]*)\)/.exec(pose(page, 'root') ?? '')
+      if (matrix) heights.add(Number(matrix[1]!.split(',')[5]))
+    }
+    return heights
+  }
+
+  it('never lifts the root off the ground on the cheer, at the mount or on the change into it (#785)', async () => {
+    stubInView()
+    motion('reduced')
+    const mounted = await mountRig({ state: 'cheer', variant: 'head' })
+    const heights = await rootHeights(mounted, 1200)
+    expect([...heights].every(y => y === 0)).toBe(true)
+
+    const changed = await mountRig({ state: 'idle', variant: 'head' })
+    await ready(changed)
+    await changed.setProps({ state: 'cheer' })
+    const afterChange = await rootHeights(changed, 1200)
+    expect([...afterChange].every(y => y === 0)).toBe(true)
+    expect(attribute(changed, 'data-held')).toBe('true')
+  })
+
+  it('hops under full motion on the same cheer, so that the test above can fail', async () => {
+    stubInView()
+    motion('full')
+    const page = await mountRig({ state: 'cheer', variant: 'head' })
+    await ready(page)
+
+    const heights = await rootHeights(page, 1200)
+
+    expect(Math.min(...heights)).toBeLessThan(-10)
+  })
+
   it('moves under full motion, so that the held pose above can fail', async () => {
     stubInView()
     motion('full')
