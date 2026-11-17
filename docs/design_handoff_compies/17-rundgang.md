@@ -25,6 +25,18 @@ Rejected (shown in the ref file, not to be built): **A „Still“** (three held
 - Rule for choosing a thing: the smallest element the sentence is about. If it is taller than the window on a phone, pick a child (poll → first card).
 - Shown once per account on the first Event page visit (`tour.event.done` on the user, not the device). Restart: Profil → „Rundgang starten“. It never starts while a sheet, dialog, ConnectionBanner „lost“ or a synced moment (wheel, veto, ceremony) is on screen; it waits.
 
+## As built (0.15, #622)
+
+Where the build differs from this note. The spec is #622, the decisions are ADR 0017 (the Tour is built in house) and ADR 0015 (GSAP loads for the rig only).
+
+- **Deviation (0.15, #622):** the bubble and the hole move with the Web Animations API (`app/utils/tour-motion.ts`, the durations and eases of the table below as `--cp-dur-*` and `--cp-ease-*` tokens), not GSAP: the note's „All GSAP“ is not built (ADR 0015). GSAP is loaded for Compibert's face only, and only while the Tour shows.
+- **Deviation (0.15, #460):** the rig gets its ninth state, `wave`, for the greeting; the note says „no new state“. `cheer` and `idle` are used as written.
+- **Deviation (0.15, #460):** the page's scroll is not locked while the Tour is open: a User who scrolls moves the hole with the thing and the Tour keeps what they did. The page behind is `inert` (AppShell's `covered`), so nothing but the Tour takes a click or a key.
+- **Deviation (0.15, #460):** the thing gets no `aria-describedby` to the bubble's body. The bubble is a modal dialog named by its title and described by its text, and its live region reads each step; the page behind is inert, so no assistive technology reaches the thing.
+- **Deviation (0.15, #647):** the ConnectionBanner „lost“ start condition is not built. The start rule is the spec's: not while a sheet, dialog, menu or Clip is open, while a Session runs, for the Host or on a finished Event, and only after the page has been calm for a second (`shared/tour.ts`).
+- **Deviation (0.15, #622, story 28):** „Überspringen“ stays on the last step beside „Fertig“; the note removes it on step 8.
+- **Deviation (0.15, #622):** names. The controller is `TourLayer` (the note's `EventTour`); it emits `over('finished' | 'skipped')`, not `done({skipped, at})`; the step keys are `greeting`, `head`, `poll`, `board` (with `boardOpen` and `boardLocked`), `how`, `activity`, `tabs`, `sound` and `end` (the note's `hallo`, `ende`, `feed`, `ton`); the Profil's button reads „Wiederholen“ in the row „Rundgang“.
+
 ---
 
 ## Additions to 02-components.md

@@ -1,5 +1,5 @@
 import type { EventView } from '~~/shared/event'
-import { MEMBER_TOUR, TOUR_CALM_MS, TOUR_VERSION, tourMayStart, tourRun, type TourStartInput, type TourStep } from '~~/shared/tour'
+import { MEMBER_TOUR, TOUR_CALM_MS, tourMayStart, tourRun, type TourStartInput, type TourStep } from '~~/shared/tour'
 
 // The Tour's running on a page (#647, spec #622, ADR 0017): when it starts, when it ends by itself, and what finishing or skipping saves. The rules
 // are `shared/tour.ts`'s pure functions; this reads their inputs from the page. Each device decides for itself and nothing goes to the room (ADR 0013):
@@ -27,7 +27,7 @@ export function useTour(options: {
   wide: () => boolean
 }) {
   const steps = options.steps ?? MEMBER_TOUR
-  const user = useAuthUser()
+  const { stored, markSeen } = useTourSeen()
   const { busy } = useOpenLayers()
 
   const shown = ref(false)
@@ -40,7 +40,7 @@ export function useTour(options: {
   const input = computed<TourStartInput>(() => {
     const view = options.view()
     return {
-      storedVersion: user.value?.tourSeen ?? null,
+      storedVersion: stored.value,
       role: view?.event.isHost ? 'host' : 'member',
       phase: view?.event.phase ?? null,
       sessionRunning: view ? view.runningSessionId !== null : false,
@@ -92,20 +92,8 @@ export function useTour(options: {
     // Closed and latched first, so the end rule does not read the stored version that changes next.
     shown.value = false
     done = true
-    const current = user.value
-    if (!current) return
-    // Seen at once and never lowered, like the server (useNewsSeen.markSeen); the save runs in the background and is never awaited.
-    user.value = { ...current, tourSeen: Math.max(current.tourSeen, TOUR_VERSION) }
-    void save()
-  }
-
-  async function save() {
-    try {
-      await $fetch('/api/me/tour-seen', { method: 'POST', body: { version: TOUR_VERSION } })
-    }
-    catch {
-      // The client stays „seen“ until the next page load, whose `GET /api/me` brings the server's number back: the Tour shows again at the next visit.
-    }
+    // Seen at once, saved in the background (useTourSeen).
+    markSeen()
   }
 
   return { shown, run, over }

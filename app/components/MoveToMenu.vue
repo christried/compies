@@ -28,6 +28,9 @@ const wide = useMediaQuery(MD_QUERY)
 const narrow = computed(() => wide.value === false)
 const position = ref({ top: 0, left: 0 })
 
+// The popover is a layer of its own (#785): the Tour waits while it is open (useOpenLayers). The phone's sheet is counted by AppSheet already.
+useOpenLayers().track(computed(() => props.open && !narrow.value))
+
 watch(() => props.open, async (open) => {
   if (!open) return
   const rect = props.anchor?.getBoundingClientRect()

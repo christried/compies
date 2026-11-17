@@ -209,6 +209,29 @@ describe('the focus', () => {
     expect(document.activeElement).toBe(before)
   })
 
+  // A browser does not focus an element that is `visibility: hidden` (happy-dom does): the bubble is hidden until it is placed, so focusing one tick after
+  // `open` finds a bubble that refuses it (#785, measured in the browser check of 0.15).
+  it.each(['full', 'reduced'] as const)('moves onto „Weiter“ once the bubble is placed, as a browser allows it, and back on close, under %s motion (#785)', async (mode) => {
+    motion(mode)
+    const realFocus = HTMLElement.prototype.focus
+    vi.spyOn(HTMLElement.prototype, 'focus').mockImplementation(function (this: HTMLElement, options?: FocusOptions) {
+      if (this.closest('[style*="visibility: hidden"]')) return
+      realFocus.call(this, options)
+    })
+    const before = document.createElement('button')
+    document.body.append(before)
+    before.focus()
+    await mount(false)
+
+    await page!.setProps({ open: true })
+    await flushPromises()
+    expect(document.activeElement).toBe(button('Weiter'))
+
+    await page!.setProps({ open: false })
+    await flushPromises()
+    expect(document.activeElement).toBe(before)
+  })
+
   it('stays on the forward button after a step, also where „Zurück“ has gone', async () => {
     await mount()
 
@@ -447,6 +470,74 @@ describe('the spotlight', () => {
     await vi.waitFor(() => expect(holeOf()).toMatchObject({ left: 92, top: 22, width: 276, height: 106 }))
   })
 
+  // happy-dom has no ResizeObserver. The stub is a browser's in one point: every `observe()` delivers a first callback. An open Tour on a page that does not change
+  // must settle on it (#785); a place is one read of the hidden twin's height, which is what the count takes.
+  describe('with a ResizeObserver that calls back on every observe (#785)', () => {
+    const observers: { fire: () => void, observed: Element[] }[] = []
+    let reads = 0
+
+    beforeEach(() => {
+      observers.length = 0
+      reads = 0
+      vi.stubGlobal('ResizeObserver', class {
+        private readonly entry: { fire: () => void, observed: Element[] }
+        private pending: ReturnType<typeof setTimeout>[] = []
+        constructor(callback: () => void) {
+          this.entry = { fire: callback, observed: [] }
+          observers.push(this.entry)
+        }
+
+        observe(target: Element) {
+          this.entry.observed.push(target)
+          this.pending.push(setTimeout(() => this.entry.fire(), 0))
+        }
+
+        unobserve(target: Element) {
+          this.entry.observed = this.entry.observed.filter(element => element !== target)
+        }
+
+        // As a browser's: what was observed is dropped with its undelivered callbacks, and the observer works again after the next observe().
+        disconnect() {
+          for (const timer of this.pending) clearTimeout(timer)
+          this.pending = []
+          this.entry.observed = []
+        }
+      })
+      Object.defineProperty(HTMLElement.prototype, 'offsetHeight', { configurable: true, get: () => (reads += 1, 160) })
+    })
+
+    const pause = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
+
+    it('places a bounded number of times on an unchanged page, and none once it has settled', async () => {
+      host({ left: 40, top: 20, width: 300, height: 80 })
+      await mount(true, THREE)
+      await click('Weiter')
+      await vi.waitFor(() => expect(holeOf().left).toBe(32))
+      await pause(300)
+
+      const settled = reads
+      await pause(500)
+
+      expect(reads).toBe(settled)
+      expect(settled).toBeLessThan(15)
+    })
+
+    it('still places again on a real size change of the thing or of the page', async () => {
+      const { move } = host({ left: 40, top: 20, width: 300, height: 80 })
+      await mount(true, THREE)
+      await click('Weiter')
+      await vi.waitFor(() => expect(holeOf().left).toBe(32))
+      await pause(300)
+      const settled = reads
+
+      move({ left: 100, top: 30, width: 260, height: 90 })
+      observers.at(-1)!.fire()
+
+      await vi.waitFor(() => expect(holeOf()).toMatchObject({ left: 92, top: 22, width: 276, height: 106 }))
+      expect(reads).toBeGreaterThan(settled)
+    })
+  })
+
   it('follows the thing when the page is scrolled by the User', async () => {
     const { move } = host({ left: 40, top: 20, width: 300, height: 80 })
     await mount(true, THREE)
@@ -633,6 +724,87 @@ describe('the motion', () => {
     const [move] = callsOn(spotlight())
     expect(move!.options).toMatchObject({ duration: 360, easing: IO })
     expect(move!.keyframes[0]).toMatchObject({ outlineWidth: '3px' })
+  })
+
+  // A change that is cut short (#785, item 11): the glide lives on frames, and a starved main thread gave it one at the start and none after. The change still ends
+  // with the page at the scroll it aimed at and the hole on the thing, unless the User scrolled meanwhile.
+  describe('when the glide gets no frame after its first', () => {
+    async function starvedChange() {
+      Object.defineProperty(document.documentElement, 'scrollHeight', { configurable: true, get: () => 3000 })
+      host({ left: 40, top: 1500, width: 300, height: 80 })
+      await mount(true, THREE)
+      const frames: FrameRequestCallback[] = []
+      vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => frames.push(callback))
+      vi.stubGlobal('cancelAnimationFrame', () => {})
+      scrollTo.mockClear()
+      button('Weiter').click()
+      // The glide's first frame runs, and no frame after it ever does.
+      await vi.waitFor(() => expect(frames.length).toBeGreaterThan(0))
+      frames.splice(0).forEach(frame => frame(performance.now()))
+    }
+
+    afterEach(() => Reflect.deleteProperty(document.documentElement, 'scrollHeight'))
+
+    it('ends the change with the page at the aimed scroll and the hole on the thing', async () => {
+      await starvedChange()
+
+      await vi.waitFor(() => expect(scrollTo).toHaveBeenLastCalledWith(0, 1476), { timeout: 1500 })
+      await vi.waitFor(() => expect(holeOf()).toMatchObject({ left: 32, width: 316, height: 96 }), { timeout: 1500 })
+      expect(title()).toBe(HEAD)
+    })
+
+    it('leaves the page where the User scrolled it meanwhile', async () => {
+      await starvedChange()
+
+      vi.stubGlobal('scrollY', 600)
+      window.dispatchEvent(new Event('scroll'))
+      scrollTo.mockClear()
+      await new Promise(resolve => setTimeout(resolve, 800))
+
+      expect(scrollTo).not.toHaveBeenCalledWith(0, 1476)
+      expect(title()).toBe(HEAD)
+    })
+  })
+
+  // The scroll glide (#785): a `requestAnimationFrame` loop, so the test plays the frames: the clock and the frame queue are its own. The expected values are the
+  // in-out curve `cubic-bezier(.65,0,.35,1)` of the CSS solved apart (bisection on x) for a scroll from 0 to 1476: .0708, .5 and .9292 of the way.
+  it.each([
+    ['the token\'s 360 ms', undefined, 360],
+    ['a token of .5s (the production CSS is minified)', '.5s', 500],
+  ])('glides the scroll along the in-out curve over --cp-dur-slow: %s', async (_name, token, ms) => {
+    if (token) document.documentElement.style.setProperty('--cp-dur-slow', token)
+    Object.defineProperty(document.documentElement, 'scrollHeight', { configurable: true, get: () => 3000 })
+    host({ left: 40, top: 1500, width: 300, height: 80 })
+    await mount(true, THREE)
+    const realFrame = window.requestAnimationFrame
+    const realCancel = window.cancelAnimationFrame
+    const frames: FrameRequestCallback[] = []
+    vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => frames.push(callback))
+    vi.stubGlobal('cancelAnimationFrame', () => {})
+    vi.spyOn(performance, 'now').mockReturnValue(1000)
+    scrollTo.mockClear()
+    try {
+      button('Weiter').click()
+      const at = (elapsed: number) => {
+        frames.splice(0).forEach(frame => frame(1000 + elapsed))
+        return scrollTo.mock.lastCall?.[1] as number | undefined
+      }
+      // The first frame is the glide's own: at the start it scrolls to where the page is.
+      await vi.waitFor(() => expect(at(0)).toBe(0))
+
+      expect(at(ms / 4)).toBeCloseTo(104.5, 0)
+      expect(at(ms / 2)).toBeCloseTo(738, 0)
+      expect(at(ms * 3 / 4)).toBeCloseTo(1371.5, 0)
+      expect(at(ms)).toBe(1476)
+      // It has landed: later frames change nothing.
+      expect(at(ms * 2)).toBe(1476)
+    }
+    finally {
+      vi.stubGlobal('requestAnimationFrame', realFrame)
+      vi.stubGlobal('cancelAnimationFrame', realCancel)
+      document.documentElement.style.removeProperty('--cp-dur-slow')
+      Reflect.deleteProperty(document.documentElement, 'scrollHeight')
+    }
   })
 
   it('closes the hole into the thing\'s centre in 220 ms, ease in, and the ring goes to 0, when the next step has no thing', async () => {

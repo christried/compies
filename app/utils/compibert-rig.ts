@@ -351,11 +351,10 @@ export function mountRig(gsap: Gsap, host: HTMLElement, options: { variant: RigV
     // The Tour's end hops twice and lands (the reference's `arrive()`, 1150 ms): the cheer's infinite loops stop and the figure comes down.
     if (next === 'cheer' && hopsFor !== undefined && !reduced) landCall = gsap.delayedCall(hopsFor, () => land(tl))
     if (reduced) {
-      // Held pose: once the entry tweens have run, every infinite loop of the state stands at its start.
+      // Held pose: every infinite loop of the state stands at its start, from the first frame. The entry tweens are not loops and still run; a loop
+      // paused only after they had (at 0.45 s) ran from its own start at 0.3 s, and the cheer's jump lifted the face for 0.15 s (#785).
       for (const loop of loops) loop.pause(0)
-      tl.call(() => {
-        for (const child of tl.getChildren(true, true, true)) if ('repeat' in child && child.repeat() === -1) child.pause(0)
-      }, undefined, 0.45)
+      for (const child of tl.getChildren(true, true, true)) if ('repeat' in child && child.repeat() === -1) child.pause(0)
     }
     apply()
   }

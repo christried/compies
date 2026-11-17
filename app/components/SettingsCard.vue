@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { Compass, Sun, Volume2 } from '@lucide/vue'
-import type { SavedTourSeen } from '~~/shared/auth'
 
 // The card „Einstellungen“ on the Profil page (screen 25, shipped trimmed, #400): one SettingsRow per setting. Ton is the device's Sound
 // (GLOSSARY § Sound), the same state as the header's button, stored as before. Darstellung is the User's Appearance (GLOSSARY § Appearance,
@@ -9,17 +8,18 @@ import type { SavedTourSeen } from '~~/shared/auth'
 const { t } = useI18n()
 const sound = useSound()
 const appearance = useAppearance()
-const user = useAuthUser()
+const { reset: resetSeen } = useTourSeen()
 const { toast } = useToast()
 const tourResetting = ref(false)
 const tourResetFailed = ref(false)
 
 async function resetTour() {
+  // The button is aria-disabled while this runs (a native `disabled` would drop the focus, AppButton): a click still arrives, so it is turned away here (#785).
+  if (tourResetting.value) return
   tourResetFailed.value = false
   tourResetting.value = true
   try {
-    const saved = await $fetch<SavedTourSeen>('/api/me/tour-reset', { method: 'POST' })
-    if (user.value) user.value = { ...user.value, tourSeen: saved.tourSeen }
+    await resetSeen()
     toast({ tone: 'success', text: t('settings.tourResetDone') })
   }
   catch {
@@ -84,7 +84,7 @@ async function resetTour() {
           <AppButton
             variant="secondary"
             size="md"
-            :disabled="tourResetting"
+            :aria-disabled="tourResetting || undefined"
             :aria-describedby="descriptionId"
             @click="resetTour"
           >

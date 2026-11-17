@@ -11,9 +11,17 @@ export const TOUR_LAYOUT = {
   narrow: { pad: 6, gap: 20, margin: 12, S: 56, faceL: 8, faceT: -16, faceZone: 70, tail: 16, lead: 16, sh: 10, safe: 18 },
 } as const
 
+/** The layout numbers for the window's width: the one home of the face's, the tail's and the placement's sizes (#785); TourFace and TourBubble read them here. */
+export function tourLayout(narrow: boolean) {
+  return narrow ? TOUR_LAYOUT.narrow : TOUR_LAYOUT.wide
+}
+
+/** The bubble's width on a wide window. */
+export const TOUR_BUBBLE_WIDTH = 400
+
 /** The bubble's width: 400 px, or the window less 12 px a side. */
 export function tourBubbleWidth(windowWidth: number): number {
-  return windowWidth < TOUR_NARROW_BELOW ? windowWidth - 24 : 400
+  return windowWidth < TOUR_NARROW_BELOW ? windowWidth - 24 : TOUR_BUBBLE_WIDTH
 }
 
 export interface Rect { x: number, y: number, w: number, h: number }
@@ -62,7 +70,7 @@ const clamp = (value: number, low: number, high: number) => Math.max(low, Math.m
 export function placeTour(input: TourPlacementInput): TourPlacement {
   const { window: win, headerBottom, stageBottom, maxScroll, thing, bubbleHeight } = input
   const narrow = win.w < TOUR_NARROW_BELOW
-  const C = narrow ? TOUR_LAYOUT.narrow : TOUR_LAYOUT.wide
+  const C = tourLayout(narrow)
   const bw = tourBubbleWidth(win.w)
   const bh = bubbleHeight
   const minY = headerBottom + C.margin
