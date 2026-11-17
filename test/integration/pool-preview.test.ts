@@ -249,7 +249,7 @@ describe('Pool preview secrecy (#225)', () => {
     for (const game of pool) expect(raw).not.toContain(game.tag)
     // The control: the Host's game carries every field, the notes and the Price too.
     const hostPool = (JSON.parse(await rawRead(hostCookie, slug)) as EventView).pool!
-    expect(Object.keys(hostPool[0]!).sort()).toEqual(['clipLength', 'clipStart', 'id', 'imageUrl', 'name', 'notes', 'playersMax', 'playersMin', 'price', 'suitabilities', 'youtubeId'])
+    expect(Object.keys(hostPool[0]!).sort()).toEqual(['archived', 'clipLength', 'clipStart', 'id', 'imageUrl', 'name', 'notes', 'playersMax', 'playersMin', 'price', 'suitabilities', 'youtubeId'])
     expect(hostPool[0]).toMatchObject({ notes: pool[0]!.notesDoc, price: pool[0]!.price })
   })
 
