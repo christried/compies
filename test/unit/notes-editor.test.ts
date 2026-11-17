@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { checkLinkAddress, noteShortcutLabel, tidyNotes } from '~/utils/notes-editor'
+import { checkLinkAddress, editorContent, noteShortcutLabel, tidyNotes } from '~/utils/notes-editor'
 import { notesLinkHref } from '~~/shared/notes-doc'
 
 // The pure rules of the notes editor (#454): what the editor emits is tidied before the shared parser rebuilds it, and the link control checks an address
@@ -43,6 +43,30 @@ describe('tidyNotes', () => {
 
   it('keeps a document without a content key as it is', () => {
     expect(tidyNotes({ type: 'doc' })).toEqual({ type: 'doc', content: [] })
+  })
+})
+
+describe('editorContent', () => {
+  it('is an empty paragraph for no notes', () => {
+    expect(editorContent(null)).toEqual({ type: 'doc', content: [{ type: 'paragraph' }] })
+  })
+
+  it('hands a document over as it is', () => {
+    const doc = { type: 'doc', content: [paragraph('a'), { type: 'paragraph', content: [{ type: 'text', text: 'b', marks: [{ type: 'bold' }] }] }] } as const
+    expect(editorContent(doc as never)).toEqual(doc)
+  })
+
+  it('takes bold off the text of a heading, which the editor has no place for, and keeps its other marks', () => {
+    const marks = [{ type: 'bold' }, { type: 'italic' }]
+    const doc = { type: 'doc', content: [{ type: 'heading', attrs: { level: 3 }, content: [{ type: 'text', text: 'Titel', marks }] }] }
+    expect(editorContent(doc as never)).toEqual({ type: 'doc', content: [{ type: 'heading', attrs: { level: 3 }, content: [{ type: 'text', text: 'Titel', marks: [{ type: 'italic' }] }] }] })
+    // The stored document is not touched.
+    expect(doc.content[0]!.content![0]!.marks).toEqual(marks)
+  })
+
+  it('leaves a text node without a mark in a heading without a marks key', () => {
+    const doc = { type: 'doc', content: [{ type: 'heading', attrs: { level: 3 }, content: [{ type: 'text', text: 'T', marks: [{ type: 'bold' }] }] }] }
+    expect(editorContent(doc as never).content[0]).toEqual({ type: 'heading', attrs: { level: 3 }, content: [{ type: 'text', text: 'T' }] })
   })
 })
 

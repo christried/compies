@@ -1,5 +1,5 @@
 import { asRecord } from '~~/shared/record'
-import { notesLinkHref } from '~~/shared/notes-doc'
+import { notesLinkHref, type NotesDoc } from '~~/shared/notes-doc'
 
 // The pure rules of the notes editor (#454, ADR 0019). No Tiptap in here, so a unit test runs them and the editor's lazy chunk stays the only place that
 // imports the library.
@@ -22,6 +22,25 @@ export function tidyNotes(doc: { type: string, content?: unknown[] }): { type: s
   }
   while (isEmptyParagraph(content.at(-1))) content.pop()
   return { ...doc, content }
+}
+
+/**
+ * What the editor starts from: the stored document, or an empty paragraph for no notes. The API accepts bold text in a heading (the shared parser), the editor's schema
+ * has no place for it (Lilita has one weight) and refuses every edit in such a heading, so the bold is taken off here. The stored document stays as it is until the
+ * User changes something: the editor never emits on mount.
+ */
+export function editorContent(doc: NotesDoc | null): { type: string, content: unknown[] } {
+  if (doc === null) return { type: 'doc', content: [{ type: 'paragraph' }] }
+  return {
+    ...doc,
+    content: doc.content.map((block) => {
+      if (block.type !== 'heading' || !block.content) return block
+      return { ...block, content: block.content.map(({ marks, ...rest }) => {
+        const kept = marks?.filter(mark => mark.type !== 'bold') ?? []
+        return kept.length > 0 ? { ...rest, marks: kept } : rest
+      }) }
+    }),
+  }
 }
 
 export type LinkAddress = { ok: true, href: string } | { ok: false, empty?: true }
