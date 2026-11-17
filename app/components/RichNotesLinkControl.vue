@@ -203,9 +203,9 @@ defineExpose({ open })
       ref="root"
       :role="popover ? 'dialog' : 'group'"
       :aria-label="t('notesEditor.link')"
-      class="flex flex-col gap-2 bg-surface"
+      class="flex flex-col gap-2"
       :class="popover
-        ? 'layer-popover absolute box-border w-80 rounded-[18px] border-(length:--cp-bw) border-line px-3.5 pt-3.5 pb-2.5 shadow-modal'
+        ? 'layer-popover absolute box-border w-80 bg-surface rounded-[18px] border-(length:--cp-bw) border-line px-3.5 pt-3.5 pb-2.5 shadow-modal'
         : 'border-b-2 border-line-soft bg-paper-2 px-2.5 pt-2.5 pb-3'"
       :style="popover ? { left: `${place.left}px`, top: `${place.top}px` } : undefined"
       @keydown="onKeydown"
