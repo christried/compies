@@ -20,10 +20,25 @@ const CHROME = process.env.CHROME_PATH ?? {
 
 export const sleep = ms => new Promise(resolve => setTimeout(resolve, ms))
 
-/** @public For the agents' own checks (docs/agents/browser-frame.md). One Chrome per account, as `{ host, member, … }`. */
-export async function launchAll(accounts) {
+/**
+ * Makes Chrome report a hovering fine pointer (a mouse) to every page it loads, whatever the machine has (retro 0.14,
+ * #780). Headless Chrome answers `(hover: hover)` and `(pointer: fine)` as the machine does, and on the operator's
+ * machine the answer changed within minutes on 2026-11-16: every hover item of a 0.14 run failed, since Tailwind puts
+ * each `hover:` rule inside `@media (hover: hover)`. The protocol's media emulation ignores both features (tried
+ * 2026-11-15 and 2026-11-16). Measured on 2026-11-16: the setting holds through a page load, device metrics and a colour
+ * scheme; a phone tab (`resize` below 600 px) still reports a coarse pointer without hover, also after a page load; and
+ * `Emulation.setTouchEmulationEnabled` puts the machine's own answer back until the next page load, so read a hover
+ * item after `open()`, never after a bare `resize()`.
+ */
+const HOVERING_MOUSE = '--blink-settings=primaryHoverType=2,availableHoverTypes=2,primaryPointerType=4,availablePointerTypes=4'
+
+/**
+ * @public For the agents' own checks (docs/agents/browser-frame.md). One Chrome per account, as `{ host, member, … }`;
+ * `options` are `launch`'s.
+ */
+export async function launchAll(accounts, options) {
   const tabs = {}
-  for (const account of accounts) tabs[account] = await launch(account)
+  for (const account of accounts) tabs[account] = await launch(account, options)
   return tabs
 }
 
@@ -32,8 +47,13 @@ export function closeAll(tabs) {
   for (const tab of Object.values(tabs)) tab.close()
 }
 
-/** Starts Chrome for one account (`host`, `member`, `admin`, `member2`) on its port in `PORTS` and connects to its page. */
-export async function launch(account) {
+/**
+ * Starts Chrome for one account (`host`, `member`, `admin`, `member2`) on its port in `PORTS` and connects to its page.
+ * `scrollbars: true` leaves Chrome its classic scrollbar (15 px wide at 1440 px on Windows), for an item about the page
+ * moving sideways when a scrollbar comes or goes: the kit hides scrollbars otherwise, so no layout number depends on
+ * them, and #658's reading in 0.14 had to go to the operator's own Chrome (#780).
+ */
+export async function launch(account, { scrollbars = false } = {}) {
   if (!existsSync(CHROME)) throw new Error(`No Chrome at ${CHROME}; set CHROME_PATH.`)
   // One Chrome per profile folder and cookies ignore ports, so slot 2 has its own folders (#567).
   const profile = join(OUT, profileOf(slotOf(), account))
@@ -44,7 +64,9 @@ export async function launch(account) {
   // A sound check (#537) needs Chrome with and without `--autoplay-policy=no-user-gesture-required`: headless Chrome
   // holds an AudioContext back until a gesture, like a window does. `COMPIES_CHROME_FLAGS` adds flags, split at spaces.
   const extra = (process.env.COMPIES_CHROME_FLAGS ?? '').split(' ').filter(Boolean)
-  const chrome = spawn(CHROME, ['--headless=new', '--mute-audio', `--remote-debugging-port=${port}`, `--user-data-dir=${profile}`, '--no-first-run', '--no-default-browser-check', '--hide-scrollbars', ...extra, 'about:blank'], { stdio: 'ignore' })
+  // Chrome takes one `--blink-settings` flag: a check that brings its own (the no-hover case) replaces the kit's.
+  const pointer = extra.some(flag => flag.startsWith('--blink-settings=')) ? [] : [HOVERING_MOUSE]
+  const chrome = spawn(CHROME, ['--headless=new', '--mute-audio', `--remote-debugging-port=${port}`, `--user-data-dir=${profile}`, '--no-first-run', '--no-default-browser-check', ...(scrollbars ? [] : ['--hide-scrollbars']), ...pointer, ...extra, 'about:blank'], { stdio: 'ignore' })
   for (let i = 0; i < 50; i++) {
     try {
       const targets = await (await fetch(`http://127.0.0.1:${port}/json/list`)).json()
@@ -105,10 +127,26 @@ async function connect(url) {
   return { send, evaluate, errors, nativeDrags }
 }
 
-/** The viewport; below 600 px it is a phone with touch. */
+/**
+ * The viewport; below 600 px it is a phone with touch. It returns once the page's `innerWidth` is the new width and a
+ * frame has been drawn at it, so a media query has answered before the next reading: twice in 0.14 a page was measured
+ * while its viewport had not followed, and an item failed on a page that was right (#780). A page that never takes the
+ * width (a phone page without a viewport meta lays out at 980 px) is waited on for two seconds, then left as it is; so
+ * is a page that is just navigating away.
+ */
 export async function resize(tab, width, height) {
   await tab.send('Emulation.setDeviceMetricsOverride', { width, height, deviceScaleFactor: 1, mobile: width < 600 })
   await tab.send('Emulation.setTouchEmulationEnabled', { enabled: width < 600 })
+  try {
+    await tab.evaluate(`new Promise((resolve) => {
+      const end = performance.now() + 2000
+      const settle = () => innerWidth === ${Number(width)} || performance.now() > end ? requestAnimationFrame(() => resolve()) : setTimeout(settle, 20)
+      settle()
+    })`)
+  }
+  catch {
+    // The page went away under the reading; the next page starts at the new width.
+  }
 }
 
 /** The device's colour scheme (`prefers-color-scheme`): `'dark'` or `'light'`, for every page the tab opens until it is set again. */

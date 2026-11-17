@@ -3,6 +3,7 @@
 //
 //   node scripts/ci-wait.mjs [sha] [--until-done]    (default: HEAD, which must be pushed)
 //   node scripts/ci-wait.mjs --pr <n>    (waits until the PR is merged; for run_in_background)
+//   node scripts/ci-wait.mjs --deployed [sha]    (waits until Vercel has deployed the commit; for run_in_background)
 //
 // Exit 0: every CI run of the commit passed. Exit 1: one failed or was cancelled (the failing step's output follows,
 // cut to its failures), or no run appeared within two minutes. Exit 2: CI is still running after 2.5 minutes, so run it
@@ -19,7 +20,7 @@
 // second one exits 1 with the run's URL. A later call recognises the single re-run by the run's attempt number (retro 0.10, #388).
 // It prints one line while waiting, not a progress log.
 import { execFileSync } from 'node:child_process'
-import { rerunDecision } from './ci-verdict.mjs'
+import { deployDecision, rerunDecision } from './ci-verdict.mjs'
 import { prDecision } from './pr-verdict.mjs'
 
 const args = process.argv.slice(2)
@@ -218,6 +219,43 @@ async function waitForPr(number) {
   process.exit(2)
 }
 if (prNumber !== null) await waitForPr(prNumber)
+
+// The deployment mode (retro 0.14, #780): `--deployed [sha]` polls the commit's statuses until Vercel reports the
+// deployment of that commit, for a background run before a check on staging or the smoke check on production. Both local
+// sessions of 0.14 wrote this loop by hand, the first after six calls that looked for the deployment elsewhere. It
+// reads through `gh api` (REST), so it runs in a cloud session too, always waits the long limit and ends the process itself.
+// Exit 0 deployed; 1 the deployment failed, no status of Vercel appeared in three minutes, or a gh call failed; 2 still deploying.
+async function waitForDeployment(commit) {
+  const DEPLOY_APPEAR_MS = 180_000
+  const begun = Date.now()
+  console.log(`waiting for Vercel's deployment of ${commit.slice(0, 7)} …`)
+  while (Date.now() - begun < PR_LIMIT_MS) {
+    let statuses
+    try {
+      statuses = JSON.parse(gh('api', `repos/${REPO}/commits/${commit}/statuses?per_page=100`, '--jq', '[.[] | {context, state, description, target_url}]'))
+    }
+    catch (error) {
+      return fail(`status lookup failed for ${commit.slice(0, 7)}`, error)
+    }
+    const decision = deployDecision(statuses)
+    if (decision.kind === 'deployed') {
+      console.log(`deployed: ${commit.slice(0, 7)} (Vercel: ${decision.description}) ${decision.url}`)
+      process.exit(0)
+    }
+    if (decision.kind === 'failed') {
+      console.log(`deployment failed: ${commit.slice(0, 7)} (Vercel: ${decision.description}) ${decision.url}`)
+      process.exit(1)
+    }
+    if (decision.kind === 'none' && Date.now() - begun > DEPLOY_APPEAR_MS) {
+      console.log(`No status of Vercel appeared for ${commit.slice(0, 7)}. Vercel deploys a pushed commit of staging and main: is this one, and is it pushed?`)
+      process.exit(1)
+    }
+    await sleep(POLL_MS)
+  }
+  console.log(`Vercel is still deploying ${commit.slice(0, 7)} after 20 minutes: run this again.`)
+  process.exit(2)
+}
+if (args.includes('--deployed')) await waitForDeployment(sha)
 
 const started = Date.now()
 let runs = []

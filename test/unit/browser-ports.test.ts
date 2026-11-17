@@ -102,6 +102,30 @@ describe('serversOf', () => {
   })
 })
 
+// `serve.mjs start <run> --wording` starts the dev server with the switch of the key tags (#627, stage.ts carriesKeyTags).
+describe('serversOf with wording (#627)', () => {
+  it('slot 1\'s dev server gets COMPIES_WORDING=1 and nothing else changes', () => {
+    const { dev } = serversOf(1, { wording: true })
+    expect(dev.env).toEqual({ COMPIES_WORDING: '1' })
+    expect({ ...dev, env: undefined }).toEqual({ ...serversOf(1).dev, env: undefined })
+  })
+
+  it('slot 2\'s dev server keeps REALTIME_URL and BETTER_AUTH_URL beside it', () => {
+    const { dev } = serversOf(2, { wording: true })
+    expect(dev.env).toEqual({ ...serversOf(2).dev.env, COMPIES_WORDING: '1' })
+    expect(dev.env?.REALTIME_URL).toBe('http://localhost:8887')
+    expect(dev.env?.BETTER_AUTH_URL).toBe('http://localhost:3100')
+  })
+
+  it.each([1, 2] as const)('slot %i has no COMPIES_WORDING without the option, and the Worker and the production server never get it', (slot) => {
+    expect(serversOf(slot).dev.env ?? {}).not.toHaveProperty('COMPIES_WORDING')
+    expect(serversOf(slot, {}).dev.env ?? {}).not.toHaveProperty('COMPIES_WORDING')
+    const { realtime, prod } = serversOf(slot, { wording: true })
+    expect(realtime.env ?? {}).not.toHaveProperty('COMPIES_WORDING')
+    expect(prod.env ?? {}).not.toHaveProperty('COMPIES_WORDING')
+  })
+})
+
 describe('profileOf', () => {
   it('keeps slot 1\'s Chrome profile folders and gives slot 2 its own', () => {
     expect(profileOf(1, 'host')).toBe('profile-host')

@@ -191,4 +191,101 @@ describe('scripts/context-usage.mjs', { timeout: 20_000 }, () => {
     expect(result.stdout).toBe('')
     expect(result.stderr).toContain('No session transcript in')
   })
+
+  // The operator raised the limit twice in 0.14 (400k, then 600k) and the script still said „HAND OFF“ at 300k (#780).
+  it('says HAND OFF from 300k on by default', async () => {
+    stage([mine(5), other(0)])
+
+    const under = await run([MINE])
+    const over = await run([OTHER])
+
+    expect(under.stdout).toContain('limit for a new implementer: 300k → ok')
+    expect(over.stdout).toContain('limit for a new implementer: 300k → HAND OFF')
+  })
+
+  it.each([
+    ['400k', '400k → ok'],
+    ['310000', '310k → HAND OFF'],
+    ['600K', '600k → ok'],
+  ])('takes the limit the operator set with --limit %s, before or after the id', async (limit, verdict) => {
+    stage([mine(5), other(0)])
+
+    const after = await run([OTHER, '--limit', limit])
+    const before = await run(['--limit', limit, OTHER])
+
+    expect(after.code).toBe(0)
+    expect(after.stdout).toContain('310k tokens (310000)')
+    expect(after.stdout).toContain(`limit for a new implementer: ${verdict}`)
+    expect(before.stdout).toBe(after.stdout)
+  })
+
+  it.each([['abc'], ['0'], ['-5k']])('refuses --limit %s', async (limit) => {
+    stage([mine(0)])
+
+    const result = await run([MINE, '--limit', limit])
+
+    expect(result.code).toBe(2)
+    expect(result.stdout).toBe('')
+    expect(result.stderr).toContain('--limit')
+  })
+
+  // Where a session's context goes before its first subagent (#780): local session 1 of 0.14 read 85k there.
+  describe('--startup', () => {
+    const line = (entry: object) => `${JSON.stringify(entry)}\n`
+    const assistant = (tokens: number, calls: { id: string, name: string, input: object }[], sidechain = false) => line({
+      type: 'assistant',
+      isSidechain: sidechain,
+      message: { role: 'assistant', usage: { input_tokens: tokens, cache_creation_input_tokens: 0, cache_read_input_tokens: 0 }, content: calls.map(call => ({ type: 'tool_use', ...call })) },
+    })
+    const result = (id: string, text: string) => line({ type: 'user', message: { role: 'user', content: [{ type: 'tool_result', tool_use_id: id, content: text }] } })
+
+    function stageStartup(withAgent: boolean) {
+      rmSync(project, { recursive: true, force: true })
+      mkdirSync(project, { recursive: true })
+      writeFileSync(join(project, `${MINE}.jsonl`), [
+        assistant(71_000, [{ id: 'a', name: 'Bash', input: { description: 'Read the spec issue', command: 'gh issue view 1' } }, { id: 'b', name: 'Read', input: { file_path: 'docs/agents/delivery.md' } }]),
+        result('a', 'x'.repeat(27_000)),
+        // Claude Code can write one result twice; it counts once.
+        result('a', 'x'.repeat(27_000)),
+        result('b', 'y'.repeat(9_000)),
+        assistant(95_000, [{ id: 'c', name: 'Bash', input: { command: 'git status' } }]),
+        result('c', 'z'.repeat(40)),
+        // A subagent's turn in the same file never counts.
+        assistant(400_000, [], true),
+        ...(withAgent
+          ? [
+              assistant(101_000, [{ id: 'd', name: 'Agent', input: { description: 'Implement #1' } }]),
+              result('d', 'launched'),
+              assistant(102_000, [{ id: 'e', name: 'Read', input: { file_path: 'after-the-spawn.md' } }]),
+              result('e', 'w'.repeat(90_000)),
+              assistant(140_000, []),
+            ]
+          : [assistant(96_000, [])]),
+      ].join(''))
+    }
+
+    it('lists what the session read before its first subagent, the largest first, with the context at both ends', async () => {
+      stageStartup(true)
+
+      const run1 = await run([MINE, '--startup'])
+
+      expect(run1.code).toBe(0)
+      expect(run1.stdout).toContain('71k tokens at its first turn')
+      expect(run1.stdout).toContain('101k before its first subagent')
+      expect(run1.stdout).toContain('30k read in 3 tool results')
+      const rows = run1.stdout.split('\n').filter(row => /^\s+[\d,]+ ch /.test(row))
+      expect(rows.map(row => row.trim())).toEqual(['27,000 ch  Bash: Read the spec issue', '9,000 ch  Read: docs/agents/delivery.md', '40 ch  Bash: git status'])
+      expect(run1.stdout).not.toContain('after-the-spawn')
+    })
+
+    it('measures up to the last turn while no subagent was spawned', async () => {
+      stageStartup(false)
+
+      const run1 = await run([MINE, '--startup'])
+
+      expect(run1.code).toBe(0)
+      expect(run1.stdout).toContain('71k tokens at its first turn')
+      expect(run1.stdout).toContain('96k now, no subagent yet')
+    })
+  })
 })

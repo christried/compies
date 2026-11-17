@@ -49,6 +49,15 @@ watch(() => props.current, async () => {
   heading.value?.focus()
 })
 
+// While mounted, the page footer leaves room under its links for the fixed pill (#701, PageFooter).
+let leavePill: (() => void) | undefined
+onMounted(() => {
+  leavePill = useStepperPill().attach()
+})
+onBeforeUnmount(() => {
+  leavePill?.()
+})
+
 // Weiter is a submit button, so Enter in a field goes on too.
 function next() {
   if (props.nextBlocked !== null || props.busy) return

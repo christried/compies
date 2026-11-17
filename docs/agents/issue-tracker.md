@@ -42,15 +42,17 @@ GitHub shares one number space across issues and PRs, so a bare `#42` may be eit
 
 ## Ideas
 
-An idea that isn't grilled yet is an **Idea issue**, never a line in `docs/roadmap.md` (the user, 2026-11-10). The roadmap holds only what a grilling has given a Release. `/capture-idea` files one in about two minutes: a few quick questions, a draft, the user's OK.
+An idea that isn't grilled yet is an **Idea issue** (the user, 2026-11-10). `/christried-capture-idea` files one in about two minutes: a few quick questions, a draft, the user's OK.
 
-- **Title**: `Idea: <the idea in a few words>`. The prefix says what the issue is: a placeholder, not a ticket.
+Every plan lives in GitHub Issues (the user, 2026-11-16): the user picks from the open Idea issues what to grill next, and `docs/roadmap.md` is gone; older specs, issues and reviews that cite it read [its last version](https://github.com/christried/compies/blob/34281e4621a9b46d0d5313c2a3058ac9e8eab9e6/docs/roadmap.md). What a grilling picks becomes one Release: one spec, usable on its own, grilled, specced and ticketed in one session once the code it builds on exists, never several Releases up front, because a spec names real modules and seams.
+
+- **Title**: `<the idea in a few words>`, without an `Idea:` prefix: the `needs-triage` label already says it is a placeholder, not a ticket (the user, 2026-11-16; older titles lost the prefix the same day).
 - **Labels**: `enhancement` + `needs-triage`, where `needs-triage` means "not grilled yet". An Idea issue waits for a grilling, not for `/triage`: it is the user's own.
 - **Body**: unfinished on purpose. The idea in the user's words, where it came from (a staging review, a game night, a session), and, where known, what it contradicts (`GLOSSARY.md`, an ADR, the design hand-off) and the open questions. Nothing about the app's Users: the repo is public (`CLAUDE.md` § Personal data).
 - **One idea per issue**: a note that holds several ideas becomes several issues.
-- **Create**: `gh issue create --title "Idea: …" --label enhancement --label needs-triage --body-file body.md`. In a cloud session: the REST call of § In a cloud session with `-f "labels[]=enhancement" -f "labels[]=needs-triage"`.
-- **Find**: `gh issue list --state open --label needs-triage --search "Idea in:title" --json number,title,body`. Every release grilling reads them beside the roadmap (`docs/roadmap.md`).
-- **Picked up**: a grilling that takes an idea into a spec closes the Idea issue with a link to the spec, or rewrites it into one of the spec's tickets (new title, `ready-for-agent` instead of `needs-triage`), as #38 became 0.10-8. An idea too small for a spec is grilled with `/grill-with-docs` and built in the same session with `/implement`, or rewritten into a `ready-for-agent` ticket. An idea the user drops is closed as not planned (`gh issue close <n> --reason "not planned"`), with the reason in a comment.
+- **Create**: `gh issue create --title "…" --label enhancement --label needs-triage --body-file body.md`. In a cloud session: the REST call of § In a cloud session with `-f "labels[]=enhancement" -f "labels[]=needs-triage"`.
+- **Find**: `gh issue list --state open --label enhancement --label needs-triage --json number,title,body` (`needs-triage` alone also finds incoming bug reports). The user picks from them what to grill next, and every grilling reads them.
+- **Picked up**: no topic stands twice in the open issues, and an open Idea issue is always one that is not grilled yet (the user, 2026-11-16). A grilling that takes an idea into a spec rewrites the Idea issue, in the same session that writes the spec: into the spec issue itself when the idea is the whole spec, else into one of the spec's tickets (new title, new body, `ready-for-agent` instead of `needs-triage`, a last line „Rewritten on <date> from the Idea issue of this number“), as #38 became 0.10-8. That is the preferred way. Only where no ticket matches the idea (it spreads over several tickets, or the grilling settled it without work) is the Idea issue closed, with a comment that links the spec and names the tickets that carry it. An idea too small for a spec is grilled with `/grill-with-docs` and built in the same session with `/implement`, or rewritten into a `ready-for-agent` ticket. An idea the user drops is closed as not planned (`gh issue close <n> --reason "not planned"`), with the reason in a comment.
 
 ## When a skill says "publish to the issue tracker"
 

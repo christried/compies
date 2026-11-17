@@ -72,7 +72,9 @@ export async function open(tab, path, width, height, waitFor = 'body', { news = 
  * both reported no fine pointer, and the „?“ hint of #465 never rendered in a check; on 2026-11-15 the same machine
  * reported one. Chrome's media emulation (`Emulation.setEmulatedMedia`) ignores `pointer` (tried 2026-11-15), so this
  * replaces the answer in the page's JavaScript. It proves what the page does with the answer (`useMediaQuery`), not what a
- * device reports, and a CSS `@media (pointer: fine)` rule does not follow it (#599).
+ * device reports, and a CSS `@media (pointer: fine)` rule does not follow it (#599). Since #780 `chrome.mjs` launches
+ * every Chrome reporting a hovering fine pointer, in CSS too, so what is left for this helper is the other case,
+ * `finePointer(tab, false)`: the page of a device without one, at desktop width.
  */
 export async function finePointer(tab, fine = true) {
   await tab.send('Page.addScriptToEvaluateOnNewDocument', { source: `(() => {
@@ -84,6 +86,62 @@ export async function finePointer(tab, fine = true) {
     };
   })();` })
 }
+
+/**
+ * @public For the agents' own checks (docs/agents/browser-frame.md § Checks).
+ * The animations running on the element now, each with the curve it really runs on: `{ name, duration, delay, easing }`,
+ * `null` without the element. A CSS animation keeps its `animation-timing-function` on its keyframes and reports
+ * `linear` as the effect's own easing, so an item that read `effect.getTiming().easing` failed on a page that was right
+ * (0.14, #780); a transition and an `element.animate()` call keep the curve on the effect. This returns whichever of
+ * the two is not `linear`. Call it while the animation runs: a finished one is gone from `getAnimations()`.
+ */
+export const motionOf = (tab, selector) => tab.evaluate(`(() => {
+  const el = document.querySelector(${JSON.stringify(selector)});
+  if (!el) return null;
+  return el.getAnimations().map((animation) => {
+    const timing = animation.effect.getComputedTiming();
+    const first = animation.effect.getKeyframes()[0];
+    return {
+      name: animation.animationName ?? animation.transitionProperty ?? animation.id ?? '',
+      duration: timing.duration,
+      delay: timing.delay,
+      easing: timing.easing !== 'linear' ? timing.easing : first?.easing ?? 'linear',
+    };
+  });
+})()`)
+
+/**
+ * @public For the agents' own checks (docs/agents/browser-frame.md § Checks).
+ * The shadows a User sees on the element: the layers of its computed `box-shadow` that have a colour and a size, each as
+ * `{ color, x, y, blur, spread, inset }` in px; `[]` for none, `null` without the element. Tailwind writes a shadow as
+ * several layers, the first ones transparent placeholders, so an item that read the first layer found „no shadow“ on a
+ * button that had one, and a blocked button's missing shadow read the same (0.14, #780).
+ */
+export const shadowOf = (tab, selector) => tab.evaluate(`(() => {
+  const el = document.querySelector(${JSON.stringify(selector)});
+  if (!el) return null;
+  const value = getComputedStyle(el).boxShadow;
+  if (!value || value === 'none') return [];
+  // Layers are separated by the commas outside a colour's brackets.
+  const layers = [];
+  let depth = 0, from = 0;
+  for (let i = 0; i <= value.length; i++) {
+    const c = value[i];
+    if (c === '(') depth++;
+    else if (c === ')') depth--;
+    else if ((c === ',' && depth === 0) || i === value.length) { layers.push(value.slice(from, i).trim()); from = i + 1; }
+  }
+  return layers.map((layer) => {
+    const color = (/^[a-z-]+\\([^)]*\\)|^#[0-9a-f]+|^[a-z]+(?= )/i.exec(layer) ?? [''])[0];
+    const [x = 0, y = 0, blur = 0, spread = 0] = (layer.slice(color.length).match(/-?[\\d.]+px/g) ?? []).map(parseFloat);
+    const slash = /\\/\\s*([\\d.]+%?)\\s*\\)$/.exec(color);
+    const legacy = /^rgba\\((?:[^,]+,){3}\\s*([\\d.]+)\\s*\\)$/.exec(color);
+    const part = slash?.[1] ?? legacy?.[1];
+    const alpha = color === 'transparent' ? 0 : part === undefined ? 1 : part.endsWith('%') ? parseFloat(part) / 100 : parseFloat(part);
+    return { color, x, y, blur, spread, inset: /\\binset\\b/.test(layer), alpha };
+  }).filter(layer => layer.alpha > 0 && (layer.x !== 0 || layer.y !== 0 || layer.blur !== 0 || layer.spread !== 0))
+    .map(({ alpha, ...layer }) => layer);
+})()`)
 
 /**
  * Opens `path` signed out the way a User gets there (#398: sign-out does not touch the Appearance cookie): signs in with
@@ -349,8 +407,12 @@ export async function finishedEvent(tabs, { name, outcome = 'winner', games = ta
  * `note` print their line and append it to `results.log` there the moment it is decided, so a check that stops early
  * (the s6 agent of 0.8 hit the usage limit) leaves every result it had. Each run opens the log with its script and the
  * SHA of the code under test. `shot` saves screenshots into the same folder; `failed` is for the exit code.
+ *
+ * The code under test is the kit's own commit, except against a remote base (staging): there it is the commit that base
+ * serves, which only the caller knows, so it comes in `COMPIES_TESTED_SHA` (the spawn prompt names it), and the header
+ * adds the base and the kit's commit. 0.14's staging logs named the check worktree's commit (#780).
  */
-export function results(name) {
+export function results(name, { sha: served = process.env.COMPIES_TESTED_SHA, base = BASE } = {}) {
   const dir = join(OUT, name)
   mkdirSync(dir, { recursive: true })
   const log = join(dir, 'results.log')
@@ -358,7 +420,9 @@ export function results(name) {
     console.log(line)
     appendFileSync(log, `${line}\n`)
   }
-  const sha = execFileSync('git', ['-C', fileURLToPath(new URL('.', import.meta.url)), 'rev-parse', '--short', 'HEAD'], { encoding: 'utf8' }).trim()
+  const kit = execFileSync('git', ['-C', fileURLToPath(new URL('.', import.meta.url)), 'rev-parse', '--short', 'HEAD'], { encoding: 'utf8' }).trim()
+  const remote = base.startsWith('https://')
+  const sha = remote && served ? served.slice(0, kit.length) : kit
   // A run name comes back from Release to Release (`l1`, `m2`): a log of another commit is set aside under that commit,
   // so this run's lines never follow an earlier Release's (0.13.1 and 0.13.2: every report had to say where its lines start, #599).
   if (existsSync(log)) {
@@ -369,7 +433,8 @@ export function results(name) {
       console.log(`NOTE  the log of ${last} in this run folder is now results-${last}.log`)
     }
   }
-  appendFileSync(log, `== ${basename(process.argv[1] ?? 'check')} on ${sha}, ${new Date().toISOString()}\n`)
+  appendFileSync(log, `== ${basename(process.argv[1] ?? 'check')} on ${sha}, ${new Date().toISOString()}${remote && served ? ` (served by ${base}; kit of ${kit})` : ''}\n`)
+  if (remote && !served) write(`NOTE  this log names the kit's commit ${kit}, not the one ${base} serves: set COMPIES_TESTED_SHA to the commit under test`)
   let failed = false
   return {
     dir,

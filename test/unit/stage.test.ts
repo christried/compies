@@ -1,7 +1,7 @@
 import { readdirSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { carriesDevSignIn, carriesListeningPage, isStagingBuild, stageBranding } from '../../stage'
+import { carriesDevSignIn, carriesKeyTags, carriesListeningPage, isStagingBuild, stageBranding } from '../../stage'
 
 // Staging is decided at build time (#178): Vercel builds the `staging` branch with its ref in the env.
 describe('isStagingBuild (#178)', () => {
@@ -51,6 +51,26 @@ describe('carriesListeningPage (#534)', () => {
   // Authentication, and the page's candidate files must never be deployed there.
   it('is false in the production build and in the staging build', () => {
     expect(carriesListeningPage(false)).toBe(false)
+  })
+})
+
+describe('carriesKeyTags (#627)', () => {
+  it('is true on the dev server when asked for', () => {
+    expect(carriesKeyTags(true, { COMPIES_WORDING: '1' })).toBe(true)
+  })
+
+  it('is false on the dev server when not asked for', () => {
+    expect(carriesKeyTags(true, {})).toBe(false)
+  })
+
+  // Both the production build and the staging build run with `dev` false, whatever the environment says.
+  it('is false in the production build and in the staging build, even with the variable set', () => {
+    expect(carriesKeyTags(false, { COMPIES_WORDING: '1' })).toBe(false)
+    expect(carriesKeyTags(false, { COMPIES_WORDING: '1', COMPIES_STAGE: 'staging', VERCEL_GIT_COMMIT_REF: 'staging' })).toBe(false)
+  })
+
+  it.each(['0', 'true', '', ' 1'])('is false for COMPIES_WORDING=%j', (value) => {
+    expect(carriesKeyTags(true, { COMPIES_WORDING: value })).toBe(false)
   })
 })
 

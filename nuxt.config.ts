@@ -2,8 +2,8 @@ import { copyFileSync, mkdirSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import { join } from 'node:path'
 import tailwindcss from '@tailwindcss/vite'
-import { addServerHandler, createResolver, defineNuxtModule } from 'nuxt/kit'
-import { carriesDevSignIn, carriesListeningPage, isStagingBuild, stageBranding } from './stage'
+import { addPlugin, addServerHandler, createResolver, defineNuxtModule } from 'nuxt/kit'
+import { carriesDevSignIn, carriesKeyTags, carriesListeningPage, isStagingBuild, stageBranding } from './stage'
 
 // Staging names itself and wears tinted icons (#178). Production and local builds keep the defaults.
 const staging = isStagingBuild()
@@ -36,6 +36,17 @@ export default defineNuxtConfig({
           pages.push({ name: 'dev-listening', path: '/dev/ton', file: resolve('./app/dev/listening-page.vue') })
         })
         addServerHandler({ route: '/_dev/cue-candidates/**', method: 'get', handler: resolve('./server/dev/cue-candidates') })
+      },
+    }),
+    // The key tags (#627, spec #620): every text `t()` returns carries its message key in invisible characters, so a script can read a
+    // dev-server page back. The plugin sits in app/dev/, a folder Nuxt does not scan, so nothing imports it unless this module registers it,
+    // on the dev server and only when COMPIES_WORDING=1 asks for it (carriesKeyTags, stage.ts); no production build bundles it.
+    // test/build/key-tags.test.ts checks the build output.
+    defineNuxtModule({
+      meta: { name: 'key-tags' },
+      setup(_options, nuxt) {
+        if (!carriesKeyTags(nuxt.options.dev)) return
+        addPlugin({ src: createResolver(import.meta.url).resolve('./app/dev/key-tags-plugin'), mode: 'all' })
       },
     }),
     // GSAP loads through `loadGsap()` on the lead before a run only (ADR 0015). Vite's manifest marks the chunk of every dynamic import

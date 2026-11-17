@@ -12,6 +12,7 @@ const route = useRoute()
 const user = useAuthUser()
 const { seen } = useNewsSeen()
 const { docked } = useHostDock()
+const { shown: pilled } = useStepperPill()
 
 const version = RELEASES[0]?.version
 const page = computed(() => props.variant === 'page')
@@ -90,11 +91,13 @@ function toTop() {
         </NuxtLink>
       </span>
     </component>
-    <!-- Room for the dock and for the reason bubble above its disabled primary (#166). -->
+    <!-- Room for the dock and for the reason bubble above its disabled primary (#166), or for the stepper's pill (16 px
+         from the window's bottom, 72 px high) and a blocked reason of up to three lines above it (#701). -->
     <span
-      v-if="page && docked"
+      v-if="page && (pilled || docked)"
       aria-hidden="true"
-      class="h-32 flex-none"
+      class="flex-none"
+      :class="pilled ? 'h-40' : 'h-32'"
     />
   </component>
 </template>

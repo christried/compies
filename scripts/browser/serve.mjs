@@ -2,8 +2,10 @@
 // A TaskStop on a backgrounded `pnpm dev` ends the shell and leaves nuxt, the Worker, workerd and esbuild running on Windows, and the
 // auto-mode classifier refuses `taskkill` on a PID. So the agent runs this script in the background instead: it owns the children
 // and takes its own process tree down, however the run ends.
-//   node scripts/browser/serve.mjs start <run> [--only=dev,realtime,prod] [--minutes=90] [--slot=1|2]
+//   node scripts/browser/serve.mjs start <run> [--only=dev,realtime,prod] [--minutes=90] [--slot=1|2] [--wording]
 //   node scripts/browser/serve.mjs stop <run>
+// `--wording` starts the dev server with COMPIES_WORDING=1: every translated text carries its message key in invisible characters,
+// which scripts/wording/keys.mjs reads back (#627). It needs `dev` among the servers.
 // `start` stays up after printing `ready: …`. It stops its tree when `stop` leaves <run folder>/serve.stop, when its parent process is
 // gone (TaskStop, a dead agent shell), on SIGINT, SIGTERM, SIGBREAK or SIGHUP, and after --minutes (the backstop for an agent that dies
 // mid-check). No dependency.
@@ -27,7 +29,7 @@ const stamp = () => new Date().toISOString().slice(11, 19)
 
 const [command, run, ...rest] = process.argv.slice(2)
 if (!['start', 'stop'].includes(command) || !run || !/^[\w.-]+$/.test(run)) {
-  console.error('usage: node scripts/browser/serve.mjs start <run> [--only=dev,realtime,prod] [--minutes=90] [--slot=1|2]\n       node scripts/browser/serve.mjs stop <run>')
+  console.error('usage: node scripts/browser/serve.mjs start <run> [--only=dev,realtime,prod] [--minutes=90] [--slot=1|2] [--wording]\n       node scripts/browser/serve.mjs stop <run>')
   process.exit(2)
 }
 const dir = join(OUT, run)
@@ -171,8 +173,13 @@ async function start() {
     process.exit(2)
   }
   const slot = slotFlag === undefined ? slotOf() : Number(slotFlag)
-  SERVERS = serversOf(slot)
+  const wording = rest.includes('--wording')
+  SERVERS = serversOf(slot, { wording })
   const only = (rest.find(a => a.startsWith('--only='))?.slice(7) ?? 'dev,realtime').split(',').filter(Boolean)
+  if (wording && !only.includes('dev')) {
+    console.error('--wording starts the dev server with the key tags, so --only must include dev')
+    process.exit(2)
+  }
   const minutes = Number(rest.find(a => a.startsWith('--minutes='))?.slice(10) ?? 90)
   if (!only.length || only.some(name => !SERVERS[name]) || !(minutes > 0)) {
     console.error(`--only takes ${Object.keys(SERVERS).join(', ')}; --minutes a positive number`)
