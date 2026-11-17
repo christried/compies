@@ -244,6 +244,7 @@ const meta = computed(() => {
   <!-- A plain block of the stage, no card around it (11-event-seite § GameBoard): its notices sit above the title like the other notices of the page. -->
   <section
     ref="root"
+    data-tour="board"
     class="@container flex flex-col gap-3 text-ink"
     aria-labelledby="board-title"
   >

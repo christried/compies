@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+<template id="__bundler_thumbnail"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="#151515"/><rect x="24" y="22" width="52" height="22" rx="8" fill="#fff3df" stroke="#ffd23f" stroke-width="4"/><rect x="18" y="54" width="64" height="28" rx="8" fill="#fffdf8" stroke="#fffdf8" stroke-width="3"/><rect x="58" y="70" width="18" height="8" rx="4" fill="#ffd23f"/></svg></template>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&amp;family=Lilita+One&amp;family=Bungee&amp;family=JetBrains+Mono:wght@500;700&amp;display=swap">
+<link rel="stylesheet" href="./tokens/compies-tokens.css">
+<script src="./tokens/lucide-subset.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+<script src="./compibert-options.js"></script>
+<script src="./rundgang-note.js"></script>
+<style>body{margin:0;background:#f3ead9}a{color:#1f5fe0;text-decoration-thickness:2px;text-underline-offset:3px}a:hover{color:#151515}</style>
+</helmet>
+<img data-rg-logo="1" src="./assets/compibert/compibert-head.svg" alt="" width="1" height="1" style="position:absolute;width:1px;height:1px;opacity:0;pointer-events:none"></img>
+<div lang="de" data-theme="light" style="padding:72px 80px 160px;display:flex;flex-direction:column;gap:120px;font-family:var(--cp-font-sans);font-weight:500;font-size:16px;line-height:1.45;color:#151515;background:#f3ead9;width:max-content;min-width:100%;box-sizing:border-box">
+
+  <header style="display:flex;flex-direction:column;gap:18px;max-width:1180px">
+    <span style="font-family:var(--cp-font-mono);font-size:14px;font-weight:700;color:#5d5650">Event-Seite · Rundgang · first visit via invite link</span>
+    <h1 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:88px;line-height:.92">Rundgang</h1>
+    <p style="margin:0;font-size:22px;line-height:1.4;max-width:1060px;text-wrap:pretty">Eight steps, one thing at a time: the page goes dark except the thing being explained, a bubble says one or two sentences, and Compibert's face sits on the bubble's corner. The bubble is the app's popover (3 px ink border, 18 px corners, modal shadow), the dark is the sheet scrim (<span style="font-family:var(--cp-font-mono);font-size:18px">--cp-overlay</span>), the ring is Sonne. Two options for Compibert, <a href="#A">A</a> still and <a href="#B">B</a> gently moving; everything else is shared. No new tokens.</p>
+    <div style="display:flex;flex-wrap:wrap;gap:12px;margin-top:6px">
+      <span style="display:inline-flex;align-items:center;height:40px;padding:0 16px;border-radius:999px;border:3px solid #151515;background:#ffd23f;font-weight:800;box-shadow:3px 3px 0 #151515">Recommended: B „Bewegt“</span>
+      <span style="display:inline-flex;align-items:center;height:40px;padding:0 16px;border-radius:999px;border:2px solid #151515;background:#fffdf8;font-weight:700">New tokens: none</span>
+      <span style="display:inline-flex;align-items:center;height:40px;padding:0 16px;border-radius:999px;border:2px solid #151515;background:#fffdf8;font-weight:700">Step change 520 ms · reduced: cut + 140 ms fade</span>
+      <a href="#rules" style="display:inline-flex;align-items:center;height:40px;padding:0 16px;border-radius:999px;border:2px solid #151515;background:#fffdf8;font-weight:700;color:#151515;text-decoration:none">Placement rules ↓</a>
+      <a href="#handoff" style="display:inline-flex;align-items:center;height:40px;padding:0 16px;border-radius:999px;border:2px solid #151515;background:#fffdf8;font-weight:700;color:#151515;text-decoration:none">Hand-off note ↓</a>
+    </div>
+    <ol style="margin:8px 0 0;padding:0;list-style:none;display:flex;flex-wrap:wrap;gap:8px">
+      <sc-for list="{{ stepList }}" as="s" hint-placeholder-count="8"><li style="display:inline-flex;align-items:center;gap:8px;height:34px;padding:0 12px 0 4px;border:2px solid #151515;border-radius:999px;background:#fffdf8;font-size:14px;font-weight:700"><span style="display:grid;place-items:center;width:26px;height:26px;border-radius:50%;border:2px solid #151515;box-sizing:border-box;background:{{ s.bg }};font-family:var(--cp-font-num);font-size:11px">{{ s.n }}</span>{{ s.t }}</li></sc-for>
+    </ol>
+  </header>
+
+  <sc-if value="{{ show.s1 }}" hint-placeholder-val="{{ true }}"><section data-screen-label="1 Options 1440" style="display:flex;flex-direction:column;gap:28px">
+    <div style="display:flex;flex-direction:column;gap:8px;max-width:1180px">
+      <span style="font-family:var(--cp-font-mono);font-size:15px;font-weight:700;color:#5d5650">1 · 1440 px · step 3 „Terminumfrage“ · light</span>
+      <h2 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:56px;line-height:1">A still, B gently moving</h2>
+      <p style="margin:0;font-size:20px;max-width:1120px;text-wrap:pretty">Same bubble, same spotlight, same face crop and position, face only (no hand). The difference is effort: A is three held frames; B keeps the rig running: he blinks, his eyes glide to each new thing, he nods once when the bubble lands. B replays its arrival every 5 s in these frames so you can see it; in the app it plays once per step.</p>
+    </div>
+    <div style="display:flex;gap:72px;align-items:flex-start">
+      <sc-for list="{{ opts }}" as="o" hint-placeholder-count="2">
+        <div id="{{ o.id }}" style="display:flex;flex-direction:column;gap:16px;width:1440px">
+          <div style="display:flex;align-items:center;gap:14px">
+            <span style="display:inline-grid;place-items:center;min-width:52px;height:44px;padding:0 10px;border-radius:12px;border:3px solid #151515;background:{{ o.badge }};font-family:var(--cp-font-mono);font-weight:700;font-size:20px;box-sizing:border-box">{{ o.id }}</span>
+            <b style="font-family:var(--cp-font-display);font-weight:400;font-size:40px;line-height:1">{{ o.name }}</b>
+            <span style="font-size:18px;color:#5d5650">{{ o.short }}</span>
+            <sc-if value="{{ o.rec }}"><span style="margin-left:auto;display:inline-flex;align-items:center;height:36px;padding:0 14px;border-radius:999px;border:3px solid #151515;background:#ffd23f;font-weight:800;font-size:15px">Recommended</span></sc-if>
+          </div>
+          <dc-import name="RundgangStage" w="{{ 1440 }}" theme="light" step="{{ 3 }}" opt="{{ o.k }}" face-loop="{{ faceLoop }}" guides="{{ guides }}" hint-size="1440px,900px"></dc-import>
+          <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:28px;font-size:18px;line-height:1.45;text-wrap:pretty">
+            <div style="display:flex;flex-direction:column;gap:4px"><b style="font-family:var(--cp-font-mono);font-size:14px;color:#5d5650">WHAT IT DOES</b><span>{{ o.does }}</span></div>
+            <div style="display:flex;flex-direction:column;gap:4px"><b style="font-family:var(--cp-font-mono);font-size:14px;color:#5d5650">WHAT IT NEEDS FROM THE RIG</b><span>{{ o.rig }}</span></div>
+            <div style="display:flex;flex-direction:column;gap:4px"><b style="font-family:var(--cp-font-mono);font-size:14px;color:#5d5650">TRADE-OFF</b><span>{{ o.tr }}</span></div>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+  </section></sc-if>
+
+  <sc-if value="{{ show.s2 }}" hint-placeholder-val="{{ true }}"><section data-screen-label="2 Options 390" style="display:flex;flex-direction:column;gap:28px">
+    <div style="display:flex;flex-direction:column;gap:8px;max-width:1180px">
+      <span style="font-family:var(--cp-font-mono);font-size:15px;font-weight:700;color:#5d5650">2 · 390 px · step 3 · light</span>
+      <h2 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:56px;line-height:1">The same on a phone</h2>
+      <p style="margin:0;font-size:20px;max-width:1120px;text-wrap:pretty">On the phone the four slot cards stack, so the poll is taller than the window. The step spots the first card only, because that is what the sentence is about (Ja, Meh, Nein). Rule: each step names the smallest thing its sentence explains. Bubble full width minus 12 px, face 56 px.</p>
+    </div>
+    <div style="display:flex;gap:96px;align-items:flex-start">
+      <sc-for list="{{ opts }}" as="o" hint-placeholder-count="2">
+        <div id="{{ o.mid }}" style="display:flex;flex-direction:column;gap:16px;width:390px">
+          <div style="display:flex;align-items:center;gap:12px"><span style="display:inline-grid;place-items:center;min-width:44px;height:40px;padding:0 10px;border-radius:12px;border:3px solid #151515;background:{{ o.badge }};font-family:var(--cp-font-mono);font-weight:700;font-size:18px;box-sizing:border-box">{{ o.id }}</span><b style="font-family:var(--cp-font-display);font-weight:400;font-size:30px;line-height:1">{{ o.name }}</b></div>
+          <dc-import name="RundgangStage" w="{{ 390 }}" theme="light" step="{{ 3 }}" opt="{{ o.k }}" face-loop="{{ faceLoop }}" guides="{{ guides }}" hint-size="390px,844px"></dc-import>
+        </div>
+      </sc-for>
+      <div style="display:flex;flex-direction:column;gap:14px;max-width:560px;padding-top:58px;font-size:18px;text-wrap:pretty">
+        <b style="font-family:var(--cp-font-display);font-weight:400;font-size:30px">Face on the bubble</b>
+        <span>Sits on the bubble's top-left corner, in front of the border, like a sticker: 72 px at 1440 (14 px in, 20 px above the edge), 56 px at 390 (8 px in, 16 px above). The title starts right of it; the body runs full width below it.</span>
+        <span>The crop is the header logo's crop (head, no neck). He keeps the rig's profile and faces right, into the bubble and toward „Weiter“. Never mirrored. Only his pupils (and in B a small nod) turn to the thing; the tail does the pointing.</span>
+        <span>Outline: light none (his own ink line on the cream bubble, as in the header); dark the rig's sticker rim, so he does not sink into the dark surface.</span>
+      </div>
+    </div>
+  </section></sc-if>
+
+  <sc-if value="{{ show.s3 }}" hint-placeholder-val="{{ true }}"><section id="B-worked" data-screen-label="3 Recommended B" style="display:flex;flex-direction:column;gap:36px">
+    <div style="display:flex;flex-direction:column;gap:8px;max-width:1200px">
+      <span style="font-family:var(--cp-font-mono);font-size:15px;font-weight:700;color:#5d5650">3 · Recommended <a href="#B">B</a> „Bewegt“ · 1440 and 390 · light and dark</span>
+      <h2 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:56px;line-height:1">The tour, worked out</h2>
+      <p style="margin:0;font-size:20px;max-width:1160px;text-wrap:pretty">Why B: the rig already blinks, glides its pupils and has the wave and cheer faces; the header logo already does this on every page. A still face next to a living logo reads as broken. B adds no new parts, only a fixed look target and one short nod. Below: a live tour, then five steps per width and appearance.</p>
+    </div>
+    <div style="display:flex;gap:64px;align-items:flex-start">
+      <dc-import name="RundgangStage" w="{{ 1440 }}" theme="light" opt="B" live="{{ true }}" reduced="{{ liveReduced }}" hint-size="1440px,950px"></dc-import>
+      <dc-import name="RundgangStage" w="{{ 390 }}" theme="dark" opt="B" live="{{ true }}" reduced="{{ liveReduced }}" hint-size="390px,890px"></dc-import>
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(5,1440px);gap:14px 56px;align-items:end">
+      <sc-for list="{{ worked }}" as="f" hint-placeholder-count="5">
+        <div style="display:flex;flex-direction:column;gap:4px"><b style="font-family:var(--cp-font-display);font-weight:400;font-size:40px;line-height:1">{{ f.t }}</b><span style="font-family:var(--cp-font-mono);font-size:16px;font-weight:700;color:#5d5650">{{ f.w1 }}</span></div>
+      </sc-for>
+      <sc-for list="{{ worked }}" as="f" hint-placeholder-count="5"><dc-import name="RundgangStage" w="{{ 1440 }}" theme="light" step="{{ f.s1 }}" opt="B" guides="{{ guides }}" hint-size="1440px,900px"></dc-import></sc-for>
+      <sc-for list="{{ worked }}" as="f" hint-placeholder-count="5"><dc-import name="RundgangStage" w="{{ 1440 }}" theme="dark" step="{{ f.s1 }}" opt="B" guides="{{ guides }}" hint-size="1440px,900px"></dc-import></sc-for>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(5,390px);gap:14px 64px;align-items:end">
+      <sc-for list="{{ worked }}" as="f" hint-placeholder-count="5">
+        <div style="display:flex;flex-direction:column;gap:4px"><b style="font-family:var(--cp-font-display);font-weight:400;font-size:30px;line-height:1">{{ f.t2 }}</b><span style="font-family:var(--cp-font-mono);font-size:14px;font-weight:700;color:#5d5650">{{ f.w2 }}</span></div>
+      </sc-for>
+      <sc-for list="{{ worked }}" as="f" hint-placeholder-count="5"><dc-import name="RundgangStage" w="{{ 390 }}" theme="light" step="{{ f.s2 }}" opt="B" guides="{{ guides }}" hint-size="390px,844px"></dc-import></sc-for>
+      <sc-for list="{{ worked }}" as="f" hint-placeholder-count="5"><dc-import name="RundgangStage" w="{{ 390 }}" theme="dark" step="{{ f.s2 }}" opt="B" guides="{{ guides }}" hint-size="390px,844px"></dc-import></sc-for>
+    </div>
+  </section></sc-if>
+
+  <sc-if value="{{ show.sr }}" hint-placeholder-val="{{ true }}"><section id="rules" data-screen-label="Placement rules" style="display:flex;flex-direction:column;gap:28px">
+    <div style="display:flex;flex-direction:column;gap:8px;max-width:1200px">
+      <span style="font-family:var(--cp-font-mono);font-size:15px;font-weight:700;color:#5d5650">Placement · blue dashes = the thing, blue dot = what the tail points at</span>
+      <h2 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:56px;line-height:1">Where the bubble goes</h2>
+    </div>
+    <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:24px;max-width:1500px">
+      <ol style="margin:0;padding:28px 32px 28px 52px;border:3px solid #151515;border-radius:20px;background:#fffdf8;box-shadow:6px 6px 0 #151515;display:flex;flex-direction:column;gap:10px;font-size:18px;line-height:1.45;text-wrap:pretty">
+        <sc-for list="{{ rules }}" as="r" hint-placeholder-count="7"><li><b>{{ r.k }}</b> {{ r.v }}</li></sc-for>
+      </ol>
+      <div style="display:flex;flex-direction:column;gap:10px;padding:28px 32px;border:3px solid #151515;border-radius:20px;background:#fffdf8;font-size:18px;line-height:1.45;text-wrap:pretty">
+        <b style="font-family:var(--cp-font-display);font-weight:400;font-size:30px">Spotlight</b>
+        <sc-for list="{{ spot }}" as="r" hint-placeholder-count="5"><span><b>{{ r.k }}</b> {{ r.v }}</span></sc-for>
+        <div style="display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 16px;margin-top:6px;font-family:var(--cp-font-mono);font-size:15px">
+          <sc-for list="{{ consts }}" as="c" hint-placeholder-count="8"><span style="font-weight:700">{{ c.k }}</span><span>{{ c.v }}</span></sc-for>
+        </div>
+      </div>
+    </div>
+    <div style="display:flex;gap:56px;align-items:flex-start">
+      <sc-for list="{{ ruleFrames }}" as="f" hint-placeholder-count="4">
+        <div style="display:flex;flex-direction:column;gap:10px;width:390px"><b style="font-family:var(--cp-font-display);font-weight:400;font-size:28px;line-height:1">{{ f.t }}</b><span style="font-size:16px;color:#5d5650;min-height:48px;text-wrap:pretty">{{ f.d }}</span><dc-import name="RundgangStage" w="{{ 390 }}" theme="light" step="{{ f.s }}" opt="B" guides="{{ true }}" hint-size="390px,844px"></dc-import></div>
+      </sc-for>
+      <div style="display:flex;flex-direction:column;gap:10px;width:360px;padding-top:4px"><b style="font-family:var(--cp-font-display);font-weight:400;font-size:28px;line-height:1">Beside (≥ 600 only)</b><span style="font-size:16px;color:#5d5650;text-wrap:pretty">See step 6 at 1440 in section 3: the side panel is as tall as the window, so there is no room above or below; the bubble goes to its left (the side with more room), tail on its right edge at the panel's tab. Turn on the „guides“ tweak to see the dashes on every frame.</span></div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:14px">
+      <b style="font-family:var(--cp-font-display);font-weight:400;font-size:30px">Edge: ring, glow or nothing</b>
+      <div style="display:flex;gap:40px;align-items:flex-start">
+        <sc-for list="{{ edges }}" as="e" hint-placeholder-count="3">
+          <div style="display:flex;flex-direction:column;gap:10px;width:390px"><span style="font-size:17px;text-wrap:pretty"><b>{{ e.t }}</b> {{ e.d }}</span><dc-import name="RundgangStage" w="{{ 390 }}" h="{{ 300 }}" theme="{{ e.th }}" step="{{ 7 }}" opt="B" edge="{{ e.k }}" hint-size="390px,300px"></dc-import></div>
+        </sc-for>
+      </div>
+    </div>
+  </section></sc-if>
+
+  <sc-if value="{{ show.s4 }}" hint-placeholder-val="{{ true }}"><section data-screen-label="4 Expressions" style="display:flex;flex-direction:column;gap:28px">
+    <div style="display:flex;flex-direction:column;gap:8px;max-width:1200px">
+      <span style="font-family:var(--cp-font-mono);font-size:15px;font-weight:700;color:#5d5650">4 · Compibert's face · 200 px · light and dark</span>
+      <h2 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:56px;line-height:1">Hallo · Zeigt · Freut sich</h2>
+      <p style="margin:0;font-size:20px;max-width:1160px;text-wrap:pretty">All three come from existing rig states on the head crop: „Hallo“ = <span style="font-family:var(--cp-font-mono);font-size:17px">wave</span> (grin, brow up, head tilted −6°), „Zeigt“ = <span style="font-family:var(--cp-font-mono);font-size:17px">idle</span> with the pupils set toward the thing, „Freut sich“ = <span style="font-family:var(--cp-font-mono);font-size:17px">cheer</span> (happy eyes, grin). Row A holds them; row B is the live rig (blink, eyes, nod, two hops at the end). Zeigt is shown pointing up-right, the most common case (bubble under the thing).</p>
+    </div>
+    <div style="display:flex;gap:40px;align-items:flex-start">
+      <sc-for list="{{ exThemes }}" as="th" hint-placeholder-count="2">
+        <div data-theme="{{ th.theme }}" style="display:flex;flex-direction:column;gap:18px;padding:28px;border:3px solid #151515;border-radius:20px;background:var(--cp-surface);color:var(--cp-ink)">
+          <span style="font-family:var(--cp-font-mono);font-size:14px;font-weight:700;color:var(--cp-ink-2)">{{ th.label }}</span>
+          <div style="display:grid;grid-template-columns:40px repeat(3,240px);gap:16px 20px;align-items:center">
+            <span></span>
+            <sc-for list="{{ exCols }}" as="c" hint-placeholder-count="3"><div style="display:flex;flex-direction:column;gap:2px"><b style="font-family:var(--cp-font-display);font-weight:400;font-size:26px">{{ c.t }}</b><span style="font-size:14px;color:var(--cp-ink-2)">{{ c.when }}</span></div></sc-for>
+            <sc-for list="{{ exRows }}" as="r" hint-placeholder-count="2">
+              <div style="display:contents">
+                <b style="font-family:var(--cp-font-mono);font-size:20px">{{ r.o }}</b>
+                <sc-for list="{{ exCols }}" as="c" hint-placeholder-count="3"><div style="height:240px;display:grid;place-items:center;border-radius:16px;background:var(--cp-paper-2)"><dc-import name="RundgangFace" size="{{ 200 }}" expr="{{ c.k }}" dir="{{ -40 }}" opt="{{ r.o }}" loop="{{ true }}" hint-size="200px,200px"></dc-import></div></sc-for>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+  </section></sc-if>
+
+  <sc-if value="{{ show.s5 }}" hint-placeholder-val="{{ true }}"><section data-screen-label="5 Reduced motion" style="display:flex;flex-direction:column;gap:28px">
+    <div style="display:flex;flex-direction:column;gap:8px;max-width:1200px">
+      <span style="font-family:var(--cp-font-mono);font-size:15px;font-weight:700;color:#5d5650">5 · „Weiter“ from step 2 to 3 · 390 · full motion vs reduced</span>
+      <h2 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:56px;line-height:1">Nothing glides</h2>
+      <p style="margin:0;font-size:20px;max-width:1160px;text-wrap:pretty">Full: the bubble fades out (140), spotlight and page glide together (360, ease-io), the bubble fades in at the new place from 8 px toward its tail (220, ease-out). Reduced: spotlight and page cut at 0, the bubble only fades in (140, linear), Compibert holds his pose and keeps blinking.</p>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <span style="font-family:var(--cp-font-mono);font-size:15px;font-weight:700">Full motion</span>
+      <div style="display:flex;gap:28px;align-items:flex-start">
+        <sc-for list="{{ filmFull }}" as="f" hint-placeholder-count="5"><div style="display:flex;flex-direction:column;gap:8px"><span style="font-family:var(--cp-font-mono);font-size:14px;font-weight:700;color:#5d5650">{{ f.l }}</span><dc-import name="RundgangStage" w="{{ 390 }}" theme="light" step="{{ 3 }}" opt="B" trans-t="{{ f.t }}" hint-size="390px,844px"></dc-import></div></sc-for>
+      </div>
+    </div>
+    <div style="display:flex;gap:64px;align-items:flex-start">
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <span style="font-family:var(--cp-font-mono);font-size:15px;font-weight:700">Reduced</span>
+        <div style="display:flex;gap:28px;align-items:flex-start">
+          <sc-for list="{{ filmRed }}" as="f" hint-placeholder-count="2"><div style="display:flex;flex-direction:column;gap:8px"><span style="font-family:var(--cp-font-mono);font-size:14px;font-weight:700;color:#5d5650">{{ f.l }}</span><dc-import name="RundgangStage" w="{{ 390 }}" theme="light" step="{{ 3 }}" opt="B" reduced="{{ true }}" trans-t="{{ f.t }}" hint-size="390px,844px"></dc-import></div></sc-for>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:12px"><span style="font-family:var(--cp-font-mono);font-size:15px;font-weight:700">Live · reduced · light</span><dc-import name="RundgangStage" w="{{ 390 }}" theme="light" opt="B" live="{{ true }}" reduced="{{ true }}" hint-size="390px,890px"></dc-import></div>
+      <div style="display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1.3fr) minmax(0,1fr);gap:0;align-self:flex-start;max-width:900px;border:3px solid #151515;border-radius:20px;background:#fffdf8;overflow:hidden;font-size:15px;line-height:1.4">
+        <b style="padding:12px 16px;background:#fbe9cc;border-bottom:2px solid #151515">Motion</b><b style="padding:12px 16px;background:#fbe9cc;border-bottom:2px solid #151515">Full</b><b style="padding:12px 16px;background:#fbe9cc;border-bottom:2px solid #151515">Reduced</b>
+        <sc-for list="{{ motion }}" as="m" hint-placeholder-count="7"><div style="display:contents"><span style="padding:10px 16px;border-bottom:1.5px solid rgba(21,21,21,.16);font-weight:700">{{ m.k }}</span><span style="padding:10px 16px;border-bottom:1.5px solid rgba(21,21,21,.16);text-wrap:pretty">{{ m.f }}</span><span style="padding:10px 16px;border-bottom:1.5px solid rgba(21,21,21,.16);text-wrap:pretty">{{ m.r }}</span></div></sc-for>
+      </div>
+    </div>
+  </section></sc-if>
+
+  <sc-if value="{{ show.s6 }}" hint-placeholder-val="{{ true }}"><section data-screen-label="6 Copy length" style="display:flex;flex-direction:column;gap:28px">
+    <div style="display:flex;flex-direction:column;gap:8px;max-width:1200px">
+      <span style="font-family:var(--cp-font-mono);font-size:15px;font-weight:700;color:#5d5650">6 · 390 · longest and shortest copy</span>
+      <h2 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:56px;line-height:1">The bubble holds both</h2>
+      <p style="margin:0;font-size:20px;max-width:1160px;text-wrap:pretty">Width is fixed, height follows the text; the placement uses the measured height. Longest: two sentences, 119 + 120 characters (7 lines at 15 px). Shortest: the Ton step, 38 characters; the bubble never gets narrower, so the buttons stay where the thumb expects them.</p>
+    </div>
+    <div style="display:flex;gap:64px;align-items:flex-start">
+      <sc-for list="{{ copyFrames }}" as="f" hint-placeholder-count="2">
+        <div style="display:flex;flex-direction:column;gap:10px;width:390px"><b style="font-family:var(--cp-font-display);font-weight:400;font-size:28px;line-height:1">{{ f.t }}</b><span style="font-family:var(--cp-font-mono);font-size:14px;font-weight:700;color:#5d5650">{{ f.d }}</span><dc-import name="RundgangStage" w="{{ 390 }}" theme="light" step="{{ f.s }}" opt="B" title="{{ f.title }}" body="{{ f.body }}" hint-size="390px,844px"></dc-import></div>
+      </sc-for>
+    </div>
+  </section></sc-if>
+
+  <section id="handoff" data-screen-label="Hand-off" style="display:flex;flex-direction:column;gap:20px;max-width:1200px">
+    <span style="font-family:var(--cp-font-mono);font-size:15px;font-weight:700;color:#5d5650">Hand-off · design_handoff_compies/17-rundgang.md</span>
+    <dc-import name="MdNote" global="RG_NOTE" src="./design_handoff_compies/17-rundgang.md" hint-size="1200px,600px"></dc-import>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;section&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;alle&quot;,&quot;1&quot;,&quot;2&quot;,&quot;3&quot;,&quot;r&quot;,&quot;4&quot;,&quot;5&quot;,&quot;6&quot;],&quot;default&quot;:&quot;alle&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;View&quot;},&quot;liveMotion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;reduced&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;'full'|'reduced'&quot;,&quot;section&quot;:&quot;Live tour&quot;},&quot;faceLoop&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Frames&quot;},&quot;guides&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Frames&quot;}}">
+class Component extends DCLogic {
+  renderVals(){
+    const p=this.props;
+    const opts=[
+      {k:'A',id:'A',mid:'A-390',badge:'#fffdf8',name:'„Still“',short:'three held faces, changed with a 140 ms fade',rec:false,
+       does:'Hallo on step 1, Zeigt on steps 2–7 (pupils turned toward the thing once, no glide), Freut sich on step 8. No blink, no loops. When the expression changes it fades in with the bubble (140 ms, dur-fast).',
+       rig:'variant="head", still (exists). Two small flags: blink=false and lookAt (the existing eye-follow track() called once with the thing\u2019s anchor instead of the cursor). Or skip the rig on this route: 6 static SVGs (hallo, zeigt oben/unten/links/rechts, freut).',
+       tr:'Cheapest and calm. But the header logo next to it blinks and reacts, so a frozen face on the bubble looks like a picture of him, not him. The tail has to do all the pointing.'},
+      {k:'B',id:'B',mid:'B-390',badge:'#ffd23f',name:'„Bewegt“',short:'blinks, looks, nods',rec:true,
+       does:'Same three faces, live: blinks (rig loop), pupils glide to each new thing (0.4 s), one nod when the bubble arrives (0.42 s). Hallo uses the rig\u2019s wave face (grin, brow up, head tilt), Freut sich hops twice, then lands. Face only, no hand.',
+       rig:'Nothing new to draw. lookAt (as A), idle without micro-actions, a way to stop cheer\u2019s hop loop after two hops, and one short nod timeline. No new part, no new state.',
+       tr:'About a day more than A. It is the one place where a new person meets him, so it is worth it. Every move is one-shot per step; nothing loops except the blink, so it never competes with the copy.'}];
+    const worked=[
+      {t:'1 · Hallo',s1:1,s2:1,w1:'no thing · page dark · bubble in the middle',t2:'1 · Hallo',w2:'no thing · middle'},
+      {t:'4 · Spielbrett (card in the stage)',s1:4,s2:4,w1:'under the thing · tail at „Du“ on the Tribüne',t2:'4 · Spielbrett',w2:'no room · docks at the bottom over the board'},
+      {t:'7 · Ton (top of the window)',s1:7,s2:7,w1:'header button · circle hole · bubble below, tail at the right end',t2:'7 · Ton',w2:'header · circle · below'},
+      {t:'6 · Aktivität (side panel)',s1:6,s2:6,w1:'as tall as the window · bubble beside it',t2:'6 · Aktivität (tab bar)',w2:'bottom of the window · bubble above'},
+      {t:'8 · Ende',s1:8,s2:8,w1:'no thing · middle · „Fertig“ · then the avatar ticks',t2:'8 · Ende',w2:'no thing · middle'}];
+    const rules=[
+      {k:'No thing (steps 1, 8):',v:'hole closed, whole page dark, bubble centred (46 % down), no tail.'},
+      {k:'Scroll first:',v:'if the thing is in the stage, scroll its top to 24 px (390: 16 px) under the sticky header, as far as the page allows. Header, side panel and tab bar never scroll.'},
+      {k:'Below:',v:'if the bubble fits between the hole + 24 px (390: 20) and the window bottom − 24 (390: − 12 − safe area), it goes below. Tail on top. Top of the window (Ton) always lands here.'},
+      {k:'Above:',v:'else above, if it fits under the header + 24. Tail at the bottom. Bottom of the window (tab bar) lands here.'},
+      {k:'Beside (≥ 600 only):',v:'else to the left or right, whichever has room (bubble 400 + 24 + margin). Tail on the facing edge at the anchor\u2019s height, never in the face corner.'},
+      {k:'No room / taller than the window:',v:'the bubble docks at the bottom of the window, over the thing, tail up at the anchor; the page scrolls until the anchor sits 24 px above the tail. The hole is clipped by the header and the window, so its ring is open where the thing goes on.'},
+      {k:'Horizontal:',v:'bubble centred on the anchor, clamped to the margins (390: always full width minus 12). The tail follows the anchor, clamped 18 px + half the tail from the corners and out of the face corner (≥ 92 / 70 px from the left on the top edge).'},
+      {k:'Anchor:',v:'the point the tail aims at: the thing\u2019s centre, or a named child (Spielbrett → „Du“, Terminumfrage → Ja/Meh/Nein of the first card, Aktivität → the tab). Things taller than half the window without an anchor: 48 px below their top.'}];
+    const spot=[
+      {k:'Dark:',v:'one element with box-shadow 0 0 0 4000px var(--cp-overlay): the same scrim as sheets and dialogs (light rgba(21,21,21,.48), dark rgba(8,5,12,.66)). The hole is the element itself, so moving it is one tween.'},
+      {k:'Edge:',v:'3 px ring in --cp-primary (outline on the hole, follows its radius). It is the only yellow besides „Weiter“, which ties the two together. Not the focus blue, so it never reads as keyboard focus.'},
+      {k:'Corners:',v:'hole = the thing + 8 px (390: 6) on every side, radius = the thing\u2019s own radius + the same padding, so the curves stay concentric (card 14 → 22). Round things (Ton) get a circle. Square things get 8. Where the thing touches the header, the hole is flush; where it touches the window edge, it runs past it.'},
+      {k:'Inert:',v:'the page under the scrim, including the bright thing, gets inert; a click on it does nothing. Only the bubble takes input.'}];
+    const consts=[{k:'bubble',v:'400 px · 390: 100vw − 24'},{k:'face',v:'72 px (14, −20) · 390: 56 px (8, −16)'},{k:'hole padding',v:'8 · 390: 6'},{k:'hole → bubble',v:'24 · 390: 20'},{k:'window margin',v:'24 · 390: 12 (+ 18 safe area at the bottom)'},{k:'tail',v:'square 20 · 390: 16, rotated 45°'},{k:'ring',v:'3 px --cp-primary'},{k:'layer',v:'--cp-z-modal (50)'}];
+    const ruleFrames=[
+      {t:'Top: Ton',s:7,d:'In the header: hole is a circle, bubble below, tail clamped toward the button.'},
+      {t:'Middle: So wird gespielt',s:5,d:'Scrolled under the header; room below, so the bubble goes below.'},
+      {t:'Bottom: tab bar',s:6,d:'Sticky at the bottom: no room below, the bubble goes above.'},
+      {t:'Taller: Spielbrett',s:4,d:'Board + bubble do not fit. The bubble docks at the bottom over the board; the hole is cut by the header.'}];
+    const edges=[
+      {k:'ring',th:'light',t:'Ring (chosen).',d:'Hard, Memphis, readable in both appearances.'},
+      {k:'glow',th:'light',t:'Glow.',d:'Soft shadows are for toasts and tooltips only; it blurs the hole\u2019s edge.'},
+      {k:'none',th:'dark',t:'Nothing.',d:'In dark the hole melts into the scrim; the eye has to find it.'}];
+    const exCols=[{k:'hallo',t:'Hallo',when:'step 1'},{k:'zeigt',t:'Zeigt',when:'steps 2–7'},{k:'freut',t:'Freut sich',when:'step 8'}];
+    const motion=[
+      {k:'Tour starts',f:'scrim + hole opacity 0 → 1, 220 ms ease-out; bubble scale .96 → 1 + opacity, 220 ms ease-out, +60 ms',r:'both opacity only, 140 ms'},
+      {k:'Bubble out',f:'opacity 1 → 0, scale .98, 140 ms ease-in',r:'—'},
+      {k:'Spotlight + page',f:'hole rect + radius and page scroll in one timeline, 360 ms ease-io; ring stays',r:'cut at 0'},
+      {k:'No thing → thing',f:'hole opens from the thing\u2019s centre, 360 ms ease-out',r:'cut'},
+      {k:'Thing → no thing',f:'hole closes into its centre, 220 ms ease-in',r:'cut'},
+      {k:'Bubble in',f:'at 300 ms: opacity 0 → 1, 8 px toward the tail, 220 ms ease-out',r:'opacity 0 → 1, 140 ms linear'},
+      {k:'Compibert (B)',f:'pupils glide 0.4 s; nod 0.18 + 0.24 (Zeigt); 2 hops then land (Freut sich), from bubble-in',r:'held pose, blink kept, pupils set'},
+      {k:'Tour ends',f:'bubble out 140 ease-in; scrim out 220 ease-in; avatar ticks once (1 → 1.14 → 1, 220)',r:'bubble + scrim fade 140, no tick'}];
+    return {opts,worked,rules,spot,consts,ruleFrames,edges,exCols,motion,
+      stepList:['Hallo','Das Event','Terminumfrage','Spielbrett','So wird gespielt','Aktivität','Ton','Ende'].map((t,i)=>({n:String(i+1),t,bg:i===0||i===7?'#fbe9cc':'#ffd23f'})),
+      exThemes:[{theme:'light',label:'LIGHT · no outline (his own ink line)'},{theme:'dark',label:'DARK · sticker rim'}],
+      exRows:[{o:'A'},{o:'B'}],
+      filmFull:[{t:0,l:'0 ms'},{t:140,l:'140 · bubble gone'},{t:220,l:'220 · gliding'},{t:360,l:'360 · landed'},{t:520,l:'520 · bubble in'}],
+      filmRed:[{t:0,l:'0 ms · cut'},{t:140,l:'140 · done'}],
+      copyFrames:[
+        {t:'Longest',s:3,d:'2 sentences · 240 characters',title:'Terminumfrage',body:'Stimm für jeden vorgeschlagenen Termin ab: Ja, wenn es sicher passt, Meh, wenn es zur Not geht, und sonst einfach Nein. Sobald der Host einen Termin festlegt, bekommst du eine Nachricht und kannst dir auf dem Spielbrett dein Team aussuchen.'},
+        {t:'Shortest',s:7,d:'1 sentence · 38 characters',title:'',body:''}],
+      faceLoop:p.faceLoop!==false,guides:!!p.guides,liveReduced:p.liveMotion==='reduced',show:(()=>{const v=String(p.section??'alle');const o={};['s1','s2','s3','sr','s4','s5','s6'].forEach(k=>o[k]=v==='alle'||v===k.slice(1));return o;})()};
+  }
+}
+</script>
+</body>
+</html>

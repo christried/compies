@@ -3,6 +3,8 @@
 // `itemSelector` picks the items in the walk; `initialFocus` picks the one a freshly opened menu focuses (default: the first).
 export function useDropdownMenu(options: { itemSelector: string, initialFocus?: () => HTMLElement | undefined }) {
   const open = ref(false)
+  // An open menu is not a calm page for the Tour (#647).
+  useOpenLayers().track(open)
   const root = useTemplateRef<HTMLElement>('root')
 
   // Items hidden by CSS (the footer links below md, on desktop) are skipped.

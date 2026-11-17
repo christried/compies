@@ -11,7 +11,15 @@ const props = withDefaults(defineProps<{
   variant?: RigVariant
   /** Width in px; without it the rig fills its container's width. Full is 404 × 344, the head and the bust (#526) are square. */
   size?: number
-}>(), { state: 'idle', variant: 'full', size: undefined })
+  /** The Tour's face (#460): where the pupils look, in degrees from the face's centre (0 = right, 90 = down); null looks straight ahead. Applied after each state change. */
+  look?: number | null
+  /** false: the idle has no micro actions (the blink stays). */
+  micro?: boolean
+  /** Seconds after which a `cheer` stops hopping and lands. */
+  hopsFor?: number
+  /** The head crop wears the Sticker outline in Dunkel (and System-dark): the cream rim keeps him from vanishing on a dark bubble. Hell has none. */
+  rim?: boolean
+}>(), { state: 'idle', variant: 'full', size: undefined, look: null, micro: true, hopsFor: undefined, rim: false })
 
 // Cheap outline on weak devices (hand-off § Performance): the hard shadow's offset in the figure's own units, 7 and 8 of the viewBox's width
 // (`viewWidth`: 404 for the full figure, 254 for the bust's crop of it (#526), 192 for the head (#584)).
@@ -45,12 +53,26 @@ watch([onStage, inView], () => {
   if (figure) figure.style.visibility = inView.value ? '' : 'hidden'
 }, { flush: 'sync' })
 
+// A rig that was never asked to look keeps the states' own pupils (`suspense` glances): only a look, or the return from one, touches them.
+let looked = false
+function applyLook(instant: boolean) {
+  if (props.look === null && !looked) return
+  looked = props.look !== null
+  rig?.lookAt(props.look, instant)
+}
+
 function enter(state: RigState) {
   const reduced = reducedMotion()
   held.value = reduced
-  rig?.setState(state, reduced)
+  rig?.setState(state, reduced, { hopsFor: props.hopsFor })
+  // `restTo` re-centres the face, so the look is told again after each state.
+  applyLook(reduced)
 }
 watch(() => props.state, enter)
+watch(() => props.look, () => applyLook(reducedMotion()))
+
+/** One nod of the head (the Tour's „Zeigt“); nothing under reduced motion. */
+defineExpose({ nod: () => rig?.nod() })
 
 onMounted(async () => {
   const element = root.value
@@ -73,9 +95,11 @@ onMounted(async () => {
     return // the chunk did not load: the still pose stays
   }
   if (unmounted) return
-  rig = mountRig(gsap, element, { variant: props.variant, reduced: reducedMotion() })
+  rig = mountRig(gsap, element, { variant: props.variant, reduced: reducedMotion(), micro: props.micro })
   ready.value = true
   enter(props.state)
+  // The first look is set, not eased: he arrives looking at it (the reference's `look(first)`).
+  applyLook(true)
   rig.setActive(onStage.value && inView.value)
 })
 
@@ -96,6 +120,7 @@ onBeforeUnmount(() => {
     :class="[
       variant === 'full' ? 'overflow-visible' : 'overflow-hidden',
       variant === 'head' ? 'compibert-rig--head' : '',
+      rim ? 'compibert-rig--rim' : '',
       cheap ? 'compibert-rig--cheap' : '',
     ]"
     :style="{
@@ -138,6 +163,16 @@ onBeforeUnmount(() => {
 }
 .compibert-rig--head .cb-fig {
   filter: none;
+}
+/* The Tour's face (#460): the head crop wears the Sticker rim in Dunkel and System-dark only, so his ink line does not vanish on the dark bubble.
+   Before the cheap rules, and not on a weak device, which keeps no outline. */
+[data-theme=dark] .compibert-rig--rim:not(.compibert-rig--cheap) .cb-fig {
+  filter: var(--cb-outline);
+}
+@media (prefers-color-scheme: dark) {
+  [data-theme=system] .compibert-rig--rim:not(.compibert-rig--cheap) .cb-fig {
+    filter: var(--cb-outline);
+  }
 }
 /* Weak devices (4 cores or fewer): the SVG filter is the expensive part, so light gets a CSS drop-shadow of the same offset and dark gets no outline. */
 .compibert-rig--cheap .cb-fig {

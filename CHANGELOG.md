@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Neu
+
+- **Rundgang:** Öffnest du zum ersten Mal ein Event, das du nicht hostest, zeigt dir ein kurzer Rundgang, was auf der Seite wichtig ist. Du kannst ihn jederzeit überspringen und auf deinem Profil neu starten. ([#460](https://github.com/christried/compies/issues/460))
+
 ## [0.14.0] - 2026-11-16 – Politur
 
 Viele kleine Verbesserungen an dem, was schon da ist: Läuft ein Clip, wird der Rest der Eventseite dunkel. Deine Darstellung änderst du jetzt von jeder Seite aus, und Karten, Knöpfe und Hinweise sind aufgeräumt.
