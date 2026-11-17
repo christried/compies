@@ -71,7 +71,7 @@ watch(count, (now) => {
 let silent = false
 
 /** The value the parent holds when it is the editor's own echo: it changes nothing, so the caret stays. */
-let lastEmitted: NotesDoc | null = props.modelValue
+let lastEmitted: NotesDoc | null = props.modelValue ? toRaw(props.modelValue) : null
 
 function onUpdate(instance: Editor) {
   const parsed = parseNotes(tidyNotes(instance.getJSON()), Number.POSITIVE_INFINITY)
@@ -87,7 +87,9 @@ function onUpdate(instance: Editor) {
   emit('update:modelValue', parsed)
 }
 
-watch(() => props.modelValue, (value) => {
+watch(() => props.modelValue, (proxied) => {
+  // A parent that holds the value in a `ref` hands back a reactive proxy of what was emitted: it is the same document.
+  const value = proxied ? toRaw(proxied) : proxied
   if (!editor.value || value === lastEmitted) return
   lastEmitted = value
   silent = true
