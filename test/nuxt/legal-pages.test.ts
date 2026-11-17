@@ -138,8 +138,8 @@ describe('legal pages', () => {
     expect(text.indexOf('Sitzungs-Cookies (Better Auth)')).toBeLessThan(text.indexOf(cookie))
     expect(text.indexOf(cookie)).toBeLessThan(text.indexOf('Lokaler Speicher (compies-sound)'))
     expect(section!.findAll('p')).toHaveLength(8)
-    // The one place the date is pinned: the day of the change, 10 November 2026.
-    expect(page.get('main').text()).toContain('Stand: 10. November 2026.')
+    // The one place the date is pinned: the day of the last change, 17 November 2026 (0.15's cut, §6 gained the Rundgang's sentence, #650).
+    expect(page.get('main').text()).toContain('Stand: 17. November 2026.')
   })
 
   it('keep the Datenschutzerklärung\'s sections in order: the unnumbered intro, then 1 to 22 (#405)', async () => {
