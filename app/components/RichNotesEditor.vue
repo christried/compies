@@ -24,7 +24,9 @@ const props = withDefaults(defineProps<{
   readonly?: boolean
   /** A save runs: the editor is not editable. */
   disabled?: boolean
-}>(), { variant: 'game', label: undefined, help: undefined, placeholder: undefined, max: GAME_NOTES_MAX, readonly: false, disabled: false })
+  /** The caret goes to the end of the notes once the editor exists (#464): the editor mounts from a lazy chunk, so the page that opens it cannot focus what it does not have yet. */
+  autofocus?: boolean
+}>(), { variant: 'game', label: undefined, help: undefined, placeholder: undefined, max: GAME_NOTES_MAX, readonly: false, disabled: false, autofocus: false })
 
 const emit = defineEmits<{ 'update:modelValue': [value: NotesDoc | null], 'invalid': [over: boolean] }>()
 
@@ -126,6 +128,7 @@ onMounted(() => {
     onUpdate: ({ editor: instance }) => onUpdate(instance as Editor),
     onFocus: onFocus,
   })
+  if (props.autofocus) editor.value.commands.focus('end')
 })
 onBeforeUnmount(() => {
   stopKeyboard?.()

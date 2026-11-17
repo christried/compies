@@ -11,7 +11,8 @@ import type { NotesDoc } from '~~/shared/notes-doc'
 type Props = Partial<InstanceType<typeof RichNotesEditor>['$props']>
 
 let geometry = false
-function ensureGeometry() {
+/** Gives happy-dom the Range rectangles ProseMirror asks for; a test that mounts the editor through a parent calls it too. */
+export function ensureGeometry() {
   if (geometry) return
   geometry = true
   const rect = () => ({ x: 0, y: 0, top: 0, left: 0, right: 0, bottom: 0, width: 0, height: 0, toJSON: () => ({}) })

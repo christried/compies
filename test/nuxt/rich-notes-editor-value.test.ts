@@ -276,3 +276,20 @@ describe('the states', () => {
     expect(page.get('p.is-editor-empty').attributes('data-placeholder')).toBe('z. B. Einstellungen, Aufwärmen, Siegbedingung, Hausregeln')
   })
 })
+
+describe('the caret on mount (#464)', () => {
+  const stored = doc(paragraph(text('eins')), paragraph(text('zwei')))
+
+  it('goes to the end of the notes with `autofocus`: the page that opens the editor cannot focus a field that mounts from a lazy chunk', async () => {
+    const page = await mountEditor({ modelValue: stored, autofocus: true })
+
+    expect(editorOf(page).state.selection.from).toBe(editorOf(page).state.doc.content.size - 1)
+    expect(page.values).toEqual([])
+  })
+
+  it('stays where the editor starts without it, as in the game form', async () => {
+    const page = await mountEditor({ modelValue: stored })
+
+    expect(editorOf(page).state.selection.from).toBe(1)
+  })
+})

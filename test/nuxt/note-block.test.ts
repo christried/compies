@@ -102,3 +102,36 @@ describe('NoteBlock (#729)', () => {
     expect(block.find('section').exists()).toBe(false)
   })
 })
+
+describe('the Host\'s edit button (#464)', () => {
+  const EDIT = 'Notizen für dieses Event bearbeiten'
+
+  it('ends the header of an Event block with a pencil named by editLabel, and a click says so', async () => {
+    const block = await mountSuspended(EventNotes, { props: { notes: doc, size: 'md', editable: true } })
+
+    const button = block.get(`button[aria-label="${EDIT}"]`)
+    expect(button.classes()).toEqual(expect.arrayContaining(['hit-44', 'size-9', 'border-2', 'border-line', 'bg-surface']))
+    expect(button.find('svg[class*="pencil"]').exists()).toBe(true)
+    // The title block keeps the room: the pencil sits at the end of the header.
+    expect(block.get('h3').element.parentElement!.classList).toContain('flex-1')
+    expect(button.element.parentElement!.lastElementChild).toBe(button.element)
+
+    await button.trigger('click')
+
+    expect(block.findComponent(NoteBlock).emitted('edit')).toHaveLength(1)
+    expect(block.emitted('edit')).toHaveLength(1)
+  })
+
+  it('has none unless the block is editable, on a finished Event\'s block, or without a label', async () => {
+    const plain = await mountSuspended(EventNotes, { props: { notes: doc, size: 'md' } })
+    const finished = await mountSuspended(EventNotes, { props: { notes: doc, size: 'md', editable: true, finished: true } })
+    const unlabelled = await mountSuspended(NoteBlock, { props: { kind: 'event', doc, size: 'md', editable: true } })
+    const game = await mountSuspended(NoteBlock, { props: { kind: 'game', doc, size: 'md', editable: true } })
+
+    expect(plain.find('button').exists()).toBe(false)
+    expect(finished.find('button').exists()).toBe(false)
+    expect(finished.text()).toContain('Event beendet')
+    expect(unlabelled.find('button').exists()).toBe(false)
+    expect(game.find('button').exists()).toBe(false)
+  })
+})
