@@ -1427,7 +1427,7 @@
   "mvp": {
     "_scope": "[MVP] Terminfindung zuerst. Remove keys as the real screens replace them.",
     "home": {
-      "title": "Wann zocken wir?",
+      "title": "Wann wird gezockt?",
       "titleEmpty": "Noch nix los.",
       "events": "Deine Events",
       "newPoll": "Neue Terminumfrage",
@@ -1444,7 +1444,7 @@
       "view": "Ansehen",
       "emptyTitle": "Noch keine Einladung.",
       "emptyText": "Sobald dir jemand einen Link schickt, landet die Terminumfrage hier. Bis dahin lohnt sich eine Nachfrage beim Host.",
-      "noBest": "Noch kein Termin mit Ja oder Meh.",
+      "noBest": "Noch keine Einigung vorhanden.",
       "datesStanding": "{n} von {total} Terminen steht",
       "sessionOf": "Session {n} von {total}"
     },
@@ -1515,23 +1515,22 @@
     "zone": {
       "chip": "Kommt in einer der nächsten Versionen",
       "homeTitle": "Der Rest ist noch Rohbau.",
-      "homeText": "Glücksrad, Live-Tabelle und Siegerehrung bauen wir gerade. Terminumfrage und Spielbrett funktionieren schon.",
       "tapeA": "Baustelle",
       "tapeB": "Betreten verboten",
       "signTitle": "Baustelle!",
-      "signText": "Eltern haften für ihre Dinos.",
+      "signText": "Eltern haften für ihren Dackel.",
       "navMarker": "Baustelle"
     },
     "site": {
       "toPoll": "Zur Terminumfrage",
       "toHome": "Zur Startseite",
       "archiv": {
-        "title": "Das Archiv wird noch gemauert.",
+        "title": "Das Archiv kommt bald. Bestimmt.",
         "text": "Hier landen später alle Abende mit Tabelle, Chat und Siegerbild. Bis dahin zählt: einen Termin finden."
       },
       "admin": {
-        "title": "Der Admin-Bereich hat noch keine Tür.",
-        "text": "Hostrechte vergibst du im MVP über die Umgebungsvariable. Die Nutzerliste kommt mit Ticket 3."
+        "title": "Der Admin-Bereich kommt vielleicht noch. Wenn man den überhaupt braucht.",
+        "text": "Hostrechte vergeben, Nutzerliste, diesdas."
       },
       "generic": {
         "title": "Hier wird noch gebaut.",

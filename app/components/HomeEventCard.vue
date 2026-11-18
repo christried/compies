@@ -32,7 +32,11 @@ const hostLine = computed(() => props.event.isHost
 
 // While Dates are missing the card shows the Best slot, as it does for a poll.
 const showsBestSlot = computed(() => isPoll.value || datesMissing.value)
-const whenLabel = computed(() => showsBestSlot.value ? t('mvp.home.bestSoFar') : t('mvp.home.date'))
+// A running Event's card says „Session 1 von 2 · …“ already, so the „Termin“ label stays off it (#793).
+const whenLabel = computed(() => {
+  if (showsBestSlot.value) return t('mvp.home.bestSoFar')
+  return props.event.phase === 'running' ? null : t('mvp.home.date')
+})
 const whenValue = computed(() => {
   if (showsBestSlot.value) {
     return props.event.bestSlot ? formatSlotWhen(new Date(props.event.bestSlot.startsAt)) : t('mvp.home.noBest')
@@ -95,7 +99,10 @@ const showsDates = computed(() => hasSeveralSessions.value && datesMissing.value
         :size="18"
       />
       <div class="flex min-w-0 flex-1 flex-col leading-[1.3]">
-        <span class="text-[12px] font-bold text-ink-2">{{ whenLabel }}</span>
+        <span
+          v-if="whenLabel"
+          class="text-[12px] font-bold text-ink-2"
+        >{{ whenLabel }}</span>
         <b>{{ whenValue }}</b>
       </div>
     </div>
