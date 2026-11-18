@@ -91,7 +91,7 @@ async function save(sent: EventDraft) {
         :locks="locks"
         reach-all
         :nav-title="heading"
-        :kicker="t('eventSettings.kicker')"
+        :kicker="null"
         :last-label="t('eventSettings.save')"
         :saving-label="t('common.saving')"
         error-screen="eventSettings"

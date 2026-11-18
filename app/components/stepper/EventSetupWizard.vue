@@ -26,8 +26,8 @@ const props = defineProps<{
   locks?: StepLocks
   /** The step list's heading; `stepper.heading` by default. */
   navTitle?: string
-  /** Replaces „Schritt n von m“ above the step's title. */
-  kicker?: string
+  /** Replaces „Schritt n von m“ above the step's title; `null` leaves the kicker out (#807). */
+  kicker?: string | null
   /** Weiter on the last step („Event erstellen“, „Speichern“) and while `submit` is running. */
   lastLabel: string
   savingLabel: string

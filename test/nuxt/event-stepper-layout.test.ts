@@ -42,6 +42,13 @@ describe('EventStepper', () => {
     expect(longer.get('h1').text()).toContain('Schritt 2 von 8')
   })
 
+  it('shows no kicker when the kicker is null, only the title in the h1 (#807)', async () => {
+    const page = await mountStepper({ kicker: null })
+
+    expect(page.get('h1').text()).toBe('Wer gegen wen?')
+    expect(page.get('h1').text()).not.toContain('Schritt')
+  })
+
   describe('on desktop', () => {
     it('lists the steps in a nav, the current one marked aria-current="step"', async () => {
       const page = await mountStepper()

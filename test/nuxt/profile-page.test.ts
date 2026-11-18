@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import ProfilePage from '~/pages/profil.vue'
 import { kitty, signInAs } from './auth'
 import { shownToasts } from './event-page'
+import de from '~~/i18n/locales/de.json'
 
 // The Profil page (screen 25, shipped trimmed, #399): the picture, renaming, Abmelden.
 
@@ -20,14 +21,16 @@ describe('the Profil page', () => {
     useState('toasts').value = []
   })
 
-  it('shows the picture with its hint and the Display name with help and counter', async () => {
+  it('shows the picture with its hint and the Display name with its counter and no help line (#807)', async () => {
     const page = await mount()
 
     expect(page.get('h1').text()).toBe('Profil')
     expect(page.text()).toContain('Kommt von Discord oder Twitch. Ein neues Bild siehst du nach deiner nächsten Anmeldung.')
     expect(input(page).value).toBe('Kitty')
     expect(page.text()).toContain('5/32')
-    expect(page.get('#display-name-help').text()).toBe('Muss nicht eindeutig sein. Alle sehen ihn überall in Compies.')
+    expect(page.find('#display-name-help').exists()).toBe(false)
+    expect(page.text()).not.toContain('Muss nicht eindeutig sein')
+    expect('displayNameHelp' in de.profile).toBe(false)
     expect(cardPicture(page).attributes('src')).toBe(withPicture.image)
   })
 
@@ -359,7 +362,7 @@ describe('the Profil page', () => {
 
       expect(group(page).attributes('aria-label')).toBe('Darstellung')
       const described = group(page).attributes('aria-describedby')
-      expect(page.get(`[id="${described}"]`).text()).toBe('Gilt auf allen deinen Geräten. System folgt deinem Gerät.')
+      expect(page.get(`[id="${described}"]`).text()).toBe('Gilt auf allen deinen Geräten.')
       expect(checked(page)).toEqual(['System'])
       expect(page.findAll('main h2').map(h => h.text())).toEqual(['Profil', 'Einstellungen'])
 

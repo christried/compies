@@ -287,7 +287,6 @@
     "avatar": "Profilbild",
     "avatarHelp": "Kommt von Discord oder Twitch. Ein neues Bild siehst du nach deiner nächsten Anmeldung.",
     "displayName": "Anzeigename",
-    "displayNameHelp": "Muss nicht eindeutig sein. Alle sehen ihn überall in Compies.",
     "displayNameEmpty": "Ohne Namen geht es nicht. Wie sollen dich die anderen nennen?",
     "saved": "Gespeichert.",
     "saveFailed": "Speichern hat nicht geklappt. Versuch’s nochmal."
@@ -1136,7 +1135,7 @@
     "title": "Einstellungen",
     "soundHelp": "Clips und Geräusche mit Ton",
     "appearance": "Darstellung",
-    "appearanceHelp": "Gilt auf allen deinen Geräten. System folgt deinem Gerät.",
+    "appearanceHelp": "Gilt auf allen deinen Geräten.",
     "light": "Hell",
     "dark": "Dunkel",
     "system": "System",
@@ -1148,7 +1147,6 @@
     "tourResetFailed": "Das hat nicht geklappt, der Rundgang ist wie vorher. Versuch’s nochmal."
   },
   "eventSettings": {
-    "kicker": "Einstellungen",
     "heading": "Einstellungen",
     "setupHeading": "Event einrichten",
     "save": "Speichern",
@@ -1213,7 +1211,6 @@
     "title": "Neuigkeiten",
     "intro": "Frisch geschraubt: Hier siehst du, was sich bei Compies getan hat.",
     "rail": "Versionen",
-    "jump": "Springe zu",
     "new": "Neu",
     "say": "Version {v}",
     "item": "Version {v}, {name}, {date}",

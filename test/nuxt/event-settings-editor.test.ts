@@ -12,6 +12,7 @@ import { defaultSettings, poolHint, type EventSettings, type SettingsFloors } fr
 import { INSTANT_MARGIN_MS } from '~/composables/useInstantRefresh'
 import { kitty, signInAs } from './auth'
 import { LARSI, memberView, SANNE, serve, shownToasts, view } from './event-page'
+import de from '~~/i18n/locales/de.json'
 
 // The settings editor (#147): the stepper's steps 2 to 7 on an Event that exists, prefilled, with the settings
 // that stay fixed once the Event runs shown locked with their reason.
@@ -142,6 +143,16 @@ describe('the settings editor', () => {
     expect(stepItems(page).slice(1).every(item => item.find('button').exists())).toBe(true)
     expect(page.get('nav[aria-label="Schritte"]').text()).toContain('Einstellungen')
     expect(page.get('h1').text()).toContain('Wer gegen wen und wie?')
+  })
+
+  it('shows no kicker above the step title, neither Einstellungen nor Schritt n von m (#807)', async () => {
+    const { slug } = setUp()
+
+    const page = await mountEditor(slug)
+
+    expect(page.get('h1').text()).not.toContain('Einstellungen')
+    expect(page.get('h1').text()).not.toContain('Schritt')
+    expect('kicker' in de.eventSettings).toBe(false)
   })
 
   it('keeps the hub nav in its header, with Events current and the Event’s name and Phase under it (#426)', async () => {
