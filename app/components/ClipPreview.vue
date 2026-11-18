@@ -121,11 +121,8 @@ onBeforeUnmount(() => {
     </div>
     <div class="flex justify-between gap-2 font-mono text-[11px] text-ink-2">
       <span>0:00</span>
-      <span>{{ t('gameEdit.excerpt', { from: clipTime(start), to: clipTime(end) }) }}</span>
+      <span class="font-sans text-small">{{ t('gameEdit.excerpt', { from: clipTime(start), to: clipTime(end) }) }}</span>
       <span>{{ total ? clipTime(total) : '' }}</span>
     </div>
-    <p class="m-0 text-small text-pretty text-ink-2">
-      {{ t('gameEdit.excerptNote', { n: length }) }}
-    </p>
   </div>
 </template>

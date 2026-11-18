@@ -30,7 +30,9 @@ const props = withDefaults(defineProps<{
   cutAtMax?: boolean
   /** Muted and not editable: the Price amount of a source that takes none (#337). */
   disabled?: boolean
-}>(), { multiline: false, help: undefined, error: undefined, type: 'text', maxlength: undefined, id: undefined, invalid: false, autocomplete: undefined, inputmode: undefined, cutAtMax: false, disabled: false })
+  /** The hint shown in the empty field, in the muted colour (#804). A prop: as an attribute it would fall to the root `<div>`. */
+  placeholder?: string
+}>(), { multiline: false, help: undefined, error: undefined, type: 'text', maxlength: undefined, id: undefined, invalid: false, autocomplete: undefined, inputmode: undefined, cutAtMax: false, disabled: false, placeholder: undefined })
 
 const emit = defineEmits<{ 'update:modelValue': [value: string] }>()
 
@@ -76,7 +78,8 @@ defineExpose({ focus: () => (props.multiline ? textareaEl.value : inputEl.value)
       :aria-invalid="error || invalid ? 'true' : undefined"
       :aria-describedby="describedBy"
       :disabled="disabled"
-      class="field-sizing-content min-h-[9.5rem] resize-none overflow-hidden px-3.5 py-2.5 text-[17px] leading-[1.45] text-ink disabled:cursor-not-allowed disabled:opacity-60"
+      :placeholder="placeholder"
+      class="field-sizing-content min-h-[9.5rem] resize-none overflow-hidden px-3.5 py-2.5 text-[17px] leading-[1.45] text-ink placeholder:text-ink-2 disabled:cursor-not-allowed disabled:opacity-60"
       :class="fieldBox(Boolean(error || invalid))"
       @input="onInput"
     />
@@ -91,7 +94,8 @@ defineExpose({ focus: () => (props.multiline ? textareaEl.value : inputEl.value)
       :aria-invalid="error || invalid ? 'true' : undefined"
       :aria-describedby="describedBy"
       :disabled="disabled"
-      class="h-control-lg px-3.5 text-[17px] text-ink disabled:cursor-not-allowed disabled:opacity-60"
+      :placeholder="placeholder"
+      class="h-control-lg px-3.5 text-[17px] text-ink placeholder:text-ink-2 disabled:cursor-not-allowed disabled:opacity-60"
       :class="fieldBox(Boolean(error || invalid))"
       @input="onInput"
     >

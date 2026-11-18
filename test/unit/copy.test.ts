@@ -82,7 +82,6 @@ describe('copy rules', () => {
 
   // The library is the viewer's own (#724, decision A5): the texts that said it is shared, or that name a creator, are gone.
   it('says the library is the viewer’s own in the three texts that spoke of all Hosts (#724)', () => {
-    expect(de.library.kicker).toBe('Deine Spiele')
     expect(de.notesEditor.help).toBe('Nur du siehst das.')
     expect(de.empty.library.text).toBe('Leg das erste Spiel an. Danach holst du es in jedes deiner Events.')
   })

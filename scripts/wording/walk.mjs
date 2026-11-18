@@ -62,7 +62,6 @@ const MONO_USES = [
   { site: 'ClipPreview.vue:122 times', component: 'app/components/ClipPreview.vue', entry: true },
   { site: 'HostDock.vue:243 H', component: 'app/components/HostDock.vue', entry: true },
   { site: 'InviteLinkCard.vue:37 input', component: 'app/components/InviteLinkCard.vue', entry: true },
-  { site: 'GameForm.vue:396 gameEdit.noPreview / noClip', component: 'app/components/GameForm.vue', keys: ['gameEdit.noPreview', 'gameEdit.noClip'] },
   { site: 'GameImageField.vue:310 gameEdit.imageRatio', component: 'app/components/GameImageField.vue', keys: ['gameEdit.imageRatio'] },
   { site: 'NoteEditor.vue:118 common.counter', component: 'app/components/NoteEditor.vue', keys: ['common.counter'] },
   { site: 'TeamNameBuilder.vue:222 common.counter', component: 'app/components/TeamNameBuilder.vue', keys: ['common.counter'] },

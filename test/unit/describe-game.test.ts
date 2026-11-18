@@ -28,10 +28,10 @@ describe('describeGame', () => {
     [3, null, 'ab 3', '3'],
     [3, 6, '3 bis 6', '3–6'],
     [null, 10, 'bis 10', '10'],
-    [1, 1, '1 Spieler', '1'],
-    [2, 2, '2 Spieler', '2'],
-    [3, 3, '3 Spieler', '3'],
-    [4, 4, '4 Spieler', '4'],
+    [1, 1, '1 Spielende', '1'],
+    [2, 2, '2 Spielende', '2'],
+    [3, 3, '3 Spielende', '3'],
+    [4, 4, '4 Spielende', '4'],
   ])('describes %j to %j players as „%s“, compact „%s“', (min, max, players, playersCompact) => {
     expect(describeGame(game(min, max), t)).toMatchObject({ players, playersCompact })
   })
@@ -43,6 +43,6 @@ describe('describeGame', () => {
   })
 
   it('lists the Suitabilities in the order given, comma-joined', () => {
-    expect(describeGame(game(null, null, ['teams', 'ffa']), t).suitabilities).toBe('Teams, Jeder gegen jeden')
+    expect(describeGame(game(null, null, ['teams', 'ffa']), t).suitabilities).toBe('Teams, FFA')
   })
 })

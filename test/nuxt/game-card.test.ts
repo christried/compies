@@ -535,6 +535,67 @@ describe('the two reserved title lines (#612)', () => {
   })
 })
 
+// jsdom has no layout, so the classes that clamp and reserve the lines are pinned; the heights are the browser check's.
+describe('the price line wraps to two lines (#804)', () => {
+  const LONG = { cents: 99_999, source: 'epic' as const, checkedAt: '2025-11-03T10:00:00.000Z' }
+  const LONG_TEXT = '999,99 € bei Epic Games Store · Stand 3. Nov. 2025'
+  const SHORT = { cents: null, source: 'free_to_play' as const, checkedAt: '2026-11-03T10:00:00.000Z' }
+  const PRICES = [['long', LONG], ['short', SHORT]] as const
+  const priceSpan = () => root().querySelector('[data-price]') as HTMLElement
+  const tokens = (el: Element) => el.className.split(' ')
+
+  it.each(PRICES)('clamps the %s line to two lines and reserves both in the card layout', async (_what, price) => {
+    await mount({ name: 'Pong', price }, 'card', false)
+
+    expect(tokens(priceSpan())).toEqual(expect.arrayContaining(['line-clamp-2', 'min-h-[2lh]']))
+  })
+
+  it('gives a card with a long price line and one with a short line the same classes, so the same height', async () => {
+    await mount({ name: 'Pong', price: LONG }, 'card', false)
+    const long = priceSpan().className
+    page!.unmount()
+
+    await mount({ name: 'Pong', price: SHORT }, 'card', false)
+
+    expect(priceSpan().className).toBe(long)
+  })
+
+  it.each(PRICES)('keeps the %s line on one line below md and clamps it to two from md in the responsive layout', async (_what, price) => {
+    await mount({ name: 'Pong', price }, 'responsive', false)
+
+    const classes = tokens(priceSpan())
+    expect(classes).toEqual(expect.arrayContaining(['truncate', 'md:line-clamp-2', 'md:min-h-[2lh]', 'md:whitespace-normal']))
+    expect(classes).not.toContain('min-h-[2lh]')
+  })
+
+  it.each(PRICES)('keeps the %s line truncated to one line in a row, with no reserved lines', async (_what, price) => {
+    await mount({ name: 'Pong', price }, 'row', false)
+
+    const classes = tokens(priceSpan())
+    expect(classes).toContain('truncate')
+    expect(classes.some(token => token.includes('line-clamp') || token.includes('min-h'))).toBe(false)
+  })
+
+  it.each(['card', 'responsive', 'row'] as const)('has the whole line in the DOM and in the title in the %s layout, so a cut line stays readable', async (layout) => {
+    await mount({ name: 'Pong', price: LONG }, layout, false)
+
+    expect(priceSpan().textContent).toBe(LONG_TEXT)
+    expect(priceSpan().getAttribute('title')).toBe(LONG_TEXT)
+  })
+
+  it('reserves nothing on a card without a Price', async () => {
+    await mount({ name: 'Pong', price: null }, 'card', false)
+
+    expect(root().querySelector('[data-price]')).toBeNull()
+  })
+
+  it('shows no price line on a tile', async () => {
+    await mount({ name: 'Pong', price: LONG }, 'tile', false)
+
+    expect(root().querySelector('[data-price]')).toBeNull()
+  })
+})
+
 // A tile that opens a dialog (#443, #444): a tile with `opens` is a button, one without it stays plain.
 describe('the tile that opens (#443)', () => {
   async function mountOpening(props: { opens?: boolean, to?: string }) {

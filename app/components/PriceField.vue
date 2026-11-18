@@ -52,10 +52,8 @@ const amountError = computed(() => {
   if (props.attempted && priceSource.value !== '' && !priceEntered.value) return t('gameEdit.priceRange')
   return undefined
 })
-const amountHelp = computed(() => {
-  if (amountless.value) return t('gameEdit.priceNoAmount')
-  return amountError.value ? undefined : t('gameEdit.priceAmountHelp')
-})
+// Only a source without an amount explains itself; the hint „z. B. 19,99“ is the placeholder of the field (#804).
+const amountHelp = computed(() => (amountless.value ? t('gameEdit.priceNoAmount') : undefined))
 const sourceError = computed(() => (props.attempted && priceEntered.value && priceSource.value === '' ? t('gameEdit.priceNeedsSource') : undefined))
 const sourceOptions = computed(() => PRICE_SOURCES.map(source => ({ value: source, label: priceSourceLabel(source, t) })))
 /** The source the FilterSelect chose: a value that is no source is „none chosen“ (#362). */
@@ -122,6 +120,7 @@ async function confirmPrice() {
         :help="amountHelp"
         :error="amountError"
         :disabled="amountless"
+        :placeholder="amountless ? undefined : t('gameEdit.pricePlaceholder')"
         inputmode="text"
         autocomplete="off"
       />
