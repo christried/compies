@@ -3,7 +3,8 @@ import { parseDisplayName, type SavedProfile } from '~~/shared/auth'
 
 // The Display name's form, once for profile setup (einrichten.vue, screen 03) and the card „Profil“ (ProfileCard.vue, #399): the
 // typed name, why it can't be sent, the save through `POST /api/profile/setup` and its failure. A page keeps its layout, its help
-// text and its button; its template mounts a `TextField` with `ref="field"` and `v-model="displayName"`.
+// text and its button; its template mounts a `TextField` with `ref="field"` and `v-model="displayName"`. It owns the form's
+// „submit tried“ flag (#797): the field's message shows red after a blocked save.
 // `saved` is the name stored now: given, a save of the same name (after trimming) is not sent, as on Profil. Without it, any
 // name that isn't empty is sent, as at setup.
 export function useDisplayNameForm(options: { initial: string, saved?: MaybeRefOrGetter<string> }) {
@@ -16,12 +17,14 @@ export function useDisplayNameForm(options: { initial: string, saved?: MaybeRefO
   const saving = ref(false)
   const saveFailed = ref(false)
   const field = useTemplateRef<{ focus: () => void }>('field')
+  const { attempt } = provideFormAttempt()
 
   /**
    * Sends the name. An empty one focuses the field instead. `onSaved` runs inside the save, so `saving` holds until it is done
    * (setup navigates on). Resolves true when the name was stored; false when nothing was sent or the save failed.
    */
   async function save(onSaved?: () => unknown) {
+    attempt()
     if (missing.value) {
       field.value?.focus()
       return false

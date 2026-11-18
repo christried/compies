@@ -54,8 +54,7 @@ const save = () => saveName(() => {
         ref="field"
         v-model="displayName"
         :label="t('profile.displayName')"
-        :help="missing ? t('profile.displayNameEmpty') : undefined"
-        :invalid="missing"
+        :error="missing ? t('profile.displayNameEmpty') : undefined"
         :maxlength="DISPLAY_NAME_MAX"
         cut-at-max
         autocomplete="nickname"
@@ -73,7 +72,6 @@ const save = () => saveName(() => {
         size="lg"
         class="self-start"
         :aria-disabled="!canSave || saving"
-        :aria-describedby="missing ? 'display-name-help' : undefined"
       >
         {{ t('common.save') }}
       </AppButton>
