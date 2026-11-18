@@ -33,6 +33,8 @@ async function passTime(ms: number) {
 }
 
 const timeOf = (page: NonNullable<typeof mounted>) => page.get('[data-testid="countdown-time"]')
+/** What the screen reader reads on demand: the state is told here since the pill left the card (#802). */
+const timerOf = (page: NonNullable<typeof mounted>) => page.get('[role="timer"]').text()
 const buttonLabels = (page: NonNullable<typeof mounted>) => page.findAll('button').map((button: { text: () => string }) => button.text())
 
 beforeEach(() => {
@@ -183,7 +185,8 @@ describe('paused and at zero', () => {
     const page = await mount({ durationMs: 60_000, remainingMs: 25_000, startedAt: null, lastStartedAt: null })
 
     expect(timeOf(page).text()).toBe('0:25')
-    expect(page.text()).toContain('Pausiert')
+    expect(timerOf(page)).toBe('Pausiert, noch 25 Sekunden')
+    expect(page.find('[data-testid="countdown-pill"]').exists()).toBe(false)
 
     await passTime(10_000)
     expect(timeOf(page).text()).toBe('0:25')
@@ -195,17 +198,17 @@ describe('paused and at zero', () => {
     await passTime(61_000)
 
     expect(timeOf(page).text()).toBe('0:00')
-    expect(page.text()).toContain('Zeit ist um')
+    expect(timerOf(page)).toBe('Zeit ist um')
     await passTime(30_000)
-    expect(page.text()).toContain('Zeit ist um')
+    expect(timerOf(page)).toBe('Zeit ist um')
   })
 
   it('shows the full duration while ready, without „Pausiert“ or „Zeit ist um“', async () => {
     const page = await mount({ durationMs: 300_000, remainingMs: 300_000, startedAt: null, lastStartedAt: null })
 
     expect(timeOf(page).text()).toBe('5:00')
-    expect(page.text()).not.toContain('Pausiert')
-    expect(page.text()).not.toContain('Zeit ist um')
+    expect(timerOf(page)).not.toContain('Pausiert')
+    expect(timerOf(page)).not.toContain('Zeit ist um')
   })
 })
 

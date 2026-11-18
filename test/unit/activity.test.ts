@@ -24,7 +24,7 @@ describe('groupActivity', () => {
   const one = { id: 's1', number: 1, startedAt: '2090-10-31T17:00:00.000Z', endedAt: '2090-10-31T21:00:00.000Z' }
   const two = { id: 's2', number: 2, startedAt: '2090-11-07T17:00:00.000Z', endedAt: null }
 
-  it('puts everything into „Vor dem Start“ while no Session has started', () => {
+  it('puts everything into „Beginn“ while no Session has started', () => {
     const entries = [entry('a', '2090-10-30T18:00:00.000Z'), entry('b', '2090-10-30T19:00:00.000Z')]
 
     expect(groupActivity(entries, [], 1)).toEqual([{ key: 'beforeStart', kind: 'beforeStart', number: null, entries }])

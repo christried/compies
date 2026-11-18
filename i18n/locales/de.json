@@ -413,7 +413,6 @@
   },
   "wheel": {
     "title": "Glücksrad",
-    "empty": "Das Rad ist leer",
     "spinning": "Das Rad dreht …",
     "where": "Wo bleibt es stehen?",
     "says": "Das Glücksrad sagt",
@@ -467,7 +466,6 @@
     "partyLeft": "Euer Team: kein Veto mehr | Euer Team: 1 Veto übrig | Euer Team: {n} Vetos übrig",
     "soloLeft": "Du hast kein Veto mehr | Du hast noch 1 Veto | Du hast noch {n} Vetos",
     "timeLeft": "Noch {time}",
-    "timeLabel": "Veto-Zeit",
     "holding": "Halten …",
     "cast": "Veto eingelegt",
     "locked": "Veto ist drin",
@@ -507,7 +505,6 @@
   },
   "ceremony": {
     "banner": "Siegerehrung!",
-    "sub": "{event} · {n} Spiel | {event} · {n} Spiele",
     "skip": "Überspringen",
     "watch": "Siegerehrung ansehen",
     "again": "Nochmal ansehen",
@@ -524,9 +521,8 @@
     "more": "{n} weitere",
     "live": "Gewonnen hat {list}, {points}.",
     "tie": {
-      "sub": "{base} · {k} Sieger, je {n} Punkt | {base} · {k} Sieger, je {n} Punkte",
-      "subBoth": "{base} · Beide gleichauf, je {n} Punkt | {base} · Beide gleichauf, je {n} Punkte",
-      "subAll": "{base} · Alle {k} gleichauf, je {n} Punkt | {base} · Alle {k} gleichauf, je {n} Punkte",
+      "sub": "{k} Sieger, je {n} Punkt | {k} Sieger, je {n} Punkte",
+      "subBoth": "Beide gleichauf, je {n} Punkt | Beide gleichauf, je {n} Punkte",
       "plateStamp": "Unentschieden",
       "list": "Platz 1, unentschieden",
       "stack": "{team}: {players}",
@@ -608,7 +604,7 @@
   "activity": {
     "title": "Aktivität",
     "logAria": "Aktivität",
-    "beforeStart": "Vor dem Start",
+    "beforeStart": "Beginn",
     "sessionGroup": "Session {n}",
     "sessionGroupSingle": "Session",
     "beforeSession": "Vor Session {n}",
@@ -618,7 +614,7 @@
     "sessionStartedSingle": "{name} hat die Session gestartet",
     "sessionEnded": "{name} hat Session {n} beendet",
     "sessionEndedSingle": "{name} hat die Session beendet",
-    "empty": "Noch nichts passiert. Ab jetzt steht hier, wer dazukommt und wechselt.",
+    "empty": "Noch nichts passiert. Bald aber bestimmt. Vielleicht.",
     "older": "Ältere laden",
     "loadFailed": "Die Aktivität konnte nicht geladen werden.",
     "retry": "Nochmal versuchen",
@@ -743,9 +739,9 @@
   },
   "connection": {
     "reconnecting": "Verbindung wird wiederhergestellt …",
-    "reconnectingText": "Bis dahin lädt sich die Seite alle 15 Sekunden neu.",
+    "reconnectingText": "Lädt alle 15 Sekunden neu.",
     "lost": "Verbindung verloren",
-    "lostText": "Du siehst den letzten Stand.",
+    "lostText": "Du siehst den letzten Stand (den du kennst lol).",
     "retry": "Neu verbinden",
     "back": "Wieder da",
     "invalidLink": "Dieser Link ist abgelaufen.",
@@ -1724,20 +1720,11 @@
     "set": "Stellen",
     "range": "Zwischen 5 Sekunden und 99:59.",
     "running": "Der Countdown läuft schon.",
-    "pill": {
-      "ready": "Bereit",
-      "running": "Läuft",
-      "paused": "Pausiert",
-      "done": "Zeit ist um"
-    },
     "stamp": "Zeit ist um",
     "hostFallback": "Der Host",
     "meta": {
       "set": "Gestellt auf {time}",
-      "readyHost": "Gestellt auf {time}. Starte, wenn alle bereit sind.",
       "ready": "Gestellt auf {time}. {host} startet ihn.",
-      "pausedHost": "Angehalten. „Fortsetzen“ macht bei {time} weiter.",
-      "paused": "{host} hat angehalten, bei {time} geht’s weiter.",
       "doneHost": "Bleibt stehen, bis du zurücksetzt.",
       "done": "Bleibt stehen, bis {host} zurücksetzt."
     },
@@ -1769,7 +1756,7 @@
     "text": "Im schlimmsten Fall brauchst du noch {needed}, übrig ist {have}. | Im schlimmsten Fall brauchst du noch {needed}, übrig sind {have}."
   },
   "rounds": {
-    "title": "Gerade dran",
+    "title": "Läuft aktuell.",
     "list": "Offene Spiele",
     "playing": "wird gespielt",
     "putBack": "Zurücklegen",
@@ -1853,7 +1840,7 @@
     "teamWordTooLong": "Höchstens 12 Zeichen.",
     "slotTaken": "{name} war schneller.",
     "unevenTeams": "Alle Teams müssen gleich groß sein.",
-    "notAPlayer": "Ein Veto können nur Spieler in einem Team einlegen.",
+    "notAPlayer": "Ein Veto können nur Spielende in einem Team einlegen.",
     "noVetoWindow": "Dafür läuft gerade kein Veto-Fenster.",
     "vetoWindowClosed": "Das Veto-Fenster ist zu.",
     "lockedWhileDrawn": "Das lässt sich nicht ändern, solange ein Spiel gezogen wird.",

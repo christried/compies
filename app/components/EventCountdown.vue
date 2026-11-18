@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { BellRing, Pause, Play, RotateCcw, Timer } from '@lucide/vue'
+import { Pause, Play, RotateCcw, Timer } from '@lucide/vue'
 import type { Component } from 'vue'
 import { countdownClock, PIP_COUNT, type Tone } from '~/utils/countdown-card'
 import type { CountdownCommand } from '~~/shared/countdown'
@@ -9,8 +9,8 @@ import type { CountdownView } from '~~/shared/stage'
 // left from the server's clock and the stored facts on every animation frame while it runs, rounded up to whole seconds. Nothing counts
 // down by itself, so every Member sees the same moment (ceil((endsAt − serverNow) / 1000)). `useCountdownCard` owns the frame (`countdownFrame`,
 // a function of those facts and the ticker's value: a viewer who opens the page at 7 s gets the 7 row at once), the status region, the tick
-// on each second and the burst at zero (#363). This component keeps the layout, the frame's mapping to classes, pill, meta, timer text and
-// actions, and the focus hand-over.
+// on each second and the burst at zero (#363). This component keeps the layout, the frame's mapping to classes, meta, timer text and
+// actions, and the focus hand-over. No pill: the clock shows the state (#802).
 const props = withDefaults(defineProps<{
   countdown: CountdownView
   /** The server's clock in epoch ms (the page's useServerClock): the time left is measured against it, not the User's clock. */
@@ -43,26 +43,19 @@ const tileClass = computed(() => {
   return [TONE_FILL[tone], digitFg === 'on' ? TONE_TEXT[tone] : DIGIT_TEXT[digitFg], view === 'paused' ? 'border-dashed' : 'border-solid']
 })
 
-const PILL = {
-  ready: { class: 'bg-surface text-ink', key: 'ready' },
-  running: { class: 'bg-primary text-on-primary', key: 'running' },
-  paused: { class: 'bg-surface text-ink', key: 'paused' },
-  done: { class: 'bg-error text-on-error', key: 'done' },
-} as const
-
 const characters = computed(() => [...frame.value.text])
 const pips = computed(() => Array.from({ length: PIP_COUNT }, (_, i) => i < (frame.value.pips ?? 0)))
 const pipFill = computed(() => (frame.value.warning ? 'bg-warning' : 'bg-error'))
 const fillWidth = computed(() => `${Math.round(frame.value.fill * 10000) / 100}%`)
 const fillEdge = computed(() => frame.value.fill > 0 && frame.value.fill < 1)
 
-const meta = computed(() => {
+/** The grey line by the buttons (#802): none for the Host while ready, and none for anybody while paused (the clock and the badge say it). */
+const meta = computed((): string | null => {
   const { view, s } = frame.value
-  const asHost = props.isHost
   if (view === 'running') return t('countdown.meta.set', { time: countdownClock(Math.ceil(props.countdown.durationMs / 1000)) })
-  if (view === 'ready') return t(asHost ? 'countdown.meta.readyHost' : 'countdown.meta.ready', { time: countdownClock(s), host: host.value })
-  if (view === 'paused') return t(asHost ? 'countdown.meta.pausedHost' : 'countdown.meta.paused', { time: countdownClock(s), host: host.value })
-  return t(asHost ? 'countdown.meta.doneHost' : 'countdown.meta.done', { host: host.value })
+  if (view === 'ready') return props.isHost ? null : t('countdown.meta.ready', { time: countdownClock(s), host: host.value })
+  if (view === 'paused') return null
+  return t(props.isHost ? 'countdown.meta.doneHost' : 'countdown.meta.done', { host: host.value })
 })
 
 /** What the screen reader can read on demand (the sr-only timer; implicit `aria-live="off"`, so it may change every second). */
@@ -135,24 +128,6 @@ watch(actionsKey, () => {
       >
         {{ t('countdown.title') }}
       </h2>
-      <span
-        data-testid="countdown-pill"
-        class="ml-auto inline-flex h-7 flex-none items-center gap-1.5 rounded-pill border-2 border-line px-2.75 text-[13px] font-extrabold whitespace-nowrap transition-colors dur-fast ease-snap motion-reduce:transition-none reduced:transition-none"
-        :class="PILL[frame.view].class"
-      >
-        <span
-          v-if="frame.view === 'ready' || frame.view === 'running'"
-          aria-hidden="true"
-          class="size-2 rounded-full border-[1.5px] border-line"
-          :class="frame.view === 'running' ? 'bg-hot' : 'bg-ink-3'"
-        />
-        <AppIcon
-          v-else
-          :icon="frame.view === 'paused' ? Pause : BellRing"
-          :size="14"
-        />
-        {{ t(`countdown.pill.${PILL[frame.view].key}`) }}
-      </span>
     </div>
 
     <div class="flex flex-col items-center gap-3 md:grid md:grid-cols-[300px_minmax(0,1fr)] md:gap-5.5">
@@ -272,8 +247,12 @@ watch(actionsKey, () => {
             :class="lit ? ['border-solid border-line', pipFill] : 'border-dashed border-ink-3 bg-transparent'"
           />
         </div>
-        <div class="flex flex-wrap items-center gap-3">
+        <div
+          v-if="meta || (isHost && actions.length > 0)"
+          class="flex flex-wrap items-center gap-3"
+        >
           <span
+            v-if="meta"
             data-testid="countdown-meta"
             class="min-w-0 flex-[1_1_200px] text-[14px] font-bold text-pretty text-ink-2"
           >{{ meta }}</span>
