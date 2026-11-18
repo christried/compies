@@ -2,6 +2,7 @@
 import { Link as LinkIcon } from '@lucide/vue'
 import { formatSlotDay, formatSlotTime } from '~/utils/berlin-time'
 import { feedSessions } from '~/utils/activity'
+import { ceremonyAwaitsSound } from '~/utils/ceremony'
 import { stageInstants, stageUnsettled } from '~/utils/event-stage'
 import { dateBlockedKey, eventPageState, headerPill, waitsForCeremony, wearsPartyhat } from '~/utils/event-page'
 import { historyCorrections } from '~/utils/history-corrections'
@@ -118,7 +119,7 @@ const { noticeShown: soundNotice, unlock: unlockSound } = useSoundUnlock({
   suspended: cues.suspended,
   resume: cues.resume,
   ready: () => serverClock.ready.value,
-  sessionRunning: () => pageState.value?.kind === 'running',
+  moment: () => pageState.value?.kind === 'running' || (!!data.value && ceremonyAwaitsSound(data.value, serverClock.now())),
 })
 const waits = computed(() => (pageState.value ? waitsForCeremony(pageState.value) : false))
 /** The Standings' sequence waits while their block has not arrived on top (#442): false for a null clock (server render, reload, hidden tab) and for a view without a Result moment, which have no arrival. */
