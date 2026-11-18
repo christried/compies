@@ -1,11 +1,12 @@
 import { STAMP_DELAY_MS } from '~/utils/motion'
 import {
-  CUE_IDS, TICK_MIN_GAP_MS, coinCuePlan, cueFileUrl, standingsCues, thinTicks, vetoArrivalCues, vetoCuePlan, wheelCuePlan, wheelVoicePlan,
+  CUE_IDS, TICK_MIN_GAP_MS, ceremonyCuePlan, coinCuePlan, cueFileUrl, standingsCues, thinTicks, vetoArrivalCues, vetoCuePlan, wheelCuePlan, wheelVoicePlan,
   type ArrivalCue, type Cue, type CueId, type VetoArrivalState,
 } from '~/utils/sound-cues'
 import { isText, parseCredits, type CueCredit, type Licence } from '~/utils/sound-credits'
 import { pinCrossings } from '~/utils/wheel-pins'
 import type { WheelTiming } from '~/utils/wheel'
+import type { CeremonyGag } from '~~/shared/ceremony'
 import { COIN_DURATION_MS } from '~~/shared/coin'
 import type { RoundGame } from '~~/shared/game'
 import { isRecord } from '~~/shared/record'
@@ -52,6 +53,11 @@ export const CUE_BRIEF: Record<CueId, { character: string }> = {
   'lb-winner': { character: 'mini celebration: party horn + 3 confetti pops' },
   // board
   // ceremony
+  'cer-drop': { character: 'banner thud' },
+  'cer-row': { character: 'place slides in, pitch rises with rank' },
+  'cer-run': { character: 'the run: boots and the trophy\'s rattle' },
+  'cer-trip': { character: 'Stolpern: he trips over the trophy' },
+  'cer-bonk': { character: 'Volltreffer: the trophy lands on his head' },
   // tour
 }
 
@@ -60,7 +66,7 @@ export const CUE_BRIEF: Record<CueId, { character: string }> = {
  * a member here (a union takes no group lines, so it is the one line two tickets may both touch), a `MOMENT_LABEL` row and a runner in the
  * page's `MOMENT_RUNNERS`, under its group's line.
  */
-export type Moment = 'spin' | 'window' | 'arrival' | 'voice' | 'coin' | 'standings'
+export type Moment = 'spin' | 'window' | 'arrival' | 'voice' | 'coin' | 'standings' | 'ceremony'
 
 export const MOMENT_OF: Record<CueId, Moment> = {
   // wheel
@@ -74,6 +80,7 @@ export const MOMENT_OF: Record<CueId, Moment> = {
   'lb-swap': 'standings', 'lb-count': 'standings', 'lb-winner': 'standings',
   // board
   // ceremony
+  'cer-drop': 'ceremony', 'cer-row': 'ceremony', 'cer-run': 'ceremony', 'cer-trip': 'ceremony', 'cer-bonk': 'ceremony',
   // tour
 }
 
@@ -91,6 +98,7 @@ export const MOMENT_LABEL: Record<Moment, string> = {
   standings: 'Test Standings change',
   // board
   // ceremony
+  ceremony: 'Test ceremony',
   // tour
 }
 
@@ -404,4 +412,14 @@ export function arrivalCues(button: ArrivalButton, now: number): ArrivalCue[] {
     return vetoArrivalCues({ draw, ownCast: false, revealedCount: null }, { draw: set, ownCast: false, revealedCount: null }, now)
   }
   return stampCues(draw, button === 'reveal-1' ? 1 : 2, now)
+}
+
+// Ceremony run (#743) ----------------------------------------------------------------------------------------------------------------
+
+/**
+ * A test ceremony: the plan the REAL `ceremonyCuePlan` makes for one Winner of four Parties (three places below, so the ladder is audible), as
+ * the Event page's layer would give it for a run that starts `LEAD_MS` from `now`. The plan only, sound and no picture.
+ */
+export function ceremonyRun(now: number, gag: CeremonyGag): Cue[] {
+  return ceremonyCuePlan({ startsAt: now + LEAD_MS, shape: { partyCount: 4, winners: 1, gag, grid: false }, reducedMotion: false })
 }

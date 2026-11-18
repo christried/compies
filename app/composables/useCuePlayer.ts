@@ -22,6 +22,7 @@ function groupInputOf(view: EventView | null | undefined): GroupInput {
     // Both are the same for every viewer's read; `view.coin` is only tested for null, its side is never read (#669).
     sessionRunning: view?.runningSessionId != null,
     toss: view?.coin != null,
+    finished: view?.event.phase === 'finished',
     // The Event is set up and not finished, the page's own rule of `useStandingsNews`: the Host's read and a Member's hold both fields (#741).
     standings: view?.standings != null && view.event.phase !== 'finished',
   }
@@ -75,6 +76,8 @@ export function useCuePlayer(input: {
   ready: () => boolean
   /** Grows when the server clock's offset changed (`useServerClock().moves`): the pending cues are looked at again (#594). */
   moved: () => number
+  /** The Award ceremony's plan (#743), from the layer's own run: the synced start or a viewer's replay. Its own source in the player, so a read never replaces it. */
+  ceremony?: () => readonly Cue[]
 }): { suspended: Readonly<Ref<boolean>>, resume: () => Promise<void>, playNow: CuePlayer['playNow'] } {
   // Order matters: `useSound` registers its read of the stored switch first, so Ton has its stored value when `mounted` turns true.
   const { enabled } = useSound()
@@ -134,10 +137,11 @@ export function useCuePlayer(input: {
     const view = input.view()
     made.preload(cueFilesOf(reachableGroups(groupInputOf(view))))
     made.setPlan(view ? planOf(view) : [])
+    made.setPlan(input.ceremony?.() ?? [], 'ceremony')
   }
 
   // Not a sync watch: a refetch of the same read is a new object every time, and the player diffs the plan, so it schedules nothing twice.
-  watch([() => input.view(), () => input.ready(), () => enabled.value, mounted], sync)
+  watch([() => input.view(), () => input.ready(), () => enabled.value, mounted, () => input.ceremony?.()], sync)
 
   // The server clock's offset changed (the first answer, a re-sync): a cue scheduled on the old reading moves with it (#594).
   watch(input.moved, () => player?.refresh())

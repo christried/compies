@@ -2,7 +2,7 @@
 import LuckyWheel from '~/components/LuckyWheel.vue'
 import VetoWindow from '~/components/VetoWindow.vue'
 import {
-  CANDIDATE_BASE, CUE_BRIEF, MOMENT_LABEL, MOMENT_OF, MOMENT_SETUP, arrivalCues, buildCoinRun, buildRun, candidatesOf, choicesReport, configFor, emptyChoices, stampCues, standingsChangeCues, testCandidateOf,
+  CANDIDATE_BASE, CUE_BRIEF, MOMENT_LABEL, MOMENT_OF, MOMENT_SETUP, arrivalCues, buildCoinRun, buildRun, candidatesOf, ceremonyRun, choicesReport, configFor, emptyChoices, stampCues, standingsChangeCues, testCandidateOf,
   type ArrivalButton, type Candidate, type Choices, type Controls, type Moment, type Run,
 } from '~/dev/listening-model'
 import { createCuePlayer, type CuePlayer } from '~/utils/cue-player'
@@ -164,6 +164,13 @@ async function standingsChange() {
   for (const cue of standingsChangeCues(controls.reduced, countDurationMs())) armed.playNow(cue.id, cue.delayMs)
 }
 
+/** A test ceremony (#743): the REAL plan of one Winner of four Parties on the player's ceremony source, sound only; the gag is the one of the cue's own button. */
+async function startCeremony(id: CueId) {
+  if (!await ensureContext() || !armed) return
+  clearTimeout(timer)
+  armed.setPlan(ceremonyRun(Date.now(), id === 'cer-bonk' ? 'bonk' : 'trip'), 'ceremony')
+}
+
 /** What a moment's button runs (#740): a new `Moment` has no runner until it has a row here, so typecheck says so. A new moment's row sits under its group's line. */
 const MOMENT_RUNNERS: Record<Moment, (id: CueId) => void> = {
   // wheel
@@ -178,6 +185,7 @@ const MOMENT_RUNNERS: Record<Moment, (id: CueId) => void> = {
   standings: () => void standingsChange(),
   // board
   // ceremony
+  ceremony: id => void startCeremony(id),
   // tour
 }
 

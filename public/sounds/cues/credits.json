@@ -125,6 +125,36 @@
       "source": "scripts/make-cue-candidates.mjs, Rezept troete-knall",
       "author": null,
       "licence": "generated"
+    },
+    "cer-drop": {
+      "candidate": "holz-brett",
+      "source": "scripts/make-cue-candidates.mjs, Rezept holz-brett",
+      "author": null,
+      "licence": "generated"
+    },
+    "cer-row": {
+      "candidate": "holz-marimba",
+      "source": "scripts/make-cue-candidates.mjs, Rezept holz-marimba",
+      "author": null,
+      "licence": "generated"
+    },
+    "cer-run": {
+      "candidate": "holz-stapfen",
+      "source": "scripts/make-cue-candidates.mjs, Rezept holz-stapfen",
+      "author": null,
+      "licence": "generated"
+    },
+    "cer-trip": {
+      "candidate": "holz-stolper",
+      "source": "scripts/make-cue-candidates.mjs, Rezept holz-stolper",
+      "author": null,
+      "licence": "generated"
+    },
+    "cer-bonk": {
+      "candidate": "holz-bonk",
+      "source": "scripts/make-cue-candidates.mjs, Rezept holz-bonk",
+      "author": null,
+      "licence": "generated"
     }
   }
 }
