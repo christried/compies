@@ -102,13 +102,6 @@ function rotate() {
           />
           {{ t('invite.renewMembers') }}
         </li>
-        <li class="flex gap-2">
-          <AppIcon
-            :icon="Check"
-            :size="16"
-          />
-          {{ t('invite.renewShare') }}
-        </li>
       </ul>
 
       <HoldToConfirmButton

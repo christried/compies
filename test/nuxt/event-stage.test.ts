@@ -206,7 +206,7 @@ describe('the blocks of the stage', () => {
   })
 
   // A Tie (#278): the banner is the news of the stage and sits right under the Head and the reopen notices, wherever the Host's dock offers
-  // „Unentschieden beenden“ (running, between, done), and in no other kind: a finished Event keeps `end.tie`, but nobody decides any more.
+  // „Unentschieden“ (running, between, done), and in no other kind: a finished Event keeps `end.tie`, but nobody decides any more.
   it('lists the Tie banner right after the reopen notices while a Session runs, between Sessions and after the last one', () => {
     expect(blocks(ONE_RUNNING, { ...RUNNING, ...TIE })).toEqual(['head', 'reopen', 'tie', 'rounds', 'standings', 'board', 'poll', 'cards'])
     expect(blocks(ONE_RUNNING, { ...RUNNING, ...WHEEL, ...TIE })).toEqual(['head', 'reopen', 'tie', 'wheel', 'rounds', 'standings', 'board', 'poll', 'cards'])

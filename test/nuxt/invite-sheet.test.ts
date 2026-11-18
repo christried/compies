@@ -1,6 +1,7 @@
 import { mountSuspended, registerEndpoint } from '@nuxt/test-utils/runtime'
 import { createError } from 'h3'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import de from '~~/i18n/locales/de.json'
 import InviteSheet from '~/components/InviteSheet.vue'
 
 // Each test gets its own slug: registerEndpoint keeps the first handler for a path.
@@ -38,6 +39,36 @@ describe('InviteSheet', () => {
 
     expect(dialog()?.textContent).toContain('Leute einladen')
     expect(dialog()?.querySelector<HTMLInputElement>('input[readonly]')?.value).toBe(link)
+  })
+
+  it('says who gets the link and asks whether a new one is needed, without the Einladung pill or the old line (#801)', async () => {
+    testNumber += 1
+    const slug = `freitags-invite-${testNumber}`
+
+    await mountSuspended(InviteSheet, { props: { open: true, slug, url: url(slug, 'AbCdEfGhIjKl') } })
+
+    expect(dialog()?.textContent).toContain('Wer den Link hat und sich anmeldet, landet auf der Tribüne.')
+    expect(dialog()?.textContent).not.toContain('Von dort ziehen sich alle selbst ins Team.')
+    expect(dialog()?.textContent).toContain('Neuer Link notwendig?')
+    expect(dialog()?.textContent).not.toContain('Link geleakt?')
+  })
+
+  it('lists two points when renewing, and no line about sharing the new link (#801)', async () => {
+    testNumber += 1
+    const slug = `freitags-invite-${testNumber}`
+
+    await mountSuspended(InviteSheet, { props: { open: true, slug, url: url(slug, 'AbCdEfGhIjKl') } })
+    button('Link erneuern')!.click()
+
+    await vi.waitFor(() => expect(dialog()?.textContent).toContain('Einladungslink erneuern?'))
+    const points = [...dialog()!.querySelectorAll('li')].map(item => item.textContent?.trim())
+    expect(points).toEqual(['Der alte Link funktioniert sofort nicht mehr.', 'Alle im Event bleiben drin.'])
+    expect(dialog()?.textContent).not.toContain('Den neuen Link musst du neu teilen.')
+  })
+
+  it('has no key for the Einladung pill or the share line any more (#801)', () => {
+    expect(Object.keys(de.invite)).not.toContain('kicker')
+    expect(Object.keys(de.invite)).not.toContain('renewShare')
   })
 
   it('renders nothing while closed', async () => {
