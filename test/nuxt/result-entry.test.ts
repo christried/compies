@@ -111,11 +111,12 @@ describe('the result sheet', () => {
     const correctionSave = () => footerButton('Korrektur speichern')
     const noteLine = () => [...sheet().querySelectorAll('[role="status"]')].find(item => item.textContent?.includes('rechnet nach dem Speichern neu'))
 
-    it('is titled „Spiel 3 korrigieren“ with the kicker „Korrektur: Spiel 3 von 6“, the note and „Korrektur speichern“', async () => {
+    it('is titled „Spiel 3 korrigieren“ with no kicker line (#803), the note and „Korrektur speichern“', async () => {
       await mount({ correction: shared, kicker: { number: 3, total: 6 } })
 
       expect(sheet().querySelector('h2')?.textContent).toBe('Spiel 3 korrigieren')
-      expect([...sheet().querySelectorAll('p')].some(line => line.textContent?.trim() === 'Korrektur: Spiel 3 von 6')).toBe(true)
+      expect(sheet().textContent).not.toContain('Spiel 3 von 6')
+      expect(sheet().textContent).not.toContain('Korrektur:')
       expect(noteLine()?.textContent).toContain('In der Aktivität steht, dass du Spiel 3 korrigiert hast.')
       expect(correctionSave()).toBeDefined()
       expect(footerButton('Ergebnis speichern')).toBeUndefined()
@@ -290,6 +291,24 @@ describe('the result sheet', () => {
     expect(rows().map(earnsOf)).toEqual(['+2 Punkte', '+2 Punkte', '+2 Punkte'])
     await click(switches()[0]!)
     expect(places()).toEqual(['1', '2', '2'])
+  })
+
+  it('draws the „gleichauf“ control as a solid-bordered button with no „=“ icon, on and off (#803)', async () => {
+    await mount()
+
+    const off = switches()[0]!
+    expect(off.textContent?.trim()).toBe('gleichauf')
+    expect(off.classList).toContain('border-2')
+    expect(off.classList).not.toContain('border-dashed')
+    expect(off.querySelector('svg')).toBeNull()
+
+    await click(off)
+
+    const on = switches()[0]!
+    expect(on.getAttribute('aria-checked')).toBe('true')
+    expect(on.classList).toContain('border-2')
+    expect(on.classList).not.toContain('border-dashed')
+    expect(on.querySelector('svg')).toBeNull()
   })
 
   it('clears the „gleichauf“ flags that touch the moved rows and keeps the ones outside', async () => {

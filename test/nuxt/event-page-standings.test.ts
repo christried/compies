@@ -634,7 +634,7 @@ describe('the Standings on the Event page', () => {
       await vi.waitFor(() => expect(dialog()).not.toBeNull())
 
       expect(dialog()!.querySelector('h2')?.textContent).toBe('Spiel 1 korrigieren')
-      expect(dialog()!.textContent).toContain('Korrektur: Spiel 1 von 6')
+      expect(dialog()!.textContent).not.toContain('Korrektur:')
       await clickButton(dialog(), 'Korrektur speichern')
       await flushPromises()
 

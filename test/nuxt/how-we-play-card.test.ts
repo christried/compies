@@ -202,7 +202,7 @@ describe('HowWePlayCard (#148)', () => {
     it('says the others see the games only at the wheel, with the Lucky Wheel, and the Host keeps both pools', async () => {
       const card = await mountCard({ settings: { ...wheel, poolPreview: false }, pool: visiblePool, isHost: true })
 
-      expect(card.text()).toContain('Pool vorher zeigen ist aus: Die anderen sehen die Spiele erst am Rad.')
+      expect(card.text()).toContain('Pool vorher zeigen ist aus: Die Teilnehmenden sehen die Spiele erst am Rad.')
       expect(card.text()).toContain('Nur du siehst das')
       expect(card.findAll('li').map(li => li.text())).toEqual(['Mario Kart', 'Pong'])
     })
@@ -210,7 +210,7 @@ describe('HowWePlayCard (#148)', () => {
     it('says the others see the games only once the Host sets them, with Host pick', async () => {
       const card = await mountCard({ settings: { ...defaultSettings(), poolPreview: false }, pool: visiblePool, isHost: true })
 
-      expect(card.text()).toContain('Pool vorher zeigen ist aus: Die anderen sehen die Spiele erst, wenn du sie setzt.')
+      expect(card.text()).toContain('Pool vorher zeigen ist aus: Die Teilnehmenden sehen die Spiele erst, wenn du sie setzt.')
       expect(card.text()).not.toContain('am Rad')
     })
 
@@ -230,7 +230,7 @@ describe('HowWePlayCard (#148)', () => {
     const card = await mountCard({ settings: hiddenWheel, pool: visiblePool, isHost: true })
 
     expect(card.findAll('li').map(li => li.text())).toEqual(['Mario Kart', 'Pong'])
-    expect(card.text()).toContain('Das Rad ist verdeckt: Die anderen sehen erst am Rad, wie viele Spiele drauf sind, und nur die Spiele, die gezogen werden.')
+    expect(card.text()).toContain('Das Rad ist verdeckt: Die Teilnehmenden sehen erst am Rad, wie viele Spiele drauf sind, und nur die Spiele, die gezogen werden.')
   })
 
   it('does not add the note for the Host while the wheel is visible', async () => {

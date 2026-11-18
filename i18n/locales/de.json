@@ -485,7 +485,7 @@
   },
   "bonusVeto": {
     "title": "Bonus-Veto geben",
-    "help": "Die Partei kann es sofort einsetzen, auch in einem laufenden Veto-Fenster. Ein Bonus-Veto lässt sich nicht zurücknehmen.",
+    "help": "Die Partei kann es sofort einsetzen – auch in einem laufenden Veto-Fenster. Ein Bonus-Veto lässt sich nicht zurücknehmen.",
     "count": "Noch kein Bonus-Veto | 1 Bonus-Veto | {n} Bonus-Vetos",
     "grant": "Bonus-Veto geben",
     "done": "Gegeben"
@@ -541,7 +541,6 @@
     "title": "Ergebnis eintragen",
     "kicker": "Spiel {n} von {total}",
     "correction": "Spiel {n} korrigieren",
-    "kickerCorrection": "Korrektur: Spiel {n} von {total}",
     "correctionNote": "Die Tabelle rechnet nach dem Speichern neu, für alle sichtbar. In der Aktivität steht, dass du Spiel {n} korrigiert hast.",
     "cancelCorrection": "Korrektur abbrechen",
     "allPlayed": "Alle Spiele gespielt",
@@ -1704,9 +1703,9 @@
     "emptyMember": "Noch nicht festgelegt. {host} legt gleich fest, wie gespielt wird.",
     "mainPool": "Spielepool",
     "emptyPool": "Noch keine Spiele.",
-    "hostOnly": "Das Rad ist verdeckt: Die anderen sehen erst am Rad, wie viele Spiele drauf sind, und nur die Spiele, die gezogen werden.",
-    "previewOffWheel": "Pool vorher zeigen ist aus: Die anderen sehen die Spiele erst am Rad.",
-    "previewOffPick": "Pool vorher zeigen ist aus: Die anderen sehen die Spiele erst, wenn du sie setzt."
+    "hostOnly": "Das Rad ist verdeckt: Die Teilnehmenden sehen erst am Rad, wie viele Spiele drauf sind, und nur die Spiele, die gezogen werden.",
+    "previewOffWheel": "Pool vorher zeigen ist aus: Die Teilnehmenden sehen die Spiele erst am Rad.",
+    "previewOffPick": "Pool vorher zeigen ist aus: Die Teilnehmenden sehen die Spiele erst, wenn du sie setzt."
   },
   "countdown": {
     "title": "Countdown",
@@ -1773,7 +1772,7 @@
     "selected": "{name} ist ausgewählt",
     "choose": "Such dir ein Spiel aus.",
     "chosen": "Alle sehen es sofort.",
-    "vetoAllowed": "Veto erlauben",
+    "vetoAllowed": "Vetos erlauben",
     "vetoAllowedHelp": "Die Parteien können das Spiel dann im Veto-Fenster ablehnen.",
     "confirm": "Setzen"
   },
