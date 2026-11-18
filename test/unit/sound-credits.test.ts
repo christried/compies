@@ -43,7 +43,7 @@ describe('parseCredits', () => {
     expect(problems.filter(problem => problem.includes(id))).toHaveLength(1)
     expect(Object.keys(credits)).not.toContain(id)
     // The other ten are untouched.
-    expect(Object.keys(credits).length).toBe(id === 'wheel-boom' ? 11 : 10)
+    expect(Object.keys(credits).length).toBe(id === 'wheel-boom' ? CUE_IDS.length : CUE_IDS.length - 1)
   })
 
   it.each([null, 'x', 3, [], { cues: 'x' }, { cues: null }, { cues: [] }])('never throws on %j: a problem and no credit', (raw) => {
