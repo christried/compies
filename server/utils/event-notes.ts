@@ -1,0 +1,50 @@
+import { and, eq } from 'drizzle-orm'
+import { eventGameNotes } from '../db/schema'
+import { isUuid } from '../domain/uuid'
+import { EVENT_NOTES_MAX, type EventNotesSaved } from '../../shared/event'
+import { parseNotes, type NotesDoc } from '../../shared/notes-doc'
+import { asRecord } from '../../shared/record'
+import type { Db } from './db'
+import type { EventChange } from './event-access'
+import { apiError } from './errors'
+import { assertGamesExist } from './pools'
+
+// The Host's Event notes (#731, spec #717 § E, GLOSSARY: Event notes): one document per Event and game, kept in `event_game_notes`. A save is an
+// ordinary Event change (ADR 0013): the instants come from `EventChange.now`, an `event.changed` to the Host alone follows after the commit (#820), and it writes no
+// Activity entry, so nothing but the Host's own read ever carries a note.
+
+/**
+ * Sets or clears one game's Event notes. The body is `{ notes }`; `null`, `''` and a document with no visible text clear (no row is left), a refused
+ * document is `invalid_game_notes`. The game must be in the Event's Host's library, archived or not (#722); another Host's game and an unknown id
+ * answer alike.
+ */
+export async function saveEventNotes({ tx, eventRow, user, now, body, publishTo }: Pick<EventChange, 'tx' | 'eventRow' | 'user' | 'now' | 'body' | 'publishTo'>, rawGameId: string): Promise<EventNotesSaved> {
+  if (!isUuid(rawGameId)) throw apiError('invalid_value')
+  const gameId = rawGameId.toLowerCase()
+  // A stray request that lacks the key must never clear a note.
+  const fields = asRecord(body)
+  if (!Object.hasOwn(fields, 'notes')) throw apiError('invalid_value')
+  const notes = parseNotes(fields.notes, EVENT_NOTES_MAX)
+  if (notes === undefined) throw apiError('invalid_game_notes')
+
+  await assertGamesExist(tx, eventRow.hostId, [gameId])
+
+  // A save wakes the Host's own tabs only (#820): a Member's Event read does not change, so no Member refetches it or learns that the Host edits notes.
+  publishTo([user.id], { type: 'event.changed' })
+
+  if (notes === null) {
+    await tx.delete(eventGameNotes).where(and(eq(eventGameNotes.eventId, eventRow.id), eq(eventGameNotes.gameId, gameId)))
+    return { gameId, notes: null }
+  }
+  await tx
+    .insert(eventGameNotes)
+    .values({ eventId: eventRow.id, gameId, notes, createdAt: now, updatedAt: now })
+    .onConflictDoUpdate({ target: [eventGameNotes.eventId, eventGameNotes.gameId], set: { notes, updatedAt: now } })
+  return { gameId, notes }
+}
+
+/** The Event's notes by game id, for the Host's read: one select, no lock, no join. Every stored document has visible text (a clear deletes the row). */
+export async function readEventNotes(db: Db, eventId: string): Promise<Record<string, NotesDoc>> {
+  const rows = await db.select({ gameId: eventGameNotes.gameId, notes: eventGameNotes.notes }).from(eventGameNotes).where(eq(eventGameNotes.eventId, eventId))
+  return Object.fromEntries(rows.map(row => [row.gameId, row.notes]))
+}

@@ -10,6 +10,7 @@ import {
   gameNotesProblem, parseGameInput, parsePlayerCount, type GameTag,
   type GameView, type Suitability,
 } from '~~/shared/game'
+import type { NotesDoc } from '~~/shared/notes-doc'
 import { parseYouTubeId } from '~~/shared/youtube'
 
 // Create or edit a game (screen 24, `?s=edit`, #141, #142, #171): name, YouTube link, start and length, with a live
@@ -53,7 +54,10 @@ const suitabilities = ref<Suitability[]>([...(props.game?.suitabilities ?? [])])
 const tags = ref<GameTag[]>([...(props.game?.tags ?? [])])
 const tagInput = useTemplateRef('tagInput')
 const nameField = useTemplateRef('nameField')
-const notes = ref(props.game?.notes ?? '')
+// The notes are the document the editor holds (#454, ADR 0019): it starts from the game's stored document and never emits on mount, so a form opened and saved
+// untouched sends the document as it is stored. `notesOver` is the editor's own report of a note over the limit that it could not hand over (a paste too big for the parser).
+const notes = ref<NotesDoc | null>(props.game?.notes ?? null)
+const notesOver = ref(false)
 // The Price (#337, #361): the Price the field writes as the User types, and the one blocker the field reports.
 const price = ref<PriceDraft>(props.game?.price ? { cents: props.game.price.cents, source: props.game.price.source } : null)
 const priceError = ref<string | null>(null)
@@ -121,8 +125,8 @@ const rangeInverted = computed(() => {
 const fromError = computed(() => (fromInvalid.value ? t('error.playersInvalid') : undefined))
 const toError = computed(() => (toInvalid.value || rangeInverted.value ? t('error.playersInvalid') : undefined))
 
-// Game notes (#223): the shared rule says when they are too long; the message shows at once, like the name's.
-const notesError = computed(() => (gameNotesProblem(notes.value) === 'too_long' ? t('gameEdit.notesTooLong', { max: GAME_NOTES_MAX }) : undefined))
+// Game notes (#223): the shared rule says when they are too long. The editor shows its own error at once; the CTA says why it is blocked.
+const notesBlocked = computed(() => notesOver.value || gameNotesProblem(notes.value) === 'too_long')
 
 /** Why the CTA is blocked, in the words of the field that is wrong, or null when no field is. */
 const blocker = computed<string | null>(() => {
@@ -130,7 +134,7 @@ const blocker = computed<string | null>(() => {
   if (nameProblem.value === 'too_long') return t('error.nameTooLong', { max: GAME_NAME_MAX })
   if (linkError.value) return t('gameEdit.linkRequired')
   if (fromError.value || toError.value) return t('error.playersInvalid')
-  if (notesError.value) return notesError.value
+  if (notesBlocked.value) return t('notesEditor.saveBlocked')
   if (priceError.value) return priceError.value
   return startError.value ?? endError.value ?? lengthError.value ?? null
 })
@@ -152,7 +156,7 @@ const draft = computed(() => ({
   suitabilities: SUITABILITIES.filter(suitability => suitabilities.value.includes(suitability)),
   // The labels: the server normalises them again and takes over the spelling in use (#335).
   tags: tags.value.map(tag => tag.label),
-  // The raw text: the shared rules trim it, and refuse it when it is too long.
+  // The editor's document (#454); the shared rules rebuild it and refuse it when it is too long.
   notes: notes.value,
   // null when neither the amount nor the source is set; the field keeps the shape the shared rules read (#337, #361).
   price: price.value,
@@ -366,13 +370,12 @@ function onShortcut(event: KeyboardEvent) {
           @failure="failure = $event"
         />
 
-        <TextField
+        <!-- The editor is a lazy chunk and client only (#454): no page's first load names it. Until it mounts the field's chrome holds its place, and a chunk that fails to load shows a retry (#822). -->
+        <RichNotesEditorLoader
           v-model="notes"
-          multiline
-          :label="t('gameEdit.notes')"
-          :help="t('gameEdit.notesHelp')"
-          :error="notesError"
-          :maxlength="GAME_NOTES_MAX"
+          :max="GAME_NOTES_MAX"
+          :disabled="saving"
+          @invalid="notesOver = $event"
         />
       </div>
 

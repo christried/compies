@@ -909,12 +909,18 @@
     "filterPlayers": "Spielerzahl",
     "filterSuitability": "Passt zu",
     "filterTag": "Tag",
-    "filterMine": "Von mir",
+    "filterArchived": "Archiviert",
+    "archivedMark": "Archiviert",
+    "restore": "Wiederherstellen",
+    "restoreLabel": "{name} wiederherstellen",
+    "archiveSwitch": "Archiviert",
+    "archiveHelp": "Archivierte Spiele zeigt die Bibliothek nur im Filter „Archiviert“. Du kannst sie jederzeit zurückholen.",
+    "archivedDone": "Archiviert.",
+    "restoredDone": "Wiederhergestellt.",
     "none": "Nichts gefunden. Vielleicht heißt es anders?",
     "create": "Spiel anlegen",
-    "editOnlyOwner": "Bearbeiten dürfen nur {name} und die Plattform-Admin.",
     "played": "{n}× gespielt",
-    "kicker": "Global, für alle Hosts",
+    "kicker": "Deine Spiele",
     "suitability": {
       "teams": "Teams",
       "ffa": "Jeder gegen jeden",
@@ -922,7 +928,6 @@
     },
     "loading": "Bibliothek lädt",
     "clipFact": "Clip {n} s",
-    "createdBy": "Angelegt von {name} im {month}",
     "listFailed": "Die Bibliothek lässt sich gerade nicht laden.",
     "saved": "{name} ist in der Bibliothek.",
     "saveDone": "Gespeichert.",
@@ -938,11 +943,62 @@
     "tags": "Tags",
     "moreTags": "+{n}",
     "moreTagsLabel": "{n} weiterer Tag | {n} weitere Tags",
+    "inEvents": "in {n} Event | in {n} Events",
     "loadMore": "Mehr laden",
     "shownOf": "{shown} von {total} Spielen"
   },
   "gameNotes": {
     "open": "Notizen ansehen"
+  },
+  "eventNotes": {
+    "title": "Notizen für dieses Event",
+    "edit": "Notizen für dieses Event bearbeiten",
+    "add": "Notizen für dieses Event hinzufügen"
+  },
+  "notesEditor": {
+    "label": "Notizen",
+    "eventLabel": "Notizen für dieses Event",
+    "help": "Nur du siehst das.",
+    "eventHelp": "Gilt nur für dieses Event. Nur du siehst das.",
+    "placeholder": "z. B. Einstellungen, Aufwärmen, Siegbedingung, Hausregeln",
+    "eventPlaceholder": "z. B. heute nur Bo1",
+    "toolbar": "Formatierung",
+    "bold": "Fett",
+    "italic": "Kursiv",
+    "heading": "Überschrift",
+    "bulletList": "Liste",
+    "orderedList": "Nummerierte Liste",
+    "link": "Link",
+    "unlink": "Link entfernen",
+    "boldInHeading": "in Überschriften nicht",
+    "counter": "noch {n} Zeichen",
+    "over": "{n} zu viel",
+    "errorMax": "Höchstens {max} Zeichen.",
+    "liveRemaining": "Noch {n} Zeichen",
+    "linkAddress": "Adresse",
+    "linkApply": "Übernehmen",
+    "linkCancel": "Abbrechen",
+    "linkError": "Nur Adressen mit http oder https.",
+    "saving": "Wird gespeichert …",
+    "saveBlocked": "Erst die Notizen kürzen.",
+    "loading": "Editor lädt",
+    "loadFailed": "Der Editor lässt sich gerade nicht laden."
+  },
+  "notes": {
+    "from_library": "aus deiner Bibliothek",
+    "open_a11y": "Notizen zu {game}",
+    "link": {
+      "new_tab": "(öffnet in neuem Tab)"
+    },
+    "finished": {
+      "chip": "Event beendet"
+    }
+  },
+  "gameEvents": {
+    "title": "Deine Events mit diesem Spiel",
+    "inPool": "im Pool",
+    "none": "Dieses Spiel ist noch in keinem deiner Events.",
+    "failed": "Die Events dieses Spiels lassen sich gerade nicht laden."
   },
   "hint": {
     "open": "Hinweis anzeigen"
@@ -992,8 +1048,6 @@
     "playersFrom": "von",
     "playersTo": "bis",
     "notes": "Notizen",
-    "notesHelp": "Einstellungen, Aufwärmen, Siegbedingung, Hausregeln. Alle Hosts können sie lesen.",
-    "notesTooLong": "Höchstens {max} Zeichen.",
     "tags": "Tags",
     "tagsHelp": "Enter oder Komma fügt einen Tag hinzu.",
     "tagsFreeToPlayHint": "Ohne Preis bekommt das Spiel den Tag „Free-to-play“.",
@@ -1001,6 +1055,7 @@
     "tagsTooMany": "Höchstens {max} Tags",
     "tagRemove": "Tag „{label}“ entfernen",
     "tagSuggestions": "Vorschläge",
+    "allTags": "Alle Tags",
     "price": "Preis",
     "priceAmount": "Betrag in €",
     "priceAmountHelp": "Zum Beispiel 19,99",
@@ -1767,7 +1822,6 @@
     "gameNotesInvalid": "Die Notizen sind zu lang.",
     "tagsInvalid": "Höchstens 8 Tags mit je höchstens 20 Zeichen, keiner doppelt.",
     "priceInvalid": "Der Preis braucht eine Quelle und einen Betrag von 0,01 € bis 999,99 €. Bei Free-to-play und Abo gibt es keinen Betrag.",
-    "notGameEditor": "Bearbeiten dürfen nur die Person, die das Spiel angelegt hat, und die Plattform-Admin.",
     "imageTooLarge": "Das Bild ist zu groß.",
     "imageNotWebp": "Das Bild muss ein WebP sein.",
     "poolsInvalid": "Die Spieleauswahl stimmt nicht.",
@@ -1859,7 +1913,7 @@
     },
     "library": {
       "title": "Die Bibliothek ist leer.",
-      "text": "Leg das erste Spiel an. Alle Hosts profitieren davon."
+      "text": "Leg das erste Spiel an. Danach holst du es in jedes deiner Events."
     },
     "search": {
       "title": "Nix gefunden.",

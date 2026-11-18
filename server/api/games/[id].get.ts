@@ -3,12 +3,12 @@ import { useDb } from '../../utils/db'
 import { loadGame, readGameViews, requireLibraryViewer } from '../../utils/library'
 import type { GameView } from '../../../shared/game'
 
-// One game of the library (#141). An unknown id and text that is no uuid answer like a missing route;
-// text that is no uuid never reaches the database.
+// One game of the viewer's library (#141). An unknown id, text that is no uuid and a game of another User (#455) answer like
+// a missing route; text that is no uuid never reaches the database.
 export default defineEventHandler(async (event): Promise<GameView> => {
   const viewer = await requireLibraryViewer(event)
   const db = useDb(event)
-  const { game, creatorName } = await loadGame(db, getRouterParam(event, 'id') ?? '')
-  const [view] = await readGameViews(db, [{ game, creatorName }], viewer)
+  const game = await loadGame(db, getRouterParam(event, 'id') ?? '', viewer.id)
+  const [view] = await readGameViews(db, [game])
   return view!
 })

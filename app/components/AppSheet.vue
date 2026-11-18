@@ -10,6 +10,8 @@ const props = defineProps<{
   open: boolean
   title: string
   full?: boolean
+  /** A sheet in edit mode (#464): 90 % of the window high below md, the design's „Sheet in edit mode“. Not with `full`; from md up nothing changes. */
+  tall?: boolean
 }>()
 
 const emit = defineEmits<{ close: [] }>()
@@ -66,7 +68,7 @@ function onLeave(el: Element, done: () => void) {
           aria-modal="true"
           :aria-labelledby="titleId"
           class="relative flex flex-col gap-4 overflow-y-auto border-line bg-surface p-5 text-ink shadow-modal max-md:w-full max-md:border-t-(length:--cp-bw) md:h-full md:w-[400px] md:max-w-full md:border-l-(length:--cp-bw)"
-          :class="full ? 'max-md:h-full max-md:max-h-none max-md:rounded-none' : 'max-md:max-h-[76%] max-md:rounded-t-[24px]'"
+          :class="full ? 'max-md:h-full max-md:max-h-none max-md:rounded-none' : [tall ? 'max-md:h-[90%] max-md:max-h-[90%]' : 'max-md:max-h-[76%]', 'max-md:rounded-t-[24px]']"
           @keydown="onKeydown"
         >
           <span

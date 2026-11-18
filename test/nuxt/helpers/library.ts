@@ -18,11 +18,10 @@ export function game(overrides: Partial<GameView>): GameView {
     playersMin: null,
     playersMax: null,
     suitabilities: [],
-    createdBy: { id: kitty.id, name: 'Sanne' },
     createdAt: '2026-01-15T10:00:00.000Z',
-    canEdit: true,
     notes: null,
     tags: [],
+    archived: false,
     price: null,
     ...overrides,
   }

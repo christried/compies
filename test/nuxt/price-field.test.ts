@@ -22,7 +22,7 @@ registerEndpoint(`/api/games/${GAME_ID}`, {
     const body = await readBody(event)
     patchedWith(body)
     if (patchFailWith) throw createError({ statusCode: 400, statusMessage: patchFailWith })
-    const game: GameView = { id: GAME_ID, name: 'Mario Kart', imageUrl: null, youtubeId: null, clipStart: 0, clipLength: 30, playersMin: null, playersMax: null, suitabilities: [], createdBy: { id: kitty.id, name: 'Kitty' }, createdAt: '2026-10-28T10:00:00.000Z', canEdit: true, notes: null, tags: [], price: patchPrice }
+    const game: GameView = { id: GAME_ID, name: 'Mario Kart', imageUrl: null, youtubeId: null, clipStart: 0, clipLength: 30, playersMin: null, playersMax: null, suitabilities: [], createdAt: '2026-10-28T10:00:00.000Z', notes: null, tags: [], archived: false, price: patchPrice }
     return game
   },
 })

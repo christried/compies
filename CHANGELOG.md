@@ -2,6 +2,27 @@
 
 ## [Unreleased]
 
+### Neu
+
+- **Spiele archivieren:** Ein Spiel, das du nicht mehr spielen kannst, legst du auf seiner Seite in der Bibliothek ins Archiv. Dort verschwindet es aus der Liste und bleibt im Filter „Archiviert“, aus dem du es jederzeit zurückholst. Bearbeiten kannst du es weiter. In deinen Events, die noch nicht beendet sind, kommt es nicht mehr aufs Glücksrad, und die anderen sehen es im Spielepool nicht mehr; du siehst es dort mit dem Hinweis „Archiviert“. Runden, in denen es schon gespielt wurde, zeigen es weiter. ([#467](https://github.com/christried/compies/issues/467))
+- **Alle Tags im Spiele-Formular:** Unter dem Tag-Feld klappst du jetzt „Alle Tags“ auf und siehst alle Tags deiner Bibliothek. Ein Klick fügt einen Tag dem Spiel hinzu, ein zweiter Klick nimmt ihn wieder weg. ([#615](https://github.com/christried/compies/issues/615))
+- **Wo ein Spiel gerade drin ist:** Auf der Karte eines Spiels in der Bibliothek steht jetzt „in 2 Events“, wenn es im Spielepool von Events liegt, die noch nicht beendet sind. ([#733](https://github.com/christried/compies/issues/733))
+- **Die Events eines Spiels:** Auf der Seite eines Spiels in der Bibliothek stehen jetzt alle deine Events, in denen es im Pool liegt oder gespielt wurde, neueste zuerst, auch beendete. Jede Zeile führt zum Event, sagt „im Pool“ oder „1× gespielt“ und zeigt deine Notizen für dieses Event. ([#656](https://github.com/christried/compies/issues/656))
+- **Notizen formatieren:** Notizen zu einem Spiel lassen sich jetzt formatieren: fett, kursiv, eine Überschrift, Listen und Links. Sie dürfen jetzt 2000 Zeichen lang sein statt 1000. ([#454](https://github.com/christried/compies/issues/454))
+- **Notizen für dieses Event:** Im Dialog eines Spiels auf der Eventseite schreibst du jetzt Notizen nur für dieses Event, zum Beispiel „heute nur Bo1“, mit denselben Formaten wie bei den Notizen eines Spiels. Nur du siehst sie, und nach dem Ende des Events bleiben sie so stehen. ([#464](https://github.com/christried/compies/issues/464))
+
+### Geändert
+
+- **Deine eigene Bibliothek:** Jeder Host hat jetzt eine eigene Bibliothek. Du siehst und bearbeitest nur die Spiele, die du selbst angelegt hast, und niemand sonst sieht deine, auch die Plattform-Admin nicht. Spiele anderer Hosts, die in deinen Events vorkamen, hast du als eigene Kopie bekommen. Tags und Tag-Vorschläge kommen nur noch aus deinen eigenen Spielen. ([#455](https://github.com/christried/compies/issues/455))
+
+### Entfernt
+
+- **„Von mir“ ist weg:** Die Bibliothek hat keinen Filter „Von mir“ mehr, denn jedes Spiel darin ist dein eigenes. Auch „Angelegt von …“ und der Hinweis, wer ein Spiel bearbeiten darf, fallen weg. ([#724](https://github.com/christried/compies/issues/724))
+
+### Sicherheit
+
+- **Spielbilder bleiben bei ihrem Besitzer:** Das Bild eines Spiels sehen nur noch du als Besitzer des Spiels und die Mitglieder der Events, die das Spiel nutzen, nicht mehr jeder Host und nicht die Plattform-Admin. Wann Mitglieder ein Bild sehen (Pool vorher zeigen, verdecktes Rad), hat sich nicht geändert. ([#723](https://github.com/christried/compies/issues/723))
+
 ## [0.15.0] - 2026-11-17 – Tour
 
 Ein kurzer Rundgang zeigt dir, was auf der Eventseite wichtig ist, wenn du zum ersten Mal ein Event öffnest, das du nicht hostest.

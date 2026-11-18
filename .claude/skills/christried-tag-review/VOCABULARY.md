@@ -1,6 +1,6 @@
 # Tag vocabulary
 
-The Tags of the Game library, spelled exactly as here: the first spelling of a key sticks for the whole library (`saveTags`), and the key is the label lower-cased. A Tag has at most 20 characters, a game at most 8 Tags. Labels mix German and English on purpose, the way the group talks.
+The Tags of the Game library, spelled exactly as here: the first spelling of a key sticks within the one library (`saveTags`), and a word has its own first spelling in each library (ADR 0018), and the key is the label lower-cased. A Tag has at most 20 characters, a game at most 8 Tags. Labels mix German and English on purpose, the way the group talks.
 
 When more than 8 fit a game, keep them in this order: Price, Genre, Launcher, Setup, Play style.
 

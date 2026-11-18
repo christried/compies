@@ -5,6 +5,7 @@ import * as schema from '../../server/db/schema'
 import { testClock } from '../../server/utils/clock'
 import type { Db } from '../../server/utils/db'
 import { memoryRoomNotifier } from '../../server/utils/room-notifier'
+import { notesFromLines } from '../../shared/notes-doc'
 import { createTestApp, sendVia } from './app'
 import { createTestDb, resetDatabase } from './harness'
 import { clockToEnd, clockToStop, hostEntersResult, hostSets, hostSpins, playerVetoes, setUpEvent, startRunningEvent, type GameSeed, type Rig } from './scenario'
@@ -225,6 +226,11 @@ describe('statements under the Event row lock (#416)', () => {
     ['POST last-game', async () => {
       const ev = await twoResults(true)
       return () => send('POST', `/api/e/${ev.slug}/last-game`, ev.host.cookie)
+    }],
+    // Event notes (#731): the game check and one upsert under the lock.
+    ['PUT games/:gameId/notes', async () => {
+      const { ev } = await rich()
+      return () => send('PUT', `/api/e/${ev.slug}/games/${ev.games.G4.id}/notes`, ev.host.cookie, { notes: notesFromLines(['Eine Notiz']) })
     }],
     ['POST ceremony', async () => {
       const ev = await twoResults(false)

@@ -5,6 +5,7 @@ import { testClock } from '../../server/utils/clock'
 import { memoryImageStore } from '../../server/utils/image-store'
 import { memoryRoomNotifier } from '../../server/utils/room-notifier'
 import type { GamePrice, GameView } from '../../shared/game'
+import { notesFromLines, type NotesDoc } from '../../shared/notes-doc'
 import { createTestApp, mountedRoutes, type MountedRoute, type TestRequest } from './app'
 import { TEST_SETTINGS } from './fixtures'
 import { createTestDb, resetDatabase } from './harness'
@@ -38,7 +39,7 @@ export function vetoRead({ left, own = null, revealed = null, draw = expect.obje
   return { left, own, revealed, draw }
 }
 
-export interface Secret { id: string, name: string, videoId: string, notes: string, tag: string, imageUrl: string, imageKey: string, cents: number, price: GamePrice | null, playersMin: number, playersMax: number }
+export interface Secret { id: string, name: string, videoId: string, notes: string, notesDoc: NotesDoc, tag: string, imageUrl: string, imageKey: string, cents: number, price: GamePrice | null, playersMin: number, playersMax: number }
 
 // The Price's amount is a trace (#338): distinct per game, it names the game whose Price a read carries.
 export const priceTrace = (secret: Secret) => `"cents":${secret.cents}`
@@ -113,10 +114,11 @@ export const EXPECTED_STATUS: Readonly<Record<string, Readonly<Record<string, nu
   // `requireLibraryViewer`: only Hosts and the Admin, the others get the missing-route answer.
   '/api/games': answers(404, 404, 200),
   '/api/games/:id': answers(404, 404, 200),
+  '/api/games/:id/events': answers(404, 404, 200),
   '/api/games/tags': answers(404, 404, 200),
   // Reads `events`, no viewer.
   '/api/health': answers(200, 200, 200),
-  // `canSeeImage`: the Host always; a Member only for a game a Round set or a draw stopped on (`seen`, below).
+  // `canSeeImage`: the game's owner always (the Host owns every swept game); a Member only for a game a Round set or a draw stopped on (`seen`, below).
   '/api/images/:key': answers(404, 404, 200),
   // Needs a signed room call: every refusal is the same 401, whatever the cookie.
   '/api/internal/deploy-check': answers(401, 401, 401),
@@ -239,7 +241,9 @@ export function hiddenWheelWorld() {
 
   async function newGame(name: string, videoId: string, clipLength?: number): Promise<Secret> {
     // Every game carries notes (#224): a Player must not get them under a Hidden wheel.
+    // The text is the trace the secrecy checks look for in the raw responses; the document is what is sent and what the Host reads back (#727).
     const notes = `Hausregel fuer ${name}`
+    const notesDoc = notesFromLines([notes])!
     // Lower case, so the key and the label are one string; only the library and the Host's `hostGames` carry a Tag (#335, #443): no Player's read does.
     const tag = `tag-${name.split(' ')[0]!.toLowerCase()}`
     // Distinct cents per game (#338): the amount names its game in a read.
@@ -251,7 +255,7 @@ export function hiddenWheelWorld() {
     const created = await request('/api/games', {
       method: 'POST',
       headers: { 'content-type': 'application/json', 'cookie': hostSigned.cookie },
-      body: JSON.stringify({ name, youtubeUrl: `https://youtu.be/${videoId}`, ...(clipLength === undefined ? {} : { clipLength }), notes, tags: [tag], price: { cents, source: 'steam' }, playersMin, playersMax, suitabilities: ['teams'] }),
+      body: JSON.stringify({ name, youtubeUrl: `https://youtu.be/${videoId}`, ...(clipLength === undefined ? {} : { clipLength }), notes: notesDoc, tags: [tag], price: { cents, source: 'steam' }, playersMin, playersMax, suitabilities: ['teams'] }),
     })
     expect(created.status).toBe(200)
     const { id, price } = await created.json() as GameView
@@ -263,7 +267,7 @@ export function hiddenWheelWorld() {
     expect(uploaded.status).toBe(200)
     const view = await uploaded.json() as GameView
     expect(view.youtubeId).toBe(videoId)
-    return { id, name, videoId, notes, tag, imageUrl: view.imageUrl!, imageKey: view.imageUrl!.slice('/api/images/'.length), cents, price, playersMin, playersMax }
+    return { id, name, videoId, notes, notesDoc, tag, imageUrl: view.imageUrl!, imageKey: view.imageUrl!.slice('/api/images/'.length), cents, price, playersMin, playersMax }
   }
 
   /** A, B in the Game pool, C in the library only (#279: there is no Tiebreaker pool); the Player has joined. */

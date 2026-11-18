@@ -13,6 +13,7 @@ import { setAllowlist, signIn, stubAuthEnv } from './sign-in'
 
 const host = { provider: 'discord', id: '1', name: 'Hostess', email: 'host@example.com', image: undefined } as const
 const member = { provider: 'discord', id: '2', name: 'Gast', email: 'member@example.com', image: undefined } as const
+const otherHost = { provider: 'discord', id: '3', name: 'Zweiter', email: 'host2@example.com', image: undefined } as const
 const outsider = { provider: 'discord', id: '4', name: 'Fremd', email: 'outsider@example.com', image: undefined } as const
 
 describe('changing the settings of an Event (#147)', () => {
@@ -20,6 +21,7 @@ describe('changing the settings of an Event (#147)', () => {
   let request: TestRequest
   let hostCookie: string
   let memberCookie: string
+  let otherCookie: string
 
   beforeAll(async () => {
     testDb = await createTestDb()
@@ -32,9 +34,10 @@ describe('changing the settings of an Event (#147)', () => {
 
   beforeEach(async () => {
     stubAuthEnv()
-    setAllowlist({ hosts: 'discord:1', admins: 'discord:9' })
+    setAllowlist({ hosts: 'discord:1,discord:3', admins: 'discord:9' })
     await resetDatabase(testDb.db)
     hostCookie = (await signIn(testDb.db, host)).cookie
+    otherCookie = (await signIn(testDb.db, otherHost)).cookie
     memberCookie = (await signIn(testDb.db, member)).cookie
   })
 
@@ -44,8 +47,8 @@ describe('changing the settings of an Event (#147)', () => {
 
   const json = (cookie: string) => ({ 'content-type': 'application/json', cookie })
 
-  async function newGame(name: string) {
-    const response = await request('/api/games', { method: 'POST', headers: json(hostCookie), body: JSON.stringify({ name }) })
+  async function newGame(name: string, cookie = hostCookie) {
+    const response = await request('/api/games', { method: 'POST', headers: json(cookie), body: JSON.stringify({ name }) })
     expect(response.status).toBe(200)
     return await response.json() as GameView
   }
@@ -265,6 +268,35 @@ describe('changing the settings of an Event (#147)', () => {
       expect(response.statusText).toBe('unknown_game')
       expect(await poolOf(slug)).toEqual([kart.id])
       expect((await row(slug)).gameCount).toBe(10)
+    })
+
+    it('refuses another Host\'s game, alone or beside an own one, with unknown_game and changes nothing, settings included (#722)', async () => {
+      const kart = await newGame('Mario Kart')
+      const foreign = await newGame('Fremdes Spiel', otherCookie)
+      const slug = await createdEvent({ pool: [kart.id] })
+
+      for (const pool of [[foreign.id], [kart.id, foreign.id]]) {
+        const response = await patch(slug, { settings: { gameCount: 3 }, pool })
+
+        expect(response.status).toBe(400)
+        expect(response.statusText).toBe('unknown_game')
+      }
+      expect((await patch(slug, { pool: [foreign.id] })).statusText).toBe('unknown_game')
+      expect(await poolOf(slug)).toEqual([kart.id])
+      expect((await row(slug)).gameCount).toBe(10)
+    })
+
+    it('takes the Host\'s own game, and drops a foreign pool row the 0.15 code left, when the Host saves the pool (#722, ADR 0007)', async () => {
+      const kart = await newGame('Mario Kart')
+      const pong = await newGame('Pong')
+      const foreign = await newGame('Fremdes Spiel', otherCookie)
+      const slug = await createdEvent({ pool: [kart.id] })
+      await testDb.db.insert(eventPoolGames).values({ eventId: (await row(slug)).id, gameId: foreign.id })
+
+      const response = await patch(slug, { pool: [kart.id, pong.id] })
+
+      expect(response.status).toBe(200)
+      expect((await poolOf(slug)).sort()).toEqual([kart.id, pong.id].sort())
     })
 
     it('shows the games to a Member once the Hidden wheel is switched off and the Pool preview on, and hides them again when the wheel is hidden again', async () => {

@@ -5,16 +5,21 @@ import NextGamePicker from '~/components/NextGamePicker.vue'
 import type { GameTag, GameView, PoolGame } from '~~/shared/game'
 import { kitty, signInAs } from './auth'
 import { clickButton, dialog, restoreScreen, stubScreen } from './event-page'
+import { notesFromLines, type NotesDoc } from '~~/shared/notes-doc'
+import { eventNotesContext } from './helpers/event-notes-context'
+import { FORMATTED_NOTES, readFormatted } from './helpers/formatted-notes'
 
 // The switch „Veto erlauben“ in the picker for the next game (#232, spec #218 § „Nächstes Spiel setzen“, stories 50 and 53): off every
 // time the sheet opens, there only in a Selection mode with a wheel, and its value goes out with the game that is picked.
 
-const halo: PoolGame = { id: 'g-halo', name: 'Halo', imageUrl: null, youtubeId: null, clipStart: 0, clipLength: 30, playersMin: 2, playersMax: 4, suitabilities: [], notes: null, price: null }
+const halo: PoolGame = { id: 'g-halo', name: 'Halo', imageUrl: null, youtubeId: null, clipStart: 0, clipLength: 30, playersMin: 2, playersMax: 4, suitabilities: [], notes: null, price: null, archived: false }
 
 let page: Awaited<ReturnType<typeof mountSuspended>> | undefined
 
-async function mount(props: { open?: boolean, vetoSwitch?: boolean, pool?: PoolGame[] } = {}) {
-  page = await mountSuspended(NextGamePicker, { props: { open: true, pool: [halo], busy: false, ...props } })
+// `eventNotes` and `eventName` are the Event page's context (#821): the picker reads them from it, not from props.
+async function mount({ eventNotes, eventName, ...props }: { open?: boolean, vetoSwitch?: boolean, pool?: PoolGame[], eventNotes?: Record<string, NotesDoc> | null, eventName?: string } = {}) {
+  const { global } = eventNotesContext({ notes: eventNotes ?? null, ...(eventName === undefined ? {} : { eventName }) })
+  page = await mountSuspended(NextGamePicker, { props: { open: true, pool: [halo], busy: false, ...props }, global })
   await flushPromises()
   return page
 }
@@ -129,11 +134,10 @@ function libraryGame(n: number, name: string, overrides: Partial<GameView> = {})
     playersMin: null,
     playersMax: null,
     suitabilities: [],
-    createdBy: { id: kitty.id, name: 'Kitty' },
     createdAt: '2026-01-15T10:00:00.000Z',
-    canEdit: true,
     notes: null,
     tags: [],
+    archived: false,
     price: null,
     ...overrides,
   }
@@ -141,9 +145,10 @@ function libraryGame(n: number, name: string, overrides: Partial<GameView> = {})
 
 let libraryGames: GameView[] = []
 let libraryTags: GameTag[] = []
+let libraryEventCounts: Record<string, number> = {}
 registerEndpoint('/api/games', {
   method: 'GET',
-  handler: () => ({ games: libraryGames, tagsInUse: libraryTags }),
+  handler: () => ({ games: libraryGames, tagsInUse: libraryTags, eventCounts: libraryEventCounts }),
 })
 
 describe('the Tag filter of the library list (#336)', () => {
@@ -169,7 +174,7 @@ describe('the Tag filter of the library list (#336)', () => {
     libraryTags = [{ key: 'retro', label: 'Retro' }, { key: 'co-op', label: 'Co-op' }]
   })
 
-  it('offers the Tags in use by label, next to „Alle“ and „Von mir“, and no player count or „Passt zu“', async () => {
+  it('offers the Tags in use by label, and no player count or „Passt zu“', async () => {
     await mount()
     await vi.waitFor(() => expect(libraryCards()).toHaveLength(3))
 
@@ -202,6 +207,27 @@ describe('the Tag filter of the library list (#336)', () => {
     const check = dialog()!.querySelector<HTMLButtonElement>('button[aria-label="Retro Kart auswählen"]')!
     const card = check.closest('ul[aria-label="Bibliothek"] > li')!.firstElementChild as HTMLElement
     expect(card.lastElementChild!.contains(check)).toBe(true)
+  })
+
+  it('shows no „in 2 Events“ on a library card: the marker is the library page\'s (#733)', async () => {
+    libraryEventCounts = { [retroKart.id]: 2 }
+    await mount()
+    await vi.waitFor(() => expect(libraryCards()).toHaveLength(3))
+
+    expect(dialog()!.textContent).not.toContain('Events')
+    expect(dialog()!.textContent).not.toContain('in 2')
+    libraryEventCounts = {}
+  })
+
+  it('marks no pool row and lists no Archived library game: the Host\'s picker has no Archived game to show (#726)', async () => {
+    libraryGames = [retroKart, coop, libraryGame(4, 'Altes Spiel', { archived: true })]
+    await mount()
+    await vi.waitFor(() => expect(libraryCards()).toHaveLength(2))
+
+    expect(libraryCards()).toEqual(['Retro Kart', 'Pandemie'])
+    expect(poolCards()).toEqual(['Halo'])
+    expect(dialog()!.textContent).not.toContain('Altes Spiel')
+    expect(dialog()!.textContent).not.toContain('Archiviert')
   })
 
   it('starts each opening of the sheet without a Tag', async () => {
@@ -273,7 +299,7 @@ describe('the library list of the picker (#369)', () => {
 // The Notes button of a game in the picker (#436): on a pool game and a library game with Notes, and on no other; Escape closes its
 // popover, the sheet stays open and the focus goes back to the button.
 describe('the Notes button of a game in the picker (#436)', () => {
-  const poolWithNotes: PoolGame = { ...halo, notes: 'Settings: 3 Runden\nWarmup: Lobby' }
+  const poolWithNotes: PoolGame = { ...halo, notes: notesFromLines(['Settings: 3 Runden', 'Warmup: Lobby']) }
   const poolWithout: PoolGame = { ...halo, id: 'g-pong', name: 'Pong', notes: null }
   const poolList = () => dialog()!.querySelector<HTMLElement>('ul[aria-label="Spiele, die im Pool noch übrig sind"]')!
   const libraryList = () => dialog()!.querySelector<HTMLElement>('ul[aria-label="Bibliothek"]')!
@@ -287,7 +313,7 @@ describe('the Notes button of a game in the picker (#436)', () => {
     signInAs({ ...kitty, canHost: true })
     await clearNuxtData('games')
     useState('game-library').value = null
-    libraryGames = [libraryGame(1, 'Retro Kart', { notes: 'Setup: Tisch' }), libraryGame(2, 'Schach')]
+    libraryGames = [libraryGame(1, 'Retro Kart', { notes: notesFromLines(['Setup: Tisch']) }), libraryGame(2, 'Schach')]
     libraryTags = []
   })
 
@@ -308,6 +334,82 @@ describe('the Notes button of a game in the picker (#436)', () => {
     expect(notesButtons(rowOf(libraryList(), 'Retro Kart'))).toHaveLength(1)
     expect(notesButtons(rowOf(libraryList(), 'Schach'))).toHaveLength(0)
     expect(notesButtons(poolList())).toHaveLength(0)
+  })
+
+  it('shows it on a pool game that has only Event notes, next to its ✓, and not on one without a key (#732)', async () => {
+    await mount({ pool: [poolWithout, { ...halo, notes: null }], eventNotes: { 'g-halo': notesFromLines(['Heute nur Bo1'])! } })
+
+    expect(notesButtons(rowOf(poolList(), 'Halo'))).toHaveLength(1)
+    expect(rowOf(poolList(), 'Halo').querySelector('button[aria-label="Halo auswählen"]')).not.toBeNull()
+    expect(notesButtons(rowOf(poolList(), 'Pong'))).toHaveLength(0)
+
+    notesButtons(poolList())[0]!.click()
+    await flushPromises()
+    expect([...popover()!.querySelectorAll('h3')].map(h => h.textContent)).toEqual(['Notizen für dieses Event'])
+    expect(popover()!.textContent).toContain('Heute nur Bo1')
+  })
+
+  it('shows the Event notes above the Game notes in a pool game\'s popover (#732)', async () => {
+    await mount({ pool: [poolWithNotes], eventNotes: { 'g-halo': notesFromLines(['Heute nur Bo1'])! } })
+
+    notesButtons(poolList())[0]!.click()
+    await flushPromises()
+
+    const text = popover()!.textContent!
+    expect(text.indexOf('Heute nur Bo1')).toBeGreaterThan(-1)
+    expect(text.indexOf('Heute nur Bo1')).toBeLessThan(text.indexOf('Settings: 3 Runden'))
+  })
+
+  it('names the Event under its notes block in the popover where both blocks show, and not where only the Event notes do (#821, review 0.16 N2)', async () => {
+    await mount({ pool: [poolWithNotes, poolWithout], eventNotes: { 'g-halo': notesFromLines(['Heute nur Bo1'])!, 'g-pong': notesFromLines(['Heute Bo3'])! }, eventName: 'Spieleabend bei Sanne' })
+
+    notesButtons(rowOf(poolList(), 'Halo'))[0]!.click()
+    await flushPromises()
+    expect(popover()!.textContent).toContain('Spieleabend bei Sanne')
+    expect(popover()!.textContent).toContain('aus deiner Bibliothek')
+    notesButtons(rowOf(poolList(), 'Halo'))[0]!.click()
+    await flushPromises()
+
+    notesButtons(rowOf(poolList(), 'Pong'))[0]!.click()
+    await flushPromises()
+    expect(popover()!.textContent).toContain('Heute Bo3')
+    expect(popover()!.textContent).not.toContain('Spieleabend bei Sanne')
+  })
+
+  it('names the Event under its notes block in the sheet where both blocks show (#821, review 0.16 N2)', async () => {
+    stubScreen(false)
+    await mount({ pool: [poolWithNotes], eventNotes: { 'g-halo': notesFromLines(['Heute nur Bo1'])! }, eventName: 'Spieleabend bei Sanne' })
+
+    notesButtons(poolList())[0]!.click()
+    await flushPromises()
+
+    expect(popover()).toBeNull()
+    const text = document.querySelectorAll('[data-sheet="panel"]')[1]!.textContent!
+    expect(text).toContain('Heute nur Bo1')
+    expect(text).toContain('Spieleabend bei Sanne')
+    expect(text).toContain('aus deiner Bibliothek')
+  })
+
+  it('follows the same map on the library cards (#732)', async () => {
+    const schach = '00000000-0000-4000-8000-000000000002'
+    await mount({ pool: [poolWithout], eventNotes: { [schach]: notesFromLines(['Heute nur Bo1'])! } })
+    await vi.waitFor(() => expect(libraryList().querySelectorAll('li')).toHaveLength(2))
+
+    expect(notesButtons(rowOf(libraryList(), 'Schach'))).toHaveLength(1)
+    expect(notesButtons(rowOf(libraryList(), 'Retro Kart'))).toHaveLength(1)
+    notesButtons(rowOf(libraryList(), 'Schach'))[0]!.click()
+    await flushPromises()
+    expect(popover()!.textContent).toContain('Notizen für dieses Event')
+    expect(popover()!.textContent).toContain('Heute nur Bo1')
+  })
+
+  it('shows the formatted notes of a pool game in the popover (#728)', async () => {
+    await mount({ pool: [{ ...halo, notes: FORMATTED_NOTES }] })
+
+    notesButtons(poolList())[0]!.click()
+    await flushPromises()
+
+    expect(readFormatted(popover()!)).toMatchObject({ bold: 'Wichtig', items: ['Erstens', 'Zweitens'] })
   })
 
   it('closes its popover on Escape, keeps the picker sheet open and gives the focus back to the button', async () => {

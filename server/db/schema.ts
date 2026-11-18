@@ -5,6 +5,7 @@ import { ACTIVITY_TYPES, type ActivityParams, type ActivityType } from '../../sh
 import { PHASES } from '../../shared/event'
 import { ZONES } from '../../shared/board'
 import { PRICE_SOURCES, SUITABILITIES } from '../../shared/game'
+import type { NotesDoc } from '../../shared/notes-doc'
 import { COIN_SIDES, DRAW_KINDS, DRAW_OUTCOMES, DRAW_SOURCES } from '../../shared/rounds'
 import { CEREMONY_GAGS } from '../../shared/ceremony'
 import { FORMATS, SELECTION_MODES, type PointsTable } from '../../shared/settings'
@@ -199,7 +200,7 @@ export const gameSuitability = pgEnum('game_suitability', SUITABILITIES)
 // A game's Price source (#337, GLOSSARY: Price): an enum of its own, since the glossary term is its own.
 export const priceSource = pgEnum('price_source', PRICE_SOURCES)
 
-// The Game library (#141, brief §15): one global library that Hosts fill. Games are never deleted, so
+// The Game library (#141, brief §15): one library per Host (ADR 0018). Games are never deleted, so
 // Events that used them keep working. `imageKey` names the image in the image store (#143); `youtubeId`
 // is the clip's video id, played from `clipStart` for `clipLength` seconds.
 export const games = pgTable('games', {
@@ -213,12 +214,16 @@ export const games = pgTable('games', {
   playersMax: integer('players_max'),
   /** What kind of play the game works for, any number of them (#171). Was `formats` until 0007. */
   suitabilities: gameSuitability('suitabilities').array().default(sql`'{}'`).notNull(),
-  // Game notes (#223): plain text, at most GAME_NOTES_MAX characters; null = none.
-  notes: text('notes'),
+  // Game notes (#223, #727, ADR 0019): the document (a NotesDoc), at most GAME_NOTES_MAX visible characters; null = none.
+  notes: jsonb('notes_doc').$type<NotesDoc>(),
+  // The 0.15 text column (ADR 0007): the new code neither reads nor writes it. The Release after 0.16 drops it with the trigger that fills `notes_doc` from it.
+  notesLegacy: text('notes'),
   // The Price (#337, GLOSSARY: Price): amount in cents, where it is bought, the day it was last checked. All null = no Price.
   priceCents: integer('price_cents'),
   priceSource: priceSource('price_source'),
   priceCheckedAt: timestamp('price_checked_at', { withTimezone: true }),
+  // When the owner archived the game (#467, spec #717 § B); null = not archived. The library list carries every own game flagged.
+  archivedAt: timestamp('archived_at', { withTimezone: true }),
   createdBy: uuid('created_by').notNull().references(() => users.id),
   createdAt: createdAt(),
   updatedAt: updatedAt(),
@@ -257,6 +262,21 @@ export const gameTags = pgTable('game_tags', {
   check('game_tags_position_check', sql`${table.position} >= 0`),
   // Lookups by key: the label a new row takes and the Tags in use (#335). The primary key serves lookups by game.
   index('game_tags_key_idx').on(table.key),
+])
+
+// The Host's Event notes (#731, GLOSSARY: Event notes): one document per Event and game, in the editor's document format (ADR 0019). It belongs to the Event
+// and the game, not to the Game pool row, so it stays when the game leaves the pool and exists for a game the Host set directly. A cleared note has no row.
+// The game is in the Event's Host's library (the route checks, ADR 0018); games are never deleted, so the key has no cascade. Rows go with their Event.
+export const eventGameNotes = pgTable('event_game_notes', {
+  eventId: uuid('event_id').notNull().references(() => events.id, { onDelete: 'cascade' }),
+  gameId: uuid('game_id').notNull().references(() => games.id),
+  notes: jsonb('notes').$type<NotesDoc>().notNull(),
+  createdAt: createdAt(),
+  updatedAt: updatedAt(),
+}, table => [
+  primaryKey({ columns: [table.eventId, table.gameId] }),
+  // Lookups by game (#656's game page). The primary key serves the lookups by Event.
+  index('event_game_notes_game_id_idx').on(table.gameId),
 ])
 
 export const activityType = pgEnum('activity_type', ACTIVITY_TYPES)

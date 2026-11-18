@@ -343,3 +343,25 @@ export function sheetLeave(parts: SheetParts): Promise<void> {
     })
   })
 }
+
+/**
+ * A disclosure panel's height run (04-motion § Notizen, #729): 0 → what it measures in `--cp-dur-base` on `--cp-ease-out`, and back in `--cp-dur-fast`
+ * on `--cp-ease-in`. The panel clips (`overflow-hidden`) so its content does not spill while it grows. Under reduced motion, in a hidden tab and
+ * where nothing can animate it cuts: `done` is called at once. `done` ends a Transition's hook; a backgrounded tab that never finishes is let go
+ * 50 ms after the duration.
+ */
+function heightRun(element: Element, opening: boolean, done: () => void): void {
+  if (reducedMotion() || typeof element.animate !== 'function' || unwatched()) return done()
+  const full = `${element.scrollHeight}px`
+  const duration = motionMs(opening ? '--cp-dur-base' : '--cp-dur-fast', opening ? '220ms' : '140ms')
+  const easing = opening ? motionToken('--cp-ease-out', 'cubic-bezier(.16,1,.3,1)') : motionToken('--cp-ease-in', 'cubic-bezier(.7,0,.84,0)')
+  const animation = element.animate(opening ? [{ height: '0px' }, { height: full }] : [{ height: full }, { height: '0px' }], { duration, easing, fill: opening ? 'none' : 'forwards' })
+  const timer = setTimeout(done, duration + 50)
+  void animation.finished?.catch(() => {}).then(() => {
+    clearTimeout(timer)
+    done()
+  })
+}
+
+export const disclosureEnter = (element: Element, done: () => void) => heightRun(element, true, done)
+export const disclosureLeave = (element: Element, done: () => void) => heightRun(element, false, done)

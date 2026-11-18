@@ -1,11 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import {
-  CLIP_END_MAX, CLIP_LENGTH_MAX, CLIP_LENGTH_MIN, CLIP_START_MAX, GAME_NAME_MAX, NO_FILTERS, SUITABILITIES, canEditGame, canSeeLibrary, clipTime, filterGames, gameNameProblem,
-  isClipLength, normaliseTag, parseClipLength, parseClipTime, parseGameInput, parsePlayerCount, parseTags, tagProblem,
+  CLIP_END_MAX, CLIP_LENGTH_MAX, CLIP_LENGTH_MIN, CLIP_START_MAX, GAME_NAME_MAX, NO_FILTERS, SUITABILITIES, canSeeLibrary, clipTime, filterGames, gameNameProblem,
+  isClipLength, normaliseTag, parseClipLength, parseClipTime, parseGameInput, parsePlayerCount, parseTags, sortTagsByLabel, tagProblem,
   formatPriceAmount, isPriceCheckOnly, parsePrice, parsePriceAmount, priceTakesAmount,
-  FREE_TO_PLAY_TAG, tagsWithFreeToPlay,
+  FREE_TO_PLAY_TAG, tagsWithFreeToPlay, GAME_NOTES_MAX, gameNotesProblem,
   type GameFilters, type GameView, type Suitability,
 } from '../../shared/game'
+import { notesFromLines } from '../../shared/notes-doc'
 
 describe('clipTime', () => {
   it.each([
@@ -53,27 +54,13 @@ describe('parseClipTime', () => {
 })
 
 describe('canSeeLibrary', () => {
-  it('lets Hosts and the Platform admin in', () => {
-    expect(canSeeLibrary({ canHost: true, isAdmin: false })).toBe(true)
-    expect(canSeeLibrary({ canHost: false, isAdmin: true })).toBe(true)
+  it('lets a Host in', () => {
+    expect(canSeeLibrary({ canHost: true })).toBe(true)
   })
 
-  it('keeps out Members without rights and signed-out visitors', () => {
-    expect(canSeeLibrary({ canHost: false, isAdmin: false })).toBe(false)
+  it('keeps out everyone without the Host permission, and signed-out visitors (#455)', () => {
+    expect(canSeeLibrary({ canHost: false })).toBe(false)
     expect(canSeeLibrary(null)).toBe(false)
-  })
-})
-
-describe('canEditGame', () => {
-  const game = { createdBy: 'u1' }
-
-  it('lets the creator and the Platform admin edit', () => {
-    expect(canEditGame({ id: 'u1', isAdmin: false }, game)).toBe(true)
-    expect(canEditGame({ id: 'u9', isAdmin: true }, game)).toBe(true)
-  })
-
-  it('keeps every other User out', () => {
-    expect(canEditGame({ id: 'u2', isAdmin: false }, game)).toBe(false)
   })
 })
 
@@ -289,6 +276,36 @@ describe('parseGameInput', () => {
       expect(parseGameInput({ ...valid, tags })).toEqual({ ok: false, error: 'invalid_tags' })
     })
   })
+
+  describe('notes (#727)', () => {
+    const doc = { type: 'doc', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Notiz', marks: [{ type: 'bold' }] }] }] }
+
+    it('allows 2000 characters', () => {
+      expect(GAME_NOTES_MAX).toBe(2000)
+    })
+
+    it('gives a document back', () => {
+      expect(parseGameInput({ ...valid, notes: doc })).toMatchObject({ ok: true, game: { notes: doc } })
+    })
+
+    it.each([
+      ['a plain string', 'Notiz'],
+      ['a link that is not http', { type: 'doc', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'x', marks: [{ type: 'link', attrs: { href: 'javascript:alert(1)' } }] }] }] }],
+      ['2001 characters', { type: 'doc', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'a'.repeat(2001) }] }] }],
+    ])('refuses %s with invalid_game_notes', (_label, notes) => {
+      expect(parseGameInput({ ...valid, notes })).toEqual({ ok: false, error: 'invalid_game_notes' })
+    })
+
+    it.each([[undefined], [null], ['']])('takes %j as none', (notes) => {
+      expect(parseGameInput({ ...valid, notes })).toMatchObject({ ok: true, game: { notes: null } })
+    })
+
+    it('has a live check for the form: too long past 2000 characters, none before', () => {
+      expect(gameNotesProblem(notesFromLines(['a'.repeat(2000)]))).toBeNull()
+      expect(gameNotesProblem(notesFromLines(['a'.repeat(2001)]))).toBe('too_long')
+      expect(gameNotesProblem(null)).toBeNull()
+    })
+  })
 })
 
 describe('filterGames (#173)', () => {
@@ -303,11 +320,10 @@ describe('filterGames (#173)', () => {
       playersMin: null,
       playersMax: null,
       suitabilities: [],
-      createdBy: { id: 'me', name: 'Ich' },
       createdAt: '2026-01-15T10:00:00.000Z',
-      canEdit: true,
       notes: null,
       tags: [],
+      archived: false,
       price: null,
       ...overrides,
     }
@@ -318,10 +334,10 @@ describe('filterGames (#173)', () => {
   const counter = game('Counter-Strike 2', { playersMin: 2, playersMax: 10, suitabilities: ['teams'] })
   const halo = game('Halo', { playersMax: 4, suitabilities: ['ffa'] })
   const open = game('Offen', { playersMin: 6 })
-  const board = game('Brettspiel', { createdBy: { id: 'other', name: 'Anna' } })
+  const board = game('Brettspiel')
   const library = [mario, counter, halo, open, board]
 
-  const by = (filters: Partial<GameFilters>, viewerId = 'me') => filterGames(library, { ...NO_FILTERS, ...filters }, viewerId).map(found => found.name)
+  const by = (filters: Partial<GameFilters>) => filterGames(library, { ...NO_FILTERS, ...filters }).map(found => found.name)
 
   it('keeps every game without filters, in the given order', () => {
     expect(by({})).toEqual(['Mario Kart', 'Counter-Strike 2', 'Halo', 'Offen', 'Brettspiel'])
@@ -335,7 +351,7 @@ describe('filterGames (#173)', () => {
 
   it('reads % and _ in the search as plain characters', () => {
     const named = [game('Rocket 100%'), game('Rocket 1000'), game('Die_Siedler'), game('Die Siedler')]
-    const found = (q: string) => filterGames(named, { ...NO_FILTERS, q }, 'me').map(item => item.name)
+    const found = (q: string) => filterGames(named, { ...NO_FILTERS, q }).map(item => item.name)
 
     expect(found('%')).toEqual(['Rocket 100%'])
     expect(found('_')).toEqual(['Die_Siedler'])
@@ -343,7 +359,7 @@ describe('filterGames (#173)', () => {
 
   it('matches umlauts whatever their case', () => {
     const named = [game('Äpfel Spiel'), game('Würfeln')]
-    const found = (q: string) => filterGames(named, { ...NO_FILTERS, q }, 'me').map(item => item.name)
+    const found = (q: string) => filterGames(named, { ...NO_FILTERS, q }).map(item => item.name)
 
     expect(found('ä')).toEqual(['Äpfel Spiel'])
     expect(found('Ä')).toEqual(['Äpfel Spiel'])
@@ -367,19 +383,47 @@ describe('filterGames (#173)', () => {
     expect(by({ suitability: 'one_v_one' as Suitability })).toEqual([])
   })
 
-  it('keeps the games the viewer created with „Von mir“', () => {
-    expect(by({ mine: true })).toEqual(['Mario Kart', 'Counter-Strike 2', 'Halo', 'Offen'])
-    expect(by({ mine: true }, 'other')).toEqual(['Brettspiel'])
+  it('keeps a Brettspiel whatever its creator: the library holds only the viewer’s games, so no filter asks who made one', () => {
+    expect(by({ q: 'brett' })).toEqual(['Brettspiel'])
   })
 
   it('combines the filters with AND', () => {
-    expect(by({ players: 3, suitability: 'teams', mine: true, q: 'counter' })).toEqual(['Counter-Strike 2'])
+    expect(by({ players: 3, suitability: 'teams', q: 'counter' })).toEqual(['Counter-Strike 2'])
     expect(by({ players: 3, suitability: 'ffa', q: 'counter' })).toEqual([])
+  })
+
+  describe('Archived games (#467)', () => {
+    const found = (games: GameView[], filters: Partial<GameFilters>) => filterGames(games, { ...NO_FILTERS, ...filters }).map(item => item.name)
+    const old = game('Alt Kart', { archived: true, playersMin: 2, playersMax: 4, tags: [{ key: 'retro', label: 'Retro' }] })
+    const old2 = game('Alt Halo', { archived: true })
+    const fresh = game('Neu Kart', { playersMin: 2, playersMax: 4, tags: [{ key: 'retro', label: 'Retro' }] })
+
+    it('NO_FILTERS is the normal list', () => {
+      expect(NO_FILTERS.archived).toBe(false)
+    })
+
+    it('leaves Archived games out of the normal list and keeps only them when the filter is on, at 0, 1 and 2', () => {
+      expect(found([], { archived: false })).toEqual([])
+      expect(found([], { archived: true })).toEqual([])
+      expect(found([fresh, old], { archived: false })).toEqual(['Neu Kart'])
+      expect(found([fresh, old], { archived: true })).toEqual(['Alt Kart'])
+      expect(found([old, old2], { archived: false })).toEqual([])
+      expect(found([old, old2, fresh], { archived: true })).toEqual(['Alt Kart', 'Alt Halo'])
+    })
+
+    it('combines with the search, the player count and the Tag by AND', () => {
+      const all = [fresh, old, old2]
+      expect(found(all, { archived: true, q: 'kart' })).toEqual(['Alt Kart'])
+      expect(found(all, { archived: true, players: 3 })).toEqual(['Alt Kart'])
+      expect(found(all, { archived: true, tag: 'retro' })).toEqual(['Alt Kart'])
+      expect(found(all, { archived: false, tag: 'retro', q: 'kart' })).toEqual(['Neu Kart'])
+      expect(found(all, { archived: true, q: 'neu' })).toEqual([])
+    })
   })
 
   describe('the Tag filter and the search over Tags (#336)', () => {
     const tag = (label: string) => ({ key: label.toLocaleLowerCase('de'), label })
-    const found = (games: GameView[], filters: Partial<GameFilters>) => filterGames(games, { ...NO_FILTERS, ...filters }, 'me').map(item => item.name)
+    const found = (games: GameView[], filters: Partial<GameFilters>) => filterGames(games, { ...NO_FILTERS, ...filters }).map(item => item.name)
 
     const coop = game('Pandemie', { tags: [tag('Co-op'), tag('Retro')] })
     const kart = game('Kart Rennen', { tags: [tag('Retro')] })
@@ -388,7 +432,7 @@ describe('filterGames (#173)', () => {
 
     it('NO_FILTERS carries no Tag', () => {
       expect(NO_FILTERS.tag).toBeNull()
-      expect(NO_FILTERS).toEqual({ q: '', players: null, suitability: null, tag: null, mine: false })
+      expect(NO_FILTERS).toEqual({ q: '', players: null, suitability: null, tag: null, archived: false })
     })
 
     it('keeps the games carrying the Tag key, in the given order, and any one of several Tags does', () => {
@@ -470,6 +514,15 @@ describe('normaliseTag (#335)', () => {
 
   it.each([[''], ['   '], [' \t'], ['\u00a0']])('gives nothing for %j', (raw) => {
     expect(normaliseTag(raw)).toBeNull()
+  })
+})
+
+describe('sortTagsByLabel (#615)', () => {
+  it('sorts by label in German collation, so an umlaut sorts with its letter, and leaves the input as it was', () => {
+    const tags = [{ key: 'zeit', label: 'Zeit' }, { key: 'ärger', label: 'Ärger' }, { key: 'bo1', label: 'Bo1' }]
+
+    expect(sortTagsByLabel(tags).map(tag => tag.label)).toEqual(['Ärger', 'Bo1', 'Zeit'])
+    expect(tags.map(tag => tag.label)).toEqual(['Zeit', 'Ärger', 'Bo1'])
   })
 })
 

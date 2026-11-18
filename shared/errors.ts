@@ -22,14 +22,12 @@ export const API_ERROR_STATUS = {
   invalid_players: 400,
   /** A game's Suitabilities are unknown or repeated (#171). */
   invalid_suitabilities: 400,
-  /** A game's notes are longer than GAME_NOTES_MAX characters (#223). */
+  /** A game's notes are refused: not a valid document, or longer than GAME_NOTES_MAX visible characters (#223, #727). */
   invalid_game_notes: 400,
   /** A game's Tags are not a list of at most 8 Tags of 1 to 20 characters, none twice (#335). */
   invalid_tags: 400,
   /** A game's Price is not a source with a whole amount (or none), or „Preis stimmt noch“ is no flag or has no Price to confirm (#337). */
   invalid_price: 400,
-  /** Only the creator of a game and the Platform admin may edit it (#142). */
-  not_game_editor: 403,
   /** A game image is larger than GAME_IMAGE_MAX_BYTES (#143). */
   image_too_large: 413,
   /** A game image is not a WebP file (#143). */

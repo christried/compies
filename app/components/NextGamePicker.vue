@@ -20,6 +20,8 @@ const props = defineProps<{
 const emit = defineEmits<{ close: [], pick: [gameId: string, vetoAllowed: boolean] }>()
 
 const { t } = useI18n()
+// The Host's Event notes by game id (#732) are the Event page's context's (#821): each game's notes button shows its entry above the Game notes.
+const { notesOf: eventNotesOf } = useEventNotes()
 const user = useAuthUser()
 const library = computed(() => canSeeLibrary(user.value))
 const filters = ref<GameFilters>({ ...NO_FILTERS })
@@ -72,6 +74,7 @@ const isChosen = (id: string) => chosen.value?.id === id
               <GameNotesButton
                 :name="game.name"
                 :notes="game.notes"
+                :event-notes="eventNotesOf(game.id)"
               />
               <IconButton
                 :icon="Check"
@@ -101,6 +104,7 @@ const isChosen = (id: string) => chosen.value?.id === id
           <GameNotesButton
             :name="game.name"
             :notes="game.notes"
+            :event-notes="eventNotesOf(game.id)"
           />
           <IconButton
             :icon="Check"

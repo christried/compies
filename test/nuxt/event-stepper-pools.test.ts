@@ -1,10 +1,14 @@
 import { mountSuspended, registerEndpoint } from '@nuxt/test-utils/runtime'
-import type { VueWrapper } from '@vue/test-utils'
+import { flushPromises, type VueWrapper } from '@vue/test-utils'
 import { createError, readBody } from 'h3'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import RichNotesEditor from '~/components/RichNotesEditor.vue'
 import CreatePage from '~/pages/neu.vue'
 import type { GameView } from '~~/shared/game'
+import { notesFromLines, type NotesDoc } from '~~/shared/notes-doc'
 import { kitty, signInAs } from './auth'
+import { FORMATTED_HREF, FORMATTED_NOTES, readFormatted } from './helpers/formatted-notes'
+import { editorOf } from './helpers/notes-editor'
 
 // Step 6 of the stepper, the Game pool (#146, #173; the Tiebreaker pool is gone, #279): the game browser over the library,
 // the hint under the Game pool, „Neues Spiel anlegen“ in a sheet, and what is sent. The other steps have their own
@@ -24,11 +28,10 @@ function game(n: number, name: string, overrides: Partial<GameView> = {}): GameV
     playersMin: null,
     playersMax: null,
     suitabilities: [],
-    createdBy: { id: kitty.id, name: 'Kitty' },
     createdAt: '2026-01-15T10:00:00.000Z',
-    canEdit: true,
     notes: null,
     tags: [],
+    archived: false,
     price: null,
     ...overrides,
   }
@@ -41,10 +44,11 @@ const fresh = game(99, 'Frisch Angelegt')
 
 // One endpoint per path and method for the file; each test sets the library and what the game form gets back.
 let library: GameView[] = []
+let libraryEventCounts: Record<string, number> = {}
 const postedGame = vi.fn()
 registerEndpoint('/api/games', {
   method: 'GET',
-  handler: () => ({ games: library, tagsInUse: [{ key: 'retro', label: 'Retro' }] }),
+  handler: () => ({ games: library, tagsInUse: [{ key: 'retro', label: 'Retro' }], eventCounts: libraryEventCounts }),
 })
 // The game form's suggestions come from the Tags in use (#365), the same Tag the list answers.
 registerEndpoint('/api/games/tags', { method: 'GET', handler: () => [{ key: 'retro', label: 'Retro' }] })
@@ -420,7 +424,7 @@ describe('the pool steps', () => {
     const newGameButton = (page: Page) => page.findAll('button').find(button => button.text().includes('Neues Spiel anlegen'))!
     const dialog = () => document.body.querySelector('[role="dialog"]')
 
-    async function createInSheet(page: Page, notes?: string) {
+    async function createInSheet(page: Page, notes?: NotesDoc) {
       await newGameButton(page).trigger('click')
       await vi.waitFor(() => expect(dialog()).not.toBeNull())
       const label = [...dialog()!.querySelectorAll('label')].find(element => element.textContent === 'Name')!
@@ -428,10 +432,9 @@ describe('the pool steps', () => {
       input.value = 'Frisch Angelegt'
       input.dispatchEvent(new Event('input'))
       if (notes !== undefined) {
-        const notesLabel = [...dialog()!.querySelectorAll('label')].find(element => element.textContent === 'Notizen')!
-        const area = dialog()!.querySelector<HTMLTextAreaElement>(`[id="${notesLabel.getAttribute('for')}"]`)!
-        area.value = notes
-        area.dispatchEvent(new Event('input'))
+        // The editor is a lazy chunk (#454): it mounts after the sheet is open.
+        await vi.waitFor(() => expect(dialog()!.querySelector('[role="textbox"]')).not.toBeNull())
+        editorOf(page.findComponent(RichNotesEditor)).commands.setContent(notes as never, { emitUpdate: true })
       }
       dialog()!.querySelector('form')!.dispatchEvent(new Event('submit', { cancelable: true }))
     }
@@ -546,16 +549,53 @@ describe('the pool steps', () => {
       await vi.waitFor(() => expect([...dialog()!.querySelectorAll('[role="listbox"] [role="option"]')].map(option => option.textContent?.trim())).toEqual(['Retro']))
     })
 
-    it('posts the notes typed in the sheet and puts the game in the pool (#223)', async () => {
+    it('posts the notes written in the sheet and puts the game in the pool (#223, #454)', async () => {
       const page = await mountCreate()
       await toPoolStep(page)
-      const notes = 'Settings: 3 Runden\nWin: meiste Punkte'
 
-      await createInSheet(page, notes)
+      await createInSheet(page, FORMATTED_NOTES)
 
       await vi.waitFor(() => expect(dialog()).toBeNull())
-      expect(postedGame).toHaveBeenCalledWith(expect.objectContaining({ name: 'Frisch Angelegt', notes }))
+      expect(postedGame).toHaveBeenCalledWith(expect.objectContaining({ name: 'Frisch Angelegt', notes: FORMATTED_NOTES }))
       expect(inPool(page)!.findAll('li').map(row => row.get('b').text())).toEqual(['Frisch Angelegt'])
+    })
+
+    it('closes only the link control on Esc: the sheet and the form in it stay open (#454)', async () => {
+      const page = await mountCreate()
+      await toPoolStep(page)
+      await newGameButton(page).trigger('click')
+      await vi.waitFor(() => expect(dialog()!.querySelector('[role="textbox"]')).not.toBeNull())
+
+      dialog()!.querySelector<HTMLButtonElement>('button[aria-label="Link"]')!.click()
+      await vi.waitFor(() => expect(dialog()!.querySelector('[aria-label="Link"] input[type="url"]')).not.toBeNull())
+      dialog()!.querySelector('[aria-label="Link"] input[type="url"]')!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }))
+
+      await vi.waitFor(() => expect(dialog()!.querySelector('[aria-label="Link"] input[type="url"]')).toBeNull())
+      expect(dialog()).not.toBeNull()
+      expect(dialog()!.querySelector('form')).not.toBeNull()
+    })
+  })
+
+  // An Archived game (#726) is never offered here, so a new Event's pool holds none: its rows carry no mark and the count is the rows.
+  describe('Archived library games (#726)', () => {
+    it('offers none, marks no game added from the library, and counts the pool on the Fertig screen', async () => {
+      library = [kart, pong, game(4, 'Altes Spiel', { archived: true })]
+      const page = await mountCreate()
+      await toPoolStep(page)
+
+      expect(picker(page).findAll('li').map(card => card.get('b').text())).toEqual(['Mario Kart', 'Pong'])
+      await toggle(page, 'Pong in den Pool').trigger('click')
+      await toggle(page, 'Mario Kart in den Pool').trigger('click')
+
+      expect(inPool(page)!.text()).not.toContain('Archiviert')
+      expect(page.text()).toContain('Im Pool: 2 Spiele')
+      await toLastStep(page)
+      await cta(page).trigger('click')
+
+      await vi.waitFor(() => expect(page.text()).toContain('Freitags-Zocken steht!'))
+      const rows = new Map(page.get('dl').findAll('dt').map((term, index) => [term.text(), page.get('dl').findAll('dd')[index]!.text()]))
+      expect(rows.get('Pool')).toBe('2 Spiele')
+      expect(page.text()).not.toContain('Altes Spiel')
     })
   })
 
@@ -608,21 +648,29 @@ describe('the game browser in the pool steps (#173)', () => {
     useState('game-library').value = null
   })
 
-  it('is the compact browser: the search, „Alle“, the Tag and „Von mir“, without the player count and „Passt zu“ (#336)', async () => {
+  it('is the compact browser: the search, „Alle“ and the Tag, without the player count and „Passt zu“ (#336, #724)', async () => {
     const page = await mountCreate()
     await toPoolStep(page)
 
     expect(page.find('input[type="search"]').exists()).toBe(true)
     const chips = picker(page).element.parentElement!.querySelectorAll('button[aria-pressed]')
-    expect([...chips].map(chip => chip.textContent!.trim())).toEqual(['Alle', 'Von mir'])
+    expect([...chips].map(chip => chip.textContent!.trim())).toEqual(['Alle'])
     const tag = page.get('select[aria-label="Tag"]')
     expect([...tag.element.querySelectorAll('option')].map(option => option.textContent!.trim())).toEqual(['Tag', 'Retro'])
     const all = [...chips].find(chip => chip.textContent!.trim() === 'Alle')!
-    const mine = [...chips].find(chip => chip.textContent!.trim() === 'Von mir')!
     expect(all.compareDocumentPosition(tag.element) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
-    expect(tag.element.compareDocumentPosition(mine) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
     expect(page.find('select[aria-label="Spielerzahl"]').exists()).toBe(false)
     expect(page.find('select[aria-label="Passt zu"]').exists()).toBe(false)
+  })
+
+  it('shows no „in 2 Events“ on a card: the marker is the library page\'s (#733)', async () => {
+    libraryEventCounts = { [kart.id]: 2 }
+    const page = await mountCreate()
+    await toPoolStep(page)
+
+    expect(picker(page).text()).toContain('Mario Kart')
+    expect(page.text()).not.toContain('in 2 Events')
+    libraryEventCounts = {}
   })
 
   it('picks a Tag and shows only the cards of the games carrying it, a ＋ still adds a hidden game, and „Alle“ resets the Tag (#336)', async () => {
@@ -682,8 +730,6 @@ describe('the game browser in the pool steps (#173)', () => {
     const before = useRouter().currentRoute.value.fullPath
 
     await searchInput(page).setValue('mario')
-    await page.findAll('button[aria-pressed]').find(button => button.text() === 'Von mir')!.trigger('click')
-
     expect(picker(page).findAll('li').map(card => card.get('b').text())).toEqual(['Mario Kart'])
     await new Promise(resolve => setTimeout(resolve, 400))
     expect(useRouter().currentRoute.value.fullPath).toBe(before)
@@ -745,7 +791,7 @@ describe('the game browser in the pool steps (#173)', () => {
 // The Notes button of a game in the pool steps (#436): on a game with Notes, in the compact browser and on the chosen games, and on no
 // other. The ＋ and the ✕ stay where they are.
 describe('the Notes button of a game in the pool steps (#436)', () => {
-  const withNotes = game(1, 'Mario Kart', { notes: 'Settings: 3 Runden\nWarmup: Lobby' })
+  const withNotes = game(1, 'Mario Kart', { notes: notesFromLines(['Settings: 3 Runden', 'Warmup: Lobby']) })
   const notesButtons = (root: { element: Element }) => root.element.querySelectorAll('button[aria-label="Notizen ansehen"]')
   const cardOf = (page: Page, name: string) => picker(page).findAll('li').find(card => card.get('b').text() === name)!
 
@@ -799,6 +845,18 @@ describe('the Notes button of a game in the pool steps (#436)', () => {
     expect(notesButtons(page)).toHaveLength(0)
     expect(maybeToggle(page, 'Schach in den Pool').exists()).toBe(true)
     expect(maybeToggle(page, 'Pong aus dem Pool nehmen').exists()).toBe(true)
+  })
+
+  it('shows the formatted notes of a library game when the Notes button is pressed (#728)', async () => {
+    library = [game(1, 'Mario Kart', { notes: FORMATTED_NOTES }), pong, chess]
+    const page = await mountCreate()
+    await toPoolStep(page)
+
+    ;(notesButtons(picker(page))[0] as HTMLButtonElement).click()
+    await flushPromises()
+
+    expect(readFormatted(document.body).bold).toBe('Wichtig')
+    expect(document.querySelector(`a[href="${FORMATTED_HREF}"]`)?.getAttribute('target')).toBe('_blank')
   })
 
   it('shows the Notes button in the browser while the pool is empty', async () => {

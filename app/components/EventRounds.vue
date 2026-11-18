@@ -35,6 +35,8 @@ const props = withDefaults(defineProps<{
   hostGames?: Record<string, HostGameFacts> | null
 }>(), { hostGames: null })
 
+// The Host's Event notes by game id are the Event page's context's (#821): each Round's Notizen disclosure reads its entry, the tiles read theirs in the dialog.
+const { notesOf } = useEventNotes()
 const { t } = useI18n()
 const headingId = useId()
 
@@ -105,8 +107,10 @@ watch(resultFor, async (id, was) => {
           />
         </div>
         <GameNotesDisclosure
-          v-if="round.notes"
-          :notes="round.notes"
+          v-if="round.notes || notesOf(round.game.id)"
+          :notes="round.notes ?? null"
+          :event-notes="notesOf(round.game.id)"
+          variant="round"
           start-open
         />
         <div

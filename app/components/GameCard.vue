@@ -13,7 +13,8 @@ import { colorTags } from '~~/shared/tag-colors'
 // without it the card is a plain element, not a button. #146 and #148 reuse it; a game with no player count and no Suitabilities shows neither. `layout="responsive"` (#173) is a row
 // below md and a card from md up, decided in CSS, so the game browser needs no `matchMedia`. A library game shows its first
 // three Tags and „+N“ (#335), each in the colour the game's whole Tag order gives it (#427, as on its page) and its Price line under the meta line (#337, #338: a pool and a Round game carry the Price too); only a wheel slice carries neither. „+N“ is a button above the link, and its popover lists every Tag (#614). They are
-// spans, not a list: the tests count the cards as `li`. The picker's rows are these cards too, so they show the Price as well.
+// spans, not a list: the tests count the cards as `li`. The picker's rows are these cards too, so they show the Price as well. With `inEvents` (#733) a neutral pill „in 2 Events“
+// sits between the Price line and the Tags; it is a count, no Tag, so it is not a `TagChip`, and no control, so it adds no tab stop. With `archived` (#726) the same pill reads „Archiviert“ right under the name, tile included.
 // The `tile` layout (#435) is the cover and the name only, on the Event page: no players, Suitabilities, Tags or Price, and no link. With `opens` (#443) the
 // name is a button that emits `open` (a tile opens the game dialog, #443, #444) and stretches over the tile like the link does; a tile without it stays plain.
 const props = withDefaults(defineProps<{
@@ -22,7 +23,11 @@ const props = withDefaults(defineProps<{
   to?: RouteLocationRaw
   /** The name is a button that asks for the game's dialog (#443). Without it, or with `to`, nothing changes. */
   opens?: boolean
-}>(), { layout: 'card', to: undefined, opens: false })
+  /** In how many of the Host's live Events the game sits in the pool (#733): „in 2 Events“ in a pill of its own; 0 draws nothing. */
+  inEvents?: number
+  /** The Host's pool shows the game as Archived (#726): a pill „Archiviert“ under the name, in every layout. Not read off `game`: the library's cards are GameViews that carry the flag too. */
+  archived?: boolean
+}>(), { layout: 'card', to: undefined, opens: false, inEvents: 0, archived: false })
 
 const emit = defineEmits<{ open: [] }>()
 
@@ -56,6 +61,9 @@ const more = useTemplateRef<HTMLElement>('more')
 const moreEl = computed(() => more.value ?? null)
 const { open, triggerAttrs, popoverAttrs } = useRevealPopover(moreEl)
 
+// The neutral pill of „in 2 Events“ (#733) and „Archiviert“ (#726): text only, no fill swap.
+const PILL = 'w-fit max-w-full truncate rounded-pill border-2 border-line bg-paper-2 px-2 text-[11px] leading-5 font-bold text-ink-2'
+
 // One class set per layout; Tailwind needs the strings whole. The responsive set is the row's, undone from md up.
 // The body grows, so the actions sit on the card's bottom edge in a stretched grid row (#351).
 const LAYOUT = {
@@ -76,8 +84,9 @@ const LAYOUT = {
     // The Tags sit on the card's bottom edge, one line, so every card of a row shares their top edge (#614).
     tags: 'mt-auto flex-nowrap',
   },
+  // The tile fills its grid cell: the grid stretches each cell to its row's tallest tile, so a tile with the pill and one without share the height (#824).
   tile: {
-    box: 'flex-col overflow-hidden rounded-[14px]',
+    box: 'h-full flex-col overflow-hidden rounded-[14px]',
     cover: 'aspect-[16/10] w-full border-b-2',
     body: 'px-3 pt-2.5 pb-3',
     name: 'line-clamp-2 break-words min-h-[2lh]',
@@ -143,6 +152,11 @@ const look = computed(() => LAYOUT[props.layout])
       >
         {{ game.name }}
       </component>
+      <!-- Outside `showMeta`: the tile shows it too (#726). A sibling of the name, so the tile's button keeps the game's name as its label. -->
+      <span
+        v-if="archived"
+        :class="PILL"
+      >{{ t('library.archivedMark') }}</span>
       <div
         v-if="showMeta && (players || suitabilities)"
         class="flex flex-wrap gap-x-2.5 text-[12px] text-ink-2"
@@ -164,6 +178,10 @@ const look = computed(() => LAYOUT[props.layout])
         class="text-[12px] font-bold text-ink-2"
         :class="layout === 'card' ? '' : layout === 'row' ? 'truncate' : 'truncate md:whitespace-normal'"
       >{{ priceText }}</span>
+      <span
+        v-if="showMeta && inEvents > 0"
+        :class="PILL"
+      >{{ t('library.inEvents', { n: inEvents }, inEvents) }}</span>
       <div
         v-if="showMeta && shownTags.length > 0"
         role="group"

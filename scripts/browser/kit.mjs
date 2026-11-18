@@ -230,9 +230,21 @@ export async function ok(answer, what) {
   return body
 }
 
-/** A game in the library (`POST /api/games`): `fields` are `name`, `playersMin`, `playersMax`, `notes`, … Returns the GameView. */
+/**
+ * A game in the library (`POST /api/games`): `fields` are `name`, `playersMin`, `playersMax`, `notes`, … Returns the GameView.
+ * `notes` as a string is sent as the document the migration 0038 builds from a text (#727; an .mjs cannot import shared/notes-doc.ts):
+ * one paragraph per line, an empty line an empty paragraph without `content`.
+ */
 export async function createGame(tab, fields) {
-  return ok(await api(tab, 'POST', '/api/games', fields), 'POST /api/games')
+  const notes = typeof fields.notes === 'string' ? notesDocument(fields.notes) : fields.notes
+  return ok(await api(tab, 'POST', '/api/games', { ...fields, notes }), 'POST /api/games')
+}
+
+/** The document of a text, as `notesFromLines` in shared/notes-doc.ts builds it; null when no line has a visible character. */
+function notesDocument(text) {
+  if (!/\S/.test(text)) return null
+  const content = text.split(/\r?\n/).map(line => (line === '' ? { type: 'paragraph' } : { type: 'paragraph', content: [{ type: 'text', text: line }] }))
+  return { type: 'doc', content }
 }
 
 /** The defaults of `defaultSettings()` in shared/settings.ts (an .mjs cannot import the TypeScript): Host pick, visible wheel, a 3v3. */

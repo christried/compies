@@ -9,17 +9,19 @@ import { GAME_NAME_MAX, TAG_MAX, type GameView } from '~~/shared/game'
 // The card's structure (#351): the actions sit in the card's last child, and the body grows, so in a stretched grid row the
 // buttons of every card share one bottom edge, whatever the length of the name, the player count, Suitabilities, Price and Tags.
 
-type Props = Partial<Pick<GameView, 'playersMin' | 'playersMax' | 'suitabilities' | 'tags' | 'price' | 'imageUrl' | 'youtubeId'>> & { name: string }
+type Props = Partial<Pick<GameView, 'playersMin' | 'playersMax' | 'suitabilities' | 'tags' | 'price' | 'imageUrl' | 'youtubeId'>> & { name: string, inEvents?: number, archived?: boolean }
 type Layout = 'card' | 'row' | 'responsive' | 'tile'
 
 let page: VueWrapper | undefined
 
 async function mount(game: Props, layout: Layout, withActions = true, attachTo?: HTMLElement) {
-  const { name, ...rest } = game
+  const { name, inEvents, archived, ...rest } = game
   page = await mountSuspended(GameCard, {
     props: {
       game: { id: 'g-1', imageUrl: null, youtubeId: null, playersMin: null, playersMax: null, suitabilities: [], tags: [], price: null, ...rest, name },
       layout,
+      inEvents,
+      archived,
     },
     slots: withActions ? { actions: () => h('button', { type: 'button' }, 'Hinzufügen') } : {},
     attachTo,
@@ -256,6 +258,150 @@ describe('the „+N“ button and its popover (#614)', () => {
     expect(popover()).toBeNull()
     expect(document.activeElement).toBe(moreButton())
     container.remove()
+  })
+})
+
+// „in 2 Events“ (#733): a neutral pill under the Price line and above the Tags, for a game that sits in the pool of live Events. A count, no Tag.
+describe('the „in N Events“ marker (#733)', () => {
+  const marker = () => [...root().querySelectorAll('span')].find(span => /^in \d+ Events?$/.test(span.textContent!.trim()))
+
+  it('draws nothing for 0 and for no count', async () => {
+    for (const inEvents of [0, undefined]) {
+      await mount({ name: 'Mario Kart', ...FULL, inEvents }, 'card')
+      expect(marker()).toBeUndefined()
+      expect(root().textContent).not.toContain('Event')
+      page?.unmount()
+    }
+  })
+
+  it('reads „in 1 Event“ for one, „in 2 Events“ for two and „in 12 Events“ for twelve', async () => {
+    for (const [inEvents, text] of [[1, 'in 1 Event'], [2, 'in 2 Events'], [12, 'in 12 Events']] as const) {
+      await mount({ name: 'Mario Kart', inEvents }, 'card')
+      expect(marker()?.textContent?.trim()).toBe(text)
+      page?.unmount()
+    }
+  })
+
+  it('sits under the Price line and above the Tags', async () => {
+    await mount({ name: 'Mario Kart', ...FULL, inEvents: 2 }, 'card')
+
+    const lines = [...body().children]
+    const at = lines.indexOf(marker()!)
+    expect(lines[at - 1]?.textContent).toContain('€')
+    expect(lines[at + 1]?.getAttribute('role')).toBe('group')
+  })
+
+  it('is no Tag chip: neutral paper-2 fill and line border, ink-2 text', async () => {
+    await mount({ name: 'Mario Kart', inEvents: 2 }, 'card')
+
+    expect(marker()!.className).toContain('bg-paper-2')
+    expect(marker()!.className).toContain('border-line')
+    expect(marker()!.className).toContain('text-ink-2')
+  })
+
+  it('is left out of the tile layout', async () => {
+    await mount({ name: 'Mario Kart', inEvents: 2 }, 'tile')
+
+    expect(marker()).toBeUndefined()
+  })
+
+  it('shows on the row and the responsive layouts too', async () => {
+    for (const layout of ['row', 'responsive'] as const) {
+      await mount({ name: 'Mario Kart', inEvents: 2 }, layout)
+      expect(marker()?.textContent?.trim()).toBe('in 2 Events')
+      page?.unmount()
+    }
+  })
+
+  it('renders with the longest name, and stays inside the card (truncated, never wider)', async () => {
+    for (const layout of ['card', 'row'] as const) {
+      await mount({ name: LONG_NAME, ...FULL, inEvents: 2 }, layout)
+      expect(root().textContent).toContain(LONG_NAME)
+      expect(marker()?.textContent?.trim()).toBe('in 2 Events')
+      expect(marker()!.className).toContain('max-w-full')
+      expect(marker()!.className).toContain('truncate')
+      page?.unmount()
+    }
+  })
+
+  it('adds no list item, link, button or tab stop', async () => {
+    await mount({ name: 'Mario Kart', inEvents: 2 }, 'card', false)
+
+    expect(marker()!.querySelector('li, a, button')).toBeNull()
+    expect(marker()!.closest('li')).toBeNull()
+    expect(root().querySelectorAll('a, button, li')).toHaveLength(0)
+  })
+})
+
+// „Archiviert“ (#726): the Host's pool shows an Archived game as such, a neutral pill under the name in every layout, the tile too. Text only.
+describe('the „Archiviert“ mark (#726)', () => {
+  const mark = () => [...root().querySelectorAll('span')].find(span => span.textContent!.trim() === 'Archiviert')
+  const nameEl = () => root().querySelector('b, button')!
+  const LAYOUTS = ['tile', 'row', 'card', 'responsive'] as const
+
+  it('draws the pill in every layout', async () => {
+    for (const layout of LAYOUTS) {
+      await mount({ name: 'Mario Kart', archived: true }, layout, false)
+      expect(mark(), layout).toBeDefined()
+      page?.unmount()
+    }
+  })
+
+  it('draws nothing for false and for no flag', async () => {
+    for (const archived of [false, undefined]) {
+      await mount({ name: 'Mario Kart', ...FULL, archived }, 'card')
+      expect(mark()).toBeUndefined()
+      expect(root().textContent).not.toContain('Archiviert')
+      page?.unmount()
+    }
+  })
+
+  it('sits right after the name in the tile and the row', async () => {
+    for (const layout of ['tile', 'row'] as const) {
+      await mount({ name: 'Mario Kart', ...FULL, archived: true }, layout, false)
+      expect(nameEl().nextElementSibling).toBe(mark())
+      page?.unmount()
+    }
+  })
+
+  it('has the look of the „in N Events“ pill: neutral paper-2 fill, line border, ink-2 text', async () => {
+    await mount({ name: 'Mario Kart', archived: true, inEvents: 2 }, 'card')
+    const pill = [...root().querySelectorAll('span')].find(span => /^in \d+ Events?$/.test(span.textContent!.trim()))!
+
+    expect(mark()!.className).toContain('bg-paper-2')
+    expect(mark()!.className).toContain('border-line')
+    expect(mark()!.className).toContain('text-ink-2')
+    expect(mark()!.className).toBe(pill.className)
+  })
+
+  it('is no button, link or tab stop: a tile that opens still has one button, named by the game', async () => {
+    page = await mountSuspended(GameCard, {
+      props: { game: { id: 'g-1', name: 'Mario Kart', imageUrl: null, youtubeId: null, price: null, playersMin: null, playersMax: null, suitabilities: [] }, layout: 'tile', opens: true, archived: true },
+    })
+
+    expect(mark()!.querySelector('li, a, button')).toBeNull()
+    expect(mark()!.closest('button')).toBeNull()
+    const buttons = root().querySelectorAll('button')
+    expect(buttons).toHaveLength(1)
+    expect(buttons[0]!.textContent!.trim()).toBe('Mario Kart')
+  })
+
+  it('shows in the tile although the tile hides the meta lines and the „in N Events“ count', async () => {
+    await mount({ name: 'Mario Kart', archived: true, inEvents: 2 }, 'tile', false)
+
+    expect(mark()).toBeDefined()
+    expect(root().textContent).not.toContain('in 2 Events')
+  })
+
+  it('keeps the two-line clamp of the longest name in the tile, and truncates it in the row', async () => {
+    await mount({ name: LONG_NAME, archived: true }, 'tile', false)
+    expect(nameEl().className).toContain('line-clamp-2')
+    expect(mark()).toBeDefined()
+    page?.unmount()
+
+    await mount({ name: LONG_NAME, archived: true }, 'row', false)
+    expect(nameEl().className).toContain('truncate')
+    expect(mark()!.className).toContain('truncate')
   })
 })
 
@@ -526,6 +672,18 @@ describe('the lift on a card that can be clicked (#608)', () => {
     for (const [layout, props, withActions] of [['tile', {}, false], ['card', {}, false], ['row', {}, true], ['row', { to: '' }, true]] as const) {
       await mountClickable(layout, props, withActions)
       expect(root().classList.contains('lift')).toBe(false)
+      page?.unmount()
+    }
+  })
+})
+
+// A tile fills its grid cell (#824): the grid's row stretches each cell to its tallest tile, so a tile with the „Archiviert“ pill
+// and one without share the row's height.
+describe('the tile in a grid row (#824)', () => {
+  it('fills its grid cell, with and without the pill', async () => {
+    for (const archived of [true, false]) {
+      await mount({ name: 'Mario Kart', archived }, 'tile', false)
+      expect(root().classList).toContain('h-full')
       page?.unmount()
     }
   })

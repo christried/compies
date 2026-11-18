@@ -79,6 +79,19 @@ describe('copy rules', () => {
     expect(Object.keys(de.stepper.done)).not.toContain('kicker')
     expect(entries.some(e => e.value === 'Geschafft')).toBe(false)
   })
+
+  // The library is the viewer's own (#724, decision A5): the texts that said it is shared, or that name a creator, are gone.
+  it('says the library is the viewer’s own in the three texts that spoke of all Hosts (#724)', () => {
+    expect(de.library.kicker).toBe('Deine Spiele')
+    expect(de.notesEditor.help).toBe('Nur du siehst das.')
+    expect(de.empty.library.text).toBe('Leg das erste Spiel an. Danach holst du es in jedes deiner Events.')
+  })
+
+  it('has no library key left that named the creator or the owner-only edit (#724)', () => {
+    const library = de.library as Record<string, unknown>
+    expect(['filterMine', 'createdBy', 'editOnlyOwner'].filter(key => key in library)).toEqual([])
+    expect('notGameEditor' in de.error).toBe(false)
+  })
 })
 
 // A number in the copy that can be 1 needs a singular form (#268): „1 Spiele auf dem Rad“ reached staging in 0.7 (#263).

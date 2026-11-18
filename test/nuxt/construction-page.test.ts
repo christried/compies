@@ -81,7 +81,7 @@ describe('construction page route guard', () => {
   })
 
   it('renders the Admin state for the Platform admin, with the Bibliothek nav item', async () => {
-    signInAs({ ...kitty, isAdmin: true })
+    signInAs({ ...kitty, canHost: true, isAdmin: true })
     const page = await visit('/admin')
 
     expect(page.get('h1').text()).toBe('Der Admin-Bereich hat noch keine Tür.')
