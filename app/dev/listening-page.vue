@@ -2,7 +2,7 @@
 import LuckyWheel from '~/components/LuckyWheel.vue'
 import VetoWindow from '~/components/VetoWindow.vue'
 import {
-  CANDIDATE_BASE, CUE_BRIEF, MOMENT_LABEL, MOMENT_OF, MOMENT_SETUP, arrivalCues, buildRun, candidatesOf, choicesReport, configFor, emptyChoices, stampCues, testCandidateOf,
+  CANDIDATE_BASE, CUE_BRIEF, MOMENT_LABEL, MOMENT_OF, MOMENT_SETUP, arrivalCues, buildCoinRun, buildRun, candidatesOf, choicesReport, configFor, emptyChoices, stampCues, testCandidateOf,
   type ArrivalButton, type Candidate, type Choices, type Controls, type Moment, type Run,
 } from '~/dev/listening-model'
 import { createCuePlayer, type CuePlayer } from '~/utils/cue-player'
@@ -151,6 +151,12 @@ async function arrive(button: ArrivalButton) {
   for (const cue of arrivalCues(button, Date.now())) armed.playNow(cue.id, cue.delayMs)
 }
 
+/** A test toss (#669): the real `coinCuePlan` through the armed player, as `arrive` does: no picture, no `CoinFlip`; the reduced checkbox decides the plan. */
+async function startToss() {
+  if (!await ensureContext() || !armed) return
+  armed.setPlan(buildCoinRun(controls.reduced, Date.now()).plan)
+}
+
 /** What a moment's button runs (#740): a new `Moment` has no runner until it has a row here, so typecheck says so. A new moment's row sits under its group's line. */
 const MOMENT_RUNNERS: Record<Moment, (id: CueId) => void> = {
   // wheel
@@ -160,6 +166,7 @@ const MOMENT_RUNNERS: Record<Moment, (id: CueId) => void> = {
   window: () => void startRun('window'),
   arrival: () => void arrive('own'),
   // coin
+  coin: () => void startToss(),
   // standings
   // board
   // ceremony

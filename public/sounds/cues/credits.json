@@ -83,6 +83,30 @@
       "source": "scripts/make-cue-candidates.mjs, Rezept becken-spielzeug",
       "author": null,
       "licence": "generated"
+    },
+    "coin-toss": {
+      "candidate": "daumen-flick",
+      "source": "scripts/make-cue-candidates.mjs, Rezept daumen-flick",
+      "author": null,
+      "licence": "generated"
+    },
+    "coin-spin": {
+      "candidate": "muenz-schimmer",
+      "source": "scripts/make-cue-candidates.mjs, Rezept muenz-schimmer",
+      "author": null,
+      "licence": "generated"
+    },
+    "coin-land": {
+      "candidate": "klirr-wobble",
+      "source": "scripts/make-cue-candidates.mjs, Rezept klirr-wobble",
+      "author": null,
+      "licence": "generated"
+    },
+    "coin-result": {
+      "candidate": "ting-zweiklang",
+      "source": "scripts/make-cue-candidates.mjs, Rezept ting-zweiklang",
+      "author": null,
+      "licence": "generated"
     }
   }
 }
