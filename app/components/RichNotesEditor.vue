@@ -9,7 +9,7 @@ import { notesLength, parseNotes, type NotesDoc } from '~~/shared/notes-doc'
 import { characterCount } from '~~/shared/text'
 
 // The notes editor (#454, 18-notizen § NoteEditor, ADR 0019): a Tiptap WYSIWYG restricted to the nodes and marks of `shared/notes-doc.ts`, in the chrome of a
-// TextField. It is loaded by a dynamic import where a note is edited (`LazyRichNotesEditor` under `ClientOnly`), so no page's first load grows. It never emits on
+// TextField. It is loaded by a dynamic import where a note is edited (`RichNotesEditorLoader`, #822), so no page's first load grows. It never emits on
 // mount, so a form opened and saved untouched sends the document as it is stored; every emitted value went through `parseNotes`, so it is a document the
 // server accepts unless it is over `max`: the over-limit document is emitted too (a paste must not lose text) and `invalid` says why. The count is `notesLength`,
 // the function the server counts with. A finished Event never opens the editor (`GameDialog`'s `canEdit`); its notes are read in `NoteBlock` (#822).
