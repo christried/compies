@@ -676,3 +676,15 @@ describe('the lift on a card that can be clicked (#608)', () => {
     }
   })
 })
+
+// A tile fills its grid cell (#824): the grid's row stretches each cell to its tallest tile, so a tile with the „Archiviert“ pill
+// and one without share the row's height.
+describe('the tile in a grid row (#824)', () => {
+  it('fills its grid cell, with and without the pill', async () => {
+    for (const archived of [true, false]) {
+      await mount({ name: 'Mario Kart', archived }, 'tile', false)
+      expect(root().classList).toContain('h-full')
+      page?.unmount()
+    }
+  })
+})
