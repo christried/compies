@@ -2,7 +2,7 @@
 import LuckyWheel from '~/components/LuckyWheel.vue'
 import VetoWindow from '~/components/VetoWindow.vue'
 import {
-  CANDIDATE_BASE, CUE_BRIEF, MOMENT_LABEL, MOMENT_OF, MOMENT_SETUP, arrivalCues, buildRun, candidatesOf, ceremonyRun, choicesReport, configFor, emptyChoices, stampCues, standingsChangeCues, testCandidateOf,
+  CANDIDATE_BASE, CUE_BRIEF, MOMENT_LABEL, MOMENT_OF, MOMENT_SETUP, arrivalCues, buildRun, candidatesOf, ceremonyRun, choicesReport, configFor, emptyChoices, stampCues, standingsChangeCues, testCandidateOf, tourVoiceCues,
   type ArrivalButton, type Candidate, type Choices, type Controls, type Moment, type Run,
 } from '~/dev/listening-model'
 import { createCuePlayer, type CuePlayer } from '~/utils/cue-player'
@@ -158,6 +158,12 @@ async function standingsChange() {
   for (const cue of standingsChangeCues(controls.reduced, countDurationMs())) armed.playNow(cue.id, cue.delayMs)
 }
 
+/** The test Tour voice (#747): the chirp, then the cheer, through the real step map and the real player. */
+async function tourVoice() {
+  if (!await ensureContext() || !armed) return
+  for (const cue of tourVoiceCues()) armed.playNow(cue.id, cue.delayMs)
+}
+
 /** A test ceremony (#743): the REAL plan of one Winner of four Parties on the player's ceremony source, sound only; the gag is the one of the cue's own button. */
 async function startCeremony(id: CueId) {
   if (!await ensureContext() || !armed) return
@@ -180,6 +186,7 @@ const MOMENT_RUNNERS: Record<Moment, (id: CueId) => void> = {
   // ceremony
   ceremony: id => void startCeremony(id),
   // tour
+  tour: () => void tourVoice(),
 }
 
 /** The cue's default moment with the current controls (a spin, a window, for `veto-seal` the own cast), after the controls its row of `MOMENT_SETUP` sets. */

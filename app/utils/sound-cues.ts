@@ -32,6 +32,7 @@ export const CUE_IDS = [
   // ceremony
   'cer-drop', 'cer-row', 'cer-run', 'cer-trip', 'cer-bonk',
   // tour
+  'cb-hi',
 ] as const
 export type CueId = (typeof CUE_IDS)[number]
 
@@ -49,6 +50,7 @@ export const CUE_VOLUME: Record<CueId, number> = {
   // ceremony
   'cer-drop': 55, 'cer-row': 40, 'cer-run': 40, 'cer-trip': 60, 'cer-bonk': 60,
   // tour
+  'cb-hi': 50,
 }
 
 /** The moments whose cue files an Event page requests together (#740). Only `wheel` and `veto` have cues and a rule so far. */
@@ -58,7 +60,7 @@ export type CueGroup = 'wheel' | 'veto' | 'coin' | 'standings' | 'board' | 'cere
 export const CUE_GROUPS: Record<CueId, readonly [CueGroup, ...CueGroup[]]> = {
   // wheel
   'wheel-windup': ['wheel'], 'wheel-tick': ['wheel'], 'wheel-stop': ['wheel'], 'wheel-morph': ['wheel'], 'wheel-slice-out': ['wheel'],
-  'cb-hype': ['wheel'], 'cb-gulp': ['wheel'], 'cb-yay': ['wheel'],
+  'cb-hype': ['wheel'], 'cb-gulp': ['wheel'], 'cb-yay': ['wheel', 'tour'],
   // veto
   'veto-open': ['veto'], 'veto-clock': ['veto'], 'veto-clip-close': ['veto'], 'veto-seal': ['veto'], 'veto-drumroll': ['veto'], 'veto-reveal': ['veto'],
   // coin
@@ -68,6 +70,7 @@ export const CUE_GROUPS: Record<CueId, readonly [CueGroup, ...CueGroup[]]> = {
   // ceremony
   'cer-drop': ['ceremony'], 'cer-row': ['ceremony'], 'cer-run': ['ceremony'], 'cer-trip': ['ceremony'], 'cer-bonk': ['ceremony'],
   // tour
+  'cb-hi': ['tour'],
 }
 
 /** What the group rule reads of the viewer's Event read: three flags, nothing of the draw (§ Secrecy), so it cannot carry a game, a label or a toss. */
@@ -82,6 +85,8 @@ export interface GroupInput {
   standings?: boolean
   /** `view.event.phase === 'finished'` (#743): the Award ceremony's files, whether or not the Host has started it. Optional: absent = not finished. */
   finished?: boolean
+  /** The Tour may start for this Member (`tourMayStart` without the layer and the calm second, #747): a rule of the Member's own state. Absent = not reached. */
+  tour?: boolean
 }
 
 /**
@@ -96,6 +101,7 @@ export function reachableGroups(input: GroupInput): CueGroup[] {
   if (input.standings) groups.push('standings')
   // The ceremony's files depend on „the Event is finished“ and nothing else: no request may tell a Member who won, that it is a Tie or which gag (#743).
   if (input.finished) groups.push('ceremony')
+  if (input.tour) groups.push('tour')
   return groups
 }
 
@@ -207,6 +213,12 @@ export function wheelVoicePlan(input: WheelVoiceInput): Cue[] {
   const yay: Cue = { id: 'cb-yay', at: moments.cheerAt }
   if (reducedMotion) return [yay]
   return [{ id: 'cb-hype', at: spinStartAt }, { id: 'cb-gulp', at: moments.brakeAt }, yay]
+}
+
+const TOUR_STEP_CUES: Readonly<Record<string, CueId>> = { greeting: 'cb-hi', end: 'cb-yay' }
+/** The cue a Tour step sounds when it shows (#747), by the step's id in `MEMBER_TOUR`; null = silent. */
+export function tourStepCue(stepId: string): CueId | null {
+  return TOUR_STEP_CUES[stepId] ?? null
 }
 
 /**
