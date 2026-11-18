@@ -4,8 +4,8 @@ import { describe, expect, it } from 'vitest'
 import type { SpinView, VetoView } from '~~/shared/stage'
 import { pinCrossings } from '../../app/utils/wheel-pins'
 import {
-  ARRIVAL_LATE_MS, CUE_IDS, CUE_VOLUME, STAMP_GAP_MS, TICK_MIN_GAP_MS, thinTicks, vetoArrivalCues, vetoCuePlan, wheelCuePlan,
-  type ArrivalCue, type Cue, type VetoArrivalState, type VetoCueInput, type WheelCueInput,
+  ARRIVAL_LATE_MS, CUE_IDS, CUE_VOLUME, STAMP_GAP_MS, TICK_MIN_GAP_MS, cueFilesOf, reachableGroups, thinTicks, vetoArrivalCues, vetoCuePlan, wheelCuePlan,
+  type ArrivalCue, type Cue, type GroupInput, type VetoArrivalState, type VetoCueInput, type WheelCueInput,
 } from '../../app/utils/sound-cues'
 
 // The wheel's cue plan (#530, spec #504 § The cue plan): which sound cue is due at which server time for a spin, as a pure function of the
@@ -502,5 +502,47 @@ describe('the cue ids and their volumes', () => {
 
     expect(Object.keys(vol).sort()).toEqual([...CUE_IDS].sort())
     expect(CUE_VOLUME).toEqual(vol)
+  })
+})
+
+// Which cue files an Event read can need (#740): the group rule is a pure function of three flags of the viewer's own read, so a later
+// moment adds a field and a line, never a list in the composable.
+describe('reachableGroups', () => {
+  it('reaches no group without a wheel, whatever the other fields say', () => {
+    expect(reachableGroups({ wheel: false, vetoAllowance: 0, vetoWindow: false })).toEqual([])
+    expect(reachableGroups({ wheel: false, vetoAllowance: 2, vetoWindow: true })).toEqual([])
+  })
+
+  it('reaches the wheel\'s group with a wheel alone', () => {
+    expect(reachableGroups({ wheel: true, vetoAllowance: 0, vetoWindow: false })).toEqual(['wheel'])
+  })
+
+  it('reaches the Veto window\'s group too with an allowance', () => {
+    expect(reachableGroups({ wheel: true, vetoAllowance: 2, vetoWindow: false })).toEqual(['wheel', 'veto'])
+  })
+
+  it('reaches the Veto window\'s group too with a window, even without an allowance', () => {
+    expect(reachableGroups({ wheel: true, vetoAllowance: 0, vetoWindow: true })).toEqual(['wheel', 'veto'])
+  })
+
+  it('takes three flags and nothing of the draw (Secrecy)', () => {
+    const input: GroupInput = { wheel: true, vetoAllowance: 0, vetoWindow: false }
+
+    expect(Object.keys(input).sort()).toEqual(['vetoAllowance', 'vetoWindow', 'wheel'])
+  })
+})
+
+describe('cueFilesOf', () => {
+  it('is the five wheel cues for the wheel\'s group', () => {
+    expect(cueFilesOf(['wheel'])).toEqual(['wheel-windup', 'wheel-tick', 'wheel-stop', 'wheel-morph', 'wheel-slice-out'])
+  })
+
+  it('is every cue, in the order of CUE_IDS and each once, for both groups', () => {
+    expect(cueFilesOf(['wheel', 'veto'])).toEqual([...CUE_IDS])
+    expect(cueFilesOf(['veto', 'wheel'])).toEqual([...CUE_IDS])
+  })
+
+  it('is empty for no group', () => {
+    expect(cueFilesOf([])).toEqual([])
   })
 })

@@ -43,9 +43,9 @@ const wheelWith = (spin: SpinView | null, vetoes: Partial<VetoView> = {}): Wheel
 const planOf = (spin: SpinView) => wheelCuePlan({ spin, hiddenWheel: false, isHost: false, reducedMotion: reducedMotion() })
 
 /** The Event page's read: a Session that runs, the Event's Veto allowance (none unless a test says) and the Clip of the latest draw. */
-function serveWheel(wheel: WheelView | null, first: { vetoAllowance?: number | null, clip?: ClipView | null } = {}) {
+function serveWheel(wheel: WheelView | null, first: { vetoAllowance?: number | null, clip?: ClipView | null, isHost?: boolean } = {}) {
   const read = (slug: string, wheelOfRead: WheelView | null, rest = first) => viewWithSessions(slug, [{ number: null, startsAt: FIRST, startedAt: STARTED }], 0, {
-    event: { isHost: false, phase: 'running' }, settings: { ...defaultSettings(), vetoAllowance: rest.vetoAllowance ?? null },
+    event: { isHost: rest.isHost ?? false, phase: 'running' }, settings: { ...defaultSettings(), vetoAllowance: rest.vetoAllowance ?? null },
     runningSessionId: `session-${slug}-0`, wheel: wheelOfRead, clip: rest.clip ?? null,
   })
   const served = serve(slug => read(slug, wheel))
@@ -374,6 +374,17 @@ describe('the Veto window on the Event page', () => {
 
       expect(VETO_FILES).toHaveLength(6)
       for (const id of VETO_FILES) expect(requests[id], id).toBe(1)
+    })
+
+    // The group rule reads no `isHost` (#740): the Host's read and a Member's request the same files.
+    it.each([['a Member', false], ['the Host', true]])('are all of them for a wheel read with an allowance, for %s', async (_who, isHost) => {
+      const served = serveWheel(wheelWith(null), { vetoAllowance: 2, isHost })
+
+      page = await mountSuspended(EventPage, { route: `/e/${served.slug}` })
+      await vi.waitFor(() => expect(requested()).toHaveLength(CUE_IDS.length))
+      await flushPromises()
+
+      expect(requested()).toEqual([...CUE_IDS].sort())
     })
 
     it('are requested by a window even when the allowance is not known', async () => {
