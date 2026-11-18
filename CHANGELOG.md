@@ -27,6 +27,7 @@
 - **Offline-Seite im Look von „Link ungültig“:** Ohne Verbindung zeigt die App jetzt den Kopf der App-Figur, eine große Überschrift und den Knopf „Seite neu laden“ wie auf „Link ungültig“. Die Texte bleiben, wie sie waren, und die Seite braucht weiterhin kein Netz. ([#808](https://github.com/christried/compies/issues/808))
 - **Kürzere Texte, ein Name pro Sache:** Viele Texte sind kürzer, und was du ohnehin siehst, steht nicht noch einmal daneben. Eine Sache hat jetzt überall denselben Namen: Der Host fixiert einen Termin („Termin fixieren“), und ein Platz in einem Team heißt auf dem Spielbrett „Slot“. ([#809](https://github.com/christried/compies/issues/809))
 - **Meldungen in Formularen:** Eine Meldung unter einem Feld erscheint jetzt rot und erst, wenn du das Feld benutzt hast oder zu speichern oder weiterzugehen versucht hast. Gehören mehrere Felder zusammen, zum Beispiel „von“ und „bis“ bei der Spielerzahl, steht eine gemeinsame Meldung darunter. ([#797](https://github.com/christried/compies/issues/797))
+- **„Ton aktivieren“ auch zur Siegerehrung:** Bei einem beendeten Event fragt dich die Seite schon vor der Siegerehrung mit „Ton aktivieren“ nach einem Tipp, damit du die Siegerehrung auch hörst. Der Hinweis ist derselbe wie in einer laufenden Session. ([#755](https://github.com/christried/compies/issues/755))
 
 ### Entfernt
 
