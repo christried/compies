@@ -5,6 +5,7 @@ import {
   CUE_BRIEF, MOMENT_OF, SHIPPED_NAME, STAMP_LAG_MS, arrivalCues, buildRun, candidatesOf, choicesReport, configFor, emptyChoices, stampCues, testCandidateOf, withTickGap,
   type RunConfig,
 } from '../../app/dev/listening-model'
+import { CUE_LENGTHS } from '../../app/utils/cue-lengths'
 import { CUE_CREDITS_URL } from '../../app/utils/sound-credits'
 import { CUE_IDS, TICK_MIN_GAP_MS, cueFileUrl, wheelCuePlan } from '../../app/utils/sound-cues'
 import { REVEAL_AFTER_MS } from '../../app/utils/wheel'
@@ -26,18 +27,17 @@ const creditsOf = (fields: Record<string, unknown> = {}) => ({
 const credits = creditsOf()
 
 describe('CUE_BRIEF', () => {
-  it('is the character and the length of compibert-sound.md, for every cue', () => {
+  it('is the character of compibert-sound.md, for every cue the document has a clean row for (its length is CUE_LENGTHS, #740)', () => {
     const doc = readFileSync(resolve(root, 'docs/design_handoff_compies/reference/docs/compibert-sound.md'), 'utf8')
-    for (const id of CUE_IDS) {
+    for (const id of CUE_IDS.filter(known => CUE_LENGTHS[known].docRow)) {
       const cells = doc.split('\n').map(line => line.split('|').map(cell => cell.trim())).find(row => row.includes(`\`${id}\``))!
       const at = cells.indexOf(`\`${id}\``)
-      const [, amount, unit, loop] = /^([\d.]+) (ms|s)( loop)?$/.exec(cells[at + 2]!)!
-      expect(CUE_BRIEF[id], id).toEqual({ character: cells[at + 1], lengthMs: Math.round(Number(amount) * (unit === 's' ? 1000 : 1)), loop: loop !== undefined })
+      expect(CUE_BRIEF[id], id).toEqual({ character: cells[at + 1] })
     }
   })
 
   it('has one moment per cue', () => {
-    expect(Object.keys(MOMENT_OF)).toEqual([...CUE_IDS])
+    expect(Object.keys(MOMENT_OF).sort()).toEqual([...CUE_IDS].sort())
   })
 })
 

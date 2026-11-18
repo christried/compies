@@ -8,17 +8,79 @@ import { pinCrossings } from './wheel-pins'
 // `wheelCuePlan` and `vetoCuePlan` return, skips a cue that is too late and never works a time out itself. What the arrival of a read causes
 // (the own Party's cast, the stamps, a set game's opening) is no time known ahead: `vetoArrivalCues` decides it (#532).
 
-/** The eleven cue ids of 0.13.3 (#504), = the cue id of `compibert-sound.md` and the file name in the sound folder. */
+/**
+ * The cue ids (#504, #718), = the cue id of `compibert-sound.md` and the file name in the sound folder. A new cue is one row in each table
+ * keyed by `CueId` (volume and group here, `CUE_LENGTHS`, the listening brief and `MOMENT_OF`) and one recipe file (#740); the rows sit under
+ * their group's comment line, so two tickets of different groups never touch the same lines. Two plain-Node scripts read this array from
+ * the file's text (`make-cue-candidates.mjs`, `ship-cue-sound.mjs`): keep it one `[ ... ]` of quoted ids, and no quote or bracket in a comment.
+ */
 export const CUE_IDS = [
+  // wheel
   'wheel-windup', 'wheel-tick', 'wheel-stop', 'wheel-morph', 'wheel-slice-out',
+  // veto
   'veto-open', 'veto-clock', 'veto-clip-close', 'veto-seal', 'veto-drumroll', 'veto-reveal',
+  // coin
+  // standings
+  // board
+  // ceremony
+  // tour
 ] as const
 export type CueId = (typeof CUE_IDS)[number]
 
 /** `Vol` of `reference/docs/compibert-sound.md`, 0 to 100, relative to the loudest cue (the fanfare = 100); the player's gain is Vol / 100. */
 export const CUE_VOLUME: Record<CueId, number> = {
+  // wheel
   'wheel-windup': 45, 'wheel-tick': 30, 'wheel-stop': 70, 'wheel-morph': 50, 'wheel-slice-out': 35,
+  // veto
   'veto-open': 50, 'veto-clock': 25, 'veto-clip-close': 35, 'veto-seal': 55, 'veto-drumroll': 60, 'veto-reveal': 85,
+  // coin
+  // standings
+  // board
+  // ceremony
+  // tour
+}
+
+/** The moments whose cue files an Event page requests together (#740). Only `wheel` and `veto` have cues and a rule so far. */
+export type CueGroup = 'wheel' | 'veto' | 'coin' | 'standings' | 'board' | 'ceremony' | 'tour'
+
+/** The groups a cue's file is requested for, at least one: a cue that two moments play (a voice cue) names both, and its file comes once. */
+export const CUE_GROUPS: Record<CueId, readonly [CueGroup, ...CueGroup[]]> = {
+  // wheel
+  'wheel-windup': ['wheel'], 'wheel-tick': ['wheel'], 'wheel-stop': ['wheel'], 'wheel-morph': ['wheel'], 'wheel-slice-out': ['wheel'],
+  // veto
+  'veto-open': ['veto'], 'veto-clock': ['veto'], 'veto-clip-close': ['veto'], 'veto-seal': ['veto'], 'veto-drumroll': ['veto'], 'veto-reveal': ['veto'],
+  // coin
+  // standings
+  // board
+  // ceremony
+  // tour
+}
+
+/** What the group rule reads of the viewer's Event read: three flags, nothing of the draw (§ Secrecy), so it cannot carry a game, a label or a toss. */
+export interface GroupInput {
+  /** `view.wheel != null`. */
+  wheel: boolean
+  /** `view.settings?.vetoAllowance ?? 0`. */
+  vetoAllowance: number
+  /** `view.wheel?.vetoes.draw != null`. */
+  vetoWindow: boolean
+}
+
+/**
+ * The groups whose files this read can need, ascending in the order of the `CueGroup` union. The wheel's are reached with a wheel. The Veto
+ * window's too when the Event allows Vetoes (the early signal: a set game's window opens at its commit and the files must be decoded by
+ * then) or has a window (the late one). Everyone gets all of a group's files, whether their Party casts or not: no request may depend on a cast.
+ */
+export function reachableGroups(input: GroupInput): CueGroup[] {
+  const groups: CueGroup[] = []
+  if (input.wheel) groups.push('wheel')
+  if (input.wheel && (input.vetoAllowance > 0 || input.vetoWindow)) groups.push('veto')
+  return groups
+}
+
+/** The cue files of these groups, in the order of `CUE_IDS`, each once. */
+export function cueFilesOf(groups: readonly CueGroup[]): CueId[] {
+  return CUE_IDS.filter(id => CUE_GROUPS[id].some(group => groups.includes(group)))
 }
 
 /** Where the cue files are served from (`public/sounds/cues/`) and their extension: the one place that names either (#531). */

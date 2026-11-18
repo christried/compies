@@ -10,33 +10,75 @@ import { isRecord } from '~~/shared/record'
 import type { ClipView, SpinView, VetoCastView, VetoDrawView, WheelView } from '~~/shared/stage'
 
 // The logic of the listening page for the cue sounds (#534, the session of #535): what each cue is meant to sound like, the candidates, a
-// test run built through the REAL cue plan functions, and the eleven choices as the agent reads them back. Pure: no Vue, no DOM, no clock
+// test run built through the REAL cue plan functions, and the choices as the agent reads them back. Pure: no Vue, no DOM, no clock
 // (`now` is handed in), so test/unit/listening-model.test.ts covers it. Dev server only (app/dev/ is no folder Nuxt scans; nuxt.config.ts
 // registers the page, stage.ts decides).
 
 /** The candidates' URL base: server/dev/cue-candidates.ts serves it from `sound-candidates/`. Not under `public/`, so no deployment has a file. */
 export const CANDIDATE_BASE = '/_dev/cue-candidates'
 
-/** What the brief says of each cue: the Cue column and the Length column of `reference/docs/compibert-sound.md`, word for word (a unit test reads the doc). */
-export const CUE_BRIEF: Record<CueId, { character: string, lengthMs: number, loop: boolean }> = {
-  'wheel-windup': { character: 'ratchet pulled back', lengthMs: 500, loop: false },
-  'wheel-tick': { character: 'plastic flapper per peg, rate follows speed', lengthMs: 30, loop: false },
-  'wheel-stop': { character: 'thunk + three-note chord', lengthMs: 600, loop: false },
-  'wheel-morph': { character: 'hidden mode: scramble/zip as the fake name turns real', lengthMs: 500, loop: false },
-  'wheel-slice-out': { character: 'slice pops out, „schwupp“', lengthMs: 300, loop: false },
-  'veto-open': { character: 'shutter whoosh, window slides up', lengthMs: 400, loop: false },
-  'veto-clock': { character: 'dry clock tick, last 10 s only, speeds up at 5 s', lengthMs: 40, loop: false },
-  'veto-clip-close': { character: 'soft TV off', lengthMs: 300, loop: false },
-  'veto-seal': { character: 'own veto confirmed: wax-stamp thud', lengthMs: 300, loop: false },
-  'veto-drumroll': { character: 'snare roll before the reveal', lengthMs: 1200, loop: true },
-  'veto-reveal': { character: 'all at once: cymbal hit + stamp per veto (staggered 80 ms)', lengthMs: 800, loop: false },
+/**
+ * What the brief says of each cue: the Cue column of `reference/docs/compibert-sound.md`, word for word where the document has a clean row (a
+ * unit test reads the doc). The length is `CUE_LENGTHS`, shared with the file test and the generator (#740). A new cue's row goes under its
+ * group's line.
+ */
+export const CUE_BRIEF: Record<CueId, { character: string }> = {
+  // wheel
+  'wheel-windup': { character: 'ratchet pulled back' },
+  'wheel-tick': { character: 'plastic flapper per peg, rate follows speed' },
+  'wheel-stop': { character: 'thunk + three-note chord' },
+  'wheel-morph': { character: 'hidden mode: scramble/zip as the fake name turns real' },
+  'wheel-slice-out': { character: 'slice pops out, „schwupp“' },
+  // veto
+  'veto-open': { character: 'shutter whoosh, window slides up' },
+  'veto-clock': { character: 'dry clock tick, last 10 s only, speeds up at 5 s' },
+  'veto-clip-close': { character: 'soft TV off' },
+  'veto-seal': { character: 'own veto confirmed: wax-stamp thud' },
+  'veto-drumroll': { character: 'snare roll before the reveal' },
+  'veto-reveal': { character: 'all at once: cymbal hit + stamp per veto (staggered 80 ms)' },
+  // coin
+  // standings
+  // board
+  // ceremony
+  // tour
 }
 
-/** Where a cue sounds in a real Event: in a spin, in a Veto window, or at the arrival of a read (the own Party's cast, a stamp). */
+/**
+ * Where a cue sounds in a real Event: in a spin, in a Veto window, or at the arrival of a read (the own Party's cast, a stamp). A new moment is
+ * a member here (a union takes no group lines, so it is the one line two tickets may both touch), a `MOMENT_LABEL` row and a runner in the
+ * page's `MOMENT_RUNNERS`, under its group's line.
+ */
 export type Moment = 'spin' | 'window' | 'arrival'
+
 export const MOMENT_OF: Record<CueId, Moment> = {
+  // wheel
   'wheel-windup': 'spin', 'wheel-tick': 'spin', 'wheel-stop': 'spin', 'wheel-morph': 'spin', 'wheel-slice-out': 'spin',
+  // veto
   'veto-open': 'window', 'veto-clock': 'window', 'veto-clip-close': 'window', 'veto-seal': 'arrival', 'veto-drumroll': 'window', 'veto-reveal': 'window',
+  // coin
+  // standings
+  // board
+  // ceremony
+  // tour
+}
+
+/** What the page prints beside the moment button. */
+export const MOMENT_LABEL: Record<Moment, string> = {
+  // wheel
+  spin: 'Test spin',
+  // veto
+  window: 'Test window',
+  arrival: 'Ankunft der Antwort',
+  // coin
+  // standings
+  // board
+  // ceremony
+  // tour
+}
+
+/** The controls a cue's moment button sets before it runs, for a cue that needs more than its moment: `wheel-morph` needs the Hidden wheel. */
+export const MOMENT_SETUP: Partial<Record<CueId, Partial<Controls>>> = {
+  'wheel-morph': { hidden: true },
 }
 
 // Candidates -------------------------------------------------------------------------------------------------------------------------
@@ -140,7 +182,7 @@ export interface ChoiceReport {
   licence: Licence | null
 }
 
-/** The eleven choices as the agent reads them back (the `<pre>` and `window.__compiesListeningChoices`), with the tick cap the session settled on. */
+/** The choices as the agent reads them back (the `<pre>` and `window.__compiesListeningChoices`), with the tick cap the session settled on. */
 export function choicesReport(byCue: Record<CueId, Candidate[]>, choices: Choices, tickMinGapMs: number): { choices: Record<CueId, ChoiceReport>, tickMinGapMs: number } {
   const report = {} as Record<CueId, ChoiceReport>
   for (const id of CUE_IDS) {

@@ -1,6 +1,6 @@
 import { createCuePlayer, exposesCueLog, type CueLogEntry, type CuePlayer } from '~/utils/cue-player'
 import { reducedMotion } from '~/utils/motion'
-import { CUE_IDS, cueFileUrl, vetoArrivalCues, vetoCuePlan, wheelCuePlan, type Cue, type CueId, type VetoArrivalState } from '~/utils/sound-cues'
+import { cueFileUrl, cueFilesOf, reachableGroups, vetoArrivalCues, vetoCuePlan, wheelCuePlan, type Cue, type GroupInput, type VetoArrivalState } from '~/utils/sound-cues'
 import type { EventView } from '~~/shared/event'
 
 // The sound of the Event page (#531, spec #504 § The cue player): the page's one Web Audio context, the cue player on it, and the plan the
@@ -11,11 +11,12 @@ import type { EventView } from '~~/shared/event'
 // from it, a timer or a frame.
 
 /**
- * The Event page's cue files: the wheel's are fetched and decoded when the read has a wheel (#531), the Veto window's too when the Event allows
- * Vetoes or has a window (#532). Everyone fetches all six, whether their Party casts or not: no request may depend on a cast.
+ * What the group rule reads of a read (#740): three flags, so no file is requested from anything the viewer may not know. Which groups they
+ * reach and which files each group holds are `reachableGroups` and `CUE_GROUPS` in sound-cues.ts (#531, #532).
  */
-const WHEEL_IDS: readonly CueId[] = CUE_IDS.filter(id => id.startsWith('wheel-'))
-const VETO_IDS: readonly CueId[] = CUE_IDS.filter(id => id.startsWith('veto-'))
+function groupInputOf(view: EventView | null | undefined): GroupInput {
+  return { wheel: view?.wheel != null, vetoAllowance: view?.settings?.vetoAllowance ?? 0, vetoWindow: view?.wheel?.vetoes.draw != null }
+}
 
 /**
  * The plan of a read: every cue the Event page has due, from the viewer's own read only (CODING_STANDARDS § Secrecy), so the five fields of the
@@ -104,7 +105,7 @@ export function useCuePlayer(input: {
     return made
   }
 
-  /** Gives the player the plan of the current read, and the files it needs once the read has a wheel. */
+  /** Gives the player the plan of the current read, and the files of the groups the read reaches. */
   function sync() {
     if (!mounted.value || !input.ready()) return
     if (!enabled.value) {
@@ -115,11 +116,7 @@ export function useCuePlayer(input: {
     if (!made) return
     made.setEnabled(true)
     const view = input.view()
-    if (view?.wheel) {
-      made.preload(WHEEL_IDS)
-      // The allowance is the early signal (a set game's window opens at its commit, the files must be decoded by then), the window the late one.
-      if ((view.settings?.vetoAllowance ?? 0) > 0 || view.wheel.vetoes.draw !== null) made.preload(VETO_IDS)
-    }
+    made.preload(cueFilesOf(reachableGroups(groupInputOf(view))))
     made.setPlan(view ? planOf(view) : [])
   }
 
