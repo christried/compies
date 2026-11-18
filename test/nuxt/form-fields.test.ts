@@ -4,6 +4,8 @@ import { Check, X } from '@lucide/vue'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import { flushPromises } from '@vue/test-utils'
 import { describe, expect, it } from 'vitest'
+import { defineComponent, h } from 'vue'
+import { provideFormAttempt } from '~/composables/useFormAttempt'
 import DateTimeField from '~/components/DateTimeField.vue'
 import IconButton from '~/components/IconButton.vue'
 import SegmentedControl from '~/components/SegmentedControl.vue'
@@ -23,11 +25,22 @@ describe('IconButton', () => {
   })
 })
 
+// A form that owns the attempt flag (#797): its button is the blocked submit.
+function formOf(child: () => ReturnType<typeof h>) {
+  return defineComponent({
+    setup() {
+      const { attempt } = provideFormAttempt()
+      return () => h('div', [child(), h('button', { onClick: attempt }, 'Speichern')])
+    },
+  })
+}
+
 describe('TextField', () => {
   it('labels the input and links the error and the help text to it', async () => {
     const page = await mountSuspended(TextField, {
       props: { modelValue: '', label: 'Name der Event', help: 'Sehen alle in der Einladung.', error: 'Gib der Event einen Namen.' },
     })
+    await page.get('input').trigger('input')
 
     const input = page.get('input')
     expect(page.get('label').attributes('for')).toBe(input.attributes('id'))
@@ -99,17 +112,46 @@ describe('TextField', () => {
     expect((page.get('input').element as HTMLInputElement).value).toBe('👍🏽👍🏽👍🏽👍🏽')
   })
 
-  it('marks the field invalid with the help text as the reason, announced, under the given id', async () => {
-    const page = await mountSuspended(TextField, {
-      props: { modelValue: '', label: 'Name', help: 'Ohne Namen geht’s nicht.', invalid: true, id: 'x' },
-    })
+  it('shows no message before the field was touched (#797)', async () => {
+    const page = await mountSuspended(TextField, { props: { modelValue: '', label: 'Name', error: 'Gib einen Namen an.', help: 'Sehen alle.', id: 'x' } })
 
-    expect(page.get('input').attributes('id')).toBe('x')
+    expect(page.text()).not.toContain('Gib einen Namen an.')
+    expect(page.get('input').attributes('aria-invalid')).toBeUndefined()
+    expect(page.get('input').classes()).not.toContain('border-error-fg')
+    expect(page.get('input').attributes('aria-describedby')).toBe('x-help')
+  })
+
+  it('shows the message in red after an input (#797)', async () => {
+    const page = await mountSuspended(TextField, { props: { modelValue: '', label: 'Name', error: 'Gib einen Namen an.', id: 'x' } })
+
+    await page.get('input').trigger('input')
+
+    const line = page.get('#x-error')
+    expect(line.text()).toBe('Gib einen Namen an.')
+    expect(line.classes()).toContain('text-error-fg')
     expect(page.get('input').attributes('aria-invalid')).toBe('true')
-    const help = page.get('#x-help')
-    expect(help.text()).toBe('Ohne Namen geht’s nicht.')
-    expect(help.attributes('aria-live')).toBe('polite')
-    expect(page.get('label').attributes('for')).toBe('x')
+    expect(page.get('input').classes()).toContain('border-error-fg')
+  })
+
+  it('shows the message after the field was left, and keeps it touched (#797)', async () => {
+    const page = await mountSuspended(TextField, { props: { modelValue: '', label: 'Name', error: 'Gib einen Namen an.' } })
+
+    await page.get('input').trigger('blur')
+    expect(page.text()).toContain('Gib einen Namen an.')
+
+    await page.setProps({ error: undefined })
+    await page.setProps({ error: 'Wieder falsch.' })
+    expect(page.text()).toContain('Wieder falsch.')
+  })
+
+  it('shows the message of an untouched field once the form tried to submit (#797)', async () => {
+    const page = await mountSuspended(formOf(() => h(TextField, { modelValue: '', label: 'Name', error: 'Gib einen Namen an.' })))
+    expect(page.text()).not.toContain('Gib einen Namen an.')
+
+    await page.get('button').trigger('click')
+
+    expect(page.text()).toContain('Gib einen Namen an.')
+    expect(page.get('input').attributes('aria-invalid')).toBe('true')
   })
 })
 
