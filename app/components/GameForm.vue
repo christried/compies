@@ -129,16 +129,22 @@ const toError = computed(() => (toInvalid.value || rangeInverted.value ? t('erro
 // Game notes (#223): the shared rule says when they are too long. The editor shows its own error at once (it only arises from typing or a paste); the CTA says why it is blocked.
 const notesBlocked = computed(() => notesOver.value || gameNotesProblem(notes.value) === 'too_long')
 
-/** Why the CTA is blocked, in the words of the field that is wrong, or null when no field is. */
-const blocker = computed<string | null>(() => {
-  if (nameProblem.value === 'empty') return t('gameEdit.nameRequired')
-  if (nameProblem.value === 'too_long') return t('error.nameTooLong', { max: GAME_NAME_MAX })
-  if (linkError.value) return t('gameEdit.linkRequired')
-  if (fromError.value || toError.value) return t('error.playersInvalid')
-  if (notesBlocked.value) return t('notesEditor.saveBlocked')
-  if (priceError.value) return priceError.value
-  return startError.value ?? endError.value ?? lengthError.value ?? null
+/**
+ * Why the CTA is blocked, in the words of the field that is wrong, or null when no field is. `immediate` says the reason shows
+ * beside the button at once; every other reason waits for a try (#797). The reason carries that itself (#825), never its text.
+ */
+const blockerReason = computed<{ text: string, immediate: boolean } | null>(() => {
+  const later = (text: string) => ({ text, immediate: false })
+  if (nameProblem.value === 'empty') return later(t('gameEdit.nameRequired'))
+  if (nameProblem.value === 'too_long') return later(t('error.nameTooLong', { max: GAME_NAME_MAX }))
+  if (linkError.value) return later(t('gameEdit.linkRequired'))
+  if (fromError.value || toError.value) return later(t('error.playersInvalid'))
+  if (notesBlocked.value) return { text: t('notesEditor.saveBlocked'), immediate: true }
+  if (priceError.value) return later(priceError.value)
+  const clip = startError.value ?? endError.value ?? lengthError.value
+  return clip ? later(clip) : null
 })
+const blocker = computed(() => blockerReason.value?.text ?? null)
 
 /** A player count field as the shared rules read it: its number, nothing, or the text itself when that is no count, so the rules refuse it too. */
 function countOf(text: string): number | string | null {
@@ -167,7 +173,7 @@ const draft = computed(() => ({
  * The reason beside the button shows after a try (#797): until then the disabled button says enough. The notes reason is the
  * exception: a note over the limit only arises from the User's own typing or paste, so it is touched already and shows at once.
  */
-const blockerShown = computed(() => blocker.value !== null && (attempted.value || (notesBlocked.value && blocker.value === t('notesEditor.saveBlocked'))))
+const blockerShown = computed(() => blockerReason.value !== null && (attempted.value || blockerReason.value.immediate))
 
 /** The form is blocked exactly when a field says why, or the shared rules refuse the body, or the player reported the link broken (#171). */
 const blocked = computed(() => blocker.value !== null || !parseGameInput(draft.value).ok)

@@ -647,6 +647,31 @@ describe('the game form', () => {
       await vi.waitFor(() => expect(cta(page).attributes('aria-disabled')).not.toBe('true'))
     })
 
+    // The notes reason is recognised by what it is, not by its text (#825): with its text equal to another reason's, that other reason still waits for a try.
+    it('shows another reason only after a try, though its text equals the notes reason', async () => {
+      const LINK_REASON = 'Erst einen gültigen YouTube-Link eintragen.'
+      type Messages = Record<string, Record<string, unknown>>
+      const i18n = useNuxtApp().$i18n as unknown as { getLocaleMessage: (locale: string) => Messages, setLocaleMessage: (locale: string, messages: Messages) => void }
+      const messages = i18n.getLocaleMessage('de')
+      i18n.setLocaleMessage('de', { ...messages, notesEditor: { ...messages.notesEditor, saveBlocked: LINK_REASON } })
+      try {
+        const page = await mountSuspended(GameForm)
+        await field(page, 'Titel').setValue('Mario Kart')
+        await field(page, 'YouTube-Link').setValue('https://vimeo.com/123456789')
+        const editor = await notesEditor(page)
+
+        editor.commands.setContent(letters(NOTES_MAX + 1) as never, { emitUpdate: true })
+
+        await vi.waitFor(() => expect(cta(page).attributes('aria-disabled')).toBe('true'))
+        expect(page.find('#game-blocker').exists()).toBe(false)
+        await page.get('form').trigger('submit')
+        expect(page.get('#game-blocker').text()).toBe(LINK_REASON)
+      }
+      finally {
+        i18n.setLocaleMessage('de', messages)
+      }
+    })
+
     it('blocks saving for a paste too big for the parser, though the form never got that document', async () => {
       const page = await mountSuspended(GameForm)
       await field(page, 'Titel').setValue('Mario Kart')

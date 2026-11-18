@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { DateValue } from '@internationalized/date'
 import { parseDate } from '@internationalized/date'
-import { CalendarDays, ChevronLeft, ChevronRight, CircleAlert, Clock } from '@lucide/vue'
+import { CalendarDays, ChevronLeft, ChevronRight, Clock } from '@lucide/vue'
 import {
   CalendarCell,
   CalendarCellTrigger,
@@ -45,8 +45,7 @@ const emit = defineEmits<{ 'update:modelValue': [value: string] }>()
 const { t } = useI18n()
 const id = useId()
 const errorId = `${id}-error`
-const { shown, touch } = useTouched(() => props.attempted)
-const message = computed(() => (shown.value ? props.error : undefined))
+const { message, touch } = useTouched(() => props.error, () => props.attempted)
 
 // Steps of the time list: every 15 minutes, 00:00 to 23:45.
 const TIME_STEPS = Array.from({ length: 96 }, (_, step) => formatTime(Math.floor(step / 4), (step % 4) * 15))
@@ -489,16 +488,11 @@ watch(timeOpen, async (open) => {
         </PopoverPortal>
       </PopoverRoot>
     </div>
-    <span
+    <FieldError
       v-if="message"
       :id="errorId"
-      class="flex items-center gap-1.5 text-small font-bold text-error-fg"
     >
-      <AppIcon
-        :icon="CircleAlert"
-        :size="14"
-      />
       {{ message }}
-    </span>
+    </FieldError>
   </div>
 </template>

@@ -266,7 +266,7 @@ describe('Hidden wheel secrecy (#148)', () => {
     it('shows the pools to a Player once the Hidden wheel is off and the Pool preview on, and the room still carries no game', async () => {
       const { slug, eventId, games } = await lobbyFlow()
       const [a, , , d] = games
-      // The Session ended with a Round still being drawn; Rad verdecken is locked until its Veto window has run out (#231).
+      // The Session ended with a Round still being drawn; Pseudo-Games is locked until its Veto window has run out (#231).
       clock.advance(WINDOW_MS + 10_000)
 
       expect((await send('PATCH', `/api/e/${slug}/settings`, hostCookie, { settings: { hiddenWheel: false, poolPreview: true } })).status).toBe(200)

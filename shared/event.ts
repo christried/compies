@@ -219,7 +219,7 @@ export interface EventView {
   setGame: SetGameView | null
   /** The Lucky Wheel (#229): in a running Session of a Lucky Wheel Event, else null. */
   wheel: WheelView | null
-  /** Whether a game is being drawn now (#231): the wheel spins or its Veto window runs. „Rad verdecken“ is locked meanwhile (LOCKED_WHILE_DRAWN). Only the Host's page needs it; false for every other Member. */
+  /** Whether a game is being drawn now (#231): the wheel spins or its Veto window runs. „Pseudo-Games“ is locked meanwhile (LOCKED_WHILE_DRAWN). Only the Host's page needs it; false for every other Member. */
   roundBeingDrawn: boolean
   /** The clip that runs now (#230): while a Session runs, from a draw's stop to the end of its clip, unless the Host skipped it. Else null. */
   clip: ClipView | null

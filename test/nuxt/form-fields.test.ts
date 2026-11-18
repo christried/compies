@@ -133,6 +133,15 @@ describe('TextField', () => {
     expect(page.get('input').classes()).toContain('border-error-fg')
   })
 
+  it('announces its message: the line has role="alert" once it shows (#825)', async () => {
+    const page = await mountSuspended(TextField, { props: { modelValue: '', label: 'Name', error: 'Gib einen Namen an.', id: 'x' } })
+    expect(page.find('[role="alert"]').exists()).toBe(false)
+
+    await page.get('input').trigger('input')
+
+    expect(page.get('[role="alert"]').text()).toBe('Gib einen Namen an.')
+  })
+
   it('shows the message after the field was left, and keeps it touched (#797)', async () => {
     const page = await mountSuspended(TextField, { props: { modelValue: '', label: 'Name', error: 'Gib einen Namen an.' } })
 
@@ -257,6 +266,16 @@ describe('DateTimeField', () => {
       expect(line.text()).toBe(error)
       expect(line.classes()).toContain('text-error-fg')
       expect(page.get('[role="group"]').attributes('aria-describedby')).toBe(line.attributes('id'))
+      page.unmount()
+    })
+
+    it('announces its message: the line has role="alert" once it shows (#825)', async () => {
+      const page = await mountWithError()
+      expect(page.find('[role="alert"]').exists()).toBe(false)
+
+      await type(page.element, 'Datum', '01.01.2001')
+
+      expect(page.get('[role="alert"]').text()).toBe(error)
       page.unmount()
     })
 

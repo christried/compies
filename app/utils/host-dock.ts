@@ -10,8 +10,8 @@ import { pageFacts, type PageFacts } from './event-page'
 // The state of the Host dock (#164, 11-event-seite § HostDock): which primary action the Event offers now, from the
 // Event read. It is the page's kind and session facts (pageFacts: one place decides what the Event is doing) plus the
 // Host's start rule, so the dock, its tests and the page agree. Once the Rounds with a Result reach the Game count and first
-// place is not shared, „Event abschließen“ is the primary in every state that plays (#277); with a Tie the primary is „Unentschieden
-// beenden“ and „Letztes Spiel hinzufügen“ sits next to it (#278), and a finished Event has „Siegerehrung starten“ (#309) and „Einladen“. In a running Session „Nächstes Spiel setzen“ is the
+// place is not shared, „Event abschließen“ is the primary in every state that plays (#277); with a Tie the primary is „Unentschieden“
+// and „Letztes Spiel“ sits next to it (#278), and a finished Event has „Siegerehrung starten“ (#309) and „Einladen“. In a running Session „Nächstes Spiel setzen“ is the
 // primary of Host pick; in the Lucky Wheel „Rad drehen“ is (#229), disabled with its reason, and „Nächstes Spiel setzen“ waits in „Mehr“.
 // The end is decided once, as `closing` (#285): the kinds that play take its primary over their own, and dockLayout lays it out on top of their layout.
 

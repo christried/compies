@@ -15,7 +15,7 @@ import { cutToCharacters } from '~~/shared/text'
 // Each row shows the points it earns by the Points table. Nothing is sent before „Ergebnis speichern“; closing discards the draft, and
 // opening starts again from team order. The save is the page's (EventRounds); it says whether the server took the Result, and only then the sheet
 // closes, so a refusal keeps the order and the Scores. FFA is not built here. With `correction` (#275) the sheet corrects a saved Result: it opens
-// on that Result's order, Places and Scores, says so in its title, kicker and note, and the save is the same PUT (the page sends it, no confirm dialog).
+// on that Result's order, Places and Scores, says so in its title and note (no kicker line, #803), and the save is the same PUT (the page sends it, no confirm dialog).
 const props = withDefaults(defineProps<{
   open: boolean
   /** The game of the Round, shown above the rows; null while no Round is chosen. */

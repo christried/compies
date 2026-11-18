@@ -80,7 +80,7 @@ export async function changeEvent<T>(
     // Read after the row lock is taken, so the instants of writes queued on one Event follow the lock order.
     const now = useClock(event).now()
     // A draw whose last instant has passed is settled first, whatever the change reads (#229, #259): a writer cannot forget it, and the
-    // lock on „Rad verdecken“ is free again at the end of a draw (#231). A `share` lock (Votes) never settles: the settle writes.
+    // lock on „Pseudo-Games“ is free again at the end of a draw (#231). A `share` lock (Votes) never settles: the settle writes.
     if (load.lock === 'update') await settleDue(tx, eventRow, now)
     const publish = (...queued: RoomMessage[]) => void messages.push(...queued)
     const publishTo = (to: readonly string[], ...queued: RoomMessage[]) => void named.push({ to, messages: queued })

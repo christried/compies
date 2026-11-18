@@ -36,6 +36,8 @@ describe('FieldGroup (#797)', () => {
     expect(lines).toHaveLength(1)
     expect(lines[0]!.text()).toBe('Von bis falsch.')
     expect(lines[0]!.classes()).toContain('text-error-fg')
+    // Announced (#825): the line appears after a touch or a try, so nothing else would tell a screen reader.
+    expect(lines[0]!.attributes('role')).toBe('alert')
     expect(page.get('#a').element.closest('.grid')!.contains(lines[0]!.element)).toBe(false)
     expect(page.get('#b').attributes('aria-describedby')).toBe(lines[0]!.attributes('id'))
     expect(page.get('#b').attributes('aria-invalid')).toBe('true')

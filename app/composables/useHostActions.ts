@@ -11,7 +11,7 @@ import { leadersOf } from '~~/shared/finish'
 // einrichten, Termin fixieren, Session starten, Nächstes Spiel setzen, Rad drehen, Event abschließen, Siegerehrung starten, or none after the last Session) and
 // dockLayout which actions sit where (named parts: primary, secondary, more; review 1.4 A4). Each action is one entry below.
 // „Session starten“, „Nächstes Spiel setzen“ and „Rad drehen“ look disabled with the rule's reason when they cannot run; „Session beenden“ is
-// a secondary hold. At a Tie (#278) „Unentschieden beenden“ takes the primary's place as a hold, and „Letztes Spiel hinzufügen“ is a plain
+// a secondary hold. At a Tie (#278) „Unentschieden“ takes the primary's place as a hold, and „Letztes Spiel“ is a plain
 // button beside it; the finish holds send the Parties on Place 1 they showed (review 0.8 S2). „Termin für Session m“ stays while another
 // Session still polls, and „Termine bearbeiten“ while the Date poll is open. „Event löschen“ (#333) is in Mehr in every state; it opens the
 // delete sheet, whose hold deletes, and it is disabled with its reason while a Session runs.

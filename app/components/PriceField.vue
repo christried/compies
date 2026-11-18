@@ -68,7 +68,7 @@ watch(price, (value) => {
   model.value = value
 }, { flush: 'sync' })
 
-const blocker = computed<string | null>(() => sourceError.value ?? amountError.value ?? null)
+const blocker = computed<string | null>(() => amountError.value ?? sourceError.value ?? null)
 watch(blocker, message => emit('error', message), { flush: 'sync' })
 
 /** „Preis entfernen“ (#337): empties both fields; in edit mode nothing is deleted until the form's save sends `price: null`. */

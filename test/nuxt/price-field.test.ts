@@ -302,11 +302,14 @@ describe('the Price field (#361)', () => {
     expect(messageLines(page)).toHaveLength(0)
   })
 
-  it('reports the source before the amount when both are wrong', async () => {
+  // The reason beside „Speichern“ names the problem of the first field, as the group's line does (#825).
+  it('reports the amount before the source when both are wrong', async () => {
     const page = await mountField()
-    await amount(page).setValue('0')
+    await amount(page).setValue('abc')
 
-    expect(lastError(page)).toBe(NEEDS_SOURCE)
+    expect(lastError(page)).toBe(RANGE)
+    await tryToSubmit(page)
+    expect(messageLines(page).map(line => line.text())).toEqual([RANGE])
   })
 
   it('shows a wrong amount once, in one line under both inputs, not inside the amount field (#797)', async () => {
