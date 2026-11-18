@@ -6,6 +6,7 @@ import {
   answerUnused,
   changedSince,
   emptyAnswers,
+  mergeAnswers,
   newestAnswersName,
   parseAnswers,
   serializeAnswers,
@@ -189,6 +190,52 @@ describe('changedSince', () => {
   it('reports a fixed text the files no longer hold with now null', () => {
     const answers = answerText(base, 'fixed:offline.title', { text: 'Du bist offline', answer: 'passt' })
     expect(changedSince(answers, [], [])).toEqual([{ id: 'fixed:offline.title', swept: 'Du bist offline', replacement: null, now: null }])
+  })
+})
+
+describe('mergeAnswers', () => {
+  const first = answerMono(answerUnused(answerText(answerText(emptyAnswers('2026-11-16'), 'a', { text: 'A1', answer: 'passt' }), 'b', { text: 'B1', answer: 'passt' }), 'wheel', 'behalten'), 'app/a.vue', 'eins')
+  const second = answerMono(answerUnused(answerText(emptyAnswers('2026-11-17'), 'a', { text: 'A2', answer: 'ersetzt', replacement: 'A3' }), 'wheel', 'loeschen'), 'app/b.vue', 'zwei')
+
+  it('lets the later file win per key and keeps what only one file holds', () => {
+    const merged = mergeAnswers([first, second])
+    expect(merged.texts.a?.text).toBe('A2')
+    expect(merged.texts.a?.replacement).toBe('A3')
+    expect(merged.texts.b?.text).toBe('B1')
+    expect(merged.sweptAt).toBe('2026-11-17')
+    expect(merged.version).toBe(1)
+  })
+
+  it('replaces an entry entirely, not field by field', () => {
+    const answered = answerText(emptyAnswers('2026-11-16'), 'a', { text: 'A', answer: 'passt', comment: 'alt' })
+    const commentOnly = answerText(emptyAnswers('2026-11-17'), 'a', { text: 'A', comment: 'neu' })
+    expect(mergeAnswers([answered, commentOnly]).texts.a).toEqual({ text: 'A', answer: null, replacement: null, comment: 'neu', alternatives: [] })
+  })
+
+  it('merges the fixed, unused and mono sections per key', () => {
+    const merged = mergeAnswers([answerText(first, 'fixed:x', { text: 'X', answer: 'passt' }), second])
+    expect(merged.unused).toEqual({ wheel: 'loeschen' })
+    expect(Object.keys(merged.mono).sort()).toEqual(['app/a.vue', 'app/b.vue'])
+    expect(merged.fixed.x?.text).toBe('X')
+  })
+
+  it('takes the order the caller gives, and merges three files', () => {
+    const third = answerText(emptyAnswers('2026-11-18'), 'b', { text: 'B3', answer: 'passt' })
+    expect(mergeAnswers([first, second, third]).texts.b?.text).toBe('B3')
+    expect(mergeAnswers([second, first]).texts.a?.text).toBe('A1')
+    expect(mergeAnswers([second, first]).sweptAt).toBe('2026-11-16')
+  })
+
+  it('never mutates its input', () => {
+    const before = JSON.stringify([first, second])
+    const merged = mergeAnswers([first, second])
+    merged.texts.a!.alternatives.push('x')
+    merged.mono['app/a.vue']!.comment = 'geändert'
+    expect(JSON.stringify([first, second])).toBe(before)
+  })
+
+  it('throws on an empty list', () => {
+    expect(() => mergeAnswers([])).toThrow()
   })
 })
 

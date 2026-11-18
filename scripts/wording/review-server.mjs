@@ -3,13 +3,13 @@
 // and a POST writes a repo file, so a request with a foreign Host (DNS rebinding) or a body that is not JSON is refused.
 // Files are read per request (no cache): the walk or an agent may change them while the page is open. The page reads the model, it
 // does not reshape it: the steps are computed here with `stepsOf`, and the page imports the same modules from /modules/.
-import { execFileSync } from 'node:child_process'
 import { createServer } from 'node:http'
-import { existsSync, mkdirSync, readdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs'
 import { basename, dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { OUT } from '../browser/chrome.mjs'
-import { ANSWERS, answersFileName, answerMono, answerText, answerUnused, emptyAnswers, newestAnswersName, parseAnswers, serializeAnswers, stepName, UNUSED_ANSWERS } from './answers.mjs'
+import { ANSWERS, answersFileName, answerMono, answerText, answerUnused, newestAnswersName, serializeAnswers, stepName, UNUSED_ANSWERS } from './answers.mjs'
+import { gitTrackedNames, namesIn, readAnswers, readBaseline } from './baseline.mjs'
 import { checkReplacement } from './check-replacement.mjs'
 import { flattenMessages } from './messages.mjs'
 import { RETIRED } from './retired-words.mjs'
@@ -40,34 +40,6 @@ const NO_RECORDING = 'Aufnehmen: COMPIES_SLOT=2 node scripts/browser/serve.mjs s
  */
 function isRecord(value) {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
-}
-
-/**
- * @param {string} path
- * @returns {string[]}
- */
-function namesIn(path) {
-  try {
-    return readdirSync(path)
-  }
-  catch {
-    return []
-  }
-}
-
-/** The day an answers file is for: its name's date, else today. */
-function sweptAtOf(/** @type {string} */ path) {
-  return /^wording_(\d{4}-\d{2}-\d{2})\.json$/.exec(basename(path))?.[1] ?? answersFileName(new Date()).slice('wording_'.length, -'.json'.length)
-}
-
-/**
- * The answers file at `path`: an empty one when it does not exist yet (written on the first answer).
- * @param {string} path
- * @returns {{ answers: AnswersFile | null, problems: string[] }}
- */
-function readAnswers(path) {
-  if (!existsSync(path)) return { answers: emptyAnswers(sweptAtOf(path)), problems: [] }
-  return parseAnswers(readFileSync(path, 'utf8'))
 }
 
 /**
@@ -152,28 +124,12 @@ export function chooseAnswersFile(names, steps, answersOf, today = new Date()) {
 }
 
 /**
- * The files of `dir` that git tracks, by name; null when git cannot say (not a repo, no git, no folder). The baseline of a sweep is
- * a committed one: an answers file the operator has not committed yet is no earlier sweep (#620).
- * @param {string} dir
- * @returns {string[] | null}
- */
-function gitTrackedNames(dir) {
-  try {
-    return execFileSync('git', ['ls-files', '--', '.'], { cwd: dir, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] })
-      .split('\n').map(line => line.trim()).filter(line => line !== '' && !line.includes('/'))
-  }
-  catch {
-    return null
-  }
-}
-
-/**
  * Not listening yet: a test listens on port 0, the command on its port. Rejects with a sentence when there is no recording, when the
  * recording fails its check, or when the answers file cannot be read (never saved over, #628). `server.info` says which file it fills.
  * @param {{ recordingDir?: string, answersPath?: string, answersDir?: string, newSweep?: boolean, trackedAnswers?: (dir: string) => string[] | null, localePath?: string, rulesPath?: string }} [options]
  *   `answersDir` is where an answers file is looked for when `answersPath` is not given (default docs/reviews). `newSweep` starts (or
  *   resumes) today's file whatever the older ones hold: the sweep before a cut (release.md step 3). `trackedAnswers` says which files
- *   of a folder git tracks (null: it cannot say, so every file counts); the baseline is the newest of those, a seam for tests.
+ *   of a folder git tracks (null: it cannot say, so every file counts); the baseline is those files merged, the newer answer winning (#810), a seam for tests.
  * @returns {Promise<import('node:http').Server & { info: ReviewInfo }>}
  */
 export async function createReviewServer({
@@ -197,16 +153,7 @@ export async function createReviewServer({
   const first = readAnswers(target)
   if (!first.answers) throw new Error(`Die Antwortdatei ${target} ist nicht lesbar, sie wird nicht überschrieben:\n${first.problems.map(problem => `- ${problem}`).join('\n')}`)
 
-  /** @returns {{ name: string | null, answers: AnswersFile | null }} */
-  const baselineOf = () => {
-    const folder = dirname(target)
-    const tracked = trackedAnswers(folder)
-    const present = namesIn(folder)
-    const name = newestAnswersName(tracked ? present.filter(candidate => tracked.includes(candidate)) : present, { except: basename(target) })
-    if (!name) return { name: null, answers: null }
-    const answers = readAnswers(join(folder, name)).answers
-    return { name: answers ? name : null, answers }
-  }
+  const baselineOf = () => readBaseline(dirname(target), { except: basename(target), tracked: trackedAnswers })
 
   /**
    * @param {import('node:http').ServerResponse} response

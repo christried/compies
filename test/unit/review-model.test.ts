@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { answerMono, answerText, answerUnused, emptyAnswers } from '../../scripts/wording/answers.mjs'
+import { answerMono, answerText, answerUnused, emptyAnswers, mergeAnswers } from '../../scripts/wording/answers.mjs'
 import { flattenMessages } from '../../scripts/wording/messages.mjs'
 import { checkRecording, filterSteps, isAnswered, isNewSince, progressOf, sightingToShow, stepsOf } from '../../scripts/wording/review-model.mjs'
 
@@ -437,5 +437,69 @@ describe('checkRecording', () => {
     expect(checkRecording(recordingOf({ monoElements: [{ component: 4, what: 'x', sightings: [] }] }))[0]).toContain('monoElements[0].component')
     expect(checkRecording(recordingOf({ fixed: [{ id: 'a', text: 'b', file: 'c', line: 'x', sightings: [] }] }))[0]).toContain('fixed[0].line')
     expect(checkRecording(recordingOf({ locations: { a: { file: 3, line: 1 } } }))[0]).toContain('locations.a')
+  })
+})
+
+describe('isNewSince with the merged baseline of two sweeps', () => {
+  // The Tour's sweep of 2026-11-17 holds only its own steps; the sweep of 2026-11-16 holds the rest (#810, spec #790 story 74).
+  const step = (id: string, text: string, kind: 'message' | 'fixed' | 'mono' | 'unused' = 'message') => ({ id, kind, text }) as Parameters<typeof isNewSince>[0]
+  const f1116 = (() => {
+    let file = emptyAnswers('2026-11-16')
+    file = answerText(file, 'only.first', { text: 'Nur im ersten', answer: 'passt' })
+    file = answerText(file, 'both.keys', { text: 'Erste Fassung', answer: 'passt' })
+    file = answerText(file, 'later.comment', { text: 'Mit Antwort', answer: 'passt' })
+    file = answerText(file, 'replaced', { text: 'Alt', answer: 'ersetzt', replacement: 'Neu' })
+    file = answerText(file, 'fixed:offline.title', { text: 'Du bist offline', answer: 'passt' })
+    file = answerMono(file, 'app/components/Clock.vue', '')
+    return answerUnused(file, 'wheel', 'behalten')
+  })()
+  const f1117 = (() => {
+    let file = emptyAnswers('2026-11-17')
+    file = answerText(file, 'both.keys', { text: 'Zweite Fassung', answer: 'ersetzt', replacement: 'Dritte Fassung' })
+    file = answerText(file, 'later.comment', { text: 'Mit Antwort', comment: 'hm' })
+    return answerText(file, 'fixed:offline.title', { text: 'Du bist offline!', answer: 'passt' })
+  })()
+  const merged = mergeAnswers([f1116, f1117])
+
+  it('is not new for a key only the first sweep holds, text unchanged: the ticket\'s case', () => {
+    expect(isNewSince(step('only.first', 'Nur im ersten'), merged)).toBe(false)
+    // The newest file alone, which was the baseline until 0.16.1, would call it new.
+    expect(isNewSince(step('only.first', 'Nur im ersten'), f1117)).toBe(true)
+  })
+
+  it('is new for that key once its text changed since', () => {
+    expect(isNewSince(step('only.first', 'Umformuliert'), merged)).toBe(true)
+  })
+
+  it('compares with the second sweep\'s entry when a key is in both', () => {
+    expect(isNewSince(step('both.keys', 'Zweite Fassung'), merged)).toBe(false)
+    expect(isNewSince(step('both.keys', 'Dritte Fassung'), merged)).toBe(false)
+    expect(isNewSince(step('both.keys', 'Erste Fassung'), merged)).toBe(true)
+  })
+
+  it('is new for a key reworded after both sweeps, and for a key in neither', () => {
+    expect(isNewSince(step('both.keys', 'Vierte Fassung'), merged)).toBe(true)
+    expect(isNewSince(step('in.neither', 'Gar nicht da'), merged)).toBe(true)
+  })
+
+  it('lets a comment-only entry of the newer sweep replace an answered one, and still count as held', () => {
+    expect(merged.texts['later.comment']?.answer).toBeNull()
+    expect(isNewSince(step('later.comment', 'Mit Antwort'), merged)).toBe(false)
+  })
+
+  it('is not new when the replacement of an `ersetzt` entry equals the text today', () => {
+    expect(isNewSince(step('replaced', 'Neu'), merged)).toBe(false)
+    expect(isNewSince(step('replaced', 'Alt'), merged)).toBe(false)
+    expect(isNewSince(step('replaced', 'Anders'), merged)).toBe(true)
+  })
+
+  it('treats a fixed text alike, the newer sweep\'s text counting', () => {
+    expect(isNewSince(step('fixed:offline.title', 'Du bist offline!', 'fixed'), merged)).toBe(false)
+    expect(isNewSince(step('fixed:offline.title', 'Du bist offline', 'fixed'), merged)).toBe(true)
+  })
+
+  it('never calls a mono or an unused step new', () => {
+    expect(isNewSince(step('mono:app/components/Clock.vue', '', 'mono'), merged)).toBe(false)
+    expect(isNewSince(step('unused:wheel', '', 'unused'), merged)).toBe(false)
   })
 })
