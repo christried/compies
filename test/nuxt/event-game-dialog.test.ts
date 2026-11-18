@@ -257,13 +257,13 @@ describe('a Member\'s tiles on the Event page open the dialog (#444)', () => {
     }
     gone()
 
-    for (const [heading, name] of [['So wird gespielt', 'Kart'], ['Gerade dran', 'Schach']] as const) {
+    for (const [heading, name] of [['So wird gespielt', 'Kart'], ['Läuft aktuell.', 'Schach']] as const) {
       tileButton(heading, name)!.click()
       await flushPromises()
       gone()
       await close()
     }
-    expect(sectionOf('Gerade dran')!.querySelector('button[aria-expanded]')).toBeNull()
+    expect(sectionOf('Läuft aktuell.')!.querySelector('button[aria-expanded]')).toBeNull()
   })
 
   it('opens from the Spielepool with the game\'s players, Suitabilities and Price, and a tap on another tile opens that one', async () => {
