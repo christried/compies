@@ -424,16 +424,20 @@ export const clipboard = (tab, outcome) => tab.evaluate(`Object.defineProperty(n
 // ---------------------------------------------------------------------------------------------------------------------------------
 // States
 
+/** The Rundgang's bubble: the layer's dialog (its hidden twin, which measures the height, has no role). */
+export const TOUR_BUBBLE = '[data-tour-layer] [role=dialog]'
+
 /**
  * One page state as the two viewers: `<name>-host` (the Dev Host, 1440 px) and `<name>-spieler` (the Dev Member, 390 px).
  * `key` and `build` make the Event once per pass; `fresh: true` makes it again in every `open` (a window or a clip that ends).
  * `hostStops` and `spielerStops` are the stops of each viewer, `hostWidths` the Host's widths (default 1440 only), `only` leaves one of them out, `prepare(ctx)` runs after the page
- * is quiet, `after(ctx)` after the Spieler's read, the last of the pair.
+ * is quiet, `after(ctx)` after the Spieler's read, the last of the pair. `spielerWidths` are the Spieler's widths (default 390 only). `tour: true` (#810, the
+ * wording walk's Rundgang states) signs in with the Rundgang unseen and waits for its bubble instead of `waitFor`: the Member's page opens covered by it.
  */
-export function pair({ name, group, key = name, fresh = false, waitFor = 'h1', hostStops = [], spielerStops = [], hostWidths = [1440], only, viewport, differs, stillHolds, prepare, after }) {
+export function pair({ name, group, key = name, fresh = false, waitFor = 'h1', hostStops = [], spielerStops = [], hostWidths = [1440], spielerWidths = [390], tour = false, only, viewport, differs, stillHolds, prepare, after }) {
   const sides = [
     { suffix: 'host', account: 'host', widths: hostWidths, stops: hostStops },
-    { suffix: 'spieler', account: 'member', widths: [390], stops: spielerStops },
+    { suffix: 'spieler', account: 'member', widths: spielerWidths, stops: spielerStops },
   ]
   return sides.filter(side => !only || only === side.suffix).map(side => ({
     name: `${name}-${side.suffix}`,
@@ -442,10 +446,11 @@ export function pair({ name, group, key = name, fresh = false, waitFor = 'h1', h
     widths: side.widths,
     ...(viewport ? { viewport } : {}),
     ...(differs ? { differs } : {}),
+    ...(tour ? { tour: true } : {}),
     async open(ctx) {
       ctx.event = fresh ? await BUILDS[key](ctx) : await made(ctx, key, BUILDS[key])
       await park(ctx, side.account)
-      await open(ctx.tab, `/e/${ctx.event.slug}`, ctx.width, ctx.height, waitFor, { appearance: ctx.appearance })
+      await open(ctx.tab, `/e/${ctx.event.slug}`, ctx.width, ctx.height, tour ? TOUR_BUBBLE : waitFor, { appearance: ctx.appearance, tour })
       await quiet(ctx.tab)
       await prepare?.(ctx)
     },
