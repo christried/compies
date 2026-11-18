@@ -10,7 +10,7 @@ defineProps<{
 <template>
   <div class="flex flex-col items-center gap-4 rounded-[18px] border-2 border-dashed border-line bg-paper-2 px-6 py-8 text-center md:flex-row md:text-left">
     <div class="w-[120px] flex-none">
-      <Compibert variant="bust" />
+      <Compibert variant="head" />
     </div>
     <div class="flex min-w-0 flex-col items-center gap-1.5 md:items-start">
       <h2 class="m-0 font-display text-[28px] leading-tight font-normal">

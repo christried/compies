@@ -18,7 +18,7 @@ useHead({ title: () => t(`${copy.value}.title`) })
 <template>
   <div class="mx-auto flex max-w-[560px] flex-1 flex-col items-center justify-center gap-3.5 py-10 text-center">
     <div class="w-[140px]">
-      <Compibert variant="bust" />
+      <Compibert variant="head" />
     </div>
     <h1
       ref="heading"
