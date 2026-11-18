@@ -2,7 +2,7 @@
 import { NotebookText, X } from '@lucide/vue'
 import { MD_QUERY } from '~/composables/useMediaQuery'
 import { placeNotePopover } from '~/utils/note-popover'
-import { notesHasText, type NotesDoc } from '~~/shared/notes-doc'
+import type { NotesDoc } from '~~/shared/notes-doc'
 
 // The Notes of a game in a picker (#436, 02-components § GameCard, deviation 0.12): a Notes button that opens the game's notes read-only,
 // formatted (#728). From md up a popover beside the button, below it a sheet from the bottom (the pattern of the Sessions card's „Mehr“,
@@ -18,16 +18,12 @@ const props = withDefaults(defineProps<{
   eventNotes?: NotesDoc | null
   /** The button's visual diameter: the picker's rows are 36, its cards 40. */
   size?: 36 | 40
-  /** The Event's name, the sub of the Event block where both blocks show (#729); given by the page that holds it. */
-  eventName?: string
-  /** The Event is finished (#729): its block shows the dashed frame and the chip. */
-  eventFinished?: boolean
-}>(), { size: 40, eventNotes: null, eventName: undefined, eventFinished: false })
+}>(), { size: 40, eventNotes: null })
 
 const { t } = useI18n()
-// The document to show: null for none or for blank notes, so the template narrows on it.
-const doc = computed(() => notesHasText(props.notes) ? props.notes : null)
-const eventDoc = computed(() => notesHasText(props.eventNotes) ? props.eventNotes : null)
+// The documents to show: null for none or for blank notes, so the template narrows on them. The Event's name and finished state (the Event block's sub and chip, #729)
+// are the Event page's context's, read by the pair (#821).
+const { doc, eventDoc } = useNotePair(() => props.notes, () => props.eventNotes)
 const wide = useMediaQuery(MD_QUERY)
 const narrow = computed(() => wide.value === false)
 const open = ref(false)
@@ -120,8 +116,6 @@ onBeforeUnmount(() => {
         :notes="doc"
         :event-notes="eventDoc"
         size="md"
-        :event-name="eventName"
-        :event-finished="eventFinished"
       />
     </AppSheet>
     <Teleport
@@ -166,8 +160,6 @@ onBeforeUnmount(() => {
             :notes="doc"
             :event-notes="eventDoc"
             size="sm"
-            :event-name="eventName"
-            :event-finished="eventFinished"
           />
         </div>
       </div>
