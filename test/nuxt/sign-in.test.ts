@@ -22,6 +22,18 @@ describe('SignInCard', () => {
     expect(card.text().indexOf('Compies verarbeitet')).toBeGreaterThan(card.text().indexOf('Mit Twitch anmelden'))
   })
 
+  it('Standard: each button wears its brand mark and fill (#792)', async () => {
+    const card = await mountSuspended(SignInCard)
+
+    const discord = button(card, 'Discord')
+    const twitch = button(card, 'Twitch')
+    expect(discord.find('svg[data-brand-mark="discord"]').exists()).toBe(true)
+    expect(twitch.find('svg[data-brand-mark="twitch"]').exists()).toBe(true)
+    expect(discord.classes()).toEqual(expect.arrayContaining(['bg-discord', 'text-on-discord']))
+    expect(twitch.classes()).toEqual(expect.arrayContaining(['bg-twitch', 'text-on-twitch']))
+    for (const mark of card.findAll('svg[data-brand-mark]')) expect(mark.attributes('aria-hidden')).toBe('true')
+  })
+
   it('Über Einladung: names the Host and the Event', async () => {
     const card = await mountSuspended(SignInCard, {
       props: { invited: true, invite: { eventName: 'Freitags-Zocken', host: { name: 'Sanne', image: null } } },
@@ -31,6 +43,8 @@ describe('SignInCard', () => {
     expect(card.text()).toContain('Sanne hat dich zu Freitags-Zocken eingeladen.')
     expect(card.text()).not.toContain('Tribüne')
     expect(card.text()).toContain('Compies verarbeitet nur das Notwendigste an Daten.')
+    expect(card.find('svg[data-brand-mark="discord"]').exists()).toBe(true)
+    expect(card.find('svg[data-brand-mark="twitch"]').exists()).toBe(true)
   })
 
   it('Weiterleitung: shows where it goes and blocks a second click', async () => {
@@ -38,6 +52,15 @@ describe('SignInCard', () => {
 
     expect(button(card, 'Twitch').text()).toBe('Weiter zu Twitch …')
     expect(card.findAll('button').every(b => b.attributes('disabled') !== undefined)).toBe(true)
+  })
+
+  it('Weiterleitung: the busy button shows the spinner instead of its mark, the other keeps its mark (#792)', async () => {
+    const card = await mountSuspended(SignInCard, { props: { busy: 'twitch' } })
+
+    const twitch = button(card, 'Twitch')
+    expect(twitch.find('[data-brand-mark]').exists()).toBe(false)
+    expect(twitch.find('.animate-spin').exists()).toBe(true)
+    expect(button(card, 'Discord').find('svg[data-brand-mark="discord"]').exists()).toBe(true)
   })
 
   it('Abgebrochen: says which provider sent nothing, and keeps both buttons active', async () => {

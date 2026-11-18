@@ -1,11 +1,10 @@
 <script setup lang="ts">
-import { LoaderCircle, MessageSquare, Play } from '@lucide/vue'
-import type { Component } from 'vue'
+import { LoaderCircle } from '@lucide/vue'
 import type { SignInProvider } from '~~/shared/auth'
 import type { InvitePreview } from '~~/shared/event'
 
 // Sign-in card (screen 02, `App Einstieg ?s=login`): Standard, Über Einladung, Weiterleitung,
-// Abgebrochen. Discord is primary, Twitch secondary; neutral icons instead of brand logos.
+// Abgebrochen. Each button wears its brand's logo and fill, side by side as equals (#792).
 withDefaults(defineProps<{
   /** The visitor came from an Invite link. */
   invited?: boolean
@@ -21,10 +20,7 @@ const emit = defineEmits<{ signIn: [provider: SignInProvider] }>()
 
 const { t } = useI18n()
 
-const buttons: { provider: SignInProvider, variant: 'primary' | 'secondary', icon: Component }[] = [
-  { provider: 'discord', variant: 'primary', icon: MessageSquare },
-  { provider: 'twitch', variant: 'secondary', icon: Play },
-]
+const providers: SignInProvider[] = ['discord', 'twitch']
 
 const providerName = (provider: SignInProvider) => t(`auth.provider.${provider}`)
 </script>
@@ -82,29 +78,29 @@ const providerName = (provider: SignInProvider) => t(`auth.provider.${provider}`
     </NoticeBanner>
 
     <AppButton
-      v-for="button in buttons"
-      :key="button.provider"
-      :variant="button.variant"
+      v-for="provider in providers"
+      :key="provider"
+      :variant="provider"
       size="xl"
       class="w-full"
-      :class="busy && busy !== button.provider && 'opacity-50'"
+      :class="busy && busy !== provider && 'opacity-50'"
       :disabled="!!busy"
-      @click="emit('signIn', button.provider)"
+      @click="emit('signIn', provider)"
     >
       <template #icon>
         <AppIcon
-          v-if="busy === button.provider"
+          v-if="busy === provider"
           :icon="LoaderCircle"
           :size="20"
           class="animate-spin reduced:animate-none motion-reduce:animate-none"
         />
-        <AppIcon
+        <BrandIcon
           v-else
-          :icon="button.icon"
+          :provider
           :size="20"
         />
       </template>
-      {{ busy === button.provider ? t('auth.redirecting', { provider: providerName(button.provider) }) : t(`auth.${button.provider}`) }}
+      {{ busy === provider ? t('auth.redirecting', { provider: providerName(provider) }) : t(`auth.${provider}`) }}
     </AppButton>
 
     <p class="m-0 text-body text-pretty text-ink-2">
