@@ -1005,6 +1005,8 @@ describe('the edit page (#142)', () => {
     await vi.waitFor(() => expect(useRouter().currentRoute.value.path).toBe(`/bibliothek/${withClip.id}`))
     expect(patched).toHaveBeenCalledWith(expect.objectContaining({ name: 'Counter-Strike 2 HD' }))
     expect(useState<{ text: string }[]>('toasts').value.map(toast => toast.text)).toEqual(['Gespeichert.'])
+    // #806: the edit page's toast offers no action.
+    expect(useState<{ action?: unknown }[]>('toasts').value[0]?.action).toBeUndefined()
   })
 
   it('Strg + Enter in the name saves the changes too and goes back to the game (#465)', async () => {
