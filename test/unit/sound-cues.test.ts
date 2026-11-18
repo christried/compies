@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import type { SpinView, VetoView } from '~~/shared/stage'
+import { CUE_LENGTHS } from '../../app/utils/cue-lengths'
 import { pinCrossings } from '../../app/utils/wheel-pins'
 import {
   ARRIVAL_LATE_MS, CUE_IDS, CUE_VOLUME, STAMP_GAP_MS, TICK_MIN_GAP_MS, cueFilesOf, reachableGroups, thinTicks, vetoArrivalCues, vetoCuePlan, wheelCuePlan,
@@ -488,10 +489,11 @@ describe('vetoArrivalCues', () => {
 
 describe('the cue ids and their volumes', () => {
   it('are eleven distinct ids', () => {
-    expect(new Set(CUE_IDS).size).toBe(11)
+    expect(new Set(CUE_IDS).size).toBe(CUE_IDS.length)
   })
 
-  it('give each cue the Vol of compibert-sound.md', () => {
+  // Only the cues the document has a clean row for (#740, `docRow`): the voice cues share one cell, so their Vol is the spec table's (#718).
+  it('give each of them the Vol of compibert-sound.md', () => {
     const doc = readFileSync(resolve(import.meta.dirname, '../../docs/design_handoff_compies/reference/docs/compibert-sound.md'), 'utf8')
     const vol: Record<string, number> = {}
     for (const row of doc.split('\n')) {
@@ -500,8 +502,9 @@ describe('the cue ids and their volumes', () => {
       if (id) vol[id] = Number(cells.at(-2))
     }
 
-    expect(Object.keys(vol).sort()).toEqual([...CUE_IDS].sort())
-    expect(CUE_VOLUME).toEqual(vol)
+    const withRow = CUE_IDS.filter(id => CUE_LENGTHS[id].docRow)
+    expect(Object.keys(vol).sort()).toEqual([...withRow].sort())
+    expect(Object.fromEntries(withRow.map(id => [id, CUE_VOLUME[id]]))).toEqual(vol)
   })
 })
 
@@ -533,8 +536,8 @@ describe('reachableGroups', () => {
 })
 
 describe('cueFilesOf', () => {
-  it('is the five wheel cues for the wheel\'s group', () => {
-    expect(cueFilesOf(['wheel'])).toEqual(['wheel-windup', 'wheel-tick', 'wheel-stop', 'wheel-morph', 'wheel-slice-out'])
+  it('is the five wheel cues and Compibert\'s three voice cues for the wheel\'s group', () => {
+    expect(cueFilesOf(['wheel'])).toEqual(['wheel-windup', 'wheel-tick', 'wheel-stop', 'wheel-morph', 'wheel-slice-out', 'cb-hype', 'cb-gulp', 'cb-yay'])
   })
 
   it('is every cue, in the order of CUE_IDS and each once, for both groups', () => {
