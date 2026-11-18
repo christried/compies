@@ -126,7 +126,7 @@ function setMotion(reduced: boolean) {
 }
 
 /** A test run: the wheel, the window or both, built through the real plans; the player gets the whole plan, the page the visuals. */
-async function startRun(kind: 'spin' | 'window' | 'both') {
+async function startRun(kind: 'spin' | 'window' | 'both' | 'voice') {
   if (!await ensureContext() || !armed) return
   clearTimeout(timer)
   const config = configFor(kind, controls)
@@ -162,6 +162,7 @@ async function startCeremony(id: CueId) {
 const MOMENT_RUNNERS: Record<Moment, (id: CueId) => void> = {
   // wheel
   spin: () => void startRun('spin'),
+  voice: () => void startRun('voice'),
   // veto
   window: () => void startRun('window'),
   arrival: () => void arrive('own'),
@@ -390,6 +391,13 @@ const FIELD = 'rounded border border-line bg-surface px-1.5 py-0.5 text-ink'
           @click="startRun('spin')"
         >
           Test spin
+        </button>
+        <button
+          type="button"
+          :class="BUTTON"
+          @click="startRun('voice')"
+        >
+          Test voice run
         </button>
         <button
           type="button"

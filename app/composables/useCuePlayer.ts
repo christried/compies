@@ -1,6 +1,6 @@
 import { createCuePlayer, exposesCueLog, type CueLogEntry, type CuePlayer } from '~/utils/cue-player'
 import { reducedMotion } from '~/utils/motion'
-import { cueFileUrl, cueFilesOf, reachableGroups, vetoArrivalCues, vetoCuePlan, wheelCuePlan, type Cue, type GroupInput, type VetoArrivalState } from '~/utils/sound-cues'
+import { cueFileUrl, cueFilesOf, reachableGroups, vetoArrivalCues, vetoCuePlan, wheelCuePlan, wheelVoicePlan, type Cue, type GroupInput, type VetoArrivalState } from '~/utils/sound-cues'
 import type { EventView } from '~~/shared/event'
 
 // The sound of the Event page (#531, spec #504 § The cue player): the page's one Web Audio context, the cue player on it, and the plan the
@@ -25,7 +25,7 @@ function groupInputOf(view: EventView | null | undefined): GroupInput {
 
 /**
  * The plan of a read: every cue the Event page has due, from the viewer's own read only (CODING_STANDARDS § Secrecy), so the five fields of the
- * spin, the window's four and the Clip's two are copied; the drawn game, `own`, `left` and `revealed` stay where they are. No spin and no
+ * spin go to the wheel's plan and its two instants to the voice's (#671), the window's four and the Clip's two are copied; the drawn game, `own`, `left` and `revealed` stay where they are. No spin and no
  * window give an empty plan. The two plans may overlap in time; the player diffs by key, so no sort across them is needed.
  */
 function planOf(view: EventView): Cue[] {
@@ -36,6 +36,11 @@ function planOf(view: EventView): Cue[] {
       spin: spin ? { spinStartAt: spin.spinStartAt, stopAt: spin.stopAt, slices: spin.slices, resultIndex: spin.resultIndex, resultOffset: spin.resultOffset } : null,
       hiddenWheel: view.settings?.hiddenWheel ?? false,
       isHost: view.event.isHost,
+      reducedMotion: reducedMotion(),
+    }),
+    ...wheelVoicePlan({
+      spin: spin ? { spinStartAt: spin.spinStartAt, stopAt: spin.stopAt } : null,
+      hiddenWheel: view.settings?.hiddenWheel ?? false,
       reducedMotion: reducedMotion(),
     }),
     ...vetoCuePlan({

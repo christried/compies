@@ -535,8 +535,8 @@ describe('reachableGroups', () => {
 })
 
 describe('cueFilesOf', () => {
-  it('is the five wheel cues for the wheel\'s group', () => {
-    expect(cueFilesOf(['wheel'])).toEqual(['wheel-windup', 'wheel-tick', 'wheel-stop', 'wheel-morph', 'wheel-slice-out'])
+  it('is the five wheel cues and Compibert\'s three voice cues for the wheel\'s group', () => {
+    expect(cueFilesOf(['wheel'])).toEqual(['wheel-windup', 'wheel-tick', 'wheel-stop', 'wheel-morph', 'wheel-slice-out', 'cb-hype', 'cb-gulp', 'cb-yay'])
   })
 
   it('is every cue, in the order of CUE_IDS and each once, for both groups', () => {

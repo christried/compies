@@ -3,6 +3,7 @@ import { ceremonyTimeline, type RunShape } from '~~/shared/ceremony'
 import { msOf } from '~~/shared/instant'
 import { REVEAL_AFTER_MS, removalStart } from './wheel'
 import { pinCrossings } from './wheel-pins'
+import { mascotMoments } from './wheel-mascot'
 
 // Which sound cue is due at which server time (#530, spec #504 § The cue plan): a pure function of the viewer's own Event read, so every
 // device, a late joiner included, holds the same plan (ADR 0013). Nothing here plays or knows a clock: the cue player (#531) schedules what
@@ -18,6 +19,7 @@ import { pinCrossings } from './wheel-pins'
 export const CUE_IDS = [
   // wheel
   'wheel-windup', 'wheel-tick', 'wheel-stop', 'wheel-morph', 'wheel-slice-out',
+  'cb-hype', 'cb-gulp', 'cb-yay',
   // veto
   'veto-open', 'veto-clock', 'veto-clip-close', 'veto-seal', 'veto-drumroll', 'veto-reveal',
   // coin
@@ -33,6 +35,7 @@ export type CueId = (typeof CUE_IDS)[number]
 export const CUE_VOLUME: Record<CueId, number> = {
   // wheel
   'wheel-windup': 45, 'wheel-tick': 30, 'wheel-stop': 70, 'wheel-morph': 50, 'wheel-slice-out': 35,
+  'cb-hype': 40, 'cb-gulp': 40, 'cb-yay': 40,
   // veto
   'veto-open': 50, 'veto-clock': 25, 'veto-clip-close': 35, 'veto-seal': 55, 'veto-drumroll': 60, 'veto-reveal': 85,
   // coin
@@ -50,6 +53,7 @@ export type CueGroup = 'wheel' | 'veto' | 'coin' | 'standings' | 'board' | 'cere
 export const CUE_GROUPS: Record<CueId, readonly [CueGroup, ...CueGroup[]]> = {
   // wheel
   'wheel-windup': ['wheel'], 'wheel-tick': ['wheel'], 'wheel-stop': ['wheel'], 'wheel-morph': ['wheel'], 'wheel-slice-out': ['wheel'],
+  'cb-hype': ['wheel'], 'cb-gulp': ['wheel'], 'cb-yay': ['wheel'],
   // veto
   'veto-open': ['veto'], 'veto-clock': ['veto'], 'veto-clip-close': ['veto'], 'veto-seal': ['veto'], 'veto-drumroll': ['veto'], 'veto-reveal': ['veto'],
   // coin
@@ -166,6 +170,34 @@ export function wheelCuePlan(input: WheelCueInput): Cue[] {
   if (hiddenWheel && !isHost) cues.push({ id: 'wheel-morph', at: stop + REVEAL_AFTER_MS })
   cues.push({ id: 'wheel-slice-out', at: removalStart({ stopAt: stop }, hiddenWheel) })
   return cues
+}
+
+/** What the voice's plan reads: the spin's two instants, the Event's Hidden wheel setting and reduced motion: exactly what Compibert is told (`mascotMoments`). */
+export interface WheelVoiceInput {
+  /** `view.wheel.spin`, only the two instants the read sends every viewer from the spin's commit on (ISO strings); null before the first spin. No slice, no result, no label, no game, and no `isHost`. */
+  spin: Pick<SpinView, 'spinStartAt' | 'stopAt'> | null
+  /** `view.settings?.hiddenWheel ?? false`. It delays his cheer for EVERY viewer, the Host included: do not use the Host's `concealed`. */
+  hiddenWheel: boolean
+  /** `reducedMotion()`, passed in; this module reads no DOM. */
+  reducedMotion: boolean
+}
+
+/**
+ * Compibert's voice at the wheel (#671, spec #718): `cb-hype` when the spin starts, `cb-gulp` at his brake and `cb-yay` at his cheer, ascending
+ * by `at`. The instants are `mascotMoments`' own (the 3/5 of the spin and the reveal's half second are never worked out here), so a change of
+ * his beats moves his voice with them. Reduced motion leaves only the cheer, at the same instant. No slice, result, label or game can reach it
+ * (the type has none, § Secrecy), and no cue's presence or time depends on `isHost`: the Host's and a Member's voice are the same, only the
+ * wheel's morph differs. It has no `now` and drops nothing for being past: the player skips a cue more than `CUE_LATE_MS` late.
+ */
+export function wheelVoicePlan(input: WheelVoiceInput): Cue[] {
+  const { spin, hiddenWheel, reducedMotion } = input
+  if (spin === null) return []
+
+  const spinStartAt = msOf(spin.spinStartAt)
+  const moments = mascotMoments({ spinStartAt, stopAt: msOf(spin.stopAt) }, hiddenWheel, reducedMotion)
+  const yay: Cue = { id: 'cb-yay', at: moments.cheerAt }
+  if (reducedMotion) return [yay]
+  return [{ id: 'cb-hype', at: spinStartAt }, { id: 'cb-gulp', at: moments.brakeAt }, yay]
 }
 
 /**

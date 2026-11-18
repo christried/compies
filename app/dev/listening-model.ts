@@ -1,5 +1,5 @@
 import {
-  CUE_IDS, TICK_MIN_GAP_MS, ceremonyCuePlan, cueFileUrl, thinTicks, vetoArrivalCues, vetoCuePlan, wheelCuePlan,
+  CUE_IDS, TICK_MIN_GAP_MS, ceremonyCuePlan, cueFileUrl, thinTicks, vetoArrivalCues, vetoCuePlan, wheelCuePlan, wheelVoicePlan,
   type ArrivalCue, type Cue, type CueId, type VetoArrivalState,
 } from '~/utils/sound-cues'
 import { isText, parseCredits, type CueCredit, type Licence } from '~/utils/sound-credits'
@@ -30,6 +30,9 @@ export const CUE_BRIEF: Record<CueId, { character: string }> = {
   'wheel-stop': { character: 'thunk + three-note chord' },
   'wheel-morph': { character: 'hidden mode: scramble/zip as the fake name turns real' },
   'wheel-slice-out': { character: 'slice pops out, „schwupp“' },
+  'cb-hype': { character: 'Compibert excited as the spin starts, wordless' },
+  'cb-gulp': { character: 'Compibert gulps at the brake, wordless' },
+  'cb-yay': { character: 'Compibert cheers at the stop (wheel) and at the Tour\'s end, wordless' },
   // veto
   'veto-open': { character: 'shutter whoosh, window slides up' },
   'veto-clock': { character: 'dry clock tick, last 10 s only, speeds up at 5 s' },
@@ -54,11 +57,12 @@ export const CUE_BRIEF: Record<CueId, { character: string }> = {
  * a member here (a union takes no group lines, so it is the one line two tickets may both touch), a `MOMENT_LABEL` row and a runner in the
  * page's `MOMENT_RUNNERS`, under its group's line.
  */
-export type Moment = 'spin' | 'window' | 'arrival' | 'ceremony'
+export type Moment = 'spin' | 'window' | 'arrival' | 'voice' | 'ceremony'
 
 export const MOMENT_OF: Record<CueId, Moment> = {
   // wheel
   'wheel-windup': 'spin', 'wheel-tick': 'spin', 'wheel-stop': 'spin', 'wheel-morph': 'spin', 'wheel-slice-out': 'spin',
+  'cb-hype': 'voice', 'cb-gulp': 'voice', 'cb-yay': 'voice',
   // veto
   'veto-open': 'window', 'veto-clock': 'window', 'veto-clip-close': 'window', 'veto-seal': 'arrival', 'veto-drumroll': 'window', 'veto-reveal': 'window',
   // coin
@@ -73,6 +77,7 @@ export const MOMENT_OF: Record<CueId, Moment> = {
 export const MOMENT_LABEL: Record<Moment, string> = {
   // wheel
   spin: 'Test spin',
+  voice: 'Test voice run',
   // veto
   window: 'Test window',
   arrival: 'Ankunft der Antwort',
@@ -222,6 +227,8 @@ export interface RunConfig {
   clip: boolean
   vetoes: 0 | 1 | 2
   tickGapMs: number
+  /** A voice run (#671): the plan is Compibert's voice alone, from the same spin; the real wheel and his rig run beside it. */
+  voice?: boolean
 }
 
 export interface Run {
@@ -260,7 +267,8 @@ export function withTickGap(plan: readonly Cue[], timing: WheelTiming, gapMs: nu
 /**
  * A test run: the spin and the Veto window as the Event read would give them at `now` (epoch ms), and the plan the REAL `wheelCuePlan` and
  * `vetoCuePlan` make of them, from the same five and four fields as `planOf` in useCuePlayer.ts (the game and the Vetoes stay out of them).
- * `counter` makes a new draw id for every run: the wheel reads reduced motion again for a new one.
+ * `counter` makes a new draw id for every run: the wheel reads reduced motion again for a new one. A voice run holds `wheelVoicePlan` only (#671),
+ * from the spin's two instants like `planOf`, so the voice is judged without the wheel's cues and the plain spin run stays free of him.
  */
 export function buildRun(config: RunConfig, now: number, counter: number): Run {
   const drawId = `listen-${counter}`
@@ -286,16 +294,21 @@ export function buildRun(config: RunConfig, now: number, counter: number): Run {
     count: games.length, slices: config.hidden ? null : games, spin, vetoes: { left: [2, 2], own: null, revealed: null, draw },
   }
 
-  let plan = [
-    ...wheelCuePlan({
-      spin: spin ? { spinStartAt: spin.spinStartAt, stopAt: spin.stopAt, slices: spin.slices, resultIndex: spin.resultIndex, resultOffset: spin.resultOffset } : null,
-      hiddenWheel: config.hidden,
-      isHost: false,
-      reducedMotion: config.reduced,
-    }),
-    ...vetoCuePlan({ draw: draw ? { drawId, kind: draw.kind, stopAt: draw.stopAt, vetoEndsAt: draw.vetoEndsAt } : null, clip, reducedMotion: config.reduced }),
-  ]
-  if (spin) plan = withTickGap(plan, { spinStartAt: start, stopAt: stop, slices: SLICES, resultIndex: RESULT_INDEX, resultOffset: 0.5 }, config.tickGapMs)
+  const planOf = (): Cue[] => {
+    // The voice alone (#671): no wheel cue, no tick and no window's, so what the operator judges is him.
+    if (config.voice) return wheelVoicePlan({ spin: spin ? { spinStartAt: spin.spinStartAt, stopAt: spin.stopAt } : null, hiddenWheel: config.hidden, reducedMotion: config.reduced })
+    const whole = [
+      ...wheelCuePlan({
+        spin: spin ? { spinStartAt: spin.spinStartAt, stopAt: spin.stopAt, slices: spin.slices, resultIndex: spin.resultIndex, resultOffset: spin.resultOffset } : null,
+        hiddenWheel: config.hidden,
+        isHost: false,
+        reducedMotion: config.reduced,
+      }),
+      ...vetoCuePlan({ draw: draw ? { drawId, kind: draw.kind, stopAt: draw.stopAt, vetoEndsAt: draw.vetoEndsAt } : null, clip, reducedMotion: config.reduced }),
+    ]
+    return spin ? withTickGap(whole, { spinStartAt: start, stopAt: stop, slices: SLICES, resultIndex: RESULT_INDEX, resultOffset: 0.5 }, config.tickGapMs) : whole
+  }
+  const plan = planOf()
 
   return {
     drawId, spin, wheel, draw, clip,
@@ -319,15 +332,15 @@ export interface Controls {
 }
 
 /**
- * The run a button makes: `spin` the wheel alone, `window` the window alone, `both` the full run. A part with nothing selected takes its first
+ * The run a button makes: `spin` the wheel alone, `window` the window alone, `both` the full run, `voice` a spin with Compibert's voice alone (#671). A part with nothing selected takes its first
  * value (6 s, 40 s); the late start only fits a window alone, since after a spin the window opens at the stop.
  */
-export function configFor(kind: 'spin' | 'window' | 'both', controls: Controls): RunConfig {
+export function configFor(kind: 'spin' | 'window' | 'both' | 'voice', controls: Controls): RunConfig {
   const spinMs = controls.spin === '10' ? 10_000 : 6000
   const windowMs = controls.window === '150' ? 150_000 : 40_000
   return {
     spinMs: kind === 'window' ? 0 : spinMs,
-    windowMs: kind === 'spin' ? 0 : windowMs,
+    windowMs: kind === 'spin' || kind === 'voice' ? 0 : windowMs,
     start: kind === 'window' ? controls.start : 'beginning',
     clip: controls.clip,
     vetoes: controls.vetoes,
@@ -335,6 +348,7 @@ export function configFor(kind: 'spin' | 'window' | 'both', controls: Controls):
     reduced: controls.reduced,
     // An emptied field is no cap: the shipped one.
     tickGapMs: controls.tickGapMs > 0 ? controls.tickGapMs : TICK_MIN_GAP_MS,
+    ...(kind === 'voice' ? { voice: true } : {}),
   }
 }
 
