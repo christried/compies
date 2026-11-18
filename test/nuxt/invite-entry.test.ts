@@ -83,7 +83,27 @@ describe('the Invite link, signed in', () => {
 
     await vi.waitFor(() => expect(joined).toHaveBeenCalledTimes(1))
     await vi.waitFor(() => expect(useRouter().currentRoute.value.path).toBe('/e/freitags-zocken-k7q2'))
-    expect(useToast().toasts.value.map(toast => toast.text)).toContain('Du bist drin! Du sitzt erstmal auf der Tribüne.')
+    expect(useToast().toasts.value.map(toast => toast.text)).toContain('Du bist drin! Schön, dass du da bist ❤️')
+  })
+
+  it('shows no toast to somebody already in the Event, the Host included, but still moves on to it (#800)', async () => {
+    const path = link('Hh4Hh4Hh4Hh4')
+    const answered = vi.fn()
+    // The toast of the test above may still stand (4 s): this one asks only about its own visit.
+    for (const stale of useToast().toasts.value) useToast().dismiss(stale.id)
+    registerEndpoint(`/api/invite/${path}`, {
+      method: 'POST',
+      handler: () => {
+        answered()
+        return { slug: 'freitags-zocken-k7q2', joined: false }
+      },
+    })
+
+    await mountSuspended(EventPage, { route: `/e/${path}` })
+
+    await vi.waitFor(() => expect(answered).toHaveBeenCalledTimes(1))
+    await vi.waitFor(() => expect(useRouter().currentRoute.value.path).toBe('/e/freitags-zocken-k7q2'))
+    expect(useToast().toasts.value.map(toast => toast.text).join(' ')).not.toContain('Du bist drin')
   })
 
   it('titles the tab Einladung while joining, not sign-in', async () => {

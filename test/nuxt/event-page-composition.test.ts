@@ -155,7 +155,7 @@ describe('the stage of the Event page', () => {
       const member = serveState({ sessions: [SESSION(1, FIRST)], missing: 0, phase: 'date_set', teamChoiceOpen: true, overrides: uneven })
       const host = serveState({ sessions: [SESSION(1, FIRST)], missing: 0, host: true, phase: 'date_set', teamChoiceOpen: true, overrides: uneven })
 
-      expect(has(await mount(member.slug), 'Team Orange sucht noch jemanden. Rück rein, dann kann’s losgehen.')).toBe(true)
+      expect(has(await mount(member.slug), 'Team Orange sucht noch jemanden. Dich vielleicht?')).toBe(true)
       const hostPage = await mount(host.slug)
       expect(has(hostPage, 'Team Orange hat 0, die anderen haben 2.')).toBe(true)
       expect(has(hostPage, 'sucht noch jemanden')).toBe(false)
@@ -166,7 +166,7 @@ describe('the stage of the Event page', () => {
       const between = serveState({ sessions: [SESSION(1, FIRST, { startedAt: STARTED, endedAt: ENDED }), SESSION(2, SECOND)], missing: 0, phase: 'running' })
 
       const runningPage = await mount(running.slug)
-      expect(has(runningPage, 'Gesperrt seit dem Start')).toBe(false)
+      expect(has(runningPage, 'Dein Teamwort kannst du weiter ändern')).toBe(false)
       expect(has(runningPage, 'Das Event läuft.')).toBe(true)
       expect(has(runningPage, 'Die Teams bleiben fürs ganze Event')).toBe(false)
 

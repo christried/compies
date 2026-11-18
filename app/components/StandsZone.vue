@@ -27,7 +27,6 @@ const { t } = useI18n()
       <h3 class="m-0 font-display text-[19px] leading-none font-normal">
         {{ t('board.stands') }}
       </h3>
-      <span class="min-w-0 truncate text-[13px] text-ink-2">{{ t('board.standsSub') }}</span>
       <span class="num-ui ml-auto flex-none rounded-pill border-2 border-line px-2 text-[12px] font-extrabold">{{ count }}</span>
     </header>
     <div

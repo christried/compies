@@ -146,12 +146,14 @@ describe('GameBoard', () => {
       expect(page.findAll('[role="group"]').map(element => element.attributes('aria-label'))).toEqual(['Tribüne'])
     })
 
-    it('draws one zone, the Tribüne, with its sub-line, and no Bench and no Zuschauer', async () => {
+    it('draws one zone, the Tribüne, with its name and count and no sub-line, and no Bench and no Zuschauer (#800)', async () => {
       const { page } = await mountBoard()
 
       expect(page.findAll('[data-drop-zone="stands"]')).toHaveLength(1)
       expect(page.findAll('[data-drop-zone="bench"]')).toHaveLength(0)
-      expect(group(page, 'Tribüne').text()).toContain('Noch ohne Team, unbegrenzt')
+      expect(group(page, 'Tribüne').text()).not.toContain('Noch ohne Team, unbegrenzt')
+      expect(group(page, 'Tribüne').get('h3').text()).toBe('Tribüne')
+      expect(group(page, 'Tribüne').get('header').text()).toMatch(/^Tribüne\s*3$/)
       expect(page.text()).not.toMatch(/Bench|Zuschauer|spielen nicht mit/)
     })
 
@@ -192,19 +194,46 @@ describe('GameBoard', () => {
   describe('what the board says about itself under its title (#166)', () => {
     const meta = (page: Board) => page.get('h2 + span').text()
 
-    it('says who is there in an Event that was never set up, how full the teams are while Team choice is open, and that the teams are closed or locked otherwise', async () => {
+    it('says who is there in an Event that was never set up, how full the slots are while Team choice is open, and that the teams are locked once the Event runs', async () => {
       expect(meta((await mountBoard({ settings: null, teamChoiceOpen: false })).page)).toBe('3 Leute da')
       expect(meta((await mountBoard({ settings: null, teamChoiceOpen: false, members: [kittyAt()] })).page)).toBe('1 Person da')
-      expect(meta((await mountBoard({ teamChoiceOpen: false })).page)).toBe('2 Teams à 2 · Teamwahl noch zu')
-      expect(meta((await mountBoard({ members: [kittyAt(team(1)), larsiAt(), sanneAt()] })).page)).toBe('1 von 4 Plätzen besetzt')
+      expect(meta((await mountBoard({ members: [kittyAt(team(1)), larsiAt(), sanneAt()] })).page)).toBe('1 von 4 Slots besetzt')
       expect(meta((await mountBoard({ started: true })).page)).toBe('2 Teams à 2 · gesperrt')
+    })
+
+    it('says nothing next to the title while the Team choice is still closed, to a Member and to the Host (#800)', async () => {
+      const member = (await mountBoard({ teamChoiceOpen: false })).page
+      const host = (await mountBoard({ teamChoiceOpen: false, viewerId: SANNE, isHost: true })).page
+
+      expect(member.find('h2 + span').exists()).toBe(false)
+      expect(host.find('h2 + span').exists()).toBe(false)
+    })
+
+    it('shows the word „gesperrt“ of the running line in the danger colour and the teams part not, to a Member and to the Host (#800)', async () => {
+      for (const options of [{}, { viewerId: SANNE, isHost: true }]) {
+        const { page } = await mountBoard({ started: true, ...options })
+
+        const word = page.get('h2 + span span')
+        expect(word.text()).toBe('gesperrt')
+        expect(word.classes()).toContain('text-error-fg')
+        expect(page.get('h2 + span').classes()).not.toContain('text-error-fg')
+      }
     })
 
     it('leaves out the locked notice where the page says so, between two Sessions', async () => {
       const { page } = await mountBoard({ started: true, pageKind: 'between' })
 
       expect(page.text()).not.toContain('Das Event läuft')
-      expect(page.text()).not.toContain('Gesperrt seit dem Start')
+      expect(page.text()).not.toContain('Dein Teamwort kannst du weiter ändern')
+    })
+
+    it('hints at the long press while Team choice is open, to a Member and to the Host, and in no other phase (#800)', async () => {
+      for (const options of [{}, { viewerId: SANNE, isHost: true }]) {
+        expect((await mountBoard(options)).page.text()).toContain('Gedrückt halten, dann ziehen')
+        expect((await mountBoard({ ...options, settings: null, teamChoiceOpen: false })).page.text()).not.toContain('Gedrückt halten')
+        expect((await mountBoard({ ...options, teamChoiceOpen: false })).page.text()).not.toContain('Gedrückt halten')
+        expect((await mountBoard({ ...options, started: true })).page.text()).not.toContain('Gedrückt halten')
+      }
     })
   })
 
@@ -233,10 +262,13 @@ describe('GameBoard', () => {
       expect(host.page.text()).toContain('Event läuft: nur du kannst noch tauschen.')
 
       const player = await running({ members: [kittyAt(team(1)), larsiAt(), sanneAt()] })
-      expect(player.page.text()).toContain('Gesperrt seit dem Start. Dein Teamwort kannst du weiter ändern.')
+      expect(player.page.text()).toContain('Teams sind gesperrt. Dein Teamwort kannst du weiter ändern.')
 
       const other = await running({ members: [kittyAt(), larsiAt(team(1)), sanneAt()] })
       expect(other.page.text()).toContain('Das Event läuft. Die Teams sind gesperrt, nur der Host setzt dich noch in ein Team.')
+
+      expect(host.page.text()).not.toContain('Dein Teamwort')
+      expect(other.page.text()).not.toContain('Dein Teamwort')
     })
 
     it('does not tell the Host about uneven teams any more: the start is over', async () => {
@@ -643,7 +675,7 @@ describe('GameBoard', () => {
       expect(animate.mock.calls.some(([, options]) => (options as { easing: string }).easing === 'cubic-bezier(.5,1.8,.4,.8)')).toBe(true)
     })
 
-    it('names the winner when it lost the race for the last place', async () => {
+    it('names the winner when it lost the race for the last slot', async () => {
       let refuse: () => void = () => undefined
       const gate = new Promise<void>((resolve) => {
         refuse = resolve
@@ -661,8 +693,24 @@ describe('GameBoard', () => {
       await vi.waitFor(() => expect(person(page, kitty.id).attributes('aria-label')).toBe('Kitty, Team Rot'))
       refuse()
 
-      await vi.waitFor(() => expect(shownToasts().map(toast => toast.text)).toContain('Larsi war schneller. Der letzte Platz in Team Rot ist weg.'))
+      await vi.waitFor(() => expect(shownToasts().map(toast => toast.text)).toContain('Larsi war schneller. Der letzte Slot in Team Rot ist weg.'))
       expect(person(page, kitty.id).attributes('aria-label')).toBe('Kitty, Tribüne')
+    })
+
+    it('says the same to the Host whose move of a Member into the full team was refused (#800)', async () => {
+      const { page } = await mountBoard({
+        members: [kittyAt(), larsiAt(), sanneAt(team(1))],
+        viewerId: SANNE,
+        isHost: true,
+        answer: () => {
+          throw createError({ statusCode: 409, statusMessage: 'team_full', data: { winnerId: LARSI } })
+        },
+      })
+
+      await person(page, kitty.id).trigger('click')
+      menuItem('Nach Team Rot').click()
+
+      await vi.waitFor(() => expect(shownToasts().map(toast => toast.text)).toContain('Larsi war schneller. Der letzte Slot in Team Rot ist weg.'))
     })
   })
 
@@ -915,7 +963,8 @@ describe('GameBoard', () => {
       const { page } = await mountBoard({ members: uneven })
 
       expect(page.text()).not.toContain('Die Session startet erst')
-      expect(page.text()).toContain('Team Orange sucht noch jemanden. Rück rein, dann kann’s losgehen.')
+      expect(page.text()).toContain('Team Orange sucht noch jemanden. Dich vielleicht?')
+      expect(page.text()).not.toContain('Rück rein')
       expect(page.text()).not.toContain('Nur du siehst das')
     })
 
