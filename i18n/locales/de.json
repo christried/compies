@@ -773,14 +773,13 @@
     "joinAndSignIn": "Anmelden und beitreten",
     "cancelled": "Anmelden hat nicht geklappt. Versuch’s nochmal.",
     "titleInvite": "Erst kurz anmelden",
-    "intro": "Einfach nur mit dem Konto, mit dem du eh schon zockst, und das war’s.",
-    "inviteNotice": "{host} hat dich zu {event} eingeladen. Melde dich an, dann geht’s direkt auf die Tribüne.",
+    "intro": "Compies verarbeitet nur das Notwendigste an Daten.",
+    "inviteNotice": "{host} hat dich zu {event} eingeladen.",
     "cancelledTitle": "Anmeldung abgebrochen.",
     "cancelledProvider": "{headline} {provider} hat uns nichts geschickt. Einfach nochmal versuchen.",
     "redirecting": "Weiter zu {provider} …",
-    "linkLater": "Die Konten lassen sich später im Profil verknüpfen.",
-    "heroTitle": "Wer gewinnt diesmal?",
-    "heroText": "Termin finden, Teams bilden, Spiele auslosen, Punkte zählen. Gespielt wird woanders, gefeiert wird hier.",
+    "heroTitle": "Schwitzen, aber unter Freund:innen",
+    "heroText": "Hier koordinieren, woanders spielen.",
     "provider": {
       "discord": "Discord",
       "twitch": "Twitch"
@@ -789,8 +788,7 @@
     "logout": "Abmelden"
   },
   "onboarding": {
-    "kicker": "Fast geschafft",
-    "title": "Wie sollen wir dich nennen?",
+    "title": "Wie möchtest du genannt werden?",
     "nameHint": "Muss nicht eindeutig sein. Max. 32 Zeichen.",
     "nameMissing": "Ohne Namen geht’s nicht.",
     "avatarFromProvider": "Bild von {provider} nehmen",
