@@ -59,9 +59,6 @@ const providerName = (provider: SignInProvider) => t(`auth.provider.${provider}`
       <h1 class="m-0 text-[38px] leading-none md:text-[46px]">
         {{ invited ? t('auth.titleInvite') : t('auth.title') }}
       </h1>
-      <p class="m-0 text-body text-pretty text-ink-2">
-        {{ t('auth.intro') }}
-      </p>
     </div>
 
     <NoticeBanner
@@ -110,8 +107,8 @@ const providerName = (provider: SignInProvider) => t(`auth.provider.${provider}`
       {{ busy === button.provider ? t('auth.redirecting', { provider: providerName(button.provider) }) : t(`auth.${button.provider}`) }}
     </AppButton>
 
-    <p class="m-0 text-center text-small text-pretty text-ink-2">
-      {{ t('auth.linkLater') }}
+    <p class="m-0 text-body text-pretty text-ink-2">
+      {{ t('auth.intro') }}
     </p>
   </div>
 </template>

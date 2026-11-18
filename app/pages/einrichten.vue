@@ -30,7 +30,6 @@ const save = () => saveName(() => navigateTo(safeRedirect(route.query.redirect),
       >
         <div class="flex items-start gap-3">
           <div class="flex flex-1 flex-col gap-1">
-            <span class="text-small font-bold text-ink-2">{{ t('onboarding.kicker') }}</span>
             <h1 class="m-0 text-[34px] leading-none">
               {{ t('onboarding.title') }}
             </h1>
