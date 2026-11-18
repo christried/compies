@@ -16,3 +16,11 @@ export const VOTE_LOOK: Record<VoteValue, VoteLook> = {
   maybe: { labelKey: 'poll.maybe', cellIcon: Minus, fill: 'bg-warning text-on-warning' },
   no: { labelKey: 'poll.no', icon: X, cellIcon: X, fill: 'bg-error text-on-error' },
 }
+
+export type VoteCountTone = 'text-success-fg' | 'text-warning-fg' | 'text-error-fg'
+
+/** The Has voted rule (GLOSSARY) as a colour: everyone green, some yellow, nobody red (#798). With no future Slot left nobody has voted, so 0 of 0 is red. */
+export function voteCountTone({ voted, total }: { voted: number, total: number }): VoteCountTone {
+  if (voted === 0) return 'text-error-fg'
+  return voted >= total ? 'text-success-fg' : 'text-warning-fg'
+}

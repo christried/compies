@@ -29,7 +29,7 @@ describe('the stage of the Event page', () => {
         const page = await mount(slug)
 
         expect(regionHeadings(page)).toEqual(['Termin für Session 1', 'Spielbrett', 'Sessions', 'So wird gespielt'])
-        expect(page.get('h1').text()).toBe('Wann zocken wir?')
+        expect(page.get('h1').text()).toBe('Wann Zockung?')
       })
 
       it(`puts the Game board first once a Session is dated and the poll of another one below it, for ${who}`, async () => {
@@ -89,7 +89,7 @@ describe('the stage of the Event page', () => {
       const page = await mount(slug)
 
       expect(toggle(page)).toBeUndefined()
-      expect(page.findAll('h3').map(heading => heading.text())).toContain('Wer kann wann?')
+      expect(page.findAll('h2').map(heading => heading.text())).toContain('Wer kann wann?')
     })
 
     it('is quiet once another Session is dated: „Wer kann wann?“ is folded behind a button that says how many voted', async () => {
@@ -100,12 +100,12 @@ describe('the stage of the Event page', () => {
       const button = toggle(page)!
       expect(button.text()).toBe('Wer kann wann? · 2 von 3')
       expect(button.attributes('aria-expanded')).toBe('false')
-      expect(page.findAll('h3').map(heading => heading.text())).not.toContain('Wer kann wann?')
+      expect(page.findAll('h2').map(heading => heading.text())).not.toContain('Wer kann wann?')
 
       await button.trigger('click')
 
       expect(button.attributes('aria-expanded')).toBe('true')
-      expect(page.findAll('h3').map(heading => heading.text())).toContain('Wer kann wann?')
+      expect(page.findAll('h2').map(heading => heading.text())).toContain('Wer kann wann?')
       expect(page.find(`[id="${button.attributes('aria-controls')}"]`).text()).toContain('Wer kann wann?')
     })
 

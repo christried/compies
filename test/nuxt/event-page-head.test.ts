@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it } from 'vitest'
 import EventPageHead from '~/components/EventPageHead.vue'
 import { eventPageState, type PageInput } from '~/utils/event-page'
 import type { BoardTeam } from '~~/shared/event'
+import de from '~~/i18n/locales/de.json'
 
 // The Head of the Event page (#166, 11-event-seite § EventPageHead): kicker, the one h1 and the jump to a poll that is
 // not on top, per state of the page.
@@ -36,19 +37,46 @@ describe('EventPageHead', () => {
     expect(head.classes()).toContain('max-w-full')
   })
 
-  it('says the poll runs: Session n of total, and „Wann zocken wir?“', async () => {
+  it('says the poll runs: Session n of total, and „Wann Zockung?“', async () => {
     const head = await mountHead([undated('a'), undated('b')])
 
     expect(head.text()).toContain('Session 1 von 2 · Terminumfrage läuft')
-    expect(head.get('h1').text()).toBe('Wann zocken wir?')
+    expect(head.get('h1').text()).toBe('Wann Zockung?')
     expect(head.find('a').exists()).toBe(false)
   })
 
-  it('has no numbers for the only Session', async () => {
-    const head = await mountHead([undated('a')])
+  // The kicker is the head's only span: with one Session it says nothing the heading does not (#798), so it is not there, for the Host too.
+  describe.each([false, true])('the only Session, for a Member and the Host (isHost %s)', (isHost) => {
+    it('has no kicker in the poll, and no numbers', async () => {
+      const head = await mountHead([undated('a')], {}, isHost)
 
-    expect(head.text()).toContain('Terminumfrage läuft')
-    expect(head.text()).not.toContain('Session')
+      expect(head.get('h1').text()).toBe('Wann Zockung?')
+      expect(head.findAll('span')).toHaveLength(0)
+      expect(head.text()).not.toContain('Terminumfrage läuft')
+      expect(head.text()).not.toContain('Session')
+    })
+
+    it('has no kicker in the teams', async () => {
+      const head = await mountHead([dated('a', null, SAT)], {}, isHost)
+
+      expect(head.get('h1').text()).toBe('Rein in die Teams')
+      expect(head.findAll('span')).toHaveLength(0)
+      expect(head.text()).not.toContain('Teamwahl offen')
+    })
+
+    it('has no kicker in a finished Event', async () => {
+      const head = await mountHead([dated('a', 1, SAT, { startedAt: SAT, endedAt: SUN })], { event: { phase: 'finished', isHost: false } }, isHost, { winners: [1], teams: [{ position: 1, name: 'Wilde Gurken' }] })
+
+      expect(head.get('h1').text()).toBe('Wilde Gurken gewinnt das Event')
+      expect(head.findAll('span')).toHaveLength(0)
+      expect(head.text()).not.toContain('Event beendet')
+    })
+  })
+
+  it('has dropped the single kickers of the poll, the teams and a finished Event from the texts (#798)', () => {
+    expect('kickerSingle' in de.event.head.poll).toBe(false)
+    expect('kickerSingle' in de.event.head.teams).toBe(false)
+    expect('kicker' in de.event.head.finished).toBe(false)
   })
 
   it('opens the teams with the Date of the next Session, and links to the poll of a Session that still waits for its Date', async () => {
@@ -124,7 +152,8 @@ describe('EventPageHead', () => {
     it('says the Event is over and names the winner by the Team\'s frozen name', async () => {
       const head = await mountHead([ended], FINISHED, false, { winners: [1], teams })
 
-      expect(head.text()).toContain('Event beendet')
+      expect(head.text()).not.toContain('Event beendet')
+      expect(head.findAll('span')).toHaveLength(0)
       expect(head.get('h1').text()).toBe('Wilde Gurken gewinnt das Event')
     })
 
@@ -148,7 +177,8 @@ describe('EventPageHead', () => {
 
         expect(head.findAll('h1')).toHaveLength(1)
         expect(head.get('h1').text()).toBe('Unentschieden')
-        expect(head.text()).toContain('Event beendet')
+        expect(head.text()).not.toContain('Event beendet')
+        expect(head.findAll('span')).toHaveLength(0)
         expect(head.get('h1').classes()).toEqual(expect.arrayContaining(['text-balance', 'break-words']))
       }
     })

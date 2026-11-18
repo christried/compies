@@ -19,7 +19,6 @@ const emit = defineEmits<{ save: [text: string] }>()
 
 const { t } = useI18n()
 const fieldId = useId()
-const audienceId = useId()
 const root = useTemplateRef<HTMLElement>('root')
 const field = useTemplateRef<HTMLTextAreaElement>('field')
 const editing = ref(false)
@@ -110,10 +109,6 @@ defineExpose({ open, closeIfUntouched })
           class="text-[13px] font-extrabold"
         >{{ t('mvp.notes.label') }}</label>
         <span
-          :id="audienceId"
-          class="text-[12px] font-semibold text-ink-2"
-        >{{ t('mvp.notes.audience') }}</span>
-        <span
           aria-hidden="true"
           class="ml-auto font-mono text-[12px] font-bold"
           :class="count >= NOTE_MAX - 8 ? 'text-warning-fg' : 'text-ink-2'"
@@ -126,7 +121,6 @@ defineExpose({ open, closeIfUntouched })
         rows="1"
         enterkeyhint="done"
         :placeholder="t('mvp.notes.placeholder')"
-        :aria-describedby="audienceId"
         class="field-sizing-content block w-full resize-none overflow-hidden rounded-[10px] border-2 border-line bg-surface-2 px-[11px] py-[9px] text-[13px] leading-[1.4] font-semibold text-ink placeholder:text-ink-2"
         @input="onInput"
         @keydown.enter="onEnter"
@@ -157,7 +151,6 @@ defineExpose({ open, closeIfUntouched })
       class="flex items-start gap-2"
     >
       <div class="flex min-w-0 flex-1 flex-col gap-0.5">
-        <span class="text-[12px] font-bold text-ink-2">{{ t('mvp.notes.savedLabel') }}</span>
         <p class="m-0 text-[13px] leading-[1.4] font-semibold text-pretty break-words">
           {{ note }}
         </p>

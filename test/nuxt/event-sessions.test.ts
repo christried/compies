@@ -312,6 +312,8 @@ describe('several Sessions on the Event page', () => {
     const FIRST = '2026-10-30T19:00:00.000Z'
     const card = (page: Page) => page.findAll('section').find(section => section.findAll('h2').some(heading => heading.text() === 'Sessions'))!
     const rowText = (page: Page, n: number) => rowOf(page, n).text()
+    // The vote count of an undated row, coloured by the Has voted rule (#798): a span of its own inside the row's line.
+    const voteCount = (page: Page, n: number) => rowOf(page, n).findAll('span').filter(span => span.text().includes('abgestimmt')).at(-1)!
 
     it('counts the Sessions in the title and names each row by its number, with the undated ones numbered after the dated ones', async () => {
       const { slug } = serve(s => viewWithSessions(s, [
@@ -335,6 +337,7 @@ describe('several Sessions on the Event page', () => {
 
       expect(rowText(hostPage, 2)).toContain('Terminumfrage')
       expect(rowText(hostPage, 2)).toContain('2 von 3 haben vollständig abgestimmt')
+      expect(voteCount(hostPage, 2).classes()).toContain('text-warning-fg')
       await clickButton(rowOf(hostPage, 2).element, 'Zur Umfrage')
       expect(document.activeElement?.id).toBe('poll-session-2')
       hostPage.unmount()
@@ -343,7 +346,23 @@ describe('several Sessions on the Event page', () => {
       const memberPage = await mountSuspended(EventPage, { route: `/e/${member.slug}`, attachTo: document.body })
 
       expect(rowOf(memberPage, 2).findAll('button').map(button => button.text())).toEqual(['Abstimmen'])
+      expect(voteCount(memberPage, 2).classes()).toContain('text-warning-fg')
       memberPage.unmount()
+    })
+
+    it.each([false, true])('colours the count of a Session that polls by who has voted: everyone green, nobody red (isHost %s)', async (isHost) => {
+      const sessions = [{ number: 1, startsAt: FIRST }, { number: null, startsAt: null }]
+      const everyone = serve(s => viewWithSessions(s, sessions, 1, { event: { phase: 'poll', isHost }, progress: { voted: 3, total: 3 } }))
+      const everyonePage = await mountSuspended(EventPage, { route: `/e/${everyone.slug}`, attachTo: document.body })
+      expect(voteCount(everyonePage, 2).text()).toBe('3 von 3 haben vollständig abgestimmt')
+      expect(voteCount(everyonePage, 2).classes()).toContain('text-success-fg')
+      everyonePage.unmount()
+
+      const nobody = serve(s => viewWithSessions(s, sessions, 1, { event: { phase: 'poll', isHost }, progress: { voted: 0, total: 3 } }))
+      const nobodyPage = await mountSuspended(EventPage, { route: `/e/${nobody.slug}`, attachTo: document.body })
+      expect(voteCount(nobodyPage, 2).text()).toBe('0 von 3 haben vollständig abgestimmt')
+      expect(voteCount(nobodyPage, 2).classes()).toContain('text-error-fg')
+      nobodyPage.unmount()
     })
 
     it('gives a Session that runs and one that ended no actions, but its time', async () => {

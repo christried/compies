@@ -125,12 +125,10 @@
     "head": {
       "poll": {
         "kicker": "Session {n} von {total} · Terminumfrage läuft",
-        "kickerSingle": "Terminumfrage läuft",
-        "title": "Wann zocken wir?"
+        "title": "Wann Zockung?"
       },
       "teams": {
         "kicker": "Session {n}: {date} · Teamwahl offen",
-        "kickerSingle": "{date} · Teamwahl offen",
         "title": "Rein in die Teams"
       },
       "jumpPoll": "Session {n}: Terminumfrage läuft",
@@ -151,7 +149,6 @@
         "title": "Gut gespielt"
       },
       "finished": {
-        "kicker": "Event beendet",
         "title": "{team} gewinnt das Event",
         "titleDone": "Das Event ist beendet",
         "titleTie": "Unentschieden"
@@ -1487,19 +1484,17 @@
       "addA11y": "Anmerkung hinzufügen",
       "edit": "Anmerkung bearbeiten",
       "label": "Anmerkung",
-      "audience": "sehen alle",
       "placeholder": "z. B. kann maximal bis 20:30",
       "quoted": "„{note}“",
       "remaining": "Noch {n} Zeichen",
       "save": "Anmerkung speichern",
-      "savedLabel": "Deine Anmerkung · sehen alle",
       "heading": "Anmerkungen"
     },
     "poll": {
       "missingDates": "{n} Termin gesucht | {n} Termine gesucht",
       "past": "vorbei",
       "notVoted": "noch nicht abgestimmt",
-      "savedNote": "Gespeichert. Du kannst deine Stimmen ändern, bis der Host den Termin festlegt.",
+      "savedNote": "Gespeichert. Du kannst deine Stimmen ändern, bis der Host den Termin fixiert.",
       "pickThis": "Termin festlegen",
       "whoWhen": "Wer kann wann?",
       "exportCsv": "Als CSV exportieren",
