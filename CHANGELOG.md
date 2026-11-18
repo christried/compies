@@ -10,6 +10,7 @@
 - **Die Events eines Spiels:** Auf der Seite eines Spiels in der Bibliothek stehen jetzt alle deine Events, in denen es im Pool liegt oder gespielt wurde, neueste zuerst, auch beendete. Jede Zeile führt zum Event, sagt „im Pool“ oder „1× gespielt“ und zeigt deine Notizen für dieses Event. ([#656](https://github.com/christried/compies/issues/656))
 - **Notizen formatieren:** Notizen zu einem Spiel lassen sich jetzt formatieren: fett, kursiv, eine Überschrift, Listen und Links. Sie dürfen jetzt 2000 Zeichen lang sein statt 1000. ([#454](https://github.com/christried/compies/issues/454))
 - **Notizen für dieses Event:** Im Dialog eines Spiels auf der Eventseite schreibst du jetzt Notizen nur für dieses Event, zum Beispiel „heute nur Bo1“, mit denselben Formaten wie bei den Notizen eines Spiels. Nur du siehst sie, und nach dem Ende des Events bleiben sie so stehen. ([#464](https://github.com/christried/compies/issues/464))
+- **Die App-Figur hat eine Stimme:** Am Glücksrad macht die App-Figur jetzt Laute, ganz ohne Worte: Sie ist aufgeregt, wenn das Rad anläuft, schluckt an der Bremse und jubelt beim Stopp. Beim verdeckten Rad jubelt sie erst mit der Auflösung, für alle gleichzeitig, auch für den Host. Bei reduzierter Bewegung hörst du nur den Jubel. Der Schalter „Ton“ schaltet auch das aus. ([#671](https://github.com/christried/compies/issues/671))
 
 ### Geändert
 
