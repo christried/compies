@@ -198,6 +198,7 @@ const newsOf = (overrides: Partial<StandingsNews> = {}): StandingsNews => ({
   winners: [1],
   at: Date.now(),
   announcement: 'Spiel 2 ist eingetragen.',
+  cuesAsked: new Set(),
   ...overrides,
 })
 

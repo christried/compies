@@ -27,7 +27,7 @@ const view = {
 }
 
 /** A news from long ago, so the Leaderboard stays calm: only what reaches it is under test. */
-const news: StandingsNews = { key: 1, kind: 'entered', roundId: 'r1', number: 1, before: [{ team: 1, rank: 1, points: 0 }, { team: 2, rank: 1, points: 0 }], winners: [2], at: 0, announcement: 'Spiel 1 ist eingetragen.' }
+const news: StandingsNews = { key: 1, kind: 'entered', roundId: 'r1', number: 1, before: [{ team: 1, rank: 1, points: 0 }, { team: 2, rank: 1, points: 0 }], winners: [2], at: 0, announcement: 'Spiel 1 ist eingetragen.', cuesAsked: new Set() }
 
 const corrections: HistoryCorrections = { pointsTable: { preset: 'linear', values: [1, 0] }, total: 6, save: vi.fn(async () => true) }
 const pencils = (wrapper: VueWrapper) => wrapper.findAll('button[aria-label="Spiel 1 korrigieren"]')

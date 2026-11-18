@@ -23,6 +23,8 @@ const presence = usePresence(room)
 const serverClock = useServerClock(room)
 // The wheel is heard (#531): the cue player schedules the read's plan on the audio clock, on the Event page only.
 const cues = useCuePlayer({ view: () => data.value, serverNow: serverClock.now, ready: () => serverClock.ready.value, moved: () => serverClock.moves.value })
+// What this device shows is heard through the same player (#741): the Standings' sequence asks for its sounds with the function handed down here.
+provideImmediateCue(cues.playNow)
 const onlineState = (userId: string) => (presence.known.value ? presence.isOnline(userId) : undefined)
 
 useHead({ title: () => data.value?.event.name })
