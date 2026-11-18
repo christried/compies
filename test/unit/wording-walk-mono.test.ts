@@ -23,4 +23,14 @@ describe('the walk’s table of font-mono uses', () => {
       .filter(line => line.includes('font-mono'))
     expect(rows.length).toBe(lines.length)
   })
+
+  // An untagged mono element (`entry: true`) is labelled by MONO_WHAT, else the report calls its component unlabelled; keyed rows are not.
+  it('labels the component of every untagged mono row in MONO_WHAT, so the report does not call it unlabelled', () => {
+    const walk = readFileSync(join(ROOT, 'scripts/wording/walk.mjs'), 'utf8')
+    const table = walk.match(/const MONO_WHAT = \{([\s\S]*?)\n\}/)?.[1] ?? ''
+    const labelled = [...table.matchAll(/'(app\/[^']+)':/g)].map(match => match[1])
+    const untagged = walk.split('\n').filter(line => /^ {2}\{ site: /.test(line) && line.includes('entry: true'))
+      .map(line => line.match(/component: '(app\/[^']+)'/)?.[1] ?? '')
+    expect([...new Set(untagged)].filter(component => !labelled.includes(component))).toEqual([])
+  })
 })

@@ -53,6 +53,7 @@ const MONO_WHAT = {
   'app/components/ChangelogInline.vue': 'Changelog: Code und Ausgabe-Chip',
   'app/components/ClipPreview.vue': 'Clip-Zeiten',
   'app/components/InviteLinkCard.vue': 'Einladungslink',
+  'app/components/RichNotesToolbar.vue': 'Tastenkürzel im Tipp der Notizen-Werkzeugleiste',
 }
 
 /** The ten uses of `font-mono` in app/ (`grep -rn "font-mono" app --include=*.vue`) and how each is recorded; the report says where each was seen. */
