@@ -39,7 +39,7 @@ export async function mountEditor(props: Props = {}): Promise<MountedEditor> {
       ...props,
     },
   })
-  if (!props.readonly) await vi.waitFor(() => expect(page.find('[role="textbox"]').exists()).toBe(true))
+  await vi.waitFor(() => expect(page.find('[role="textbox"]').exists()).toBe(true))
   return Object.assign(page, { values, invalids })
 }
 

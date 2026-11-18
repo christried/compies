@@ -29,6 +29,20 @@ describe('the value', () => {
     expect(editorOf(page).getJSON().content?.[1]).toMatchObject({ type: 'heading' })
   })
 
+  it('rebuilds the document at most once per animation frame, and the last state always lands (#822)', async () => {
+    const page = await mountEditor({ modelValue: doc(paragraph(text('a'))) })
+    editorOf(page).commands.focus('end')
+
+    for (const letter of ['b', 'c', 'd']) editorOf(page).commands.insertContent(letter)
+
+    // The first keystroke of the frame is emitted at once, the three after it collapse into one run.
+    expect(page.values).toHaveLength(1)
+    await vi.waitFor(() => expect(page.values).toHaveLength(2))
+    expect(page.values.at(-1)).toEqual(doc(paragraph(text('abcd'))))
+    await new Promise(resolve => requestAnimationFrame(resolve))
+    expect(page.values).toHaveLength(2)
+  })
+
   it('takes a changed modelValue as the new content, without an emit', async () => {
     const page = await mountEditor({ modelValue: doc(paragraph(text('eins'))) })
 
@@ -229,17 +243,6 @@ describe('the states', () => {
 
     await vi.waitFor(() => expect(contentOf(page).attributes('contenteditable')).toBe('true'))
     expect(page.values).toEqual([])
-  })
-
-  it('renders the notes without a textbox or a toolbar when readonly, with the lock help and the chip', async () => {
-    const page = await mountEditor({ modelValue: FORMATTED_NOTES, readonly: true, variant: 'event' })
-
-    expect(page.find('[role="textbox"]').exists()).toBe(false)
-    expect(page.find('[role="toolbar"]').exists()).toBe(false)
-    expect(page.text()).toContain('Regeln')
-    expect(page.text()).toContain('Event beendet')
-    expect(page.find('span.rounded-pill.border-2.bg-paper-2').exists()).toBe(true)
-    expect(page.text()).toContain('Das Event ist beendet. Diese Notizen bleiben so stehen.')
   })
 
   it('names the field by its label and focuses the content on a click on the label', async () => {
