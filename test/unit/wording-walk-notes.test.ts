@@ -88,8 +88,14 @@ describe('the state of the editor that cannot load', () => {
     const tab = {
       account: 'host',
       spying: true,
-      send: async (method: string, params: Record<string, unknown>) => { calls.push({ method, params }); return { result: {} } },
-      evaluate: async (expression: string) => { waited.push(expression); return true },
+      send: async (method: string, params: Record<string, unknown>) => {
+        calls.push({ method, params })
+        return { result: {} }
+      },
+      evaluate: async (expression: string) => {
+        waited.push(expression)
+        return true
+      },
     }
     const { states } = await loadStates({ extra: 'walk-states-' }) as { states: { name: string, group: string, stops?: unknown[], open: (ctx: unknown) => Promise<void>, after: (ctx: unknown) => Promise<void> }[] }
     const state = states.find(entry => entry.name === 'bibliothek-neu-editor-ladefehler')!
