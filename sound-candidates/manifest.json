@@ -748,6 +748,108 @@
         "note": "Glocke auf dem Kopf, klingt wabernd nach"
       }
     ],
+    "cer-stamp": [
+      {
+        "name": "gummi-stempel",
+        "file": "cer-stamp/gummi-stempel.wav",
+        "source": "scripts/make-cue-candidates.mjs, Rezept gummi-stempel",
+        "author": null,
+        "licence": "generated",
+        "note": "Gummistempel auf Karton, dumpf"
+      },
+      {
+        "name": "metall-stempel",
+        "file": "cer-stamp/metall-stempel.wav",
+        "source": "scripts/make-cue-candidates.mjs, Rezept metall-stempel",
+        "author": null,
+        "licence": "generated",
+        "note": "Metallstempel, kurzes Nachklingen"
+      },
+      {
+        "name": "filz-stempel",
+        "file": "cer-stamp/filz-stempel.wav",
+        "source": "scripts/make-cue-candidates.mjs, Rezept filz-stempel",
+        "author": null,
+        "licence": "generated",
+        "note": "Filzpolster, tiefer weicher Schlag"
+      },
+      {
+        "name": "holz-griff",
+        "file": "cer-stamp/holz-griff.wav",
+        "source": "scripts/make-cue-candidates.mjs, Rezept holz-griff",
+        "author": null,
+        "licence": "generated",
+        "note": "Holzgriff schlägt auf den Tisch"
+      }
+    ],
+    "cer-fanfare": [
+      {
+        "name": "spielzeug-trompete",
+        "file": "cer-fanfare/spielzeug-trompete.wav",
+        "source": "scripts/make-cue-candidates.mjs, Rezept spielzeug-trompete",
+        "author": null,
+        "licence": "generated",
+        "note": "Spielzeugtrompete: C, E, G, dann ein langes C"
+      },
+      {
+        "name": "blech-kapelle",
+        "file": "cer-fanfare/blech-kapelle.wav",
+        "source": "scripts/make-cue-candidates.mjs, Rezept blech-kapelle",
+        "author": null,
+        "licence": "generated",
+        "note": "Blechbläser, Obertonreihe, langes Ausklingen"
+      },
+      {
+        "name": "chip-arpeggio",
+        "file": "cer-fanfare/chip-arpeggio.wav",
+        "source": "scripts/make-cue-candidates.mjs, Rezept chip-arpeggio",
+        "author": null,
+        "licence": "generated",
+        "note": "Arcade-Jingle, schneller Dreiklang, hohes C"
+      },
+      {
+        "name": "kazoo-fanfare",
+        "file": "cer-fanfare/kazoo-fanfare.wav",
+        "source": "scripts/make-cue-candidates.mjs, Rezept kazoo-fanfare",
+        "author": null,
+        "licence": "generated",
+        "note": "Partykazoo, brummend, vier steigende Töne"
+      }
+    ],
+    "cer-crowd": [
+      {
+        "name": "saal-publikum",
+        "file": "cer-crowd/saal-publikum.wav",
+        "source": "scripts/make-cue-candidates.mjs, Rezept saal-publikum",
+        "author": null,
+        "licence": "generated",
+        "note": "Publikum im Saal, Rauschen, das anschwillt"
+      },
+      {
+        "name": "chip-publikum",
+        "file": "cer-crowd/chip-publikum.wav",
+        "source": "scripts/make-cue-candidates.mjs, Rezept chip-publikum",
+        "author": null,
+        "licence": "generated",
+        "note": "Arcade-Jubel, körniges Rauschen"
+      },
+      {
+        "name": "klatsch-publikum",
+        "file": "cer-crowd/klatsch-publikum.wav",
+        "source": "scripts/make-cue-candidates.mjs, Rezept klatsch-publikum",
+        "author": null,
+        "licence": "generated",
+        "note": "Applaus, viele einzelne Klatscher"
+      },
+      {
+        "name": "jubel-pfeifen",
+        "file": "cer-crowd/jubel-pfeifen.wav",
+        "source": "scripts/make-cue-candidates.mjs, Rezept jubel-pfeifen",
+        "author": null,
+        "licence": "generated",
+        "note": "Jubel mit Pfiffen, die nach oben gleiten"
+      }
+    ],
     "cb-hi": [
       {
         "name": "zwei-ton-piep",

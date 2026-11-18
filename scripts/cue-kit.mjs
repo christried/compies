@@ -173,3 +173,10 @@ export const thump = (seconds, from, to, drop, tau) =>
 
 /** A plain attack-then-decay envelope. */
 export const pluckEnv = (attack, tau) => t => (t < attack ? t / attack : Math.exp(-(t - attack) / tau))
+
+/** A held-note envelope: `attack` s up, full until `length` s, then a release with time constant `release`. */
+export const heldEnv = (attack, length, release) => t => Math.min(1, t / attack) * (t < length ? 1 : Math.exp(-(t - length) / release))
+
+/** A brassy note by modal synthesis (#744): the harmonic series of `hz`, the upper partials quieter (`rolloff`) and shorter-lived, each starting at its peak so the note has its onset at once. */
+export const brass = (seconds, hz, tau, { count = 8, rolloff = 1 } = {}) =>
+  modal(seconds, Array.from({ length: count }, (_, i) => ({ hz: hz * (i + 1), amp: (i + 1) ** -rolloff, tau: tau / (1 + i * 0.25), phase: Math.PI / 2 })))
