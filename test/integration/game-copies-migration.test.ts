@@ -11,7 +11,7 @@ import { createTestDbBefore, migrateThrough } from './harness'
 // columns. The database stops at this migration (`migrateThrough`): later 0.16 migrations add columns and would change the rows
 // that the tests compare. Every name, id and note is invented.
 
-const MIGRATION = '0035_game_copies_per_host'
+const MIGRATION = '0036_game_copies_per_host'
 
 const uid = (kind: string, n: number) => `00000000-0000-4000-8000-${kind}${String(n).padStart(11, '0')}`
 

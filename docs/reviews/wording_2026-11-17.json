@@ -1,0 +1,450 @@
+{
+  "version": 1,
+  "sweptAt": "2026-11-17",
+  "texts": {
+    "legal.datenschutz.signIn.text": {
+      "text": "Die Anmeldung erfolgt ausschließlich über den OAuth-Dienst von Discord (Discord Inc., San Francisco, USA) oder Twitch (Twitch Interactive, Inc., San Francisco, USA). Dabei wirst du auf eine Seite von Discord bzw. Twitch weitergeleitet, für die deren Datenschutzbestimmungen gelten. Angefragt werden nur die Berechtigungen für deine Profilangaben und deine E-Mail-Adresse. Aus deinem Discord- bzw. Twitch-Konto speichern wir: deinen Namen dort, deine E-Mail-Adresse und deren Bestätigungsstatus, die Adresse (URL) deines Profilbilds, deine Benutzerkennung beim jeweiligen Dienst sowie die zur Anmeldung gehörenden OAuth-Token. Name und Profilbild werden bei jeder Anmeldung aktualisiert. Auf dein Konto bei Discord oder Twitch greift Compies darüber hinaus nicht zu.\n\nHat dein Konto keine E-Mail-Adresse, speichern wir stattdessen einen Platzhalter. Deine E-Mail-Adresse wird niemandem angezeigt. Sie dient nur dazu, eine Anmeldung über den zweiten Dienst demselben Nutzerkonto zuzuordnen, wenn beide Dienste dieselbe, von ihnen bestätigte E-Mail-Adresse melden.\n\nNach der ersten Anmeldung wählst du einen Anzeigenamen. Er ist der Name, unter dem dich andere in Compies sehen; dein Name bei Discord bzw. Twitch wird gespeichert, aber anderen nicht angezeigt. Du kannst deinen Anzeigenamen jederzeit auf der Seite „Profil“ ändern. Der neue Name erscheint überall in Compies, auch in dem, was schon geschehen ist, etwa im Aktivitäts-Feed und in den Ergebnissen; einen früheren Anzeigenamen speichern wir nicht.\n\nAußerdem speichern wir zu deinem Nutzerkonto, welche Version von Compies du unter „Was ist neu“ zuletzt gesehen hast, damit der Hinweis auf jedem Gerät nur einmal erscheint. Genauso merken wir uns, welche Version des Rundgangs über die Event-Seite du zuletzt gesehen oder übersprungen hast, damit er auf jedem Gerät nur einmal startet; startest du ihn auf der Seite „Profil“ neu, setzen wir diesen Wert zurück.\n\nEbenso speichern wir zu deinem Nutzerkonto deine Darstellung: Hell, Dunkel oder System (System folgt der Einstellung deines Geräts). Du wählst sie auf der Seite „Profil“; solange du nichts wählst, ist es Hell. Die Wahl gilt auf jedem Gerät, auf dem du dich anmeldest. Wie ein Gerät sie für Seiten ohne Anmeldung behält, steht in Abschnitt 9.\n\nDiese Daten sind erforderlich, um dein Nutzerkonto bereitzustellen. Rechtsgrundlage ist Art. 6 Abs. 1 lit. b DSGVO (Begründung und Durchführung des Nutzungsverhältnisses).\n\nWelche Konten Events anlegen dürfen (Host-Berechtigung), ist als Liste von Discord- und Twitch-Benutzerkennungen fest hinterlegt. Bei jeder Anmeldung wird deine Benutzerkennung mit dieser Liste abgeglichen und die Berechtigung in deinem Nutzerkonto vermerkt. Rechtsgrundlage ist Art. 6 Abs. 1 lit. f DSGVO (berechtigtes Interesse daran, dass nur bekannte Personen Events anlegen).",
+      "answer": "passt",
+      "replacement": null,
+      "comment": "",
+      "alternatives": []
+    },
+    "settings.tour": {
+      "text": "Rundgang",
+      "answer": "passt",
+      "replacement": null,
+      "comment": "",
+      "alternatives": []
+    },
+    "settings.tourAgain": {
+      "text": "Wiederholen",
+      "answer": "passt",
+      "replacement": null,
+      "comment": "",
+      "alternatives": []
+    },
+    "settings.tourHelp": {
+      "text": "Zeigt dir die Event-Seite noch einmal.",
+      "answer": "passt",
+      "replacement": null,
+      "comment": "",
+      "alternatives": []
+    },
+    "settings.tourResetDone": {
+      "text": "Der Rundgang startet beim nächsten Event, das du nicht hostest.",
+      "answer": "passt",
+      "replacement": null,
+      "comment": "",
+      "alternatives": []
+    },
+    "settings.tourResetFailed": {
+      "text": "Das hat nicht geklappt, der Rundgang ist wie vorher. Versuch’s nochmal.",
+      "answer": "passt",
+      "replacement": null,
+      "comment": "",
+      "alternatives": []
+    },
+    "tour.activity.text": {
+      "text": "Hier steht, was im Event passiert: wer beigetreten ist, welche Spiele drankommen und wie sie ausgehen.",
+      "answer": "passt",
+      "replacement": null,
+      "comment": "",
+      "alternatives": []
+    },
+    "tour.activity.title": {
+      "text": "Aktivität",
+      "answer": "passt",
+      "replacement": null,
+      "comment": "",
+      "alternatives": []
+    },
+    "tour.board.text": {
+      "text": "Hier sitzt du erst auf der Tribüne. Dein Team wählst du, sobald das Event eingerichtet ist und der Termin steht.",
+      "answer": "passt",
+      "replacement": null,
+      "comment": "",
+      "alternatives": []
+    },
+    "tour.board.title": {
+      "text": "Spielbrett",
+      "answer": "passt",
+      "replacement": null,
+      "comment": "",
+      "alternatives": []
+    },
+    "tour.boardLocked.text": {
+      "text": "Die Teams stehen seit dem Start fest. Wer in einem Team sitzt, kann sein Teamwort weiter ändern.",
+      "answer": "passt",
+      "replacement": null,
+      "comment": "",
+      "alternatives": []
+    },
+    "tour.boardLocked.title": {
+      "text": "Spielbrett",
+      "answer": "passt",
+      "replacement": null,
+      "comment": "",
+      "alternatives": []
+    },
+    "tour.boardOpen.text": {
+      "text": "Such dir jetzt ein Team aus: Zieh dich hinein oder tipp dich an und wähl eins. Dort trägst du dein Teamwort ein, es wird Teil des Teamnamens.",
+      "answer": "passt",
+      "replacement": null,
+      "comment": "",
+      "alternatives": []
+    },
+    "tour.boardOpen.title": {
+      "text": "Spielbrett",
+      "answer": "passt",
+      "replacement": null,
+      "comment": "",
+      "alternatives": []
+    },
+    "tour.count": {
+      "text": "{n} von {total}",
+      "answer": "passt",
+      "replacement": null,
+      "comment": "",
+      "alternatives": []
+    },
+    "tour.countLabel": {
+      "text": "Schritt {n} von {total}",
+      "answer": "passt",
+      "replacement": null,
+      "comment": "",
+      "alternatives": []
+    },
+    "tour.end.text": {
+      "text": "Du willst den Rundgang noch einmal sehen? Auf deinem Profil unter „Einstellungen“ startest du ihn neu.",
+      "answer": "passt",
+      "replacement": null,
+      "comment": "",
+      "alternatives": []
+    },
+    "tour.end.title": {
+      "text": "Das war’s",
+      "answer": "passt",
+      "replacement": null,
+      "comment": "",
+      "alternatives": []
+    },
+    "tour.finish": {
+      "text": "Fertig",
+      "answer": "passt",
+      "replacement": null,
+      "comment": "",
+      "alternatives": []
+    },
+    "tour.greeting.text": {
+      "text": "Ich zeige dir kurz, wie dieses Event funktioniert. Du musst nichts tun: nur schauen und auf „Weiter“ klicken.",
+      "answer": "passt",
+      "replacement": null,
+      "comment": "",
+      "alternatives": []
+    },
+    "tour.greeting.title": {
+      "text": "Willkommen!",
+      "answer": "passt",
+      "replacement": null,
+      "comment": "",
+      "alternatives": []
+    },
+    "tour.head.text": {
+      "text": "Hier steht, worum es geht und wann es losgeht.",
+      "answer": "passt",
+      "replacement": null,
+      "comment": "",
+      "alternatives": []
+    },
+    "tour.head.title": {
+      "text": "Das Event",
+      "answer": "passt",
+      "replacement": null,
+      "comment": "",
+      "alternatives": []
+    },
+    "tour.how.text": {
+      "text": "Hier steht, wie ihr spielt: das Format, wie die Spiele gewählt werden und wie die Punkte zählen.",
+      "answer": "passt",
+      "replacement": null,
+      "comment": "",
+      "alternatives": []
+    },
+    "tour.how.title": {
+      "text": "So wird gespielt",
+      "answer": "passt",
+      "replacement": null,
+      "comment": "",
+      "alternatives": []
+    },
+    "tour.live": {
+      "text": "Schritt {n} von {total}: {title}. {text}",
+      "answer": "passt",
+      "replacement": null,
+      "comment": "",
+      "alternatives": []
+    },
+    "tour.poll.text": {
+      "text": "Hier stimmst du für jeden Termin ab: Ja, Meh oder Nein. Zu deiner Stimme kannst du eine Anmerkung schreiben.",
+      "answer": "passt",
+      "replacement": null,
+      "comment": "",
+      "alternatives": []
+    },
+    "tour.poll.title": {
+      "text": "Terminumfrage",
+      "answer": "passt",
+      "replacement": null,
+      "comment": "",
+      "alternatives": []
+    },
+    "tour.skip": {
+      "text": "Überspringen",
+      "answer": "passt",
+      "replacement": null,
+      "comment": "",
+      "alternatives": []
+    },
+    "tour.sound.text": {
+      "text": "Hier schaltest du den Ton an oder aus.",
+      "answer": "passt",
+      "replacement": null,
+      "comment": "",
+      "alternatives": []
+    },
+    "tour.sound.title": {
+      "text": "Ton",
+      "answer": "passt",
+      "replacement": null,
+      "comment": "",
+      "alternatives": []
+    },
+    "tour.tabs.text": {
+      "text": "Unten findest du den Reiter „Aktivität“. Dort steht, was im Event passiert.",
+      "answer": "passt",
+      "replacement": null,
+      "comment": "",
+      "alternatives": []
+    },
+    "tour.tabs.title": {
+      "text": "Aktivität",
+      "answer": "passt",
+      "replacement": null,
+      "comment": "",
+      "alternatives": []
+    },
+    "wheel.placeholders.0": {
+      "text": "Schießen Springen Schreien",
+      "answer": "passt",
+      "replacement": null,
+      "comment": "",
+      "alternatives": []
+    },
+    "wheel.placeholders.1": {
+      "text": "Liga der Lemminge",
+      "answer": "passt",
+      "replacement": null,
+      "comment": "",
+      "alternatives": []
+    },
+    "wheel.placeholders.10": {
+      "text": "Autos und Fußball?",
+      "answer": "passt",
+      "replacement": null,
+      "comment": "",
+      "alternatives": []
+    },
+    "wheel.placeholders.11": {
+      "text": "Overquatsch",
+      "answer": "passt",
+      "replacement": null,
+      "comment": "",
+      "alternatives": []
+    },
+    "wheel.placeholders.12": {
+      "text": "FIFA 2087",
+      "answer": "passt",
+      "replacement": null,
+      "comment": "",
+      "alternatives": []
+    },
+    "wheel.placeholders.13": {
+      "text": "Irgendein Shooter",
+      "answer": "passt",
+      "replacement": null,
+      "comment": "",
+      "alternatives": []
+    },
+    "wheel.placeholders.14": {
+      "text": "Ableben 3",
+      "answer": "passt",
+      "replacement": null,
+      "comment": "",
+      "alternatives": []
+    },
+    "wheel.placeholders.15": {
+      "text": "Claude bau mir ein Spiel mach keine Fehler",
+      "answer": "passt",
+      "replacement": null,
+      "comment": "",
+      "alternatives": []
+    },
+    "wheel.placeholders.16": {
+      "text": "Flutschfinger-Wettessen",
+      "answer": "passt",
+      "replacement": null,
+      "comment": "",
+      "alternatives": []
+    },
+    "wheel.placeholders.17": {
+      "text": "Mensch ärgere dich nicht",
+      "answer": "passt",
+      "replacement": null,
+      "comment": "",
+      "alternatives": []
+    },
+    "wheel.placeholders.18": {
+      "text": "Bongo Cat",
+      "answer": "passt",
+      "replacement": null,
+      "comment": "",
+      "alternatives": []
+    },
+    "wheel.placeholders.19": {
+      "text": "Portal 3",
+      "answer": "passt",
+      "replacement": null,
+      "comment": "",
+      "alternatives": []
+    },
+    "wheel.placeholders.2": {
+      "text": "Disco Disco Party Party",
+      "answer": "passt",
+      "replacement": null,
+      "comment": "",
+      "alternatives": []
+    },
+    "wheel.placeholders.20": {
+      "text": "Mehr Skins als Gameplay",
+      "answer": "passt",
+      "replacement": null,
+      "comment": "",
+      "alternatives": []
+    },
+    "wheel.placeholders.21": {
+      "text": "Wer ist am vegansten?",
+      "answer": "passt",
+      "replacement": null,
+      "comment": "",
+      "alternatives": []
+    },
+    "wheel.placeholders.22": {
+      "text": "Gamba Simulator 2000",
+      "answer": "passt",
+      "replacement": null,
+      "comment": "",
+      "alternatives": []
+    },
+    "wheel.placeholders.23": {
+      "text": "Bottleflip Contest",
+      "answer": "passt",
+      "replacement": null,
+      "comment": "",
+      "alternatives": []
+    },
+    "wheel.placeholders.24": {
+      "text": "Twitch VoD Binge-Watching",
+      "answer": "passt",
+      "replacement": null,
+      "comment": "",
+      "alternatives": []
+    },
+    "wheel.placeholders.25": {
+      "text": "Terminumfragen ausfüllen",
+      "answer": "passt",
+      "replacement": null,
+      "comment": "",
+      "alternatives": []
+    },
+    "wheel.placeholders.26": {
+      "text": "Platzhalter ausdenken Wettkampf",
+      "answer": "passt",
+      "replacement": null,
+      "comment": "",
+      "alternatives": []
+    },
+    "wheel.placeholders.27": {
+      "text": "Smackmania",
+      "answer": "passt",
+      "replacement": null,
+      "comment": "",
+      "alternatives": []
+    },
+    "wheel.placeholders.28": {
+      "text": "Counter-Dreck",
+      "answer": "passt",
+      "replacement": null,
+      "comment": "",
+      "alternatives": []
+    },
+    "wheel.placeholders.29": {
+      "text": "Wettbacken",
+      "answer": "passt",
+      "replacement": null,
+      "comment": "",
+      "alternatives": []
+    },
+    "wheel.placeholders.3": {
+      "text": "Raketenliga",
+      "answer": "passt",
+      "replacement": null,
+      "comment": "",
+      "alternatives": []
+    },
+    "wheel.placeholders.4": {
+      "text": "Turbo Smash Sisters",
+      "answer": "passt",
+      "replacement": null,
+      "comment": "",
+      "alternatives": []
+    },
+    "wheel.placeholders.5": {
+      "text": "Schmetris",
+      "answer": "passt",
+      "replacement": null,
+      "comment": "",
+      "alternatives": []
+    },
+    "wheel.placeholders.6": {
+      "text": "MediNait",
+      "answer": "passt",
+      "replacement": null,
+      "comment": "",
+      "alternatives": []
+    },
+    "wheel.placeholders.7": {
+      "text": "Straßenkampf ohne Treten",
+      "answer": "passt",
+      "replacement": null,
+      "comment": "",
+      "alternatives": []
+    },
+    "wheel.placeholders.8": {
+      "text": "Aushalten: Rauchen",
+      "answer": "passt",
+      "replacement": null,
+      "comment": "",
+      "alternatives": []
+    },
+    "wheel.placeholders.9": {
+      "text": "Großes Im-Kreisfahren",
+      "answer": "passt",
+      "replacement": null,
+      "comment": "",
+      "alternatives": []
+    }
+  },
+  "fixed": {},
+  "unused": {},
+  "mono": {}
+}

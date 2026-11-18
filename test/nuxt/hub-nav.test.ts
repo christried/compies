@@ -24,6 +24,12 @@ describe('HubNav', () => {
     expect(link(nav, 'Events').attributes('aria-current')).toBeUndefined()
   })
 
+  it('carries no marker for the Tour: only the Event page\'s tab bar is pointed at (#648)', async () => {
+    const nav = await mountSuspended(HubNav, { props: { layout: 'tabs' }, route: '/' })
+
+    expect(nav.find('[data-tour]').exists()).toBe(false)
+  })
+
   it('marks Events as current on Home', async () => {
     const nav = await mountSuspended(HubNav, { props: { layout: 'tabs' }, route: '/' })
 

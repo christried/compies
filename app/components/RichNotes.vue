@@ -81,7 +81,7 @@ function renderBlock(node: unknown, headingLevel: 'h3' | 'h4', newTab: string): 
   const type = asRecord(node).type
   if (type === 'paragraph') {
     const inline = renderInline(children(node), newTab)
-    // An empty paragraph (a converted blank line, migration 0037) stays one line high.
+    // An empty paragraph (a converted blank line, migration 0038) stays one line high.
     return h('p', inline.length > 0 ? inline : [h('br')])
   }
   if (type === 'heading') {

@@ -32,6 +32,12 @@ Each concern below has one home. New code calls it; a second copy is a finding e
 | Telling a translated text apart on the page (development only, #627) | `shared/key-tag.ts`, `app/dev/key-tags.ts`, `app/dev/key-tags-plugin.ts`; registered only by the `key-tags` module in `nuxt.config.ts` |
 | The wording harness (development only, #620: walk, review page, answers file, unused scan) | `scripts/wording/`: the review's model in `review-model.mjs` (steps, filters, resume, what is new), the answers file and the step-id prefixes in `answers.mjs`, the unused scan in `unused-scan.mjs`, the recording the walk makes in `recording.mjs`; `scripts/wording/README.md` says how a sitting runs |
 | Letting sound through (the page-wide first-gesture listener, the „Ton aktivieren“ notice's condition, the page's gesture flag the Clip reads) | `useSoundUnlock` (#533); it calls the cue player's `resume` and never builds an audio context itself |
+| The Tour: its steps, run and start rule | `shared/tour.ts` (#645, #647); `useTour` reads the rule's inputs from the page and calls it |
+| Where the Tour's bubble, hole and face stand, and their sizes (the face's, the tail's, the bubble's width) | `app/utils/tour-placement.ts` (`placeTour`, `tourLayout`, `TOUR_BUBBLE_WIDTH`; #785): `TourFace` and `TourBubble` read the numbers there |
+| The Tour's motion (the enter, the step change, the exit, the scroll glide) | `app/utils/tour-motion.ts`; its tests assert the tokens' duration and curve (§ Motion) |
+| What is open on the page, for the Tour's calm second | `useOpenLayers` (#647): `useDialog` and `useDropdownMenu` track themselves; a new overlay that opens by a click calls `track` too (MoveToMenu's popover, #785), or the Tour starts over it |
+| The `data-tour` markers the Tour points at | on the Event page's elements, pinned by `test/nuxt/event-page-tour-markers.test.ts` |
+| The User's stored Tour version (`user.tourSeen`: read, set seen, reset) | `useTourSeen` (#785): `useTour` finishes and skips through it, the Profil's „Rundgang“ row resets through it |
 
 A second page, flow or component that does what an existing one does needs its reason in the PR description. Without one, the review asks for the existing module to grow instead.
 
@@ -73,4 +79,7 @@ What a feature keeps from some Users (a sealed Veto, a Hidden wheel before its s
 
 - UI copy uses the glossary's UI word. When the glossary retires a word, it goes into `RETIRED` in `scripts/wording/retired-words.mjs` (`test/unit/copy.test.ts` and the wording review read it).
 - Copy promises only what the app does today. A string the spec prescribes word for word is decided; the review names it only when the app has changed since the spec.
+- A text says only what the screen does not already show: no kicker that repeats the page's title or place, no help line that restates its field, no pill for a state the screen already shows, no line that tells a Host what everyone will see anyway. A wink is welcome in empty states, errors, placeholders and Construction pages (the wording sweep of 2026-11-16).
+- Words for people are gender-neutral: a participle („Spielende“, „Teilnehmende“) or a neutral word („Leute“, „alle“), and the colon form („Freund:innen“) only where neither fits. A word that names a Party, not a person („Sieger“), stays (the user, 2026-11-17).
+- A form message (a validation) is red and shows only once its field was touched or a submit was tried; until then a disabled submit button says enough. Inputs that form one group (from and to, start, end and length, amount and source) share one message line under the group, as wide as the group (the user, 2026-11-17).
 - A new third party the browser or the server talks to goes into the Datenschutzerklärung; `test/unit/privacy-hosts.test.ts` names the host, and the user approves the text.

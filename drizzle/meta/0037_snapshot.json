@@ -1,6 +1,6 @@
 {
-  "id": "4dfe4a29-a726-4da4-a433-69fa751e39d6",
-  "prevId": "cdc0c221-78ec-4a97-bb4f-489ee7bf73b5",
+  "id": "cdc0c221-78ec-4a97-bb4f-489ee7bf73b5",
+  "prevId": "736bd57a-5728-4e05-a0f0-1b83daf2e7a1",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -1508,12 +1508,6 @@
           "notNull": true,
           "default": "'{}'"
         },
-        "notes_doc": {
-          "name": "notes_doc",
-          "type": "jsonb",
-          "primaryKey": false,
-          "notNull": false
-        },
         "notes": {
           "name": "notes",
           "type": "text",
@@ -2217,6 +2211,13 @@
           "type": "text",
           "primaryKey": false,
           "notNull": false
+        },
+        "tour_seen_version": {
+          "name": "tour_seen_version",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
         },
         "appearance": {
           "name": "appearance",

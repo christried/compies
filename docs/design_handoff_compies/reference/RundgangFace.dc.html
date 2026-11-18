@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+</helmet>
+<div ref="{{ wrap }}" aria-hidden="true" style="position:relative;width:{{ s }}px;height:{{ s }}px;flex:none;pointer-events:none">
+  <div ref="{{ el }}" style="position:absolute;inset:0"></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:200,&quot;height&quot;:200},&quot;size&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:160,&quot;tsType&quot;:&quot;number&quot;},&quot;expr&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;hallo&quot;,&quot;zeigt&quot;,&quot;freut&quot;],&quot;default&quot;:&quot;zeigt&quot;,&quot;tsType&quot;:&quot;'hallo'|'zeigt'|'freut'&quot;},&quot;dir&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:45,&quot;min&quot;:-180,&quot;max&quot;:180,&quot;tsType&quot;:&quot;number&quot;},&quot;opt&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;A&quot;,&quot;B&quot;],&quot;default&quot;:&quot;B&quot;,&quot;tsType&quot;:&quot;'A'|'B'&quot;},&quot;reduced&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;},&quot;loop&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;},&quot;cue&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;number&quot;}}">
+const ANG=(a)=>{ a=((a%360)+540)%360-180; return a; };
+class Component extends DCLogic {
+  el=React.createRef(); wrap=React.createRef();
+  componentDidMount(){ if(!window.CBO&&!document.querySelector('script[data-rg-cbo]')){ const sc=document.createElement('script'); sc.src='./compibert-options.js'; sc.dataset.rgCbo='1'; document.head.appendChild(sc); } const go=()=>(window.gsap&&window.CBO&&this.el.current)?this.boot():(this._t=setTimeout(go,60)); go(); }
+  componentWillUnmount(){ clearTimeout(this._t); clearInterval(this._lp); clearTimeout(this._hop); this.tw&&this.tw.forEach(t=>t.kill()); this.r&&CBO.kill(this.r); }
+  boot(){
+    const d=this.el.current, s=document.documentElement.style;
+    if(!s.getPropertyValue('--cb-body')){ Object.entries(CBO.CW.Minze).forEach(([k,v])=>s.setProperty('--cb-'+k,v)); s.setProperty('--cb-ink','#151515'); }
+    gsap.defaults({overwrite:'auto'});
+    d.dataset.view='head'; d.dataset.rig='F2';
+    this.r=CBO.mount(d,'f'+Math.random().toString(36).slice(2,7));
+    this.r.svg.style.overflow='visible';
+    CBO.treat(this.r,d.closest('[data-theme="dark"]')?'Sticker':'Pur');
+    this.apply(true);
+    if(this.props.loop) this._lp=setInterval(()=>this.arrive(),5200);
+  }
+  still(){ return this.props.opt!=='B'; }
+  calm(){ return this.still()||!!this.props.reduced; }
+  apply(first){
+    const r=this.r; if(!r) return;
+    const ex=this.props.expr||'zeigt';
+    r.reduced=this.calm();
+    if(this.still()&&r.blinkCall){ r.blinkCall.kill(); r.blinkCall=null; }
+    clearTimeout(this._hop);
+    CBO.toState(r,{hallo:'wave',zeigt:'idle',freut:'cheer'}[ex]);
+    if(ex==='zeigt') r.state='zeigt';
+    this.look(first||this.calm());
+    if(this.still()&&!first&&this.wrap.current) gsap.fromTo(this.wrap.current,{opacity:0},{opacity:1,duration:.14,ease:'power1.out'});
+    this.arrive();
+  }
+  look(instant){
+    const r=this.r; if(!r||!r.p.pupL) return;
+    const ex=this.props.expr||'zeigt'; const [mx,my]=r.mp[0];
+    let x=0,y=0,n=0;
+    if(ex==='zeigt'){ const a=ANG(this.props.dir==null?45:+this.props.dir)*Math.PI/180; x=Math.cos(a)*mx; y=Math.sin(a)*my; n=Math.sin(a)*6; }
+    if(instant){ gsap.set(r.p.pupL,{x,y}); gsap.set(r.p.neck,{rotation:n}); }
+    else { r.qpx[0](x); r.qpy[0](y); r.qn&&r.qn(n); }
+  }
+  arrive(){
+    const r=this.r; if(!r||this.calm()) return;
+    const ex=this.props.expr||'zeigt';
+    this.tw&&this.tw.forEach(t=>t.kill()); this.tw=[];
+    if(ex==='zeigt'){
+      this.tw.push(gsap.timeline().to(r.p.head,{rotation:7,duration:.18,ease:'power2.out'}).to(r.p.head,{rotation:0,duration:.24,ease:'sine.inOut'}));
+    }
+    if(ex==='freut'){
+      clearTimeout(this._hop);
+      this._hop=setTimeout(()=>{ if(!this.r||!this.r.stateTl) return; this.r.stateTl.getChildren(true,false,true).forEach(c=>{ if(c.repeat&&c.repeat()===-1) c.kill(); }); gsap.to(this.r.p.root,{y:0,scaleX:1,scaleY:1,duration:.2,ease:'power2.in'}); },1150);
+    }
+  }
+  componentDidUpdate(pp){
+    if(!this.r) return;
+    if(pp.expr!==this.props.expr||pp.opt!==this.props.opt||pp.reduced!==this.props.reduced) this.apply(false);
+    else { if(pp.dir!==this.props.dir) this.look(this.calm()); if(pp.cue!==this.props.cue) this.arrive(); }
+  }
+  renderVals(){ return {el:this.el,wrap:this.wrap,s:this.props.size||72}; }
+}
+</script>
+</body>
+</html>

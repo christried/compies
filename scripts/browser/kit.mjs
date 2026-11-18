@@ -232,7 +232,7 @@ export async function ok(answer, what) {
 
 /**
  * A game in the library (`POST /api/games`): `fields` are `name`, `playersMin`, `playersMax`, `notes`, … Returns the GameView.
- * `notes` as a string is sent as the document the migration 0037 builds from a text (#727; an .mjs cannot import shared/notes-doc.ts):
+ * `notes` as a string is sent as the document the migration 0038 builds from a text (#727; an .mjs cannot import shared/notes-doc.ts):
  * one paragraph per line, an empty line an empty paragraph without `content`.
  */
 export async function createGame(tab, fields) {

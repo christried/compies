@@ -8,7 +8,7 @@ import { createTestDb, createTestDbBefore, migrateTo } from './harness'
 // The migration that stores the Game notes as a document (#727, spec #717 § C, ADR 0019 and ADR 0007): a `notes_doc` jsonb column beside the 0.15
 // text column, filled from it, one paragraph per line. The code that serves until the switch-over keeps writing `notes`; a trigger carries what it writes.
 
-const MIGRATION = '0037_game_notes_document'
+const MIGRATION = '0038_game_notes_document'
 
 const HOST = '00000000-0000-4000-8000-0000000000a1'
 const OTHER_HOST = '00000000-0000-4000-8000-0000000000a2'
@@ -27,7 +27,7 @@ const OLD: { id: string, name: string, notes: string | null, lines: string[] | n
   { id: id(9), name: 'Neun', notes: '  eingerueckt \nund hinten  ', lines: ['  eingerueckt ', 'und hinten  '] },
   { id: id(10), name: 'Zehn', notes: '<b>x</b> "Zitat" \\ 🎮', lines: ['<b>x</b> "Zitat" \\ 🎮'] },
   { id: id(11), name: 'Elf', notes: 'Regeln: https://example.com/regeln', lines: ['Regeln: https://example.com/regeln'] },
-  // A copy as 0035 makes it: another Host's row with the original's note.
+  // A copy as 0036 makes it: another Host's row with the original's note.
   { id: id(12), name: 'Vier', notes: 'a\n\nb', lines: ['a', '', 'b'], host: OTHER_HOST },
 ]
 
@@ -80,7 +80,7 @@ describe('migration: Game notes as a document', () => {
     expect(JSON.stringify(await docOf(id(10)))).not.toContain('marks')
   })
 
-  it('converts a copy made by 0035 like its original', async () => {
+  it('converts a copy made by 0036 like its original', async () => {
     expect(await docOf(id(12))).toEqual(await docOf(id(4)))
   })
 

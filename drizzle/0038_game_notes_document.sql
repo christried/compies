@@ -1,6 +1,6 @@
 -- Release 0.16 (#727, spec #717 § C, ADR 0019): Game notes become a document. `games.notes_doc` (jsonb, nullable, no default) holds the editor's document (shared/notes-doc.ts);
 -- the 0.15 text column `games.notes` stays as it is, type and text (ADR 0007). The new code reads and writes `notes_doc` only; the Release after 0.16 drops `notes`, both triggers and both functions.
--- The conversion (every game, a copy made by 0035 included, since a copy is a `games` row with the original's `notes`): one paragraph per line, `\r\n` and `\n` both, an empty line an empty
+-- The conversion (every game, a copy made by 0036 included, since a copy is a `games` row with the original's `notes`): one paragraph per line, `\r\n` and `\n` both, an empty line an empty
 -- paragraph without `content`, a line kept as it is (no trimming), no list and no link inferred; a `NULL` or whitespace-only note stays `NULL`. `games_notes_doc_of` is that rule in SQL,
 -- the twin of `notesFromLines` in shared/notes-doc.ts (the migration test pins them to each other).
 -- Switch-over (ADR 0007, spec #717 „The migration window“): the 0.15 code serves while the build migrates and keeps writing `notes` (a new game, an edit). A BEFORE trigger carries

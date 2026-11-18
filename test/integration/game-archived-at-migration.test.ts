@@ -7,7 +7,7 @@ import { createTestDbBefore, migrateThrough } from './harness'
 // serves until the switch-over inserts and updates `games` with explicit columns and never names it. The database stops at this migration
 // (`migrateThrough`): later 0.16 migrations change `games` too. Every name and id is invented.
 
-const MIGRATION = '0036_game_archived_at'
+const MIGRATION = '0037_game_archived_at'
 
 const HOST = '00000000-0000-4000-8000-0000000000a1'
 const GAME_A = '00000000-0000-4000-8000-0000000000b1'

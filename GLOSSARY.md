@@ -59,11 +59,11 @@ An Event its Host removed for good: it leaves Home for every Member at once, its
 _Avoid_: Archived (an archive is readable), cancelled, closed
 
 **Member**:
-A User who has joined an Event through its Invite link. The Host is a Member of their own Event.
+A User who has joined an Event through its Invite link. The Host is a Member of their own Event (UI: Teilnehmende, where a Host's text means the Members other than the Host).
 _Avoid_: Participant, attendee, guest
 
 **Player**:
-A Member who is in a Party.
+A Member who is in a Party (UI: Spielende).
 _Avoid_: Competitor, participant
 
 ## Date poll
@@ -73,7 +73,7 @@ The voting on proposed Slots from which the Host sets the Dates of an Event's Se
 _Avoid_: Terminumfrage (UI copy only), survey, scheduling
 
 **Slot**:
-A proposed date and time in an Event's Date poll, from which the Host can set a Session's Date. A Slot is open until it becomes a Date; a Reopen makes it open again. The Host can change an open Slot's date and time, and its Votes stay.
+A proposed date and time in an Event's Date poll, from which the Host can set a Session's Date. A Slot is open until it becomes a Date; a Reopen makes it open again. The Host can change an open Slot's date and time, and its Votes stay. The UI never calls it „Slot“: that UI word means a Seat.
 _Avoid_: Option, proposal, Termin
 
 **Vote**:
@@ -93,7 +93,7 @@ The open future Slot with the most yes Votes, then the most maybe Votes, then th
 _Avoid_: Winner, recommended slot
 
 **Date**:
-The confirmed start time of a Session, set by the Host from a Slot or directly.
+The confirmed start time of a Session, set by the Host from a Slot or directly (UI: „Termin fixieren“, never „festlegen“).
 _Avoid_: Termin (UI copy only), appointment, start date
 
 **Reschedule**:
@@ -111,8 +111,12 @@ One competing unit in an Event: a team in a team format, a single player in free
 _Avoid_: Side, group
 
 **Team size**:
-The number of slots per team in the Teams format, set by the Host and changeable while the Event runs, but never below the number of Players in the fullest team that remains (lowering the team count sends the Players of the removed teams to the Stands). A team may have fewer Players than its Team size; a game starts only when all teams have the same number of Players.
+The number of Seats per team in the Teams format, set by the Host and changeable while the Event runs, but never below the number of Players in the fullest team that remains (lowering the team count sends the Players of the removed teams to the Stands). A team may have fewer Players than its Team size; a game starts only when all teams have the same number of Players.
 _Avoid_: Team capacity, players per team
+
+**Seat**:
+One place in a team on the Game board, filled by a Player or free; a team has as many as its Team size (UI: Slot).
+_Avoid_: Platz (a Place is inside a Result), spot, position
 
 **Game board**:
 The view of an Event's teams and its Stands, where Members take their place; Players move only themselves, the Host moves everyone (UI: Spielbrett).
@@ -165,7 +169,7 @@ The Selection mode in which the Host sets every next game (UI: Host-Wahl).
 _Avoid_: Admin pick, Admin-Wahl (Admin means the Platform admin)
 
 **Hidden wheel**:
-A Lucky Wheel option under which only the Host knows which games are on the wheel; everyone else learns how many there are only once the wheel is on screen, sees placeholder names until a game is drawn, and never learns the games that were not drawn.
+A Lucky Wheel option under which only the Host knows which games are on the wheel; everyone else learns how many there are only once the wheel is on screen, sees placeholder names until a game is drawn, and never learns the games that were not drawn (UI: „Pseudo-Games“ for the option; the wheel itself is „verdeckt“).
 _Avoid_: Blind wheel, secret wheel
 
 **Pool preview**:
@@ -291,7 +295,7 @@ The Host changing a Result after it was entered, possible until the Event finish
 _Avoid_: Edit, fix, amendment
 
 **Tie**:
-Two or more Parties sharing the first rank in the Standings once every Round up to the Game count has its Result. The Host then finishes the Event with all of them as winners (UI: „Unentschieden beenden“), or raises the Game count by one for another Round that every Party plays like any other (UI: „Letztes Spiel hinzufügen“). Ties on other ranks just stay shared (UI: Gleichstand).
+Two or more Parties sharing the first rank in the Standings once every Round up to the Game count has its Result. The Host then finishes the Event with all of them as winners (UI: „Unentschieden“), or raises the Game count by one for another Round that every Party plays like any other (UI: „Letztes Spiel“). Ties on other ranks just stay shared (UI: Gleichstand).
 _Avoid_: Draw (a Draw is a try at a Round's game), Shared place (that is inside one Result), Tiebreaker
 
 **Finish**:

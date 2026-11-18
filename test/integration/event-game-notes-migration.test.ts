@@ -6,7 +6,7 @@ import { createTestDbBefore, migrateTo } from './harness'
 // The migration that adds the Event notes (#731, spec #717 § E, ADR 0007): an `event_game_notes` table, one row per Event and game, cascading with
 // its Event. The code that serves until the switch-over never reads or writes it and inserts and updates `games` and `events` with explicit columns.
 
-const MIGRATION = '0038_event_game_notes'
+const MIGRATION = '0039_event_game_notes'
 
 const HOST = '00000000-0000-4000-8000-0000000000a1'
 const GAME_A = '00000000-0000-4000-8000-0000000000b1'

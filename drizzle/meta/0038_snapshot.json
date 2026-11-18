@@ -1,6 +1,6 @@
 {
-  "id": "b69c9b3f-522e-46df-9bbf-07b5637da03f",
-  "prevId": "4dfe4a29-a726-4da4-a433-69fa751e39d6",
+  "id": "4dfe4a29-a726-4da4-a433-69fa751e39d6",
+  "prevId": "cdc0c221-78ec-4a97-bb4f-489ee7bf73b5",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -895,102 +895,6 @@
           "value": "\"draws\".\"kind\" <> 'spin' OR (\"draws\".\"result_index\" >= 0 AND \"draws\".\"result_index\" < cardinality(\"draws\".\"slice_game_ids\") AND \"draws\".\"slice_game_ids\"[\"draws\".\"result_index\" + 1] = \"draws\".\"game_id\" AND (\"draws\".\"slice_labels\" IS NULL OR cardinality(\"draws\".\"slice_labels\") = cardinality(\"draws\".\"slice_game_ids\")) AND \"draws\".\"result_offset\" >= 0 AND \"draws\".\"result_offset\" < 1)"
         }
       },
-      "isRLSEnabled": false
-    },
-    "public.event_game_notes": {
-      "name": "event_game_notes",
-      "schema": "",
-      "columns": {
-        "event_id": {
-          "name": "event_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "game_id": {
-          "name": "game_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "notes": {
-          "name": "notes",
-          "type": "jsonb",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {
-        "event_game_notes_game_id_idx": {
-          "name": "event_game_notes_game_id_idx",
-          "columns": [
-            {
-              "expression": "game_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
-      "foreignKeys": {
-        "event_game_notes_event_id_events_id_fk": {
-          "name": "event_game_notes_event_id_events_id_fk",
-          "tableFrom": "event_game_notes",
-          "tableTo": "events",
-          "columnsFrom": [
-            "event_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "event_game_notes_game_id_games_id_fk": {
-          "name": "event_game_notes_game_id_games_id_fk",
-          "tableFrom": "event_game_notes",
-          "tableTo": "games",
-          "columnsFrom": [
-            "game_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {
-        "event_game_notes_event_id_game_id_pk": {
-          "name": "event_game_notes_event_id_game_id_pk",
-          "columns": [
-            "event_id",
-            "game_id"
-          ]
-        }
-      },
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
       "isRLSEnabled": false
     },
     "public.event_members": {
@@ -2313,6 +2217,13 @@
           "type": "text",
           "primaryKey": false,
           "notNull": false
+        },
+        "tour_seen_version": {
+          "name": "tour_seen_version",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
         },
         "appearance": {
           "name": "appearance",

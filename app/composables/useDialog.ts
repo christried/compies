@@ -6,8 +6,13 @@ import type { Ref } from 'vue'
 
 const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
 
-export function useDialog(open: Ref<boolean>, container: Ref<HTMLElement | null>, onClose: () => void) {
+/**
+ * `options.tracked` (default true) adds the dialog to the registry of open layers (#647), which the Tour reads for a calm page; the Tour's own
+ * layer passes false, so it does not block itself.
+ */
+export function useDialog(open: Ref<boolean>, container: Ref<HTMLElement | null>, onClose: () => void, options: { tracked?: boolean } = {}) {
   let returnFocus: HTMLElement | null = null
+  if (options.tracked !== false) useOpenLayers().track(open)
 
   function focusables(): HTMLElement[] {
     return [...(container.value?.querySelectorAll<HTMLElement>(FOCUSABLE) ?? [])]

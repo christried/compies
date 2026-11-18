@@ -250,29 +250,36 @@
     {
       "idx": 35,
       "version": "7",
-      "when": 1794838223825,
-      "tag": "0035_game_copies_per_host",
+      "when": 1794793076242,
+      "tag": "0035_tour_seen",
       "breakpoints": true
     },
     {
       "idx": 36,
       "version": "7",
-      "when": 1794851416009,
-      "tag": "0036_game_archived_at",
+      "when": 1794838223825,
+      "tag": "0036_game_copies_per_host",
       "breakpoints": true
     },
     {
       "idx": 37,
       "version": "7",
-      "when": 1794851684707,
-      "tag": "0037_game_notes_document",
+      "when": 1794851416009,
+      "tag": "0037_game_archived_at",
       "breakpoints": true
     },
     {
       "idx": 38,
       "version": "7",
+      "when": 1794851684707,
+      "tag": "0038_game_notes_document",
+      "breakpoints": true
+    },
+    {
+      "idx": 39,
+      "version": "7",
       "when": 1794855737927,
-      "tag": "0038_event_game_notes",
+      "tag": "0039_event_game_notes",
       "breakpoints": true
     }
   ]

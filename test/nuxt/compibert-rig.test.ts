@@ -25,7 +25,7 @@ type Page = Awaited<ReturnType<typeof mountSuspended<typeof CompibertRig>>>
 
 const pages: Page[] = []
 
-interface Props { state?: RigState, variant?: RigVariant, size?: number }
+interface Props { state?: RigState, variant?: RigVariant, size?: number, look?: number | null, micro?: boolean, hopsFor?: number, rim?: boolean }
 
 async function mountRig(props: Props = {}) {
   const page = await mountSuspended(CompibertRig, { props })
@@ -202,6 +202,43 @@ describe('reduced motion', () => {
     expect(attribute(page, 'data-held')).toBe('true')
     expect([pose(page, 'arm-left'), pose(page, 'arm-right'), pose(page, 'root')]).toEqual(first)
     expect(first[0]).toBeDefined()
+  })
+
+  // The cheer's jump starts at 0.3 s and the held pose stood at 0.45 s: the face rose for 0.15 s on the Tour's end step (#785, measured 13 px in the browser check).
+  /** The root's vertical offset in every frame sampled over `ms`; the part's matrix is `matrix(a, b, c, d, e, f)`, and `f` is y. */
+  async function rootHeights(page: Page, ms: number) {
+    const heights = new Set<number>()
+    for (const end = Date.now() + ms; Date.now() < end; await pause(5)) {
+      const matrix = /matrix\(([^)]*)\)/.exec(pose(page, 'root') ?? '')
+      if (matrix) heights.add(Number(matrix[1]!.split(',')[5]))
+    }
+    return heights
+  }
+
+  it('never lifts the root off the ground on the cheer, at the mount or on the change into it (#785)', async () => {
+    stubInView()
+    motion('reduced')
+    const mounted = await mountRig({ state: 'cheer', variant: 'head' })
+    const heights = await rootHeights(mounted, 1200)
+    expect([...heights].every(y => y === 0)).toBe(true)
+
+    const changed = await mountRig({ state: 'idle', variant: 'head' })
+    await ready(changed)
+    await changed.setProps({ state: 'cheer' })
+    const afterChange = await rootHeights(changed, 1200)
+    expect([...afterChange].every(y => y === 0)).toBe(true)
+    expect(attribute(changed, 'data-held')).toBe('true')
+  })
+
+  it('hops under full motion on the same cheer, so that the test above can fail', async () => {
+    stubInView()
+    motion('full')
+    const page = await mountRig({ state: 'cheer', variant: 'head' })
+    await ready(page)
+
+    const heights = await rootHeights(page, 1200)
+
+    expect(Math.min(...heights)).toBeLessThan(-10)
   })
 
   it('moves under full motion, so that the held pose above can fail', async () => {
@@ -478,5 +515,194 @@ describe('the bust', () => {
     await vi.waitFor(() => expect(rootOf(page).classes('compibert-rig--cheap')).toBe(true))
     expect(attribute(page, 'style')).toContain('--cb-dx: 7px')
     expect(attribute(page, 'style')).toContain('--cb-dy: 8px')
+  })
+})
+
+// The Tour's face (#460): the head crop that looks at a point, nods, hops twice and lands, and waves. All of it is the rig's own motion, so the
+// tests read the figure's transforms with real GSAP, as above.
+
+/** The six numbers of the matrix GSAP writes as a part's `transform` (empty while there is none). */
+const matrixOf = (page: Pick<Page, 'get'>, part: string) => (pose(page, part) ?? '').match(/-?\d*\.?\d+(?:e-?\d+)?/gi)?.map(Number) ?? []
+
+/** The translation of a part (0, 0 while there is none). */
+function shift(page: Pick<Page, 'get'>, part: string): { x: number, y: number } {
+  const numbers = matrixOf(page, part)
+  return numbers.length >= 6 ? { x: numbers[4]!, y: numbers[5]! } : { x: 0, y: 0 }
+}
+
+/** The rotation of a part in degrees. */
+function turn(page: Pick<Page, 'get'>, part: string): number {
+  const numbers = matrixOf(page, part)
+  return numbers.length >= 6 ? Math.atan2(numbers[1]!, numbers[0]!) * 180 / Math.PI : 0
+}
+
+describe('the Tour\'s face: looking (#460)', () => {
+  it('turns the pupil toward an angle by the note\'s numbers: x = cos a · 10.16, y = sin a · 8.71', async () => {
+    stubInView()
+    motion('full')
+    const page = await mountRig({ variant: 'head', state: 'idle', micro: false, look: 0 })
+    await ready(page)
+
+    await vi.waitFor(() => expect(shift(page, 'pupil-left').x).toBeCloseTo(10.16, 1), { timeout: 3000 })
+    expect(shift(page, 'pupil-left').y).toBeCloseTo(0, 1)
+
+    await page.setProps({ look: 90 })
+    await vi.waitFor(() => expect(shift(page, 'pupil-left').y).toBeCloseTo(8.71, 1), { timeout: 3000 })
+    expect(shift(page, 'pupil-left').x).toBeCloseTo(0, 1)
+  })
+
+  it('turns the neck by sin a · 6 degrees', async () => {
+    stubInView()
+    motion('full')
+    const page = await mountRig({ variant: 'head', state: 'idle', micro: false, look: 90 })
+    await ready(page)
+
+    await vi.waitFor(() => expect(turn(page, 'neck')).toBeCloseTo(6, 0), { timeout: 3000 })
+  })
+
+  it('brings the pupil back to the centre for null', async () => {
+    stubInView()
+    motion('full')
+    const page = await mountRig({ variant: 'head', state: 'idle', micro: false, look: 0 })
+    await ready(page)
+    await vi.waitFor(() => expect(shift(page, 'pupil-left').x).toBeCloseTo(10.16, 1), { timeout: 3000 })
+
+    await page.setProps({ look: null })
+
+    await vi.waitFor(() => expect(shift(page, 'pupil-left').x).toBeCloseTo(0, 1), { timeout: 3000 })
+    await vi.waitFor(() => expect(turn(page, 'neck')).toBeCloseTo(0, 0), { timeout: 3000 })
+  })
+
+  it('keeps looking where it was told after a state change', async () => {
+    stubInView()
+    motion('full')
+    const page = await mountRig({ variant: 'head', state: 'idle', micro: false, look: 0 })
+    await ready(page)
+    await vi.waitFor(() => expect(shift(page, 'pupil-left').x).toBeCloseTo(10.16, 1), { timeout: 3000 })
+
+    await page.setProps({ state: 'wave' })
+    await pause(700)
+
+    expect(shift(page, 'pupil-left').x).toBeCloseTo(10.16, 1)
+  })
+
+  it('sets the pupil at once under reduced motion', async () => {
+    stubInView()
+    motion('reduced')
+    const page = await mountRig({ variant: 'head', state: 'idle', look: 0 })
+    await ready(page)
+
+    // Not eased: the rig is ready and the pupil already stands at the target.
+    await vi.waitFor(() => expect(shift(page, 'pupil-left').x).toBeCloseTo(10.16, 1), { timeout: 150 })
+  })
+})
+
+describe('the Tour\'s face: idling without micro actions, the nod (#460)', () => {
+  /** The first micro action of a default idle is due at 1 s with the random stubbed to 0, and turns the head by −8°. */
+  async function headOver(props: Props, ms: number) {
+    stubInView()
+    motion('full')
+    vi.spyOn(Math, 'random').mockReturnValue(0)
+    const page = await mountRig({ variant: 'head', state: 'idle', ...props })
+    await ready(page)
+    return { page, heads: await sample(() => pose(page, 'head'), ms) }
+  }
+
+  it('moves the head by itself in a default idle', async () => {
+    const { heads } = await headOver({}, 1900)
+
+    expect(heads.size).toBeGreaterThanOrEqual(2)
+  })
+
+  it('keeps the head still with micro actions off', async () => {
+    const { heads } = await headOver({ micro: false }, 1900)
+
+    expect(heads.size).toBe(1)
+  })
+
+  it('still blinks with micro actions off', async () => {
+    stubInView()
+    motion('full')
+    vi.spyOn(Math, 'random').mockReturnValue(0)
+    const page = await mountRig({ variant: 'head', state: 'idle', micro: false })
+    await ready(page)
+
+    const lids = await sample(() => pose(page, 'lid-left'), 1500)
+    expect(lids.size).toBeGreaterThanOrEqual(2)
+  })
+
+  it('nods: the head turns to about 7 degrees and comes back to 0', async () => {
+    stubInView()
+    motion('full')
+    const page = await mountRig({ variant: 'head', state: 'idle', micro: false })
+    await ready(page)
+
+    ;(page.vm as unknown as { nod: () => void }).nod()
+    const turns = new Set<number>()
+    for (const end = Date.now() + 900; Date.now() < end; await pause(15)) turns.add(Math.round(turn(page, 'head') * 10) / 10)
+
+    expect(Math.max(...turns)).toBeGreaterThan(5.5)
+    expect(Math.max(...turns)).toBeLessThan(7.6)
+    expect(Math.abs(turn(page, 'head'))).toBeLessThan(0.3)
+  })
+
+  it('does not nod under reduced motion', async () => {
+    stubInView()
+    motion('reduced')
+    const page = await mountRig({ variant: 'head', state: 'idle', micro: false })
+    await ready(page)
+
+    ;(page.vm as unknown as { nod: () => void }).nod()
+    const heads = await sample(() => pose(page, 'head'), 500)
+
+    expect(heads.size).toBe(1)
+  })
+})
+
+describe('the Tour\'s face: the end\'s hops and the wave (#460)', () => {
+  it('hops twice and lands: after hopsFor seconds the root stands at y 0 and stays there', async () => {
+    stubInView()
+    motion('full')
+    const page = await mountRig({ variant: 'head', state: 'cheer', hopsFor: 1.15 })
+    await ready(page)
+
+    const during = await sample(() => String(Math.round(shift(page, 'root').y)), 900)
+    expect(during.size).toBeGreaterThanOrEqual(3)
+    await pause(900)
+    const after = await sample(() => pose(page, 'root'), 700)
+    expect(after.size).toBe(1)
+    expect(Math.abs(shift(page, 'root').y)).toBeLessThan(0.5)
+  })
+
+  it('keeps hopping without hopsFor, so that the landing above is the option\'s doing', async () => {
+    stubInView()
+    motion('full')
+    const page = await mountRig({ variant: 'head', state: 'cheer' })
+    await ready(page)
+    await pause(1800)
+
+    const late = await sample(() => pose(page, 'root'), 700)
+    expect(late.size).toBeGreaterThanOrEqual(2)
+  })
+
+  it('waves: the arm swings in the state wave', async () => {
+    stubInView()
+    motion('full')
+    const page = await mountRig({ state: 'wave' })
+    await ready(page)
+
+    const arms = await sample(() => pose(page, 'arm-left'), 1200)
+    expect(arms.size).toBeGreaterThanOrEqual(3)
+    expect(attribute(page, 'data-state')).toBe('wave')
+  })
+
+  it('shows a lifted brow and the head turned by -6 degrees on the head crop', async () => {
+    stubInView()
+    motion('full')
+    const page = await mountRig({ variant: 'head', state: 'wave' })
+    await ready(page)
+
+    await vi.waitFor(() => expect(turn(page, 'head')).toBeCloseTo(-6, 0), { timeout: 3000 })
+    expect(shift(page, 'brow-left').y).toBeCloseTo(-6, 0)
   })
 })
