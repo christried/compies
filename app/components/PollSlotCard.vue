@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { CalendarCheck, Sparkles } from '@lucide/vue'
+import { CalendarCheck } from '@lucide/vue'
 import { VOTE_VALUES, type VoteValue } from '~~/shared/poll'
 import type { NoteRow } from '~/utils/notes'
 import { VOTE_LOOK } from '~/utils/vote-look'
@@ -63,10 +63,6 @@ function choose(value: string) {
       v-if="best"
       class="absolute -top-3 left-3 inline-flex h-6 items-center gap-1 rounded-pill border-2 border-line bg-primary px-2.5 text-[11px] font-extrabold text-on-primary"
     >
-      <AppIcon
-        :icon="Sparkles"
-        :size="11"
-      />
       {{ t('poll.best') }}
     </span>
     <div class="flex items-baseline justify-between gap-2">

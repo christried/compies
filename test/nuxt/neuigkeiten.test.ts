@@ -93,6 +93,7 @@ describe('Neuigkeiten', () => {
     const page = await mountSuspended(NeuigkeitenPage, { route: '/neuigkeiten' })
 
     expect(page.get('section[id="1.2.0"] article').text()).toContain('Neu')
+    expect(page.find('section[id="1.2.0"] .lucide-sparkles').exists()).toBe(false)
     expect(page.get('section[id="1.1.0"] article > div:nth-child(2)').text()).not.toContain('Neu')
   })
 

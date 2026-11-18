@@ -15,6 +15,7 @@
 
 - **Deine eigene Bibliothek:** Jeder Host hat jetzt eine eigene Bibliothek. Du siehst und bearbeitest nur die Spiele, die du selbst angelegt hast, und niemand sonst sieht deine, auch die Plattform-Admin nicht. Spiele anderer Hosts, die in deinen Events vorkamen, hast du als eigene Kopie bekommen. Tags und Tag-Vorschläge kommen nur noch aus deinen eigenen Spielen. ([#455](https://github.com/christried/compies/issues/455))
 - **Nur noch der Kopf der App-Figur:** Wo nichts zu zeigen ist (noch keine Events, keine Treffer in der Bibliothek) und auf den ganzseitigen Hinweisen wie „Link ungültig“, „Event gelöscht“ und den Fehlerseiten zeigt die App-Figur jetzt nur noch den Kopf statt der gerahmten Büste. ([#794](https://github.com/christried/compies/issues/794))
+- **Kein Glitzer-Symbol mehr:** Neben „Bester Termin“ in der Terminumfrage und neben „Neu“ bei den Neuigkeiten steht kein Glitzer-Symbol mehr. Auf der Startseite zeigt der beste Termin eines Events jetzt einen Kalender. ([#795](https://github.com/christried/compies/issues/795))
 
 ### Entfernt
 

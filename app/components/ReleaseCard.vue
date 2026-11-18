@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Calendar, Link as LinkIcon, Sparkles } from '@lucide/vue'
+import { Calendar, Link as LinkIcon } from '@lucide/vue'
 import type { Release } from '~~/shared/changelog'
 import { MD_QUERY } from '~/composables/useMediaQuery'
 import { formatReleaseDate } from '~/utils/changelog'
@@ -110,13 +110,9 @@ onBeforeUnmount(() => observer?.disconnect())
           >
             <span
               ref="stamp"
-              class="outline-memphis inline-flex h-[34px] items-center gap-1.5 rounded-pill bg-primary pr-3.5 pl-2.5 text-[14px] leading-none font-extrabold tracking-[.06em] text-on-primary uppercase shadow-sm"
+              class="outline-memphis inline-flex h-[34px] items-center gap-1.5 rounded-pill bg-primary pr-3.5 pl-3.5 text-[14px] leading-none font-extrabold tracking-[.06em] text-on-primary uppercase shadow-sm"
               :class="pending && 'opacity-0'"
             >
-              <AppIcon
-                :icon="Sparkles"
-                :size="16"
-              />
               {{ t('news.new') }}
             </span>
           </span>
