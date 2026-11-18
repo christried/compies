@@ -103,7 +103,60 @@ export async function keepToastsFromLoad(tab) {
   return result.identifier
 }
 
-/** Takes the script of `keepToastsFromLoad` away again, so later loads of the tab are as they were. */
+/**
+ * Runs `source` on every page the tab loads from now on, before the page's own scripts: a fetch that must be faked before a page load (#810). Returns the script's
+ * identifier; `releaseToasts` takes any such script away again, whatever it was.
+ */
+export async function scriptFromLoad(tab, source) {
+  const { result } = await tab.send('Page.addScriptToEvaluateOnNewDocument', { source })
+  return result.identifier
+}
+
+/** Takes the script of `keepToastsFromLoad` (or of `scriptFromLoad`) away again, so later loads of the tab are as they were. */
 export async function releaseToasts(tab, identifier) {
   await tab.send('Page.removeScriptToEvaluateOnNewDocument', { identifier })
+}
+
+/**
+ * Puts the caret into the notes editor of `scope` (#810: the Tiptap editor of `RichNotesEditor.vue`, a contenteditable `div[role=textbox][data-notes-editor]` from a lazy,
+ * client-only chunk). Waits until it exists and is not `aria-disabled`, at most 10 s, scrolls it into view, focuses it and puts the caret at its end, or with `select`
+ * selects the whole content, so the next input replaces it. Throws `no notes editor` on a timeout.
+ */
+export async function focusNotes(tab, { scope = 'body', select = false } = {}) {
+  const selector = `${scope} [data-notes-editor]`
+  const ready = `(() => { const el = document.querySelector(${JSON.stringify(selector)}); return !!el && el.getAttribute('aria-disabled') !== 'true' })()`
+  for (const end = Date.now() + 10_000; !await tab.evaluate(ready).catch(() => false); await sleep(200)) {
+    if (Date.now() > end) throw new Error('no notes editor')
+  }
+  await tab.evaluate(`(() => {
+    const el = document.querySelector(${JSON.stringify(selector)})
+    el.scrollIntoView({ block: 'center', behavior: 'instant' })
+    el.focus()
+    const range = document.createRange()
+    range.selectNodeContents(el)
+    if (!${select}) range.collapse(false)
+    const selection = getSelection()
+    selection.removeAllRanges()
+    selection.addRange(range)
+  })()`)
+  // ProseMirror reads the DOM selection on `selectionchange`, which comes after this call.
+  await sleep(150)
+}
+
+/**
+ * Types `text` into the notes editor of `scope` as the keyboard would (`Input.insertText`, as the kit's `typeInto` does for an input; `text` may be 2001 characters).
+ * `replace` (the default) selects the editor's whole content first, so the text takes its place; without it the text goes at the caret's end. Throws `no notes editor` on a timeout.
+ */
+export async function typeNotes(tab, text, { scope = 'body', replace = true } = {}) {
+  await focusNotes(tab, { scope, select: replace })
+  await tab.send('Input.insertText', { text })
+  await sleep(300)
+}
+
+/** Deletes what is selected in the focused editor as Backspace does (`focusNotes` with `select` first). The kit's `pressKey` has no code for it, so the event carries its own. */
+export async function backspace(tab) {
+  const key = { key: 'Backspace', code: 'Backspace', windowsVirtualKeyCode: 8, nativeVirtualKeyCode: 8 }
+  await tab.send('Input.dispatchKeyEvent', { type: 'rawKeyDown', ...key, commands: ['deleteBackward'] })
+  await tab.send('Input.dispatchKeyEvent', { type: 'keyUp', ...key })
+  await sleep(300)
 }
