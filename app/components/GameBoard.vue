@@ -91,11 +91,20 @@ function personEl(userId: string): HTMLElement | null {
   return root.value?.querySelector<HTMLElement>(`[data-user-id="${userId}"]`) ?? null
 }
 
-/** Moves somebody, from a drop or from the menu: drawn at once, announced when the server took it. */
+// The board's three sounds (#742, spec #718) are asked for in three places and nowhere else, each entered only by this device's User acting (the Host
+// moving another Member is the same act): the pick-up of the drag, the answer `requestMove` awaits and the release over no place. An avatar that
+// moves because of somebody else's move or a refetch (the room's `member.moved`, the `members` prop, the layout watch below) asks for nothing.
+const playCue = useImmediateCue()
+
+/** Moves somebody, from a drop or from the menu: drawn at once, announced and heard when the server took it, heard bouncing when it did not. */
 async function requestMove(userId: string, to: Place) {
   if (rejectionFor(userId, to)) return
   const taken = places.move(userId, to)
-  if (await taken) announce(t(to.zone === 'team' ? 'board.movedTeam' : 'board.movedStands', { name: nameOf(userId), team: to.zone === 'team' ? nameOfTeam(to.team) : '' }))
+  if (await taken) {
+    announce(t(to.zone === 'team' ? 'board.movedTeam' : 'board.movedStands', { name: nameOf(userId), team: to.zone === 'team' ? nameOfTeam(to.team) : '' }))
+    playCue('drag-snap')
+  }
+  else playCue('drag-reject')
 }
 
 const drag = useBoardDrag({
@@ -107,6 +116,7 @@ const drag = useBoardDrag({
     }
     return null
   },
+  pickedUp: () => playCue('drag-pick'),
   accepts(userId, key) {
     const to = placeFromKey(key)
     return to !== null && rejectionFor(userId, to) === null
@@ -116,7 +126,8 @@ const drag = useBoardDrag({
     if (to) void requestMove(userId, to)
   },
   async release(userId) {
-    // Let go anywhere else: the person was lifted off their place and glides back to it.
+    // Let go anywhere else (Escape, a cancelled pointer and a drop on their own place too): the person was lifted off their place and glides back to it.
+    playCue('drag-reject')
     announce(t('board.cancelled'))
     const element = personEl(userId)
     if (!element) return

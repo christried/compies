@@ -26,6 +26,8 @@ function groupInputOf(view: EventView | null | undefined, storedTourVersion: num
     finished: view?.event.phase === 'finished',
     // The Event is set up and not finished, the page's own rule of `useStandingsNews`: the Host's read and a Member's hold both fields (#741).
     standings: view?.standings != null && view.event.phase !== 'finished',
+    // The Game board's field is the same rule on purpose, not a read of `standings`: the two groups may part later (#742).
+    board: view?.standings != null && view.event.phase !== 'finished',
     // The Tour may start for this Member (#747): the Tour's own rule, asked with the layer closed and the calm second over, so the files are there before
     // the greeting. It reads the Member's stored version and the Event's host flag, phase and running Session, nothing of a draw, a Result or a ceremony.
     tour: tourMayStart({

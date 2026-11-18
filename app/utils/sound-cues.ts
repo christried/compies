@@ -31,6 +31,7 @@ export const CUE_IDS = [
   // standings
   'lb-swap', 'lb-count', 'lb-winner',
   // board
+  'drag-pick', 'drag-snap', 'drag-reject',
   // ceremony
   'cer-drop', 'cer-row', 'cer-run', 'cer-trip', 'cer-bonk',
   'cer-stamp', 'cer-fanfare', 'cer-crowd',
@@ -51,6 +52,7 @@ export const CUE_VOLUME: Record<CueId, number> = {
   // standings
   'lb-swap': 35, 'lb-count': 20, 'lb-winner': 60,
   // board
+  'drag-pick': 30, 'drag-snap': 40, 'drag-reject': 40,
   // ceremony
   'cer-drop': 55, 'cer-row': 40, 'cer-run': 40, 'cer-trip': 60, 'cer-bonk': 60,
   'cer-stamp': 75, 'cer-fanfare': 100, 'cer-crowd': 60,
@@ -73,6 +75,7 @@ export const CUE_GROUPS: Record<CueId, readonly [CueGroup, ...CueGroup[]]> = {
   // standings
   'lb-swap': ['standings'], 'lb-count': ['standings'], 'lb-winner': ['standings'],
   // board
+  'drag-pick': ['board'], 'drag-snap': ['board'], 'drag-reject': ['board'],
   // ceremony
   'cer-drop': ['ceremony'], 'cer-row': ['ceremony'], 'cer-run': ['ceremony'], 'cer-trip': ['ceremony'], 'cer-bonk': ['ceremony'],
   'cer-stamp': ['ceremony'], 'cer-fanfare': ['ceremony'], 'cer-crowd': ['ceremony'],
@@ -97,6 +100,8 @@ export interface GroupInput {
   toss?: boolean
   /** `view.standings != null && view.event.phase !== 'finished'`: the Event is set up and not finished (#741). Absent = not reached; no Result is needed, no game. */
   standings?: boolean
+  /** `view.standings != null && view.event.phase !== 'finished'`: the Event is set up and not finished. The Game board's own field though the rule is the Standings' today, so the two groups can part later (#742). Absent = not reached. */
+  board?: boolean
   /** `view.event.phase === 'finished'` (#743): the Award ceremony's files, whether or not the Host has started it. Optional: absent = not finished. */
   finished?: boolean
   /** The Tour may start for this Member (`tourMayStart` without the layer and the calm second, #747): a rule of the Member's own state. Absent = not reached. */
@@ -114,6 +119,7 @@ export function reachableGroups(input: GroupInput): CueGroup[] {
   if (input.wheel && (input.vetoAllowance > 0 || input.vetoWindow)) groups.push('veto')
   if (input.sessionRunning || input.toss) groups.push('coin')
   if (input.standings) groups.push('standings')
+  if (input.board) groups.push('board')
   // The ceremony's files depend on „the Event is finished“ and nothing else: no request may tell a Member who won, that it is a Tie or which gag (#743).
   if (input.finished) groups.push('ceremony')
   if (input.tour) groups.push('tour')

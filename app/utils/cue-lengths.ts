@@ -45,6 +45,9 @@ export const CUE_LENGTHS: Record<CueId, CueLength> = {
   'lb-count': { ms: 25, loop: false, docRow: true },
   'lb-winner': { ms: 800, loop: false, docRow: true },
   // board
+  'drag-pick': { ms: 120, loop: false, docRow: true },
+  'drag-snap': { ms: 150, loop: false, docRow: true },
+  'drag-reject': { ms: 350, loop: false, docRow: true },
   // ceremony
   'cer-drop': { ms: 300, loop: false, docRow: true },
   'cer-row': { ms: 250, loop: false, docRow: true },

@@ -20,6 +20,8 @@ export interface DragOptions {
   accepts: (userId: string, zoneKey: string) => boolean
   /** Let go over a place that takes the person. */
   drop: (userId: string, zoneKey: string) => void
+  /** The press became a pick-up, once per drag: a mouse past `DRAG_DISTANCE`, a finger when the long press arms (#742: the board's cue). */
+  pickedUp?: (userId: string) => void
   /** Let go anywhere else (or cancelled): the person is `dx`, `dy` away from where they stood and goes home. */
   release: (userId: string, dx: number, dy: number) => void
 }
@@ -69,7 +71,9 @@ export function useBoardDrag(options: DragOptions) {
   }
 
   function pickUp() {
-    if (press) dragging.value = { userId: press.userId, dx: 0, dy: 0 }
+    if (!press || dragging.value) return
+    dragging.value = { userId: press.userId, dx: 0, dy: 0 }
+    options.pickedUp?.(press.userId)
   }
 
   function onMove(event: PointerEvent) {
