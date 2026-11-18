@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { CircleAlert } from '@lucide/vue'
 import { characterCount, cutToCharacters } from '~~/shared/text'
 import { fieldBox } from '~/utils/field-chrome'
 
@@ -40,11 +39,10 @@ const generatedId = useId()
 const inputId = computed(() => props.id ?? generatedId)
 const helpId = computed(() => `${inputId.value}-help`)
 const errorId = computed(() => `${inputId.value}-error`)
-const { shown, touch } = useTouched()
+const { message, touch } = useTouched(() => props.error)
 // A value that moves without an input of its own (a form that follows another field, as Länge follows Ende) is touched by
 // that edit: the message of the field the User's edit hit must not wait for a blur.
 watch(() => props.modelValue, touch)
-const message = computed(() => (shown.value ? props.error : undefined))
 // In a group the group draws the line; the field only points at it while its own message shows.
 const groupErrorId = useGroupMember(() => message.value)
 const describedBy = computed(() => [message.value ? (groupErrorId ?? errorId.value) : null, props.help ? helpId.value : null].filter(Boolean).join(' ') || undefined)
@@ -110,17 +108,12 @@ defineExpose({ focus: () => (props.multiline ? textareaEl.value : inputEl.value)
     >
     <div class="flex items-start gap-3 text-small">
       <div class="flex flex-1 flex-col gap-0.5">
-        <span
+        <FieldError
           v-if="message && !groupErrorId"
           :id="errorId"
-          class="flex items-center gap-1.5 font-bold text-error-fg"
         >
-          <AppIcon
-            :icon="CircleAlert"
-            :size="14"
-          />
           {{ message }}
-        </span>
+        </FieldError>
         <span
           v-if="help"
           :id="helpId"

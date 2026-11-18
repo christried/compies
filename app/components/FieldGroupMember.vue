@@ -6,8 +6,7 @@ const props = defineProps<{
   error?: string
 }>()
 
-const { shown, touch } = useTouched()
-const message = computed(() => (shown.value ? props.error : undefined))
+const { message, touch } = useTouched(() => props.error)
 const groupErrorId = useGroupMember(() => message.value)
 </script>
 
