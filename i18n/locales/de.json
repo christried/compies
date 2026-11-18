@@ -981,7 +981,8 @@
     "linkError": "Nur Adressen mit http oder https.",
     "saving": "Wird gespeichert …",
     "saveBlocked": "Erst die Notizen kürzen.",
-    "finishedHelp": "Das Event ist beendet. Diese Notizen bleiben so stehen."
+    "loading": "Editor lädt",
+    "loadFailed": "Der Editor lässt sich gerade nicht laden."
   },
   "notes": {
     "from_library": "aus deiner Bibliothek",
