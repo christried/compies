@@ -2,9 +2,10 @@ import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import type { SpinView, VetoView } from '~~/shared/stage'
+import { CUE_LENGTHS } from '../../app/utils/cue-lengths'
 import { pinCrossings } from '../../app/utils/wheel-pins'
 import {
-  ARRIVAL_LATE_MS, CUE_IDS, CUE_VOLUME, STAMP_GAP_MS, TICK_MIN_GAP_MS, cueFilesOf, reachableGroups, thinTicks, vetoArrivalCues, vetoCuePlan, wheelCuePlan,
+  ARRIVAL_LATE_MS, CUE_GROUPS, CUE_IDS, CUE_VOLUME, STAMP_GAP_MS, TICK_MIN_GAP_MS, cueFilesOf, reachableGroups, thinTicks, vetoArrivalCues, vetoCuePlan, wheelCuePlan,
   type ArrivalCue, type Cue, type GroupInput, type VetoArrivalState, type VetoCueInput, type WheelCueInput,
 } from '../../app/utils/sound-cues'
 
@@ -488,7 +489,7 @@ describe('vetoArrivalCues', () => {
 
 describe('the cue ids and their volumes', () => {
   it('are eleven distinct ids', () => {
-    expect(new Set(CUE_IDS).size).toBe(11)
+    expect(new Set(CUE_IDS).size).toBe(CUE_IDS.length)
   })
 
   it('give each cue the Vol of compibert-sound.md', () => {
@@ -500,8 +501,9 @@ describe('the cue ids and their volumes', () => {
       if (id) vol[id] = Number(cells.at(-2))
     }
 
-    expect(Object.keys(vol).sort()).toEqual([...CUE_IDS].sort())
-    expect(CUE_VOLUME).toEqual(vol)
+    const documented = CUE_IDS.filter(id => CUE_LENGTHS[id].docRow)
+    expect(Object.keys(vol).sort()).toEqual([...documented].sort())
+    for (const id of documented) expect(CUE_VOLUME[id], id).toBe(vol[id])
   })
 })
 
@@ -538,8 +540,9 @@ describe('cueFilesOf', () => {
   })
 
   it('is every cue, in the order of CUE_IDS and each once, for both groups', () => {
-    expect(cueFilesOf(['wheel', 'veto'])).toEqual([...CUE_IDS])
-    expect(cueFilesOf(['veto', 'wheel'])).toEqual([...CUE_IDS])
+    const both = CUE_IDS.filter(id => CUE_GROUPS[id].includes('wheel') || CUE_GROUPS[id].includes('veto'))
+    expect(cueFilesOf(['wheel', 'veto'])).toEqual(both)
+    expect(cueFilesOf(['veto', 'wheel'])).toEqual(both)
   })
 
   it('is empty for no group', () => {

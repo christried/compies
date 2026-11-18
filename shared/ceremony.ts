@@ -21,6 +21,8 @@ export const CEREMONY_RUN_MS = 700
 /** One row slides in every this long (the reference's stagger); the first one at `rowsAtMs`. */
 export const CEREMONY_ROW_MS = 450
 const ROWS_AT_MS = 600
+/** The bonk: he cheers while the trophy flies up and falls (.5 + .42 s), so the trophy lands on his head this long after the run (the picture's `confused`, the sound's `cer-bonk`, #743). */
+export const CEREMONY_BONK_MS = 920
 /** After the landing, in a Tie after the plate (ms): the stamp, Compibert gets up and laughs, the Winner's people pop in. */
 const STAMP_AFTER_LAND_MS = 150
 const GET_UP_AFTER_LAND_MS = 300
@@ -67,18 +69,24 @@ export type RunShape = Required<CeremonyShape>
  */
 export function ceremonyTimeline({ partyCount, gag, winners, grid = winners >= GRID_FROM_WINNERS }: CeremonyShape) {
   const below = Math.max(partyCount - winners, 0)
+  // Rows (450 ms apart) up to 2 Winners, chips (200 ms apart) from 3.
+  const step = winners <= 2 ? CEREMONY_ROW_MS : CHIP_STEP_MS
   const rowsEnd = below === 0
     ? ROWS_AT_MS
-    : winners <= 2 ? ROWS_AT_MS + CEREMONY_ROW_MS * below : ROWS_AT_MS + CHIP_STEP_MS * (below - 1) + CHIP_MS
+    : winners <= 2 ? ROWS_AT_MS + step * below : ROWS_AT_MS + step * (below - 1) + CHIP_MS
   const runAtMs = rowsEnd + RUN_AFTER_CARD_MS
   const runEndAtMs = runAtMs + CEREMONY_RUN_MS
   const landAtMs = runEndAtMs + (gag === 'trip' ? 800 : 2200)
   const plateAtMs = winners >= 2 && !grid ? landAtMs + HOP_MS * (winners - 1) + PLATE_AFTER_LAST_LAND_MS : landAtMs
   return {
     rowsAtMs: ROWS_AT_MS,
+    /** When each place below the Winners starts to slide in: rows (450 ms apart) up to 2 Winners, chips (200 ms apart) from 3; index 0 is the last Place, the first to come. `below` entries (#743). */
+    rowAtMs: Array.from({ length: below }, (_, index) => ROWS_AT_MS + step * index),
     cardAtMs: rowsEnd,
     runAtMs,
     runEndAtMs,
+    /** When the trophy lands on his head (the bonk's gag; the trip's own landing is `landAtMs`, #743). */
+    bonkAtMs: runEndAtMs + CEREMONY_BONK_MS,
     landAtMs,
     plateAtMs,
     stampAtMs: plateAtMs + STAMP_AFTER_LAND_MS,

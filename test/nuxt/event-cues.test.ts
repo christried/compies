@@ -5,7 +5,7 @@ import { defineComponent, h, ref } from 'vue'
 import { useCuePlayer } from '~/composables/useCuePlayer'
 import EventPage from '~/pages/e/[slug]/index.vue'
 import { reducedMotion } from '~/utils/motion'
-import { CUE_IDS, vetoCuePlan, wheelCuePlan, type CueId } from '~/utils/sound-cues'
+import { CUE_GROUPS, CUE_IDS, vetoCuePlan, wheelCuePlan, type CueGroup, type CueId } from '~/utils/sound-cues'
 import type { EventView } from '~~/shared/event'
 import type { RoundGame } from '~~/shared/game'
 import type { ClipView, SpinView, VetoDrawView, VetoView, WheelView } from '~~/shared/stage'
@@ -61,6 +61,8 @@ for (const id of CUE_IDS) {
   })
 }
 const requested = () => Object.keys(requests).filter(id => requests[id]).sort()
+/** The requested files of these groups: an assertion names the groups it is about, so another moment's files never break it (#718). */
+const requestedOf = (...groups: CueGroup[]) => requested().filter(id => CUE_GROUPS[id as CueId].some(group => groups.includes(group)))
 
 const context = () => FakeAudioContext.instances.at(-1)
 
@@ -381,10 +383,10 @@ describe('the Veto window on the Event page', () => {
       const served = serveWheel(wheelWith(null), { vetoAllowance: 2, isHost })
 
       page = await mountSuspended(EventPage, { route: `/e/${served.slug}` })
-      await vi.waitFor(() => expect(requested()).toHaveLength(CUE_IDS.length))
+      await vi.waitFor(() => expect(requestedOf('wheel', 'veto')).toHaveLength(WHEEL_FILES.length + VETO_FILES.length))
       await flushPromises()
 
-      expect(requested()).toEqual([...CUE_IDS].sort())
+      expect(requestedOf('wheel', 'veto')).toEqual([...WHEEL_FILES, ...VETO_FILES].sort())
     })
 
     it('are requested by a window even when the allowance is not known', async () => {

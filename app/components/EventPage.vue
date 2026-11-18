@@ -5,6 +5,7 @@ import { feedSessions } from '~/utils/activity'
 import { stageInstants, stageUnsettled } from '~/utils/event-stage'
 import { dateBlockedKey, eventPageState, headerPill, waitsForCeremony, wearsPartyhat } from '~/utils/event-page'
 import { historyCorrections } from '~/utils/history-corrections'
+import type { Cue } from '~/utils/sound-cues'
 import { datePollOpen, sessionsEditable } from '~~/shared/event'
 
 // The Event link (`/e/<slug>`, ADR 0006) in the event shell (screen M3): useEventView loads the Event (live, #156), the stage is the
@@ -22,7 +23,15 @@ const connection = useConnectionBanner(room.state, room.enabled)
 const presence = usePresence(room)
 const serverClock = useServerClock(room)
 // The wheel is heard (#531): the cue player schedules the read's plan on the audio clock, on the Event page only.
-const cues = useCuePlayer({ view: () => data.value, serverNow: serverClock.now, ready: () => serverClock.ready.value, moved: () => serverClock.moves.value })
+// The Award ceremony's plan comes from its layer, which knows the run the viewer sees and when they skip or close it (#743).
+const ceremonyCues = shallowRef<readonly Cue[]>([])
+const cues = useCuePlayer({
+  view: () => data.value,
+  serverNow: serverClock.now,
+  ready: () => serverClock.ready.value,
+  moved: () => serverClock.moves.value,
+  ceremony: () => ceremonyCues.value,
+})
 const onlineState = (userId: string) => (presence.known.value ? presence.isOnline(userId) : undefined)
 
 useHead({ title: () => data.value?.event.name })
@@ -321,6 +330,7 @@ const covered = computed(() => clipShown.value || tour.shown.value)
       :server-now="serverClock.now"
       @share="shareOpen = true"
       @over="release"
+      @cues="ceremonyCues = $event"
     />
 
     <EventHostDialogs

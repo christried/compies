@@ -1,4 +1,5 @@
 import type { ClipView, SpinView, VetoDrawView } from '~~/shared/stage'
+import { ceremonyTimeline, type RunShape } from '~~/shared/ceremony'
 import { msOf } from '~~/shared/instant'
 import { REVEAL_AFTER_MS, removalStart } from './wheel'
 import { pinCrossings } from './wheel-pins'
@@ -23,6 +24,7 @@ export const CUE_IDS = [
   // standings
   // board
   // ceremony
+  'cer-drop', 'cer-row', 'cer-run', 'cer-trip', 'cer-bonk',
   // tour
 ] as const
 export type CueId = (typeof CUE_IDS)[number]
@@ -37,6 +39,7 @@ export const CUE_VOLUME: Record<CueId, number> = {
   // standings
   // board
   // ceremony
+  'cer-drop': 55, 'cer-row': 40, 'cer-run': 40, 'cer-trip': 60, 'cer-bonk': 60,
   // tour
 }
 
@@ -53,6 +56,7 @@ export const CUE_GROUPS: Record<CueId, readonly [CueGroup, ...CueGroup[]]> = {
   // standings
   // board
   // ceremony
+  'cer-drop': ['ceremony'], 'cer-row': ['ceremony'], 'cer-run': ['ceremony'], 'cer-trip': ['ceremony'], 'cer-bonk': ['ceremony'],
   // tour
 }
 
@@ -64,6 +68,8 @@ export interface GroupInput {
   vetoAllowance: number
   /** `view.wheel?.vetoes.draw != null`. */
   vetoWindow: boolean
+  /** `view.event.phase === 'finished'` (#743): the Award ceremony's files, whether or not the Host has started it. Optional: absent = not finished. */
+  finished?: boolean
 }
 
 /**
@@ -75,6 +81,8 @@ export function reachableGroups(input: GroupInput): CueGroup[] {
   const groups: CueGroup[] = []
   if (input.wheel) groups.push('wheel')
   if (input.wheel && (input.vetoAllowance > 0 || input.vetoWindow)) groups.push('veto')
+  // The ceremony's files depend on „the Event is finished“ and nothing else: no request may tell a Member who won, that it is a Tie or which gag (#743).
+  if (input.finished) groups.push('ceremony')
   return groups
 }
 
@@ -92,8 +100,11 @@ export function cueFileUrl(id: CueId): string {
   return `${CUE_FILE_FOLDER}/${id}.${CUE_FILE_EXTENSION}`
 }
 
-/** One cue of a plan: which, and when (server time, epoch ms). Its volume is `CUE_VOLUME[id]`, not a field: the plan holds only what a time decides. */
-export interface Cue { id: CueId, at: number }
+/**
+ * One cue of a plan: which, and when (server time, epoch ms). Its volume is `CUE_VOLUME[id]`, not a field: the plan holds only what a time decides.
+ * `rate` is the playback rate, 1 = the file's own pitch, absent = 1 (#743: the places of the Award ceremony rise by a semitone a step).
+ */
+export interface Cue { id: CueId, at: number, rate?: number }
 
 /** What the plan reads: the viewer's own Event read and the viewer's reduced-motion setting, nothing of the draw's game (§ Secrecy). */
 export interface WheelCueInput {
@@ -241,5 +252,43 @@ export function vetoArrivalCues(previous: VetoArrivalState | null, next: VetoArr
     && next.draw.vetoEndsAt !== null && now - msOf(next.draw.vetoEndsAt) <= ARRIVAL_LATE_MS) {
     for (let index = 0; index < next.revealedCount; index++) cues.push({ id: 'veto-seal', delayMs: index * STAMP_GAP_MS })
   }
+  return cues
+}
+
+/**
+ * What the Award ceremony's plan reads (#743, spec #718): the run's start, its shape on THIS screen and the viewer's reduced-motion setting.
+ * Nothing the viewer may not know: the Party count, the Winner count and the gag are in every Member's read once the Host has started the
+ * ceremony (§ Secrecy), and until then no plan exists.
+ */
+export interface CeremonyCueInput {
+  /** The run's start instant, epoch ms: the Event read's `ceremony.startsAt`, or a replay's click. */
+  startsAt: number
+  /** The run's shape on THIS screen: the same `RunShape` the layer's run takes (partyCount, winners, gag, grid). */
+  shape: RunShape
+  /** `reducedMotion()`, passed in: this module reads no DOM. */
+  reducedMotion: boolean
+}
+
+/** Each place that slides in sounds a semitone higher than the one before it, so the pitch rises toward rank 1. The listening session may change the step (#718). */
+const ROW_STEP_SEMITONES = 1
+
+/**
+ * The cues of the Award ceremony of ONE Winner, ascending by `at` (#743): the banner's drop at the start, a row for each place below (the last
+ * Place first, at the file's own pitch, each next a semitone higher), the run, then the trip or the bonk by the server's gag, never both. Every
+ * instant is `startsAt` plus a field of `ceremonyTimeline`, the function the tweens are built from, so sound and picture cannot drift. It has
+ * no `now` and drops nothing for being past: the player skips a late cue, which is what a late joiner needs.
+ */
+export function ceremonyCuePlan(input: CeremonyCueInput): Cue[] {
+  const { startsAt, shape, reducedMotion } = input
+  // #744 gives reduced motion its fanfare alone; until then the end frame it shows is silent.
+  if (reducedMotion) return []
+  // #745 gives a Tie the moments it has; until then a ceremony with several Winners is silent.
+  if (shape.winners > 1) return []
+
+  const m = ceremonyTimeline(shape)
+  const cues: Cue[] = [{ id: 'cer-drop', at: startsAt }]
+  m.rowAtMs.forEach((ms, index) => cues.push({ id: 'cer-row', at: startsAt + ms, rate: 2 ** (index * ROW_STEP_SEMITONES / 12) }))
+  cues.push({ id: 'cer-run', at: startsAt + m.runAtMs })
+  cues.push(shape.gag === 'trip' ? { id: 'cer-trip', at: startsAt + m.runEndAtMs } : { id: 'cer-bonk', at: startsAt + m.bonkAtMs })
   return cues
 }
