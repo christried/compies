@@ -159,6 +159,52 @@ describe('EventStepper', () => {
       expect(page.emitted('next')).toBeUndefined()
     })
 
+    // The reason waits for a press of Weiter (#797): the wizard passes `reasonShown`; Weiter stays blocked meanwhile.
+    describe('the reason of a blocked Weiter (#797)', () => {
+      const nextOf = (page: Awaited<ReturnType<typeof mountStepper>>) => page.findAll('[data-testid="stepper-footer"] button').find(button => button.text().includes('Weiter'))!
+
+      it('shows no reason with reasonShown false, and Weiter stays aria-disabled with nothing to describe it', async () => {
+        const page = await mountStepper({ nextBlocked: 'Gib dem Event einen Namen.', reasonShown: false })
+
+        expect(nextOf(page).attributes('aria-disabled')).toBe('true')
+        expect(nextOf(page).attributes('aria-describedby')).toBeUndefined()
+        expect(page.text()).not.toContain('Gib dem Event einen Namen.')
+      })
+
+      it('emits blockedPress, and not next, on a press of a blocked Weiter', async () => {
+        const page = await mountStepper({ nextBlocked: 'Gib dem Event einen Namen.', reasonShown: false })
+
+        await nextOf(page).trigger('click')
+
+        expect(page.emitted('blockedPress')).toHaveLength(1)
+        expect(page.emitted('next')).toBeUndefined()
+      })
+
+      it('emits next, and not blockedPress, on a free Weiter', async () => {
+        const page = await mountStepper()
+
+        await nextOf(page).trigger('click')
+
+        expect(page.emitted('next')).toHaveLength(1)
+        expect(page.emitted('blockedPress')).toBeUndefined()
+      })
+
+      it('emits neither while it is busy', async () => {
+        const page = await mountStepper({ nextBlocked: 'Gib dem Event einen Namen.', busy: true })
+
+        await nextOf(page).trigger('click')
+
+        expect(page.emitted('blockedPress')).toBeUndefined()
+        expect(page.emitted('next')).toBeUndefined()
+      })
+
+      it('shows the reason by default, as before', async () => {
+        const page = await mountStepper({ nextBlocked: 'Gib dem Event einen Namen.' })
+
+        expect(page.text()).toContain('Gib dem Event einen Namen.')
+      })
+    })
+
     // The dock is a pill as wide as its buttons, fixed at the window's bottom on every step, so Weiter keeps one
     // place (#613). Geometry cannot be measured here: the markup that decides it is pinned.
     it('is a pill as wide as its buttons, in a box fixed at the window\'s bottom', async () => {
@@ -230,7 +276,8 @@ describe('EventStepper', () => {
       const reason = page.get(`[id="${next.attributes('aria-describedby')}"]`)
       expect(reason.text()).toBe('Gib dem Event einen Namen.')
       // max-w-80: a fixed box shrinks to the window, not the form, so a long reason must not widen it past the form's left edge (#613).
-      expect(reason.classes()).toEqual(expect.arrayContaining(['text-right', 'text-ink-2', 'max-w-80']))
+      expect(reason.classes()).toEqual(expect.arrayContaining(['text-right', 'text-error-fg', 'max-w-80']))
+      expect(reason.classes()).not.toContain('text-ink-2')
       expect(reason.element.parentElement).toBe(dock.element.parentElement)
       expect(reason.element.parentElement!.className.split(' ')).toContain('fixed')
       expect(dock.element.contains(reason.element)).toBe(false)

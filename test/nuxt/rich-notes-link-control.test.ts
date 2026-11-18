@@ -55,6 +55,13 @@ describe('the link control', () => {
     expect(page.find('[role="alert"]').exists()).toBe(false)
   })
 
+  it('opens with no message and nothing marked: the message is the answer to „Übernehmen“ (#797)', async () => {
+    const page = await openOn(doc(paragraph(text('Regeln'))), [1, 7])
+
+    expect(page.find('[role="alert"]').exists()).toBe(false)
+    expect(addressInput(page).attributes('aria-invalid')).not.toBe('true')
+  })
+
   it('refuses an empty address with the message too', async () => {
     const page = await openOn(doc(paragraph(text('Regeln'))), [1, 7])
 

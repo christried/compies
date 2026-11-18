@@ -102,12 +102,42 @@ describe('the stepper', () => {
     expect(saved).not.toHaveBeenCalled()
   })
 
-  it('blocks Weiter on an empty name with the reason, and goes on once there is one', async () => {
+  it('blocks Weiter on an empty name with no red anywhere until Weiter is pressed (#797)', async () => {
     const page = await mountCreate()
 
     expect(cta(page).attributes('aria-disabled')).toBe('true')
-    expect(page.get(`[id="${cta(page).attributes('aria-describedby')}"]`).text()).toBe('Gib dem Event einen Namen.')
+    expect(cta(page).attributes('aria-describedby')).toBeUndefined()
+    expect(page.text()).not.toContain('Gib dem Event einen Namen.')
+    expect(page.get('input[type="text"]').attributes('aria-invalid')).toBeUndefined()
+  })
+
+  it('shows the empty name red, in the field and above Weiter, after a press, and hides it on a step change (#797)', async () => {
+    const page = await mountCreate()
+
     await next(page)
+
+    expect(page.get('h1').text()).toContain('Schritt 1 von 7')
+    const reason = page.get(`[id="${cta(page).attributes('aria-describedby')}"]`)
+    expect(reason.text()).toBe('Gib dem Event einen Namen.')
+    expect(reason.classes()).toContain('text-error-fg')
+    expect(page.get('input[type="text"]').attributes('aria-invalid')).toBe('true')
+    expect(page.findAll('span').filter(el => el.text() === 'Gib dem Event einen Namen.').length).toBe(2)
+
+    await page.get('input[type="text"]').setValue('Freitags-Zocken')
+    await next(page)
+    await page.findAll('button').find(item => item.text().includes('Zurück') && item.attributes('type') === 'button')!.trigger('click')
+    await page.get('input[type="text"]').setValue('')
+
+    // A step change took the try away: the dock reason is gone, the field shows its own message after the edit.
+    expect(cta(page).attributes('aria-describedby')).toBeUndefined()
+  })
+
+  it('blocks Weiter on an empty name with the reason, and goes on once there is one', async () => {
+    const page = await mountCreate()
+
+    await next(page)
+    expect(cta(page).attributes('aria-disabled')).toBe('true')
+    expect(page.get(`[id="${cta(page).attributes('aria-describedby')}"]`).text()).toBe('Gib dem Event einen Namen.')
     expect(page.get('h1').text()).toContain('Schritt 1 von 7')
 
     await page.get('input[type="text"]').setValue('  ')
@@ -401,8 +431,10 @@ describe('the stepper', () => {
 
       expect(page.get('[role="alert"]').text()).toBe('Platz 3 kann nicht mehr Punkte bekommen als Platz 2.')
       expect(cta(page).attributes('aria-disabled')).toBe('true')
-      expect(page.get(`[id="${cta(page).attributes('aria-describedby')}"]`).text()).toBe('Platz 3 kann nicht mehr Punkte bekommen als Platz 2.')
+      // The dock reason waits for a press of Weiter (#797); the table's own row message is the User's edit already.
+      expect(cta(page).attributes('aria-describedby')).toBeUndefined()
       await next(page)
+      expect(page.get(`[id="${cta(page).attributes('aria-describedby')}"]`).text()).toBe('Platz 3 kann nicht mehr Punkte bekommen als Platz 2.')
       expect(page.get('h1').text()).toContain('Schritt 4 von 7')
 
       await click(page, 'Punkte für Platz 3: weniger', 3)
@@ -419,8 +451,9 @@ describe('the stepper', () => {
 
       expect(page.get('[role="alert"]').text()).toBe('Mindestens ein Platz muss weniger Punkte bekommen als Platz 1, sonst zählt die Platzierung nicht.')
       expect(cta(page).attributes('aria-disabled')).toBe('true')
-      expect(page.get(`[id="${cta(page).attributes('aria-describedby')}"]`).text()).toBe('Mindestens ein Platz muss weniger Punkte bekommen als Platz 1, sonst zählt die Platzierung nicht.')
+      expect(cta(page).attributes('aria-describedby')).toBeUndefined()
       await next(page)
+      expect(page.get(`[id="${cta(page).attributes('aria-describedby')}"]`).text()).toBe('Mindestens ein Platz muss weniger Punkte bekommen als Platz 1, sonst zählt die Platzierung nicht.')
       expect(page.get('h1').text()).toContain('Schritt 4 von 7')
 
       await click(page, 'Punkte für Platz 2: weniger', 1)

@@ -66,7 +66,7 @@ const MONO_USES = [
   { site: 'NoteEditor.vue:113 common.counter', component: 'app/components/NoteEditor.vue', keys: ['common.counter'] },
   { site: 'RichNotesToolbar.vue:158 shortcut', component: 'app/components/RichNotesToolbar.vue', entry: true, element: 'span' },
   { site: 'TeamNameBuilder.vue:222 common.counter', component: 'app/components/TeamNameBuilder.vue', keys: ['common.counter'] },
-  { site: 'TextField.vue:124 common.counter', component: 'app/components/TextField.vue', keys: ['common.counter'] },
+  { site: 'TextField.vue:132 common.counter', component: 'app/components/TextField.vue', keys: ['common.counter'] },
   { site: 'StagingBadge.vue:12 staging.badge', component: 'app/components/StagingBadge.vue', keys: ['staging.badge'], expectedMissing: 'the badge renders on a staged server only (stage.ts), and the dev server is not started staged' },
 ]
 

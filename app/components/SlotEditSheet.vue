@@ -39,11 +39,19 @@ const busy = ref(false)
 const changingId = ref<string | null>(null)
 const changedTime = ref('')
 const saving = ref(false)
+// „A press of the blocked button“ of each of the two forms (#797): the add form and the row being changed are one component, so no shared
+// flag; each hands its own to its DateTimeField. Both go when the sheet opens, the change one when another row is changed.
+const addTried = ref(false)
+const changeTried = ref(false)
 
 watch(() => props.open, (open) => {
   if (!open) return
   now.value = utcToBerlin(new Date())
   changingId.value = null
+  addTried.value = false
+})
+watch(changingId, () => {
+  changeTried.value = false
 })
 
 const rows = computed(() => props.slots.map(slot => ({ ...slot, label: formatSlotWhen(new Date(slot.startsAt)) })))
@@ -67,8 +75,17 @@ const changeProblem = computed(() => problemText(changedTime.value, changingId.v
 const changeBlocked = computed(() => changedTime.value === '' || changeProblem.value !== undefined)
 
 function add() {
+  if (addBlocked.value) addTried.value = true
   if (addBlocked.value || busy.value) return
-  send('POST', 'slots', { body: { startsAt: newSlot.value }, busy, screen: 'slotEditor', done: () => (newSlot.value = '') })
+  send('POST', 'slots', {
+    body: { startsAt: newSlot.value },
+    busy,
+    screen: 'slotEditor',
+    done: () => {
+      newSlot.value = ''
+      addTried.value = false
+    },
+  })
 }
 
 function startChange(slot: EditableSlot) {
@@ -78,6 +95,7 @@ function startChange(slot: EditableSlot) {
 
 /** Moves the Slot to the new time (#85). The row closes once the server took it; a Slot taken meanwhile says so. */
 function saveChange() {
+  if (changeBlocked.value) changeTried.value = true
   if (changeBlocked.value || saving.value) return
   const body = { startsAt: changedTime.value }
   send<ChangedSlot>('PATCH', `slots/${changingId.value}`, { body, busy: saving, screen: 'slotEditor', done: () => (changingId.value = null) })
@@ -123,6 +141,7 @@ function remove(slotId: string) {
               v-model="changedTime"
               :label="row.label"
               :error="changeProblem"
+              :attempted="changeTried"
             />
             <div class="flex flex-wrap items-center gap-3">
               <AppButton
@@ -181,6 +200,7 @@ function remove(slotId: string) {
         v-model="newSlot"
         :label="t('mvp.slots.newLabel')"
         :error="addProblem"
+        :attempted="addTried"
       />
       <p class="m-0 text-small text-pretty text-ink-2">
         {{ t('mvp.slots.addHelp', { max: SLOTS_MAX }) }}
@@ -190,7 +210,7 @@ function remove(slotId: string) {
           type="submit"
           class="hit-44 inline-flex min-h-11 items-center gap-1.5 self-start rounded-pill border-[2.5px] border-dashed border-line px-3.5 text-small font-bold text-ink outline-memphis lift aria-disabled:text-ink-3 aria-disabled:hover:translate-y-0 aria-disabled:hover:shadow-none aria-disabled:hover:bg-none"
           :aria-disabled="addBlocked || busy ? 'true' : undefined"
-          :aria-describedby="newSlot === '' ? blockerId : undefined"
+          :aria-describedby="addTried && newSlot === '' ? blockerId : undefined"
         >
           <AppIcon
             :icon="Plus"
@@ -199,9 +219,9 @@ function remove(slotId: string) {
           {{ t('mvp.slots.add') }}
         </button>
         <span
-          v-if="newSlot === ''"
+          v-if="addTried && newSlot === ''"
           :id="blockerId"
-          class="text-small font-bold text-ink-2"
+          class="text-small font-bold text-error-fg"
         >{{ t('mvp.slots.incomplete') }}</span>
       </div>
     </form>

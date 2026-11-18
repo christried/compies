@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { CircleAlert } from '@lucide/vue'
 import { apiErrorKey } from '~/utils/api-error'
 import { formatFullDay } from '~/utils/berlin-time'
 import { priceSourceLabel, type PriceDraft } from '~/utils/price'
@@ -10,7 +9,8 @@ import {
 // The Price group of the game form (#337, #361; GLOSSARY: Price): the amount, the source, the „Stand“ line with
 // „Preis stimmt noch“, and „Preis entfernen“. It owns its inputs and its rules' wording; the form reads the Price
 // through `v-model` (the amount as typed, the source, null while neither is set) and the one blocker of the Price
-// through `error`. The rules themselves are the shared ones (shared/game.ts). `failure` tells the form why the
+// through `error`, which carries the problems as they are: the form shows its reason after a try, and the fields show
+// their line only once touched or after a try, as one line under both (#797). The rules themselves are the shared ones (shared/game.ts). `failure` tells the form why the
 // confirm was refused, for its banner.
 const model = defineModel<PriceDraft>({ required: true })
 const props = defineProps<{
@@ -18,8 +18,6 @@ const props = defineProps<{
   stored: GamePrice | null
   /** Edit mode: the game „Preis stimmt noch“ PATCHes. Undefined in create mode. */
   gameId?: string
-  /** The form's save attempt: a missing amount or source shows only after it (#337). */
-  attempted: boolean
 }>()
 const emit = defineEmits<{
   error: [message: string | null]
@@ -36,10 +34,9 @@ const priceSource = ref<PriceSource | ''>(model.value?.source ?? '')
 const storedPrice = ref<GamePrice | null>(props.stored)
 const confirming = ref(false)
 const sourceId = useId()
-const sourceErrorId = `${sourceId}-error`
 
 // Free-to-play and Abo take no amount, so choosing one empties the amount field. The amount is the shared
-// rule's (parsePriceAmount); the errors show at once for a wrong amount, and for a missing one only after a save attempt.
+// rule's (parsePriceAmount); the problems are computed as they stand, and the fields decide when they show (#797).
 const amountless = computed(() => priceSource.value !== '' && !priceTakesAmount(priceSource.value))
 watch(priceSource, (source) => {
   if (source !== '' && !priceTakesAmount(source)) priceText.value = ''
@@ -49,12 +46,12 @@ const priceEntered = computed(() => priceText.value.trim() !== '')
 const amountError = computed(() => {
   if (amountless.value) return undefined
   if (priceEntered.value && priceCents.value === null) return t('gameEdit.priceRange')
-  if (props.attempted && priceSource.value !== '' && !priceEntered.value) return t('gameEdit.priceRange')
+  if (priceSource.value !== '' && !priceEntered.value) return t('gameEdit.priceRange')
   return undefined
 })
 // Only a source without an amount explains itself; the hint „z. B. 19,99“ is the placeholder of the field (#804).
 const amountHelp = computed(() => (amountless.value ? t('gameEdit.priceNoAmount') : undefined))
-const sourceError = computed(() => (props.attempted && priceEntered.value && priceSource.value === '' ? t('gameEdit.priceNeedsSource') : undefined))
+const sourceError = computed(() => (priceEntered.value && priceSource.value === '' ? t('gameEdit.priceNeedsSource') : undefined))
 const sourceOptions = computed(() => PRICE_SOURCES.map(source => ({ value: source, label: priceSourceLabel(source, t) })))
 /** The source the FilterSelect chose: a value that is no source is „none chosen“ (#362). */
 function setSource(value: string) {
@@ -113,45 +110,42 @@ async function confirmPrice() {
     <legend class="mb-1.5 text-[14px] font-bold">
       {{ t('gameEdit.price') }}
     </legend>
-    <div class="grid grid-cols-2 gap-2.5">
-      <TextField
-        v-model="priceText"
-        :label="t('gameEdit.priceAmount')"
-        :help="amountHelp"
-        :error="amountError"
-        :disabled="amountless"
-        :placeholder="amountless ? undefined : t('gameEdit.pricePlaceholder')"
-        inputmode="text"
-        autocomplete="off"
-      />
-      <div class="flex min-w-0 flex-col gap-1.5">
-        <label
-          :for="sourceId"
-          class="text-[14px] font-bold"
-        >{{ t('gameEdit.priceSource') }}</label>
-        <FilterSelect
-          :id="sourceId"
-          :model-value="priceSource"
-          variant="field"
-          :options="sourceOptions"
-          :empty-label="t('gameEdit.priceSourceNone')"
-          :invalid="Boolean(sourceError)"
-          :aria-describedby="sourceError ? sourceErrorId : undefined"
-          @update:model-value="setSource"
+    <FieldGroup>
+      <div class="grid grid-cols-2 gap-2.5">
+        <TextField
+          v-model="priceText"
+          :label="t('gameEdit.priceAmount')"
+          :help="amountHelp"
+          :error="amountError"
+          :disabled="amountless"
+          :placeholder="amountless ? undefined : t('gameEdit.pricePlaceholder')"
+          inputmode="text"
+          autocomplete="off"
         />
-        <span
-          v-if="sourceError"
-          :id="sourceErrorId"
-          class="flex items-center gap-1.5 text-small font-bold text-error-fg"
+        <FieldGroupMember
+          v-slot="{ invalid, describedBy, touch }"
+          :error="sourceError"
         >
-          <AppIcon
-            :icon="CircleAlert"
-            :size="14"
-          />
-          {{ sourceError }}
-        </span>
+          <div class="flex min-w-0 flex-col gap-1.5">
+            <label
+              :for="sourceId"
+              class="text-[14px] font-bold"
+            >{{ t('gameEdit.priceSource') }}</label>
+            <FilterSelect
+              :id="sourceId"
+              :model-value="priceSource"
+              variant="field"
+              :options="sourceOptions"
+              :empty-label="t('gameEdit.priceSourceNone')"
+              :invalid="invalid"
+              :aria-describedby="describedBy"
+              @update:model-value="setSource($event); touch()"
+              @blur="touch"
+            />
+          </div>
+        </FieldGroupMember>
       </div>
-    </div>
+    </FieldGroup>
     <div
       v-if="storedPrice"
       class="flex flex-wrap items-center gap-3"

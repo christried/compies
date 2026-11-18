@@ -65,13 +65,28 @@ describe('the Profil page', () => {
     await page.get('input').setValue('   ')
     await page.get('form').trigger('submit')
 
-    expect(page.get('#display-name-help').text()).toBe('Ohne Namen geht es nicht. Wie sollen dich die anderen nennen?')
+    const error = page.get('#display-name-error')
+    expect(error.text()).toBe('Ohne Namen geht es nicht. Wie sollen dich die anderen nennen?')
+    expect(error.classes()).toContain('text-error-fg')
     expect(page.get('input').attributes('aria-invalid')).toBe('true')
+    expect(page.get('input').attributes('aria-describedby')).toBe('display-name-error')
     const cta = page.get('button[type="submit"]')
     expect(cta.attributes('aria-disabled')).toBe('true')
-    expect(cta.attributes('aria-describedby')).toBe('display-name-help')
+    // The disabled button says enough (#797): it points at nothing.
+    expect(cta.attributes('aria-describedby')).toBeUndefined()
     await flushPromises()
     expect(save).not.toHaveBeenCalled()
+  })
+
+  it('shows no message while the name is set, and the red one only after it was cleared (#797)', async () => {
+    const page = await mount()
+    expect(page.find('#display-name-error').exists()).toBe(false)
+    expect(page.get('input').attributes('aria-invalid')).toBeUndefined()
+
+    await page.get('input').setValue('')
+
+    expect(page.get('#display-name-error').text()).toBe('Ohne Namen geht es nicht. Wie sollen dich die anderen nennen?')
+    expect(page.find('#display-name-help').exists()).toBe(false)
   })
 
   it('never sends a too long name, it stops at 32 characters counting an emoji as one', async () => {

@@ -29,18 +29,24 @@ import { fieldBox } from '~/utils/field-chrome'
 
 // A Berlin date and time in two own fields (ADR 0010, 02-components § DateTimeField). The value is
 // `YYYY-MM-DDTHH:mm` in Europe/Berlin, or empty until both parts are set and valid (ADR 0003).
+// The `error` shows (one line for date and time together) only once a part was edited, left or picked from, or a
+// submit was tried (#797).
 const props = withDefaults(defineProps<{
   modelValue: string
   /** Accessible name of the group, e.g. the numbered Slot label of the create form. */
   label: string
   error?: string
-}>(), { error: undefined })
+  /** Replaces the form's „submit tried“ flag, for a component that holds two forms (the Slot editor). */
+  attempted?: boolean
+}>(), { error: undefined, attempted: undefined })
 
 const emit = defineEmits<{ 'update:modelValue': [value: string] }>()
 
 const { t } = useI18n()
 const id = useId()
 const errorId = `${id}-error`
+const { shown, touch } = useTouched(() => props.attempted)
+const message = computed(() => (shown.value ? props.error : undefined))
 
 // Steps of the time list: every 15 minutes, 00:00 to 23:45.
 const TIME_STEPS = Array.from({ length: 96 }, (_, step) => formatTime(Math.floor(step / 4), (step % 4) * 15))
@@ -126,6 +132,7 @@ function rewrite(input: HTMLInputElement, text: string) {
 }
 
 function onDateInput(event: Event) {
+  touch()
   const input = event.target as HTMLInputElement
   dateDigits.value = input.value.replace(/\D/g, '').slice(0, 8)
   rewrite(input, dateText.value)
@@ -133,6 +140,7 @@ function onDateInput(event: Event) {
 }
 
 function onTimeInput(event: Event) {
+  touch()
   const input = event.target as HTMLInputElement
   timeLeft.value = false
   timeDigits.value = input.value.replace(/\D/g, '').slice(0, 4)
@@ -143,6 +151,7 @@ function onTimeInput(event: Event) {
 // Leaving the time (blur or Enter) completes it: 9 is 09:00, 15 is 15:00, 153 is 15:30, 930 is 09:30.
 // An impossible hour such as 25 stays as typed and invalid.
 function commitTime() {
+  touch()
   timeLeft.value = true
   const digits = timeDigits.value
   if (digits.length === 1 || digits.length === 2) {
@@ -174,6 +183,7 @@ const calendarPlaceholder = computed(() => calendarValue.value ?? berlinToday)
 
 function selectDate(value: DateValue | undefined) {
   if (!value) return
+  touch()
   dateDigits.value = isoToDigits(value.toString())
   dateOpen.value = false
   onPart()
@@ -181,6 +191,7 @@ function selectDate(value: DateValue | undefined) {
 
 function selectTime(value: unknown) {
   if (typeof value !== 'string') return
+  touch()
   timeDigits.value = value.replace(':', '')
   timeOpen.value = false
   onPart()
@@ -264,7 +275,7 @@ watch(timeOpen, async (open) => {
   <div
     role="group"
     :aria-label="label"
-    :aria-describedby="error ? errorId : undefined"
+    :aria-describedby="message ? errorId : undefined"
     class="flex flex-col gap-1.5"
   >
     <div class="flex gap-2">
@@ -289,10 +300,11 @@ watch(timeOpen, async (open) => {
               inputmode="numeric"
               autocomplete="off"
               :placeholder="t('mvp.dateTime.datePlaceholder')"
-              :aria-invalid="error ? 'true' : undefined"
+              :aria-invalid="message ? 'true' : undefined"
               class="hit-44 h-12 min-h-11 w-full py-0 pr-10 pl-3 text-[17px] font-semibold text-ink"
-              :class="fieldBox(!!error)"
+              :class="fieldBox(!!message)"
               @input="onDateInput"
+              @blur="touch"
               @keydown.down.prevent="date.show(true)"
             >
             <button
@@ -417,9 +429,9 @@ watch(timeOpen, async (open) => {
               inputmode="numeric"
               autocomplete="off"
               :placeholder="t('mvp.dateTime.timePlaceholder')"
-              :aria-invalid="error || timeInvalid ? 'true' : undefined"
+              :aria-invalid="message || timeInvalid ? 'true' : undefined"
               class="hit-44 h-12 min-h-11 w-full py-0 pr-10 pl-3 font-num text-[17px] text-ink"
-              :class="fieldBox(!!error || timeInvalid)"
+              :class="fieldBox(!!message || timeInvalid)"
               @input="onTimeInput"
               @blur="commitTime"
               @keydown.enter="commitTime"
@@ -478,7 +490,7 @@ watch(timeOpen, async (open) => {
       </PopoverRoot>
     </div>
     <span
-      v-if="error"
+      v-if="message"
       :id="errorId"
       class="flex items-center gap-1.5 text-small font-bold text-error-fg"
     >
@@ -486,7 +498,7 @@ watch(timeOpen, async (open) => {
         :icon="CircleAlert"
         :size="14"
       />
-      {{ error }}
+      {{ message }}
     </span>
   </div>
 </template>
