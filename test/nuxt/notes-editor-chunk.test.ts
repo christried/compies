@@ -6,6 +6,7 @@ import GameForm from '~/components/GameForm.vue'
 import RichNotesEditorFallback from '~/components/RichNotesEditorFallback.vue'
 import type { PoolGameFace } from '~~/shared/game'
 import { kitty, signInAs } from './auth'
+import { eventNotesContext } from './helpers/event-notes-context'
 import { ensureGeometry } from './helpers/notes-editor'
 
 // The notes editor is a lazy chunk (#454, ADR 0019), and a chunk can fail to load (a flaky network, a phone at the table): the field must then say so and offer
@@ -68,7 +69,8 @@ describe('the notes editor whose chunk fails to load (#822)', () => {
 
   it('shows the same in the game dialog of the Event notes, and the editor once a retry loads', async () => {
     const wrapper = await mountSuspended(GameDialog, {
-      props: { open: true, game: GAME, audience: 'host', saveEventNotes: async () => true },
+      props: { open: true, game: GAME, audience: 'host' },
+      global: eventNotesContext({ save: async () => true }).global,
     })
     await flushPromises()
     const add = [...dialog().querySelectorAll('button')].find(button => button.textContent?.trim() === 'Notizen für dieses Event hinzufügen')!
