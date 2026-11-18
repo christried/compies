@@ -274,7 +274,7 @@ describe.each([['the Host', true], ['a Member', false]])('the ceremony of one Wi
       const wheelCues = (await vi.waitFor(() => {
         const ids = started().map(source => source.id)
         expect(ids.filter(id => id!.startsWith('cer-'))).toHaveLength(CEREMONY_CUES)
-        return ids.filter(id => id!.startsWith('wheel-'))
+        return ids.filter(id => !id!.startsWith('cer-'))
       }, { timeout: 5000 })).length
       expect(wheelCues).toBeGreaterThan(0)
 
@@ -290,8 +290,8 @@ describe.each([['the Host', true], ['a Member', false]])('the ceremony of one Wi
       expect(ceremonySources.filter(source => source.id !== 'cer-drop').every(source => source.stopCalls >= 1)).toBe(true)
       expect(log().filter(line => line.id.startsWith('cer-') && line.id !== 'cer-drop').every(line => line.outcome === 'cancelled')).toBe(true)
       expect(log().find(line => line.id === 'cer-drop')!.outcome).toBe('scheduled')
-      expect(started().filter(source => source.id!.startsWith('wheel-'))).toHaveLength(wheelCues)
-      expect(started().filter(source => source.id!.startsWith('wheel-')).every(source => source.stopCalls === 0)).toBe(true)
+      expect(started().filter(source => !source.id!.startsWith('cer-'))).toHaveLength(wheelCues)
+      expect(started().filter(source => !source.id!.startsWith('cer-')).every(source => source.stopCalls === 0)).toBe(true)
 
       await new Promise(resolve => setTimeout(resolve, 100))
       expect(started()).toHaveLength(CEREMONY_CUES + wheelCues)
