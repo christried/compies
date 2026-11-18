@@ -30,7 +30,7 @@ function formOf(child: () => ReturnType<typeof h>) {
   return defineComponent({
     setup() {
       const { attempt } = provideFormAttempt()
-      return () => h('div', [child(), h('button', { onClick: attempt }, 'Speichern')])
+      return () => h('div', [child(), h('button', { 'data-submit': '', onClick: attempt }, 'Speichern')])
     },
   })
 }
@@ -216,10 +216,107 @@ describe('DateTimeField', () => {
       props: { modelValue: '2001-01-01T20:00', label: 'Termin 1', error: 'Der Termin liegt in der Vergangenheit.' },
     })
 
+    await type(page.element, 'Datum', '01.01.2001')
+
     const group = page.get('[role="group"]')
     expect(group.attributes('aria-label')).toBe('Termin 1')
     expect(part(page.element, 'Datum').getAttribute('aria-invalid')).toBe('true')
     expect(page.text()).toContain('Der Termin liegt in der Vergangenheit.')
+  })
+
+  describe('message (#797)', () => {
+    const error = 'Der Termin liegt in der Vergangenheit.'
+    const mountWithError = (props: Record<string, unknown> = {}) =>
+      mountSuspended(DateTimeField, { props: { modelValue: '2001-01-01T20:00', label: 'Termin 1', error, ...props }, attachTo: document.body })
+
+    it('shows no message, no invalid mark and no description before the field was touched', async () => {
+      const page = await mountWithError()
+
+      expect(page.text()).not.toContain(error)
+      expect(part(page.element, 'Datum').getAttribute('aria-invalid')).toBeNull()
+      expect(part(page.element, 'Uhrzeit').getAttribute('aria-invalid')).toBeNull()
+      expect(page.get('[role="group"]').attributes('aria-describedby')).toBeUndefined()
+      page.unmount()
+    })
+
+    it('shows it in red after an input in the date', async () => {
+      const page = await mountWithError()
+
+      await type(page.element, 'Datum', '01.01.2001')
+
+      const line = page.get('[id$="-error"]')
+      expect(line.text()).toBe(error)
+      expect(line.classes()).toContain('text-error-fg')
+      expect(page.get('[role="group"]').attributes('aria-describedby')).toBe(line.attributes('id'))
+      page.unmount()
+    })
+
+    it('shows it after the time input was left', async () => {
+      const page = await mountWithError()
+
+      await leave(page.element, 'Uhrzeit')
+
+      expect(page.text()).toContain(error)
+      expect(part(page.element, 'Uhrzeit').getAttribute('aria-invalid')).toBe('true')
+      page.unmount()
+    })
+
+    it('shows it after the date input was left', async () => {
+      const page = await mountWithError()
+
+      await leave(page.element, 'Datum')
+
+      expect(page.text()).toContain(error)
+      page.unmount()
+    })
+
+    it('shows it after a pick from the time list', async () => {
+      const page = await mountWithError()
+
+      part(page.element, 'Uhrzeit').click()
+      await flushPromises()
+      document.querySelector<HTMLElement>('[data-time="20:15"]')!.click()
+      await flushPromises()
+
+      expect(page.text()).toContain(error)
+      page.unmount()
+    })
+
+    it('shows it after a pick from the calendar', async () => {
+      const page = await mountWithError({ modelValue: '' })
+
+      part(page.element, 'Datum').click()
+      await flushPromises()
+      document.querySelector<HTMLElement>('[role="gridcell"]:not([aria-disabled="true"]) [data-value]')!.click()
+      await flushPromises()
+
+      expect(page.text()).toContain(error)
+      page.unmount()
+    })
+
+    it('shows it at once with the attempted override', async () => {
+      const page = await mountWithError({ attempted: true })
+
+      expect(page.get('[id$="-error"]').text()).toBe(error)
+      page.unmount()
+    })
+
+    it('shows it once the form tried to submit', async () => {
+      const page = await mountSuspended(formOf(() => h(DateTimeField, { modelValue: '2001-01-01T20:00', label: 'Termin 1', error })))
+      expect(page.text()).not.toContain(error)
+
+      await page.get('button[data-submit]').trigger('click')
+
+      expect(page.text()).toContain(error)
+    })
+
+    it('keeps the impossible hour red without any touch of the message, as it arises from typing', async () => {
+      const page = await mountSuspended(DateTimeField, { props: { modelValue: '2090-10-30', label: 'Termin 1' } })
+
+      await type(page.element, 'Uhrzeit', '2460')
+
+      expect(part(page.element, 'Uhrzeit').getAttribute('aria-invalid')).toBe('true')
+    })
   })
 
   it('types the time as four digits and fills in the colon', async () => {
