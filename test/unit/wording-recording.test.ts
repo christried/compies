@@ -281,4 +281,11 @@ describe('reportOf: new texts without a picture', () => {
   it('says none when there is none', () => {
     expect(reportOf(input([]))).toContain('New texts without a picture (0): none')
   })
+
+  // The heading counts the list it prints, not a number written into the script (#825).
+  it('prints the count of its mono uses from the list', () => {
+    const use = (site: string) => ({ site, seenIn: 'a state', expectedMissing: undefined })
+    const lines = reportOf({ ...input([]), monoUses: [use('a'), use('b'), use('c')] } as never)
+    expect(lines.some(line => line.endsWith('The 3 mono uses:'))).toBe(true)
+  })
 })

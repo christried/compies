@@ -113,7 +113,7 @@ export function reportOf(input) {
   for (const problem of input.stepProblems) lines.push(`  problem: ${problem}`)
   lines.push('', `New texts without a picture (${input.unpictured.length})${input.unpictured.length ? ':' : ': none'}`)
   for (const entry of input.unpictured) lines.push(`  ${entry.id}  ${entry.reason}`)
-  lines.push('', `The mono font is ${input.monoFamily ? `"${input.monoFamily}"` : 'not read'}. The eleven mono uses:`)
+  lines.push('', `The mono font is ${input.monoFamily ? `"${input.monoFamily}"` : 'not read'}. The ${input.monoUses.length} mono uses:`)
   for (const use of input.monoUses) lines.push(`  ${use.site}: ${use.seenIn ? `seen in ${use.seenIn}` : `not seen${use.expectedMissing ? ` (expected: ${use.expectedMissing})` : ''}`}`)
   lines.push(`Mono components without a label in MONO_WHAT: ${input.unlabelled.length ? input.unlabelled.join(', ') : 'none'}`)
   lines.push(`Fixed texts: ${input.fixed.withPicture} with a picture, ${input.fixed.without} without`)
