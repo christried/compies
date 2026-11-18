@@ -39,14 +39,15 @@ function show() {
   open.value = true
 }
 
-// Measured once drawn, before the focus moves into it and before the browser paints.
+// Measured once drawn, before the focus moves into it and before the browser paints. The size is the layout size, not the drawn box: the
+// opening's scale(.96) (.cp-note-pop) shrinks the box a rect reads, and the clamp must keep the 320 px the popover really has (#824).
 function place() {
   const cell = trigger.value?.$el.getBoundingClientRect()
-  const box = popover.value?.getBoundingClientRect()
-  if (!cell || !box) return
+  const pop = popover.value
+  if (!cell || !pop) return
   const { top, left, maxHeight, side, arrowLeft } = placeNotePopover({
     cell,
-    size: { width: box.width, height: box.height },
+    size: { width: pop.offsetWidth, height: pop.offsetHeight },
     viewport: { width: window.innerWidth, height: window.innerHeight },
   })
   // The opening grows from the corner of the button's side (04-motion § Notizen): the arrow's foot, on the edge facing the button.

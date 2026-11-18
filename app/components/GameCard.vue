@@ -84,8 +84,9 @@ const LAYOUT = {
     // The Tags sit on the card's bottom edge, one line, so every card of a row shares their top edge (#614).
     tags: 'mt-auto flex-nowrap',
   },
+  // The tile fills its grid cell: the grid stretches each cell to its row's tallest tile, so a tile with the pill and one without share the height (#824).
   tile: {
-    box: 'flex-col overflow-hidden rounded-[14px]',
+    box: 'h-full flex-col overflow-hidden rounded-[14px]',
     cover: 'aspect-[16/10] w-full border-b-2',
     body: 'px-3 pt-2.5 pb-3',
     name: 'line-clamp-2 break-words min-h-[2lh]',
