@@ -86,9 +86,9 @@
     "startN": "Session {n} starten",
     "endN": "Session {n} beenden",
     "finish": "Event abschließen",
-    "finishTie": "Unentschieden beenden",
+    "finishTie": "Unentschieden",
     "ceremony": "Siegerehrung starten",
-    "lastGame": "Letztes Spiel hinzufügen",
+    "lastGame": "Letztes Spiel",
     "lastGameBlocked": {
       "game_count_range": "Mehr Spiele gehen nicht. Du kannst das Event noch als Unentschieden beenden."
     },
@@ -97,7 +97,7 @@
       "not_set_up": "Geht erst, wenn das Event eingerichtet ist.",
       "no_dated_session": "Geht erst, wenn eine Session einen Termin hat.",
       "session_running": "Es läuft schon eine Session.",
-      "teams_empty": "Geht erst, wenn in jedem Team jemand ist.",
+      "teams_empty": "Jedes Team braucht Spielende.",
       "teams_uneven": "Geht erst, wenn alle Teams gleich groß sind."
     },
     "setBlocked": {
@@ -108,10 +108,10 @@
     },
     "shortcut": "Taste H: Host-Steuerung",
     "startDialog": {
-      "title": "Los geht’s?",
-      "textFirst": "Mit dem Start werden die Teams gesperrt. Die Tribüne bleibt offen, nachziehen kannst du weiterhin.",
+      "title": "Kann’s losgehen?",
+      "textFirst": "Mit dem Start werden die Teams gesperrt. Nachziehen kannst du als Host weiterhin.",
       "textLater": "Die Teams bleiben, wie sie sind.",
-      "lock": "{teams} Teams à {size}, danach gesperrt"
+      "lock": "{teams} Teams à {size}"
     },
     "more": "Mehr",
     "group": {
@@ -179,7 +179,7 @@
       "teamsStayNext": "Die Teams bleiben fürs ganze Event. Wer bei der nächsten Session fehlt, ersetzt du von der Tribüne.",
       "teamsStayMember": "Die Teams bleiben fürs ganze Event. Wenn du bei Session {n} nicht kannst, setz dich auf die Tribüne.",
       "teamsStayMemberNext": "Die Teams bleiben fürs ganze Event. Wenn du bei der nächsten Session nicht kannst, setz dich auf die Tribüne.",
-      "tie": "Gleichstand auf Platz 1. Der Host entscheidet.",
+      "tie": "Gleichstand auf Platz 1. Der Host entscheidet, wie es weitergeht mit euch.",
       "sessionNeededTitle": "Noch {n} Spiel offen | Noch {n} Spiele offen",
       "sessionNeeded": "Dafür braucht es eine neue Session. Leg sie an und starte sie, wenn ihr so weit seid."
     },
@@ -814,16 +814,14 @@
     "invalidTitle": "Dieser Link gilt nicht mehr.",
     "deletedTitle": "Dieses Event gibt’s nicht mehr.",
     "joinedToast": "Du bist drin! Schön, dass du da bist ❤️",
-    "copyFailed": "Kopieren hat nicht geklappt. Markier den Link und kopier ihn von Hand.",
-    "kicker": "Einladung",
+    "copyFailed": "Kopieren hat nicht geklappt. Musst du wohl altmodisch abtippen oder so.",
     "joining": "Einen Moment, wir setzen dich auf die Tribüne …",
-    "sheetText": "Wer den Link hat und sich anmeldet, landet auf der Tribüne. Von dort ziehen sich alle selbst ins Team.",
-    "leakedTitle": "Link geleakt?",
+    "sheetText": "Wer den Link hat und sich anmeldet, landet auf der Tribüne.",
+    "leakedTitle": "Neuer Link notwendig?",
     "renew": "Link erneuern",
     "renewTitle": "Einladungslink erneuern?",
     "renewOld": "Der alte Link funktioniert sofort nicht mehr.",
     "renewMembers": "Alle im Event bleiben drin.",
-    "renewShare": "Den neuen Link musst du neu teilen.",
     "renewed": "Erneuert.",
     "renewedText": "Neuer Link aktiv. Der alte führt jetzt ins Leere."
   },

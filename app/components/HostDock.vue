@@ -240,7 +240,6 @@ onBeforeUnmount(() => {
           />
         </span>
         <b class="flex-1 text-[16px]">{{ t('dock.label') }}</b>
-        <kbd class="rounded-md border-[1.5px] border-line px-1.5 font-mono text-[11px]">H</kbd>
       </div>
       <div
         v-for="group in groups"
