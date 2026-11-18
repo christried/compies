@@ -5,6 +5,7 @@ import GameNotesButton from '~/components/GameNotesButton.vue'
 import { notesFromLines, type NotesDoc } from '~~/shared/notes-doc'
 import { GAME_NAME_MAX } from '~~/shared/game'
 import { restoreScreen, stubScreen } from './event-page'
+import { eventNotesContext } from './helpers/event-notes-context'
 import { BLANK_NOTES, FORMATTED_HREF, FORMATTED_NOTES, readFormatted } from './helpers/formatted-notes'
 
 // The Notes button of a game in the pickers (#436, 02-components § GameCard, deviation 0.12): a read-only popover from md up, a
@@ -16,8 +17,10 @@ const NOTES = 'Zeile eins\n\nZeile drei'
 let page: Awaited<ReturnType<typeof mountSuspended>> | undefined
 let setWide: (next: boolean) => void
 
-async function mount(props: { name?: string, notes: NotesDoc | null, eventNotes?: NotesDoc | null, eventName?: string, eventFinished?: boolean }) {
-  page = await mountSuspended(GameNotesButton, { props: { name: 'Mario Kart', ...props }, attachTo: document.body })
+// The Event's name and whether it is finished are the Event page's context's (#821), not props.
+async function mount({ eventName, eventFinished, ...props }: { name?: string, notes: NotesDoc | null, eventNotes?: NotesDoc | null, eventName?: string, eventFinished?: boolean }) {
+  const { global } = eventNotesContext({ ...(eventName === undefined ? {} : { eventName }), finished: eventFinished ?? false })
+  page = await mountSuspended(GameNotesButton, { props: { name: 'Mario Kart', ...props }, attachTo: document.body, global })
   await flushPromises()
   return page
 }

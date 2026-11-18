@@ -1,5 +1,6 @@
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import { flushPromises, type VueWrapper } from '@vue/test-utils'
+import type { Ref } from 'vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import GameDialog from '~/components/GameDialog.vue'
 import GameTile from '~/components/GameTile.vue'
@@ -9,6 +10,8 @@ import { GAME_NAME_MAX, GAME_NOTES_MAX, TAG_MAX, TAGS_PER_GAME_MAX, type HostGam
 import { notesFromLines, type NotesDoc } from '~~/shared/notes-doc'
 import { colorTags } from '~~/shared/tag-colors'
 import { kitty, signInAs } from './auth'
+import type { EventNotesContext } from '~/composables/useEventNotes'
+import { eventNotesContext } from './helpers/event-notes-context'
 import { BLANK_NOTES, FORMATTED_HREF, FORMATTED_NOTES, readFormatted } from './helpers/formatted-notes'
 import { editorOf, ensureGeometry, type } from './helpers/notes-editor'
 
@@ -44,8 +47,13 @@ const FACTS: HostGameFacts = {
 let wrapper: VueWrapper | undefined
 
 type Save = (gameId: string, notes: NotesDoc | null) => Promise<boolean>
-async function open(props: { game?: PoolGameFace, audience?: 'host' | 'member', facts?: HostGameFacts | null, eventNotes?: NotesDoc | null, eventName?: string, eventFinished?: boolean, saveEventNotes?: Save | null } = {}) {
-  wrapper = await mountSuspended(GameDialog, { props: { open: true, game: FULL, audience: 'host', facts: FACTS, ...props } })
+// The Event notes of the game, its Event's name, whether it is finished and the page's save are the Event page's context's (#821), not props: `event` is the one the page holds,
+// so a test refetches or finishes the Event by changing it.
+let event: Ref<EventNotesContext | null>
+async function open({ eventNotes = null, eventName, eventFinished = false, saveEventNotes = null, game = FULL, ...props }: { game?: PoolGameFace, audience?: 'host' | 'member', facts?: HostGameFacts | null, eventNotes?: NotesDoc | null, eventName?: string, eventFinished?: boolean, saveEventNotes?: Save | null } = {}) {
+  const { context, global } = eventNotesContext({ notes: eventNotes ? { [game.id]: eventNotes } : null, finished: eventFinished, save: saveEventNotes, ...(eventName === undefined ? {} : { eventName }) })
+  event = context
+  wrapper = await mountSuspended(GameDialog, { props: { open: true, game, audience: 'host', facts: FACTS, ...props }, global })
   await flushPromises()
   return wrapper
 }
@@ -522,7 +530,8 @@ describe('the Host writes the Event notes in the dialog (#464)', () => {
   /** The page's answer to a save: the Event is refetched before the dialog hears whether it was taken, as `send` does. */
   function takes(next: NotesDoc | null) {
     answer = async () => {
-      await wrapper!.setProps({ eventNotes: next })
+      event.value!.notes = next ? { [FULL.id]: next } : null
+      await flushPromises()
       return true
     }
   }
@@ -868,10 +877,10 @@ describe('the Host writes the Event notes in the dialog (#464)', () => {
 
   describe('while the Event changes under the edit', () => {
     it('ends the edit when the Event finishes: the frozen block shows, no editor', async () => {
-      const page = await open({ eventNotes: EVENT_DOC, saveEventNotes })
+      await open({ eventNotes: EVENT_DOC, saveEventNotes })
       await startEditing()
 
-      await page.setProps({ eventFinished: true })
+      event.value!.finished = true
       await flushPromises()
 
       expect(textbox()).toBeNull()
@@ -881,11 +890,11 @@ describe('the Host writes the Event notes in the dialog (#464)', () => {
     })
 
     it('keeps the typed text when a refetch brings other notes', async () => {
-      const page = await open({ eventNotes: EVENT_DOC, saveEventNotes })
+      await open({ eventNotes: EVENT_DOC, saveEventNotes })
       await startEditing()
       type(wrapper!.findComponent(RichNotesEditor), '!')
 
-      await page.setProps({ eventNotes: OTHER_DOC })
+      event.value!.notes = { [FULL.id]: OTHER_DOC }
       await flushPromises()
 
       expect(editor().getJSON()).toEqual(notesFromLines(['Heute nur Bo1!']))

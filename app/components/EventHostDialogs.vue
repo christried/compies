@@ -232,7 +232,6 @@ defineExpose({
     :pool="poolLeft"
     :busy="setting"
     :veto-switch="vetoSwitch"
-    :event-notes="view.eventNotes"
     @close="pickerOpen = false"
     @pick="setNextGame"
   />

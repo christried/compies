@@ -10,7 +10,6 @@ import { flapperKick, pinCrossings } from '~/utils/wheel-pins'
 import { cardPop, labelPop, popOver } from '~/utils/wheel-stop'
 import { stopReached } from '~~/shared/draw-timeline'
 import type { HostGameFacts } from '~~/shared/game'
-import type { NotesDoc } from '~~/shared/notes-doc'
 import type { WheelView } from '~~/shared/stage'
 import { characterCount, cutToCharacters } from '~~/shared/text'
 import { refillAt, refillPlan, type RefillPlan, type RestSlice } from '~/utils/wheel-refill'
@@ -41,14 +40,7 @@ const props = withDefaults(defineProps<{
   serverNow: () => number
   /** The Tags and Notes of the games, for the Host's game dialog on the drawn game's tile (#443); null for every other Member. */
   hostGames?: Record<string, HostGameFacts> | null
-  /** The Host's Event notes by game id (#732); null for every Member. Each game's tile reads its entry for the dialog. */
-  eventNotes?: Record<string, NotesDoc> | null
-  /** The Event's name and whether it is finished (#729): the dialog's Event notes block shows its sub and its finished look (#464 threads them here). */
-  eventName?: string
-  eventFinished?: boolean
-  /** Saves the Host's Event notes of a game from the drawn game's dialog (#464); resolves to whether the server took it. */
-  saveEventNotes?: ((gameId: string, notes: NotesDoc | null) => Promise<boolean>) | null
-}>(), { hostGames: null, eventNotes: null, eventName: undefined, eventFinished: false, saveEventNotes: null })
+}>(), { hostGames: null })
 
 const { t } = useI18n()
 
@@ -523,10 +515,6 @@ const headingId = useId()
           :game="card"
           :audience="isHost ? 'host' : 'member'"
           :facts="hostGames?.[card.id] ?? null"
-          :event-notes="eventNotes?.[card.id] ?? null"
-          :event-name="eventName"
-          :event-finished="eventFinished"
-          :save-event-notes="saveEventNotes"
         />
       </div>
     </div>

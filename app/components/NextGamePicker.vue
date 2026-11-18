@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { Check } from '@lucide/vue'
 import { NO_FILTERS, canSeeLibrary, type GameFilters, type PoolGame } from '~~/shared/game'
-import type { NotesDoc } from '~~/shared/notes-doc'
 
 // The Host sets the next game (#228, 02-components § NextGamePicker, screen 15 „Admin-Wahl“): a sheet that lists the games
 // still left in the Game pool first, then the library search the app already has (GameBrowser, the one search). The Host
@@ -16,13 +15,13 @@ const props = defineProps<{
   busy: boolean
   /** Whether the Selection mode has Vetoes (a wheel, #232): then the Host decides with a switch whether the Parties may veto the game. */
   vetoSwitch?: boolean
-  /** The Host's Event notes by game id (#732), from the Event read; each game's notes button shows its entry above the Game notes. */
-  eventNotes?: Record<string, NotesDoc> | null
 }>()
 
 const emit = defineEmits<{ close: [], pick: [gameId: string, vetoAllowed: boolean] }>()
 
 const { t } = useI18n()
+// The Host's Event notes by game id (#732) are the Event page's context's (#821): each game's notes button shows its entry above the Game notes.
+const { notesOf: eventNotesOf } = useEventNotes()
 const user = useAuthUser()
 const library = computed(() => canSeeLibrary(user.value))
 const filters = ref<GameFilters>({ ...NO_FILTERS })
@@ -75,7 +74,7 @@ const isChosen = (id: string) => chosen.value?.id === id
               <GameNotesButton
                 :name="game.name"
                 :notes="game.notes"
-                :event-notes="eventNotes?.[game.id] ?? null"
+                :event-notes="eventNotesOf(game.id)"
               />
               <IconButton
                 :icon="Check"
@@ -105,7 +104,7 @@ const isChosen = (id: string) => chosen.value?.id === id
           <GameNotesButton
             :name="game.name"
             :notes="game.notes"
-            :event-notes="eventNotes?.[game.id] ?? null"
+            :event-notes="eventNotesOf(game.id)"
           />
           <IconButton
             :icon="Check"
