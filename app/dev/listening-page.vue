@@ -2,11 +2,12 @@
 import LuckyWheel from '~/components/LuckyWheel.vue'
 import VetoWindow from '~/components/VetoWindow.vue'
 import {
-  CANDIDATE_BASE, CUE_BRIEF, MOMENT_LABEL, MOMENT_OF, MOMENT_SETUP, arrivalCues, buildRun, candidatesOf, choicesReport, configFor, emptyChoices, stampCues, testCandidateOf,
+  CANDIDATE_BASE, CUE_BRIEF, MOMENT_LABEL, MOMENT_OF, MOMENT_SETUP, arrivalCues, buildRun, candidatesOf, choicesReport, configFor, emptyChoices, stampCues, standingsChangeCues, testCandidateOf,
   type ArrivalButton, type Candidate, type Choices, type Controls, type Moment, type Run,
 } from '~/dev/listening-model'
 import { createCuePlayer, type CuePlayer } from '~/utils/cue-player'
 import { CUE_LENGTHS } from '~/utils/cue-lengths'
+import { countDurationMs } from '~/utils/motion'
 import { CUE_CREDITS_URL } from '~/utils/sound-credits'
 import { CUE_IDS, CUE_VOLUME, TICK_MIN_GAP_MS, type CueId } from '~/utils/sound-cues'
 import type { WheelView } from '~~/shared/stage'
@@ -151,6 +152,12 @@ async function arrive(button: ArrivalButton) {
   for (const cue of arrivalCues(button, Date.now())) armed.playNow(cue.id, cue.delayMs)
 }
 
+/** The test Standings change (#741): the real `standingsCues` on a fixed change, with the page's reduced switch, through the real player. */
+async function standingsChange() {
+  if (!await ensureContext() || !armed) return
+  for (const cue of standingsChangeCues(controls.reduced, countDurationMs())) armed.playNow(cue.id, cue.delayMs)
+}
+
 /** What a moment's button runs (#740): a new `Moment` has no runner until it has a row here, so typecheck says so. A new moment's row sits under its group's line. */
 const MOMENT_RUNNERS: Record<Moment, (id: CueId) => void> = {
   // wheel
@@ -161,6 +168,7 @@ const MOMENT_RUNNERS: Record<Moment, (id: CueId) => void> = {
   arrival: () => void arrive('own'),
   // coin
   // standings
+  standings: () => void standingsChange(),
   // board
   // ceremony
   // tour

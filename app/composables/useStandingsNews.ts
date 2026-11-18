@@ -69,6 +69,7 @@ export function useStandingsNews(data: Readonly<Ref<EventView | null | undefined
       winners: winnersOf(fresh.result.places),
       at: Date.now(),
       announcement: announce(view, fresh.kind, fresh.result.number, before),
+      cuesAsked: new Set(),
     }
     timer = setTimeout(() => {
       news.value = null

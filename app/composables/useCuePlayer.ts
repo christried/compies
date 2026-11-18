@@ -11,11 +11,17 @@ import type { EventView } from '~~/shared/event'
 // from it, a timer or a frame.
 
 /**
- * What the group rule reads of a read (#740): three flags, so no file is requested from anything the viewer may not know. Which groups they
+ * What the group rule reads of a read (#740): a few flags, so no file is requested from anything the viewer may not know. Which groups they
  * reach and which files each group holds are `reachableGroups` and `CUE_GROUPS` in sound-cues.ts (#531, #532).
  */
 function groupInputOf(view: EventView | null | undefined): GroupInput {
-  return { wheel: view?.wheel != null, vetoAllowance: view?.settings?.vetoAllowance ?? 0, vetoWindow: view?.wheel?.vetoes.draw != null }
+  return {
+    wheel: view?.wheel != null,
+    vetoAllowance: view?.settings?.vetoAllowance ?? 0,
+    vetoWindow: view?.wheel?.vetoes.draw != null,
+    // The Event is set up and not finished, the page's own rule of `useStandingsNews`: the Host's read and a Member's hold both fields (#741).
+    standings: view?.standings != null && view.event.phase !== 'finished',
+  }
 }
 
 /**
@@ -64,7 +70,7 @@ export function useCuePlayer(input: {
   ready: () => boolean
   /** Grows when the server clock's offset changed (`useServerClock().moves`): the pending cues are looked at again (#594). */
   moved: () => number
-}): { suspended: Readonly<Ref<boolean>>, resume: () => Promise<void> } {
+}): { suspended: Readonly<Ref<boolean>>, resume: () => Promise<void>, playNow: CuePlayer['playNow'] } {
   // Order matters: `useSound` registers its read of the stored switch first, so Ton has its stored value when `mounted` turns true.
   const { enabled } = useSound()
   const mounted = ref(false)
@@ -169,5 +175,8 @@ export function useCuePlayer(input: {
     await ensure()?.resume()
   }
 
-  return { suspended: readonly(suspended), resume }
+  /** The player's immediate play, for what the page hands down (`useImmediateCue`, #741): with Ton off there is no player, so nothing is scheduled or logged. */
+  const playNow: CuePlayer['playNow'] = (...args) => player?.playNow(...args)
+
+  return { suspended: readonly(suspended), resume, playNow }
 }
