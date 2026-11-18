@@ -38,6 +38,14 @@ Each concern below has one home. New code calls it; a second copy is a finding e
 | What is open on the page, for the Tour's calm second | `useOpenLayers` (#647): `useDialog` and `useDropdownMenu` track themselves; a new overlay that opens by a click calls `track` too (MoveToMenu's popover, #785), or the Tour starts over it |
 | The `data-tour` markers the Tour points at | on the Event page's elements, pinned by `test/nuxt/event-page-tour-markers.test.ts` |
 | The User's stored Tour version (`user.tourSeen`: read, set seen, reset) | `useTourSeen` (#785): `useTour` finishes and skips through it, the Profil's „Rundgang“ row resets through it |
+| The notes document: its parse, its visible-text rule, its length and its link address | `shared/notes-doc.ts`: `parseNotes` (the parser behind the write routes and the editor), `notesHasText` (the one rule for „are there notes“), `notesLength`, `notesLinkHref`; a game's limit is `GAME_NOTES_MAX` in `shared/game.ts`, passed to `parseNotes`. A link's `rel` is `NOTES_LINK_REL` from the same file |
+| Rendering a notes document (never `v-html`, ADR 0019) and the one stylesheet for it | `RichNotes` (`app/components/RichNotes.vue`), styled by `app/assets/css/notes.css` only |
+| Loading the notes editor where a note is edited, with its failure line and retry | `RichNotesEditorLoader` (`app/components/RichNotesEditorLoader.vue`, #822): the one way to load `RichNotesEditor`; the editor's Tiptap list (`createNotesExtensions` in `app/utils/notes-extensions.ts`) stays in the lazy chunk through the `lazy-chunks-no-prefetch` rule in `nuxt.config.ts` |
+| „In this Host's library“, „not Archived“, „a live Event“ (every query about the library and the Game pools) | `server/utils/library.ts` (#820): `ownedBy(hostId)`, `notArchived`, `archivedGame`, `liveEventOf(hostId)` and `poolGames` (an Event's pool, the Host's own games only); a query that spells `games.createdBy`, `games.archivedAt` or the live-Event rule itself is a finding |
+| The Event notes a Host's page holds, and the pair of a game's Game notes and Event notes (the sub of each block when both show) | `useEventNotes` and `provideEventNotes` in `app/composables/useEventNotes.ts` (`EventNotesContext`, `SaveEventNotes`; #821): a component reads the context where it needs it; `useNotePair` in `app/composables/useNotePair.ts` (#821) gives the pair of blocks |
+| The number of the pool a Host sees, for any count the wheel and the pool lists show | `wheelPoolSize` in `app/utils/event-draft.ts` |
+| Archiving and restoring a game from the browser | `useGameArchive` in `app/composables/useGameArchive.ts` (#467) |
+| Tags in label order | `sortTagsByLabel` in `shared/game.ts` |
 
 A second page, flow or component that does what an existing one does needs its reason in the PR description. Without one, the review asks for the existing module to grow instead.
 

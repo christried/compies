@@ -200,7 +200,7 @@ export const gameSuitability = pgEnum('game_suitability', SUITABILITIES)
 // A game's Price source (#337, GLOSSARY: Price): an enum of its own, since the glossary term is its own.
 export const priceSource = pgEnum('price_source', PRICE_SOURCES)
 
-// The Game library (#141, brief §15): one global library that Hosts fill. Games are never deleted, so
+// The Game library (#141, brief §15): one library per Host (ADR 0018). Games are never deleted, so
 // Events that used them keep working. `imageKey` names the image in the image store (#143); `youtubeId`
 // is the clip's video id, played from `clipStart` for `clipLength` seconds.
 export const games = pgTable('games', {
