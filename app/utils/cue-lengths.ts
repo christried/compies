@@ -53,6 +53,9 @@ export const CUE_LENGTHS: Record<CueId, CueLength> = {
   // One document row names both (`cer-trip` / `cer-bonk`), so neither is clean.
   'cer-trip': { ms: 400, loop: false, docRow: false },
   'cer-bonk': { ms: 400, loop: false, docRow: false },
+  'cer-stamp': { ms: 200, loop: false, docRow: true },
+  'cer-fanfare': { ms: 2500, loop: false, docRow: true },
+  'cer-crowd': { ms: 2000, loop: false, docRow: true },
   // tour
   'cb-hi': { ms: 300, loop: false, docRow: true },
 }

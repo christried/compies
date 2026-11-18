@@ -64,6 +64,9 @@ describe('ceremonyCuePlan', () => {
       { id: 'cer-row', at: START + m.rowAtMs[2]!, rate: 2 ** (2 / 12) },
       { id: 'cer-run', at: START + m.runAtMs },
       { id: 'cer-trip', at: START + m.runEndAtMs },
+      { id: 'cer-stamp', at: START + m.stampAtMs },
+      { id: 'cer-fanfare', at: START + m.stampAtMs },
+      { id: 'cer-crowd', at: START + m.stampAtMs },
     ])
   })
 
@@ -71,13 +74,14 @@ describe('ceremonyCuePlan', () => {
     const m = ceremonyTimeline(shape(4, 'bonk'))
     const cues = plan(shape(4, 'bonk'))
 
-    expect(ids(cues)).toEqual(['cer-drop', 'cer-row', 'cer-row', 'cer-row', 'cer-run', 'cer-bonk'])
-    expect(cues.at(-1)).toEqual({ id: 'cer-bonk', at: START + m.bonkAtMs })
+    expect(ids(cues)).toEqual(['cer-drop', 'cer-row', 'cer-row', 'cer-row', 'cer-run', 'cer-bonk', 'cer-stamp', 'cer-fanfare', 'cer-crowd'])
+    expect(cues.find(cue => cue.id === 'cer-bonk')).toEqual({ id: 'cer-bonk', at: START + m.bonkAtMs })
+    expect(cues.find(cue => cue.id === 'cer-stamp')).toEqual({ id: 'cer-stamp', at: START + m.stampAtMs })
     expect(ids(plan(shape(4, 'trip')))).not.toContain('cer-bonk')
   })
 
   it('has no row when the Winner is the only Party, and still drops, runs and trips', () => {
-    expect(ids(plan(shape(1)))).toEqual(['cer-drop', 'cer-run', 'cer-trip'])
+    expect(ids(plan(shape(1)))).toEqual(['cer-drop', 'cer-run', 'cer-trip', 'cer-stamp', 'cer-fanfare', 'cer-crowd'])
   })
 
   it('is ascending by instant for every Party count and both gags', () => {
@@ -94,14 +98,18 @@ describe('ceremonyCuePlan', () => {
   })
 
   it('drops nothing for being past: a plan far in the past is the whole plan', () => {
-    expect(ceremonyCuePlan({ startsAt: 0, shape: shape(4), reducedMotion: false })).toHaveLength(6)
+    expect(ceremonyCuePlan({ startsAt: 0, shape: shape(4), reducedMotion: false })).toHaveLength(9)
   })
 
-  // #744 gives reduced motion its fanfare, #745 gives a Tie its moments: until they do, both are silent.
-  it('is empty under reduced motion', () => {
-    expect(plan(shape(4), true)).toEqual([])
+  it('is the fanfare alone under reduced motion, at the start', () => {
+    expect(plan(shape(4), true)).toEqual([{ id: 'cer-fanfare', at: START }])
   })
 
+  it('is the fanfare alone under reduced motion for a Tie too (the end frame shows at the start; #745 may change it)', () => {
+    expect(plan(shape(4, 'trip', { winners: 2 }), true)).toEqual([{ id: 'cer-fanfare', at: START }])
+  })
+
+  // #745 gives a Tie its moments: until it does, a ceremony with several Winners is silent under full motion.
   it('is empty for a ceremony with several Winners', () => {
     expect(plan(shape(4, 'trip', { winners: 2 }))).toEqual([])
     expect(plan(shape(8, 'bonk', { winners: 3, grid: true }))).toEqual([])
@@ -124,8 +132,8 @@ describe('the files of the ceremony', () => {
     expect(reachableGroups({ wheel: false, vetoAllowance: 0, vetoWindow: false })).toEqual([])
   })
 
-  it('include the five of this ticket, in the order of the timeline', () => {
-    expect(cueFilesOf(['ceremony'])).toEqual(expect.arrayContaining(['cer-drop', 'cer-row', 'cer-run', 'cer-trip', 'cer-bonk']))
+  it('include the eight of #743 and #744, in the order of the timeline', () => {
+    expect(cueFilesOf(['ceremony'])).toEqual(expect.arrayContaining(['cer-drop', 'cer-row', 'cer-run', 'cer-trip', 'cer-bonk', 'cer-stamp', 'cer-fanfare', 'cer-crowd']))
     const files = cueFilesOf(['ceremony'])
     expect(files.indexOf('cer-drop')).toBeLessThan(files.indexOf('cer-row'))
     expect(files.indexOf('cer-run')).toBeLessThan(files.indexOf('cer-trip'))
