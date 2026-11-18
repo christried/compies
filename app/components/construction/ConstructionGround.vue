@@ -46,7 +46,7 @@ const LOOK = {
       </div>
     </div>
 
-    <!-- „Baustelle! Eltern haften für ihre Dinos.“ is HTML so the copy stays translatable (05-assets). -->
+    <!-- „Baustelle! Eltern haften für ihren Dackel.“ is HTML so the copy stays translatable (05-assets). -->
     <div
       v-if="sign"
       class="construction-sign absolute layer-content flex rotate-2 flex-col items-center text-center"

@@ -62,7 +62,7 @@ describe('construction page route guard', () => {
   it('renders the Archiv state with its own title in the hub shell', async () => {
     const page = await visit('/archiv')
 
-    expect(page.get('h1').text()).toBe('Das Archiv wird noch gemauert.')
+    expect(page.get('h1').text()).toBe('Das Archiv kommt bald. Bestimmt.')
     expect(page.find('nav[aria-label="Hauptnavigation"]').exists()).toBe(true)
   })
 
@@ -84,7 +84,7 @@ describe('construction page route guard', () => {
     signInAs({ ...kitty, canHost: true, isAdmin: true })
     const page = await visit('/admin')
 
-    expect(page.get('h1').text()).toBe('Der Admin-Bereich hat noch keine Tür.')
+    expect(page.get('h1').text()).toBe('Der Admin-Bereich kommt vielleicht noch. Wenn man den überhaupt braucht.')
     expect(page.findAll('nav[aria-label="Hauptnavigation"] a').some(a => a.text() === 'Bibliothek')).toBe(true)
   })
 
