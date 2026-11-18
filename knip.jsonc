@@ -49,6 +49,8 @@
         "scripts/bake-compibert.mjs!",
         // Run by hand with node; its output under sound-candidates/ (the listening session's candidates, #535) is committed.
         "scripts/make-cue-candidates.mjs!",
+        // Loaded by make-cue-candidates.mjs by listing the folder, one file per moment (#740), so no import of a file reaches them.
+        "scripts/cue-recipes/*.mjs!",
         // Run by hand with node (#536, #593): copies a candidate to public/sounds/cues/ and writes its credits entry; the result is committed.
         "scripts/ship-cue-sound.mjs!",
         // Run by hand with node (#627): prints the message keys a dev-server page carries.
