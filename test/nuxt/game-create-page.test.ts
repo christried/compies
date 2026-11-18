@@ -211,6 +211,39 @@ describe('the create page', () => {
     page.unmount()
   })
 
+  // #806: the toast after „Spiel anlegen“ offers „Noch eins“, which opens a fresh form for the next game.
+  it('the toast after „Spiel anlegen“ offers „Noch eins“, and the action opens a fresh form at /bibliothek/neu', async () => {
+    const page = await mount()
+    await field(page, 'Titel').setValue('Mario Kart')
+    await field(page, 'YouTube-Link').setValue(LINK)
+
+    await page.get('form').trigger('submit')
+
+    await vi.waitFor(() => expect(useRoute().path).toBe(`/bibliothek/${created.id}`))
+    const toast = useState<{ text: string, action?: { label: string, run: () => void } }[]>('toasts').value
+      .find(candidate => candidate.text === 'Mario Kart ist in der Bibliothek.')
+    expect(toast?.action?.label).toBe('Noch eins')
+
+    toast!.action!.run()
+
+    await vi.waitFor(() => expect(useRoute().path).toBe('/bibliothek/neu'))
+    page.unmount()
+  })
+
+  it('the toast after „Speichern und noch eins“ offers no action', async () => {
+    const page = await mount()
+    await fillEverything(page)
+
+    await button(page, 'Speichern und noch eins').trigger('click')
+
+    await vi.waitFor(() => expect(shownToasts().map(toast => toast.text)).toContain('Mario Kart ist in der Bibliothek.'))
+    const toast = useState<{ text: string, action?: unknown }[]>('toasts').value
+      .find(candidate => candidate.text === 'Mario Kart ist in der Bibliothek.')
+    expect(toast).toBeDefined()
+    expect(toast?.action).toBeUndefined()
+    page.unmount()
+  })
+
   describe('one save creates one game (#573)', () => {
     /** A promise the test settles by hand, to hold the page handler. */
     function deferred() {
