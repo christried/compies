@@ -6,6 +6,19 @@ import AppButton from '~/components/AppButton.vue'
 // glow (`.aura`, the comet ring of compies-theme.css); every other button has none. The option is a declared
 // prop, so it never reaches the DOM as an attribute.
 
+describe('AppButton brand variants (#792)', () => {
+  it.each(['discord', 'twitch'] as const)('gives the %s button its brand fill and white text, at the secondary weight', async (variant) => {
+    const page = await mountSuspended(AppButton, { props: { variant }, slots: { default: 'Los' } })
+
+    const classes = page.get('button').classes()
+    expect(classes).toContain(`bg-${variant}`)
+    expect(classes).toContain(`text-on-${variant}`)
+    expect(classes).not.toContain('bg-primary')
+    expect(classes).toContain('font-bold')
+    expect(classes).not.toContain('font-extrabold')
+  })
+})
+
 describe('AppButton aura option (#471)', () => {
   it('has no aura by default', async () => {
     const page = await mountSuspended(AppButton, { slots: { default: 'Los' } })

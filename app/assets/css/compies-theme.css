@@ -54,6 +54,8 @@
   --color-warning: var(--cp-warning);  --color-on-warning: var(--cp-on-warning);  --color-warning-fg: var(--cp-warning-fg);
   --color-error: var(--cp-error);      --color-on-error: var(--cp-on-error);      --color-error-fg: var(--cp-error-fg);
   --color-info: var(--cp-info);        --color-on-info: var(--cp-on-info);        --color-info-fg: var(--cp-info-fg);
+  --color-discord: var(--cp-discord);  --color-on-discord: var(--cp-on-discord);
+  --color-twitch: var(--cp-twitch);    --color-on-twitch: var(--cp-on-twitch);
   /* Notice backgrounds (#172): a pale tint of the tone on the surface, opaque so the dotted page never shows through. */
   --color-success-tint: color-mix(in srgb, var(--cp-success) 15%, var(--cp-surface));
   --color-warning-tint: color-mix(in srgb, var(--cp-warning) 15%, var(--cp-surface));

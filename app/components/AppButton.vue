@@ -4,7 +4,8 @@ import type { RouteLocationRaw } from 'vue-router'
 // One primary per view. MVP covers the variants and sizes the shell needs;
 // disabled-with-reason is aria-disabled (still focusable, reason linked via aria-describedby).
 const props = withDefaults(defineProps<{
-  variant?: 'primary' | 'secondary'
+  /** discord and twitch: the sign-in buttons in their brand's fill (#792). */
+  variant?: 'primary' | 'secondary' | 'discord' | 'twitch'
   /** card = 48 px, the buttons of the Event page's Session cards and its calendar and invite row (#49). */
   size?: 'md' | 'card' | 'lg' | 'xl'
   /** Renders a NuxtLink instead of a button. */
@@ -21,6 +22,8 @@ const SIZE = { md: 'h-control-md px-4 text-small', card: 'h-12 px-4.5 text-body'
 const VARIANT = {
   primary: 'bg-primary text-on-primary',
   secondary: 'bg-surface text-ink',
+  discord: 'bg-discord text-on-discord',
+  twitch: 'bg-twitch text-on-twitch',
 }
 
 // Primary weighs 800 except on a card, where it matches the secondary 700.
