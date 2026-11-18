@@ -1,4 +1,4 @@
-import { and, eq, isNull } from 'drizzle-orm'
+import { and, eq } from 'drizzle-orm'
 import { draws, events, games, rounds, vetoes } from '../db/schema'
 import { WHEEL_PLACEHOLDERS, drawSpin } from '../domain/wheel'
 import type { RoundSpun, VetoCast } from '../../shared/stage'
@@ -11,6 +11,7 @@ import { apiError } from './errors'
 import type { ChangeCore, EventChange, EventRow } from './event-access'
 import { dueDraws } from './draw-timeline'
 import { gamesLeftOf, partyOf, readEventState, roundRowsOf, setReason, spinReason, vetoReason, vetoesLeftOf, withParts } from './event-state'
+import { notArchived, ownedBy } from './library'
 import { settleDue } from './settle'
 
 // The Event's Rounds (GLOSSARY: Round, #228): the changes the Host makes, setting the next game, spinning the wheel and putting a Round
@@ -66,7 +67,7 @@ export async function setNextGame({ tx, eventRow, user, publish, now }: ChangeCo
   if (rejection) throw apiError(rejection)
   // The rules above refused an Event without settings. Host pick has no Vetoes (spec #218 § Vetoes).
   if (vetoAllowed && !hasWheel(state.settings!.selectionMode)) throw apiError('no_wheel')
-  const [game] = await tx.select({ id: games.id, youtubeId: games.youtubeId, clipLength: games.clipLength }).from(games).where(and(eq(games.id, gameId), eq(games.createdBy, eventRow.hostId), isNull(games.archivedAt)))
+  const [game] = await tx.select({ id: games.id, youtubeId: games.youtubeId, clipLength: games.clipLength }).from(games).where(and(eq(games.id, gameId), ownedBy(eventRow.hostId), notArchived))
   if (!game) throw apiError('unknown_game')
   const roundRows = roundRowsOf(state)
   // A retried „Setzen“ would open a second Round of the same game, and a vetoed game stays vetoed, library or pool (review 0.7, F14).

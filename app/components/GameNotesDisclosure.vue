@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ChevronDown, Lock, StickyNote } from '@lucide/vue'
-import { notesHasText, type NotesDoc } from '~~/shared/notes-doc'
+import type { NotesDoc } from '~~/shared/notes-doc'
 
 // The Game notes of a game (#224, GLOSSARY: Game notes) as a disclosure: collapsed by default, announced as open or
 // closed, and the document formatted by RichNotes (#728). A document without a visible character shows no button; `notes` left at null (the slot's use) shows it. The panel is rendered only while it is open.
@@ -17,18 +17,13 @@ const props = withDefaults(defineProps<{
   label?: string
   startOpen?: boolean
   variant?: 'default' | 'round'
-  /** The Event's name, the sub of its block where both blocks show (#729); the page that holds it gives it. */
-  eventName?: string
-  eventFinished?: boolean
-}>(), { notes: null, eventNotes: null, label: undefined, startOpen: false, variant: 'default', eventName: undefined, eventFinished: false })
+}>(), { notes: null, eventNotes: null, label: undefined, startOpen: false, variant: 'default' })
 
 const { t } = useI18n()
 const panelId = useId()
 const open = ref(props.startOpen)
-const shown = computed(() => (props.notes === null && props.eventNotes === null) || notesHasText(props.notes) || notesHasText(props.eventNotes))
-const gameDoc = computed(() => notesHasText(props.notes) ? props.notes : null)
-const eventDoc = computed(() => notesHasText(props.eventNotes) ? props.eventNotes : null)
-const both = computed(() => gameDoc.value !== null && eventDoc.value !== null)
+const { doc, eventDoc } = useNotePair(() => props.notes, () => props.eventNotes)
+const shown = computed(() => (props.notes === null && props.eventNotes === null) || doc.value !== null || eventDoc.value !== null)
 </script>
 
 <template>
@@ -72,29 +67,13 @@ const both = computed(() => gameDoc.value !== null && eventDoc.value !== null)
         :id="panelId"
         class="overflow-hidden rounded-[12px] bg-paper-2"
       >
-        <div class="flex flex-col gap-3.5 px-3.5 pt-3 pb-3.5">
-          <EventNotes
-            v-if="eventDoc"
-            :notes="eventDoc"
-            size="sm"
-            :sub="both ? eventName : undefined"
-            :finished="eventFinished"
-          />
-          <div
-            v-if="both"
-            data-notes-rule
-            class="h-0.5 flex-none rounded-[1px] bg-line-soft"
-            aria-hidden="true"
-          />
-          <NoteBlock
-            v-if="gameDoc"
-            kind="game"
-            :doc="gameDoc"
-            size="sm"
-            :sub="both ? t('notes.from_library') : undefined"
-            bare
-          />
-        </div>
+        <GameNotesStack
+          class="px-3.5 pt-3 pb-3.5"
+          :notes="doc"
+          :event-notes="eventDoc"
+          size="sm"
+          bare
+        />
       </div>
     </Transition>
   </div>
@@ -122,18 +101,11 @@ const both = computed(() => gameDoc.value !== null && eventDoc.value !== null)
       class="rounded-[12px] bg-paper-2 px-3.5 py-3"
     >
       <slot>
-        <div class="flex flex-col gap-3">
-          <EventNotes
-            v-if="eventNotes"
-            :notes="eventNotes"
-            size="sm"
-          />
-          <RichNotes
-            v-if="notes && notesHasText(notes)"
-            :doc="notes"
-            size="sm"
-          />
-        </div>
+        <GameNotesStack
+          :notes="doc"
+          :event-notes="eventDoc"
+          size="sm"
+        />
       </slot>
     </div>
   </div>

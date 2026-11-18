@@ -140,6 +140,8 @@ describe('Event notes are in no read but the Host\'s (#731)', () => {
       await save(slug, a, notes)
       const messages = notifier.messages(eventId)
       expect(messages.map(message => message.type), step).toEqual(['event.changed'])
+      // Named to the Host alone (#820): the Host's other tabs refresh, no Member's channel hears of a save or learns that the Host edits notes.
+      expect(notifier.sends(eventId).map(send => send.to), step).toEqual([[world.hostSigned.id]])
       const sent = JSON.stringify(messages)
       expect(sent, step).not.toContain(TRACE)
       expect(sent, step).not.toContain(REPLACED)

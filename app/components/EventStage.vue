@@ -189,7 +189,6 @@ watch(() => ({ kind: props.pageState.kind, blocks: props.pageState.blocks, count
           v-else-if="block === 'wheel'"
           :view="view"
           :server-now="serverNow"
-          :save-event-notes="actions.saveEventNotes"
         />
 
         <EventRounds
@@ -202,10 +201,6 @@ watch(() => ({ kind: props.pageState.kind, blocks: props.pageState.blocks, count
           :enter-result="actions.enterResult"
           :end="view.end"
           :host-games="view.hostGames"
-          :event-notes="view.eventNotes"
-          :event-name="view.event.name"
-          :event-finished="view.event.phase === 'finished'"
-          :save-event-notes="actions.saveEventNotes"
         />
 
         <Leaderboard
@@ -309,10 +304,6 @@ watch(() => ({ kind: props.pageState.kind, blocks: props.pageState.blocks, count
             :locked="started"
             :host-name="hostName"
             :host-games="view.hostGames"
-            :event-notes="view.eventNotes"
-            :event-name="view.event.name"
-            :event-finished="view.event.phase === 'finished'"
-            :save-event-notes="actions.saveEventNotes"
           />
         </div>
       </div>

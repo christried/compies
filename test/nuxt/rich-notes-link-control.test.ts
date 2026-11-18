@@ -76,7 +76,7 @@ describe('the link control', () => {
     await enter(page, 'a.de')
 
     // The editor's own mark carries the rendering attributes; they are gone from what the form gets, below.
-    expect(firstMarks(page)?.[0]?.[0]).toMatchObject({ type: 'link', attrs: { href: 'https://a.de/', target: '_blank', rel: 'noopener noreferrer nofollow' } })
+    expect(firstMarks(page)?.[0]?.[0]).toMatchObject({ type: 'link', attrs: { href: 'https://a.de/', target: '_blank', rel: 'noopener noreferrer' } })
     expect(page.find('input[type="url"]').exists()).toBe(false)
     expect(editorOf(page).state.selection.from).toBe(7)
     // What the form gets carries the address and nothing of the link's rendering.

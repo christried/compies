@@ -6,6 +6,7 @@ import type { GameTag, GameView, PoolGame } from '~~/shared/game'
 import { kitty, signInAs } from './auth'
 import { clickButton, dialog, restoreScreen, stubScreen } from './event-page'
 import { notesFromLines, type NotesDoc } from '~~/shared/notes-doc'
+import { eventNotesContext } from './helpers/event-notes-context'
 import { FORMATTED_NOTES, readFormatted } from './helpers/formatted-notes'
 
 // The switch „Veto erlauben“ in the picker for the next game (#232, spec #218 § „Nächstes Spiel setzen“, stories 50 and 53): off every
@@ -15,8 +16,10 @@ const halo: PoolGame = { id: 'g-halo', name: 'Halo', imageUrl: null, youtubeId: 
 
 let page: Awaited<ReturnType<typeof mountSuspended>> | undefined
 
-async function mount(props: { open?: boolean, vetoSwitch?: boolean, pool?: PoolGame[], eventNotes?: Record<string, NotesDoc> | null } = {}) {
-  page = await mountSuspended(NextGamePicker, { props: { open: true, pool: [halo], busy: false, ...props } })
+// `eventNotes` and `eventName` are the Event page's context (#821): the picker reads them from it, not from props.
+async function mount({ eventNotes, eventName, ...props }: { open?: boolean, vetoSwitch?: boolean, pool?: PoolGame[], eventNotes?: Record<string, NotesDoc> | null, eventName?: string } = {}) {
+  const { global } = eventNotesContext({ notes: eventNotes ?? null, ...(eventName === undefined ? {} : { eventName }) })
+  page = await mountSuspended(NextGamePicker, { props: { open: true, pool: [halo], busy: false, ...props }, global })
   await flushPromises()
   return page
 }
@@ -355,6 +358,36 @@ describe('the Notes button of a game in the picker (#436)', () => {
     const text = popover()!.textContent!
     expect(text.indexOf('Heute nur Bo1')).toBeGreaterThan(-1)
     expect(text.indexOf('Heute nur Bo1')).toBeLessThan(text.indexOf('Settings: 3 Runden'))
+  })
+
+  it('names the Event under its notes block in the popover where both blocks show, and not where only the Event notes do (#821, review 0.16 N2)', async () => {
+    await mount({ pool: [poolWithNotes, poolWithout], eventNotes: { 'g-halo': notesFromLines(['Heute nur Bo1'])!, 'g-pong': notesFromLines(['Heute Bo3'])! }, eventName: 'Spieleabend bei Sanne' })
+
+    notesButtons(rowOf(poolList(), 'Halo'))[0]!.click()
+    await flushPromises()
+    expect(popover()!.textContent).toContain('Spieleabend bei Sanne')
+    expect(popover()!.textContent).toContain('aus deiner Bibliothek')
+    notesButtons(rowOf(poolList(), 'Halo'))[0]!.click()
+    await flushPromises()
+
+    notesButtons(rowOf(poolList(), 'Pong'))[0]!.click()
+    await flushPromises()
+    expect(popover()!.textContent).toContain('Heute Bo3')
+    expect(popover()!.textContent).not.toContain('Spieleabend bei Sanne')
+  })
+
+  it('names the Event under its notes block in the sheet where both blocks show (#821, review 0.16 N2)', async () => {
+    stubScreen(false)
+    await mount({ pool: [poolWithNotes], eventNotes: { 'g-halo': notesFromLines(['Heute nur Bo1'])! }, eventName: 'Spieleabend bei Sanne' })
+
+    notesButtons(poolList())[0]!.click()
+    await flushPromises()
+
+    expect(popover()).toBeNull()
+    const text = document.querySelectorAll('[data-sheet="panel"]')[1]!.textContent!
+    expect(text).toContain('Heute nur Bo1')
+    expect(text).toContain('Spieleabend bei Sanne')
+    expect(text).toContain('aus deiner Bibliothek')
   })
 
   it('follows the same map on the library cards (#732)', async () => {

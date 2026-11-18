@@ -31,7 +31,7 @@ describe('the formats', () => {
 
     expect(editorOf(page).getJSON().content?.[0]?.content?.[0]?.marks).toEqual([{ type: mark }])
     await vi.waitFor(() => expect(toolbarButton(page, label).attributes('aria-pressed')).toBe('true'))
-    expect(page.values.at(-1)).toEqual(doc(paragraph(text('Hallo', [{ type: mark }]))))
+    await vi.waitFor(() => expect(page.values.at(-1)).toEqual(doc(paragraph(text('Hallo', [{ type: mark }])))))
 
     await toolbarButton(page, label).trigger('click')
     expect(editorOf(page).getJSON().content?.[0]?.content?.[0]?.marks).toBeUndefined()
@@ -47,7 +47,7 @@ describe('the formats', () => {
 
     expect(editorOf(page).getJSON().content?.[0]?.type).toBe(kind)
     await vi.waitFor(() => expect(toolbarButton(page, label).attributes('aria-pressed')).toBe('true'))
-    expect(page.values.at(-1)).toEqual(doc({ type: kind, content: [item(paragraph(text('Hallo')))] }))
+    await vi.waitFor(() => expect(page.values.at(-1)).toEqual(doc({ type: kind, content: [item(paragraph(text('Hallo')))] })))
 
     await toolbarButton(page, label).trigger('click')
     expect(editorOf(page).getJSON().content?.[0]?.type).toBe('paragraph')

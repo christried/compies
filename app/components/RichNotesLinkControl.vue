@@ -3,7 +3,7 @@ import { getMarkRange } from '@tiptap/core'
 import type { Editor } from '@tiptap/vue-3'
 import { CircleAlert, Link, Unlink } from '@lucide/vue'
 import { MD_QUERY } from '~/composables/useMediaQuery'
-import { motionMs, motionToken, reducedMotion } from '~/utils/motion'
+import { disclosureEnter, disclosureLeave, motionMs, motionToken, reducedMotion } from '~/utils/motion'
 import { checkLinkAddress } from '~/utils/notes-editor'
 import { setLinkTarget } from '~/utils/notes-extensions'
 
@@ -158,34 +158,35 @@ onMounted(() => document.addEventListener('pointerdown', onPointerdown, true))
 onBeforeUnmount(() => document.removeEventListener('pointerdown', onPointerdown, true))
 
 // Motion (04-motion § Notizen), Web Animations as everywhere but the ceremonies (ADR 0015). Under reduced motion the popover fades without moving and the bar is cut.
+// Every run lets go of its Transition hook when the animation ends or is cancelled (the control unmounts while it runs, #822): `finished` settles either way,
+// `onfinish` only on a finish. The bar is the disclosure panels' height run (`heightRun`, which also cuts under reduced motion and in a hidden tab), clipped while it runs.
 const EASE_OUT = 'cubic-bezier(.16,1,.3,1)'
 const EASE_IN = 'cubic-bezier(.7,0,.84,0)'
+function popoverRun(element: Element, keyframes: Keyframe[], options: KeyframeAnimationOptions, done: () => void) {
+  const animation = element.animate(keyframes, options)
+  void (animation.finished ?? Promise.resolve()).catch(() => {}).then(done)
+}
 function enter(element: Element, done: () => void) {
   if (typeof element.animate !== 'function') return done()
-  const easing = motionToken('--cp-ease-out', EASE_OUT)
-  let animation: Animation | undefined
   if (popover.value) {
     const keyframes = reducedMotion() ? [{ opacity: 0 }, { opacity: 1 }] : [{ opacity: 0, transform: 'translateY(-4px)' }, { opacity: 1, transform: 'none' }]
-    animation = element.animate(keyframes, { duration: motionMs('--cp-dur-fast', '140ms'), easing })
+    return popoverRun(element, keyframes, { duration: motionMs('--cp-dur-fast', '140ms'), easing: motionToken('--cp-ease-out', EASE_OUT) }, done)
   }
-  else if (!reducedMotion() && element instanceof HTMLElement) {
-    const height = element.offsetHeight
-    element.style.overflow = 'hidden'
-    animation = element.animate([{ height: '0px' }, { height: `${height}px` }], { duration: motionMs('--cp-dur-base', '220ms'), easing })
-  }
-  if (!animation) return done()
-  animation.onfinish = () => {
-    if (element instanceof HTMLElement) element.style.overflow = ''
+  if (!(element instanceof HTMLElement)) return done()
+  element.style.overflow = 'hidden'
+  disclosureEnter(element, () => {
+    element.style.overflow = ''
     done()
-  }
+  })
 }
 function leave(element: Element, done: () => void) {
-  if (typeof element.animate !== 'function' || (!popover.value && reducedMotion())) return done()
-  const easing = motionToken('--cp-ease-in', EASE_IN)
-  const keyframes = popover.value
-    ? (reducedMotion() ? [{ opacity: 1 }, { opacity: 0 }] : [{ opacity: 1, transform: 'none' }, { opacity: 0, transform: 'translateY(-4px)' }])
-    : [{ height: `${(element as HTMLElement).offsetHeight}px`, overflow: 'hidden' }, { height: '0px', overflow: 'hidden' }]
-  element.animate(keyframes, { duration: motionMs('--cp-dur-fast', '140ms'), easing }).onfinish = done
+  if (typeof element.animate !== 'function') return done()
+  if (!popover.value) {
+    if (element instanceof HTMLElement) element.style.overflow = 'hidden'
+    return disclosureLeave(element, done)
+  }
+  const keyframes = reducedMotion() ? [{ opacity: 1 }, { opacity: 0 }] : [{ opacity: 1, transform: 'none' }, { opacity: 0, transform: 'translateY(-4px)' }]
+  popoverRun(element, keyframes, { duration: motionMs('--cp-dur-fast', '140ms'), easing: motionToken('--cp-ease-in', EASE_IN) }, done)
 }
 
 defineExpose({ open })

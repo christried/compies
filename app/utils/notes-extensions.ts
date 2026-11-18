@@ -10,7 +10,7 @@ import { Text } from '@tiptap/extension-text'
 import { Placeholder, UndoRedo } from '@tiptap/extensions'
 import { Plugin, PluginKey } from '@tiptap/pm/state'
 import { Decoration, DecorationSet } from '@tiptap/pm/view'
-import { notesLinkHref } from '~~/shared/notes-doc'
+import { NOTES_LINK_REL, notesLinkHref } from '~~/shared/notes-doc'
 
 // The one list of Tiptap extensions of the notes editor (#454, ADR 0019). Its schema is exactly the list of `shared/notes-doc.ts`: the nodes doc,
 // paragraph, text, heading (level 3), bulletList, orderedList, listItem (paragraphs only) and the marks bold, italic and link (http or https). Where a
@@ -114,7 +114,7 @@ export function createNotesExtensions({ placeholder, onOpenLink }: { placeholder
       protocols: ['http', 'https'],
       // The shared rule: a pasted `javascript:` or `data:` link keeps its text and loses the mark.
       isAllowedUri: uri => notesLinkHref(uri) !== null,
-      HTMLAttributes: { target: '_blank', rel: 'noopener noreferrer nofollow' },
+      HTMLAttributes: { target: '_blank', rel: NOTES_LINK_REL },
     }),
     Placeholder.configure({ placeholder: () => placeholder() }),
     UndoRedo,
