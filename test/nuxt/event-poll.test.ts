@@ -82,6 +82,17 @@ describe('the Event poll', () => {
     expect(page.get('[data-best="true"]').text()).toContain('Sa 24.10.')
   })
 
+  it('marks the Best slot with its text and no icon: no sparkle (#795)', async () => {
+    const { slug } = serve(s => view(s, sanneAndLarsi))
+
+    const page = await mountSuspended(EventPage, { route: `/e/${slug}` })
+
+    const badge = page.get('[data-best="true"] span.absolute')
+    expect(badge.text()).toBe('Bester Termin')
+    expect(badge.find('svg').exists()).toBe(false)
+    expect(page.find('[data-best="true"] .lucide-sparkles').exists()).toBe(false)
+  })
+
   it('marks a past Slot as vorbei and does not let it be voted on', async () => {
     const { slug } = serve(s => view(s, sanneAndLarsi))
 

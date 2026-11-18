@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { CalendarCheck, ChevronRight, CircleAlert, CircleCheck, Sparkles } from '@lucide/vue'
+import { CalendarCheck, ChevronRight, CircleAlert, CircleCheck } from '@lucide/vue'
 import { formatSlotWhen } from '~/utils/berlin-time'
 import { pagePill } from '~/utils/event-page'
 import { datePollOpen, type HomeEvent } from '~~/shared/event'
@@ -66,7 +66,6 @@ const ownStatus = computed(() => {
 const CTA_LABEL = { open: 'mvp.home.open', vote: 'mvp.home.vote', view: 'mvp.home.view' } as const
 const ctaLabel = computed(() => t(CTA_LABEL[props.event.action]))
 
-const WhenIcon = computed(() => showsBestSlot.value ? Sparkles : CalendarCheck)
 // Not voted yet: the own status warns (icon + words), otherwise it is plain good news.
 const warnsVote = computed(() => isPoll.value && !props.event.viewerVoted)
 const showsDates = computed(() => hasSeveralSessions.value && datesMissing.value)
@@ -95,7 +94,7 @@ const showsDates = computed(() => hasSeveralSessions.value && datesMissing.value
       class="flex items-center gap-3 rounded-[12px] bg-paper-2 px-3 py-2.5"
     >
       <AppIcon
-        :icon="WhenIcon"
+        :icon="CalendarCheck"
         :size="18"
       />
       <div class="flex min-w-0 flex-1 flex-col leading-[1.3]">
