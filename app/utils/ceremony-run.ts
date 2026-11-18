@@ -1,4 +1,4 @@
-import { ceremonyTimeline, CEREMONY_ROW_MS, type CeremonyShape, type RunShape } from '~~/shared/ceremony'
+import { ceremonyTimeline, CEREMONY_BONK_MS, CEREMONY_ROW_MS, type CeremonyShape, type RunShape } from '~~/shared/ceremony'
 import type { RigState } from './compibert-rig'
 import { addTieEntrance, addTieLanding, boxWithin, setTie, tiePartsOf, tieStops, type TieBox, type TieParts, type TieStops } from './ceremony-tie-run'
 import type { Gsap } from './gsap'
@@ -99,9 +99,6 @@ export function measureRun(root: HTMLElement, parts: RunParts): RunBox {
   return { ...box, card: cards[0]!, tie: { grid: tie.grid, cards, plate: boxWithin(root, tie.plate) } }
 }
 
-/** The bonk: he cheers while the trophy flies up and falls (.5 + .42 s), then is confused. */
-const BONK_CHEER_MS = 920
-
 /**
  * The pose Compibert's rig must hold `elapsedMs` into the run. The timeline's calls change it as the clock crosses them; a late joiner,
  * a returning tab and a skip set it with this instead, because a seek past a call does not fire it.
@@ -114,7 +111,7 @@ export function ceremonyRigState(elapsedMs: number, shape: CeremonyShape): RigSt
   if (elapsedMs >= endMs) return 'dance'
   if (elapsedMs >= getUpAtMs) return 'laugh'
   if (gag === 'trip') return 'suspense'
-  return elapsedMs < runEndAtMs + BONK_CHEER_MS ? 'cheer' : 'confused'
+  return elapsedMs < runEndAtMs + CEREMONY_BONK_MS ? 'cheer' : 'confused'
 }
 
 /** A burst of confetti (#315): the stamp of the card or the plate, or the trophy landing on card `index` of a chain. `atMs` is its moment on the timeline. */
@@ -195,7 +192,7 @@ export function buildRun(gsap: Gsap, parts: RunParts, geometry: Geometry, { part
     state('cheer', t1)
     tl.to(trophy, { y: handY - 170, rotation: 360, duration: 0.5, ease: 'power2.out' }, t1)
     tl.to(trophy, { y: groundY + 6, duration: 0.42, ease: 'power2.in' }, t1 + 0.5)
-    state('confused', t1 + 0.92)
+    state('confused', t1 + sec(CEREMONY_BONK_MS))
     tl.to(trophy, { x: cardX, duration: 0.7, ease: 'power1.inOut' }, t1 + 1.5)
     tl.to(trophy, { y: Math.min(cardY, groundY) - 90, duration: 0.38, ease: 'power2.out' }, t1 + 1.5)
     tl.to(trophy, { y: cardY, duration: 0.32, ease: 'power2.in' }, t1 + 1.88)

@@ -577,6 +577,176 @@
         "licence": "generated",
         "note": "Ratsche rattert aus, drei Konfetti-Knalle"
       }
+    ],
+    "cer-drop": [
+      {
+        "name": "holz-brett",
+        "file": "cer-drop/holz-brett.wav",
+        "source": "scripts/make-cue-candidates.mjs, Rezept holz-brett",
+        "author": null,
+        "licence": "generated",
+        "note": "Brett fällt auf den Tisch, trocken"
+      },
+      {
+        "name": "chip-plumps",
+        "file": "cer-drop/chip-plumps.wav",
+        "source": "scripts/make-cue-candidates.mjs, Rezept chip-plumps",
+        "author": null,
+        "licence": "generated",
+        "note": "Arcade-Plumps, fallende Rechteckwelle"
+      },
+      {
+        "name": "filz-kissen",
+        "file": "cer-drop/filz-kissen.wav",
+        "source": "scripts/make-cue-candidates.mjs, Rezept filz-kissen",
+        "author": null,
+        "licence": "generated",
+        "note": "Kissen plumpst, weich und tief"
+      },
+      {
+        "name": "tuch-klatsch",
+        "file": "cer-drop/tuch-klatsch.wav",
+        "source": "scripts/make-cue-candidates.mjs, Rezept tuch-klatsch",
+        "author": null,
+        "licence": "generated",
+        "note": "Stoffbanner klatscht, dann der Saum"
+      }
+    ],
+    "cer-row": [
+      {
+        "name": "holz-marimba",
+        "file": "cer-row/holz-marimba.wav",
+        "source": "scripts/make-cue-candidates.mjs, Rezept holz-marimba",
+        "author": null,
+        "licence": "generated",
+        "note": "Holzstab, Marimba-Ton"
+      },
+      {
+        "name": "chip-blip",
+        "file": "cer-row/chip-blip.wav",
+        "source": "scripts/make-cue-candidates.mjs, Rezept chip-blip",
+        "author": null,
+        "licence": "generated",
+        "note": "Arcade-Blip mit kleinem Aufstieg"
+      },
+      {
+        "name": "filz-glocke",
+        "file": "cer-row/filz-glocke.wav",
+        "source": "scripts/make-cue-candidates.mjs, Rezept filz-glocke",
+        "author": null,
+        "licence": "generated",
+        "note": "weicher Glockenton, Filzhammer"
+      },
+      {
+        "name": "schwupp-pfeife",
+        "file": "cer-row/schwupp-pfeife.wav",
+        "source": "scripts/make-cue-candidates.mjs, Rezept schwupp-pfeife",
+        "author": null,
+        "licence": "generated",
+        "note": "Gleitpfeife schwupp, klingt oben nach"
+      }
+    ],
+    "cer-run": [
+      {
+        "name": "holz-stapfen",
+        "file": "cer-run/holz-stapfen.wav",
+        "source": "scripts/make-cue-candidates.mjs, Rezept holz-stapfen",
+        "author": null,
+        "licence": "generated",
+        "note": "fünf Holzschritte, dazwischen das Pokal-Klingeln"
+      },
+      {
+        "name": "chip-lauf",
+        "file": "cer-run/chip-lauf.wav",
+        "source": "scripts/make-cue-candidates.mjs, Rezept chip-lauf",
+        "author": null,
+        "licence": "generated",
+        "note": "Arcade-Lauf, Rauschschritte und Ding"
+      },
+      {
+        "name": "filz-tapsen",
+        "file": "cer-run/filz-tapsen.wav",
+        "source": "scripts/make-cue-candidates.mjs, Rezept filz-tapsen",
+        "author": null,
+        "licence": "generated",
+        "note": "weiche Filzschritte, Papier raschelt mit"
+      },
+      {
+        "name": "klapper-trab",
+        "file": "cer-run/klapper-trab.wav",
+        "source": "scripts/make-cue-candidates.mjs, Rezept klapper-trab",
+        "author": null,
+        "licence": "generated",
+        "note": "Spielzeug-Trab, Tok-Tak mit Ratschen"
+      }
+    ],
+    "cer-trip": [
+      {
+        "name": "holz-stolper",
+        "file": "cer-trip/holz-stolper.wav",
+        "source": "scripts/make-cue-candidates.mjs, Rezept holz-stolper",
+        "author": null,
+        "licence": "generated",
+        "note": "zwei Holzticks, Rutsch nach unten, Plumps"
+      },
+      {
+        "name": "chip-stolper",
+        "file": "cer-trip/chip-stolper.wav",
+        "source": "scripts/make-cue-candidates.mjs, Rezept chip-stolper",
+        "author": null,
+        "licence": "generated",
+        "note": "Arcade-Womp, drei fallende Töne, dumpfer Aufprall"
+      },
+      {
+        "name": "filz-stolper",
+        "file": "cer-trip/filz-stolper.wav",
+        "source": "scripts/make-cue-candidates.mjs, Rezept filz-stolper",
+        "author": null,
+        "licence": "generated",
+        "note": "Schuh schleift, Wackeln, dumpfes Landen"
+      },
+      {
+        "name": "purzel-ticks",
+        "file": "cer-trip/purzel-ticks.wav",
+        "source": "scripts/make-cue-candidates.mjs, Rezept purzel-ticks",
+        "author": null,
+        "licence": "generated",
+        "note": "Hüpfer werden schneller, dann ein Plumps"
+      }
+    ],
+    "cer-bonk": [
+      {
+        "name": "holz-bonk",
+        "file": "cer-bonk/holz-bonk.wav",
+        "source": "scripts/make-cue-candidates.mjs, Rezept holz-bonk",
+        "author": null,
+        "licence": "generated",
+        "note": "hohles Holzklopfen mit Boing"
+      },
+      {
+        "name": "chip-boing",
+        "file": "cer-bonk/chip-boing.wav",
+        "source": "scripts/make-cue-candidates.mjs, Rezept chip-boing",
+        "author": null,
+        "licence": "generated",
+        "note": "Arcade-Boing, wackelnde Rechteckwelle"
+      },
+      {
+        "name": "filz-bonk",
+        "file": "cer-bonk/filz-bonk.wav",
+        "source": "scripts/make-cue-candidates.mjs, Rezept filz-bonk",
+        "author": null,
+        "licence": "generated",
+        "note": "dumpfer Bonk, tiefes Nachwackeln"
+      },
+      {
+        "name": "glocke-bonk",
+        "file": "cer-bonk/glocke-bonk.wav",
+        "source": "scripts/make-cue-candidates.mjs, Rezept glocke-bonk",
+        "author": null,
+        "licence": "generated",
+        "note": "Glocke auf dem Kopf, klingt wabernd nach"
+      }
     ]
   }
 }
