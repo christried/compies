@@ -24,7 +24,7 @@ const ROOT = join(HERE, '../..')
 const PAGE_DIR = join(HERE, 'review-page')
 const MAX_BODY = 64 * 1024
 // The modules the page imports (page.mjs) and, through them, each other; nothing else of scripts/wording/ is served.
-const MODULES = ['answers', 'review-model', 'check-replacement', 'messages', 'retired-words']
+const MODULES = ['answers', 'review-model', 'check-replacement', 'messages', 'retired-words', 'review-keys']
 const TYPES = {
   '.html': 'text/html; charset=utf-8',
   '.mjs': 'text/javascript; charset=utf-8',
