@@ -25,22 +25,11 @@ export function tidyNotes(doc: { type: string, content?: unknown[] }): { type: s
 }
 
 /**
- * What the editor starts from: the stored document, or an empty paragraph for no notes. The API accepts bold text in a heading (the shared parser), the editor's schema
- * has no place for it (Lilita has one weight) and refuses every edit in such a heading, so the bold is taken off here. The stored document stays as it is until the
- * User changes something: the editor never emits on mount.
+ * What the editor starts from: the stored document, or an empty paragraph for no notes. The editor's schema is the server's (ADR 0019, #820: a heading takes no bold
+ * on either side), so a stored document goes in as it is; the editor never emits on mount.
  */
 export function editorContent(doc: NotesDoc | null): { type: string, content: unknown[] } {
-  if (doc === null) return { type: 'doc', content: [{ type: 'paragraph' }] }
-  return {
-    ...doc,
-    content: doc.content.map((block) => {
-      if (block.type !== 'heading' || !block.content) return block
-      return { ...block, content: block.content.map(({ marks, ...rest }) => {
-        const kept = marks?.filter(mark => mark.type !== 'bold') ?? []
-        return kept.length > 0 ? { ...rest, marks: kept } : rest
-      }) }
-    }),
-  }
+  return doc ?? { type: 'doc', content: [{ type: 'paragraph' }] }
 }
 
 export type LinkAddress = { ok: true, href: string } | { ok: false, empty?: true }
