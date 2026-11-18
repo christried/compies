@@ -476,6 +476,142 @@
         "note": "kleiner heller Gong, klingt aus"
       }
     ],
+    "coin-toss": [
+      {
+        "name": "daumen-flick",
+        "file": "coin-toss/daumen-flick.wav",
+        "source": "scripts/make-cue-candidates.mjs, Rezept daumen-flick",
+        "author": null,
+        "licence": "generated",
+        "note": "Daumen-Schnipp, dann steigendes Rauschen"
+      },
+      {
+        "name": "chip-flick",
+        "file": "coin-toss/chip-flick.wav",
+        "source": "scripts/make-cue-candidates.mjs, Rezept chip-flick",
+        "author": null,
+        "licence": "generated",
+        "note": "Arcade-Start, Pulswelle gleitet hoch"
+      },
+      {
+        "name": "filz-wusch",
+        "file": "coin-toss/filz-wusch.wav",
+        "source": "scripts/make-cue-candidates.mjs, Rezept filz-wusch",
+        "author": null,
+        "licence": "generated",
+        "note": "weiches Wusch, kein scharfer Rand"
+      },
+      {
+        "name": "muenz-ping",
+        "file": "coin-toss/muenz-ping.wav",
+        "source": "scripts/make-cue-candidates.mjs, Rezept muenz-ping",
+        "author": null,
+        "licence": "generated",
+        "note": "kurzer hoher Ping und etwas Luft"
+      }
+    ],
+    "coin-spin": [
+      {
+        "name": "muenz-schimmer",
+        "file": "coin-spin/muenz-schimmer.wav",
+        "source": "scripts/make-cue-candidates.mjs, Rezept muenz-schimmer",
+        "author": null,
+        "licence": "generated",
+        "note": "metallisches Schimmern mit langsamem Flimmern"
+      },
+      {
+        "name": "kreisel-surren",
+        "file": "coin-spin/kreisel-surren.wav",
+        "source": "scripts/make-cue-candidates.mjs, Rezept kreisel-surren",
+        "author": null,
+        "licence": "generated",
+        "note": "Surren wie ein Kreisel, Tonhöhe wandert"
+      },
+      {
+        "name": "chip-trillern",
+        "file": "coin-spin/chip-trillern.wav",
+        "source": "scripts/make-cue-candidates.mjs, Rezept chip-trillern",
+        "author": null,
+        "licence": "generated",
+        "note": "schneller Arcade-Triller, flimmert"
+      },
+      {
+        "name": "glocken-hauch",
+        "file": "coin-spin/glocken-hauch.wav",
+        "source": "scripts/make-cue-candidates.mjs, Rezept glocken-hauch",
+        "author": null,
+        "licence": "generated",
+        "note": "kleine Glöckchen, die durcheinander klingeln"
+      }
+    ],
+    "coin-land": [
+      {
+        "name": "klirr-wobble",
+        "file": "coin-land/klirr-wobble.wav",
+        "source": "scripts/make-cue-candidates.mjs, Rezept klirr-wobble",
+        "author": null,
+        "licence": "generated",
+        "note": "Klirren, Aufsetzer werden schneller und leiser, Wobbeln"
+      },
+      {
+        "name": "holz-tisch-klack",
+        "file": "coin-land/holz-tisch-klack.wav",
+        "source": "scripts/make-cue-candidates.mjs, Rezept holz-tisch-klack",
+        "author": null,
+        "licence": "generated",
+        "note": "trockenes Holzklacken, drei Nachklacker"
+      },
+      {
+        "name": "chip-huepfer",
+        "file": "coin-land/chip-huepfer.wav",
+        "source": "scripts/make-cue-candidates.mjs, Rezept chip-huepfer",
+        "author": null,
+        "licence": "generated",
+        "note": "Arcade-Hüpfer, werden kürzer und tiefer"
+      },
+      {
+        "name": "filz-plumps-klimper",
+        "file": "coin-land/filz-plumps-klimper.wav",
+        "source": "scripts/make-cue-candidates.mjs, Rezept filz-plumps-klimper",
+        "author": null,
+        "licence": "generated",
+        "note": "weiches Plumps und kleines Klimpern"
+      }
+    ],
+    "coin-result": [
+      {
+        "name": "ting-zweiklang",
+        "file": "coin-result/ting-zweiklang.wav",
+        "source": "scripts/make-cue-candidates.mjs, Rezept ting-zweiklang",
+        "author": null,
+        "licence": "generated",
+        "note": "zwei helle Stabspiel-Pings, schließender Abgang"
+      },
+      {
+        "name": "chip-stich",
+        "file": "coin-result/chip-stich.wav",
+        "source": "scripts/make-cue-candidates.mjs, Rezept chip-stich",
+        "author": null,
+        "licence": "generated",
+        "note": "Arcade-Fanfärchen: drei Pulstöne"
+      },
+      {
+        "name": "holz-tusch",
+        "file": "coin-result/holz-tusch.wav",
+        "source": "scripts/make-cue-candidates.mjs, Rezept holz-tusch",
+        "author": null,
+        "licence": "generated",
+        "note": "Holzblock, Tom und kurze Ratsche, ohne Tonhöhe"
+      },
+      {
+        "name": "glocken-stich",
+        "file": "coin-result/glocken-stich.wav",
+        "source": "scripts/make-cue-candidates.mjs, Rezept glocken-stich",
+        "author": null,
+        "licence": "generated",
+        "note": "heller Glockenakkord, klingt kurz aus"
+      }
+    ],
     "lb-swap": [
       {
         "name": "doppel-wisch",

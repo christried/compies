@@ -1,12 +1,13 @@
 import { STAMP_DELAY_MS } from '~/utils/motion'
 import {
-  CUE_IDS, TICK_MIN_GAP_MS, ceremonyCuePlan, cueFileUrl, standingsCues, thinTicks, tourStepCue, vetoArrivalCues, vetoCuePlan, wheelCuePlan, wheelVoicePlan,
+  CUE_IDS, TICK_MIN_GAP_MS, ceremonyCuePlan, coinCuePlan, cueFileUrl, standingsCues, thinTicks, tourStepCue, vetoArrivalCues, vetoCuePlan, wheelCuePlan, wheelVoicePlan,
   type ArrivalCue, type Cue, type CueId, type VetoArrivalState,
 } from '~/utils/sound-cues'
 import { isText, parseCredits, type CueCredit, type Licence } from '~/utils/sound-credits'
 import { pinCrossings } from '~/utils/wheel-pins'
 import type { WheelTiming } from '~/utils/wheel'
 import type { CeremonyGag } from '~~/shared/ceremony'
+import { COIN_DURATION_MS } from '~~/shared/coin'
 import type { RoundGame } from '~~/shared/game'
 import { isRecord } from '~~/shared/record'
 import type { ClipView, SpinView, VetoCastView, VetoDrawView, WheelView } from '~~/shared/stage'
@@ -43,6 +44,10 @@ export const CUE_BRIEF: Record<CueId, { character: string }> = {
   'veto-drumroll': { character: 'snare roll before the reveal' },
   'veto-reveal': { character: 'all at once: cymbal hit + stamp per veto (staggered 80 ms)' },
   // coin
+  'coin-toss': { character: 'thumb flick + whoosh' },
+  'coin-spin': { character: 'metallic shimmer while in the air' },
+  'coin-land': { character: 'clink + wobble rattle' },
+  'coin-result': { character: 'short sting, Kopf/Schwanz same sound' },
   // standings
   'lb-swap': { character: 'rows swap: quick double whoosh' },
   'lb-count': { character: 'point counter ticks, 1 per point, max 15/s' },
@@ -63,7 +68,7 @@ export const CUE_BRIEF: Record<CueId, { character: string }> = {
  * a member here (a union takes no group lines, so it is the one line two tickets may both touch), a `MOMENT_LABEL` row and a runner in the
  * page's `MOMENT_RUNNERS`, under its group's line.
  */
-export type Moment = 'spin' | 'window' | 'arrival' | 'voice' | 'standings' | 'ceremony' | 'tour'
+export type Moment = 'spin' | 'window' | 'arrival' | 'voice' | 'coin' | 'standings' | 'ceremony' | 'tour'
 
 export const MOMENT_OF: Record<CueId, Moment> = {
   // wheel
@@ -72,6 +77,7 @@ export const MOMENT_OF: Record<CueId, Moment> = {
   // veto
   'veto-open': 'window', 'veto-clock': 'window', 'veto-clip-close': 'window', 'veto-seal': 'arrival', 'veto-drumroll': 'window', 'veto-reveal': 'window',
   // coin
+  'coin-toss': 'coin', 'coin-spin': 'coin', 'coin-land': 'coin', 'coin-result': 'coin',
   // standings
   'lb-swap': 'standings', 'lb-count': 'standings', 'lb-winner': 'standings',
   // board
@@ -90,6 +96,7 @@ export const MOMENT_LABEL: Record<Moment, string> = {
   window: 'Test window',
   arrival: 'Ankunft der Antwort',
   // coin
+  coin: 'Test toss',
   // standings
   standings: 'Test Standings change',
   // board
@@ -327,6 +334,16 @@ export function buildRun(config: RunConfig, now: number, counter: number): Run {
     plan,
     tickCount: plan.filter(cue => cue.id === 'wheel-tick').length,
   }
+}
+
+/**
+ * A test toss (#669): the Coin flip as the Event read would give it at `now`, and the plan the REAL `coinCuePlan` makes of its two instants,
+ * the fields `planOf` copies (no side exists here). No picture runs beside it; the page plays the plan through its own player.
+ */
+export function buildCoinRun(reduced: boolean, now: number): { startedAt: number, landsAt: number, plan: Cue[] } {
+  const startedAt = now + LEAD_MS
+  const landsAt = startedAt + COIN_DURATION_MS
+  return { startedAt, landsAt, plan: coinCuePlan({ toss: { startedAt: iso(startedAt), landsAt: iso(landsAt) }, reducedMotion: reduced }) }
 }
 
 /** The controls of the page, as they stand: what a run button reads. */

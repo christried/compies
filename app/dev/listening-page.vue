@@ -2,7 +2,7 @@
 import LuckyWheel from '~/components/LuckyWheel.vue'
 import VetoWindow from '~/components/VetoWindow.vue'
 import {
-  CANDIDATE_BASE, CUE_BRIEF, MOMENT_LABEL, MOMENT_OF, MOMENT_SETUP, arrivalCues, buildRun, candidatesOf, ceremonyRun, choicesReport, configFor, emptyChoices, stampCues, standingsChangeCues, testCandidateOf, tourVoiceCues,
+  CANDIDATE_BASE, CUE_BRIEF, MOMENT_LABEL, MOMENT_OF, MOMENT_SETUP, arrivalCues, buildCoinRun, buildRun, candidatesOf, ceremonyRun, choicesReport, configFor, emptyChoices, stampCues, standingsChangeCues, testCandidateOf, tourVoiceCues,
   type ArrivalButton, type Candidate, type Choices, type Controls, type Moment, type Run,
 } from '~/dev/listening-model'
 import { createCuePlayer, type CuePlayer } from '~/utils/cue-player'
@@ -152,6 +152,12 @@ async function arrive(button: ArrivalButton) {
   for (const cue of arrivalCues(button, Date.now())) armed.playNow(cue.id, cue.delayMs)
 }
 
+/** A test toss (#669): the real `coinCuePlan` through the armed player, as `arrive` does: no picture, no `CoinFlip`; the reduced checkbox decides the plan. */
+async function startToss() {
+  if (!await ensureContext() || !armed) return
+  armed.setPlan(buildCoinRun(controls.reduced, Date.now()).plan)
+}
+
 /** The test Standings change (#741): the real `standingsCues` on a fixed change, with the page's reduced switch, through the real player. */
 async function standingsChange() {
   if (!await ensureContext() || !armed) return
@@ -180,6 +186,7 @@ const MOMENT_RUNNERS: Record<Moment, (id: CueId) => void> = {
   window: () => void startRun('window'),
   arrival: () => void arrive('own'),
   // coin
+  coin: () => void startToss(),
   // standings
   standings: () => void standingsChange(),
   // board

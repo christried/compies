@@ -1,6 +1,6 @@
 import { createCuePlayer, exposesCueLog, type CueLogEntry, type CuePlayer } from '~/utils/cue-player'
 import { reducedMotion } from '~/utils/motion'
-import { cueFileUrl, cueFilesOf, reachableGroups, vetoArrivalCues, vetoCuePlan, wheelCuePlan, wheelVoicePlan, type Cue, type GroupInput, type VetoArrivalState } from '~/utils/sound-cues'
+import { coinCuePlan, cueFileUrl, cueFilesOf, reachableGroups, vetoArrivalCues, vetoCuePlan, wheelCuePlan, wheelVoicePlan, type Cue, type GroupInput, type VetoArrivalState } from '~/utils/sound-cues'
 import type { EventView } from '~~/shared/event'
 import { TOUR_CALM_MS, tourMayStart } from '~~/shared/tour'
 
@@ -20,6 +20,9 @@ function groupInputOf(view: EventView | null | undefined, storedTourVersion: num
     wheel: view?.wheel != null,
     vetoAllowance: view?.settings?.vetoAllowance ?? 0,
     vetoWindow: view?.wheel?.vetoes.draw != null,
+    // Both are the same for every viewer's read; `view.coin` is only tested for null, its side is never read (#669).
+    sessionRunning: view?.runningSessionId != null,
+    toss: view?.coin != null,
     finished: view?.event.phase === 'finished',
     // The Event is set up and not finished, the page's own rule of `useStandingsNews`: the Host's read and a Member's hold both fields (#741).
     standings: view?.standings != null && view.event.phase !== 'finished',
@@ -57,6 +60,8 @@ function planOf(view: EventView): Cue[] {
       clip: view.clip ? { drawId: view.clip.drawId, endsAt: view.clip.endsAt } : null,
       reducedMotion: reducedMotion(),
     }),
+    // The Coin flip: the toss's two instants only, never its side (ADR 0013 amendment).
+    ...coinCuePlan({ toss: view.coin ? { startedAt: view.coin.startedAt, landsAt: view.coin.landsAt } : null, reducedMotion: reducedMotion() }),
   ]
 }
 
