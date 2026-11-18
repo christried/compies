@@ -14,18 +14,19 @@ import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, wri
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { closeAll, colorScheme, launchAll, OUT, sleep } from '../browser/chrome.mjs'
-import { api, BASE, ok, open, results } from '../browser/kit.mjs'
+import { api, BASE, eventView, ok, open, results } from '../browser/kit.mjs'
 import { HEIGHTS, loadStates, makeData, settle } from '../browser/states.mjs'
 import de from '../../i18n/locales/de.json' with { type: 'json' }
 import { decodeTags } from '../../shared/key-tag.ts'
+import { readBaseline } from './baseline.mjs'
 import { flattenMessages } from './messages.mjs'
 import { findCandidates, measureCandidates, rowsFrom } from './read-keys.mjs'
-import { assemble, budgetId, createBudget, selectItems } from './recording.mjs'
+import { assemble, budgetId, createBudget, selectItems, wheelPlaceholderKeys } from './recording.mjs'
 import { checkRecording, stepsOf } from './review-model.mjs'
 import { firstReferences } from './unused-scan.mjs'
 import { orderStates, sectionOf } from './walk-order.mjs'
 import { CLEAR_FRAME, DESCRIBE, pictureScript, untaggedScript } from './walk-page.mjs'
-import { isLocalBase, monoUseSightings, reportOf } from './walk-report.mjs'
+import { isLocalBase, monoUseSightings, reportOf, withoutPicture } from './walk-report.mjs'
 import { fixedTexts, locationOf, MONTH_PATTERN } from './where.mjs'
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '../..')
@@ -72,9 +73,19 @@ const MONO_USES = [
  * The server-drawn pictures: a row per picture whose copy the server reads, so #630 can add rows. `keys(ctx)` names the messages the picture shows,
  * and the picture is the `element`, framed, in the stop of the states. The Share image's keys depend on the Event: they would come from running
  * `shareImageModel` over a copy whose every leaf is its own key, and Node cannot import `shared/share-image.ts` (extensionless imports), so no key is claimed (decided on #629, O2).
+ * The Hidden wheel's placeholders (#810) are server-drawn too: a spin's labels reach the Member as plain strings, so no key tag carries them. They are read from the
+ * Member's own view of the Event, never the Host's: nothing of the pool's real names may reach the recording (`CODING_STANDARDS.md` § Secrecy). Before the stop all 30
+ * labels are placeholders; a late read gives fewer, because the result slice shows the game.
  */
 const SERVER_SIGHTINGS = [
-  { stop: 'teilen', states: /^fertig(-gleichstand)?-(host|spieler)$/, element: '[role=dialog] img[src^="blob:"]', keys: async () => /** @type {string[]} */ ([]) },
+  { stop: 'teilen', states: /^fertig(-gleichstand)?-(host|spieler)$/, element: '[role=dialog] img[src^="blob:"]', kind: 'img', keys: async () => /** @type {string[]} */ ([]) },
+  {
+    stop: 'dreht',
+    states: /^rad-platzhalter-spieler$/,
+    element: '[data-testid="wheel-disc"]',
+    kind: 'disc',
+    keys: async ctx => wheelPlaceholderKeys((await eventView(ctx.tabs.member, ctx.event.slug)).wheel?.spin?.labels ?? [], de.wheel.placeholders),
+  },
 ]
 
 const OFFLINE_STATES = ['offline']
@@ -145,6 +156,8 @@ const readings = []
 const budget = createBudget()
 const counts = { covered: 0, notPainted: 0, untagged: 0 }
 const missing = new Set()
+/** The keys the walk read and could not picture, and why (`pictureScript`'s `skip`): the report's reason for a new text without a picture. */
+const skipped = new Map()
 const unreached = new Set()
 const readStates = new Set()
 let seq = 0
@@ -152,18 +165,100 @@ let monoFamily = null
 let firstReading = true
 const notes = []
 
-const snapshot = () => ({ seq, readings: readings.length, counts: { ...counts }, missing: new Set(missing), budget: budget.snapshot() })
+const snapshot = () => ({ seq, readings: readings.length, counts: { ...counts }, missing: new Set(missing), skipped: new Map(skipped), budget: budget.snapshot() })
 function restore(mark) {
   seq = mark.seq
   readings.length = mark.readings
   Object.assign(counts, mark.counts)
   missing.clear()
   for (const key of mark.missing) missing.add(key)
+  skipped.clear()
+  for (const [key, why] of mark.skipped) skipped.set(key, why)
   budget.restore(mark.budget)
 }
 
-/** One reading of the page as it stands (a state's page, or one of its stops): rows, marks, pictures. */
-async function readPage(ctx, state, name) {
+/**
+ * The Rundgang covers a Member's Event page, so it may be on the page only in a state that asked for it (`tour: true`, #810): a plain dev sign-in marks it seen, and this
+ * is the check that no state of the walk is covered by it. A state without the flag whose page has the layer, or with the flag whose page lacks it, is not reached.
+ */
+async function checkRundgang(tab, state) {
+  const covered = await tab.evaluate(`!!document.querySelector('[data-tour-layer]')`)
+  if (covered && !state.tour) throw new Error('the Rundgang covers this page')
+  if (!covered && state.tour) throw new Error('the Rundgang is not on the page')
+}
+
+/** The pictures of a reading's kept items, the budget applied per key. A skip is counted, and kept by key for the report. */
+async function pictureItems(tab, kept) {
+  const pictured = []
+  // One picture serves every key of a server sighting (the 30 placeholders on one disc): one shot per element, written under each key's own `seq`.
+  const shots = new Map()
+  for (const item of kept) {
+    const id = budgetId(item)
+    if (budget.full(id)) {
+      budget.drop()
+      continue
+    }
+    const shared = item.via === 'server' ? item.target.selector : null
+    let taken = shared ? shots.get(shared) : undefined
+    if (!taken) {
+      const placed = await tab.evaluate(pictureScript(item.target))
+      if (placed.skip) taken = { skip: placed.skip }
+      else {
+        const shot = await tab.send('Page.captureScreenshot', { format: 'jpeg', quality: 70 })
+        taken = { box: placed.box, data: Buffer.from(shot.result.data, 'base64') }
+      }
+      if (shared) shots.set(shared, taken)
+    }
+    if (taken.skip) {
+      counts[taken.skip]++
+      if (item.key !== null && !skipped.has(item.key)) skipped.set(item.key, taken.skip)
+      continue
+    }
+    seq++
+    writeFileSync(join(PICTURES, `${seq}.jpg`), taken.data)
+    budget.use(id)
+    const rest = { ...item }
+    delete rest.target
+    pictured.push({ ...rest, box: taken.box, picture: `pictures/${seq}.jpg` })
+  }
+  return pictured
+}
+
+/**
+ * The server-drawn pictures of a stop (`SERVER_SIGHTINGS`): the keys the server's copy gives, each with the picture of its element. Read before anything else of a
+ * reading, since the Hidden wheel's placeholders last 6 s on the shortest spin.
+ */
+async function serverItemsOf(ctx, state, name) {
+  const items = []
+  for (const server of SERVER_SIGHTINGS) {
+    if (!name.endsWith(`/${server.stop}`) || !server.states.test(state.name)) continue
+    for (const key of await server.keys(ctx)) items.push({ key, via: 'server', rendered: '', marks: [], component: null, element: server.kind, target: { selector: server.element } })
+  }
+  return items
+}
+
+/**
+ * One reading of the page as it stands (a state's page, or one of its stops): rows, marks, pictures. `serverOnly` (a stop's flag) reads the server sightings and nothing
+ * else: the page was read before the stop, and the stop's time is short.
+ */
+async function readPage(ctx, state, name, { serverOnly = false } = {}) {
+  const { tab } = ctx
+  await checkRundgang(tab, state)
+  const pictured = []
+  const server = selectItems(await serverItemsOf(ctx, state, name), messageKeys)
+  for (const key of server.missing) missing.add(key)
+  if (server.kept.length) {
+    pictured.push(...await pictureItems(tab, server.kept))
+    await tab.evaluate(CLEAR_FRAME)
+  }
+  if (!serverOnly) pictured.push(...await readItems(ctx, state))
+  // A layer that came while the page was read covers what the pictures show: the same check, once more, for the states that did not ask for it.
+  if (!state.tour) await checkRundgang(tab, state)
+  readings.push({ state: name, account: state.group === 'signed-out' ? null : state.account, width: ctx.width, items: pictured })
+}
+
+/** The page's own texts: rows by their key tags, the mono elements and fixed texts, each with its picture. */
+async function readItems(ctx, state) {
   const { tab } = ctx
   await settle(tab)
   await sleep(400)
@@ -191,6 +286,7 @@ async function readPage(ctx, state, name) {
     if (via === 'aria-label' || via === 'alt' || (via === 'text' && description.srOnly)) marks.push('sr-only')
     if (row.box === null && !marks.includes('sr-only')) {
       counts.notPainted++
+      if (!skipped.has(row.key)) skipped.set(row.key, 'notPainted')
       return
     }
     items.push({
@@ -200,35 +296,12 @@ async function readPage(ctx, state, name) {
   })
   for (const entry of extra.mono) items.push({ key: null, via: 'text', rendered: entry.text, marks: ['mono'], component: repoPath(entry.component), element: entry.element, target: { list: 'extra', i: entry.ref } })
   for (const entry of extra.fixed) items.push({ key: null, fixedId: entry.id, via: 'text', rendered: entry.text, marks: [], component: null, element: 'text', target: { list: 'extra', i: entry.ref } })
-  for (const server of SERVER_SIGHTINGS) {
-    if (!name.endsWith(`/${server.stop}`) || !server.states.test(state.name)) continue
-    for (const key of await server.keys(ctx)) items.push({ key, via: 'server', rendered: '', marks: [], component: null, element: 'img', target: { selector: server.element } })
-  }
 
   const { kept, missing: unknown } = selectItems(items, messageKeys)
   for (const key of unknown) missing.add(key)
-  const pictured = []
-  for (const item of kept) {
-    const id = budgetId(item)
-    if (budget.full(id)) {
-      budget.drop()
-      continue
-    }
-    const placed = await tab.evaluate(pictureScript(item.target))
-    if (placed.skip) {
-      counts[placed.skip]++
-      continue
-    }
-    const shot = await tab.send('Page.captureScreenshot', { format: 'jpeg', quality: 70 })
-    seq++
-    writeFileSync(join(PICTURES, `${seq}.jpg`), Buffer.from(shot.result.data, 'base64'))
-    budget.use(id)
-    const rest = { ...item }
-    delete rest.target
-    pictured.push({ ...rest, box: placed.box, picture: `pictures/${seq}.jpg` })
-  }
+  const pictured = await pictureItems(tab, kept)
   await tab.evaluate(CLEAR_FRAME)
-  readings.push({ state: name, account: state.group === 'signed-out' ? null : state.account, width: ctx.width, items: pictured })
+  return pictured
 }
 
 /** One state at one width, as `dark.mjs`'s `readState` reads it: the page, then each stop. Returns the FAIL lines instead of logging them, so a read that is repeated leaves none. */
@@ -247,7 +320,7 @@ async function readState(state, ctx) {
     if (stop.widths && !stop.widths.includes(ctx.width)) continue
     try {
       await stop.go(ctx)
-      await readPage(ctx, state, `${state.name}/${stop.name}`)
+      await readPage(ctx, state, `${state.name}/${stop.name}`, { serverOnly: stop.serverOnly })
     }
     catch (error) {
       if (error instanceof NoKeys) throw error
@@ -369,6 +442,8 @@ function finish() {
 
   const unusedFile = join(FOLDER, 'unused.json')
   const { steps, problems: stepProblems } = stepsOf({ messages: messageList, recording: made, unused: existsSync(unusedFile) ? JSON.parse(readFileSync(unusedFile, 'utf8')) : null })
+  // „Neu“ as the review's filter says it: against every answers file git tracks, merged (#810). No file: every text is new.
+  const baseline = readBaseline(join(ROOT, 'docs/reviews'), { except: null })
   const bytes = all.reduce((sum, sighting) => sum + statSync(join(FOLDER, sighting.picture)).size, 0)
   const report = reportOf({
     run, commit: made.commit, seconds, partial, statesRead: readStates.size, unreached: [...unreached], readings: readings.length,
@@ -377,8 +452,12 @@ function finish() {
     steps, stepProblems, unusedNote: existsSync(unusedFile) ? null : 'unused.json is not there (node scripts/wording/unused.mjs): the unused groups are not in these counts',
     monoUses: monoUseSightings(MONO_USES, readings), unlabelled: made.monoElements.filter(entry => !(entry.component in MONO_WHAT)).map(entry => entry.component),
     fixed: { withPicture: made.fixed.filter(entry => entry.sightings.length).length, without: made.fixed.filter(entry => !entry.sightings.length).length },
+    unpictured: withoutPicture({ steps, baseline: baseline.answers, skipped }),
     missing: [...missing], untagged: counts.untagged, monoFamily,
-    notes: [`Locations for ${Object.keys(locations).length} of ${messageList.length - seen.size} keys without a sighting.`],
+    notes: [
+      `Locations for ${Object.keys(locations).length} of ${messageList.length - seen.size} keys without a sighting.`,
+      `New texts are those the baseline does not hold, unchanged: ${baseline.name ?? 'no answers file is tracked, so every text is new'}.`,
+    ],
   })
   for (const line of report) log.note(line)
   writeFileSync(join(FOLDER, 'report.md'), `${report.join('\n')}\n`)
