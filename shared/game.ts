@@ -125,7 +125,8 @@ export interface GameView extends PoolGame {
    * PoolGameFace and RoundGame do not, so no Member's Event read, feed entry or message can name one.
    */
   tags: GameTag[]
-  createdAt: string
+  /** The game's last change, any update of the row (#805). */
+  updatedAt: string
 }
 
 /** Every game the viewer may see, by name (GET /api/games, #173). The browser filters them (`filterGames`) and knows the length. */

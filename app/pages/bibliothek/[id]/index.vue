@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Pencil } from '@lucide/vue'
 import type { GameEvents } from '~~/shared/game-events'
+import { formatMonthYear } from '~/utils/berlin-time'
 
 // One game of the library (screen 23, `?s=detail`, #141, #142): the clip preview from the start second for the
 // set length, the facts (player count, Suitabilities, clip length, the Price (#337)) and the Tags (#335, each in its colour, #427). The cover, the facts with the Tags and the Notes
@@ -8,7 +9,7 @@ import type { GameEvents } from '~~/shared/game-events'
 // holds only the viewer's own games (#724). A game that does not exist
 // looks like any missing page; so does the page for Users who may not see the library. The switch „Archiviert“ (#467) is the owner's: the route answers
 // only own games, and an Archived game keeps its page and stays editable. Below the Game notes the page lists the game's Events (#656) from a read of
-// its own: a failing read shows a notice and never hides the game.
+// its own: a failing read shows a notice and never hides the game. A line under the switch says when the game last changed (#805).
 const { t } = useI18n()
 const route = useRoute()
 const id = computed(() => String(route.params.id))
@@ -21,6 +22,7 @@ const { data: gameEvents, error: eventsError } = useFetch<GameEvents>(() => `/ap
 useHead({ title: () => game.value?.name ?? t('nav.library') })
 
 const { setArchived } = useGameArchive()
+const updatedMonth = computed(() => (game.value ? formatMonthYear(new Date(game.value.updatedAt)) : ''))
 </script>
 
 <template>
@@ -92,6 +94,9 @@ const { setArchived } = useGameArchive()
             :help="t('library.archiveHelp')"
             @update:model-value="setArchived(game.id, $event)"
           />
+          <p class="m-0 text-[13px] text-ink-2">
+            {{ t('library.updatedAt', { month: updatedMonth }) }}
+          </p>
           <AppButton
             :to="`/bibliothek/${game.id}/bearbeiten`"
             variant="secondary"

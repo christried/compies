@@ -913,6 +913,7 @@
     },
     "loading": "Bibliothek lädt",
     "clipFact": "Clip {n} s",
+    "updatedAt": "Zuletzt aktualisiert: {month}",
     "listFailed": "Die Bibliothek lässt sich gerade nicht laden.",
     "saved": "{name} ist in der Bibliothek.",
     "saveDone": "Gespeichert.",
