@@ -126,6 +126,12 @@ export const STATES = [
         await setField(tab, GAME.length, '5')
         await until(tab, invalid, 'the clip errors')
       }),
+      // The clip fields share one line (#797), the first problem's: Start's. With Start put right, Länge's own line is the one on screen.
+      step('clip-laenge', async (tab) => {
+        await setField(tab, GAME.start, '0:00')
+        await until(tab, invalid, 'the length error')
+        await sleep(300)
+      }),
       step('zahlen', async (tab) => {
         await setField(tab, GAME.playersFrom, 'x')
         // Notizen is a Tiptap editor since 0.16 (#810): a contenteditable, no input a label points at, so it is typed into.
@@ -182,6 +188,9 @@ export const STATES = [
         await pickRadio(tab, COPY.setup.points.custom.name)
         await stepBy(tab, COPY.stepper.points.stepper.replace('{n}', '2'), 'mehr', 2)
         await until(tab, `!!document.querySelector('[role=alert]')`, 'the rising-table error')
+        // The reason above Weiter shows red after a press of the blocked button (#797); the step stays.
+        await stepperNext(tab)
+        await sleep(300)
       }),
       // A rising table blocks Weiter: Linear again puts the rows right before the step goes on.
       step('modus-rad', async (tab) => {
@@ -216,6 +225,9 @@ export const STATES = [
         await next(tab)
         await typeDateTime(tab, '[role=group]', '01012020', '1900')
         await until(tab, invalid, 'the past-date error')
+        // The reason above Weiter shows red after a press of the blocked button (#797), and stays while the step does: the next stops' reasons too.
+        await stepperNext(tab)
+        await sleep(300)
       }),
       step('sessions-zu-wenig', async (tab) => {
         await typeDateTime(tab, '[role=group]', inDays(10))

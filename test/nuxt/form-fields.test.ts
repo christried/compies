@@ -30,7 +30,7 @@ function formOf(child: () => ReturnType<typeof h>) {
   return defineComponent({
     setup() {
       const { attempt } = provideFormAttempt()
-      return () => h('div', [child(), h('button', { 'data-submit': '', onClick: attempt }, 'Speichern')])
+      return () => h('div', [child(), h('button', { 'data-submit': '', 'onClick': attempt }, 'Speichern')])
     },
   })
 }
