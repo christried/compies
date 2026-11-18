@@ -61,7 +61,7 @@ describe('the entry pages', () => {
     const page = await mountCreate()
 
     expect(page.findComponent(EventSetupWizard).exists()).toBe(true)
-    expect(stepLabels(page)).toEqual(['Name', 'Format', 'Spiele', 'Punkte', 'Auswahlmodus', 'Spielepool', 'Termin'])
+    expect(stepLabels(page)).toEqual(['Name', 'Format', 'Spieleanzahl', 'Punkte', 'Auswahlmodus', 'Spielepool', 'Termin'])
     expect(page.get('nav[aria-label="Schritte"]').text()).toContain('Neues Event')
   })
 
@@ -69,7 +69,7 @@ describe('the entry pages', () => {
     const { page } = await mountEditor(defaultSettings())
 
     expect(page.findComponent(EventSetupWizard).exists()).toBe(true)
-    expect(stepLabels(page)).toEqual(['Format', 'Spiele', 'Punkte', 'Auswahlmodus', 'Spielepool'])
+    expect(stepLabels(page)).toEqual(['Format', 'Spieleanzahl', 'Punkte', 'Auswahlmodus', 'Spielepool'])
     expect(page.get('nav[aria-label="Schritte"]').text()).toContain('Einstellungen')
     expect(stepItems(page).slice(1).every(item => item.find('button').exists())).toBe(true)
   })
@@ -78,9 +78,9 @@ describe('the entry pages', () => {
 describe('the Veto allowance in the editor', () => {
   it('follows the Team size of a Host pick Event until the Host sets it, and is sent as it stands', async () => {
     const { page, patched } = await mountEditor({ ...defaultSettings(), teamSize: 2 })
-    await button(page, 'Spieler pro Team: mehr').trigger('click')
-    await button(page, 'Spieler pro Team: mehr').trigger('click')
-    await button(page, 'Spieler pro Team: mehr').trigger('click')
+    await button(page, 'Spielende pro Team: mehr').trigger('click')
+    await button(page, 'Spielende pro Team: mehr').trigger('click')
+    await button(page, 'Spielende pro Team: mehr').trigger('click')
 
     await goTo(page, 'Auswahlmodus')
     await radios(page)[1]!.trigger('click')
@@ -99,8 +99,8 @@ describe('the Veto allowance in the editor', () => {
     expect(veto(page).attributes('aria-valuenow')).toBe('2')
 
     await goTo(page, 'Format')
-    await button(page, 'Spieler pro Team: mehr').trigger('click')
-    await button(page, 'Spieler pro Team: mehr').trigger('click')
+    await button(page, 'Spielende pro Team: mehr').trigger('click')
+    await button(page, 'Spielende pro Team: mehr').trigger('click')
     await goTo(page, 'Auswahlmodus')
     expect(veto(page).attributes('aria-valuenow')).toBe('2')
 
@@ -112,8 +112,8 @@ describe('the Veto allowance in the editor', () => {
 
   it('counts a stored Veto allowance as the Host’s choice', async () => {
     const { page } = await mountEditor({ ...defaultSettings(), selectionMode: 'lucky_wheel', vetoAllowance: 2 })
-    await button(page, 'Spieler pro Team: mehr').trigger('click')
-    await button(page, 'Spieler pro Team: mehr').trigger('click')
+    await button(page, 'Spielende pro Team: mehr').trigger('click')
+    await button(page, 'Spielende pro Team: mehr').trigger('click')
 
     await goTo(page, 'Auswahlmodus')
 
@@ -126,7 +126,7 @@ describe('the Veto allowance in /neu', () => {
     const page = await mountCreate()
     await page.get('input[type="text"]').setValue('Abend')
     await cta(page).trigger('click')
-    await button(page, 'Spieler pro Team: mehr').trigger('click')
+    await button(page, 'Spielende pro Team: mehr').trigger('click')
     await cta(page).trigger('click')
     await cta(page).trigger('click')
     await cta(page).trigger('click')

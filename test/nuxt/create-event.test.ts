@@ -93,7 +93,7 @@ describe('create an Event: the Sessions and Dates step', () => {
 
     await toSessionsStep(page)
 
-    expect(page.get('h1').text()).toContain('Wann zocken wir?')
+    expect(page.get('h1').text()).toContain('Wann ist es soweit?')
     expect(page.findAll('[role="group"]')).toHaveLength(1)
     expect(page.text()).toContain('Termin vorschlagen')
   })
@@ -146,7 +146,7 @@ describe('create an Event: the Sessions and Dates step', () => {
 
     await vi.waitFor(() => expect(page.text()).toContain('Freitags-Zocken steht!'))
     expect(saved).toHaveBeenCalledWith({ name: 'Freitags-Zocken', dateMode: 'poll', sessions: 1, slots: ['2090-10-30T20:30'], settings: DEFAULT_SETTINGS, pool: [] })
-    expect(page.text()).toContain('Schick den Link an deine Freunde, dann können sie sich anmelden und abstimmen.')
+    expect(page.text()).toContain('Schick den Link an deine Leute, dann können sie sich anmelden und abstimmen.')
     expect((page.get('input[readonly]').element as HTMLInputElement).value).toBe(created.inviteUrl)
     expect(page.get('a[href="/e/freitags-zocken-k7q2"]').text()).toContain('Zur Umfrage')
   })

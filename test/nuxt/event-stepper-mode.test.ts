@@ -6,7 +6,7 @@ import CreatePage from '~/pages/neu.vue'
 import { kitty, signInAs } from './auth'
 
 // Step 5 of the stepper, the Selection mode (#145): the two open modes, the locked ones, the Glücksrad's
-// options (Rad verdecken, Vetos pro Partei) that follow the Team size until the Host sets them, and the
+// options (Pseudo-Games, Vetos pro Partei) that follow the Team size until the Host sets them, and the
 // Fertig summary. The other steps have their own cases in event-stepper.test.ts and create-event.test.ts.
 
 const host = { ...kitty, canHost: true }
@@ -32,7 +32,7 @@ const radios = (page: Page) => page.findAll('[role="radio"]')
 const checked = (page: Page) => radios(page).map(radio => radio.attributes('aria-checked'))
 const stepItems = (page: Page) => page.get('nav[aria-label="Schritte"]').findAll('li')
 const switchOf = (page: Page, label: string) => page.findAll('[role="switch"]').find(sw => sw.text().includes(label))
-const hideSwitch = (page: Page) => switchOf(page, 'Rad verdecken')!
+const hideSwitch = (page: Page) => switchOf(page, 'Pseudo-Games')!
 const previewSwitch = (page: Page) => switchOf(page, 'Pool vorher zeigen')
 const vetoStepper = (page: Page) => page.findAll('[role="spinbutton"]').find(stepper => stepper.attributes('aria-label') === 'Vetos pro Partei')
 
@@ -80,7 +80,7 @@ describe('the Selection mode step', () => {
 
     expect(page.get('h1').text()).toContain('Schritt 5 von 7')
     expect(page.get('h1').text()).toContain('Wie wird das nächste Spiel bestimmt?')
-    expect(stepItems(page).map(item => item.text())).toEqual(['✓ Name', '✓ Format', '✓ Spiele', '✓ Punkte', '5 Auswahlmodus', '6 Spielepool', '7 Termin'])
+    expect(stepItems(page).map(item => item.text())).toEqual(['✓ Name', '✓ Format', '✓ Spieleanzahl', '✓ Punkte', '5 Auswahlmodus', '6 Spielepool', '7 Termin'])
   })
 
   it('offers all five modes in the design’s order, with Host-Wahl chosen', async () => {
@@ -133,22 +133,22 @@ describe('the Selection mode step', () => {
     const page = await mountCreate()
     await toModeStep(page)
 
-    expect(switchOf(page, 'Rad verdecken')).toBeUndefined()
+    expect(switchOf(page, 'Pseudo-Games')).toBeUndefined()
     expect(vetoStepper(page)).toBeUndefined()
 
     await radios(page)[1]!.trigger('click')
 
     expect(hideSwitch(page).attributes('aria-checked')).toBe('false')
-    expect(hideSwitch(page).text()).toContain('Rad verdecken')
+    expect(hideSwitch(page).text()).toContain('Pseudo-Games')
     expect(vetoStepper(page)!.attributes('aria-valuenow')).toBe('3')
 
     await radios(page)[0]!.trigger('click')
 
-    expect(switchOf(page, 'Rad verdecken')).toBeUndefined()
+    expect(switchOf(page, 'Pseudo-Games')).toBeUndefined()
     expect(vetoStepper(page)).toBeUndefined()
   })
 
-  // „Pool vorher zeigen“ (#225): on by default for Host-Wahl and the Glücksrad, off and disabled under „Rad verdecken“.
+  // „Pool vorher zeigen“ (#225): on by default for Host-Wahl and the Glücksrad, off and disabled under „Pseudo-Games“.
   describe('Pool vorher zeigen', () => {
     it('is on by default, with Host-Wahl and with the Glücksrad, with its help', async () => {
       const page = await mountCreate()
@@ -156,24 +156,24 @@ describe('the Selection mode step', () => {
 
       expect(previewSwitch(page)!.attributes('aria-checked')).toBe('true')
       expect(previewSwitch(page)!.attributes('aria-disabled')).toBeUndefined()
-      expect(previewSwitch(page)!.text()).toContain('Die anderen sehen den Spielepool schon vorher.')
+      expect(previewSwitch(page)!.text()).toContain('Die Teilnehmenden sehen den Spielepool schon vorher.')
 
       await radios(page)[1]!.trigger('click')
 
       expect(previewSwitch(page)!.attributes('aria-checked')).toBe('true')
-      expect(previewSwitch(page)!.text()).toContain('Die anderen sehen den Spielepool schon vorher.')
+      expect(previewSwitch(page)!.text()).toContain('Die Teilnehmenden sehen den Spielepool schon vorher.')
     })
 
-    it('sits right after „Rad verdecken“ in the wheel’s box', async () => {
+    it('sits right after „Pseudo-Games“ in the wheel’s box', async () => {
       const page = await mountCreate()
       await toModeStep(page)
       await radios(page)[1]!.trigger('click')
 
-      expect(page.findAll('[role="switch"]').map(sw => sw.get('b').text())).toEqual(['Rad verdecken', 'Pool vorher zeigen'])
+      expect(page.findAll('[role="switch"]').map(sw => sw.get('b').text())).toEqual(['Pseudo-Games', 'Pool vorher zeigen'])
       expect(hideSwitch(page).element.parentElement).toBe(previewSwitch(page)!.element.parentElement)
     })
 
-    it('turns off and is disabled with the reason under „Rad verdecken“', async () => {
+    it('turns off and is disabled with the reason under „Pseudo-Games“', async () => {
       const page = await mountCreate()
       await toModeStep(page)
       await radios(page)[1]!.trigger('click')
@@ -182,12 +182,12 @@ describe('the Selection mode step', () => {
 
       expect(previewSwitch(page)!.attributes('aria-checked')).toBe('false')
       expect(previewSwitch(page)!.attributes('aria-disabled')).toBe('true')
-      expect(previewSwitch(page)!.text()).toContain('Beim verdeckten Rad sieht niemand den Pool.')
+      expect(previewSwitch(page)!.text()).toContain('Mit Pseudo-Games sieht niemand den Pool von Spielen.')
       await previewSwitch(page)!.trigger('click')
       expect(previewSwitch(page)!.attributes('aria-checked')).toBe('false')
     })
 
-    it('stays off when „Rad verdecken“ is turned off again, until the Host turns it on', async () => {
+    it('stays off when „Pseudo-Games“ is turned off again, until the Host turns it on', async () => {
       const page = await mountCreate()
       await toModeStep(page)
       await radios(page)[1]!.trigger('click')
@@ -198,13 +198,13 @@ describe('the Selection mode step', () => {
       expect(hideSwitch(page).attributes('aria-checked')).toBe('false')
       expect(previewSwitch(page)!.attributes('aria-checked')).toBe('false')
       expect(previewSwitch(page)!.attributes('aria-disabled')).toBeUndefined()
-      expect(previewSwitch(page)!.text()).not.toContain('Beim verdeckten Rad')
+      expect(previewSwitch(page)!.text()).not.toContain('Mit Pseudo-Games')
 
       await previewSwitch(page)!.trigger('click')
       expect(previewSwitch(page)!.attributes('aria-checked')).toBe('true')
     })
 
-    it('stays off when „Rad verdecken“ is turned off again after a detour through Host-Wahl, where the Host turned it on', async () => {
+    it('stays off when „Pseudo-Games“ is turned off again after a detour through Host-Wahl, where the Host turned it on', async () => {
       const saved = recordPost()
       const page = await mountCreate()
       await toModeStep(page)
@@ -237,7 +237,7 @@ describe('the Selection mode step', () => {
       expect(page.text()).toContain('Host-Wahl, Spiele erst beim Setzen')
     })
 
-    it('is sent on by default with the Glücksrad, and off under „Rad verdecken“', async () => {
+    it('is sent on by default with the Glücksrad, and off under „Pseudo-Games“', async () => {
       const saved = recordPost()
       const page = await mountCreate()
       await toModeStep(page)
@@ -261,7 +261,7 @@ describe('the Selection mode step', () => {
     const aside = page.get('aside[aria-label="Erklärung"]')
     expect(aside.text()).toContain('Glücksrad')
     expect(aside.text()).toContain('Du legst Spiele auf das Glücksrad und drehst es.')
-    expect(aside.text()).toContain('Option „Rad verdecken“')
+    expect(aside.text()).toContain('Pseudo-Games')
     expect(aside.text()).toContain('Du als Host siehst die Spiele auf dem verdeckten Rad trotzdem, auch wenn du mitspielst.')
   })
 
@@ -285,7 +285,7 @@ describe('the Selection mode step', () => {
       const page = await mountCreate()
       await page.get('input[type="text"]').setValue('Freitags-Zocken')
       await next(page)
-      await click(page, 'Spieler pro Team: mehr', 2)
+      await click(page, 'Spielende pro Team: mehr', 2)
       expect(page.findAll('[role="spinbutton"]')[1]!.attributes('aria-valuenow')).toBe('5')
 
       await next(page, 3)
@@ -296,7 +296,7 @@ describe('the Selection mode step', () => {
       expect(vetoStepper(page)!.attributes('aria-valuenow')).toBe('2')
 
       await stepItems(page)[1]!.get('button').trigger('click')
-      await click(page, 'Spieler pro Team: weniger', 1)
+      await click(page, 'Spielende pro Team: weniger', 1)
       await next(page, 3)
 
       expect(vetoStepper(page)!.attributes('aria-valuenow')).toBe('2')
@@ -306,7 +306,7 @@ describe('the Selection mode step', () => {
       const page = await mountCreate()
       await page.get('input[type="text"]').setValue('Freitags-Zocken')
       await next(page)
-      await click(page, 'Spieler pro Team: mehr', 3)
+      await click(page, 'Spielende pro Team: mehr', 3)
       await next(page, 3)
 
       await radios(page)[1]!.trigger('click')
