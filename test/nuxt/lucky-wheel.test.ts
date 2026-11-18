@@ -125,7 +125,7 @@ describe('the wheel at rest', () => {
     await mount(wheelOf(null, { count: 0, slices: [] }))
 
     expect(page!.get('[role="img"]').attributes('aria-label')).toBe('Glücksrad mit 0 Spielen')
-    expect(text()).toContain('Das Rad ist leer')
+    expect(text()).not.toContain('Das Rad ist leer')
     expect(text()).not.toContain('auf dem Rad')
   })
 
@@ -155,10 +155,18 @@ describe('the wheel at rest', () => {
     expect(page!.get('[data-testid="wheel-label-1"]').text()).toBe('Kart')
   })
 
-  it('says so when the wheel is empty', async () => {
+  it('says nothing in the heading row when the wheel is empty or holds one game, only its accessible name counts (#802)', async () => {
     await mount(wheelOf(null, { count: 0, slices: [] }))
 
-    expect(text()).toContain('Das Rad ist leer')
+    expect(text()).not.toContain('Das Rad ist leer')
+    expect(text()).not.toContain('Das Rad dreht')
+    expect(page!.get('[role="img"]').attributes('aria-label')).toBe('Glücksrad mit 0 Spielen')
+    page!.unmount()
+
+    await mount(wheelOf(null, { count: 1, slices: [{ id: 'a', name: 'Halo' }] }))
+    expect(text()).not.toContain('Das Rad ist leer')
+    expect(text()).not.toContain('Das Rad dreht')
+    expect(page!.get('[role="img"]').attributes('aria-label')).toBe('Glücksrad mit 1 Spiel')
   })
 
   it('shows a Member under a Hidden wheel the placeholders instead of the games, and the count in the accessible name only', async () => {

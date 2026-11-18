@@ -406,7 +406,7 @@ describe('the „Archiviert“ mark (#726)', () => {
 })
 
 // The tile (#435): on the Event page a game is its picture and its name, nothing else. The tile is a plain element: no link, no
-// button, and no actions slot, so the Spielepool, „Zuletzt gezogen“ and „Gerade dran“ show the same thing for the Host and a Member.
+// button, and no actions slot, so the Spielepool, „Zuletzt gezogen“ and „Läuft aktuell.“ show the same thing for the Host and a Member.
 describe('the tile layout (#435)', () => {
   const FULL_TILE = { name: 'Mario Kart', ...FULL, imageUrl: '/api/images/kart.webp' }
 

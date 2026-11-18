@@ -367,7 +367,7 @@ describe('the ConnectionBanner on the Event page', () => {
     expect(banner(page, 'Verbindung wird wiederhergestellt')).toBeUndefined()
     const lost = banner(page, 'Verbindung verloren')
     expect(lost?.attributes('role')).toBe('alert')
-    expect(lost?.text()).toContain('Du siehst den letzten Stand.')
+    expect(lost?.text()).toContain('Du siehst den letzten Stand (den du kennst lol).')
 
     lastSocket().options.onOpen()
     await vi.advanceTimersByTimeAsync(10)

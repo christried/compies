@@ -37,9 +37,9 @@ const readOf = (slug: string, overrides: EventOverrides = {}) => viewWithSession
   ...overrides,
 })
 
-const TODAY = ['Gerade dran', 'Tabelle', 'Spielbrett', 'Sessions', 'So wird gespielt']
-const LIFTED = ['Countdown', 'Gerade dran', 'Tabelle', 'Spielbrett', 'Sessions', 'So wird gespielt']
-const WAITING = ['Gerade dran', 'Tabelle', 'Countdown', 'Spielbrett', 'Sessions', 'So wird gespielt']
+const TODAY = ['Läuft aktuell.', 'Tabelle', 'Spielbrett', 'Sessions', 'So wird gespielt']
+const LIFTED = ['Countdown', 'Läuft aktuell.', 'Tabelle', 'Spielbrett', 'Sessions', 'So wird gespielt']
+const WAITING = ['Läuft aktuell.', 'Tabelle', 'Countdown', 'Spielbrett', 'Sessions', 'So wird gespielt']
 
 /** The page's motion setting, as the tokens put it in `--cp-motion`. */
 function motion(value: 'full' | 'reduced') {
@@ -132,11 +132,11 @@ describe('the order of the stage on the Event page', () => {
 
     vi.setSystemTime(new Date(T + 2000))
     await read({ results: [afterResult.results![0]!, resultAt(T)], standings: afterResult.standings, end: { played: 2, gameCount: 6, complete: false, tie: null, finish: null, lastGame: null } })
-    expect(headings()).toEqual(['Tabelle', 'Gerade dran', 'Spielbrett', 'Sessions', 'So wird gespielt'])
+    expect(headings()).toEqual(['Tabelle', 'Läuft aktuell.', 'Spielbrett', 'Sessions', 'So wird gespielt'])
 
     vi.setSystemTime(new Date(T + 5000))
     await read({ results: [afterResult.results![0]!, resultAt(T)], countdown: countdownAt(T + 4000) })
-    expect(headings()).toEqual(['Countdown', 'Tabelle', 'Gerade dran', 'Spielbrett', 'Sessions', 'So wird gespielt'])
+    expect(headings()).toEqual(['Countdown', 'Tabelle', 'Läuft aktuell.', 'Spielbrett', 'Sessions', 'So wird gespielt'])
   })
 
   // The page scrolls to the top when a block takes the first place (#586), so the viewer sees it. The decision is `scrollsToTop` (event-stage.test.ts); here the page's wiring of it.
@@ -323,7 +323,7 @@ describe('the order of the stage on the Event page', () => {
     await read({ countdown: countdownAt(T) })
     await flushPromises()
 
-    // The Countdown arrives lifted: nobody saw it anywhere else, so it only appears. Gerade dran and Tabelle shift down and keep their order.
+    // The Countdown arrives lifted: nobody saw it anywhere else, so it only appears. Läuft aktuell. and Tabelle shift down and keep their order.
     expect(inStage()).toEqual([])
   })
 
@@ -383,16 +383,16 @@ describe('the order of the stage on the Event page', () => {
     const { read, headings } = await open()
     vi.setSystemTime(new Date(T + 2000))
     await read({ results: [afterResult.results![0]!, resultAt(T)], standings: afterResult.standings, end: { played: 2, gameCount: 6, complete: false, tie: null, finish: null, lastGame: null } })
-    expect(headings()).toEqual(['Tabelle', 'Gerade dran', 'Spielbrett', 'Sessions', 'So wird gespielt'])
+    expect(headings()).toEqual(['Tabelle', 'Läuft aktuell.', 'Spielbrett', 'Sessions', 'So wird gespielt'])
 
-    // The second Result's moment is T + 2000, its read 200 ms later: its half second is not over, and the block used to fall below „Gerade dran“ and rise again.
+    // The second Result's moment is T + 2000, its read 200 ms later: its half second is not over, and the block used to fall below „Läuft aktuell.“ and rise again.
     vi.setSystemTime(new Date(T + 2200))
     await read({ results: [afterResult.results![0]!, resultAt(T + 2000)], standings: afterResult.standings, end: { played: 2, gameCount: 6, complete: false, tie: null, finish: null, lastGame: null } })
-    expect(headings()).toEqual(['Tabelle', 'Gerade dran', 'Spielbrett', 'Sessions', 'So wird gespielt'])
+    expect(headings()).toEqual(['Tabelle', 'Läuft aktuell.', 'Spielbrett', 'Sessions', 'So wird gespielt'])
 
     for (const step of [299, 1, 600]) {
       await vi.advanceTimersByTimeAsync(step)
-      expect(headings()).toEqual(['Tabelle', 'Gerade dran', 'Spielbrett', 'Sessions', 'So wird gespielt'])
+      expect(headings()).toEqual(['Tabelle', 'Läuft aktuell.', 'Spielbrett', 'Sessions', 'So wird gespielt'])
     }
   })
 
@@ -434,7 +434,7 @@ describe('the order of the stage on the Event page', () => {
       await vi.advanceTimersByTimeAsync(ms)
       await flushPromises()
     }
-    const TABELLE_FIRST = ['Tabelle', 'Gerade dran', 'Spielbrett', 'Sessions', 'So wird gespielt']
+    const TABELLE_FIRST = ['Tabelle', 'Läuft aktuell.', 'Spielbrett', 'Sessions', 'So wird gespielt']
 
     it('starts after the block\'s move: the old table until then, the Tabelle tab plays at once, and nothing but the table waits', async () => {
       const { page, read, headings } = await open()
@@ -531,7 +531,7 @@ describe('the order of the stage on the Event page', () => {
       expect(stamp(page)).toBe('Sieg in Spiel 3!')
       expect(sequence().filter(entry => entry.options.duration === 480)).toHaveLength(1)
       // Once risen the block stayed on top: no drop between the two rises.
-      expect(steps.slice(2).every(step => step.indexOf('Tabelle') <= step.indexOf('Gerade dran'))).toBe(true)
+      expect(steps.slice(2).every(step => step.indexOf('Tabelle') <= step.indexOf('Läuft aktuell.'))).toBe(true)
     })
 
     it('plays two Results in a row as two sequences in order: the second counts from the first\'s result, and the block stays on top', async () => {
@@ -569,7 +569,7 @@ describe('the order of the stage on the Event page', () => {
 
       // The Countdown's glide ends at T + 910, the Standings rise at T + 700 and arrive at T + 1110: not at the Countdown's end.
       await settle(200)
-      expect(headings()).toEqual(['Tabelle', 'Countdown', 'Gerade dran', 'Spielbrett', 'Sessions', 'So wird gespielt'])
+      expect(headings()).toEqual(['Tabelle', 'Countdown', 'Läuft aktuell.', 'Spielbrett', 'Sessions', 'So wird gespielt'])
       await settle(riseSettleMs() - 1)
       expect(stagePills(page)).toBe(0)
       await settle(1)

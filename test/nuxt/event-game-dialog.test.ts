@@ -13,7 +13,7 @@ import { serve, shownToasts, viewWithSessions } from './event-page'
 import { editorOf, ensureGeometry, type } from './helpers/notes-editor'
 
 // The game dialog on the Event page, through the whole page (#443, #444): the Spielepool in „So wird gespielt“, „Zuletzt gezogen“ under the wheel
-// and „Gerade dran“, with the props threaded through EventStage and StageWheel. A Member's tiles open the same dialog without Tags and Notes (#444).
+// and „Läuft aktuell.“, with the props threaded through EventStage and StageWheel. A Member's tiles open the same dialog without Tags and Notes (#444).
 
 const STARTED = '2026-10-30T19:30:00.000Z'
 const STOP = '2026-10-30T19:45:10.000Z'
@@ -169,18 +169,18 @@ describe('the Host\'s game dialog on the Event page (#443)', () => {
     expectEventNotesAboveGameNotes('Event-Kart: Mirror aus', 'Kart-Notizen')
   })
 
-  it('shows the Event notes above the Game notes in the dialog of „Gerade dran“, for a pool game and one set from the library (#732)', async () => {
+  it('shows the Event notes above the Game notes in the dialog of „Läuft aktuell.“, for a pool game and one set from the library (#732)', async () => {
     const { slug } = serveHost(true)
     await mount(slug)
 
-    tileButton('Gerade dran', 'Halo')!.click()
+    tileButton('Läuft aktuell.', 'Halo')!.click()
     await flushPromises()
     expectEventNotesAboveGameNotes('Event-Halo: nur Bo1', 'Hausregel: keine Raketen')
     dialog()!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
     await flushPromises()
     await vi.waitFor(() => expect(dialog()).toBeNull())
 
-    tileButton('Gerade dran', 'Schach')!.click()
+    tileButton('Läuft aktuell.', 'Schach')!.click()
     await flushPromises()
     expectEventNotesAboveGameNotes('Event-Schach: mit Uhr', 'Schach-Notizen')
   })
@@ -199,12 +199,12 @@ describe('the Host\'s game dialog on the Event page (#443)', () => {
     expect(dialog()!.textContent).toContain('Kart-Notizen')
   })
 
-  it('opens from „Gerade dran“ for a pool game and for a game set from the library outside the pool, and keeps the Round\'s Notes open under the tile', async () => {
+  it('opens from „Läuft aktuell.“ for a pool game and for a game set from the library outside the pool, and keeps the Round\'s Notes open under the tile', async () => {
     const { slug } = serveHost(true)
     await mount(slug)
-    const rounds = sectionOf('Gerade dran')!
+    const rounds = sectionOf('Läuft aktuell.')!
 
-    tileButton('Gerade dran', 'Halo')!.click()
+    tileButton('Läuft aktuell.', 'Halo')!.click()
     await flushPromises()
     expect(dialog()!.querySelector('h2')?.textContent).toBe('Halo')
     expect(dialog()!.textContent).toContain('Koop-Halo')
@@ -213,7 +213,7 @@ describe('the Host\'s game dialog on the Event page (#443)', () => {
     await flushPromises()
     await vi.waitFor(() => expect(dialog()).toBeNull())
 
-    tileButton('Gerade dran', 'Schach')!.click()
+    tileButton('Läuft aktuell.', 'Schach')!.click()
     await flushPromises()
     expect(dialog()!.querySelector('h2')?.textContent).toBe('Schach')
     expect(dialog()!.textContent).toContain('Denken-Schach')
@@ -278,17 +278,17 @@ describe('a Member\'s tiles on the Event page open the dialog (#444)', () => {
     expect(dialog()!.textContent).toContain('19,99 €')
   })
 
-  it('opens from „Gerade dran“ for a pool game and for a game set from the library outside the pool, with no Host parts on the Round', async () => {
+  it('opens from „Läuft aktuell.“ for a pool game and for a game set from the library outside the pool, with no Host parts on the Round', async () => {
     const { slug } = serveHost(false)
     await mount(slug)
-    const rounds = sectionOf('Gerade dran')!
+    const rounds = sectionOf('Läuft aktuell.')!
 
-    tileButton('Gerade dran', 'Halo')!.click()
+    tileButton('Läuft aktuell.', 'Halo')!.click()
     await flushPromises()
     expectMemberDialog('Halo')
     await close()
 
-    tileButton('Gerade dran', 'Schach')!.click()
+    tileButton('Läuft aktuell.', 'Schach')!.click()
     await flushPromises()
     expectMemberDialog('Schach')
     // The Round's Notes and buttons are the Host's: a Member's read has none of them.
@@ -310,7 +310,7 @@ describe('a Member\'s tiles on the Event page open the dialog (#444)', () => {
     await mount(slug)
 
     expect(sectionOf('So wird gespielt')!.querySelector('[aria-haspopup]')).toBeNull()
-    tileButton('Gerade dran', 'Halo')!.click()
+    tileButton('Läuft aktuell.', 'Halo')!.click()
     await flushPromises()
     expectMemberDialog('Halo')
   })
@@ -323,11 +323,11 @@ describe('the Host writes Event notes in the game dialogs of the Event page (#46
   const footerButton = (label: string) => [...dialog()!.querySelectorAll<HTMLButtonElement>('footer button')].find(button => button.textContent?.trim() === label)!
   const zuletzt = () => [...sectionOf('Zuletzt gezogen')!.querySelectorAll<HTMLButtonElement>('button[aria-haspopup="dialog"]')][0]!
 
-  // The three places a tile opens the dialog from: the Spielepool (Pong has no Event notes), „Zuletzt gezogen“ (Kart has) and „Gerade dran“ (Schach has).
+  // The three places a tile opens the dialog from: the Spielepool (Pong has no Event notes), „Zuletzt gezogen“ (Kart has) and „Läuft aktuell.“ (Schach has).
   const places = [
     { place: 'the Spielepool', game: 'g-pong', open: () => tileButton('So wird gespielt', 'Pong')!, stored: null, typed: 'Heute nur Bo1', saved: ['Heute nur Bo1'], gameText: null },
     { place: '„Zuletzt gezogen“', game: 'g-kart', open: zuletzt, stored: 'Event-Kart: Mirror aus', typed: ' und Uhr', saved: ['Event-Kart: Mirror aus und Uhr'], gameText: 'Kart-Notizen' },
-    { place: '„Gerade dran“', game: 'g-schach', open: () => tileButton('Gerade dran', 'Schach')!, stored: 'Event-Schach: mit Uhr', typed: ' und Pause', saved: ['Event-Schach: mit Uhr und Pause'], gameText: 'Schach-Notizen' },
+    { place: '„Läuft aktuell.“', game: 'g-schach', open: () => tileButton('Läuft aktuell.', 'Schach')!, stored: 'Event-Schach: mit Uhr', typed: ' und Pause', saved: ['Event-Schach: mit Uhr und Pause'], gameText: 'Schach-Notizen' },
   ]
 
   beforeEach(() => {
@@ -357,10 +357,10 @@ describe('the Host writes Event notes in the game dialogs of the Event page (#46
     expect(shownToasts()).toEqual([])
   })
 
-  it('clears the note of a game from „Gerade dran“ by saving an empty editor, and the add button takes the focus', async () => {
+  it('clears the note of a game from „Läuft aktuell.“ by saving an empty editor, and the add button takes the focus', async () => {
     const { slug } = serveHost(true)
     const mounted = await mount(slug)
-    tileButton('Gerade dran', 'Halo')!.click()
+    tileButton('Läuft aktuell.', 'Halo')!.click()
     await flushPromises()
     entry()!.click()
     await vi.waitFor(() => expect(textbox()).not.toBeNull())

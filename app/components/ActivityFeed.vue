@@ -127,7 +127,7 @@ const shown = computed(() => entries.value.flatMap((entry) => {
   return parts === null ? [] : [{ entry, parts, ...activityIcon(entry), time: formatActivityTime(new Date(entry.at), now) }]
 }))
 
-// The headers (#164): „Vor dem Start“, then „Session n“ from a start to its end, „Vor Session m“ until the next start and
+// The headers (#164): „Beginn“, then „Session n“ from a start to its end, „Vor Session m“ until the next start and
 // „Nach Session n“ when none is left. An Event with one Session has no numbers: „Session“ and „Nach der Session“.
 function groupTitle(group: ActivityGroup): string {
   const n = group.number
