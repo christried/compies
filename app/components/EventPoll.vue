@@ -8,7 +8,7 @@ import type { EventView } from '~~/shared/event'
 
 // The Date poll on the Event page (screen M3, #166, 11-event-seite § EventPoll), while it is open: its title with the vote
 // count, the Dates still missing, the legend, a card per Slot and "Wer kann wann?". The Votes are drawn as the page's
-// useOptimisticVotes holds them, so a press shows at once. The Host picks a Slot on its card ("Termin festlegen"), and the
+// useOptimisticVotes holds them, so a press shows at once. The Host picks a Slot on its card ("Termin fixieren"), and the
 // "−" next to "N Termine gesucht" removes an undated Session (#55); the Event page runs both. `compact` is the poll of a
 // later Session below the Game board: "Wer kann wann?" is folded behind a button, and the pick is no primary (the dock
 // owns it). Its heading is where the Head's link and the Sessions card jump to; the Head carries "Wann Zockung?".

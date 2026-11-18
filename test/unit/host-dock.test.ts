@@ -32,7 +32,7 @@ describe('hostDockState', () => {
     expect(hostDockState(input({ settings: null }))).toMatchObject({ kind: 'setup', primary: 'setup' })
   })
 
-  it('is the poll while no Session is dated: Termin festlegen', () => {
+  it('is the poll while no Session is dated: Termin fixieren', () => {
     const state = hostDockState(input({ sessions: [undated('a')], start: { sessionId: null, number: null, rejection: 'no_dated_session' } }))
 
     expect(state).toMatchObject({ kind: 'poll', primary: 'setDate', pollNumber: null })

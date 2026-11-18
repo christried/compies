@@ -518,7 +518,7 @@ export const STATES = [
     name: 'poll',
     group: 'event-poll',
     hostStops: [
-      // The Host's „Termin festlegen“ with the Best slot selected; never confirmed.
+      // The Host's „Termin fixieren“ with the Best slot selected; never confirmed.
       stop('termin-festlegen', async (tab) => {
         await dock(tab, COPY.dock.setDate)
         await layerOpen(tab, 'the Date dialog')
