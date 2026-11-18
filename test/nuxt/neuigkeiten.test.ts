@@ -1,6 +1,7 @@
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import NeuigkeitenPage from '~/pages/neuigkeiten.vue'
+import de from '~~/i18n/locales/de.json'
 import { signInAs } from './auth'
 
 // A fixture changelog instead of the real CHANGELOG.md, so the assertions don't move with every Release.
@@ -132,6 +133,15 @@ describe('Neuigkeiten', () => {
       expect(document.activeElement?.id).toBe(heading)
       expect(window.location.hash).toBe(link.attributes('href'))
     }
+    page.unmount()
+  })
+
+  it('shows the strip without the „Springe zu“ label, and the key is gone from de.json (#807)', async () => {
+    const page = await mountSuspended(NeuigkeitenPage, { route: '/neuigkeiten', attachTo: document.body })
+
+    expect(page.text()).not.toContain('Springe zu')
+    expect(page.findAll('nav[aria-label="Versionen"]').length).toBeGreaterThan(0)
+    expect('jump' in de.news).toBe(false)
     page.unmount()
   })
 

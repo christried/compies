@@ -54,7 +54,7 @@ const save = () => saveName(() => {
         ref="field"
         v-model="displayName"
         :label="t('profile.displayName')"
-        :help="missing ? t('profile.displayNameEmpty') : t('profile.displayNameHelp')"
+        :help="missing ? t('profile.displayNameEmpty') : undefined"
         :invalid="missing"
         :maxlength="DISPLAY_NAME_MAX"
         cut-at-max
