@@ -1,20 +1,15 @@
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
+import { CUE_LENGTHS } from '../../app/utils/cue-lengths'
 import { CUE_CREDITS_URL, parseCredits } from '../../app/utils/sound-credits'
 import { CUE_FILE_EXTENSION, CUE_FILE_FOLDER, CUE_IDS, cueFileUrl, type CueId } from '../../app/utils/sound-cues'
 
-// The cue files of 0.13.3 (#531, #536): the sounds the app ships, each at most the length `compibert-sound.md` lists, and the credits file
+// The cue files of 0.13.3 (#531, #536): the sounds the app ships, each at most the length of `CUE_LENGTHS` (which test/unit/cue-lengths.test.ts holds against `compibert-sound.md`), and the credits file
 // that says where each is from. The hub-pages criterion of the ticket („the files are not requested on the hub pages“) is pinned
 // structurally: only `cueFileUrl` names the folder, and only the Event page mounts the player.
 
 const root = resolve(import.meta.dirname, '../..')
-/** The length column of `compibert-sound.md`, in ms. */
-const LENGTH_MS: Record<CueId, number> = {
-  'wheel-windup': 500, 'wheel-tick': 30, 'wheel-stop': 600, 'wheel-morph': 500, 'wheel-slice-out': 300,
-  'veto-open': 400, 'veto-clock': 40, 'veto-clip-close': 300, 'veto-seal': 300, 'veto-drumroll': 1200, 'veto-reveal': 800,
-}
-
 const fileOf = (id: CueId) => join(root, 'public', cueFileUrl(id))
 
 describe('the cue files', () => {
@@ -22,15 +17,6 @@ describe('the cue files', () => {
     expect(CUE_FILE_FOLDER).toBe('/sounds/cues')
     expect(CUE_FILE_EXTENSION).toBe('wav')
     expect(cueFileUrl('wheel-windup')).toBe('/sounds/cues/wheel-windup.wav')
-  })
-
-  it('are the lengths of compibert-sound.md, for every cue', () => {
-    const doc = readFileSync(resolve(root, 'docs/design_handoff_compies/reference/docs/compibert-sound.md'), 'utf8')
-    for (const id of CUE_IDS) {
-      const row = doc.split('\n').find(line => line.includes(`\`${id}\``))
-      const [, amount, unit] = /\|\s*([\d.]+) (ms|s)\b[^|]*\|/.exec(row ?? '') ?? []
-      expect(LENGTH_MS[id], id).toBe(Math.round(Number(amount) * (unit === 's' ? 1000 : 1)))
-    }
   })
 
   // At most the doc's length (+5 ms) and at least half of it: a candidate may be a little shorter than the doc says (a 24 ms tick, #536).
@@ -49,8 +35,8 @@ describe('the cue files', () => {
     const samples = bytes.readUInt32LE(40) / 2
     expect(bytes.length).toBe(44 + samples * 2)
     const ms = (samples / 44_100) * 1000
-    expect(ms).toBeLessThanOrEqual(LENGTH_MS[id] + 5)
-    expect(ms).toBeGreaterThanOrEqual(LENGTH_MS[id] / 2)
+    expect(ms).toBeLessThanOrEqual(CUE_LENGTHS[id].ms + 5)
+    expect(ms).toBeGreaterThanOrEqual(CUE_LENGTHS[id].ms / 2)
   })
 
   it('peak at about -1 dBFS, so the player\'s gain alone sets the relative volume', () => {
