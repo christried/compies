@@ -182,23 +182,18 @@ function onShortcut(event: KeyboardEvent) {
           class="flex min-w-0 flex-col gap-5"
           @keydown.capture="onShortcut"
         >
-          <!-- The editor is a lazy chunk and client only (#454, ADR 0019): nothing loads before the Host presses the pencil. Until it mounts the field's chrome holds its place. -->
-          <ClientOnly>
-            <!-- The Host pressed the pencil: the caret belongs in the editor that just opened (#464). -->
-            <!-- eslint-disable vuejs-accessibility/no-autofocus -->
-            <LazyRichNotesEditor
-              v-model="draft"
-              variant="event"
-              :max="EVENT_NOTES_MAX"
-              :disabled="saving"
-              autofocus
-              @invalid="over = $event"
-            />
-            <!-- eslint-enable vuejs-accessibility/no-autofocus -->
-            <template #fallback>
-              <RichNotesEditorFallback variant="event" />
-            </template>
-          </ClientOnly>
+          <!-- The editor is a lazy chunk and client only (#454, ADR 0019): nothing loads before the Host presses the pencil. Until it mounts the field's chrome holds its place, and a chunk that fails to load shows a retry (#822). -->
+          <!-- The Host pressed the pencil: the caret belongs in the editor that just opened (#464). -->
+          <!-- eslint-disable vuejs-accessibility/no-autofocus -- the Host pressed the pencil for this editor, so the caret belongs in it (#464) -->
+          <RichNotesEditorLoader
+            v-model="draft"
+            variant="event"
+            :max="EVENT_NOTES_MAX"
+            :disabled="saving"
+            autofocus
+            @invalid="over = $event"
+          />
+          <!-- eslint-enable vuejs-accessibility/no-autofocus -->
           <GameNotes
             v-if="notes"
             :notes="notes"
