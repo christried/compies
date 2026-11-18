@@ -2,6 +2,8 @@ import { and, asc, eq, inArray, notInArray, sql } from 'drizzle-orm'
 import type { GameTag } from '../../shared/game'
 import { gameTags, games } from '../db/schema'
 import type { Db } from './db'
+// A cycle with library.ts (it reads `loadTags`), harmless: both sides only call the other's function declaration, never at load.
+import { ownedBy } from './library'
 
 // Tag persistence (#335, #365): the Tags a game carries, and the Tags in use. Only the Game library reads and writes them, and `readHostGameFacts` reads them for the Host's Event (#443).
 // The Tags in use and "the first label wins" look inside one User's library (#455, ADR 0018): a word keeps its colour (it comes from the key), each library its own first spelling.
@@ -28,7 +30,7 @@ export async function loadTagsInUse(db: Db, ownerId: string): Promise<GameTag[]>
     .select({ key: gameTags.key, label: gameTags.label })
     .from(gameTags)
     .innerJoin(games, eq(gameTags.gameId, games.id))
-    .where(eq(games.createdBy, ownerId))
+    .where(ownedBy(ownerId))
     .orderBy(asc(gameTags.key), asc(gameTags.createdAt), asc(gameTags.gameId))
   const firstPerKey = new Map<string, GameTag>()
   for (const row of rows) if (!firstPerKey.has(row.key)) firstPerKey.set(row.key, row)
@@ -48,7 +50,7 @@ export async function saveTags(tx: Db, gameId: string, tags: GameTag[], ownerId:
       .select({ key: gameTags.key, label: gameTags.label })
       .from(gameTags)
       .innerJoin(games, eq(gameTags.gameId, games.id))
-      .where(and(inArray(gameTags.key, keys), eq(games.createdBy, ownerId)))
+      .where(and(inArray(gameTags.key, keys), ownedBy(ownerId)))
       .orderBy(asc(gameTags.createdAt), asc(gameTags.gameId))
     for (const row of used) if (!labelInUse.has(row.key)) labelInUse.set(row.key, row.label)
   }

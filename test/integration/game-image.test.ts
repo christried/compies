@@ -1,6 +1,6 @@
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { eq } from 'drizzle-orm'
-import { events, games, users } from '../../server/db/schema'
+import { eventPoolGames, events, games, users } from '../../server/db/schema'
 import { memoryImageStore } from '../../server/utils/image-store'
 import type { GameView } from '../../shared/game'
 import { createTestApp, type TestRequest } from './app'
@@ -341,6 +341,18 @@ describe('game images (#143)', () => {
       expect(response.status).toBe(200)
       expect(await bytesOf(response)).toEqual(webp('shared'))
       expect((await fetchImage(urlOf(KEY), people.admin.cookie)).status).toBe(404)
+    })
+
+    it('serves a Member no image through a pool row of a game that belongs to another Host than the Event\'s (#820)', async () => {
+      const people = await cast()
+      // The 0.15 code could still write such a row while a migration ran (ADR 0007): the Event is otherHost's, the game in its pool is host's.
+      const event = await setUpEvent(rig(), { host: otherHost, players: { member }, seats: [], games: [] })
+      const foreign = await addRow(people.one, KEY)
+      await testDb.db.insert(eventPoolGames).values({ eventId: event.eventId, gameId: foreign.id })
+
+      expect((await fetchImage(urlOf(KEY), event.players.member.cookie)).status).toBe(404)
+      // Its owner still has it.
+      expect((await fetchImage(urlOf(KEY), people.one.cookie)).status).toBe(200)
     })
 
     it.each([

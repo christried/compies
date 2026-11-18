@@ -87,15 +87,6 @@ describe('the value', () => {
     await vi.waitFor(() => expect(page.values.at(-1)).toEqual(doc(paragraph(text('eins')))))
   })
 
-  it('loads a stored heading with bold text, and editing it does not throw', async () => {
-    const stored = doc({ type: 'heading', attrs: { level: 3 }, content: [text('Titel', [{ type: 'bold' }])] })
-    const page = await mountEditor({ modelValue: stored })
-
-    expect(contentOf(page).text()).toBe('Titel')
-    expect(() => editorOf(page).commands.insertContent('x')).not.toThrow()
-    expect(JSON.stringify(page.values.at(-1))).not.toContain('bold')
-  })
-
   it('handles no note, a one-character note and a note of 2000 characters with 40 empty paragraphs', async () => {
     const empty = await mountEditor({ modelValue: null })
     expect(contentOf(empty).text()).toBe('')

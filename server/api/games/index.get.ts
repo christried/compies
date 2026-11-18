@@ -1,9 +1,9 @@
-import { asc, eq, sql } from 'drizzle-orm'
+import { asc, sql } from 'drizzle-orm'
 import { defineEventHandler } from 'h3'
 import { games } from '../../db/schema'
 import { useDb } from '../../utils/db'
 import { loadTagsInUse } from '../../utils/game-tags'
-import { liveEventCounts, readGameViews, requireLibraryViewer } from '../../utils/library'
+import { liveEventCounts, ownedBy, readGameViews, requireLibraryViewer } from '../../utils/library'
 import type { GameList } from '../../../shared/game'
 
 // The Game library (#141): the viewer's own games (#455), by name without regard to case. Only Users with the Host permission
@@ -19,7 +19,7 @@ export default defineEventHandler(async (event): Promise<GameList> => {
     db
       .select()
       .from(games)
-      .where(eq(games.createdBy, viewer.id))
+      .where(ownedBy(viewer.id))
       .orderBy(asc(sql`lower(${games.name})`), asc(games.id)),
     loadTagsInUse(db, viewer.id),
     liveEventCounts(db, viewer.id),
