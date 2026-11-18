@@ -3,7 +3,7 @@
 // with the noise seeded from the file path, so a rerun gives the same bytes. A recipe for no cue id, or two files for one id, fails there.
 // The first recipe of each cue is the one that ships provisionally (ship-cue-sound.mjs): the one closest to the line of compibert-sound.md.
 // Nothing here has been heard while writing it; the operator chooses in the listening session (#748).
-import { TAU, buf, add, mix, peakTo, shape, expo, osc, noise, crush, svf, modal, bar, burst, thump } from '../cue-kit.mjs'
+import { TAU, buf, add, mix, peakTo, shape, osc, noise, crush, svf, modal, bar, burst, thump } from '../cue-kit.mjs'
 
 /** A rubber band's twang falling back: a triangle that dips and settles, its pitch following a damped wobble. */
 const wobble = (seconds, base, depth, rate, tau) => shape(osc('tri', seconds, t => base + depth * Math.exp(-t / tau) * Math.cos(TAU * rate * t)), t => Math.min(1, t / 0.003) * Math.exp(-t / (seconds * 0.45)))
