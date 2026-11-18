@@ -45,5 +45,12 @@ export const CUE_LENGTHS: Record<CueId, CueLength> = {
   'drag-snap': { ms: 150, loop: false, docRow: true },
   'drag-reject': { ms: 350, loop: false, docRow: true },
   // ceremony
+  'cer-drop': { ms: 300, loop: false, docRow: true },
+  'cer-row': { ms: 250, loop: false, docRow: true },
+  // No row of its own (the document's is `boot-steps` + `cer-trophy-rattle`, „run length“): 700 = `CEREMONY_RUN_MS`.
+  'cer-run': { ms: 700, loop: false, docRow: false },
+  // One document row names both (`cer-trip` / `cer-bonk`), so neither is clean.
+  'cer-trip': { ms: 400, loop: false, docRow: false },
+  'cer-bonk': { ms: 400, loop: false, docRow: false },
   // tour
 }
