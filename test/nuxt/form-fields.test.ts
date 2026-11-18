@@ -144,6 +144,15 @@ describe('TextField', () => {
     expect(page.text()).toContain('Wieder falsch.')
   })
 
+  it('counts a value that moved without an input as touched: the form followed another field (#797)', async () => {
+    const page = await mountSuspended(TextField, { props: { modelValue: '30', label: 'Länge', error: 'Das Ende liegt vor dem Start.' } })
+    expect(page.text()).not.toContain('Das Ende liegt vor dem Start.')
+
+    await page.setProps({ modelValue: '' })
+
+    expect(page.text()).toContain('Das Ende liegt vor dem Start.')
+  })
+
   it('shows the message of an untouched field once the form tried to submit (#797)', async () => {
     const page = await mountSuspended(formOf(() => h(TextField, { modelValue: '', label: 'Name', error: 'Gib einen Namen an.' })))
     expect(page.text()).not.toContain('Gib einen Namen an.')

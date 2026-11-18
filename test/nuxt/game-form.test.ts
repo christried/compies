@@ -122,11 +122,13 @@ describe('the game form', () => {
     expect(page.text()).toContain('Link ungültig.')
     expect(page.find('[aria-label="Ausschnitt im Video"]').exists()).toBe(false)
     expect(cta(page).attributes('aria-disabled')).toBe('true')
-    expect(page.get(`[id="${cta(page).attributes('aria-describedby')}"]`).text()).toBe('Erst einen gültigen YouTube-Link eintragen.')
+    // The reason beside the button waits for a try (#797): the disabled button says enough until then.
+    expect(page.find('#game-blocker').exists()).toBe(false)
 
     await page.get('form').trigger('submit')
 
     expect(posted).not.toHaveBeenCalled()
+    expect(page.get(`[id="${cta(page).attributes('aria-describedby')}"]`).text()).toBe('Erst einen gültigen YouTube-Link eintragen.')
   })
 
   it('shows the excerpt for a valid link with the start 1:12', async () => {
@@ -250,7 +252,8 @@ describe('the game form', () => {
   // Start, Ende and Länge (#508): the two edited last hold, the third follows; only start and length are sent.
   describe('clip fields (#508)', () => {
     const valueOf = (page: Page, label: string) => (field(page, label).element as HTMLInputElement).value
-    const errorOf = (page: Page, label: string) => page.get(`[id="${field(page, label).attributes('id')}-error"]`).text()
+    // The message sits in the group's one line under the three fields (#797); a field points at it while its own message shows.
+    const errorOf = (page: Page, label: string) => page.get(`[id="${field(page, label).attributes('aria-describedby')!.split(' ').find(id => id.endsWith('-error'))}"]`).text()
     const invalid = (page: Page, label: string) => field(page, label).attributes('aria-invalid')
 
     it('opens a new game with 0:00, 0:30 and 30 and the help of Ende and Länge', async () => {
@@ -424,13 +427,23 @@ describe('the game form', () => {
       await vi.waitFor(() => expect(patchedWith).toHaveBeenCalledWith(expect.objectContaining({ clipStart: 72, clipLength: 48 })))
     })
 
-    it('opens an old 5 s row with Länge in error and does not save it', async () => {
+    it('opens an old 5 s row blocked but with no red line, and shows the line and the reason after a try (#797)', async () => {
       const page = await mountSuspended(GameForm, { props: { game: { ...saved, clipLength: 5 } } })
+
+      expect(valueOf(page, 'Ende')).toBe('1:17')
+      expect(cta(page).attributes('aria-disabled')).toBe('true')
+      expect(invalid(page, 'Länge')).toBeUndefined()
+      expect(page.text()).not.toContain('Nur zw. 10 und 120 Sekunden möglich.')
+      expect(page.find('#game-blocker').exists()).toBe(false)
+      // The hints stay: a hidden error hides no hint.
+      expect(page.text()).toContain('Zwei Felder reichen')
+      expect(page.text()).toContain('max. 120 s')
+
+      await page.get('form').trigger('submit')
 
       expect(invalid(page, 'Länge')).toBe('true')
       expect(errorOf(page, 'Länge')).toBe('Nur zw. 10 und 120 Sekunden möglich.')
-      expect(valueOf(page, 'Ende')).toBe('1:17')
-      expect(cta(page).attributes('aria-disabled')).toBe('true')
+      expect(page.get('#game-blocker').text()).toBe('Nur zw. 10 und 120 Sekunden möglich.')
     })
   })
 
@@ -1798,5 +1811,105 @@ describe('the game form', () => {
         page.unmount()
       })
     })
+  })
+})
+
+// Form messages (#797): red, and only once a field was touched or a submit was tried; fields that belong together share one line.
+describe('the game form: messages (#797)', () => {
+  const PLAYERS = 'Die Spielerzahl passt nicht: von 1 bis 99, und „von“ nicht größer als „bis“.'
+  const START_BAD = 'Das ist keine Zeit. Schreib zum Beispiel 1:12 oder 72.'
+  const NAME = 'Gib dem Spiel einen Namen.'
+
+  beforeEach(() => {
+    signInAs({ ...kitty, canHost: true })
+    posted.mockClear()
+    failWith = null
+    tagsInUse = suggestedTags
+  })
+
+  /** The elements whose own text is exactly the message: how many lines the page draws for it. */
+  const linesOf = (page: Page, message: string) => page.findAll('span').filter(el => el.text() === message && el.element.children.length <= 1)
+
+  it('opens a new form with nothing red and no reason beside the button', async () => {
+    const page = await mountSuspended(GameForm)
+
+    expect(page.findAll('[aria-invalid="true"]')).toHaveLength(0)
+    expect(page.find('#game-blocker').exists()).toBe(false)
+    expect(cta(page).attributes('aria-describedby')).toBeUndefined()
+    expect(page.text()).not.toContain(NAME)
+  })
+
+  it('shows the empty name red after it was left, and after a try', async () => {
+    const page = await mountSuspended(GameForm)
+
+    await field(page, 'Titel').trigger('blur')
+
+    expect(page.text()).toContain(NAME)
+    expect(field(page, 'Titel').attributes('aria-invalid')).toBe('true')
+    expect(field(page, 'Titel').classes()).toContain('border-error-fg')
+  })
+
+  it('shows the empty name and the reason beside the button, both red, after a try', async () => {
+    const page = await mountSuspended(GameForm)
+
+    await page.get('form').trigger('submit')
+
+    expect(linesOf(page, NAME).length).toBeGreaterThanOrEqual(2)
+    expect(page.get('#game-blocker').classes()).toContain('text-error-fg')
+    expect(cta(page).attributes('aria-describedby')).toBe('game-blocker')
+    expect(field(page, 'Titel').attributes('aria-invalid')).toBe('true')
+  })
+
+  it('shows one line for Spielerzahl 8 to 4, under both fields and in neither of them', async () => {
+    const page = await mountSuspended(GameForm)
+
+    await field(page, 'von').setValue('8')
+    await field(page, 'bis').setValue('4')
+
+    const lines = linesOf(page, PLAYERS)
+    expect(lines).toHaveLength(1)
+    const grid = field(page, 'von').element.closest('.grid')!
+    expect(grid.contains(field(page, 'bis').element)).toBe(true)
+    expect(grid.contains(lines[0]!.element)).toBe(false)
+    expect(grid.parentElement!.contains(lines[0]!.element)).toBe(true)
+    expect(lines[0]!.classes()).toContain('text-error-fg')
+    expect(field(page, 'bis').attributes('aria-describedby')).toBe(lines[0]!.attributes('id'))
+  })
+
+  it('shows a wrong clip once, in one line under Start, Ende and Länge, and gives the hints way to it', async () => {
+    const page = await mountSuspended(GameForm)
+    expect(page.text()).toContain('Zwei Felder reichen')
+    expect(page.text()).toContain('max. 120 s')
+
+    await field(page, 'Start').setValue('bald')
+
+    const lines = linesOf(page, START_BAD)
+    expect(lines).toHaveLength(1)
+    const grid = field(page, 'Start').element.closest('.grid')!
+    expect(grid.contains(field(page, 'Länge').element)).toBe(true)
+    expect(grid.contains(lines[0]!.element)).toBe(false)
+    expect(grid.parentElement!.contains(lines[0]!.element)).toBe(true)
+    expect(page.text()).not.toContain('Zwei Felder reichen')
+    expect(page.text()).not.toContain('max. 120 s')
+
+    await field(page, 'Start').setValue('0:00')
+
+    expect(linesOf(page, START_BAD)).toHaveLength(0)
+    expect(page.text()).toContain('Zwei Felder reichen')
+    expect(page.text()).toContain('max. 120 s')
+  })
+
+  it('shows no line for an old game with a clip problem until a try, and keeps both hints meanwhile', async () => {
+    const page = await mountSuspended(GameForm, { props: { game: { ...saved, clipLength: 5 } } })
+
+    expect(page.findAll('[aria-invalid="true"]')).toHaveLength(0)
+    expect(page.text()).toContain('Zwei Felder reichen')
+    expect(page.text()).toContain('max. 120 s')
+
+    await page.get('form').trigger('submit')
+
+    expect(linesOf(page, 'Nur zw. 10 und 120 Sekunden möglich.').length).toBeGreaterThanOrEqual(1)
+    expect(page.text()).not.toContain('Zwei Felder reichen')
+    expect(page.text()).not.toContain('max. 120 s')
   })
 })
