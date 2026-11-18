@@ -10,7 +10,7 @@ import { sleep } from './chrome.mjs'
 import { api, BASE, clickText, inDays, open, openSignedOut, stepperNext } from './kit.mjs'
 import { closeSheet, next, noAutoLoad, page, step, until } from './dark-states-app.mjs'
 import { clipboard, keepToasts, stop, toastShown } from './dark-states-event.mjs'
-import { fieldByLabel, setField, stepBy, toLimit, typeDateTime, UNTAG } from './walk-kit.mjs'
+import { fieldByLabel, setField, stepBy, toLimit, typeDateTime, typeNotes, UNTAG } from './walk-kit.mjs'
 
 const COPY = JSON.parse(readFileSync(join(dirname(fileURLToPath(import.meta.url)), '../../i18n/locales/de.json'), 'utf8'))
 
@@ -44,7 +44,6 @@ const GAME = {
   start: fieldByLabel(COPY.gameEdit.start),
   length: fieldByLabel(COPY.gameEdit.length),
   playersFrom: fieldByLabel(COPY.gameEdit.playersFrom),
-  notes: fieldByLabel(COPY.gameEdit.notes),
   tags: fieldByLabel(COPY.gameEdit.tags),
   priceAmount: fieldByLabel(COPY.gameEdit.priceAmount),
 }
@@ -129,7 +128,8 @@ export const STATES = [
       }),
       step('zahlen', async (tab) => {
         await setField(tab, GAME.playersFrom, 'x')
-        await setField(tab, GAME.notes, 'x'.repeat(2001))
+        // Notizen is a Tiptap editor since 0.16 (#810): a contenteditable, no input a label points at, so it is typed into.
+        await typeNotes(tab, 'x'.repeat(2001))
         await setField(tab, GAME.tags, 'x'.repeat(21))
         await setField(tab, GAME.priceAmount, 'abc')
         await sleep(300)
