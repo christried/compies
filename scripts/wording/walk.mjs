@@ -52,20 +52,20 @@ if (!isLocalBase(BASE)) {
 const MONO_WHAT = {
   'app/components/ChangelogInline.vue': 'Changelog: Code und Ausgabe-Chip',
   'app/components/ClipPreview.vue': 'Clip-Zeiten',
-  'app/components/HostDock.vue': 'Taste „H“ im Host-Dock',
   'app/components/InviteLinkCard.vue': 'Einladungslink',
 }
 
-/** The eleven uses of `font-mono` in app/ (`grep -rn "font-mono" app --include=*.vue`) and how each is recorded; the report says where each was seen. */
+/** The ten uses of `font-mono` in app/ (`grep -rn "font-mono" app --include=*.vue`) and how each is recorded; the report says where each was seen. */
 const MONO_USES = [
   { site: 'ChangelogInline.vue:39 code', component: 'app/components/ChangelogInline.vue', entry: true, element: 'code' },
   { site: 'ChangelogInline.vue:48 issue chip', component: 'app/components/ChangelogInline.vue', entry: true, notElement: 'code' },
   { site: 'ClipPreview.vue:122 times', component: 'app/components/ClipPreview.vue', entry: true },
   { site: 'InviteLinkCard.vue:37 input', component: 'app/components/InviteLinkCard.vue', entry: true },
   { site: 'GameImageField.vue:310 gameEdit.imageRatio', component: 'app/components/GameImageField.vue', keys: ['gameEdit.imageRatio'] },
-  { site: 'NoteEditor.vue:118 common.counter', component: 'app/components/NoteEditor.vue', keys: ['common.counter'] },
+  { site: 'NoteEditor.vue:113 common.counter', component: 'app/components/NoteEditor.vue', keys: ['common.counter'] },
+  { site: 'RichNotesToolbar.vue:158 shortcut', component: 'app/components/RichNotesToolbar.vue', entry: true, element: 'span' },
   { site: 'TeamNameBuilder.vue:222 common.counter', component: 'app/components/TeamNameBuilder.vue', keys: ['common.counter'] },
-  { site: 'TextField.vue:120 common.counter', component: 'app/components/TextField.vue', keys: ['common.counter'] },
+  { site: 'TextField.vue:124 common.counter', component: 'app/components/TextField.vue', keys: ['common.counter'] },
   { site: 'StagingBadge.vue:12 staging.badge', component: 'app/components/StagingBadge.vue', keys: ['staging.badge'], expectedMissing: 'the badge renders on a staged server only (stage.ts), and the dev server is not started staged' },
 ]
 
