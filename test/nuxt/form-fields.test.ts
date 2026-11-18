@@ -36,6 +36,28 @@ describe('TextField', () => {
     expect(described).toEqual(['Gib der Event einen Namen.', 'Sehen alle in der Einladung.'])
   })
 
+  it('puts its placeholder on the input, not on the root (#804)', async () => {
+    const page = await mountSuspended(TextField, { props: { modelValue: '', label: 'Betrag', placeholder: 'z. B. 19,99' } })
+
+    expect(page.get('input').attributes('placeholder')).toBe('z. B. 19,99')
+    expect(page.attributes('placeholder')).toBeUndefined()
+    expect(page.get('input').classes()).toContain('placeholder:text-ink-2')
+  })
+
+  it('puts its placeholder on the text area with multiline (#804)', async () => {
+    const page = await mountSuspended(TextField, { props: { modelValue: '', label: 'Text', multiline: true, placeholder: 'Schreib los' } })
+
+    expect(page.get('textarea').attributes('placeholder')).toBe('Schreib los')
+    expect(page.attributes('placeholder')).toBeUndefined()
+    expect(page.get('textarea').classes()).toContain('placeholder:text-ink-2')
+  })
+
+  it('has no placeholder unless it is given (#804)', async () => {
+    const page = await mountSuspended(TextField, { props: { modelValue: '', label: 'Name' } })
+
+    expect(page.get('input').attributes('placeholder')).toBeUndefined()
+  })
+
   it('emits what is typed', async () => {
     const page = await mountSuspended(TextField, { props: { modelValue: '', label: 'Name der Event' } })
 

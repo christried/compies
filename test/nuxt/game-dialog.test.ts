@@ -75,7 +75,7 @@ describe('the game dialog for the Host (#443)', () => {
     expect(dialog().querySelector('img')?.getAttribute('src')).toBe('/api/images/kart.webp')
     const facts = pills()
     expect(facts[0]).toBe('bis 6')
-    expect(facts[1]).toBe('Teams, 1 gegen 1')
+    expect(facts[1]).toBe('Teams, 1v1')
     expect(facts[2]).toMatch(/^19,99 € bei Steam · Stand 3\. Nov\./)
     expect(text()).toContain('Notizen')
     expect(link()?.getAttribute('href')).toBe(`/bibliothek/${FULL.id}`)
@@ -206,7 +206,7 @@ describe('the game dialog for the Host (#443)', () => {
   it('shows no Price pill and no gap for a game without a Price', async () => {
     await open({ game: { ...FULL, price: null } })
 
-    expect(pills()).toEqual(['bis 6', 'Teams, 1 gegen 1'])
+    expect(pills()).toEqual(['bis 6', 'Teams, 1v1'])
     expect(text()).not.toContain('€')
     expect(text()).not.toContain('Stand')
   })
@@ -318,7 +318,7 @@ describe('the game dialog for a Member (#443, #444)', () => {
   it('shows the Price with its day, and plays no Clip', async () => {
     await open({ audience: 'member' })
 
-    expect(pills()).toEqual(['bis 6', 'Teams, 1 gegen 1', expect.stringMatching(/^19,99 € bei Steam · Stand 3\. Nov\./)])
+    expect(pills()).toEqual(['bis 6', 'Teams, 1v1', expect.stringMatching(/^19,99 € bei Steam · Stand 3\. Nov\./)])
     expect(dialog().querySelector('iframe')).toBeNull()
     expect(text()).not.toContain('Clip')
   })
@@ -326,7 +326,7 @@ describe('the game dialog for a Member (#443, #444)', () => {
   it('shows no Price pill and no gap for a game without a Price', async () => {
     await open({ audience: 'member', game: { ...FULL, price: null } })
 
-    expect(pills()).toEqual(['bis 6', 'Teams, 1 gegen 1'])
+    expect(pills()).toEqual(['bis 6', 'Teams, 1v1'])
     expect(text()).not.toContain('€')
     expect(text()).not.toContain('Stand')
   })
@@ -343,13 +343,13 @@ describe('the game dialog for a Member (#443, #444)', () => {
   it('shows a game with only a Suitability as that one pill', async () => {
     await open({ audience: 'member', game: { ...FULL, playersMin: null, playersMax: null, suitabilities: ['ffa'], price: null } })
 
-    expect(pills()).toEqual(['Jeder gegen jeden'])
+    expect(pills()).toEqual(['FFA'])
   })
 
   it('shows a game with one player count as one pill', async () => {
     await open({ audience: 'member', game: { ...FULL, playersMin: 1, playersMax: 1, suitabilities: [], price: null } })
 
-    expect(pills()).toEqual(['1 Spieler'])
+    expect(pills()).toEqual(['1 Spielende'])
   })
 
   it('holds the longest name allowed, without spaces, wrapped in the title', async () => {
@@ -450,7 +450,7 @@ describe('the game tile with its dialog (#443, #444)', () => {
 
     expect(dialog().querySelector('h2')?.textContent).toBe('Mario Kart')
     expect(dialog().querySelector('img')?.getAttribute('src')).toBe('/api/images/kart.webp')
-    expect(pills()).toEqual(['bis 6', 'Teams, 1 gegen 1', expect.stringContaining('19,99 €')])
+    expect(pills()).toEqual(['bis 6', 'Teams, 1v1', expect.stringContaining('19,99 €')])
     expect(text()).toContain('Stand')
     expect(dialog().querySelector('ul[aria-label="Tags"]')).toBeNull()
     expect(text()).not.toContain('Notizen')

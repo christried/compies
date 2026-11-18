@@ -10,7 +10,7 @@ const { toast } = useToast()
 const id = computed(() => String(route.params.id))
 
 const { viewer, game, status, error, refresh, missing } = useLibraryGame(id)
-useHead({ title: () => game.value?.name ?? t('gameEdit.editKicker') })
+useHead({ title: () => game.value?.name ?? t('library.edit') })
 
 async function onSaved(saved: GameView) {
   toast({ tone: 'success', text: t('library.saveDone') })
@@ -54,7 +54,6 @@ async function onSaved(saved: GameView) {
 
       <template v-else-if="game">
         <div class="flex flex-col gap-0.5">
-          <span class="text-small font-bold text-ink-2">{{ t('gameEdit.editKicker') }}</span>
           <h1 class="m-0 font-display text-[34px] leading-none md:text-[44px]">
             {{ game.name }}
           </h1>

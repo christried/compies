@@ -357,9 +357,6 @@ function onShortcut(event: KeyboardEvent) {
           :suggestions="tagsInUse"
           :label="t('gameEdit.tags')"
         />
-        <p class="text-small text-ink-2">
-          {{ t('gameEdit.tagsFreeToPlayHint') }}
-        </p>
 
         <PriceField
           v-model="price"
@@ -401,7 +398,7 @@ function onShortcut(event: KeyboardEvent) {
           class="grid aspect-video place-items-center rounded-[14px] border-(length:--cp-bw) border-line p-3 shadow-card"
           style="background-image: repeating-linear-gradient(135deg, var(--cp-paper-2) 0 14px, var(--cp-surface) 14px 28px)"
         >
-          <span class="rounded-[8px] border-2 border-line bg-surface px-2.5 py-1.5 text-center font-mono text-[12px] font-bold">
+          <span class="rounded-[8px] border-2 border-line bg-surface px-2.5 py-1.5 text-center text-[12px] font-bold">
             {{ hasLink ? t('gameEdit.noPreview') : t('gameEdit.noClip') }}
           </span>
         </div>

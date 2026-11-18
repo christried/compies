@@ -45,7 +45,7 @@ function amount(page: Page) {
 }
 
 function source(page: Page) {
-  return field(page, 'Wo gibt’s das Spiel?')
+  return field(page, 'Woher?')
 }
 
 function confirmButton(page: Page) {
@@ -90,6 +90,23 @@ describe('the Price field (#361)', () => {
     await source(page).setValue('gog')
 
     expect(lastModel(page)).toEqual({ cents, source: 'gog' })
+  })
+
+  it('shows „z. B. 19,99“ as the amount’s placeholder, and no help line under it (#804)', async () => {
+    const page = await mountField()
+
+    expect(amount(page).attributes('placeholder')).toBe('z. B. 19,99')
+    expect(page.text()).not.toContain('Zum Beispiel')
+  })
+
+  it.each(['free_to_play', 'subscription'])('has no placeholder on the disabled amount of the source %s, and says why', async (chosen) => {
+    const page = await mountField()
+
+    await source(page).setValue(chosen)
+
+    expect((amount(page).element as HTMLInputElement).disabled).toBe(true)
+    expect(amount(page).attributes('placeholder')).toBeUndefined()
+    expect(page.text()).toContain('Bei dieser Quelle gibt es keinen Betrag.')
   })
 
   it('enables the amount again when a paid source is chosen, still empty', async () => {

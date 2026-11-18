@@ -427,7 +427,7 @@ describe('the pool steps', () => {
     async function createInSheet(page: Page, notes?: NotesDoc) {
       await newGameButton(page).trigger('click')
       await vi.waitFor(() => expect(dialog()).not.toBeNull())
-      const label = [...dialog()!.querySelectorAll('label')].find(element => element.textContent === 'Name')!
+      const label = [...dialog()!.querySelectorAll('label')].find(element => element.textContent === 'Titel')!
       const input = dialog()!.querySelector<HTMLInputElement>(`[id="${label.getAttribute('for')}"]`)!
       input.value = 'Frisch Angelegt'
       input.dispatchEvent(new Event('input'))
@@ -464,7 +464,7 @@ describe('the pool steps', () => {
         expect(element, `no field "${label}"`).toBeDefined()
         return dialog()!.querySelector<HTMLInputElement>(`[id="${element!.getAttribute('for')}"]`)!
       }
-      expect(input('Start ab')).not.toBeNull()
+      expect(input('Start')).not.toBeNull()
       expect(input('Länge')).not.toBeNull()
       expect(input('Ende').value).toBe('0:30')
       input('Ende').value = '2:00'
@@ -472,14 +472,14 @@ describe('the pool steps', () => {
       await vi.waitFor(() => expect(input('Länge').value).toBe('120'))
     })
 
-    it('shows the Free-to-play hint of the game form in the sheet (#423)', async () => {
+    it('shows no Free-to-play hint line in the sheet (#804)', async () => {
       const page = await mountCreate()
       await toPoolStep(page)
 
       await newGameButton(page).trigger('click')
 
       await vi.waitFor(() => expect(dialog()).not.toBeNull())
-      expect(dialog()!.textContent).toContain('Ohne Preis bekommt das Spiel den Tag „Free-to-play“.')
+      expect(dialog()!.textContent).not.toContain('Ohne Preis bekommt das Spiel')
     })
 
     it('puts the new game in the pool, closes the sheet and keeps what the Host typed in the other steps', async () => {
@@ -503,7 +503,7 @@ describe('the pool steps', () => {
       await toPoolStep(page)
       await newGameButton(page).trigger('click')
       await vi.waitFor(() => expect(dialog()).not.toBeNull())
-      const label = [...dialog()!.querySelectorAll('label')].find(element => element.textContent === 'Name')!
+      const label = [...dialog()!.querySelectorAll('label')].find(element => element.textContent === 'Titel')!
       const input = dialog()!.querySelector<HTMLInputElement>(`[id="${label.getAttribute('for')}"]`)!
       input.value = 'Frisch Angelegt'
       input.dispatchEvent(new Event('input'))
@@ -525,7 +525,7 @@ describe('the pool steps', () => {
       await newGameButton(page).trigger('click')
 
       await vi.waitFor(() => expect(dialog()).not.toBeNull())
-      const label = [...dialog()!.querySelectorAll('label')].find(element => element.textContent === 'Name')!
+      const label = [...dialog()!.querySelectorAll('label')].find(element => element.textContent === 'Titel')!
       const input = dialog()!.querySelector<HTMLInputElement>(`[id="${label.getAttribute('for')}"]`)!
       expect(input.value).toBe('')
       input.value = 'Noch eins'
