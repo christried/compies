@@ -7,8 +7,9 @@ import { QuestionMark } from '~/utils/question-mark-icon'
 // current, and puts the step's form in the default slot and its explanation in the `info` slot.
 // Desktop (md+): step list left (230 px), form centre, info column right (340 px). Phones: a progress bar,
 // the info behind an „Info“ button in a bottom sheet. Zurück and Weiter sit in a pill fixed at the window's bottom,
-// its right edge on the form column's, on both (#174, #613). A blocked Weiter is aria-disabled with its reason right above the dock, as on the old create form (#49).
-const props = defineProps<{
+// its right edge on the form column's, on both (#174, #613). A blocked Weiter is aria-disabled with its reason right above the dock, as on the old create form (#49);
+// the reason is red and shows once `reasonShown` says so, which the wizard turns on after a press of the blocked Weiter (#797).
+const props = withDefaults(defineProps<{
   steps: { key: string, label: string }[]
   /** Index of the current step. */
   current: number
@@ -25,11 +26,14 @@ const props = defineProps<{
   nextLabel: string
   /** Why Weiter cannot be used right now, or null. */
   nextBlocked: string | null
+  /** Whether the reason shows (#797): the wizard turns it on after a press of the blocked Weiter. Weiter stays blocked either way. */
+  reasonShown?: boolean
   /** The last step is being sent: Weiter waits, without a reason. */
   busy?: boolean
-}>()
+}>(), { navTitle: undefined, kicker: undefined, infoTitle: undefined, reasonShown: true, busy: false })
 
-const emit = defineEmits<{ go: [index: number], next: [], back: [] }>()
+const emit = defineEmits<{ go: [index: number], next: [], back: [], blockedPress: [] }>()
+const reason = computed(() => (props.reasonShown ? props.nextBlocked : null))
 
 const { t } = useI18n()
 const heading = useTemplateRef<HTMLElement>('heading')
@@ -58,9 +62,13 @@ onBeforeUnmount(() => {
   leavePill?.()
 })
 
-// Weiter is a submit button, so Enter in a field goes on too.
+// Weiter is a submit button, so Enter in a field goes on too. A press while it is blocked is the wizard's „submit tried“ (#797).
 function next() {
-  if (props.nextBlocked !== null || props.busy) return
+  if (props.busy) return
+  if (props.nextBlocked !== null) {
+    emit('blockedPress')
+    return
+  }
   emit('next')
 }
 </script>
@@ -155,10 +163,10 @@ function next() {
       >
         <div class="fixed bottom-4 layer-sticky flex w-fit flex-col items-end gap-2">
           <span
-            v-if="nextBlocked"
+            v-if="reason"
             :id="blockedId"
-            class="max-w-80 text-right text-small font-bold text-pretty text-ink-2"
-          >{{ nextBlocked }}</span>
+            class="max-w-80 text-right text-small font-bold text-pretty text-error-fg"
+          >{{ reason }}</span>
           <div
             data-testid="stepper-footer"
             class="ml-auto flex w-fit items-center gap-2 rounded-pill border-(length:--cp-bw) border-line bg-surface pt-1.5 pl-1.5 pr-2 pb-2 shadow-card"
@@ -181,7 +189,7 @@ function next() {
               type="submit"
               size="lg"
               :aria-disabled="nextBlocked !== null || busy ? 'true' : undefined"
-              :aria-describedby="nextBlocked ? blockedId : undefined"
+              :aria-describedby="reason ? blockedId : undefined"
             >
               {{ nextLabel }}
               <AppIcon
