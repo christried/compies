@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import type { SpinView } from '~~/shared/stage'
 import { mascotMoments } from '../../app/utils/wheel-mascot'
 import { REVEAL_AFTER_MS } from '../../app/utils/wheel'
-import { wheelCuePlan, wheelVoicePlan, type Cue, type WheelCueInput, type WheelVoiceInput } from '../../app/utils/sound-cues'
+import { CUE_VOLUME, wheelCuePlan, wheelVoicePlan, type Cue, type WheelCueInput, type WheelVoiceInput } from '../../app/utils/sound-cues'
 
 // Compibert's voice at the wheel (#671, spec #718 § Secrecy „The Hidden wheel“): `cb-hype`, `cb-gulp` and `cb-yay` are a function of the
 // spin's two instants, the Hidden wheel setting and reduced motion, exactly what he is told (`mascotMoments`). Expected instants come from
@@ -68,6 +68,13 @@ describe('wheelVoicePlan: the Host and a Member hear the same voice', () => {
 
   it('do not differ at all on a visible wheel', () => {
     expect(wholeOf(false, false)).toEqual(wholeOf(true, false))
+  })
+})
+
+describe('the voice cues\' volume', () => {
+  // The document's row is one cell for the three, so no test reads their Vol from it: the spec table of #718 says 40 each.
+  it('is 40 for each of the three', () => {
+    expect([CUE_VOLUME['cb-hype'], CUE_VOLUME['cb-gulp'], CUE_VOLUME['cb-yay']]).toEqual([40, 40, 40])
   })
 })
 

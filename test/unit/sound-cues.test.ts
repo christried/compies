@@ -492,8 +492,7 @@ describe('the cue ids and their volumes', () => {
     expect(new Set(CUE_IDS).size).toBe(CUE_IDS.length)
   })
 
-  // Only the cues the document has a clean row for (#740, `docRow`): the voice cues share one cell, so their Vol is the spec table's (#718).
-  it('give each of them the Vol of compibert-sound.md', () => {
+  it('give each cue the Vol of compibert-sound.md', () => {
     const doc = readFileSync(resolve(import.meta.dirname, '../../docs/design_handoff_compies/reference/docs/compibert-sound.md'), 'utf8')
     const vol: Record<string, number> = {}
     for (const row of doc.split('\n')) {
@@ -502,9 +501,9 @@ describe('the cue ids and their volumes', () => {
       if (id) vol[id] = Number(cells.at(-2))
     }
 
-    const withRow = CUE_IDS.filter(id => CUE_LENGTHS[id].docRow)
-    expect(Object.keys(vol).sort()).toEqual([...withRow].sort())
-    expect(Object.fromEntries(withRow.map(id => [id, CUE_VOLUME[id]]))).toEqual(vol)
+    const documented = CUE_IDS.filter(id => CUE_LENGTHS[id].docRow)
+    expect(Object.keys(vol).sort()).toEqual([...documented].sort())
+    for (const id of documented) expect(CUE_VOLUME[id], id).toBe(vol[id])
   })
 })
 
