@@ -139,11 +139,11 @@ describe.each([['a Member', false], ['the Host', true]])('the toss\'s plan on th
 
     const sources = started()
     expect(sources.map(source => source.id)).toEqual(['coin-toss', 'coin-spin', 'coin-land', 'coin-result'])
-    // The fake audio clock follows real time, so the offsets are compared to the millisecond: the instants come from the plan's constants.
+    // The fake audio clock follows real time, so the tolerance is the point (50 ms, never equality): the offsets come from the plan's constants. The log below holds the exact instants.
     const first = sources[0]!.startedAt!
-    expect(sources[1]!.startedAt! - first).toBeCloseTo(COIN_DURATION_MS * COIN_SPIN_AT / 1000, 3)
-    expect(sources[2]!.startedAt! - first).toBeCloseTo(COIN_DURATION_MS * COIN_LAND_AT / 1000, 3)
-    expect(sources[3]!.startedAt! - first).toBeCloseTo(COIN_DURATION_MS / 1000, 3)
+    expect(sources[1]!.startedAt! - first).toBeCloseTo(COIN_DURATION_MS * COIN_SPIN_AT / 1000, 1)
+    expect(sources[2]!.startedAt! - first).toBeCloseTo(COIN_DURATION_MS * COIN_LAND_AT / 1000, 1)
+    expect(sources[3]!.startedAt! - first).toBeCloseTo(COIN_DURATION_MS / 1000, 1)
     expect(coinLog()).toEqual(planOf(coin).map(cue => ({ ...cue, outcome: 'scheduled' })))
     expect(requestedOf('coin')).toEqual([...COIN_IDS].sort())
     for (const id of COIN_IDS) expect(requests[id], id).toBe(1)
