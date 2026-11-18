@@ -10,6 +10,9 @@ import { runningOf, type SessionTimes } from './session-state'
 export const COIN_LEAD_MS = 1500
 /** How long the coin flies (04-motion § Coin: 3.6 s). The landing is the start plus this. */
 export const COIN_DURATION_MS = 3600
+/** Where in the flight (0 to 1) the coin turns in the air and where it reaches the ground: the keyframe offsets of the picture (04-motion § Coin flip) and the instants of `coin-spin` and `coin-land` (#669). */
+export const COIN_SPIN_AT = 0.18
+export const COIN_LAND_AT = 0.74
 
 /** What the rules need of a toss: when it starts and when it lands. */
 export interface CoinToss {

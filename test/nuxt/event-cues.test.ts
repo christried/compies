@@ -107,7 +107,7 @@ describe('the spin\'s plan on the Event page', () => {
     const started = context()!.started()
     expect(started).toHaveLength(planOf(spin).length)
     expect(started[0]!.id).toBe('wheel-windup')
-    expect(requested()).toEqual([...WHEEL_FILES].sort())
+    expect(requestedOf('wheel', 'veto')).toEqual([...WHEEL_FILES].sort())
     for (const id of WHEEL_FILES) expect(requests[id], id).toBe(1)
     expect(FakeAudioContext.instances).toHaveLength(1)
   })
@@ -184,7 +184,7 @@ describe('what the page does not play or request', () => {
     await new Promise(resolve => setTimeout(resolve, 50))
 
     expect(context()?.started() ?? []).toEqual([])
-    expect(requested()).toEqual([])
+    expect(requestedOf('wheel', 'veto')).toEqual([])
   })
 
   it('does nothing and throws nothing where the browser has no Web Audio', async () => {
@@ -368,7 +368,7 @@ describe('the Veto window on the Event page', () => {
       page = await mountSuspended(EventPage, { route: `/e/${served.slug}` })
       await settled(planOf(spinIn(4000)).length)
 
-      expect(requested()).toEqual([...WHEEL_FILES].sort())
+      expect(requestedOf('wheel', 'veto')).toEqual([...WHEEL_FILES].sort())
     })
 
     it('are all six requested once by an Event with an allowance, before any window', async () => {

@@ -1,4 +1,4 @@
-import { COIN_DURATION_MS } from '~~/shared/coin'
+import { COIN_DURATION_MS, COIN_LAND_AT, COIN_SPIN_AT } from '~~/shared/coin'
 
 // The coin's keyframes (#235, 04-motion § Coin „Zeitlupe“, 3.6 s): a coin of 13 stacked edge discs and two faces, flown by four
 // animations (camera, position, spin, ground shadow). The offsets are the spec's; an easing sits on the keyframe it starts from, as
@@ -77,32 +77,32 @@ export function flightKeyframes(tails: boolean, ease: FlightEase): CoinFlight {
   return {
     camera: [
       { transform: camera(0, 8, 0), offset: 0 },
-      { transform: camera(40, 18, 0), offset: 0.18, easing: ease.io },
+      { transform: camera(40, 18, 0), offset: COIN_SPIN_AT, easing: ease.io },
       { transform: camera(60, 22, 360), offset: 0.62 },
       { transform: camera(60, 22, 360), offset: 0.72, easing: ease.out },
       { transform: camera(150, 90, 360), offset: 1 },
     ],
     position: [
       { transform: position(STAND_Y), offset: 0, easing: 'cubic-bezier(.2,0,.4,1)' },
-      { transform: position(-130), offset: 0.18 },
+      { transform: position(-130), offset: COIN_SPIN_AT },
       { transform: position(-150), offset: 0.62, easing: 'cubic-bezier(.6,0,1,.5)' },
-      { transform: position(GROUND), offset: 0.74 },
+      { transform: position(GROUND), offset: COIN_LAND_AT },
       { transform: position(GROUND - 16), offset: 0.79 },
       { transform: position(GROUND), offset: 0.84 },
       { transform: position(GROUND), offset: 1 },
     ],
     spin: [
       { transform: spinOf(0, 0), offset: 0 },
-      { transform: spinOf(540, roll), offset: 0.18 },
+      { transform: spinOf(540, roll), offset: COIN_SPIN_AT },
       { transform: spinOf(700, roll), offset: 0.62 },
-      { transform: spinOf(landed, roll), offset: 0.74 },
+      { transform: spinOf(landed, roll), offset: COIN_LAND_AT },
       { transform: spinOf(landed, roll), offset: 1 },
     ],
     shadow: [
       { transform: 'scale(.4,.12)', opacity: 0.22, offset: 0 },
-      { transform: 'scale(.3)', opacity: 0.08, offset: 0.18 },
+      { transform: 'scale(.3)', opacity: 0.08, offset: COIN_SPIN_AT },
       { transform: 'scale(.3)', opacity: 0.08, offset: 0.62 },
-      { transform: 'scale(1)', opacity: 0.35, offset: 0.74 },
+      { transform: 'scale(1)', opacity: 0.35, offset: COIN_LAND_AT },
       { transform: 'scale(1)', opacity: 0.35, offset: 1 },
     ],
   }
