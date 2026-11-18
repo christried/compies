@@ -30,6 +30,24 @@
       "author": null,
       "licence": "generated"
     },
+    "cb-hype": {
+      "candidate": "chip-arpeggio",
+      "source": "scripts/make-cue-candidates.mjs, Rezept chip-arpeggio",
+      "author": null,
+      "licence": "generated"
+    },
+    "cb-gulp": {
+      "candidate": "schluck-wumms",
+      "source": "scripts/make-cue-candidates.mjs, Rezept schluck-wumms",
+      "author": null,
+      "licence": "generated"
+    },
+    "cb-yay": {
+      "candidate": "chirp-fanfare",
+      "source": "scripts/make-cue-candidates.mjs, Rezept chirp-fanfare",
+      "author": null,
+      "licence": "generated"
+    },
     "veto-open": {
       "candidate": "rollladen",
       "source": "scripts/make-cue-candidates.mjs, Rezept rollladen",

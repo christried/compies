@@ -5,7 +5,7 @@ import { defineComponent, h, ref } from 'vue'
 import { useCuePlayer } from '~/composables/useCuePlayer'
 import EventPage from '~/pages/e/[slug]/index.vue'
 import { reducedMotion } from '~/utils/motion'
-import { CUE_GROUPS, CUE_IDS, vetoCuePlan, wheelCuePlan, type CueGroup, type CueId } from '~/utils/sound-cues'
+import { CUE_GROUPS, CUE_IDS, vetoCuePlan, wheelCuePlan, wheelVoicePlan, type CueGroup, type CueId } from '~/utils/sound-cues'
 import type { EventView } from '~~/shared/event'
 import type { RoundGame } from '~~/shared/game'
 import type { ClipView, SpinView, VetoDrawView, VetoView, WheelView } from '~~/shared/stage'
@@ -21,7 +21,8 @@ import { serve, viewWithSessions } from './event-page'
 
 const FIRST = '2026-10-30T19:00:00.000Z'
 const STARTED = '2026-10-30T19:30:00.000Z'
-const WHEEL_FILES = CUE_IDS.filter(id => id.startsWith('wheel-'))
+// The wheel's group: its five cues and Compibert's voice (#671), which is requested with them.
+const WHEEL_FILES = CUE_IDS.filter(id => CUE_GROUPS[id].includes('wheel'))
 const VETO_FILES = CUE_IDS.filter(id => id.startsWith('veto-'))
 
 const kart: RoundGame = { id: 'g-kart', name: 'Kart', imageUrl: null, youtubeId: null, clipStart: 0, clipLength: 30, playersMin: 2, playersMax: 4, suitabilities: [], price: null }
@@ -39,8 +40,11 @@ const wheelWith = (spin: SpinView | null, vetoes: Partial<VetoView> = {}): Wheel
   vetoes: { left: [2, 2], own: null, revealed: null, draw: null, ...vetoes },
 })
 
-/** What the plan of a spin is, from the same function the page uses. */
-const planOf = (spin: SpinView) => wheelCuePlan({ spin, hiddenWheel: false, isHost: false, reducedMotion: reducedMotion() })
+/** What the plan of a spin is, from the same functions the page uses: the wheel's cues and Compibert's voice (#671). */
+const planOf = (spin: SpinView) => [
+  ...wheelCuePlan({ spin, hiddenWheel: false, isHost: false, reducedMotion: reducedMotion() }),
+  ...wheelVoicePlan({ spin: { spinStartAt: spin.spinStartAt, stopAt: spin.stopAt }, hiddenWheel: false, reducedMotion: reducedMotion() }),
+]
 
 /** The Event page's read: a Session that runs, the Event's Veto allowance (none unless a test says) and the Clip of the latest draw. */
 function serveWheel(wheel: WheelView | null, first: { vetoAllowance?: number | null, clip?: ClipView | null, isHost?: boolean } = {}) {

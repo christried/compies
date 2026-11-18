@@ -24,6 +24,10 @@ export const CUE_LENGTHS: Record<CueId, CueLength> = {
   'wheel-stop': { ms: 600, loop: false, docRow: true },
   'wheel-morph': { ms: 500, loop: false, docRow: true },
   'wheel-slice-out': { ms: 300, loop: false, docRow: true },
+  // The document's row is one cell, `cb-hype` / `cb-gulp` / `cb-yay` (0.6 / 0.25 / 0.5 s), so no clean row; the lengths are the spec table's (#718).
+  'cb-hype': { ms: 600, loop: false, docRow: false },
+  'cb-gulp': { ms: 250, loop: false, docRow: false },
+  'cb-yay': { ms: 500, loop: false, docRow: false },
   // veto
   'veto-open': { ms: 400, loop: false, docRow: true },
   'veto-clock': { ms: 40, loop: false, docRow: true },

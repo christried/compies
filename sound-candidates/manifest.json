@@ -170,6 +170,108 @@
         "note": "Korkenplopp mit kurzem Pfeifen"
       }
     ],
+    "cb-hype": [
+      {
+        "name": "chip-arpeggio",
+        "file": "cb-hype/chip-arpeggio.wav",
+        "source": "scripts/make-cue-candidates.mjs, Rezept chip-arpeggio",
+        "author": null,
+        "licence": "generated",
+        "note": "Arcade-Arpeggio nach oben, mit Vibrato"
+      },
+      {
+        "name": "glitzer-gleiter",
+        "file": "cb-hype/glitzer-gleiter.wav",
+        "source": "scripts/make-cue-candidates.mjs, Rezept glitzer-gleiter",
+        "author": null,
+        "licence": "generated",
+        "note": "schneller Gleiter nach oben, hell"
+      },
+      {
+        "name": "huepf-blips",
+        "file": "cb-hype/huepf-blips.wav",
+        "source": "scripts/make-cue-candidates.mjs, Rezept huepf-blips",
+        "author": null,
+        "licence": "generated",
+        "note": "drei hüpfende Blips, steigend"
+      },
+      {
+        "name": "xylophon-lauf",
+        "file": "cb-hype/xylophon-lauf.wav",
+        "source": "scripts/make-cue-candidates.mjs, Rezept xylophon-lauf",
+        "author": null,
+        "licence": "generated",
+        "note": "Xylophon-Lauf nach oben"
+      }
+    ],
+    "cb-gulp": [
+      {
+        "name": "schluck-wumms",
+        "file": "cb-gulp/schluck-wumms.wav",
+        "source": "scripts/make-cue-candidates.mjs, Rezept schluck-wumms",
+        "author": null,
+        "licence": "generated",
+        "note": "Schlucken: tiefer Wumms, Klick, zweiter Wumms"
+      },
+      {
+        "name": "glup-bogen",
+        "file": "cb-gulp/glup-bogen.wav",
+        "source": "scripts/make-cue-candidates.mjs, Rezept glup-bogen",
+        "author": null,
+        "licence": "generated",
+        "note": "ein Glup: Sinus fällt, steigt wieder"
+      },
+      {
+        "name": "tropfen-pluck",
+        "file": "cb-gulp/tropfen-pluck.wav",
+        "source": "scripts/make-cue-candidates.mjs, Rezept tropfen-pluck",
+        "author": null,
+        "licence": "generated",
+        "note": "gedämpfter Wassertropfen"
+      },
+      {
+        "name": "chip-abwaerts",
+        "file": "cb-gulp/chip-abwaerts.wav",
+        "source": "scripts/make-cue-candidates.mjs, Rezept chip-abwaerts",
+        "author": null,
+        "licence": "generated",
+        "note": "Arcade-Blip, fünf Stufen nach unten"
+      }
+    ],
+    "cb-yay": [
+      {
+        "name": "chirp-fanfare",
+        "file": "cb-yay/chirp-fanfare.wav",
+        "source": "scripts/make-cue-candidates.mjs, Rezept chirp-fanfare",
+        "author": null,
+        "licence": "generated",
+        "note": "Zwei-Ton-Chirp nach oben, kleiner Schnörkel"
+      },
+      {
+        "name": "glocken-dur",
+        "file": "cb-yay/glocken-dur.wav",
+        "source": "scripts/make-cue-candidates.mjs, Rezept glocken-dur",
+        "author": null,
+        "licence": "generated",
+        "note": "heller Dur-Arpeggio auf Stäben"
+      },
+      {
+        "name": "party-troete",
+        "file": "cb-yay/party-troete.wav",
+        "source": "scripts/make-cue-candidates.mjs, Rezept party-troete",
+        "author": null,
+        "licence": "generated",
+        "note": "Partytröte, Blat nach oben"
+      },
+      {
+        "name": "quiek-hoch",
+        "file": "cb-yay/quiek-hoch.wav",
+        "source": "scripts/make-cue-candidates.mjs, Rezept quiek-hoch",
+        "author": null,
+        "licence": "generated",
+        "note": "fröhliches Quieken nach oben, pendelt sich ein"
+      }
+    ],
     "veto-open": [
       {
         "name": "rollladen",
