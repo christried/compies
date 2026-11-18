@@ -38,8 +38,8 @@ const context = () => FakeAudioContext.instances.at(-1)
 /** The Standings' sounds that started, in order: [id, seconds on the audio clock]. */
 const sounds = () => (context()?.started() ?? []).filter(source => String(source.id).startsWith('lb-')).map(source => [String(source.id), source.startedAt!] as const)
 const idsStarted = () => sounds().map(([id]) => id)
-/** The sounds relative to the first, in ms rounded to 10: the beats of one sequence, whatever the clock. */
-const beats = () => sounds().map(([id, at]) => [id, Math.round((at - sounds()[0]![1]) * 100) * 10] as const)
+/** The sounds' ids and their delays after the first, in ms: the beats of one sequence, whatever the clock. */
+const beats = () => ({ ids: idsStarted(), delays: sounds().map(([, at]) => (at - sounds()[0]![1]) * 1000) })
 
 const beforeResult: EventOverrides = {
   rounds: [openRound],
@@ -331,9 +331,13 @@ describe('the Standings\' sounds and Secrecy', () => {
     const other = await runWith({ ...halo, id: 'g-kart', name: 'Kart', suitabilities: [], price: null })
     const hidden = await runWith({ ...halo, id: 'g-other', name: 'Anderes' }, { ...defaultSettings(), hiddenWheel: true })
 
-    expect(plain.beats.map(([id]) => id)).toEqual(['lb-swap', 'lb-count', 'lb-count', 'lb-count', 'lb-winner'])
-    expect(other).toEqual(plain)
-    expect(hidden).toEqual(plain)
+    expect(plain.beats.ids).toEqual(['lb-swap', 'lb-count', 'lb-count', 'lb-count', 'lb-winner'])
+    for (const run of [other, hidden]) {
+      expect(run.beats.ids).toEqual(plain.beats.ids)
+      // The same delays, give or take the time the test's own calls take.
+      run.beats.delays.forEach((delay, index) => expect(Math.abs(delay - plain.beats.delays[index]!)).toBeLessThan(25))
+      expect(run.files).toEqual(plain.files)
+    }
     expect(plain.files).toEqual([...STANDINGS_FILES].sort())
   })
 })
