@@ -17,6 +17,7 @@
 - **Nur noch der Kopf der App-Figur:** Wo nichts zu zeigen ist (noch keine Events, keine Treffer in der Bibliothek) und auf den ganzseitigen Hinweisen wie „Link ungültig“, „Event gelöscht“ und den Fehlerseiten zeigt die App-Figur jetzt nur noch den Kopf statt der gerahmten Büste. ([#794](https://github.com/christried/compies/issues/794))
 - **Kein Glitzer-Symbol mehr:** Neben „Bester Termin“ in der Terminumfrage und neben „Neu“ bei den Neuigkeiten steht kein Glitzer-Symbol mehr. Auf der Startseite zeigt der beste Termin eines Events jetzt einen Kalender. ([#795](https://github.com/christried/compies/issues/795))
 - **Discord und Twitch in ihren Farben:** Die Anmelde-Knöpfe tragen jetzt das Logo und die Farbe von Discord und von Twitch, damit du deinen Knopf auf einen Blick findest. Die Texte bleiben dieselben. ([#792](https://github.com/christried/compies/issues/792))
+- **„Zuletzt aktualisiert“ am Spiel:** Auf der Seite eines Spiels in der Bibliothek steht jetzt, wann es zuletzt geändert wurde, mit Monat und Jahr, zum Beispiel „Zuletzt aktualisiert: November 2026“. ([#805](https://github.com/christried/compies/issues/805))
 
 ### Entfernt
 

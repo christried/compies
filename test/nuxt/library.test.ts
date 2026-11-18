@@ -226,8 +226,20 @@ describe('the game page', () => {
     expect(page.get('h1').text()).toBe('Counter-Strike 2')
     expect(page.text()).toContain('Clip 30 s')
     expect(page.text()).not.toContain('Angelegt von')
+    expect(page.text()).toContain('Zuletzt aktualisiert: Januar 2026')
     expect(page.text()).toContain('Ausschnitt 1:12 – 1:42')
     expect(page.get('a[href="/bibliothek"]').text()).toContain('Bibliothek')
+  })
+
+  it('shows the month of the last change in Berlin time as one line without a name (#805)', async () => {
+    // 23:30 UTC on 31 Oct is already 1 Nov in Berlin.
+    detail = { ...withClip, updatedAt: '2026-10-31T23:30:00.000Z' }
+    const page = await mountSuspended(DetailPage, { route: `/bibliothek/${withClip.id}` })
+    await vi.waitFor(() => expect(page.find('h1').exists()).toBe(true))
+
+    const line = page.findAll('p').find(element => element.text().startsWith('Zuletzt aktualisiert'))
+    expect(line?.text()).toBe('Zuletzt aktualisiert: November 2026')
+    expect(page.text()).not.toContain('Angelegt von')
   })
 
   // The longest name allowed, without a space, made the heading wider than the page at 390 px (b337, #332): the heading breaks inside the word.
