@@ -20,6 +20,7 @@
 - **„Zuletzt aktualisiert“ am Spiel:** Auf der Seite eines Spiels in der Bibliothek steht jetzt, wann es zuletzt geändert wurde, mit Monat und Jahr, zum Beispiel „Zuletzt aktualisiert: November 2026“. ([#805](https://github.com/christried/compies/issues/805))
 - **„Noch eins“ nach dem Anlegen:** Nach dem Speichern eines neuen Spiels bietet die Meldung „Noch eins“ an, damit du direkt das nächste Spiel anlegst. ([#806](https://github.com/christried/compies/issues/806))
 - **Offline-Seite im Look von „Link ungültig“:** Ohne Verbindung zeigt die App jetzt den Kopf der App-Figur, eine große Überschrift und den Knopf „Seite neu laden“ wie auf „Link ungültig“. Die Texte bleiben, wie sie waren, und die Seite braucht weiterhin kein Netz. ([#808](https://github.com/christried/compies/issues/808))
+- **Kürzere Texte, ein Name pro Sache:** Viele Texte sind kürzer, und was du ohnehin siehst, steht nicht noch einmal daneben. Eine Sache hat jetzt überall denselben Namen: Der Host fixiert einen Termin („Termin fixieren“), und ein Platz in einem Team heißt auf dem Spielbrett „Slot“. ([#809](https://github.com/christried/compies/issues/809))
 
 ### Entfernt
 
