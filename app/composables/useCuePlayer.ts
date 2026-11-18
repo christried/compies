@@ -21,6 +21,8 @@ function groupInputOf(view: EventView | null | undefined): GroupInput {
     vetoWindow: view?.wheel?.vetoes.draw != null,
     // The Event is set up and not finished, the page's own rule of `useStandingsNews`: the Host's read and a Member's hold both fields (#741).
     standings: view?.standings != null && view.event.phase !== 'finished',
+    // The Game board's field is the same rule on purpose, not a read of `standings`: the two groups may part later (#742).
+    board: view?.standings != null && view.event.phase !== 'finished',
   }
 }
 

@@ -28,6 +28,7 @@ export const CUE_IDS = [
   // standings
   'lb-swap', 'lb-count', 'lb-winner',
   // board
+  'drag-pick', 'drag-snap', 'drag-reject',
   // ceremony
   // tour
 ] as const
@@ -44,6 +45,7 @@ export const CUE_VOLUME: Record<CueId, number> = {
   // standings
   'lb-swap': 35, 'lb-count': 20, 'lb-winner': 60,
   // board
+  'drag-pick': 30, 'drag-snap': 40, 'drag-reject': 40,
   // ceremony
   // tour
 }
@@ -62,6 +64,7 @@ export const CUE_GROUPS: Record<CueId, readonly [CueGroup, ...CueGroup[]]> = {
   // standings
   'lb-swap': ['standings'], 'lb-count': ['standings'], 'lb-winner': ['standings'],
   // board
+  'drag-pick': ['board'], 'drag-snap': ['board'], 'drag-reject': ['board'],
   // ceremony
   // tour
 }
@@ -76,6 +79,8 @@ export interface GroupInput {
   vetoWindow: boolean
   /** `view.standings != null && view.event.phase !== 'finished'`: the Event is set up and not finished (#741). Absent = not reached; no Result is needed, no game. */
   standings?: boolean
+  /** `view.standings != null && view.event.phase !== 'finished'`: the Event is set up and not finished. The Game board's own field though the rule is the Standings' today, so the two groups can part later (#742). Absent = not reached. */
+  board?: boolean
 }
 
 /**
@@ -88,6 +93,7 @@ export function reachableGroups(input: GroupInput): CueGroup[] {
   if (input.wheel) groups.push('wheel')
   if (input.wheel && (input.vetoAllowance > 0 || input.vetoWindow)) groups.push('veto')
   if (input.standings) groups.push('standings')
+  if (input.board) groups.push('board')
   return groups
 }
 

@@ -101,6 +101,24 @@
       "source": "scripts/make-cue-candidates.mjs, Rezept troete-knall",
       "author": null,
       "licence": "generated"
+    },
+    "drag-pick": {
+      "candidate": "blubb-hoch",
+      "source": "scripts/make-cue-candidates.mjs, Rezept blubb-hoch",
+      "author": null,
+      "licence": "generated"
+    },
+    "drag-snap": {
+      "candidate": "magnet-klick",
+      "source": "scripts/make-cue-candidates.mjs, Rezept magnet-klick",
+      "author": null,
+      "licence": "generated"
+    },
+    "drag-reject": {
+      "candidate": "gummi-boing",
+      "source": "scripts/make-cue-candidates.mjs, Rezept gummi-boing",
+      "author": null,
+      "licence": "generated"
     }
   }
 }

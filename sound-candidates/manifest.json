@@ -577,6 +577,108 @@
         "licence": "generated",
         "note": "Ratsche rattert aus, drei Konfetti-Knalle"
       }
+    ],
+    "drag-pick": [
+      {
+        "name": "blubb-hoch",
+        "file": "drag-pick/blubb-hoch.wav",
+        "source": "scripts/make-cue-candidates.mjs, Rezept blubb-hoch",
+        "author": null,
+        "licence": "generated",
+        "note": "kleines Blubb nach oben, weich"
+      },
+      {
+        "name": "chip-huepfer",
+        "file": "drag-pick/chip-huepfer.wav",
+        "source": "scripts/make-cue-candidates.mjs, Rezept chip-huepfer",
+        "author": null,
+        "licence": "generated",
+        "note": "Arcade-Hüpfer nach oben"
+      },
+      {
+        "name": "filz-abheben",
+        "file": "drag-pick/filz-abheben.wav",
+        "source": "scripts/make-cue-candidates.mjs, Rezept filz-abheben",
+        "author": null,
+        "licence": "generated",
+        "note": "Filz löst sich vom Holz, kurz und leise"
+      },
+      {
+        "name": "korken-plopp",
+        "file": "drag-pick/korken-plopp.wav",
+        "source": "scripts/make-cue-candidates.mjs, Rezept korken-plopp",
+        "author": null,
+        "licence": "generated",
+        "note": "winziges Korken-Plopp"
+      }
+    ],
+    "drag-snap": [
+      {
+        "name": "magnet-klick",
+        "file": "drag-snap/magnet-klick.wav",
+        "source": "scripts/make-cue-candidates.mjs, Rezept magnet-klick",
+        "author": null,
+        "licence": "generated",
+        "note": "trockenes Magnet-Klicken, kein Nachklang"
+      },
+      {
+        "name": "chip-einrasten",
+        "file": "drag-snap/chip-einrasten.wav",
+        "source": "scripts/make-cue-candidates.mjs, Rezept chip-einrasten",
+        "author": null,
+        "licence": "generated",
+        "note": "zwei kurze Arcade-Blips, der zweite höher"
+      },
+      {
+        "name": "karte-in-schlitz",
+        "file": "drag-snap/karte-in-schlitz.wav",
+        "source": "scripts/make-cue-candidates.mjs, Rezept karte-in-schlitz",
+        "author": null,
+        "licence": "generated",
+        "note": "Papier gleitet ein, trockenes Holz-Tock"
+      },
+      {
+        "name": "stift-ins-loch",
+        "file": "drag-snap/stift-ins-loch.wav",
+        "source": "scripts/make-cue-candidates.mjs, Rezept stift-ins-loch",
+        "author": null,
+        "licence": "generated",
+        "note": "Holzstift sitzt im Loch, kurz und dumpf"
+      }
+    ],
+    "drag-reject": [
+      {
+        "name": "gummi-boing",
+        "file": "drag-reject/gummi-boing.wav",
+        "source": "scripts/make-cue-candidates.mjs, Rezept gummi-boing",
+        "author": null,
+        "licence": "generated",
+        "note": "Gummiband-Boing, fällt zurück"
+      },
+      {
+        "name": "chip-nope",
+        "file": "drag-reject/chip-nope.wav",
+        "source": "scripts/make-cue-candidates.mjs, Rezept chip-nope",
+        "author": null,
+        "licence": "generated",
+        "note": "Arcade-Nope, zwei Stufen abwärts"
+      },
+      {
+        "name": "filz-plumps",
+        "file": "drag-reject/filz-plumps.wav",
+        "source": "scripts/make-cue-candidates.mjs, Rezept filz-plumps",
+        "author": null,
+        "licence": "generated",
+        "note": "weicher Plumps, dann Pfeifton nach unten"
+      },
+      {
+        "name": "tuerfeder",
+        "file": "drag-reject/tuerfeder.wav",
+        "source": "scripts/make-cue-candidates.mjs, Rezept tuerfeder",
+        "author": null,
+        "licence": "generated",
+        "note": "Türfeder-Sproing, schwingt aus"
+      }
     ]
   }
 }

@@ -46,6 +46,9 @@ export const CUE_BRIEF: Record<CueId, { character: string }> = {
   'lb-count': { character: 'point counter ticks, 1 per point, max 15/s' },
   'lb-winner': { character: 'mini celebration: party horn + 3 confetti pops' },
   // board
+  'drag-pick': { character: 'lift: little „bloop“ up' },
+  'drag-snap': { character: 'magnetic click-in' },
+  'drag-reject': { character: 'rubber boing back, someone was faster' },
   // ceremony
   // tour
 }
@@ -55,7 +58,7 @@ export const CUE_BRIEF: Record<CueId, { character: string }> = {
  * a member here (a union takes no group lines, so it is the one line two tickets may both touch), a `MOMENT_LABEL` row and a runner in the
  * page's `MOMENT_RUNNERS`, under its group's line.
  */
-export type Moment = 'spin' | 'window' | 'arrival' | 'voice' | 'standings'
+export type Moment = 'spin' | 'window' | 'arrival' | 'voice' | 'standings' | 'drag'
 
 export const MOMENT_OF: Record<CueId, Moment> = {
   // wheel
@@ -67,6 +70,7 @@ export const MOMENT_OF: Record<CueId, Moment> = {
   // standings
   'lb-swap': 'standings', 'lb-count': 'standings', 'lb-winner': 'standings',
   // board
+  'drag-pick': 'drag', 'drag-snap': 'drag', 'drag-reject': 'drag',
   // ceremony
   // tour
 }
@@ -83,6 +87,7 @@ export const MOMENT_LABEL: Record<Moment, string> = {
   // standings
   standings: 'Test Standings change',
   // board
+  drag: 'Test drag',
   // ceremony
   // tour
 }
@@ -366,6 +371,19 @@ export function standingsChangeCues(reducedMotion: boolean, countMs: number): Ar
     countMs,
     stampDelayMs: STAMP_DELAY_MS,
   })
+}
+
+// Drag -----------------------------------------------------------------------------------------------------------------------------
+
+/** The gap between the lift and the answer of the test drag: an arbitrary gap for the ear, no picture holds it (#742). */
+export const DRAG_TEST_HOLD_MS = 600
+
+/**
+ * The test drag (#742): the pick-up, then the answer. The Game board's cues are hook calls, not a plan, so this mirrors the hooks' calls: the same
+ * three ids, played through the same `playNow` the board's hooks call.
+ */
+export function dragRunCues(outcome: 'taken' | 'refused'): ArrivalCue[] {
+  return [{ id: 'drag-pick', delayMs: 0 }, { id: outcome === 'taken' ? 'drag-snap' : 'drag-reject', delayMs: DRAG_TEST_HOLD_MS }]
 }
 
 // Arrival cues -----------------------------------------------------------------------------------------------------------------------

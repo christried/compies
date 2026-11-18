@@ -2,7 +2,7 @@
 import LuckyWheel from '~/components/LuckyWheel.vue'
 import VetoWindow from '~/components/VetoWindow.vue'
 import {
-  CANDIDATE_BASE, CUE_BRIEF, MOMENT_LABEL, MOMENT_OF, MOMENT_SETUP, arrivalCues, buildRun, candidatesOf, choicesReport, configFor, emptyChoices, stampCues, standingsChangeCues, testCandidateOf,
+  CANDIDATE_BASE, CUE_BRIEF, MOMENT_LABEL, MOMENT_OF, MOMENT_SETUP, arrivalCues, buildRun, candidatesOf, choicesReport, configFor, emptyChoices, stampCues, standingsChangeCues, dragRunCues, testCandidateOf,
   type ArrivalButton, type Candidate, type Choices, type Controls, type Moment, type Run,
 } from '~/dev/listening-model'
 import { createCuePlayer, type CuePlayer } from '~/utils/cue-player'
@@ -158,6 +158,12 @@ async function standingsChange() {
   for (const cue of standingsChangeCues(controls.reduced, countDurationMs())) armed.playNow(cue.id, cue.delayMs)
 }
 
+/** The test drag (#742): the lift, then the snap (or the bounce for `drag-reject`), through the real player like the board's hooks. */
+async function dragRun(id: CueId) {
+  if (!await ensureContext() || !armed) return
+  for (const cue of dragRunCues(id === 'drag-reject' ? 'refused' : 'taken')) armed.playNow(cue.id, cue.delayMs)
+}
+
 /** What a moment's button runs (#740): a new `Moment` has no runner until it has a row here, so typecheck says so. A new moment's row sits under its group's line. */
 const MOMENT_RUNNERS: Record<Moment, (id: CueId) => void> = {
   // wheel
@@ -170,6 +176,7 @@ const MOMENT_RUNNERS: Record<Moment, (id: CueId) => void> = {
   // standings
   standings: () => void standingsChange(),
   // board
+  drag: id => void dragRun(id),
   // ceremony
   // tour
 }
