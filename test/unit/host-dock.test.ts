@@ -136,9 +136,9 @@ describe('the primary when the Event can be finished (#277)', () => {
     expect(hostDockState(input({ sessions: RUNNING, end: end({ finish: null }) }))).toMatchObject({ primary: 'spin' })
   })
 
-  // A Tie has its own primary (#278): the Host holds „Unentschieden beenden“ or adds a last game. A Session that has not started cannot hold Results,
+  // A Tie has its own primary (#278): the Host holds „Unentschieden“ or adds a last game. A Session that has not started cannot hold Results,
   // so `teams` has no Tie state (a started Session is never removed): the dock and the page's banner agree on running, between and done.
-  it('is Unentschieden beenden in a Tie: in a running Session (with its number), between Sessions and after the last one', () => {
+  it('is Unentschieden in a Tie: in a running Session (with its number), between Sessions and after the last one', () => {
     const tie = end({ tie: [1, 2] })
 
     expect(hostDockState(input({ sessions: [dated('a', 1, { startedAt: '2090-10-30T19:30:00.000Z' }), dated('b', 2)], end: tie }))).toMatchObject({ kind: 'running', primary: 'finishTie', number: 1 })
@@ -295,7 +295,7 @@ describe('dockLayout', () => {
     }
   })
 
-  it.each(STATES)('holds Letztes Spiel hinzufügen in the dock exactly where Unentschieden beenden is the primary: $name', ({ fields, primary }) => {
+  it.each(STATES)('holds Letztes Spiel in the dock exactly where Unentschieden is the primary: $name', ({ fields, primary }) => {
     for (const open of OPENS) {
       const { secondary, more } = layout(fields, open)
       expect(secondary.includes('lastGame')).toBe(primary.includes('finishTie'))

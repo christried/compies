@@ -44,7 +44,7 @@ const asButton = computed(() => props.opens && !props.to)
 /** Whether the card itself can be clicked: only then it lifts on hover, so a lift always means a click (#608). It presses only for the
  *  click of its name (`data-lift-owner` below), not for a control inside it (#658): `lift` leaves the card still while one of those is pressed. */
 const clickable = computed(() => Boolean(props.to) || props.opens)
-// The compact player count and the Suitabilities („Passt zu“, #171: „Teams, 1 gegen 1“).
+// The compact player count and the Suitabilities („Passt zu“, #171: „Teams, 1v1“).
 const description = computed(() => describeGame({
   playersMin: props.game.playersMin ?? null,
   playersMax: props.game.playersMax ?? null,
@@ -174,8 +174,10 @@ const look = computed(() => LAYOUT[props.layout])
       </div>
       <span
         v-if="showMeta && priceText"
+        data-price
+        :title="priceText"
         class="text-[12px] font-bold text-ink-2"
-        :class="layout === 'card' ? '' : layout === 'row' ? 'truncate' : 'truncate md:whitespace-normal'"
+        :class="layout === 'card' ? 'line-clamp-2 min-h-[2lh]' : layout === 'row' ? 'truncate' : 'truncate md:line-clamp-2 md:min-h-[2lh] md:whitespace-normal'"
       >{{ priceText }}</span>
       <span
         v-if="showMeta && inEvents > 0"

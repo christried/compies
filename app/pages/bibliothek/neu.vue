@@ -44,7 +44,6 @@ async function onSavedAndNext(game: GameView) {
         :label="t('nav.library')"
       />
       <div class="flex flex-col gap-0.5">
-        <span class="text-small font-bold text-ink-2">{{ t('gameEdit.kicker') }}</span>
         <h1 class="m-0 font-display text-[34px] leading-none md:text-[44px]">
           {{ t('gameEdit.title') }}
         </h1>

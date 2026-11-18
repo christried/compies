@@ -138,10 +138,10 @@ describe('the settings editor', () => {
 
     const page = await mountEditor(slug)
 
-    expect(stepItems(page).map(item => item.text().replace(/^\d\s*|^✓\s*/, ''))).toEqual(['Format', 'Spiele', 'Punkte', 'Auswahlmodus', 'Spielepool'])
+    expect(stepItems(page).map(item => item.text().replace(/^\d\s*|^✓\s*/, ''))).toEqual(['Format', 'Spieleanzahl', 'Punkte', 'Auswahlmodus', 'Spielepool'])
     expect(stepItems(page).slice(1).every(item => item.find('button').exists())).toBe(true)
     expect(page.get('nav[aria-label="Schritte"]').text()).toContain('Einstellungen')
-    expect(page.get('h1').text()).toContain('Wer gegen wen?')
+    expect(page.get('h1').text()).toContain('Wer gegen wen und wie?')
   })
 
   it('keeps the hub nav in its header, with Events current and the Event’s name and Phase under it (#426)', async () => {
@@ -176,7 +176,7 @@ describe('the settings editor', () => {
     const page = await mountEditor(slug)
 
     expect(page.get('nav[aria-label="Schritte"]').text()).toContain('Event einrichten')
-    expect(spin(page, 'Spieler pro Team').text()).toBe('3')
+    expect(spin(page, 'Spielende pro Team').text()).toBe('3')
   })
 
   it('tells a Host without the Host permission that the library is closed, keeps the pool and asks for no games (#173)', async () => {
@@ -188,7 +188,7 @@ describe('the settings editor', () => {
 
     expect(page.text()).toContain('Ohne Host-Berechtigung kannst du keine Spiele aus der Bibliothek hinzufügen. Die Spiele im Pool bleiben.')
     expect(page.find('input[type="search"]').exists()).toBe(false)
-    expect(page.findAll('button').some(item => item.text().includes('Neues Spiel anlegen'))).toBe(false)
+    expect(page.findAll('button').some(item => item.text().includes('Neues Spiel'))).toBe(false)
     expect(page.find('ul[aria-label="Bibliothek"]').exists()).toBe(false)
     expect(page.find('ul[aria-label="Spiele im Pool"]').exists()).toBe(true)
 
@@ -203,9 +203,9 @@ describe('the settings editor', () => {
     const { slug } = setUp({ settings: wheel, pool: [kart, pong] })
 
     const page = await mountEditor(slug)
-    expect(spin(page, 'Spieler pro Team').text()).toBe('4')
+    expect(spin(page, 'Spielende pro Team').text()).toBe('4')
 
-    await goTo(page, 'Spiele')
+    await goTo(page, 'Spieleanzahl')
     expect(page.get('output').text()).toBe('7')
 
     await goTo(page, 'Auswahlmodus')
@@ -222,7 +222,7 @@ describe('the settings editor', () => {
   it('saves what the Host changed, from the last step, and goes back to the Event with a toast', async () => {
     const { slug, patched } = setUp({ settings: wheel, pool: [kart] })
     const page = await mountEditor(slug)
-    await goTo(page, 'Spiele')
+    await goTo(page, 'Spieleanzahl')
     await button(page, 'Anzahl Spiele: mehr').trigger('click')
     await goTo(page, 'Spielepool')
     await settle(page)
@@ -249,7 +249,7 @@ describe('the settings editor', () => {
     await vi.waitFor(() => expect(eventSettings().text()).toContain('7 Spiele'))
 
     set(view(slug, [], { event: { isHost: true, phase: 'poll' }, settings: { ...wheel, gameCount: 8 }, pool: [kart] }))
-    await goTo(page, 'Spiele')
+    await goTo(page, 'Spieleanzahl')
     await button(page, 'Anzahl Spiele: mehr').trigger('click')
     await goTo(page, 'Spielepool')
     await settle(page)
@@ -269,7 +269,7 @@ describe('the settings editor', () => {
       await vi.waitFor(() => expect(page.find('[aria-busy="true"]').exists()).toBe(false))
     }
 
-    expect(page.get('h1').text()).toContain('Welche Spiele kommen in den Pool?')
+    expect(page.get('h1').text()).toContain('Welche Spiele?')
     expect(cta(page).text()).toContain('Speichern')
   })
 
@@ -308,11 +308,11 @@ describe('the settings editor', () => {
 
       const page = await mountEditor(slug)
 
-      const less = button(page, 'Spieler pro Team: weniger')
+      const less = button(page, 'Spielende pro Team: weniger')
       expect(less.attributes('aria-disabled')).toBe('true')
       expect(less.attributes('title')).toBe('Im vollsten Team sind schon 4.')
       await less.trigger('click')
-      expect(spin(page, 'Spieler pro Team').text()).toBe('4')
+      expect(spin(page, 'Spielende pro Team').text()).toBe('4')
     })
 
     it('keeps the Veto allowance from going below the most Vetoes a Party has spent, and says why', async () => {
@@ -337,7 +337,7 @@ describe('the settings editor', () => {
     it('keeps the Game count from going below the Rounds already started, and says why (#228)', async () => {
       const { slug } = setUp({ settings: { ...defaultSettings(), gameCount: 4 }, floors: { teamSize: 1, vetoAllowance: 0, gameCount: 3 } })
       const page = await mountEditor(slug)
-      await goTo(page, 'Spiele')
+      await goTo(page, 'Spieleanzahl')
 
       const less = button(page, 'Anzahl Spiele: weniger')
       expect(less.attributes('aria-disabled')).toBeUndefined()
@@ -351,7 +351,7 @@ describe('the settings editor', () => {
     it('has the usual limits when nothing is spent yet', async () => {
       const { slug } = setUp({ settings: { ...wheel, teamSize: 1 }, floors: { teamSize: 1, vetoAllowance: 0, gameCount: 0 } })
       const page = await mountEditor(slug)
-      expect(button(page, 'Spieler pro Team: weniger').attributes('title')).toBe('Mindestens 1 pro Team.')
+      expect(button(page, 'Spielende pro Team: weniger').attributes('title')).toBe('Mindestens 1 pro Team.')
     })
   })
 
@@ -368,13 +368,13 @@ describe('the settings editor', () => {
       })
       const page = await mountEditor(slug)
 
-      const less = button(page, 'Spieler pro Team: weniger')
+      const less = button(page, 'Spielende pro Team: weniger')
       expect(less.attributes('aria-disabled')).toBeUndefined()
       await less.trigger('click')
 
-      expect(spin(page, 'Spieler pro Team').text()).toBe('2')
-      expect(button(page, 'Spieler pro Team: weniger').attributes('title')).toBe('Im vollsten Team sind schon 2.')
-      expect(button(page, 'Spieler pro Team: weniger').attributes('aria-disabled')).toBe('true')
+      expect(spin(page, 'Spielende pro Team').text()).toBe('2')
+      expect(button(page, 'Spielende pro Team: weniger').attributes('title')).toBe('Im vollsten Team sind schon 2.')
+      expect(button(page, 'Spielende pro Team: weniger').attributes('aria-disabled')).toBe('true')
     })
 
     it('lowers the Team size floor with the team count, and raises it again with the count (#197)', async () => {
@@ -384,21 +384,21 @@ describe('the settings editor', () => {
         members: [seated(kitty.id, 'team', 1), seated(LARSI, 'team', 2), seated(SANNE, 'team', 3), seated(FOUR, 'team', 4), seated(FIVE, 'team', 4), seated(SIX, 'team', 4)],
       })
       const page = await mountEditor(slug)
-      expect(button(page, 'Spieler pro Team: weniger').attributes('title')).toBe('Im vollsten Team sind schon 3.')
+      expect(button(page, 'Spielende pro Team: weniger').attributes('title')).toBe('Im vollsten Team sind schon 3.')
 
       await button(page, 'Anzahl Teams: weniger').trigger('click')
       expect(spin(page, 'Anzahl Teams').text()).toBe('3')
-      await button(page, 'Spieler pro Team: weniger').trigger('click')
-      await button(page, 'Spieler pro Team: weniger').trigger('click')
+      await button(page, 'Spielende pro Team: weniger').trigger('click')
+      await button(page, 'Spielende pro Team: weniger').trigger('click')
 
-      expect(spin(page, 'Spieler pro Team').text()).toBe('1')
-      expect(button(page, 'Spieler pro Team: weniger').attributes('title')).toBe('Mindestens 1 pro Team.')
-      expect(button(page, 'Spieler pro Team: weniger').attributes('aria-disabled')).toBe('true')
+      expect(spin(page, 'Spielende pro Team').text()).toBe('1')
+      expect(button(page, 'Spielende pro Team: weniger').attributes('title')).toBe('Mindestens 1 pro Team.')
+      expect(button(page, 'Spielende pro Team: weniger').attributes('aria-disabled')).toBe('true')
 
       await button(page, 'Anzahl Teams: mehr').trigger('click')
       expect(spin(page, 'Anzahl Teams').text()).toBe('4')
-      expect(spin(page, 'Spieler pro Team').text()).toBe('3')
-      expect(button(page, 'Spieler pro Team: weniger').attributes('title')).toBe('Im vollsten Team sind schon 3.')
+      expect(spin(page, 'Spielende pro Team').text()).toBe('3')
+      expect(button(page, 'Spielende pro Team: weniger').attributes('title')).toBe('Im vollsten Team sind schon 3.')
     })
 
     it('tells the Host how many Players go to the Stands when the team count drops, singular and plural', async () => {
@@ -446,9 +446,9 @@ describe('the settings editor', () => {
       expect(page.findAll('[role="radio"]').every(radio => radio.attributes('aria-disabled') === 'true')).toBe(true)
       expect(button(page, 'Anzahl Teams: mehr').attributes('aria-disabled')).toBe('true')
       expect(button(page, 'Anzahl Teams: weniger').attributes('aria-disabled')).toBe('true')
-      expect(button(page, 'Spieler pro Team: mehr').attributes('aria-disabled')).toBeUndefined()
-      await button(page, 'Spieler pro Team: mehr').trigger('click')
-      expect(spin(page, 'Spieler pro Team').text()).toBe('5')
+      expect(button(page, 'Spielende pro Team: mehr').attributes('aria-disabled')).toBeUndefined()
+      await button(page, 'Spielende pro Team: mehr').trigger('click')
+      expect(spin(page, 'Spielende pro Team').text()).toBe('5')
     })
 
     it('does not change the Format when a locked card is clicked', async () => {
@@ -475,7 +475,7 @@ describe('the settings editor', () => {
       expect(page.findAll('[data-testid="points-row"] output').map(output => output.text())).toEqual(['3', '1'])
     })
 
-    it('shows the Selection mode locked, but lets Rad verdecken and the Veto allowance change', async () => {
+    it('shows the Selection mode locked, but lets Pseudo-Games and the Veto allowance change', async () => {
       const { slug } = setUp({ settings: wheel, phase: 'running' })
       const page = await mountEditor(slug)
 
@@ -510,7 +510,7 @@ describe('the settings editor', () => {
     it('lets the Game count change and shows no lock on that step', async () => {
       const { slug, patched } = setUp({ settings: wheel, phase: 'running' })
       const page = await mountEditor(slug)
-      await goTo(page, 'Spiele')
+      await goTo(page, 'Spieleanzahl')
 
       expect(page.text()).not.toContain(LOCKED)
       await button(page, 'Anzahl Spiele: weniger').trigger('click')
@@ -537,7 +537,7 @@ describe('the settings editor', () => {
     it('shows on the Spiele step at an even Game count, and follows a change of it', async () => {
       const { slug } = setUp({ settings: defaultSettings() })
       const page = await mountEditor(slug)
-      await goTo(page, 'Spiele')
+      await goTo(page, 'Spieleanzahl')
       expect(tieHint(page)!.text()).toContain('Das Event kann unentschieden enden.')
 
       await button(page, 'Anzahl Spiele: weniger').trigger('click')
@@ -548,7 +548,7 @@ describe('the settings editor', () => {
     it('shows on a running Event too', async () => {
       const { slug } = setUp({ settings: { ...defaultSettings(), gameCount: 8 }, phase: 'running' })
       const page = await mountEditor(slug)
-      await goTo(page, 'Spiele')
+      await goTo(page, 'Spieleanzahl')
 
       expect(tieHint(page)).toBeDefined()
     })
@@ -709,7 +709,7 @@ describe('the settings editor during a draw', () => {
     useState('toasts').value = []
   })
 
-  it('lifts the lock on „Rad verdecken“ and the Veto allowance at the stop, without waiting for the poll', async () => {
+  it('lifts the lock on „Pseudo-Games“ and the Veto allowance at the stop, without waiting for the poll', async () => {
     const { slug, set } = serveDraw({ stopAt: Date.now() + 1000 })
     const page = await mountEditor(slug)
     await goTo(page, 'Auswahlmodus')

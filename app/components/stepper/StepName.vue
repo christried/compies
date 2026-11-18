@@ -28,7 +28,6 @@ useStepBlocker(blocker, () => (name.value.trim() === '' ? t('error.nameRequired'
     <TextField
       v-model="name"
       :label="t('stepper.name.label')"
-      :help="t('stepper.name.help')"
       :error="error"
       :maxlength="EVENT_NAME_MAX"
     />

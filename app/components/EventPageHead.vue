@@ -6,12 +6,12 @@ import type { EventPageState } from '~/utils/event-page'
 import { jumpTo, pollHeadingId } from '~/utils/jump'
 import type { BoardTeam } from '~~/shared/event'
 
-// The Head of the Event page (#166, 11-event-seite § EventPageHead): the kicker says where the Event stands, the one
-// `<h1>` says what is on now, and while another Session still polls a link jumps to that poll. The copy follows the
+// The Head of the Event page (#166, 11-event-seite § EventPageHead): the one `<h1>` says what is on now, and the kicker
+// above it only says what the heading does not (which Session of how many, a start time), so a single-Session poll, teams and finished Event have none (#798). While another Session still polls, a link jumps to that poll. The copy follows the
 // page state (eventPageState), a union by `kind`: each kind reads what it guarantees, with no assertion (review 1.4 N10). The
 // Event's name is in the header, not here. A finished Event (#277) names its winner: `winners` are the team positions on rank 1 and `teams` the
 // Event's Teams for their Team names; the other states need neither. `data-tour="head"` (#460) is the Tour's first pointing step: `w-fit` shrinks
-// its hole to the kicker and the heading.
+// its hole to the heading (and the kicker, where there is one).
 const props = withDefaults(defineProps<{
   state: EventPageState
   isHost: boolean
@@ -21,20 +21,20 @@ const props = withDefaults(defineProps<{
 
 const { t } = useI18n()
 
-const copy = computed(() => {
+const copy = computed<{ kicker: string | null, title: string }>(() => {
   const state = props.state
   const { total, next, lastEnded, pollNumber } = state
   const single = total === 1
   switch (state.kind) {
     case 'poll':
       return {
-        kicker: single ? t('event.head.poll.kickerSingle') : t('event.head.poll.kicker', { n: pollNumber, total }),
+        kicker: single ? null : t('event.head.poll.kicker', { n: pollNumber, total }),
         title: t('event.head.poll.title'),
       }
     case 'teams': {
       const date = formatSessionWhen(new Date(state.next.startsAt))
       return {
-        kicker: single ? t('event.head.teams.kickerSingle', { date }) : t('event.head.teams.kicker', { n: state.next.number, date }),
+        kicker: single ? null : t('event.head.teams.kicker', { n: state.next.number, date }),
         title: t('event.head.teams.title'),
       }
     }
@@ -68,7 +68,7 @@ const copy = computed(() => {
         : others.length > 0
           ? t('event.head.finished.titleTie')
           : t('event.head.finished.title', { team: teamNameAt(props.teams, winner, t) })
-      return { kicker: t('event.head.finished.kicker'), title }
+      return { kicker: null, title }
     }
     default:
       return {
@@ -91,7 +91,10 @@ const jump = computed(() => {
     data-tour="head"
     class="flex w-fit max-w-full flex-col gap-0.5"
   >
-    <span class="text-[13px] font-bold text-pretty text-ink-2">{{ copy.kicker }}</span>
+    <span
+      v-if="copy.kicker"
+      class="text-[13px] font-bold text-pretty text-ink-2"
+    >{{ copy.kicker }}</span>
     <!-- `tabindex="-1"`: where focus goes when the sheet that a save emptied has nothing else to return to (EventRounds, #274). -->
     <h1
       tabindex="-1"

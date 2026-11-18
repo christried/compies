@@ -145,6 +145,17 @@ describe('HostDock', () => {
     page.unmount()
   })
 
+  it('shows no H key cap in the Mehr menu (#801): the H shortcut still focuses the pill, tested above', async () => {
+    const page = await mountSuspended(HostDock, { props: { actions: [action('A'), action('B', { place: 'more' })] } })
+
+    await page.get('[aria-haspopup="menu"]').trigger('click')
+
+    const menu = page.get('[role="menu"]').element
+    expect(menu.querySelector('kbd')).toBeNull()
+    expect([...menu.querySelectorAll('*')].some(node => node.textContent?.trim() === 'H')).toBe(false)
+    page.unmount()
+  })
+
   it('a disabled action still runs when clicked, so that its reason can be shown', async () => {
     const run = vi.fn()
     const page = await mountSuspended(HostDock, { props: { actions: [action('Termin festlegen', { disabledReason: 'Noch kein Termin.', run })] } })
@@ -214,34 +225,34 @@ describe('HostDock', () => {
 
   it('keeps a dockOnly action out of Mehr while it sits in the pill, and lists it in Mehr when it does not (#278)', async () => {
     const page = await mountSuspended(HostDock, { props: { actions: [
-      action('Unentschieden beenden', { primary: true, hold: true }),
-      action('Letztes Spiel hinzufügen', { dockOnly: true }),
+      action('Unentschieden', { primary: true, hold: true }),
+      action('Letztes Spiel', { dockOnly: true }),
       action('Session beenden', { hold: true }),
       action('Einladen'),
       action('Einstellungen'),
     ] } })
 
-    expect(pillLabels(page)).toEqual(['Unentschieden beenden 1 s halten', 'Letztes Spiel hinzufügen', 'Session beenden 1 s halten', 'Mehr'])
+    expect(pillLabels(page)).toEqual(['Unentschieden 1 s halten', 'Letztes Spiel', 'Session beenden 1 s halten', 'Mehr'])
     await page.get('[aria-haspopup="menu"]').trigger('click')
     expect(page.findAll('[role="menuitem"]').map(item => item.text())).toEqual(['Einladen', 'Einstellungen'])
     page.unmount()
   })
 
   it('lists a dockOnly action in Mehr when the pill does not hold it (#278)', async () => {
-    const page = await mountSuspended(HostDock, { props: { actions: [action('A'), action('B'), action('C'), action('Letztes Spiel hinzufügen', { dockOnly: true })] } })
+    const page = await mountSuspended(HostDock, { props: { actions: [action('A'), action('B'), action('C'), action('Letztes Spiel', { dockOnly: true })] } })
 
     expect(pillLabels(page)).toEqual(['A', 'B', 'C', 'Mehr'])
     await page.get('[aria-haspopup="menu"]').trigger('click')
-    expect(page.findAll('[role="menuitem"]').map(item => item.text())).toEqual(['A', 'B', 'C', 'Letztes Spiel hinzufügen'])
+    expect(page.findAll('[role="menuitem"]').map(item => item.text())).toEqual(['A', 'B', 'C', 'Letztes Spiel'])
     page.unmount()
   })
 
   it('on a phone, the sheet lists a dockOnly action that the pill holds (#278)', async () => {
-    const page = await mountSuspended(HostDock, { props: { actions: [action('Unentschieden beenden', { primary: true }), action('Letztes Spiel hinzufügen', { dockOnly: true }), action('Einladen')] }, attachTo: document.body })
+    const page = await mountSuspended(HostDock, { props: { actions: [action('Unentschieden', { primary: true }), action('Letztes Spiel', { dockOnly: true }), action('Einladen')] }, attachTo: document.body })
 
     await page.get('button[aria-haspopup="dialog"]').trigger('click')
     const sheet = document.querySelector('[role="dialog"]')!
-    expect([...sheet.querySelectorAll('button')].map(button => button.textContent?.trim())).toEqual(expect.arrayContaining(['Unentschieden beenden', 'Letztes Spiel hinzufügen', 'Einladen']))
+    expect([...sheet.querySelectorAll('button')].map(button => button.textContent?.trim())).toEqual(expect.arrayContaining(['Unentschieden', 'Letztes Spiel', 'Einladen']))
     page.unmount()
   })
 

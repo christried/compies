@@ -93,7 +93,7 @@ describe('the stage of an Event page that plays', () => {
 
 // A Tie (#278): everybody but the Host reads that the Host decides, right under the Head and above the Standings; the Host has the dock instead.
 describe('the Tie banner on the Event page', () => {
-  const TEXT = 'Gleichstand auf Platz 1. Der Host entscheidet.'
+  const TEXT = 'Gleichstand auf Platz 1. Der Host entscheidet, wie es weitergeht mit euch.'
   const tied: EventOverrides = {
     teams: [team(1), team(2)],
     results: [],
