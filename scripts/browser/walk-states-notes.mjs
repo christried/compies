@@ -3,6 +3,7 @@
 // (`<name>-host` at 1440, `<name>-spieler` at 390) and the Events it makes. 0.16's texts count as approved (the operator, 2026-11-18): these states make the NEXT walk picture them.
 // Nothing is saved but two things the states say: `bibliothek-spiel-notizen` archives `Spiel Notizen` and restores it (its `after` and the file's `cleanup` put it back), and
 // the Event states make Event notes with the Host's own requests. A form is typed into and never sent: the CTA refuses, or its request is held back by a replaced `fetch`.
+// `bibliothek-neu-editor-ladefehler` blocks the editor's chunk through the tab's CDP session (`blockUrls`) and lifts the block in its `after` (#826).
 // Only the Host's tab ever reads Event notes (a Member's read carries none, `CODING_STANDARDS.md` § Secrecy), so no Event state of this file opens on a Member's tab.
 import { readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
@@ -11,7 +12,7 @@ import { sleep } from './chrome.mjs'
 import { api, centre, clickText, createGame, enterResult, open, ok, placesOf, runningEvent } from './kit.mjs'
 import { noAutoLoad, page, step } from './dark-states-app.mjs'
 import { BUILDS, host, keepToasts, layerOpen, member, pair, pool, press, running, signIn, stop, toastShown, until } from './dark-states-event.mjs'
-import { backspace, focusNotes, releaseToasts, scriptFromLoad, setField, typeNotes, UNTAG } from './walk-kit.mjs'
+import { backspace, blockUrls, focusNotes, releaseToasts, scriptFromLoad, setField, typeNotes, unblockUrls, UNTAG } from './walk-kit.mjs'
 
 const COPY = JSON.parse(readFileSync(join(dirname(fileURLToPath(import.meta.url)), '../../i18n/locales/de.json'), 'utf8'))
 const GAME_PREFIX = 'R011 Dunkel-Check '
@@ -58,6 +59,7 @@ export const CLAIMS = {
   'notesEditor.linkApply': 'bibliothek-neu-editor',
   'notesEditor.linkCancel': 'bibliothek-neu-editor',
   'notesEditor.linkError': 'bibliothek-neu-editor',
+  'notesEditor.loadFailed': 'bibliothek-neu-editor-ladefehler',
   'notesEditor.unlink': 'bibliothek-bearbeiten-notizen',
   'notesEditor.boldInHeading': 'bibliothek-bearbeiten-notizen',
   'notesEditor.counter': 'bibliothek-bearbeiten-notizen',
@@ -80,7 +82,7 @@ export const CLAIMS = {
 
 /** The texts of 0.16 no state can show (key → why). */
 export const UNREACHED = {
-  'notesEditor.finishedHelp': '`RichNotesEditor`\'s `readonly` is passed by no component: a finished Event shows its notes in `EventNotes` (the chip), so the prop and the text are dead (#810).',
+  'notesEditor.loading': 'The text is `sr-only` inside the placeholder box of `RichNotesEditorFallback` and exists only while the editor\'s chunk loads. Every state waits for the editor (or, in `bibliothek-neu-editor-ladefehler`, for the failure), so no reading holds it and no picture could show it (#826).',
 }
 
 // ---------------------------------------------------------------------------------------------------------------------------------
@@ -340,6 +342,22 @@ const libraryStates = [
       step('link-fehler', badLink),
     ],
   }),
+
+  // The editor's chunk cannot be loaded (#826): `RichNotesEditorLoader` shows the critical notice with its button in place of the editor's box. On `pnpm dev` the chunk is
+  // `/_nuxt/components/RichNotesEditor.vue` (with a `?t=` query after an edit); the request is blocked through the tab's CDP session from before the page opens, and
+  // unblocked in `after`, or every later state of the tab would lose its editor. The pattern ends in `*` for the query and names `.vue` right after the name, so the
+  // Loader and the Fallback, which load, stay out of it. No `[data-notes-editor]` ever mounts here, so the wait is for the notice's text. Never saved.
+  {
+    name: 'bibliothek-neu-editor-ladefehler',
+    group: 'library',
+    account: 'host',
+    async open(ctx) {
+      await blockUrls(ctx.tab, ['*/_nuxt/components/RichNotesEditor.vue*'])
+      await open(ctx.tab, '/bibliothek/neu', ctx.width, ctx.height, 'form', { appearance: ctx.appearance })
+      await until(ctx.tab, shows(COPY.notesEditor.loadFailed), 'the notice of the editor that cannot load')
+    },
+    after: ctx => unblockUrls(ctx.tab),
+  },
 
   // The editor of `Spiel Notizen`; every stop goes on from the page the last one left. Never saved.
   libraryPage('bibliothek-bearbeiten-notizen', 'host', ctx => gamePath(ctx, '/bearbeiten'), {

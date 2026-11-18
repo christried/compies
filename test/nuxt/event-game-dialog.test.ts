@@ -57,7 +57,8 @@ const wheel: WheelView = { count: 2, slices: null, spin, vetoes: { left: [], own
 // What the Host's PUT of Event notes (#731) did, for the tests of the editing in the dialogs (#464): the bodies it got, and whether it refuses.
 const saves = { bodies: [] as { gameId: string, body: { notes: NotesDoc | null } }[], refuse: false }
 
-function serveHost(host: boolean, phase: 'running' | 'finished' = 'running') {
+// `leaked`: a Member's read that carries the Host's Event notes anyway (the server never sends them): the Member's page provides no context, so nothing of them shows (#821).
+function serveHost(host: boolean, phase: 'running' | 'finished' = 'running', leaked = false) {
   saves.bodies = []
   saves.refuse = false
   // The Event's notes as the server holds them: a save changes them, and the next read of the Event shows the change.
@@ -72,7 +73,7 @@ function serveHost(host: boolean, phase: 'running' | 'finished' = 'running') {
     rounds: host ? [round('r1', base, base.notes!), round('r2', schach, schach.notes!)] : [round('r1', base), round('r2', schach)],
     wheel,
     hostGames: host ? hostGames : null,
-    eventNotes: host ? stored : null,
+    eventNotes: host || leaked ? stored : null,
   })
   const served = serve(viewOf)
   for (const game of [base, pong, kart, schach]) {
@@ -247,6 +248,23 @@ describe('a Member\'s tiles on the Event page open the dialog (#444)', () => {
     await flushPromises()
     await vi.waitFor(() => expect(dialog()).toBeNull())
   }
+
+  it('shows no Event notes anywhere on the page, in no tile dialog and no Round disclosure, even when the read carries them (#821)', async () => {
+    const { slug } = serveHost(false, 'running', true)
+    await mount(slug)
+    const gone = () => {
+      for (const text of ['Notizen für dieses Event', 'Event-Halo', 'Event-Kart', 'Event-Schach']) expect(document.body.textContent).not.toContain(text)
+    }
+    gone()
+
+    for (const [heading, name] of [['So wird gespielt', 'Kart'], ['Läuft aktuell.', 'Schach']] as const) {
+      tileButton(heading, name)!.click()
+      await flushPromises()
+      gone()
+      await close()
+    }
+    expect(sectionOf('Läuft aktuell.')!.querySelector('button[aria-expanded]')).toBeNull()
+  })
 
   it('opens from the Spielepool with the game\'s players, Suitabilities and Price, and a tap on another tile opens that one', async () => {
     const { slug } = serveHost(false)

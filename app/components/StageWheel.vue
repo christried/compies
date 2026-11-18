@@ -1,17 +1,14 @@
 <script setup lang="ts">
 import type { EventView } from '~~/shared/event'
-import type { NotesDoc } from '~~/shared/notes-doc'
 
 // The wheel block of the Event page (#229, #231, #257): the Lucky Wheel and, while a draw has its Veto window, the window. The page
 // lists the block only when the view has the wheel (eventPageState, #256), so `wheel` is there. The Veto bar (VetoBar) is not in
 // here: it is a fixed layer that must stay outside the page's TransitionGroup, and the window itself never casts a Veto.
-const props = withDefaults(defineProps<{
+const props = defineProps<{
   view: EventView
   /** The server's clock in epoch ms (the page's useServerClock). */
   serverNow: () => number
-  /** Saves the Host's Event notes of a game from the drawn game's dialog (#464); resolves to whether the server took it. */
-  saveEventNotes?: ((gameId: string, notes: NotesDoc | null) => Promise<boolean>) | null
-}>(), { saveEventNotes: null })
+}>()
 
 const wheel = computed(() => props.view.wheel!)
 </script>
@@ -24,10 +21,6 @@ const wheel = computed(() => props.view.wheel!)
       :is-host="view.event.isHost"
       :server-now="serverNow"
       :host-games="view.hostGames"
-      :event-notes="view.eventNotes"
-      :event-name="view.event.name"
-      :event-finished="view.event.phase === 'finished'"
-      :save-event-notes="saveEventNotes"
     />
     <VetoWindow
       v-if="wheel.vetoes.draw"

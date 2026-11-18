@@ -1,5 +1,5 @@
-import { and, asc, desc, eq, isNull, sql } from 'drizzle-orm'
-import { bonusVetoes, coinTosses, draws, eventMembers, eventPoolGames, eventTeams, games, roundPlaces, rounds, users, vetoes } from '../db/schema'
+import { asc, desc, eq } from 'drizzle-orm'
+import { bonusVetoes, coinTosses, draws, eventMembers, eventTeams, games, roundPlaces, rounds, users, vetoes } from '../db/schema'
 import { numberedSessions } from '../domain/session'
 import { countSeats, composeTeamName, moveRejection, placeOf, teamChoiceOpen, type MoveRejection, type Place, type Zone } from '../../shared/board'
 import { coinRejection } from '../../shared/coin'
@@ -26,6 +26,7 @@ import { playersPerTeam, settingsFromRow, type EventSettings, type FloorFacts } 
 import type { CoinRow } from './coin'
 import type { Db } from './db'
 import type { EventRow } from './event-access'
+import { poolGames } from './library'
 import type { DrawRow, RoundRow } from './rounds'
 import { eventSessions, type SessionRow } from './sessions'
 import type { VetoRow } from './vetoes'
@@ -255,12 +256,7 @@ async function readBonusTeams(db: Db, eventId: string): Promise<number[]> {
  * restore needs no write. A Round or a Draw that already holds the game keeps it: they do not read the pool.
  */
 async function readPool(db: Db, eventId: string, hostId: string): Promise<string[]> {
-  const found = await db
-    .select({ id: games.id })
-    .from(eventPoolGames)
-    .innerJoin(games, eq(eventPoolGames.gameId, games.id))
-    .where(and(eq(eventPoolGames.eventId, eventId), eq(games.createdBy, hostId), isNull(games.archivedAt)))
-    .orderBy(asc(sql`lower(${games.name})`), asc(games.id))
+  const found = await poolGames(db, eventId, hostId, 'no')
   return found.map(row => row.id)
 }
 

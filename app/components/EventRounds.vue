@@ -3,7 +3,6 @@ import { GAME_GRID } from '~/utils/game-grid'
 import { CARD_REFLOW_CLASS, leaveInPlace, unwatched } from '~/utils/motion'
 import type { BoardTeam } from '~~/shared/event'
 import type { HostGameFacts } from '~~/shared/game'
-import type { NotesDoc } from '~~/shared/notes-doc'
 import type { ResultPlace } from '~~/shared/results'
 import type { PointsTable } from '~~/shared/settings'
 import type { EndView, RoundView } from '~~/shared/stage'
@@ -34,15 +33,10 @@ const props = withDefaults(defineProps<{
   end: EndView | null
   /** The Tags and Notes of the games, for the Host's game dialog (#443); null for every other Member. The Notes under the tile stay the Round's own. */
   hostGames?: Record<string, HostGameFacts> | null
-  /** The Host's Event notes by game id (#732); null for every Member. Each game's tile and Notizen disclosure read their entry. */
-  eventNotes?: Record<string, NotesDoc> | null
-  /** The Event's name and whether it is finished (#729): the Event notes block's sub (where both blocks show) and its finished look. */
-  eventName?: string
-  eventFinished?: boolean
-  /** Saves the Host's Event notes of a game from its tile's dialog (#464); resolves to whether the server took it. */
-  saveEventNotes?: ((gameId: string, notes: NotesDoc | null) => Promise<boolean>) | null
-}>(), { hostGames: null, eventNotes: null, eventName: undefined, eventFinished: false, saveEventNotes: null })
+}>(), { hostGames: null })
 
+// The Host's Event notes by game id are the Event page's context's (#821): each Round's Notizen disclosure reads its entry, the tiles read theirs in the dialog.
+const { notesOf } = useEventNotes()
 const { t } = useI18n()
 const headingId = useId()
 
@@ -110,18 +104,12 @@ watch(resultFor, async (id, was) => {
             :game="round.game"
             :audience="isHost ? 'host' : 'member'"
             :facts="hostGames?.[round.game.id] ?? null"
-            :event-notes="eventNotes?.[round.game.id] ?? null"
-            :event-name="eventName"
-            :event-finished="eventFinished"
-            :save-event-notes="saveEventNotes"
           />
         </div>
         <GameNotesDisclosure
-          v-if="round.notes || eventNotes?.[round.game.id]"
+          v-if="round.notes || notesOf(round.game.id)"
           :notes="round.notes ?? null"
-          :event-notes="eventNotes?.[round.game.id] ?? null"
-          :event-name="eventName"
-          :event-finished="eventFinished"
+          :event-notes="notesOf(round.game.id)"
           variant="round"
           start-open
         />

@@ -5,6 +5,7 @@ import GameNotesButton from '~/components/GameNotesButton.vue'
 import { notesFromLines, type NotesDoc } from '~~/shared/notes-doc'
 import { GAME_NAME_MAX } from '~~/shared/game'
 import { restoreScreen, stubScreen } from './event-page'
+import { eventNotesContext } from './helpers/event-notes-context'
 import { BLANK_NOTES, FORMATTED_HREF, FORMATTED_NOTES, readFormatted } from './helpers/formatted-notes'
 
 // The Notes button of a game in the pickers (#436, 02-components § GameCard, deviation 0.12): a read-only popover from md up, a
@@ -16,8 +17,10 @@ const NOTES = 'Zeile eins\n\nZeile drei'
 let page: Awaited<ReturnType<typeof mountSuspended>> | undefined
 let setWide: (next: boolean) => void
 
-async function mount(props: { name?: string, notes: NotesDoc | null, eventNotes?: NotesDoc | null, eventName?: string, eventFinished?: boolean }) {
-  page = await mountSuspended(GameNotesButton, { props: { name: 'Mario Kart', ...props }, attachTo: document.body })
+// The Event's name and whether it is finished are the Event page's context's (#821), not props.
+async function mount({ eventName, eventFinished, ...props }: { name?: string, notes: NotesDoc | null, eventNotes?: NotesDoc | null, eventName?: string, eventFinished?: boolean }) {
+  const { global } = eventNotesContext({ ...(eventName === undefined ? {} : { eventName }), finished: eventFinished ?? false })
+  page = await mountSuspended(GameNotesButton, { props: { name: 'Mario Kart', ...props }, attachTo: document.body, global })
   await flushPromises()
   return page
 }
@@ -29,6 +32,27 @@ const lines = (within: Element | null) => [...within!.querySelectorAll('p')].map
 const open = async () => {
   trigger().click()
   await flushPromises()
+}
+
+// The popover's layout size (#824): offsetWidth and offsetHeight, which the opening's transform does not change. happy-dom has no layout,
+// so the test sets them for the popover only; the returned function puts the prototype back.
+function stubPopoverSize(width: number, height: number) {
+  const sizes = { offsetWidth: width, offsetHeight: height }
+  const saved = (['offsetWidth', 'offsetHeight'] as const).map(key => [key, Object.getOwnPropertyDescriptor(HTMLElement.prototype, key)] as const)
+  for (const key of ['offsetWidth', 'offsetHeight'] as const) {
+    Object.defineProperty(HTMLElement.prototype, key, {
+      configurable: true,
+      get(this: HTMLElement) {
+        return this.getAttribute('role') === 'dialog' ? sizes[key] : 0
+      },
+    })
+  }
+  return () => {
+    for (const [key, descriptor] of saved) {
+      if (descriptor) Object.defineProperty(HTMLElement.prototype, key, descriptor)
+      else Reflect.deleteProperty(HTMLElement.prototype, key)
+    }
+  }
 }
 
 beforeEach(() => {
@@ -307,6 +331,7 @@ describe('the Notes button of a game (#436)', () => {
   it('stays inside the window for a button low in the picker (#488)', async () => {
     const realHeight = window.innerHeight
     window.innerHeight = 800
+    const unsize = stubPopoverSize(288, 300)
     const measure = vi.spyOn(Element.prototype, 'getBoundingClientRect').mockImplementation(function (this: Element) {
       const at = (top: number, left: number, width: number, height: number) => ({ top, left, width, height, bottom: top + height, right: left + width, x: left, y: top, toJSON: () => ({}) }) as DOMRect
       if (this.getAttribute('aria-label') === 'Notizen ansehen') return at(650, 400, 40, 36)
@@ -327,6 +352,7 @@ describe('the Notes button of a game (#436)', () => {
       expect(left + 288).toBeLessThanOrEqual(window.innerWidth)
     }
     finally {
+      unsize()
       measure.mockRestore()
       window.innerHeight = realHeight
     }
@@ -335,6 +361,7 @@ describe('the Notes button of a game (#436)', () => {
   it('caps a popover that fits on neither side, so it scrolls inside the window (#494)', async () => {
     const realHeight = window.innerHeight
     window.innerHeight = 900
+    const unsize = stubPopoverSize(288, 420)
     const measure = vi.spyOn(Element.prototype, 'getBoundingClientRect').mockImplementation(function (this: Element) {
       const at = (top: number, left: number, width: number, height: number) => ({ top, left, width, height, bottom: top + height, right: left + width, x: left, y: top, toJSON: () => ({}) }) as DOMRect
       if (this.getAttribute('aria-label') === 'Notizen ansehen') return at(430, 400, 40, 36)
@@ -351,7 +378,38 @@ describe('the Notes button of a game (#436)', () => {
       expect(popover()!.style.maxHeight).toBe('410px')
     }
     finally {
+      unsize()
       measure.mockRestore()
+      window.innerHeight = realHeight
+    }
+  })
+
+  // The opening's scale(.96) draws the box 307.2 px wide (#824); the clamp must still use its layout width, 320, so the right edge stays
+  // 12 px inside a 1440 px window.
+  it('places the popover by its layout size, not by the drawn box the opening shrinks it to, at 1440 px (#824)', async () => {
+    const realWidth = window.innerWidth
+    const realHeight = window.innerHeight
+    window.innerWidth = 1440
+    window.innerHeight = 900
+    const unsize = stubPopoverSize(320, 300)
+    const measure = vi.spyOn(Element.prototype, 'getBoundingClientRect').mockImplementation(function (this: Element) {
+      const at = (top: number, left: number, width: number, height: number) => ({ top, left, width, height, bottom: top + height, right: left + width, x: left, y: top, toJSON: () => ({}) }) as DOMRect
+      if (this.getAttribute('aria-label') === 'Notizen ansehen') return at(400, 1250, 40, 36)
+      if (this.getAttribute('role') === 'dialog') return at(0, 0, 307.2, 288)
+      return at(0, 0, 0, 0)
+    })
+    try {
+      await mount({ notes: notesFromLines(NOTES.split('\n')) })
+
+      await open()
+
+      const left = Number.parseFloat(popover()!.style.left)
+      expect(left + 320).toBeLessThanOrEqual(1440 - 12)
+    }
+    finally {
+      unsize()
+      measure.mockRestore()
+      window.innerWidth = realWidth
       window.innerHeight = realHeight
     }
   })

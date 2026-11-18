@@ -47,6 +47,11 @@ const slots = computed(() => (data.value?.slots ?? []).map((slot) => {
 
 // The stage's changes go through the one send (#74), held by useStageActions. The dialogs are EventHostDialogs'; the page opens them through `dialogs`.
 const actions = useStageActions(slug, refresh)
+// The Host's Event notes reach the tiles, the dialogs and the picker through one context (#821, review 0.16 S6); a Member's page provides none, so nothing of them shows there.
+// It is provided here, not by the stage: the picker is the dialogs', and the stage and the dialogs are siblings.
+provideEventNotes(() => (data.value?.event.isHost
+  ? { notes: data.value.eventNotes, eventName: data.value.event.name, finished: data.value.event.phase === 'finished', save: actions.saveEventNotes }
+  : null))
 const dialogs = useTemplateRef('dialogs')
 /** The Award ceremony's layer: „Siegerehrung ansehen“ of the finished stage asks it to play again (#314). */
 const ceremonyLayer = useTemplateRef('ceremonyLayer')

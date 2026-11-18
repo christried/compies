@@ -384,18 +384,13 @@ function onShortcut(event: KeyboardEvent) {
           @failure="failure = $event"
         />
 
-        <!-- The editor is a lazy chunk and client only (#454): no page's first load names it. Until it mounts the field's chrome holds its place. -->
-        <ClientOnly>
-          <LazyRichNotesEditor
-            v-model="notes"
-            :max="GAME_NOTES_MAX"
-            :disabled="saving"
-            @invalid="notesOver = $event"
-          />
-          <template #fallback>
-            <RichNotesEditorFallback variant="game" />
-          </template>
-        </ClientOnly>
+        <!-- The editor is a lazy chunk and client only (#454): no page's first load names it. Until it mounts the field's chrome holds its place, and a chunk that fails to load shows a retry (#822). -->
+        <RichNotesEditorLoader
+          v-model="notes"
+          :max="GAME_NOTES_MAX"
+          :disabled="saving"
+          @invalid="notesOver = $event"
+        />
       </div>
 
       <div class="flex min-w-0 flex-col gap-2.5">

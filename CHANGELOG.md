@@ -4,11 +4,11 @@
 
 ### Neu
 
-- **Spiele archivieren:** Ein Spiel, das du nicht mehr spielen kannst, legst du auf seiner Seite in der Bibliothek ins Archiv. Dort verschwindet es aus der Liste und bleibt im Filter „Archiviert“, aus dem du es jederzeit zurückholst. Bearbeiten kannst du es weiter. Aus dem Glücksrad und dem Spielepool deiner Events, die noch nicht beendet sind, fällt es damit ebenfalls heraus; Runden, in denen es schon gespielt wurde, zeigen es weiter. ([#467](https://github.com/christried/compies/issues/467))
+- **Spiele archivieren:** Ein Spiel, das du nicht mehr spielen kannst, legst du auf seiner Seite in der Bibliothek ins Archiv. Dort verschwindet es aus der Liste und bleibt im Filter „Archiviert“, aus dem du es jederzeit zurückholst. Bearbeiten kannst du es weiter. In deinen Events, die noch nicht beendet sind, kommt es nicht mehr aufs Glücksrad, und die anderen sehen es im Spielepool nicht mehr; du siehst es dort mit dem Hinweis „Archiviert“. Runden, in denen es schon gespielt wurde, zeigen es weiter. ([#467](https://github.com/christried/compies/issues/467))
 - **Alle Tags im Spiele-Formular:** Unter dem Tag-Feld klappst du jetzt „Alle Tags“ auf und siehst alle Tags deiner Bibliothek. Ein Klick fügt einen Tag dem Spiel hinzu, ein zweiter Klick nimmt ihn wieder weg. ([#615](https://github.com/christried/compies/issues/615))
 - **Wo ein Spiel gerade drin ist:** Auf der Karte eines Spiels in der Bibliothek steht jetzt „in 2 Events“, wenn es im Spielepool von Events liegt, die noch nicht beendet sind. ([#733](https://github.com/christried/compies/issues/733))
 - **Die Events eines Spiels:** Auf der Seite eines Spiels in der Bibliothek stehen jetzt alle deine Events, in denen es im Pool liegt oder gespielt wurde, neueste zuerst, auch beendete. Jede Zeile führt zum Event, sagt „im Pool“ oder „1× gespielt“ und zeigt deine Notizen für dieses Event. ([#656](https://github.com/christried/compies/issues/656))
-- **Notizen formatieren:** Notizen zu einem Spiel lassen sich jetzt formatieren: fett, kursiv, eine Überschrift, Listen und Links. ([#454](https://github.com/christried/compies/issues/454))
+- **Notizen formatieren:** Notizen zu einem Spiel lassen sich jetzt formatieren: fett, kursiv, eine Überschrift, Listen und Links. Sie dürfen jetzt 2000 Zeichen lang sein statt 1000. ([#454](https://github.com/christried/compies/issues/454))
 - **Notizen für dieses Event:** Im Dialog eines Spiels auf der Eventseite schreibst du jetzt Notizen nur für dieses Event, zum Beispiel „heute nur Bo1“, mit denselben Formaten wie bei den Notizen eines Spiels. Nur du siehst sie, und nach dem Ende des Events bleiben sie so stehen. ([#464](https://github.com/christried/compies/issues/464))
 
 ### Geändert

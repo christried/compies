@@ -93,3 +93,55 @@ describe('notes.css (#729)', () => {
     expect(rule('.cp-note--edit .cp-note-arrow, .cp-note--edit .cp-note-new-tab')).toContain('display: none')
   })
 })
+
+// The motions of the notes CSS (#822, CODING_STANDARDS § Motion): the popover's pop in notes.css and the toolbar tooltip in RichNotesToolbar.vue. A motion's test pins its
+// easing, its duration and that something animates, and the geometry of the reduced fallback.
+const toolbar = normalise(clean(readFileSync(resolve(import.meta.dirname, '../../app/components/RichNotesToolbar.vue'), 'utf8').match(/<style[^>]*>([\s\S]*)<\/style>/)![1]!))
+
+describe('the notes popover pop (#822)', () => {
+  it('scales from .96 and fades in over --cp-dur-base on --cp-ease-out', () => {
+    expect(rule('.cp-note-pop')).toContain('animation: cp-note-pop var(--cp-dur-base) var(--cp-ease-out) both')
+    expect(css).toContain('@keyframes cp-note-pop { from { opacity: 0; transform: scale(0.96); } }')
+  })
+
+  it.each(['@media (prefers-reduced-motion: reduce) { .cp-note-pop {', '[data-motion=reduced] .cp-note-pop {'])('is opacity only under reduced motion (%s): no scale, --cp-dur-fast, linear', (selector) => {
+    const start = css.indexOf(selector)
+    expect(start).toBeGreaterThan(-1)
+    expect(css.slice(start, css.indexOf('}', start))).toContain('animation: cp-note-pop-reduced var(--cp-dur-fast) linear both')
+    expect(css).toContain('@keyframes cp-note-pop-reduced { from { opacity: 0; } }')
+  })
+})
+
+describe('the toolbar tooltip (#822)', () => {
+  const block = (selector: string) => {
+    const start = toolbar.indexOf(`${selector} {`)
+    if (start < 0) throw new Error(`${selector} is not in the toolbar`)
+    return toolbar.slice(start, toolbar.indexOf('}', start))
+  }
+
+  it('rests transparent and 4 px down, and leaves in --cp-dur-instant on --cp-ease-in', () => {
+    expect(block('.cp-note-tip')).toContain('opacity: 0')
+    expect(block('.cp-note-tip')).toContain('transform: translate(var(--tip-x), 4px)')
+    expect(block('.cp-note-tip')).toContain('transition: opacity var(--cp-dur-instant) var(--cp-ease-in), transform var(--cp-dur-instant) var(--cp-ease-in)')
+  })
+
+  it('arrives at once on keyboard focus: opacity 1, in place, over --cp-dur-fast on --cp-ease-out', () => {
+    const shown = block('.cp-note-tb:focus-visible .cp-note-tip')
+
+    expect(shown).toContain('opacity: 1')
+    expect(shown).toContain('transform: translate(var(--tip-x), 0)')
+    expect(shown).toContain('transition: opacity var(--cp-dur-fast) var(--cp-ease-out), transform var(--cp-dur-fast) var(--cp-ease-out)')
+  })
+
+  it('arrives 500 ms after a fine pointer comes, never on touch', () => {
+    const start = toolbar.indexOf('@media (hover: hover) and (pointer: fine) {')
+    expect(start).toBeGreaterThan(-1)
+    expect(toolbar.slice(start, toolbar.indexOf('} }', start))).toContain('transition: opacity var(--cp-dur-fast) var(--cp-ease-out) 500ms, transform var(--cp-dur-fast) var(--cp-ease-out) 500ms')
+  })
+
+  it.each(['@media (prefers-reduced-motion: reduce) { .cp-note-tip {', '[data-motion=reduced] .cp-note-tip {'])('keeps the opacity and drops the 4 px under reduced motion (%s)', (selector) => {
+    const start = toolbar.indexOf(selector)
+    expect(start).toBeGreaterThan(-1)
+    expect(toolbar.slice(start, toolbar.indexOf('}', start))).toContain('transform: translate(var(--tip-x), 0)')
+  })
+})

@@ -3,6 +3,7 @@ import { flushPromises } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import GameNotesDisclosure from '~/components/GameNotesDisclosure.vue'
 import { notesFromLines, type NotesDoc } from '~~/shared/notes-doc'
+import { eventNotesContext } from './helpers/event-notes-context'
 import { BLANK_NOTES, FORMATTED_HREF, FORMATTED_NOTES, readFormatted } from './helpers/formatted-notes'
 import { motion } from './motion'
 
@@ -136,8 +137,10 @@ describe('GameNotesDisclosure (#224)', () => {
   })
 
   describe('the Round card variant (#729)', () => {
-    const round = (props: Record<string, unknown> = {}) => mountSuspended(GameNotesDisclosure, {
+    // The Event's name and whether it is finished are the Event page's context's (#821), not props.
+    const round = ({ eventName, eventFinished, ...props }: Record<string, unknown> = {}) => mountSuspended(GameNotesDisclosure, {
       props: { notes: notesFromLines(['Game-Zeile']), eventNotes: notesFromLines(['Heute nur Bo1']), variant: 'round', startOpen: true, ...props },
+      global: eventNotesContext({ ...(eventName === undefined ? {} : { eventName: eventName as string }), finished: eventFinished === true }).global,
     })
 
     it('is a 44 px button with a sticky note, „Notizen“, the lock with „Nur du siehst das“ and a chevron at the right', async () => {

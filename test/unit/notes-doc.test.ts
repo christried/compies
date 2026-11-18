@@ -21,6 +21,11 @@ describe('parseNotes: what is accepted', () => {
     expect(parseNotes(input, MAX)).toEqual(input)
   })
 
+  it('takes italic and a link in a heading, the marks the editor heading has (#820)', () => {
+    const input = doc({ type: 'heading', attrs: { level: 3 }, content: [text('a', [{ type: 'italic' }]), text('b', [{ type: 'link', attrs: { href: 'https://example.com/' } }])] })
+    expect(parseNotes(input, MAX)).toEqual(input)
+  })
+
   it.each(['bulletList', 'orderedList'] as const)('takes a %s with 1 and with 2 items', (type) => {
     const one = doc({ type, content: [item(paragraph(text('a')))] })
     const two = doc({ type, content: [item(paragraph(text('a'))), item(paragraph(text('b')))] })
@@ -89,6 +94,9 @@ describe('parseNotes: what is refused', () => {
     ['a heading of level 2', doc({ type: 'heading', attrs: { level: 2 }, content: [text('a')] })],
     ['a heading of level 4', doc({ type: 'heading', attrs: { level: 4 }, content: [text('a')] })],
     ['a heading without a level', doc({ type: 'heading', content: [text('a')] })],
+    // The editor's heading takes italic and link only (#820), so a document the editor cannot hold is none the server stores.
+    ['bold in a heading', doc({ type: 'heading', attrs: { level: 3 }, content: [text('a', [{ type: 'bold' }])] })],
+    ['bold with italic in a heading', doc({ type: 'heading', attrs: { level: 3 }, content: [text('a', [{ type: 'italic' }, { type: 'bold' }])] })],
     ['the root type paragraph', paragraph(text('a'))],
     ['content that is not an array', { type: 'doc', content: 'a' }],
     ['an empty text', doc(paragraph(text('')))],

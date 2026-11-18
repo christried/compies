@@ -3,7 +3,6 @@ import { EyeOff, Lock, Pencil } from '@lucide/vue'
 import { GAME_GRID } from '~/utils/game-grid'
 import { summaryRows } from '~/utils/settings-summary'
 import { isFullPoolGame, type HostGameFacts, type PoolGame, type PoolGameFace } from '~~/shared/game'
-import type { NotesDoc } from '~~/shared/notes-doc'
 import { hasWheel, lockedWhenRunning, type EventSettings } from '~~/shared/settings'
 
 // „So wird gespielt“ on the Event page (#148, #166, 11-event-seite § HowWePlayCard): Format, Spiele, Auswahl (with the Vetos
@@ -30,14 +29,7 @@ const props = withDefaults(defineProps<{
   hostName?: string
   /** The Tags and Notes of the games, for the Host's game dialog (#443); null for every other Member. */
   hostGames?: Record<string, HostGameFacts> | null
-  /** The Host's Event notes by game id (#732); null for every Member. Each game's tile reads its entry for the dialog. */
-  eventNotes?: Record<string, NotesDoc> | null
-  /** The Event's name and whether it is finished (#729): the dialog's Event notes block shows its sub and its finished look (#464 threads them here). */
-  eventName?: string
-  eventFinished?: boolean
-  /** Saves the Host's Event notes of a game from its tile's dialog (#464); resolves to whether the server took it. */
-  saveEventNotes?: ((gameId: string, notes: NotesDoc | null) => Promise<boolean>) | null
-}>(), { vetoHidden: false, editTo: null, locked: false, hostName: '', hostGames: null, eventNotes: null, eventName: undefined, eventFinished: false, saveEventNotes: null })
+}>(), { vetoHidden: false, editTo: null, locked: false, hostName: '', hostGames: null })
 
 const { t } = useI18n()
 const headingId = useId()
@@ -148,10 +140,6 @@ const rows = computed(() => (props.settings === null
                   :audience="isHost ? 'host' : 'member'"
                   :archived="isFullPoolGame(game) && game.archived"
                   :facts="hostGames?.[game.id] ?? null"
-                  :event-notes="eventNotes?.[game.id] ?? null"
-                  :event-name="eventName"
-                  :event-finished="eventFinished"
-                  :save-event-notes="saveEventNotes"
                 />
               </li>
             </ul>
