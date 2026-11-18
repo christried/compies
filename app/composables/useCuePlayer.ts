@@ -1,6 +1,6 @@
 import { createCuePlayer, exposesCueLog, type CueLogEntry, type CuePlayer } from '~/utils/cue-player'
 import { reducedMotion } from '~/utils/motion'
-import { cueFileUrl, cueFilesOf, reachableGroups, vetoArrivalCues, vetoCuePlan, wheelCuePlan, wheelVoicePlan, type Cue, type GroupInput, type VetoArrivalState } from '~/utils/sound-cues'
+import { coinCuePlan, cueFileUrl, cueFilesOf, reachableGroups, vetoArrivalCues, vetoCuePlan, wheelCuePlan, wheelVoicePlan, type Cue, type GroupInput, type VetoArrivalState } from '~/utils/sound-cues'
 import type { EventView } from '~~/shared/event'
 
 // The sound of the Event page (#531, spec #504 § The cue player): the page's one Web Audio context, the cue player on it, and the plan the
@@ -15,7 +15,14 @@ import type { EventView } from '~~/shared/event'
  * reach and which files each group holds are `reachableGroups` and `CUE_GROUPS` in sound-cues.ts (#531, #532).
  */
 function groupInputOf(view: EventView | null | undefined): GroupInput {
-  return { wheel: view?.wheel != null, vetoAllowance: view?.settings?.vetoAllowance ?? 0, vetoWindow: view?.wheel?.vetoes.draw != null }
+  return {
+    wheel: view?.wheel != null,
+    vetoAllowance: view?.settings?.vetoAllowance ?? 0,
+    vetoWindow: view?.wheel?.vetoes.draw != null,
+    // Both are the same for every viewer's read; `view.coin` is only tested for null, its side is never read (#669).
+    sessionRunning: view?.runningSessionId != null,
+    toss: view?.coin != null,
+  }
 }
 
 /**
@@ -43,6 +50,8 @@ function planOf(view: EventView): Cue[] {
       clip: view.clip ? { drawId: view.clip.drawId, endsAt: view.clip.endsAt } : null,
       reducedMotion: reducedMotion(),
     }),
+    // The Coin flip: the toss's two instants only, never its side (ADR 0013 amendment).
+    ...coinCuePlan({ toss: view.coin ? { startedAt: view.coin.startedAt, landsAt: view.coin.landsAt } : null, reducedMotion: reducedMotion() }),
   ]
 }
 

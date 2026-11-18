@@ -1,4 +1,5 @@
 import type { ClipView, SpinView, VetoDrawView } from '~~/shared/stage'
+import { COIN_DURATION_MS, COIN_LAND_AT, COIN_SPIN_AT, type CoinToss } from '~~/shared/coin'
 import { msOf } from '~~/shared/instant'
 import { REVEAL_AFTER_MS, removalStart } from './wheel'
 import { pinCrossings } from './wheel-pins'
@@ -22,6 +23,7 @@ export const CUE_IDS = [
   // veto
   'veto-open', 'veto-clock', 'veto-clip-close', 'veto-seal', 'veto-drumroll', 'veto-reveal',
   // coin
+  'coin-toss', 'coin-spin', 'coin-land', 'coin-result',
   // standings
   // board
   // ceremony
@@ -37,6 +39,7 @@ export const CUE_VOLUME: Record<CueId, number> = {
   // veto
   'veto-open': 50, 'veto-clock': 25, 'veto-clip-close': 35, 'veto-seal': 55, 'veto-drumroll': 60, 'veto-reveal': 85,
   // coin
+  'coin-toss': 50, 'coin-spin': 30, 'coin-land': 60, 'coin-result': 55,
   // standings
   // board
   // ceremony
@@ -54,13 +57,17 @@ export const CUE_GROUPS: Record<CueId, readonly [CueGroup, ...CueGroup[]]> = {
   // veto
   'veto-open': ['veto'], 'veto-clock': ['veto'], 'veto-clip-close': ['veto'], 'veto-seal': ['veto'], 'veto-drumroll': ['veto'], 'veto-reveal': ['veto'],
   // coin
+  'coin-toss': ['coin'], 'coin-spin': ['coin'], 'coin-land': ['coin'], 'coin-result': ['coin'],
   // standings
   // board
   // ceremony
   // tour
 }
 
-/** What the group rule reads of the viewer's Event read: three flags, nothing of the draw (§ Secrecy), so it cannot carry a game, a label or a toss. */
+/**
+ * What the group rule reads of the viewer's Event read: flags and one count, nothing of the draw or the toss (§ Secrecy), so it cannot carry a
+ * game, a label, a side or an instant. A flag that is absent counts as false (#718: a new group's field is optional).
+ */
 export interface GroupInput {
   /** `view.wheel != null`. */
   wheel: boolean
@@ -68,6 +75,10 @@ export interface GroupInput {
   vetoAllowance: number
   /** `view.wheel?.vetoes.draw != null`. */
   vetoWindow: boolean
+  /** `view.runningSessionId != null`: the Event has a running Session, so the Host can toss (#669). */
+  sessionRunning?: boolean
+  /** `view.coin != null`: the read carries a toss; never its side (#669). */
+  toss?: boolean
 }
 
 /**
@@ -79,6 +90,7 @@ export function reachableGroups(input: GroupInput): CueGroup[] {
   const groups: CueGroup[] = []
   if (input.wheel) groups.push('wheel')
   if (input.wheel && (input.vetoAllowance > 0 || input.vetoWindow)) groups.push('veto')
+  if (input.sessionRunning || input.toss) groups.push('coin')
   return groups
 }
 
@@ -236,6 +248,30 @@ export function vetoCuePlan(input: VetoCueInput): Cue[] {
   if (clip !== null && clip.drawId === draw.drawId) cues.push({ id: 'veto-clip-close', at: msOf(clip.endsAt) })
   // The sort is stable: on one instant the order above stays.
   return cues.filter(cue => cue.at >= stop).sort((a, b) => a.at - b.at)
+}
+
+/** What the Coin flip's plan reads: the toss's two instants and reduced motion. `side` and `id` are not in the type (§ Secrecy, ADR 0013 amendment). */
+export interface CoinCueInput { toss: CoinToss | null, reducedMotion: boolean }
+
+/**
+ * The cues of a toss (#669, spec #718), ascending by `at`: `coin-toss` at the start, `coin-spin` where the coin turns in the air, `coin-land`
+ * where it reaches the ground and `coin-result` at the landing. The beats are the picture's (`COIN_SPIN_AT`, `COIN_LAND_AT` of the flight's
+ * keyframes), measured from `startedAt` as `CoinFlip.vue` seeks; the result is `landsAt`, as the picture's `coinLanded`. Reduced motion leaves
+ * out the throw and the turn and keeps the other two at the same instants. The toss has no side, so no cue can depend on it: `coin-result` is
+ * one file for Kopf and Schwanz. It has no `now` and drops nothing for being past: the player skips a late cue.
+ */
+export function coinCuePlan({ toss, reducedMotion }: CoinCueInput): Cue[] {
+  if (toss === null) return []
+
+  const start = msOf(toss.startedAt)
+  const cues: Cue[] = []
+  if (!reducedMotion) {
+    cues.push({ id: 'coin-toss', at: start })
+    cues.push({ id: 'coin-spin', at: start + COIN_DURATION_MS * COIN_SPIN_AT })
+  }
+  cues.push({ id: 'coin-land', at: start + COIN_DURATION_MS * COIN_LAND_AT })
+  cues.push({ id: 'coin-result', at: msOf(toss.landsAt) })
+  return cues
 }
 
 /** What the arrival cues read of one Event read (the viewer's own): the page keeps the previous one. `draw: null` = no window. */
