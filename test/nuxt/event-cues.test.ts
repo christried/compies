@@ -5,7 +5,7 @@ import { defineComponent, h, ref } from 'vue'
 import { useCuePlayer } from '~/composables/useCuePlayer'
 import EventPage from '~/pages/e/[slug]/index.vue'
 import { reducedMotion } from '~/utils/motion'
-import { CUE_GROUPS, CUE_IDS, vetoCuePlan, wheelCuePlan, wheelVoicePlan, type CueId } from '~/utils/sound-cues'
+import { CUE_GROUPS, CUE_IDS, vetoCuePlan, wheelCuePlan, wheelVoicePlan, type CueGroup, type CueId } from '~/utils/sound-cues'
 import type { EventView } from '~~/shared/event'
 import type { RoundGame } from '~~/shared/game'
 import type { ClipView, SpinView, VetoDrawView, VetoView, WheelView } from '~~/shared/stage'
@@ -65,6 +65,8 @@ for (const id of CUE_IDS) {
   })
 }
 const requested = () => Object.keys(requests).filter(id => requests[id]).sort()
+/** The requested files of these groups: an assertion names the groups it is about, so another moment's files never break it (#718). */
+const requestedOf = (...groups: CueGroup[]) => requested().filter(id => CUE_GROUPS[id as CueId].some(group => groups.includes(group)))
 
 const context = () => FakeAudioContext.instances.at(-1)
 
@@ -105,7 +107,7 @@ describe('the spin\'s plan on the Event page', () => {
     const started = context()!.started()
     expect(started).toHaveLength(planOf(spin).length)
     expect(started[0]!.id).toBe('wheel-windup')
-    expect(requested()).toEqual([...WHEEL_FILES].sort())
+    expect(requestedOf('wheel', 'veto')).toEqual([...WHEEL_FILES].sort())
     for (const id of WHEEL_FILES) expect(requests[id], id).toBe(1)
     expect(FakeAudioContext.instances).toHaveLength(1)
   })
@@ -182,7 +184,7 @@ describe('what the page does not play or request', () => {
     await new Promise(resolve => setTimeout(resolve, 50))
 
     expect(context()?.started() ?? []).toEqual([])
-    expect(requested()).toEqual([])
+    expect(requestedOf('wheel', 'veto')).toEqual([])
   })
 
   it('does nothing and throws nothing where the browser has no Web Audio', async () => {
@@ -366,7 +368,7 @@ describe('the Veto window on the Event page', () => {
       page = await mountSuspended(EventPage, { route: `/e/${served.slug}` })
       await settled(planOf(spinIn(4000)).length)
 
-      expect(requested()).toEqual([...WHEEL_FILES].sort())
+      expect(requestedOf('wheel', 'veto')).toEqual([...WHEEL_FILES].sort())
     })
 
     it('are all six requested once by an Event with an allowance, before any window', async () => {
@@ -385,10 +387,10 @@ describe('the Veto window on the Event page', () => {
       const served = serveWheel(wheelWith(null), { vetoAllowance: 2, isHost })
 
       page = await mountSuspended(EventPage, { route: `/e/${served.slug}` })
-      await vi.waitFor(() => expect(requested()).toHaveLength(CUE_IDS.length))
+      await vi.waitFor(() => expect(requestedOf('wheel', 'veto')).toHaveLength(WHEEL_FILES.length + VETO_FILES.length))
       await flushPromises()
 
-      expect(requested()).toEqual([...CUE_IDS].sort())
+      expect(requestedOf('wheel', 'veto')).toEqual([...WHEEL_FILES, ...VETO_FILES].sort())
     })
 
     it('are requested by a window even when the allowance is not known', async () => {
