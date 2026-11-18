@@ -12,7 +12,8 @@ describe('profile setup', () => {
   it('prefills the Display name from the provider', async () => {
     const page = await mountSuspended(SetupPage, { route: '/einrichten' })
 
-    expect(page.get('h1').text()).toBe('Wie sollen wir dich nennen?')
+    expect(page.get('h1').text()).toBe('Wie möchtest du genannt werden?')
+    expect(page.text()).not.toContain('Fast geschafft')
     expect((page.get('input').element as HTMLInputElement).value).toBe('kitty_tv')
     expect(page.text()).toContain('8/32')
   })

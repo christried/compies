@@ -16,8 +16,10 @@ describe('SignInCard', () => {
     expect(card.get('h1').text()).toBe('Anmelden')
     expect(card.findAll('button').map(b => b.text())).toEqual(['Mit Discord anmelden', 'Mit Twitch anmelden'])
     expect(card.find('[role="alert"]').exists()).toBe(false)
-    expect(card.text()).toContain('Einfach nur mit dem Konto, mit dem du eh schon zockst, und das war’s.')
-    expect(card.text()).toContain('Die Konten lassen sich später im Profil verknüpfen.')
+    expect(card.text()).toContain('Compies verarbeitet nur das Notwendigste an Daten.')
+    expect(card.text()).not.toContain('Die Konten lassen sich später im Profil verknüpfen.')
+    // The intro sits below the two sign-in buttons, the last line of the card.
+    expect(card.text().indexOf('Compies verarbeitet')).toBeGreaterThan(card.text().indexOf('Mit Twitch anmelden'))
   })
 
   it('Über Einladung: names the Host and the Event', async () => {
@@ -26,7 +28,9 @@ describe('SignInCard', () => {
     })
 
     expect(card.get('h1').text()).toBe('Erst kurz anmelden')
-    expect(card.text()).toContain('Sanne hat dich zu Freitags-Zocken eingeladen. Melde dich an, dann geht’s direkt auf die Tribüne.')
+    expect(card.text()).toContain('Sanne hat dich zu Freitags-Zocken eingeladen.')
+    expect(card.text()).not.toContain('Tribüne')
+    expect(card.text()).toContain('Compies verarbeitet nur das Notwendigste an Daten.')
   })
 
   it('Weiterleitung: shows where it goes and blocks a second click', async () => {
@@ -70,8 +74,10 @@ describe('sign-in page', () => {
   it('shows the new hero title', async () => {
     const page = await mountSuspended(SignInPage, { route: '/anmelden' })
 
-    expect(page.text()).toContain('Wer gewinnt diesmal?')
+    expect(page.text()).toContain('Schwitzen, aber unter Freund:innen')
+    expect(page.text()).toContain('Hier koordinieren, woanders spielen.')
     expect(page.text()).not.toContain('Wer gewinnt heute Abend?')
+    expect(page.text()).not.toContain('Wer gewinnt diesmal?')
   })
 
   it('shows the cancelled state when the provider sent the visitor back', async () => {
