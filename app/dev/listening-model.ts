@@ -1,5 +1,6 @@
+import { STAMP_DELAY_MS } from '~/utils/motion'
 import {
-  CUE_IDS, TICK_MIN_GAP_MS, coinCuePlan, cueFileUrl, thinTicks, vetoArrivalCues, vetoCuePlan, wheelCuePlan, wheelVoicePlan,
+  CUE_IDS, TICK_MIN_GAP_MS, coinCuePlan, cueFileUrl, standingsCues, thinTicks, vetoArrivalCues, vetoCuePlan, wheelCuePlan, wheelVoicePlan,
   type ArrivalCue, type Cue, type CueId, type VetoArrivalState,
 } from '~/utils/sound-cues'
 import { isText, parseCredits, type CueCredit, type Licence } from '~/utils/sound-credits'
@@ -46,6 +47,9 @@ export const CUE_BRIEF: Record<CueId, { character: string }> = {
   'coin-land': { character: 'clink + wobble rattle' },
   'coin-result': { character: 'short sting, Kopf/Schwanz same sound' },
   // standings
+  'lb-swap': { character: 'rows swap: quick double whoosh' },
+  'lb-count': { character: 'point counter ticks, 1 per point, max 15/s' },
+  'lb-winner': { character: 'mini celebration: party horn + 3 confetti pops' },
   // board
   // ceremony
   // tour
@@ -56,7 +60,7 @@ export const CUE_BRIEF: Record<CueId, { character: string }> = {
  * a member here (a union takes no group lines, so it is the one line two tickets may both touch), a `MOMENT_LABEL` row and a runner in the
  * page's `MOMENT_RUNNERS`, under its group's line.
  */
-export type Moment = 'spin' | 'window' | 'arrival' | 'voice' | 'coin'
+export type Moment = 'spin' | 'window' | 'arrival' | 'voice' | 'coin' | 'standings'
 
 export const MOMENT_OF: Record<CueId, Moment> = {
   // wheel
@@ -67,6 +71,7 @@ export const MOMENT_OF: Record<CueId, Moment> = {
   // coin
   'coin-toss': 'coin', 'coin-spin': 'coin', 'coin-land': 'coin', 'coin-result': 'coin',
   // standings
+  'lb-swap': 'standings', 'lb-count': 'standings', 'lb-winner': 'standings',
   // board
   // ceremony
   // tour
@@ -83,6 +88,7 @@ export const MOMENT_LABEL: Record<Moment, string> = {
   // coin
   coin: 'Test toss',
   // standings
+  standings: 'Test Standings change',
   // board
   // ceremony
   // tour
@@ -359,6 +365,24 @@ export function configFor(kind: 'spin' | 'window' | 'both' | 'voice', controls: 
     tickGapMs: controls.tickGapMs > 0 ? controls.tickGapMs : TICK_MIN_GAP_MS,
     ...(kind === 'voice' ? { voice: true } : {}),
   }
+}
+
+// Standings change -------------------------------------------------------------------------------------------------------------------
+
+/**
+ * The test Standings change (#741): a fixed change, team 2 gaining 6 to take the lead from team 1, through the REAL `standingsCues`, with the
+ * page's reduced switch and the counter's duration handed in. Only ranks, points and team positions go in, as the Leaderboard passes them.
+ */
+export function standingsChangeCues(reducedMotion: boolean, countMs: number): ArrivalCue[] {
+  return standingsCues({
+    before: [{ team: 1, rank: 1, points: 12 }, { team: 2, rank: 2, points: 9 }, { team: 3, rank: 3, points: 0 }],
+    after: [{ team: 2, rank: 1, points: 15 }, { team: 1, rank: 2, points: 12 }, { team: 3, rank: 3, points: 0 }],
+    winners: [2],
+    celebrate: true,
+    reducedMotion,
+    countMs,
+    stampDelayMs: STAMP_DELAY_MS,
+  })
 }
 
 // Arrival cues -----------------------------------------------------------------------------------------------------------------------

@@ -1,6 +1,8 @@
-import type { ClipView, SpinView, VetoDrawView } from '~~/shared/stage'
+import type { ClipView, SpinView, StandingView, VetoDrawView } from '~~/shared/stage'
 import { COIN_DURATION_MS, COIN_LAND_AT, COIN_SPIN_AT, type CoinToss } from '~~/shared/coin'
 import { msOf } from '~~/shared/instant'
+import { countTicks } from './count-up'
+import { pointsDelta, rankMoves } from './standings-news'
 import { REVEAL_AFTER_MS, removalStart } from './wheel'
 import { pinCrossings } from './wheel-pins'
 import { mascotMoments } from './wheel-mascot'
@@ -8,7 +10,8 @@ import { mascotMoments } from './wheel-mascot'
 // Which sound cue is due at which server time (#530, spec #504 § The cue plan): a pure function of the viewer's own Event read, so every
 // device, a late joiner included, holds the same plan (ADR 0013). Nothing here plays or knows a clock: the cue player (#531) schedules what
 // `wheelCuePlan` and `vetoCuePlan` return, skips a cue that is too late and never works a time out itself. What the arrival of a read causes
-// (the own Party's cast, the stamps, a set game's opening) is no time known ahead: `vetoArrivalCues` decides it (#532).
+// (the own Party's cast, the stamps, a set game's opening) is no time known ahead: `vetoArrivalCues` decides it (#532). So does what the
+// Standings' sequence causes on this device: `standingsCues` (#741).
 
 /**
  * The cue ids (#504, #718), = the cue id of `compibert-sound.md` and the file name in the sound folder. A new cue is one row in each table
@@ -25,6 +28,7 @@ export const CUE_IDS = [
   // coin
   'coin-toss', 'coin-spin', 'coin-land', 'coin-result',
   // standings
+  'lb-swap', 'lb-count', 'lb-winner',
   // board
   // ceremony
   // tour
@@ -41,6 +45,7 @@ export const CUE_VOLUME: Record<CueId, number> = {
   // coin
   'coin-toss': 50, 'coin-spin': 30, 'coin-land': 60, 'coin-result': 55,
   // standings
+  'lb-swap': 35, 'lb-count': 20, 'lb-winner': 60,
   // board
   // ceremony
   // tour
@@ -59,6 +64,7 @@ export const CUE_GROUPS: Record<CueId, readonly [CueGroup, ...CueGroup[]]> = {
   // coin
   'coin-toss': ['coin'], 'coin-spin': ['coin'], 'coin-land': ['coin'], 'coin-result': ['coin'],
   // standings
+  'lb-swap': ['standings'], 'lb-count': ['standings'], 'lb-winner': ['standings'],
   // board
   // ceremony
   // tour
@@ -79,6 +85,8 @@ export interface GroupInput {
   sessionRunning?: boolean
   /** `view.coin != null`: the read carries a toss; never its side (#669). */
   toss?: boolean
+  /** `view.standings != null && view.event.phase !== 'finished'`: the Event is set up and not finished (#741). Absent = not reached; no Result is needed, no game. */
+  standings?: boolean
 }
 
 /**
@@ -91,6 +99,7 @@ export function reachableGroups(input: GroupInput): CueGroup[] {
   if (input.wheel) groups.push('wheel')
   if (input.wheel && (input.vetoAllowance > 0 || input.vetoWindow)) groups.push('veto')
   if (input.sessionRunning || input.toss) groups.push('coin')
+  if (input.standings) groups.push('standings')
   return groups
 }
 
@@ -310,4 +319,62 @@ export function vetoArrivalCues(previous: VetoArrivalState | null, next: VetoArr
     for (let index = 0; index < next.revealedCount; index++) cues.push({ id: 'veto-seal', delayMs: index * STAMP_GAP_MS })
   }
   return cues
+}
+
+/**
+ * What the Standings' cues read (#741): ranks, points and team positions of the Standings the page saw and the ones it shows now, the winners'
+ * team positions and the two settings of the picture. No game, label, name, score or Result field, so a cue cannot depend on what the viewer
+ * may not know yet (§ Secrecy): the Result that makes the news is already in the picture.
+ */
+export interface StandingsCueInput {
+  /** `news.before`: the Standings the page saw before the Result. */
+  before: readonly StandingView[]
+  /** The Standings shown now. */
+  after: readonly StandingView[]
+  /** `news.winners`: team positions on Place 1. */
+  winners: readonly number[]
+  /** The stamp is drawn here (the stage block). */
+  celebrate: boolean
+  /** `reducedMotion()`, passed in: this module reads no DOM. */
+  reducedMotion: boolean
+  /** How long the counter counts (`countDurationMs()` of motion.ts). */
+  countMs: number
+  /** How long after the sequence's start the stamp lands (`STAMP_DELAY_MS` of motion.ts). */
+  stampDelayMs: number
+}
+
+/**
+ * The cues of one Standings sequence (#741), `delayMs` from its start, ascending and stable: `lb-swap` when some Party's rank changed (the glide, or
+ * under reduced motion the highlight, start there), `lb-count` once per displayed change of the Party that changed most (absolute: a Correction
+ * can lower points; a tie goes to the first in the order of `after`), and `lb-winner` where the stamp is drawn. Reduced motion has no count, so no
+ * ticks, and the stamp is a fade with no delay, so the winner goes with it at once. The beats are the picture's own (`countTicks`, the counter's
+ * duration, the stamp's delay): nothing here is a number of its own.
+ */
+export function standingsCues(input: StandingsCueInput): ArrivalCue[] {
+  const { before, after, winners, celebrate, reducedMotion, countMs, stampDelayMs } = input
+  const cues: ArrivalCue[] = []
+  if (rankMoves(before, after).length > 0) cues.push({ id: 'lb-swap', delayMs: 0 })
+  if (!reducedMotion) {
+    let most: { team: number, change: number } | null = null
+    for (const [team, change] of pointsDelta(before, after)) {
+      if (change !== 0 && (most === null || Math.abs(change) > Math.abs(most.change))) most = { team, change }
+    }
+    if (most !== null) {
+      const to = after.find(standing => standing.team === most.team)!.points
+      for (const delayMs of countTicks(to - most.change, to, countMs)) cues.push({ id: 'lb-count', delayMs })
+    }
+  }
+  if (celebrate && winners.length > 0) cues.push({ id: 'lb-winner', delayMs: reducedMotion ? 0 : stampDelayMs })
+  // The sort is stable: on one instant the order above stays.
+  return cues.sort((a, b) => a.delayMs - b.delayMs)
+}
+
+/**
+ * The cues whose id this news has not asked for yet, and the ids marked as asked (#741): the stage block and the side panel's tab are both
+ * mounted on a wide screen and each plays the sequence, but one Result sounds once per page. One id is claimed for all of its ticks.
+ */
+export function claimCues(asked: Set<CueId>, cues: readonly ArrivalCue[]): ArrivalCue[] {
+  const own = cues.filter(cue => !asked.has(cue.id))
+  for (const cue of own) asked.add(cue.id)
+  return own
 }

@@ -611,6 +611,108 @@
         "licence": "generated",
         "note": "heller Glockenakkord, klingt kurz aus"
       }
+    ],
+    "lb-swap": [
+      {
+        "name": "doppel-wisch",
+        "file": "lb-swap/doppel-wisch.wav",
+        "source": "scripts/make-cue-candidates.mjs, Rezept doppel-wisch",
+        "author": null,
+        "licence": "generated",
+        "note": "zwei schnelle Wisch-Geräusche, das zweite höher"
+      },
+      {
+        "name": "chip-doppelsprung",
+        "file": "lb-swap/chip-doppelsprung.wav",
+        "source": "scripts/make-cue-candidates.mjs, Rezept chip-doppelsprung",
+        "author": null,
+        "licence": "generated",
+        "note": "zwei Arcade-Gleiter nach oben"
+      },
+      {
+        "name": "karten-schnipp",
+        "file": "lb-swap/karten-schnipp.wav",
+        "source": "scripts/make-cue-candidates.mjs, Rezept karten-schnipp",
+        "author": null,
+        "licence": "generated",
+        "note": "zwei Kartenschnipser, trocken"
+      },
+      {
+        "name": "schiebe-hin-her",
+        "file": "lb-swap/schiebe-hin-her.wav",
+        "source": "scripts/make-cue-candidates.mjs, Rezept schiebe-hin-her",
+        "author": null,
+        "licence": "generated",
+        "note": "Kazoo-Gleiten hoch und wieder runter"
+      }
+    ],
+    "lb-count": [
+      {
+        "name": "zaehlwerk-tick",
+        "file": "lb-count/zaehlwerk-tick.wav",
+        "source": "scripts/make-cue-candidates.mjs, Rezept zaehlwerk-tick",
+        "author": null,
+        "licence": "generated",
+        "note": "feines Zählwerk-Klick, trocken"
+      },
+      {
+        "name": "chip-blip",
+        "file": "lb-count/chip-blip.wav",
+        "source": "scripts/make-cue-candidates.mjs, Rezept chip-blip",
+        "author": null,
+        "licence": "generated",
+        "note": "kurzer Arcade-Blip, ein Punkt"
+      },
+      {
+        "name": "filz-tipp",
+        "file": "lb-count/filz-tipp.wav",
+        "source": "scripts/make-cue-candidates.mjs, Rezept filz-tipp",
+        "author": null,
+        "licence": "generated",
+        "note": "weiches Tippen auf Filz"
+      },
+      {
+        "name": "muenz-ting",
+        "file": "lb-count/muenz-ting.wav",
+        "source": "scripts/make-cue-candidates.mjs, Rezept muenz-ting",
+        "author": null,
+        "licence": "generated",
+        "note": "winziges Münz-Ting, hell"
+      }
+    ],
+    "lb-winner": [
+      {
+        "name": "troete-knall",
+        "file": "lb-winner/troete-knall.wav",
+        "source": "scripts/make-cue-candidates.mjs, Rezept troete-knall",
+        "author": null,
+        "licence": "generated",
+        "note": "Partytröte, dann drei Konfetti-Knalle"
+      },
+      {
+        "name": "chip-jubel",
+        "file": "lb-winner/chip-jubel.wav",
+        "source": "scripts/make-cue-candidates.mjs, Rezept chip-jubel",
+        "author": null,
+        "licence": "generated",
+        "note": "Arcade-Jingle, drei Rausch-Knalle"
+      },
+      {
+        "name": "glocken-jubel",
+        "file": "lb-winner/glocken-jubel.wav",
+        "source": "scripts/make-cue-candidates.mjs, Rezept glocken-jubel",
+        "author": null,
+        "licence": "generated",
+        "note": "Glockenspiel steigt, drei weiche Papier-Knalle"
+      },
+      {
+        "name": "ratsche-konfetti",
+        "file": "lb-winner/ratsche-konfetti.wav",
+        "source": "scripts/make-cue-candidates.mjs, Rezept ratsche-konfetti",
+        "author": null,
+        "licence": "generated",
+        "note": "Ratsche rattert aus, drei Konfetti-Knalle"
+      }
     ]
   }
 }

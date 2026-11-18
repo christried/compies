@@ -41,6 +41,9 @@ export const CUE_LENGTHS: Record<CueId, CueLength> = {
   'coin-land': { ms: 500, loop: false, docRow: true },
   'coin-result': { ms: 400, loop: false, docRow: true },
   // standings
+  'lb-swap': { ms: 300, loop: false, docRow: true },
+  'lb-count': { ms: 25, loop: false, docRow: true },
+  'lb-winner': { ms: 800, loop: false, docRow: true },
   // board
   // ceremony
   // tour
