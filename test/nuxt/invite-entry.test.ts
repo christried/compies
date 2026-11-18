@@ -106,19 +106,23 @@ describe('the Invite link, signed in', () => {
     expect(useToast().toasts.value.map(toast => toast.text).join(' ')).not.toContain('Du bist drin')
   })
 
-  it('titles the tab Einladung while joining, not sign-in', async () => {
+  it('sets no tab title of its own while joining, so the tab shows the app name (#801)', async () => {
     const path = link('Ss2Ss2Ss2Ss2')
+    const posted = vi.fn()
     let answer = (_: { slug: string, joined: boolean }) => {}
     registerEndpoint(`/api/invite/${path}`, {
       method: 'POST',
       handler: () => new Promise<{ slug: string, joined: boolean }>((resolve) => {
+        posted()
         answer = resolve
       }),
     })
 
     await mountSuspended(EventPage, { route: `/e/${path}` })
 
-    await vi.waitFor(() => expect(document.title).toBe('Einladung | Compies'))
+    await vi.waitFor(() => expect(posted).toHaveBeenCalledTimes(1))
+    await new Promise(resolve => setTimeout(resolve, 50))
+    expect(document.title).toBe('Compies')
     answer({ slug: 'freitags-zocken-k7q2', joined: false })
   })
 
