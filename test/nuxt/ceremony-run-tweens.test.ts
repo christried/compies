@@ -117,6 +117,19 @@ describe('the ceremony\'s cues sound where their tweens start (#743)', () => {
       expect(ms(fall.start + fall.duration)).toBe(cuesOf('cer-bonk')[0]!.at)
     }
   })
+
+  // The peak (#744): the stamp's tween is the picture of the stamp, the fanfare and the crowd; the last two have no tween of their own.
+  it.each([[2, 'trip'], [2, 'bonk'], [4, 'trip'], [4, 'bonk']] as const)('has the stamp, the fanfare and the crowd at the stamp\'s tween, for %i Parties and one Winner, the %s', async (parties, gag) => {
+    const seen = await tweensOf({ rows: parties - 1, winners: 1 }, parties, gag)
+    const cues = ceremonyCuePlan({ startsAt: 0, shape: { partyCount: parties, winners: 1, gag, grid: false }, reducedMotion: false })
+    const cuesOf = (id: string) => cues.filter(cue => cue.id === id)
+
+    const stamp = seen.find(tween => tween.part === 'stamp' && tween.ease === 'back.out(2.4)' && tween.duration === 0.3)!
+    expect(cuesOf('cer-stamp')).toHaveLength(1)
+    expect(ms(stamp.start)).toBe(cuesOf('cer-stamp')[0]!.at)
+    expect(cuesOf('cer-fanfare').map(cue => cue.at)).toEqual([cuesOf('cer-stamp')[0]!.at])
+    expect(cuesOf('cer-crowd').map(cue => cue.at)).toEqual([cuesOf('cer-stamp')[0]!.at])
+  })
 })
 
 describe('the Pokal-Lauf\'s eases and durations (04-motion § 6b, 6b-T)', () => {

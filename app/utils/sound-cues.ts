@@ -31,6 +31,7 @@ export const CUE_IDS = [
   // board
   // ceremony
   'cer-drop', 'cer-row', 'cer-run', 'cer-trip', 'cer-bonk',
+  'cer-stamp', 'cer-fanfare', 'cer-crowd',
   // tour
   'cb-hi',
 ] as const
@@ -49,6 +50,7 @@ export const CUE_VOLUME: Record<CueId, number> = {
   // board
   // ceremony
   'cer-drop': 55, 'cer-row': 40, 'cer-run': 40, 'cer-trip': 60, 'cer-bonk': 60,
+  'cer-stamp': 75, 'cer-fanfare': 100, 'cer-crowd': 60,
   // tour
   'cb-hi': 50,
 }
@@ -69,6 +71,7 @@ export const CUE_GROUPS: Record<CueId, readonly [CueGroup, ...CueGroup[]]> = {
   // board
   // ceremony
   'cer-drop': ['ceremony'], 'cer-row': ['ceremony'], 'cer-run': ['ceremony'], 'cer-trip': ['ceremony'], 'cer-bonk': ['ceremony'],
+  'cer-stamp': ['ceremony'], 'cer-fanfare': ['ceremony'], 'cer-crowd': ['ceremony'],
   // tour
   'cb-hi': ['tour'],
 }
@@ -385,15 +388,16 @@ const ROW_STEP_SEMITONES = 1
 
 /**
  * The cues of the Award ceremony of ONE Winner, ascending by `at` (#743): the banner's drop at the start, a row for each place below (the last
- * Place first, at the file's own pitch, each next a semitone higher), the run, then the trip or the bonk by the server's gag, never both. Every
- * instant is `startsAt` plus a field of `ceremonyTimeline`, the function the tweens are built from, so sound and picture cannot drift. It has
- * no `now` and drops nothing for being past: the player skips a late cue, which is what a late joiner needs.
+ * Place first, at the file's own pitch, each next a semitone higher), the run, then the trip or the bonk by the server's gag, never both, and
+ * last the stamp, the fanfare and the crowd, all three at `stampAtMs` (#744). Under reduced motion the plan is the fanfare alone, at `startsAt`,
+ * the instant the end frame shows. Every instant is `startsAt` plus a field of `ceremonyTimeline`, the function the tweens are built from, so
+ * sound and picture cannot drift. It has no `now` and drops nothing for being past: the player skips a late cue, which is what a late joiner needs.
  */
 export function ceremonyCuePlan(input: CeremonyCueInput): Cue[] {
   const { startsAt, shape, reducedMotion } = input
-  // #744 gives reduced motion its fanfare alone; until then the end frame it shows is silent.
-  if (reducedMotion) return []
-  // #745 gives a Tie the moments it has; until then a ceremony with several Winners is silent.
+  // Reduced motion: the end frame is the whole show, and its sound is the fanfare alone, at the instant the end frame shows (#744, spec #718).
+  if (reducedMotion) return [{ id: 'cer-fanfare', at: startsAt }]
+  // #745 gives a Tie the moments it has; until then a ceremony with several Winners is silent under full motion.
   if (shape.winners > 1) return []
 
   const m = ceremonyTimeline(shape)
@@ -401,5 +405,7 @@ export function ceremonyCuePlan(input: CeremonyCueInput): Cue[] {
   m.rowAtMs.forEach((ms, index) => cues.push({ id: 'cer-row', at: startsAt + ms, rate: 2 ** (index * ROW_STEP_SEMITONES / 12) }))
   cues.push({ id: 'cer-run', at: startsAt + m.runAtMs })
   cues.push(shape.gag === 'trip' ? { id: 'cer-trip', at: startsAt + m.runEndAtMs } : { id: 'cer-bonk', at: startsAt + m.bonkAtMs })
+  // The stamp, and with it the fanfare and the crowd: the peak of the ceremony, at the instant the stamp's tween starts (#744).
+  cues.push({ id: 'cer-stamp', at: startsAt + m.stampAtMs }, { id: 'cer-fanfare', at: startsAt + m.stampAtMs }, { id: 'cer-crowd', at: startsAt + m.stampAtMs })
   return cues
 }
