@@ -64,14 +64,16 @@ describe('the finished Event page', () => {
 
       expect(regionHeadings(page)).toEqual(['Tabelle', 'Spielverlauf', 'Sessions', 'So wird gespielt'])
       expect(page.findAll('h1').map(heading => heading.text())).toEqual(['Wilde Gurken gewinnt das Event'])
-      expect(page.get('main').text()).toContain('Event beendet')
+      // The head had the only „Event beendet“ of the page (the feed is not on a finished Event's main); it has no kicker now (#798).
+      expect(page.get('[data-tour="head"]').text()).toBe('Wilde Gurken gewinnt das Event')
+      expect(page.get('main').text()).not.toContain('Event beendet')
       const standings = page.findAll('main section').find(section => section.find('h2').text() === 'Tabelle')!
       expect(standings.text()).toContain('Nach Spiel 3 von 3')
       expect(standings.findAll('tbody tr').map(row => row.attributes('data-team'))).toEqual(['1', '2'])
       expect(page.findAll('main ol [data-number]').map(number => number.text())).toEqual(['1', '2', '3'])
       // No Game board, no open Rounds, no poll: a read-only board was never asked for.
       expect(page.text()).not.toContain('Gerade dran')
-      expect(page.text()).not.toContain('Wann zocken wir?')
+      expect(page.text()).not.toContain('Wann Zockung?')
     })
 
     it(`says Beendet in the header pill, for ${who}`, async () => {

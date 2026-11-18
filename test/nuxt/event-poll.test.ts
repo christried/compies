@@ -43,8 +43,24 @@ describe('the Event poll', () => {
     const page = await mountSuspended(EventPage, { route: `/e/${slug}` })
 
     expect(page.text()).not.toContain('Aktualisiert sich von selbst')
-    expect(page.findAll('main h2').map(heading => heading.text())).toEqual(['Terminumfrage', 'Spielbrett', 'Sessions', 'So wird gespielt'])
-    expect(page.findAll('h3').map(heading => heading.text())).toContain('Wer kann wann?')
+    expect(page.findAll('main h2').map(heading => heading.text())).toEqual(['Terminumfrage', 'Wer kann wann?', 'Spielbrett', 'Sessions', 'So wird gespielt'])
+  })
+
+  // The Has voted rule as a colour (#798): everyone green, some yellow, nobody red; the numbers stay in the text.
+  describe.each([false, true])('the vote count in the poll title row (isHost %s)', (isHost) => {
+    it.each([
+      [{ voted: 2, total: 3 }, '2 von 3', 'text-warning-fg'],
+      [{ voted: 3, total: 3 }, '3 von 3', 'text-success-fg'],
+      [{ voted: 0, total: 3 }, '0 von 3', 'text-error-fg'],
+    ])('reads %j in %s', async (progress, text, tone) => {
+      const { slug } = serve(s => view(s, sanneAndLarsi, { progress, event: { isHost } }))
+
+      const page = await mountSuspended(EventPage, { route: `/e/${slug}` })
+
+      const count = page.get('[aria-labelledby]').findAll('span').find((span: Wrapper) => span.text().startsWith(text))!
+      expect(count.text()).toBe(`${text} haben vollständig abgestimmt`)
+      expect(count.classes()).toContain(tone)
+    })
   })
 
   it('writes each matrix column header as the day and the time on separate lines', async () => {
@@ -88,14 +104,14 @@ describe('the Event poll', () => {
     expect(page.get('table').text()).toContain('Kitty')
   })
 
-  it('shows a vote at once, then the saved notice once the server has it', async () => {
+  it.each([false, true])('shows a vote at once, then the saved notice once the server has it, with the Date fixed by the Host (isHost %s)', async (isHost) => {
     let saved: unknown = null
-    const store = serve(s => view(s, sanneAndLarsi))
+    const store = serve(s => view(s, sanneAndLarsi, { event: { isHost } }))
     registerEndpoint(`/api/e/${store.slug}/slots/sat/vote`, {
       method: 'PUT',
       handler: async (event) => {
         saved = await readBody(event)
-        store.set(view(store.slug, [...sanneAndLarsi, { slotId: 'sat', userId: kitty.id, value: 'yes' }], { progress: { voted: 3, total: 3 } }))
+        store.set(view(store.slug, [...sanneAndLarsi, { slotId: 'sat', userId: kitty.id, value: 'yes' }], { progress: { voted: 3, total: 3 }, event: { isHost } }))
         return { slotId: 'sat', value: 'yes' }
       },
     })
@@ -104,7 +120,7 @@ describe('the Event poll', () => {
     await radio(page, 'Sa 24.10. 20:00', 'Ja').trigger('click')
 
     await vi.waitFor(() => expect(saved).toEqual({ value: 'yes' }))
-    await vi.waitFor(() => expect(page.text()).toContain('Gespeichert.'))
+    await vi.waitFor(() => expect(page.text()).toContain('Gespeichert. Du kannst deine Stimmen ändern, bis der Host den Termin fixiert.'))
     expect(radio(page, 'Sa 24.10. 20:00', 'Ja').attributes('aria-checked')).toBe('true')
   })
 

@@ -5,6 +5,7 @@ import { formatSessionWhen, formatSlotDay, formatSlotTime } from '~/utils/berlin
 import { sessionMenuKeys, shownSessionNumbers, type SessionMenuKey } from '~/utils/event-page'
 import { jumpTo, pollHeadingId } from '~/utils/jump'
 import { noteRows } from '~/utils/notes'
+import { voteCountTone } from '~/utils/vote-look'
 import { SESSIONS_MAX, type EventView } from '~~/shared/event'
 import { isStarted, sessionState, type SessionState } from '~~/shared/session-state'
 
@@ -168,7 +169,10 @@ function pick(key: string) {
               :datetime="row.startsAt"
             >{{ row.when }}</time>
             <template v-else-if="row.progress">{{ row.progress }}</template>
-            <template v-else>{{ t('event.sessions.voted', view.progress) }}</template>
+            <span
+              v-else
+              :class="voteCountTone(view.progress)"
+            >{{ t('event.sessions.voted', view.progress) }}</span>
           </span>
         </div>
 
