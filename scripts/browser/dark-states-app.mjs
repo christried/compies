@@ -196,7 +196,7 @@ export const STATES = [
       }),
       // The new-game sheet of the pool step; never saved.
       step('neu-pool-spiel', async (tab) => {
-        if (!await clickText(tab, 'button', COPY.stepper.pool.create)) throw new Error('no „Neues Spiel anlegen“ button')
+        if (!await clickText(tab, 'button', COPY.stepper.pool.create)) throw new Error('no „Neues Spiel“ button')
         await until(tab, `!!document.querySelector('[role=dialog]')`, 'the new-game sheet')
       }),
       forward('neu-sessions'),
