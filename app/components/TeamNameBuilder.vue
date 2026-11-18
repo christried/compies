@@ -211,7 +211,7 @@ async function reset() {
           autocomplete="off"
           autocapitalize="off"
           spellcheck="false"
-          :aria-describedby="helpId"
+          :aria-describedby="stripped ? helpId : undefined"
           class="h-9 min-w-0 flex-1 rounded-[10px] border-[2.5px] border-line bg-surface px-2.5 font-bold text-ink"
           @focus="focused = true"
           @input="onInput"
@@ -221,12 +221,12 @@ async function reset() {
         >
         <span class="font-mono text-[11px] text-ink-2">{{ t('common.counter', { n: count, max: TEAM_WORD_MAX }) }}</span>
         <p
+          v-if="stripped"
           :id="helpId"
-          class="m-0 flex-[1_0_100%] text-[12px]"
-          :class="stripped ? 'font-bold text-error-fg' : 'text-ink-2'"
-          :aria-live="stripped ? 'polite' : undefined"
+          class="m-0 flex-[1_0_100%] text-[12px] font-bold text-error-fg"
+          aria-live="polite"
         >
-          {{ stripped ? t('team.word.noSpaces') : t('team.word.help') }}
+          {{ t('team.word.noSpaces') }}
         </p>
       </div>
     </Transition>

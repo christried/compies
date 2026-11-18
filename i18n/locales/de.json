@@ -203,12 +203,11 @@
   "board": {
     "title": "Spielbrett",
     "stands": "Tribüne",
-    "standsSub": "Noch ohne Team, unbegrenzt",
     "standsEmpty": "Die Tribüne ist leer.",
     "free": "Frei",
     "dropHere": "Hier rein",
     "locked": "Gesperrt",
-    "slotsFree": "{n} Platz frei | {n} Plätze frei",
+    "slotsFree": "{n} Slot frei | {n} Slots frei",
     "zoneAria": "{name}, {n} von {size} frei",
     "closed": "Zu",
     "closedAria": "Zu. {reason}",
@@ -231,26 +230,25 @@
       "runningLocked": "Teams sind gesperrt, das Event läuft.",
       "full": "Team ist voll.",
       "leaveRunning": "Nur der Host kann dich aus dem Team holen.",
-      "lostRace": "{name} war schneller. Der letzte Platz in {team} ist weg."
+      "lostRace": "{name} war schneller. Der letzte Slot in {team} ist weg."
     },
     "note": {
       "setup": "Teams gibt es, sobald das Event eingerichtet ist. Bis dahin bleibst du auf der Tribüne."
     },
     "meta": {
       "setup": "{n} Person da | {n} Leute da",
-      "poll": "{teams} · Teamwahl noch zu",
-      "open": "{taken} von {places} Plätzen besetzt",
-      "running": "{teams} · gesperrt"
+      "open": "{taken} von {places} Slots besetzt",
+      "running": "gesperrt"
     },
-    "longPress": "Lange drücken zum Ziehen",
+    "longPress": "Gedrückt halten, dann ziehen",
     "notice": {
       "unevenTitle": "Teams sind ungleich",
-      "unevenMember": "{team} sucht noch jemanden. Rück rein, dann kann’s losgehen.",
+      "unevenMember": "{team} sucht noch jemanden. Dich vielleicht?",
       "poll": "Teamwahl öffnet, sobald der Termin steht. Bis dahin bleibst du auf der Tribüne.",
       "uneven": "{team} hat {small}, die anderen haben {big}. Die Session startet erst, wenn alle Teams gleich groß sind.",
       "running": "Das Event läuft. Die Teams sind gesperrt, nur der Host setzt dich noch in ein Team.",
       "runningHost": "Event läuft: nur du kannst noch tauschen.",
-      "runningPlayer": "Gesperrt seit dem Start. Dein Teamwort kannst du weiter ändern."
+      "runningPlayer": "Teams sind gesperrt. Dein Teamwort kannst du weiter ändern."
     },
     "conflict": "{name} war schneller."
   },
@@ -270,7 +268,6 @@
     "notPlaying": "{team}, spielt nicht mit",
     "word": {
       "label": "Dein Wort für den Teamnamen",
-      "help": "Ein Wort, bis zu 12 Zeichen.",
       "noSpaces": "Nur ein Wort, ohne Leerzeichen.",
       "noTeam": "Du bist gerade in keinem Team. Dein Wort zählt, sobald du einem beitrittst.",
       "order": "Reihenfolge:",
@@ -816,7 +813,7 @@
     "openSignedOut": "Du bist zu {event} eingeladen",
     "invalidTitle": "Dieser Link gilt nicht mehr.",
     "deletedTitle": "Dieses Event gibt’s nicht mehr.",
-    "joinedToast": "Du bist drin! Du sitzt erstmal auf der Tribüne.",
+    "joinedToast": "Du bist drin! Schön, dass du da bist ❤️",
     "copyFailed": "Kopieren hat nicht geklappt. Markier den Link und kopier ihn von Hand.",
     "kicker": "Einladung",
     "joining": "Einen Moment, wir setzen dich auf die Tribüne …",

@@ -92,6 +92,13 @@ describe('copy rules', () => {
     expect(['filterMine', 'createdBy', 'editOnlyOwner'].filter(key => key in library)).toEqual([])
     expect('notGameEditor' in de.error).toBe(false)
   })
+
+  // The board says less (#800): the lines under the Tribüne's title, next to the poll's title and under the Team word's field are gone.
+  it('has no board or Team word key left for the lines #800 removed', () => {
+    expect('standsSub' in de.board).toBe(false)
+    expect('poll' in de.board.meta).toBe(false)
+    expect('help' in de.team.word).toBe(false)
+  })
 })
 
 // A number in the copy that can be 1 needs a singular form (#268): „1 Spiele auf dem Rad“ reached staging in 0.7 (#263).
@@ -99,7 +106,7 @@ describe('copy rules', () => {
 // as „singular | plural“. vue-i18n picks the form by the named `count` or `n` (either wins over a plural argument), so the
 // count before the noun is called `n`. A `{max}` is a limit constant, never 1. NEVER_ONE holds the counted messages whose
 // count can't be 1, each with its reason.
-const PLURAL_NOUNS = ['Bonus-Vetos', 'Leute', 'Minuten', 'Plätze', 'Plätzen', 'Punkte', 'Sekunden', 'Sessions', 'Spiele', 'Spielen', 'Stimmen', 'Stunden', 'Tage', 'Tagen', 'Teams', 'Termine', 'Terminen', 'Vetos', 'Vorschläge']
+const PLURAL_NOUNS = ['Bonus-Vetos', 'Leute', 'Minuten', 'Plätze', 'Plätzen', 'Punkte', 'Sekunden', 'Sessions', 'Slots', 'Spiele', 'Spielen', 'Stimmen', 'Stunden', 'Tage', 'Tagen', 'Teams', 'Termine', 'Terminen', 'Vetos', 'Vorschläge']
 const NEVER_ONE: Record<string, string> = {
   'dock.startDialog.lock': 'teams is at least TEAM_COUNT_MIN (2)',
   'stepper.format.total': 'teams is at least TEAM_COUNT_MIN (2), so players is too',
