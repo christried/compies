@@ -75,7 +75,7 @@ describe('the Countdown on the stage', () => {
 
     const stage = await mount(slug)
 
-    expect(regionHeadings(stage)).toEqual(['Gerade dran', 'Countdown', 'Spielbrett', 'Sessions', 'So wird gespielt'])
+    expect(regionHeadings(stage)).toEqual(['Läuft aktuell.', 'Countdown', 'Spielbrett', 'Sessions', 'So wird gespielt'])
     expect(stage.get('[data-testid="countdown-time"]').text()).toBe('10:00')
   })
 

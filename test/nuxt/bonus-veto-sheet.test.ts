@@ -38,7 +38,7 @@ describe('the Bonus Veto sheet', () => {
     await mountSuspended(BonusVetoSheet, { props: { open: true, teams, granted: [0, 2], grant: async () => true } })
 
     expect(dialog()?.querySelector('h2')?.textContent).toBe('Bonus-Veto geben')
-    expect(dialog()?.textContent).toContain('Die Partei kann es sofort einsetzen, auch in einem laufenden Veto-Fenster.')
+    expect(dialog()?.textContent).toContain('Die Partei kann es sofort einsetzen – auch in einem laufenden Veto-Fenster. Ein Bonus-Veto lässt sich nicht zurücknehmen.')
     expect(rows()).toHaveLength(2)
     expect(rows()[0]!.textContent).toContain('Rot')
     expect(rows()[0]!.textContent).toContain('Noch kein Bonus-Veto')

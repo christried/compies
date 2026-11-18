@@ -113,7 +113,7 @@ function gameView(row: typeof games.$inferSelect, tags: GameTag[]): GameView {
   return {
     ...poolGameView(row),
     tags,
-    createdAt: row.createdAt.toISOString(),
+    updatedAt: row.updatedAt.toISOString(),
   }
 }
 

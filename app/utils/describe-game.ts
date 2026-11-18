@@ -6,11 +6,11 @@ import type { Translate } from '~/utils/settings-summary'
 // is left out of a range, since no COMPIES game is for one person (#458).
 
 export interface GameDescription {
-  /** „3 bis 6“, „ab 3“, „bis 10“ (also for „2 bis 10“), or „2 Spieler“ for one count; null without a count. */
+  /** „3 bis 6“, „ab 3“, „bis 10“ (also for „2 bis 10“), or „2 Spielende“ for one count; null without a count. */
   players: string | null
   /** „3–6“, or the one number; the same words as `players` when the minimum is left out; null without a count. */
   playersCompact: string | null
-  /** The Suitabilities („Passt zu“) in SUITABILITIES order, comma-joined: „Teams, 1 gegen 1“; null when none is set. */
+  /** The Suitabilities („Passt zu“) in SUITABILITIES order, comma-joined: „Teams, 1v1“; null when none is set. */
   suitabilities: string | null
 }
 

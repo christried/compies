@@ -148,10 +148,11 @@ describe('a game taken off the wheel at rest', () => {
     expect(pinsOf(page)).toBe(3)
   })
 
-  it('says at once that the wheel is empty when its last game leaves', async () => {
+  it('names zero games at once when its last game leaves, with no „leer“ line (#802)', async () => {
     page = await mount(restOf(1))
     await change(restOf(0))
-    expect(page.text()).toContain('Das Rad ist leer')
+    expect(page.text()).not.toContain('Das Rad ist leer')
+    expect(page.get('[role="img"]').attributes('aria-label')).toBe('Glücksrad mit 0 Spielen')
   })
 })
 

@@ -41,12 +41,12 @@ afterEach(() => {
 })
 
 describe('the Veto switch of the picker', () => {
-  it('is off by default, named „Veto erlauben“ with the 60 seconds as its help', async () => {
+  it('is off by default, named „Vetos erlauben“ with the 60 seconds as its help', async () => {
     await mount({ vetoSwitch: true })
 
     const toggle = vetoSwitch()!
     expect(toggle.getAttribute('aria-checked')).toBe('false')
-    expect(toggle.textContent).toContain('Veto erlauben')
+    expect(toggle.textContent).toContain('Vetos erlauben')
     expect(toggle.textContent).toContain('Die Parteien können das Spiel dann im Veto-Fenster ablehnen.')
   })
 
@@ -54,7 +54,7 @@ describe('the Veto switch of the picker', () => {
     await mount()
 
     expect(vetoSwitch()).toBeNull()
-    expect(dialog()!.textContent).not.toContain('Veto erlauben')
+    expect(dialog()!.textContent).not.toContain('Vetos erlauben')
   })
 
   it('shows "Setzen" as disabled (dashed, flat) until a game is chosen (F22)', async () => {
@@ -134,7 +134,7 @@ function libraryGame(n: number, name: string, overrides: Partial<GameView> = {})
     playersMin: null,
     playersMax: null,
     suitabilities: [],
-    createdAt: '2026-01-15T10:00:00.000Z',
+    updatedAt: '2026-01-15T10:00:00.000Z',
     notes: null,
     tags: [],
     archived: false,

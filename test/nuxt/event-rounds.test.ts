@@ -25,7 +25,7 @@ const ENDED = '2026-10-30T22:00:00.000Z'
 const halo: PoolGame = { id: 'g-halo', name: 'Halo', imageUrl: null, youtubeId: null, clipStart: 0, clipLength: 30, playersMin: 2, playersMax: 4, suitabilities: [], notes: notesFromLines(['Hausregel: keine Raketen']), price: null, archived: false }
 const kart: PoolGame = { ...halo, id: 'g-kart', name: 'Kart', notes: null }
 const pong: PoolGame = { ...halo, id: 'g-pong', name: 'Pong', notes: null }
-const schach: GameView = { ...halo, id: 'g-schach', name: 'Schach', notes: null, createdAt: '2026-01-15T10:00:00.000Z', tags: [], archived: false, price: null }
+const schach: GameView = { ...halo, id: 'g-schach', name: 'Schach', notes: null, updatedAt: '2026-01-15T10:00:00.000Z', tags: [], archived: false, price: null }
 
 const round = (id: string, game: PoolGame, notes?: NotesDoc): RoundView => {
   const { notes: _notes, ...shown } = game
@@ -77,10 +77,19 @@ describe('the open Rounds on the stage', () => {
 
     const stage = await mount(slug)
 
-    expect(regionHeadings(stage)).toEqual(['Gerade dran', 'Spielbrett', 'Sessions', 'So wird gespielt'])
+    expect(regionHeadings(stage)).toEqual(['Läuft aktuell.', 'Spielbrett', 'Sessions', 'So wird gespielt'])
     const cards = stage.get('[aria-label="Offene Spiele"]').findAll('li')
     expect(cards.map((card: Wrapper) => card.text())).toEqual([expect.stringContaining('Halo'), expect.stringContaining('Kart')])
     for (const card of cards) expect(card.text()).not.toContain('wird gespielt')
+  })
+
+  it('names the block „Läuft aktuell.“ for the Host as for a Member (#802)', async () => {
+    const { slug } = serveRunning({ host: true, rounds: [round('r1', halo), round('r2', kart)] })
+
+    const stage = await mount(slug)
+
+    expect(regionHeadings(stage)).toContain('Läuft aktuell.')
+    expect(regionHeadings(stage)).not.toContain('Gerade dran')
   })
 
   it('shows the Round as a tile with no player count and no number on it (#435)', async () => {
@@ -110,7 +119,7 @@ describe('the open Rounds on the stage', () => {
 
     const stage = await mount(slug)
 
-    expect(regionHeadings(stage)).toContain('Gerade dran')
+    expect(regionHeadings(stage)).toContain('Läuft aktuell.')
     expect(stage.get('[aria-label="Offene Spiele"]').text()).toContain('Halo')
   })
 
@@ -119,7 +128,7 @@ describe('the open Rounds on the stage', () => {
 
     const stage = await mount(slug)
 
-    expect(regionHeadings(stage)).toContain('Gerade dran')
+    expect(regionHeadings(stage)).toContain('Läuft aktuell.')
   })
 
   it('opens the Game notes of the Round for the Host', async () => {
@@ -798,7 +807,7 @@ describe('the Lucky Wheel on the stage (#229)', () => {
 
     const stage = await mount(slug)
 
-    expect(regionHeadings(stage)).toEqual(['Gerade dran', 'Glücksrad', 'Spielbrett', 'Sessions', 'So wird gespielt'])
+    expect(regionHeadings(stage)).toEqual(['Läuft aktuell.', 'Glücksrad', 'Spielbrett', 'Sessions', 'So wird gespielt'])
     expect(stage.get('[role="img"][aria-label="Glücksrad mit 2 Spielen"]').text()).toContain('Halo')
   })
 
@@ -936,7 +945,7 @@ describe('the Round tile carries no Price (#435, was #338)', () => {
   })
 })
 
-// The game dialog from „Gerade dran“ (#443, #444): the Host's has the Tags and Notes of a Round's game from `hostGames`, the Round's own Notes stay open under the tile;
+// The game dialog from „Läuft aktuell.“ (#443, #444): the Host's has the Tags and Notes of a Round's game from `hostGames`, the Round's own Notes stay open under the tile;
 // a Member's has the facts and never those.
 describe('the game dialog from the Round tiles (#443, #444)', () => {
   const hostGames = {

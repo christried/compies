@@ -356,8 +356,8 @@ export function floorsAt({ playersPerTeam: players, roundsStarted, vetoesSpent }
 }
 
 /**
- * Settings that stay fixed while a Round is being drawn (#231, review 1.4 A3): the wheel spins or a Veto window runs. „Rad
- * verdecken“ would change what the Players see of a draw that is under way; the Veto allowance decides who may veto in the open
+ * Settings that stay fixed while a Round is being drawn (#231, review 1.4 A3): the wheel spins or a Veto window runs. „Pseudo-Games“
+ * would change what the Players see of a draw that is under way; the Veto allowance decides who may veto in the open
  * window, and may never fall below a sealed Veto (the floor counts the casts only once their window is over).
  */
 export const LOCKED_WHILE_DRAWN = ['hiddenWheel', 'vetoAllowance'] as const

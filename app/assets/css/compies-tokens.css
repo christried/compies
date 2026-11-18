@@ -30,6 +30,9 @@
   --cp-warning: #ffb020;   --cp-on-warning: #151515;  --cp-warning-fg: #8a5300;
   --cp-error:   #ff4f4f;   --cp-on-error:   #151515;  --cp-error-fg:   #c01f1f;
   --cp-info:    #3a86ff;   --cp-on-info:    #151515;  --cp-info-fg:    #1f5fd0;
+  /* the sign-in buttons' brand fills (#792): the same in Hell and Dunkel, so the dark and System blocks set none */
+  --cp-discord: #5865f2;   --cp-on-discord: #ffffff;   /* Discord's Blurple */
+  --cp-twitch:  #9146ff;   --cp-on-twitch:  #ffffff;   /* Twitch Purple */
   --cp-online: #06b46b;    --cp-offline: #a39a90;
   /* lines + elevation (hard offset shadows, no blur) */
   --cp-bw: 3px;  --cp-bw-thin: 2px;

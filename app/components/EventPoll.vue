@@ -3,14 +3,15 @@ import { Check, ChevronDown, Minus, Users } from '@lucide/vue'
 import type { PollSlotView } from '~/components/PollSlotCard.vue'
 import type { OptimisticVotes } from '~/composables/useOptimisticVotes'
 import { pollHeadingId } from '~/utils/jump'
+import { voteCountTone } from '~/utils/vote-look'
 import type { EventView } from '~~/shared/event'
 
 // The Date poll on the Event page (screen M3, #166, 11-event-seite § EventPoll), while it is open: its title with the vote
 // count, the Dates still missing, the legend, a card per Slot and "Wer kann wann?". The Votes are drawn as the page's
-// useOptimisticVotes holds them, so a press shows at once. The Host picks a Slot on its card ("Termin festlegen"), and the
+// useOptimisticVotes holds them, so a press shows at once. The Host picks a Slot on its card ("Termin fixieren"), and the
 // "−" next to "N Termine gesucht" removes an undated Session (#55); the Event page runs both. `compact` is the poll of a
 // later Session below the Game board: "Wer kann wann?" is folded behind a button, and the pick is no primary (the dock
-// owns it). Its heading is where the Head's link and the Sessions card jump to; the Head carries "Wann zocken wir?".
+// owns it). Its heading is where the Head's link and the Sessions card jump to; the Head carries "Wann Zockung?".
 const props = withDefaults(defineProps<{
   view: EventView
   /** The open Slots in time order, with their day and time in Berlin. */
@@ -69,7 +70,10 @@ function removeMissing() {
         >
           {{ number === null ? t('phase.poll') : t('event.poll.title', { n: number }) }}
         </h2>
-        <span class="text-[13px] font-bold text-ink-2">{{ t('event.sessions.voted', view.progress) }}</span>
+        <span
+          class="text-[13px] font-bold"
+          :class="voteCountTone(view.progress)"
+        >{{ t('event.sessions.voted', view.progress) }}</span>
       </div>
 
       <NoticeBanner
@@ -164,9 +168,9 @@ function removeMissing() {
       class="flex flex-col gap-2"
     >
       <template v-if="showMatrix">
-        <h3 class="m-0 text-[17px] font-extrabold">
+        <h2 class="m-0 font-display text-[24px] leading-none font-normal md:text-[30px]">
           {{ t('mvp.poll.whoWhen') }}
-        </h3>
+        </h2>
         <PollMatrix
           :people="view.members"
           :slots="slots"

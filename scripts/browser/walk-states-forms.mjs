@@ -10,7 +10,7 @@ import { sleep } from './chrome.mjs'
 import { api, BASE, clickText, inDays, open, openSignedOut, stepperNext } from './kit.mjs'
 import { closeSheet, next, noAutoLoad, page, step, until } from './dark-states-app.mjs'
 import { clipboard, keepToasts, stop, toastShown } from './dark-states-event.mjs'
-import { fieldByLabel, setField, stepBy, toLimit, typeDateTime, UNTAG } from './walk-kit.mjs'
+import { fieldByLabel, setField, stepBy, toLimit, typeDateTime, typeNotes, UNTAG } from './walk-kit.mjs'
 
 const COPY = JSON.parse(readFileSync(join(dirname(fileURLToPath(import.meta.url)), '../../i18n/locales/de.json'), 'utf8'))
 
@@ -44,7 +44,6 @@ const GAME = {
   start: fieldByLabel(COPY.gameEdit.start),
   length: fieldByLabel(COPY.gameEdit.length),
   playersFrom: fieldByLabel(COPY.gameEdit.playersFrom),
-  notes: fieldByLabel(COPY.gameEdit.notes),
   tags: fieldByLabel(COPY.gameEdit.tags),
   priceAmount: fieldByLabel(COPY.gameEdit.priceAmount),
 }
@@ -127,9 +126,16 @@ export const STATES = [
         await setField(tab, GAME.length, '5')
         await until(tab, invalid, 'the clip errors')
       }),
+      // The clip fields share one line (#797), the first problem's: Start's. With Start put right, Länge's own line is the one on screen.
+      step('clip-laenge', async (tab) => {
+        await setField(tab, GAME.start, '0:00')
+        await until(tab, invalid, 'the length error')
+        await sleep(300)
+      }),
       step('zahlen', async (tab) => {
         await setField(tab, GAME.playersFrom, 'x')
-        await setField(tab, GAME.notes, 'x'.repeat(2001))
+        // Notizen is a Tiptap editor since 0.16 (#810): a contenteditable, no input a label points at, so it is typed into.
+        await typeNotes(tab, 'x'.repeat(2001))
         await setField(tab, GAME.tags, 'x'.repeat(21))
         await setField(tab, GAME.priceAmount, 'abc')
         await sleep(300)
@@ -182,6 +188,9 @@ export const STATES = [
         await pickRadio(tab, COPY.setup.points.custom.name)
         await stepBy(tab, COPY.stepper.points.stepper.replace('{n}', '2'), 'mehr', 2)
         await until(tab, `!!document.querySelector('[role=alert]')`, 'the rising-table error')
+        // The reason above Weiter shows red after a press of the blocked button (#797); the step stays.
+        await stepperNext(tab)
+        await sleep(300)
       }),
       // A rising table blocks Weiter: Linear again puts the rows right before the step goes on.
       step('modus-rad', async (tab) => {
@@ -216,6 +225,9 @@ export const STATES = [
         await next(tab)
         await typeDateTime(tab, '[role=group]', '01012020', '1900')
         await until(tab, invalid, 'the past-date error')
+        // The reason above Weiter shows red after a press of the blocked button (#797), and stays while the step does: the next stops' reasons too.
+        await stepperNext(tab)
+        await sleep(300)
       }),
       step('sessions-zu-wenig', async (tab) => {
         await typeDateTime(tab, '[role=group]', inDays(10))

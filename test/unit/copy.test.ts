@@ -82,7 +82,6 @@ describe('copy rules', () => {
 
   // The library is the viewer's own (#724, decision A5): the texts that said it is shared, or that name a creator, are gone.
   it('says the library is the viewer’s own in the three texts that spoke of all Hosts (#724)', () => {
-    expect(de.library.kicker).toBe('Deine Spiele')
     expect(de.notesEditor.help).toBe('Nur du siehst das.')
     expect(de.empty.library.text).toBe('Leg das erste Spiel an. Danach holst du es in jedes deiner Events.')
   })
@@ -90,7 +89,37 @@ describe('copy rules', () => {
   it('has no library key left that named the creator or the owner-only edit (#724)', () => {
     const library = de.library as Record<string, unknown>
     expect(['filterMine', 'createdBy', 'editOnlyOwner'].filter(key => key in library)).toEqual([])
+    // #804 took the library's kicker („Global, für alle Hosts“) away with the page's own title.
+    expect('kicker' in library).toBe(false)
     expect('notGameEditor' in de.error).toBe(false)
+  })
+
+  // The board says less (#800): the lines under the Tribüne's title, next to the poll's title and under the Team word's field are gone.
+  it('has no board or Team word key left for the lines #800 removed', () => {
+    expect('standsSub' in de.board).toBe(false)
+    expect('poll' in de.board.meta).toBe(false)
+    expect('help' in de.team.word).toBe(false)
+  })
+})
+
+// CODING_STANDARDS.md § Copy: words for people are gender-neutral. The masculine „Spieler“ and „Freunde“ (and their forms) stay out of the
+// UI copy; the legal texts keep their own wording, and a compound such as „Spielerzahl“ passes (whole words only, case-sensitive).
+const MASCULINE_PEOPLE = /\b(Spieler|Spielern|Freunde|Freunden)\b/
+const masculineHits = (list: Entry[]): string[] => list.filter(e => !isLegal(e.key) && MASCULINE_PEOPLE.test(e.value)).map(e => e.key)
+
+describe('gender rule in the copy (CODING_STANDARDS.md § Copy)', () => {
+  it('has no masculine word for people in UI copy outside the legal texts', () => {
+    expect(masculineHits(entries)).toEqual([])
+  })
+
+  it('catches a planted „Spieler“ and „Freunden“, passes „Spielerzahl“ and skips a legal key', () => {
+    const planted: Entry[] = [
+      { key: 'planted.player', value: 'Ein Spieler fehlt.' },
+      { key: 'planted.friends', value: 'Schick es deinen Freunden.' },
+      { key: 'planted.count', value: 'Spielerzahl: {n}' },
+      { key: 'legal.planted', value: 'Freunden' },
+    ]
+    expect(masculineHits(planted)).toEqual(['planted.player', 'planted.friends'])
   })
 })
 
@@ -99,7 +128,7 @@ describe('copy rules', () => {
 // as „singular | plural“. vue-i18n picks the form by the named `count` or `n` (either wins over a plural argument), so the
 // count before the noun is called `n`. A `{max}` is a limit constant, never 1. NEVER_ONE holds the counted messages whose
 // count can't be 1, each with its reason.
-const PLURAL_NOUNS = ['Bonus-Vetos', 'Leute', 'Minuten', 'Plätze', 'Plätzen', 'Punkte', 'Sekunden', 'Sessions', 'Spiele', 'Spielen', 'Stimmen', 'Stunden', 'Tage', 'Tagen', 'Teams', 'Termine', 'Terminen', 'Vetos', 'Vorschläge']
+const PLURAL_NOUNS = ['Bonus-Vetos', 'Leute', 'Minuten', 'Plätze', 'Plätzen', 'Punkte', 'Sekunden', 'Sessions', 'Slots', 'Spiele', 'Spielen', 'Stimmen', 'Stunden', 'Tage', 'Tagen', 'Teams', 'Termine', 'Terminen', 'Vetos', 'Vorschläge']
 const NEVER_ONE: Record<string, string> = {
   'dock.startDialog.lock': 'teams is at least TEAM_COUNT_MIN (2)',
   'stepper.format.total': 'teams is at least TEAM_COUNT_MIN (2), so players is too',
@@ -157,6 +186,11 @@ describe('glossary words in the copy', () => {
       'error.nameRequired',
     ]
     for (const key of keys) expect(byKey.get(key), key).not.toMatch(/Session/)
+  })
+
+  // #809: the Host fixes a Date („Termin fixieren“, GLOSSARY.md § Date); „festlegen“ for the same act is retired too.
+  it('retires „Termin festlegen“ for „Termin fixieren“ (#809)', () => {
+    expect(RETIRED['Termin festlegen']).toBe('Termin fixieren')
   })
 
   it('finds the Unreleased section it checks', () => {

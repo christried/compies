@@ -21,7 +21,7 @@ export type StepKey = 'name' | 'format' | 'games' | 'points' | 'mode' | 'pool' |
 /** What a step reads about locked settings (the editor of a running Event, #147); every step takes it and may ignore it. */
 export interface StepLocks {
   reason?: string
-  /** The reason „Rad verdecken“ and the Veto allowance are locked while a Round is being drawn (#231, LOCKED_WHILE_DRAWN); undefined when they are free. */
+  /** The reason „Pseudo-Games“ and the Veto allowance are locked while a Round is being drawn (#231, LOCKED_WHILE_DRAWN); undefined when they are free. */
   drawing?: string
   floors?: SettingsFloors
   /** False when the Host may not browse the Game library (the Host permission was revoked, #173); the pool steps then offer no search. */
@@ -38,9 +38,9 @@ export type DraftSettings = Omit<EventSettings, 'hiddenWheel' | 'vetoAllowance' 
 export interface EventDraft {
   name: string
   settings: DraftSettings
-  /** „Rad verdecken“, kept while Host-Wahl is chosen so switching back restores it (#145). */
+  /** „Pseudo-Games“, kept while Host-Wahl is chosen so switching back restores it (#145). */
   hiddenWheel: boolean
-  /** „Pool vorher zeigen“ (#225): on by default, kept while Host-Wahl is chosen, and off under „Rad verdecken“. */
+  /** „Pool vorher zeigen“ (#225): on by default, kept while Host-Wahl is chosen, and off under „Pseudo-Games“. */
   poolPreview: boolean
   /** The Host's Veto allowance, kept while Host-Wahl is chosen; null follows the Team size until the Host touches it (#145). */
   vetoAllowance: number | null

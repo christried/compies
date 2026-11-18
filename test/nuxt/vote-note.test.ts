@@ -2,11 +2,12 @@ import { mountSuspended, registerEndpoint } from '@nuxt/test-utils/runtime'
 import { createError, readBody } from 'h3'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import EventPage from '~/pages/e/[slug]/index.vue'
+import de from '~~/i18n/locales/de.json'
 import { kitty, signInAs } from './auth'
 import { clickHostAction, dialog, LARSI, radio, SANNE, serve, shownToasts, view, type Vote, type Wrapper } from './event-page'
 
 // The Note on a Vote (#102) on the Event page: the Slot card's button and field, the matrix marker, the lists in
-// „Termin festlegen“ and on the DateSetCard.
+// „Termin fixieren“ and on the DateSetCard.
 
 const NOTE = 'kann maximal bis 20:30'
 const kittyMaybe: Vote = { slotId: 'fri', userId: kitty.id, value: 'maybe', note: null }
@@ -24,6 +25,11 @@ describe('Notes on Votes', () => {
   const card = (page: Page, slotId: string) => page.get(`[data-slot="${slotId}"]`)
   const buttonLabelled = (page: Page, slotId: string, label: string) => card(page, slotId).findAll('button').find((button: Wrapper) => button.text() === label || button.attributes('aria-label') === label)
 
+  it('has dropped the audience and the saved label from the texts (#798)', () => {
+    expect('audience' in de.mvp.notes).toBe(false)
+    expect('savedLabel' in de.mvp.notes).toBe(false)
+  })
+
   describe('the Slot card', () => {
     it('offers the Anmerkung button once voted on a future Slot, and not before, nor on a past Slot', async () => {
       const { slug } = serve(s => view(s, [kittyMaybe, { slotId: 'old', userId: kitty.id, value: 'yes' }]))
@@ -35,8 +41,9 @@ describe('Notes on Votes', () => {
       expect(buttonLabelled(page, 'old', 'Anmerkung')).toBeUndefined()
     })
 
-    it('opens the editor with the label on the text area, the audience, the placeholder and the counter, focused', async () => {
-      const { slug } = serve(s => view(s, [kittyMaybe]))
+    // No audience text (#798): the Host votes too, and a Note is no secret, so the editor says nothing about who reads it.
+    it.each([false, true])('opens the editor with the label on the text area, the placeholder and the counter, focused, and no audience (isHost %s)', async (isHost) => {
+      const { slug } = serve(s => view(s, [kittyMaybe], { event: { isHost } }))
       const page = await mountSuspended(EventPage, { route: `/e/${slug}`, attachTo: document.body })
 
       await buttonLabelled(page, 'fri', 'Anmerkung')!.trigger('click')
@@ -44,8 +51,8 @@ describe('Notes on Votes', () => {
       const field = card(page, 'fri')
       const textarea = field.get('textarea')
       expect(field.get(`label[for="${textarea.attributes('id')}"]`).text()).toBe('Anmerkung')
-      const audience = field.findAll('span').find((span: Wrapper) => span.text() === 'sehen alle')!
-      expect(textarea.attributes('aria-describedby')).toBe(audience.attributes('id'))
+      expect(textarea.attributes('aria-describedby')).toBeUndefined()
+      expect(field.text()).not.toContain('sehen alle')
       expect(textarea.attributes('placeholder')).toBe('z. B. kann maximal bis 20:30')
       expect(field.text()).toContain('0/80')
       expect(field.text()).not.toContain('Sehen alle im Event')
@@ -180,6 +187,8 @@ describe('Notes on Votes', () => {
 
       expect(card(page, 'fri').find('textarea').exists()).toBe(false)
       expect(card(page, 'fri').text()).toContain(NOTE)
+      expect(card(page, 'fri').text()).not.toContain('Deine Anmerkung')
+      expect(card(page, 'fri').text()).not.toContain('sehen alle')
       expect(card(page, 'fri').text()).toContain('Anmerkungen')
       expect(card(page, 'fri').text()).toContain('Kitty (du)')
       await vi.waitFor(() => expect(sent).toEqual({ value: 'maybe', note: NOTE }))
@@ -335,6 +344,8 @@ describe('Notes on Votes', () => {
       })
       const page = await mountSuspended(EventPage, { route: `/e/${store.slug}` })
       expect(buttonLabelled(page, 'fri', 'Anmerkung')).toBeUndefined()
+      expect(card(page, 'fri').text()).not.toContain('Deine Anmerkung')
+      expect(card(page, 'fri').text()).not.toContain('sehen alle')
 
       await buttonLabelled(page, 'fri', 'Anmerkung bearbeiten')!.trigger('click')
       expect(card(page, 'fri').get('textarea').element.value).toBe(NOTE)
@@ -398,12 +409,12 @@ describe('Notes on Votes', () => {
     })
   })
 
-  describe('„Termin festlegen“ and the DateSetCard', () => {
+  describe('„Termin fixieren“ and the DateSetCard', () => {
     it('lists the Notes of each option in the dialog', async () => {
       const { slug } = serve(s => view(s, [larsiNote], { event: { isHost: true } }))
       const page = await mountSuspended(EventPage, { route: `/e/${slug}` })
 
-      await clickHostAction(page, 'Termin festlegen')
+      await clickHostAction(page, 'Termin fixieren')
 
       const option = dialog()!.querySelector('[data-slot="fri"]')!.parentElement!
       expect(option.textContent).toContain('Anmerkungen')

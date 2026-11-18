@@ -227,15 +227,14 @@ const uneven = computed(() => {
   return small.count === big ? null : { team: nameOfTeam(small.team), small: small.count, big }
 })
 
-/** What the board says about itself under its title (11-event-seite § GameBoard): who is there, or how full the teams are. */
+/** What the board says about itself under its title (11-event-seite § GameBoard): who is there, or how full the teams are. While Team choice is still closed it says nothing (#800); the running line adds the red „gesperrt“ in the template. */
 const meta = computed(() => {
   const size = props.settings?.teamSize ?? 0
-  const teamsText = t('stepper.summary.teams', { n: props.teams.length, s: size })
   switch (phase.value) {
     case 'setup': return t('board.meta.setup', { n: props.members.length })
-    case 'poll': return t('board.meta.poll', { teams: teamsText })
+    case 'poll': return null
     case 'open': return t('board.meta.open', { taken: Object.values(seats.value).reduce((sum, n) => sum + n, 0), places: props.teams.length * size })
-    default: return t('board.meta.running', { teams: teamsText })
+    default: return t('stepper.summary.teams', { n: props.teams.length, s: size })
   }
 })
 </script>
@@ -272,7 +271,10 @@ const meta = computed(() => {
       >
         {{ t('board.title') }}
       </h2>
-      <span class="text-[13px] font-bold text-ink-2">{{ meta }}</span>
+      <span
+        v-if="meta"
+        class="text-[13px] font-bold text-ink-2"
+      >{{ meta }}<template v-if="phase === 'running'"> · <span class="text-error-fg">{{ t('board.meta.running') }}</span></template></span>
       <span
         v-if="phase === 'open'"
         class="ml-auto inline-flex items-center gap-1 text-[12px] font-bold text-ink-2 md:hidden"

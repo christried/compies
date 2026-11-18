@@ -58,7 +58,13 @@ async function passTime(ms: number) {
 const tile = (p: Page) => p.get('[data-testid="countdown-tile"]')
 const digits = (p: Page) => p.get('[data-testid="countdown-digits"]')
 const timeOf = (p: Page) => p.get('[data-testid="countdown-time"]').text()
-const pill = (p: Page) => p.get('[data-testid="countdown-pill"]').text()
+/** The header row (the round icon and the h2) holds nothing else: no pill at its right in any state (#802). */
+const headerRow = (p: Page) => p.get('h2').element.parentElement!
+const noPill = (p: Page) => {
+  expect(p.find('[data-testid="countdown-pill"]').exists()).toBe(false)
+  expect(headerRow(p).children).toHaveLength(2)
+  expect(headerRow(p).textContent!.trim()).toBe('Countdown')
+}
 const status = (p: Page) => p.get('[role="status"]').text()
 const timer = (p: Page) => p.get('[role="timer"]').text()
 const labels = (p: Page) => p.findAll('button').map((b: { text: () => string }) => b.text())
@@ -113,30 +119,30 @@ describe('the frame before the ticker has a value (the server render, #340)', ()
 })
 
 describe('the four states', () => {
-  it('ready: pill „Bereit“, a solid border, the full time, one button', async () => {
+  it('ready: no pill, a solid border, the full time, one button', async () => {
     const page = await mount(READY)
 
-    expect(pill(page)).toBe('Bereit')
+    noPill(page)
     expect(tile(page).classes()).toContain('bg-paper-2')
     expect(tile(page).classes()).toContain('border-solid')
     expect(timeOf(page)).toBe('5:00')
     expect(labels(page)).toEqual(['Starten'])
   })
 
-  it('running: pill „Läuft“ and the primary tile', async () => {
+  it('running: no pill and the primary tile', async () => {
     const page = await mount(runningWith(224_600))
 
-    expect(pill(page)).toBe('Läuft')
+    noPill(page)
     expect(tile(page).classes()).toContain('bg-primary')
     expect(tile(page).classes()).toContain('border-solid')
     expect(timeOf(page)).toBe('3:45')
     expect(labels(page)).toEqual(['Pausieren'])
   })
 
-  it('paused: pill „Pausiert“, a dashed border, the badge, two buttons', async () => {
+  it('paused: no pill, a dashed border, the badge, two buttons', async () => {
     const page = await mount(pausedAt(130_000))
 
-    expect(pill(page)).toBe('Pausiert')
+    noPill(page)
     expect(tile(page).classes()).toContain('border-dashed')
     expect(tile(page).classes()).toContain('bg-paper-2')
     expect(page.find('[data-cd="badge"]').exists()).toBe(true)
@@ -144,10 +150,10 @@ describe('the four states', () => {
     expect(labels(page)).toEqual(['Fortsetzen', 'Zurücksetzen'])
   })
 
-  it('done: pill „Zeit ist um“, the error tile, the stamp, a reset button', async () => {
+  it('done: no pill, the error tile, the stamp, a reset button', async () => {
     const page = await mount(DONE)
 
-    expect(pill(page)).toBe('Zeit ist um')
+    noPill(page)
     expect(tile(page).classes()).toContain('bg-error')
     expect(page.get('[data-cd="stamp"]').text()).toBe('Zeit ist um')
     expect(timeOf(page)).toBe('0:00')
@@ -161,33 +167,40 @@ describe('the four states', () => {
     expect(page.find('[data-cd="badge"]').exists()).toBe(false)
   })
 
-  it('a Member has no buttons in any state, and the lines name the Host', async () => {
-    const lines: [CountdownView, string][] = [
+  it('a Member has no buttons in any state, and the lines name the Host; paused has no line (#802)', async () => {
+    const lines: [CountdownView, string | null][] = [
       [READY, 'Gestellt auf 5:00. Sanne startet ihn.'],
       [runningWith(224_600), 'Gestellt auf 5:00'],
-      [pausedAt(130_000), 'Sanne hat angehalten, bei 2:10 geht’s weiter.'],
+      [pausedAt(130_000), null],
       [DONE, 'Bleibt stehen, bis Sanne zurücksetzt.'],
     ]
     for (const [countdown, line] of lines) {
       const page = await mount(countdown, { isHost: false, hostName: 'Sanne' })
 
       expect(page.findAll('button')).toHaveLength(0)
-      expect(page.get('[data-testid="countdown-meta"]').text()).toBe(line)
+      if (line === null) expect(page.find('[data-testid="countdown-meta"]').exists()).toBe(false)
+      else expect(page.get('[data-testid="countdown-meta"]').text()).toBe(line)
+      // No empty row under the bar for a Member without a line.
+      if (line === null) expect(page.find('[data-testid="countdown-meta"]').exists() || page.find('[data-testid="countdown-actions"]').exists()).toBe(false)
       page.unmount()
     }
     mounted = undefined
   })
 
-  it('the Host\'s lines speak to the Host', async () => {
-    const lines: [CountdownView, string][] = [
-      [READY, 'Gestellt auf 5:00. Starte, wenn alle bereit sind.'],
-      [pausedAt(130_000), 'Angehalten. „Fortsetzen“ macht bei 2:10 weiter.'],
+  it('the Host\'s lines speak to the Host; ready and paused have none (#802)', async () => {
+    const lines: [CountdownView, string | null][] = [
+      [READY, null],
+      [runningWith(224_600), 'Gestellt auf 5:00'],
+      [pausedAt(130_000), null],
       [DONE, 'Bleibt stehen, bis du zurücksetzt.'],
     ]
     for (const [countdown, line] of lines) {
       const page = await mount(countdown)
 
-      expect(page.get('[data-testid="countdown-meta"]').text()).toBe(line)
+      if (line === null) expect(page.find('[data-testid="countdown-meta"]').exists()).toBe(false)
+      else expect(page.get('[data-testid="countdown-meta"]').text()).toBe(line)
+      // The buttons keep their row with or without a line.
+      expect(page.find('[data-testid="countdown-actions"]').exists()).toBe(true)
       page.unmount()
     }
     mounted = undefined
@@ -762,19 +775,17 @@ describe('focus after a Host action', () => {
   })
 })
 
-// The CSS transitions of the card (13-countdown § 04-motion addition, #332 S4): state changes of the tile and the pill take `dur-fast` with
+// The CSS transitions of the card (13-countdown § 04-motion addition, #332 S4): state changes of the tile take `dur-fast` with
 // `ease-snap`, the card enters with `animate-enter` (fade, `dur-base`, `ease-out`), and reduced motion turns the transitions off. jsdom
 // computes no transition, so the test reads the classes and the tokens they stand for.
 describe('the card’s CSS transitions', () => {
   const themeCss = readFileSync(resolve(import.meta.dirname, '../../app/assets/css/compies-theme.css'), 'utf8')
   const tokensCss = readFileSync(resolve(import.meta.dirname, '../../app/assets/css/compies-tokens.css'), 'utf8')
 
-  it('moves the tile’s and the pill’s colours with dur-fast and ease-snap, and not under reduced motion', async () => {
+  it('moves the tile’s colours with dur-fast and ease-snap, and not under reduced motion', async () => {
     const page = await mount(READY)
 
-    for (const element of [tile(page), page.get('[data-testid="countdown-pill"]')]) {
-      expect(element.classes()).toEqual(expect.arrayContaining(['transition-colors', 'dur-fast', 'ease-snap', 'motion-reduce:transition-none', 'reduced:transition-none']))
-    }
+    expect(tile(page).classes()).toEqual(expect.arrayContaining(['transition-colors', 'dur-fast', 'ease-snap', 'motion-reduce:transition-none', 'reduced:transition-none']))
   })
 
   it('enters with animate-enter', async () => {

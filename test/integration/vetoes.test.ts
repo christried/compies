@@ -1129,7 +1129,7 @@ describe('Vetoes', () => {
     })
   })
 
-  describe('Rad verdecken while a Round is being drawn (review 1.4 A3)', () => {
+  describe('Pseudo-Games while a Round is being drawn (review 1.4 A3)', () => {
     const hide = (party: Party, hiddenWheel: boolean) => send('PATCH', `/api/e/${party.slug}/settings`, party.hostCookie, { settings: { hiddenWheel } })
 
     it('is locked from the spin to the end of the window, with 409 locked_while_drawn, and free again after it settles', async () => {

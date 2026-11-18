@@ -6,10 +6,10 @@ import { AVAILABLE_SELECTION_MODES, VETO_ALLOWANCE_MAX, VETO_ALLOWANCE_MIN, hasW
 
 // The Selection mode (#145). The Lucky Wheel (Glücksrad) and Host-Wahl are open; the other three are shown as „Bald
 // verfügbar“ on their cards, so the Host knows what is coming (no note under them, #174). With the Lucky Wheel:
-// Rad verdecken and the Veto allowance, both kept in the draft while Host-Wahl is chosen, and the Veto allowance follows the Team size until the Host sets
+// Pseudo-Games and the Veto allowance, both kept in the draft while Host-Wahl is chosen, and the Veto allowance follows the Team size until the Host sets
 // it (`vetoAllowanceOf`). „Pool vorher zeigen“ (#225) sits in the wheel's box with the Lucky Wheel and in a box of its own
 // with Host-Wahl. The step never blocks. In the settings editor (#147) `locks.reason` locks the mode (the Event
-// is running; Rad verdecken, Pool vorher zeigen and the Veto allowance stay open), `locks.drawing` locks Rad verdecken and the
+// is running; Pseudo-Games, Pool vorher zeigen and the Veto allowance stay open), `locks.drawing` locks Pseudo-Games and the
 // Veto allowance while a game is being drawn (#231), and `locks.floors` keeps the Veto allowance from going below what a Party
 // has spent.
 const props = defineProps<{ locks?: StepLocks }>()
@@ -38,7 +38,7 @@ const vetoMinReason = computed(() => (vetoMin.value > VETO_ALLOWANCE_MIN ? t('se
 const wheel = computed(() => hasWheel(draft.value.settings.selectionMode))
 const veto = computed(() => vetoAllowanceOf(draft.value))
 
-// „Pool vorher zeigen“ (#225) is always off under „Rad verdecken“. Turning „Rad verdecken“ on turns it off; turning it off
+// „Pool vorher zeigen“ (#225) is always off under „Pseudo-Games“. Turning „Pseudo-Games“ on turns it off; turning it off
 // leaves it off until the Host turns it on, so nothing is revealed by surprise (also not a value kept from Host-Wahl).
 const poolPreview = computed({
   get: () => draft.value.poolPreview && !(wheel.value && draft.value.hiddenWheel),

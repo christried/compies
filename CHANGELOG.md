@@ -14,6 +14,14 @@
 ### Geändert
 
 - **Deine eigene Bibliothek:** Jeder Host hat jetzt eine eigene Bibliothek. Du siehst und bearbeitest nur die Spiele, die du selbst angelegt hast, und niemand sonst sieht deine, auch die Plattform-Admin nicht. Spiele anderer Hosts, die in deinen Events vorkamen, hast du als eigene Kopie bekommen. Tags und Tag-Vorschläge kommen nur noch aus deinen eigenen Spielen. ([#455](https://github.com/christried/compies/issues/455))
+- **Nur noch der Kopf der App-Figur:** Wo nichts zu zeigen ist (noch keine Events, keine Treffer in der Bibliothek) und auf den ganzseitigen Hinweisen wie „Link ungültig“, „Event gelöscht“ und den Fehlerseiten zeigt die App-Figur jetzt nur noch den Kopf statt der gerahmten Büste. ([#794](https://github.com/christried/compies/issues/794))
+- **Kein Glitzer-Symbol mehr:** Neben „Bester Termin“ in der Terminumfrage und neben „Neu“ bei den Neuigkeiten steht kein Glitzer-Symbol mehr. Auf der Startseite zeigt der beste Termin eines Events jetzt einen Kalender. ([#795](https://github.com/christried/compies/issues/795))
+- **Discord und Twitch in ihren Farben:** Die Anmelde-Knöpfe tragen jetzt das Logo und die Farbe von Discord und von Twitch, damit du deinen Knopf auf einen Blick findest. Die Texte bleiben dieselben. ([#792](https://github.com/christried/compies/issues/792))
+- **„Zuletzt aktualisiert“ am Spiel:** Auf der Seite eines Spiels in der Bibliothek steht jetzt, wann es zuletzt geändert wurde, mit Monat und Jahr, zum Beispiel „Zuletzt aktualisiert: November 2026“. ([#805](https://github.com/christried/compies/issues/805))
+- **„Noch eins“ nach dem Anlegen:** Nach dem Speichern eines neuen Spiels bietet die Meldung „Noch eins“ an, damit du direkt das nächste Spiel anlegst. ([#806](https://github.com/christried/compies/issues/806))
+- **Offline-Seite im Look von „Link ungültig“:** Ohne Verbindung zeigt die App jetzt den Kopf der App-Figur, eine große Überschrift und den Knopf „Seite neu laden“ wie auf „Link ungültig“. Die Texte bleiben, wie sie waren, und die Seite braucht weiterhin kein Netz. ([#808](https://github.com/christried/compies/issues/808))
+- **Kürzere Texte, ein Name pro Sache:** Viele Texte sind kürzer, und was du ohnehin siehst, steht nicht noch einmal daneben. Eine Sache hat jetzt überall denselben Namen: Der Host fixiert einen Termin („Termin fixieren“), und ein Platz in einem Team heißt auf dem Spielbrett „Slot“. ([#809](https://github.com/christried/compies/issues/809))
+- **Meldungen in Formularen:** Eine Meldung unter einem Feld erscheint jetzt rot und erst, wenn du das Feld benutzt hast oder zu speichern oder weiterzugehen versucht hast. Gehören mehrere Felder zusammen, zum Beispiel „von“ und „bis“ bei der Spielerzahl, steht eine gemeinsame Meldung darunter. ([#797](https://github.com/christried/compies/issues/797))
 
 ### Entfernt
 

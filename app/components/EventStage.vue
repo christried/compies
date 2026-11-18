@@ -48,7 +48,7 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  /** A Slot card's „Termin festlegen“ (the confirm dialog), the Sessions card's actions and the Session-needed notice's button. */
+  /** A Slot card's „Termin fixieren“ (the confirm dialog), the Sessions card's actions and the Session-needed notice's button. */
   pick: [slotId: string]
   reschedule: [sessionId: string]
   add: []

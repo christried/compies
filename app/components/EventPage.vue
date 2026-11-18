@@ -81,7 +81,7 @@ const vetoBarShown = ref(false)
 const clipOpen = ref(!!data.value?.clip)
 const clipShown = computed(() => clipOpen.value && !!data.value?.clip)
 
-/** Why "Termin festlegen" cannot set a Date right now, or null (#52): the dock's action says so. */
+/** Why "Termin fixieren" cannot set a Date right now, or null (#52): the dock's action says so. */
 const setBlocked = computed(() => {
   const key = dateBlockedKey(slots.value)
   return key === null ? null : t(key)

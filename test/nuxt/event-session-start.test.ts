@@ -49,12 +49,12 @@ describe('the Host dock per state', () => {
     expect(pill(page)).toEqual(['Event einrichten', 'Einladen', 'Mehr'])
   })
 
-  it('offers Termin festlegen while no Session is dated', async () => {
+  it('offers Termin fixieren while no Session is dated', async () => {
     const { slug } = serve(s => hostView(s, [{ number: null, startsAt: null }], { event: { isHost: true, phase: 'poll' }, start: { sessionId: null, number: null, rejection: 'no_dated_session' }, slots: [{ id: 'fri', startsAt: '2090-10-23T18:00:00.000Z', past: false }] }))
 
     const page = await mountSuspended(EventPage, { route: `/e/${slug}` })
 
-    expect(pill(page)).toEqual(['Termin festlegen', 'Einladen', 'Mehr'])
+    expect(pill(page)).toEqual(['Termin fixieren', 'Einladen', 'Mehr'])
   })
 
   it('offers Session 1 starten and, while Session 2 polls, Termin für Session 2', async () => {
@@ -160,7 +160,7 @@ describe('a start that the rule blocks', () => {
   })
 
   it.each([
-    ['teams_empty', 'Geht erst, wenn in jedem Team jemand ist.'],
+    ['teams_empty', 'Jedes Team braucht Spielende.'],
     ['no_dated_session', 'Geht erst, wenn eine Session einen Termin hat.'],
     ['session_running', 'Es läuft schon eine Session.'],
     ['not_set_up', 'Geht erst, wenn das Event eingerichtet ist.'],
@@ -179,7 +179,7 @@ describe('a start that the rule blocks', () => {
 
     await clickHostAction(page, 'Session 1 starten')
 
-    expect(shownToasts().map(toast => toast.text)).toEqual(['Geht erst, wenn in jedem Team jemand ist.'])
+    expect(shownToasts().map(toast => toast.text)).toEqual(['Jedes Team braucht Spielende.'])
     expect(dialog()).toBeNull()
   })
 
@@ -215,9 +215,9 @@ describe('starting a Session', () => {
     await clickHostAction(page, 'Session 1 starten')
 
     expect(started).toBe(0)
-    expect(dialog()?.textContent).toContain('Los geht’s?')
-    expect(dialog()?.textContent).toContain('Mit dem Start werden die Teams gesperrt. Die Tribüne bleibt offen, nachziehen kannst du weiterhin.')
-    expect(dialog()?.textContent).toContain('2 Teams à 3, danach gesperrt')
+    expect(dialog()?.textContent).toContain('Kann’s losgehen?')
+    expect(dialog()?.textContent).toContain('Mit dem Start werden die Teams gesperrt. Nachziehen kannst du als Host weiterhin.')
+    expect(dialog()?.textContent).toContain('2 Teams à 3')
     // The Team names stay open after the start (#438): the sheet no longer mentions them.
     expect(dialog()?.textContent).not.toContain('Namen')
     expect(dialog()?.textContent).not.toContain('eingefroren')
@@ -254,7 +254,7 @@ describe('starting a Session', () => {
     await clickHostAction(page, 'Session 2 starten')
 
     expect(dialog()?.textContent).toContain('Die Teams bleiben, wie sie sind.')
-    expect(dialog()?.textContent).not.toContain('danach gesperrt')
+    expect(dialog()?.textContent).not.toContain('Teams à')
     expect(dialog()?.textContent).not.toContain('Mit dem Start werden die Teams')
   })
 })
@@ -428,7 +428,7 @@ describe('finishing the Event', () => {
   })
 })
 
-// A Tie (#278): with the Rounds that have a Result at the Game count and more than one Party on rank 1, the Host holds „Unentschieden beenden“ or adds a last game.
+// A Tie (#278): with the Rounds that have a Result at the Game count and more than one Party on rank 1, the Host holds „Unentschieden“ or adds a last game.
 describe('a Tie at the end', () => {
   const tied = { played: 2, gameCount: 2, complete: true, tie: [1, 2], finish: { rejection: null }, lastGame: { rejection: null } }
   const RUNNING_ONE = [{ number: null, startsAt: FIRST, startedAt: STARTED }]
@@ -461,25 +461,25 @@ describe('a Tie at the end', () => {
 
     const page = await mountSuspended(EventPage, { route: `/e/${slug}` })
 
-    expect(pill(page)).toEqual(['Unentschieden beenden 1 s halten', 'Letztes Spiel hinzufügen', 'Session beenden 1 s halten', 'Mehr'])
+    expect(pill(page)).toEqual(['Unentschieden 1 s halten', 'Letztes Spiel', 'Session beenden 1 s halten', 'Mehr'])
     const items = [...(await openHostMenu(page)).querySelectorAll('[role="menuitem"]')].map(item => item.textContent?.trim())
     expect(items).toContain('Einladen')
     expect(items).toContain('Einstellungen')
-    expect(items).not.toContain('Unentschieden beenden')
+    expect(items).not.toContain('Unentschieden')
     expect(items).not.toContain('Session beenden')
-    expect(items).not.toContain('Letztes Spiel hinzufügen')
+    expect(items).not.toContain('Letztes Spiel')
   })
 
-  it('has the pill Unentschieden beenden, Letztes Spiel hinzufügen and Einladen between Sessions and after the last one', async () => {
+  it('has the pill Unentschieden, Letztes Spiel and Einladen between Sessions and after the last one', async () => {
     const between = serve(s => hostView(s, [{ number: 1, startsAt: FIRST, startedAt: STARTED, endedAt: ENDED }, { number: 2, startsAt: SECOND }], { event: { isHost: true, phase: 'running' }, start: { sessionId: 'x', number: 2, rejection: null }, end: tied }))
     const done = serve(s => hostView(s, ENDED_ONE, { event: { isHost: true, phase: 'running' }, start: NO_DATED, end: tied }))
-    const expected = ['Unentschieden beenden 1 s halten', 'Letztes Spiel hinzufügen', 'Einladen', 'Mehr']
+    const expected = ['Unentschieden 1 s halten', 'Letztes Spiel', 'Einladen', 'Mehr']
 
     expect(pill(await mountSuspended(EventPage, { route: `/e/${between.slug}` }))).toEqual(expected)
     expect(pill(await mountSuspended(EventPage, { route: `/e/${done.slug}` }))).toEqual(expected)
   })
 
-  it('does not repeat Letztes Spiel hinzufügen in Mehr, between Sessions and after the last one, and lists Einladen and Einstellungen there (#278)', async () => {
+  it('does not repeat Letztes Spiel in Mehr, between Sessions and after the last one, and lists Einladen and Einstellungen there (#278)', async () => {
     const between = serve(s => hostView(s, [{ number: 1, startsAt: FIRST, startedAt: STARTED, endedAt: ENDED }, { number: 2, startsAt: SECOND }], { event: { isHost: true, phase: 'running' }, start: { sessionId: 'x', number: 2, rejection: null }, end: tied }))
     const done = serve(s => hostView(s, ENDED_ONE, { event: { isHost: true, phase: 'running' }, start: NO_DATED, end: tied }))
 
@@ -488,7 +488,7 @@ describe('a Tie at the end', () => {
       const items = [...(await openHostMenu(page)).querySelectorAll('[role="menuitem"]')].map(item => item.textContent?.trim())
       expect(items).toContain('Einladen')
       expect(items).toContain('Einstellungen')
-      expect(items).not.toContain('Letztes Spiel hinzufügen')
+      expect(items).not.toContain('Letztes Spiel')
       page.unmount()
     }
   })
@@ -508,9 +508,9 @@ describe('a Tie at the end', () => {
     } })
     const page = await mountSuspended(EventPage, { route: `/e/${store.slug}` })
 
-    await button(page, 'Unentschieden beenden').trigger('click')
+    await button(page, 'Unentschieden').trigger('click')
     expect(posted).toEqual([])
-    await hold(button(page, 'Unentschieden beenden'))
+    await hold(button(page, 'Unentschieden'))
 
     await vi.waitFor(() => expect(posted).toEqual([{ outcome: 'tie', winners: [1, 2] }]))
     await vi.waitFor(() => expect(page.get('header').text()).toContain('Beendet'))
@@ -528,7 +528,7 @@ describe('a Tie at the end', () => {
     } })
     const page = await mountSuspended(EventPage, { route: `/e/${store.slug}` })
 
-    await button(page, 'Letztes Spiel hinzufügen').trigger('click')
+    await button(page, 'Letztes Spiel').trigger('click')
 
     await vi.waitFor(() => expect(posts).toEqual([undefined]))
     await vi.waitFor(() => expect(pill(page)).toEqual(['Nächstes Spiel setzen', 'Session beenden 1 s halten', 'Einladen', 'Mehr']))
@@ -545,7 +545,7 @@ describe('a Tie at the end', () => {
       return { gameCount: 3 }
     } })
     const page = await mountSuspended(EventPage, { route: `/e/${store.slug}` })
-    const last = button(page, 'Letztes Spiel hinzufügen')
+    const last = button(page, 'Letztes Spiel')
 
     await last.trigger('click')
     await last.trigger('click')
@@ -563,13 +563,13 @@ describe('a Tie at the end', () => {
     } })
     const page = await mountSuspended(EventPage, { route: `/e/${store.slug}` })
 
-    await button(page, 'Letztes Spiel hinzufügen').trigger('click')
+    await button(page, 'Letztes Spiel').trigger('click')
 
     await vi.waitFor(() => expect(shownToasts().map(toast => toast.text)).toEqual(['Gerade steht kein Gleichstand an. Die Seite zeigt den neuen Stand.']))
     await vi.waitFor(() => expect(pill(page)[0]).toBe('Event abschließen 1 s halten'))
   })
 
-  it('shows the last game dashed at the maximum, says why on a click and posts nothing; Unentschieden beenden stays', async () => {
+  it('shows the last game dashed at the maximum, says why on a click and posts nothing; Unentschieden stays', async () => {
     let calls = 0
     const store = serve(s => running(s, { ...tied, lastGame: { rejection: 'game_count_range' } }))
     registerEndpoint(`/api/e/${store.slug}/last-game`, { method: 'POST', handler: () => {
@@ -577,10 +577,10 @@ describe('a Tie at the end', () => {
       return { gameCount: 31 }
     } })
     const page = await mountSuspended(EventPage, { route: `/e/${store.slug}` })
-    const last = button(page, 'Letztes Spiel hinzufügen')
+    const last = button(page, 'Letztes Spiel')
 
     expect(last.attributes('aria-disabled')).toBe('true')
-    expect(pill(page)[0]).toBe('Unentschieden beenden 1 s halten')
+    expect(pill(page)[0]).toBe('Unentschieden 1 s halten')
     await last.trigger('click')
     await flushPromises()
 

@@ -11,7 +11,7 @@ import { FORMATTED_HREF, FORMATTED_NOTES, readFormatted } from './helpers/format
 import { editorOf } from './helpers/notes-editor'
 
 // Step 6 of the stepper, the Game pool (#146, #173; the Tiebreaker pool is gone, #279): the game browser over the library,
-// the hint under the Game pool, „Neues Spiel anlegen“ in a sheet, and what is sent. The other steps have their own
+// the hint under the Game pool, „Neues Spiel“ in a sheet, and what is sent. The other steps have their own
 // cases in event-stepper.test.ts, event-stepper-mode.test.ts and create-event.test.ts.
 
 const host = { ...kitty, canHost: true }
@@ -28,7 +28,7 @@ function game(n: number, name: string, overrides: Partial<GameView> = {}): GameV
     playersMin: null,
     playersMax: null,
     suitabilities: [],
-    createdAt: '2026-01-15T10:00:00.000Z',
+    updatedAt: '2026-01-15T10:00:00.000Z',
     notes: null,
     tags: [],
     archived: false,
@@ -145,14 +145,14 @@ describe('the pool steps', () => {
     await toPoolStep(page)
 
     expect(page.get('h1').text()).toContain('Schritt 6 von 7')
-    expect(page.get('h1').text()).toContain('Welche Spiele kommen in den Pool?')
+    expect(page.get('h1').text()).toContain('Welche Spiele?')
     expect(stepItems(page).map(item => item.text())).toEqual([
-      '✓ Name', '✓ Format', '✓ Spiele', '✓ Punkte', '✓ Auswahlmodus', '6 Spielepool', '7 Termin',
+      '✓ Name', '✓ Format', '✓ Spieleanzahl', '✓ Punkte', '✓ Auswahlmodus', '6 Spielepool', '7 Termin',
     ])
     await next(page)
 
     expect(page.get('h1').text()).toContain('Schritt 7 von 7')
-    expect(page.get('h1').text()).toContain('Wann zocken wir?')
+    expect(page.get('h1').text()).toContain('Wann ist es soweit?')
   })
 
   describe('the Game pool', () => {
@@ -242,13 +242,13 @@ describe('the pool steps', () => {
       expect(inPool(page)!.findAll('li').map(row => row.get('b').text())).toEqual(['Pong'])
     })
 
-    it('says so when the library is empty, and still offers „Neues Spiel anlegen“', async () => {
+    it('says so when the library is empty, and still offers „Neues Spiel“', async () => {
       library = []
       const page = await mountCreate()
       await toPoolStep(page)
 
       expect(page.text()).toContain('Die Bibliothek ist leer.')
-      expect(page.findAll('button').some(button => button.text().includes('Neues Spiel anlegen'))).toBe(true)
+      expect(page.findAll('button').some(button => button.text().includes('Neues Spiel'))).toBe(true)
     })
 
     describe('the hint', () => {
@@ -268,10 +268,10 @@ describe('the pool steps', () => {
         await chooseLuckyWheel(page)
 
         // 10 Games, plus 3 vetoes for each of the 2 Parties, plus the possible last game of a Tie (10 is even): 17 games to be safe.
-        expect(hint(page)!.text()).toBe('Wird knapp. 10 Spiele plus bis zu 6 Vetos plus 1 Spiel für einen möglichen Gleichstand: Im schlimmsten Fall brauchst du 17 Spiele, im Pool sind 0. Blockiert nichts, nur damit du’s weißt.')
+        expect(hint(page)!.text()).toBe('Wird knapp. 10 Spiele plus bis zu 6 Vetos plus 1 Spiel für einen möglichen Gleichstand: Im schlimmsten Fall brauchst du 17 Spiele, im Pool sind 0.')
 
         for (let n = 1; n <= 12; n++) await toggle(page, `Spiel ${String(n).padStart(2, '0')} in den Pool`).trigger('click')
-        expect(hint(page)!.text()).toBe('Wird knapp. 10 Spiele plus bis zu 6 Vetos plus 1 Spiel für einen möglichen Gleichstand: Im schlimmsten Fall brauchst du 17 Spiele, im Pool sind 12. Blockiert nichts, nur damit du’s weißt.')
+        expect(hint(page)!.text()).toBe('Wird knapp. 10 Spiele plus bis zu 6 Vetos plus 1 Spiel für einen möglichen Gleichstand: Im schlimmsten Fall brauchst du 17 Spiele, im Pool sind 12.')
 
         for (let n = 13; n <= 16; n++) await toggle(page, `Spiel ${n} in den Pool`).trigger('click')
         expect(hint(page)!.text()).toContain('im Pool sind 16.')
@@ -288,7 +288,7 @@ describe('the pool steps', () => {
         const page = await mountCreate()
         await toPoolStep(page)
 
-        expect(hint(page)!.text()).toBe('Wird knapp. Für 10 Spiele und ein mögliches letztes Spiel brauchst du 11 Spiele im Pool, im Pool sind 0. Blockiert nichts, nur damit du’s weißt.')
+        expect(hint(page)!.text()).toBe('Wird knapp. Für 10 Spiele plus 1 Spiel für einen möglichen Gleichstand brauchst du 11 Spiele im Pool, im Pool sind 0.')
 
         for (let n = 1; n <= 9; n++) await toggle(page, `Spiel ${String(n).padStart(2, '0')} in den Pool`).trigger('click')
         expect(hint(page)!.text()).toContain('im Pool sind 9.')
@@ -315,7 +315,7 @@ describe('the pool steps', () => {
         await next(page, 1)
         await settle(page)
 
-        expect(hint(page)!.text()).toBe('Wird knapp. Für 1 Spiel brauchst du 1 Spiel im Pool, im Pool sind 0. Blockiert nichts, nur damit du’s weißt.')
+        expect(hint(page)!.text()).toBe('Wird knapp. Für 1 Spiel brauchst du 1 Spiel im Pool, im Pool sind 0.')
       })
 
       it('says „ist 1“ for a single game in the pool', async () => {
@@ -326,7 +326,7 @@ describe('the pool steps', () => {
         await settle(page)
         await toggle(page, 'Spiel 01 in den Pool').trigger('click')
 
-        expect(hint(page)!.text()).toBe('Wird knapp. Für 2 Spiele und ein mögliches letztes Spiel brauchst du 3 Spiele im Pool, im Pool ist 1. Blockiert nichts, nur damit du’s weißt.')
+        expect(hint(page)!.text()).toBe('Wird knapp. Für 2 Spiele plus 1 Spiel für einen möglichen Gleichstand brauchst du 3 Spiele im Pool, im Pool ist 1.')
       })
 
       it('reads right for one Game with the Glücksrad', async () => {
@@ -337,7 +337,7 @@ describe('the pool steps', () => {
         await next(page)
         await settle(page)
 
-        expect(hint(page)!.text()).toBe('Wird knapp. 1 Spiel plus bis zu 6 Vetos: Im schlimmsten Fall brauchst du 7 Spiele, im Pool sind 0. Blockiert nichts, nur damit du’s weißt.')
+        expect(hint(page)!.text()).toBe('Wird knapp. 1 Spiel plus bis zu 6 Vetos: Im schlimmsten Fall brauchst du 7 Spiele, im Pool sind 0.')
 
         await toggle(page, 'Spiel 01 in den Pool').trigger('click')
         expect(hint(page)!.text()).toContain('im Pool ist 1.')
@@ -350,7 +350,7 @@ describe('the pool steps', () => {
         await next(page, 1)
         await settle(page)
 
-        expect(hint(page)!.text()).toBe('Wird knapp. Für 9 Spiele brauchst du 9 Spiele im Pool, im Pool sind 0. Blockiert nichts, nur damit du’s weißt.')
+        expect(hint(page)!.text()).toBe('Wird knapp. Für 9 Spiele brauchst du 9 Spiele im Pool, im Pool sind 0.')
       })
 
       it('adds the possible last game at 1 game with 3 teams, in the singular (#279)', async () => {
@@ -364,7 +364,7 @@ describe('the pool steps', () => {
         await next(page, 3)
         await settle(page)
 
-        expect(hint(page)!.text()).toBe('Wird knapp. Für 1 Spiel und ein mögliches letztes Spiel brauchst du 2 Spiele im Pool, im Pool sind 0. Blockiert nichts, nur damit du’s weißt.')
+        expect(hint(page)!.text()).toBe('Wird knapp. Für 1 Spiel plus 1 Spiel für einen möglichen Gleichstand brauchst du 2 Spiele im Pool, im Pool sind 0.')
       })
 
       it('is a status, not an error, and never blocks Weiter', async () => {
@@ -420,14 +420,14 @@ describe('the pool steps', () => {
     })
   })
 
-  describe('Neues Spiel anlegen', () => {
-    const newGameButton = (page: Page) => page.findAll('button').find(button => button.text().includes('Neues Spiel anlegen'))!
+  describe('Neues Spiel', () => {
+    const newGameButton = (page: Page) => page.findAll('button').find(button => button.text().includes('Neues Spiel'))!
     const dialog = () => document.body.querySelector('[role="dialog"]')
 
     async function createInSheet(page: Page, notes?: NotesDoc) {
       await newGameButton(page).trigger('click')
       await vi.waitFor(() => expect(dialog()).not.toBeNull())
-      const label = [...dialog()!.querySelectorAll('label')].find(element => element.textContent === 'Name')!
+      const label = [...dialog()!.querySelectorAll('label')].find(element => element.textContent === 'Titel')!
       const input = dialog()!.querySelector<HTMLInputElement>(`[id="${label.getAttribute('for')}"]`)!
       input.value = 'Frisch Angelegt'
       input.dispatchEvent(new Event('input'))
@@ -446,7 +446,7 @@ describe('the pool steps', () => {
       await newGameButton(page).trigger('click')
 
       await vi.waitFor(() => expect(dialog()).not.toBeNull())
-      expect(dialog()!.querySelector('h2')!.textContent).toBe('Neues Spiel anlegen')
+      expect(dialog()!.querySelector('h2')!.textContent).toBe('Neues Spiel')
       expect(dialog()!.querySelector('form')).not.toBeNull()
       // The sheet's form is not asked for „Speichern und noch eins“ (the stepper puts one game in the pool).
       expect([...dialog()!.querySelectorAll('button')].some(button => button.textContent?.trim() === 'Speichern und noch eins')).toBe(false)
@@ -464,7 +464,7 @@ describe('the pool steps', () => {
         expect(element, `no field "${label}"`).toBeDefined()
         return dialog()!.querySelector<HTMLInputElement>(`[id="${element!.getAttribute('for')}"]`)!
       }
-      expect(input('Start ab')).not.toBeNull()
+      expect(input('Start')).not.toBeNull()
       expect(input('Länge')).not.toBeNull()
       expect(input('Ende').value).toBe('0:30')
       input('Ende').value = '2:00'
@@ -472,14 +472,14 @@ describe('the pool steps', () => {
       await vi.waitFor(() => expect(input('Länge').value).toBe('120'))
     })
 
-    it('shows the Free-to-play hint of the game form in the sheet (#423)', async () => {
+    it('shows no Free-to-play hint line in the sheet (#804)', async () => {
       const page = await mountCreate()
       await toPoolStep(page)
 
       await newGameButton(page).trigger('click')
 
       await vi.waitFor(() => expect(dialog()).not.toBeNull())
-      expect(dialog()!.textContent).toContain('Ohne Preis bekommt das Spiel den Tag „Free-to-play“.')
+      expect(dialog()!.textContent).not.toContain('Ohne Preis bekommt das Spiel')
     })
 
     it('puts the new game in the pool, closes the sheet and keeps what the Host typed in the other steps', async () => {
@@ -503,7 +503,7 @@ describe('the pool steps', () => {
       await toPoolStep(page)
       await newGameButton(page).trigger('click')
       await vi.waitFor(() => expect(dialog()).not.toBeNull())
-      const label = [...dialog()!.querySelectorAll('label')].find(element => element.textContent === 'Name')!
+      const label = [...dialog()!.querySelectorAll('label')].find(element => element.textContent === 'Titel')!
       const input = dialog()!.querySelector<HTMLInputElement>(`[id="${label.getAttribute('for')}"]`)!
       input.value = 'Frisch Angelegt'
       input.dispatchEvent(new Event('input'))
@@ -525,7 +525,7 @@ describe('the pool steps', () => {
       await newGameButton(page).trigger('click')
 
       await vi.waitFor(() => expect(dialog()).not.toBeNull())
-      const label = [...dialog()!.querySelectorAll('label')].find(element => element.textContent === 'Name')!
+      const label = [...dialog()!.querySelectorAll('label')].find(element => element.textContent === 'Titel')!
       const input = dialog()!.querySelector<HTMLInputElement>(`[id="${label.getAttribute('for')}"]`)!
       expect(input.value).toBe('')
       input.value = 'Noch eins'

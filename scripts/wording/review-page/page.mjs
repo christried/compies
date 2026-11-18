@@ -5,6 +5,7 @@
 import { checkReplacement } from '/modules/check-replacement.mjs'
 import { isReworded, isStepId, stepId, stepName } from '/modules/answers.mjs'
 import { filterSteps, isAnswered, progressOf, sightingToShow, textEntry } from '/modules/review-model.mjs'
+import { tabKeyAction } from '/modules/review-keys.mjs'
 
 document.documentElement.dataset.page = 'compies-wording-review'
 
@@ -421,6 +422,14 @@ document.addEventListener('keydown', (event) => {
     case 'ArrowDown':
       event.preventDefault()
       return flip(1)
+    case 'Tab': {
+      const step = current()
+      if (tabKeyAction(event, { inField: false, commentShown: step !== null && step.kind !== 'unused' }) === null) return
+      event.preventDefault()
+      comment.focus()
+      comment.setSelectionRange(comment.value.length, comment.value.length)
+      return
+    }
   }
   // A printable character starts the replacement (a mono step: the comment). No preventDefault: the character lands in the field it opens.
   if (event.key.length === 1 && event.key !== ' ') {
@@ -590,7 +599,7 @@ parts.body.append(
     ),
   ),
   h('div', { id: 'comment-box' },
-    h('label', { text: 'Kommentar (Alt+C, Enter speichert)' }),
+    h('label', { text: 'Kommentar (Tab oder Alt+C, Enter speichert)' }),
     comment,
     h('button', { type: 'button', id: 'btn-comment', text: 'Kommentar speichern', onclick: saveComment }),
   ),

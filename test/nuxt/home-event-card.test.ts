@@ -102,6 +102,94 @@ describe('HomeEventCard (#347)', () => {
     expect(wrapper.get('a[href="/e/freitags-zocken-k7q2"]').text()).toBe('Ansehen')
   })
 
+  it.each([true, false])('leaves „Termin“ off the card of a running Event that shows its next Session, host %s (#793)', async (isHost) => {
+    const wrapper = await mountCard(card({
+      phase: 'running',
+      sessionCount: 2,
+      missingDates: 0,
+      nextSession: { number: 1, startsAt: '2090-11-01T19:00:00.000Z' },
+      action: isHost ? 'open' : 'view',
+      isHost,
+      viewerVoted: true,
+      progress: { voted: 0, total: 0 },
+    }))
+
+    expect(article(wrapper).text()).toContain('Session 1 von 2 ·')
+    expect(lineWith(wrapper, 'span', 'Termin')).toBeUndefined()
+  })
+
+  it('leaves „Termin“ off a running Event with one Session and shows its bare date (#793)', async () => {
+    const wrapper = await mountCard(card({
+      phase: 'running',
+      missingDates: 0,
+      nextSession: { number: null, startsAt: '2090-11-01T19:00:00.000Z' },
+      action: 'view',
+      viewerVoted: true,
+      progress: { voted: 0, total: 0 },
+    }))
+
+    expect(article(wrapper).find('b').text()).not.toBe('')
+    expect(article(wrapper).text()).not.toContain('Session')
+    expect(lineWith(wrapper, 'span', 'Termin')).toBeUndefined()
+  })
+
+  it('shows the Best slot under „Bester Termin bisher“ with the calendar icon and no sparkle (#795)', async () => {
+    const wrapper = await mountCard(card({ bestSlot: { id: 'slot-1', startsAt: '2090-11-01T19:00:00.000Z' } }))
+    const row = article(wrapper).get('.bg-paper-2')
+
+    expect(row.text()).toContain('Bester Termin bisher')
+    expect(row.find('.lucide-calendar-check').exists()).toBe(true)
+    expect(article(wrapper).find('.lucide-sparkles').exists()).toBe(false)
+  })
+
+  it('shows the Date of a set Event with the same calendar icon as its Best-slot line (#795)', async () => {
+    const wrapper = await mountCard(card({
+      phase: 'date_set',
+      missingDates: 0,
+      nextSession: { number: null, startsAt: '2090-11-01T19:00:00.000Z' },
+      action: 'view',
+      progress: { voted: 0, total: 0 },
+      viewerVoted: true,
+    }))
+    const row = article(wrapper).get('.bg-paper-2')
+
+    expect(row.text()).toContain('Termin')
+    expect(row.find('.lucide-calendar-check').exists()).toBe(true)
+    expect(article(wrapper).find('.lucide-sparkles').exists()).toBe(false)
+  })
+
+  it('still reads „Bester Termin bisher“ on a running Event whose poll for a later Session is open (#793)', async () => {
+    const wrapper = await mountCard(card({
+      phase: 'running',
+      sessionCount: 2,
+      missingDates: 1,
+      nextSession: { number: 1, startsAt: '2090-11-01T19:00:00.000Z' },
+      action: 'vote',
+    }))
+
+    expect(lineWith(wrapper, 'span', 'Bester Termin bisher')).toBeDefined()
+    expect(lineWith(wrapper, 'span', 'Termin')).toBeUndefined()
+  })
+
+  it('keeps „Termin“ on the card of a finished Event with a passed Session (#793)', async () => {
+    const wrapper = await mountCard(card({
+      phase: 'finished',
+      missingDates: 0,
+      nextSession: { number: null, startsAt: '2020-11-01T19:00:00.000Z' },
+      action: 'view',
+      viewerVoted: true,
+      progress: { voted: 0, total: 0 },
+    }))
+
+    expect(lineWith(wrapper, 'span', 'Termin')).toBeDefined()
+  })
+
+  it('says „Noch keine Einigung vorhanden.“ on a poll card with no Best slot (#793)', async () => {
+    const wrapper = await mountCard(card({ bestSlot: null }))
+
+    expect(article(wrapper).text()).toContain('Noch keine Einigung vorhanden.')
+  })
+
   it('reads „Läuft“ on a running Event', async () => {
     const wrapper = await mountCard(card({ phase: 'running', missingDates: 0, action: 'view', viewerVoted: true, progress: { voted: 0, total: 0 } }))
 

@@ -7,7 +7,7 @@ import { clean, theme } from './css-tokens'
 // Ink is light in Dunkel and reads 1.26:1 on the yellow primary; the `--cp-on-*` tokens stay dark in both looks. The 0.11
 // fixes pinned token values and passed before the fix (review S6, Q7), so this reads the class strings under `app/` (#481).
 // A ticket that swaps a text class on a fill adds its broken string as a case of `checkClassString` first.
-const FILLS = ['primary', 'hot', 'success', 'warning', 'error', 'info']
+const FILLS = ['primary', 'hot', 'success', 'warning', 'error', 'info', 'discord', 'twitch']
 
 const root = resolve(import.meta.dirname, '../..')
 
@@ -21,6 +21,8 @@ describe('the fills', () => {
   it('are the colours with an on-colour token in the theme', () => {
     const fills = onColourFills(clean(theme))
     expect(fills).toEqual(expect.arrayContaining(['primary', 'info', 'hot', 'warning', 'error', 'success']))
+    // The sign-in buttons' brand fills (#792): white text, never ink.
+    expect(fills).toEqual(expect.arrayContaining(['discord', 'twitch']))
     for (const notFill of ['ink', 'paper', 'info-tint']) expect(fills).not.toContain(notFill)
   })
 })
@@ -29,6 +31,8 @@ describe('the ticket cases', () => {
   it.each([
     ['hover:bg-primary focus-visible:bg-primary', ['b', 'b'], ['hover:text-on-primary', 'focus-visible:text-on-primary']],
     ['bg-info text-ink', ['a'], ['text-on-info']],
+    ['bg-discord text-ink', ['a'], ['text-on-discord']],
+    ['hover:bg-twitch', ['b'], ['hover:text-on-twitch']],
     ['bg-primary text-on-primary', [], []],
     ['hover:bg-primary hover:text-on-primary', [], []],
     ['bg-info', [], []],

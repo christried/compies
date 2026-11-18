@@ -150,6 +150,17 @@ describe('Team names on the Game board', () => {
     const { page } = await mountBoard({ members: [member(SANNE, 'Sanne', { zone: 'stands' }, null, true), member(kitty.id, 'Kitty', team(1))], viewerId: SANNE, isHost: true })
     expect(page.find('input').exists()).toBe(false)
     expect(pencil(page, 'Team Rot').exists()).toBe(false)
+    expect(page.text()).not.toContain('bis zu 12 Zeichen')
+  })
+
+  it('says nothing under the field until a space was typed (#800)', async () => {
+    const { page } = await mountBoard({ members: [member(kitty.id, 'Kitty', team(1))] })
+    const input = field(page, 'Team Rot')
+
+    expect(input.exists()).toBe(true)
+    expect(zone(page, 'Team Rot').text()).not.toContain('Ein Wort, bis zu 12 Zeichen.')
+    expect(zone(page, 'Team Rot').find('p').exists()).toBe(false)
+    expect(input.attributes('aria-describedby')).toBeUndefined()
   })
 
   it('counts while editing and strips spaces at once with the hint', async () => {
@@ -161,6 +172,9 @@ describe('Team names on the Game board', () => {
     expect(input.element.value).toBe('WildeGurken')
     expect(zone(page, 'Team Rot').text()).toContain('11/12')
     expect(zone(page, 'Team Rot').text()).toContain('Nur ein Wort, ohne Leerzeichen.')
+    const hint = zone(page, 'Team Rot').get('p')
+    expect(hint.classes()).toContain('text-error-fg')
+    expect(input.attributes('aria-describedby')).toBe(hint.attributes('id'))
   })
 
   it('counts an emoji as one character and cuts at 12', async () => {

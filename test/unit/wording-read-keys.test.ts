@@ -119,3 +119,25 @@ describe('readKeys', () => {
     expect(await readKeys(tab)).toEqual({ rows: [], untagged: 5 })
   })
 })
+
+// The Tiptap placeholder (#810): the editor's empty paragraph carries the text only as `data-placeholder` (the Placeholder extension; the CSS paints it), so the attribute is one the page read
+// looks at, and a row from it says `placeholder` for its kind (`via` of the recording stays inside its enum). The page reading itself is measured in the browser, here only the script's text.
+describe('findCandidates', () => {
+  const scriptOf = async () => {
+    let script = ''
+    const evaluate = async (expression: string) => {
+      script = expression
+      return { candidates: [], untagged: 0 }
+    }
+    await findCandidates({ evaluate })
+    return script
+  }
+
+  it('reads data-placeholder among the attributes', async () => {
+    expect(await scriptOf()).toMatch(/ATTRIBUTES = \[[^\]]*'data-placeholder'/)
+  })
+
+  it('gives a candidate from data-placeholder the kind placeholder', async () => {
+    expect(await scriptOf()).toContain(`kind: name === 'data-placeholder' ? 'placeholder' : name`)
+  })
+})

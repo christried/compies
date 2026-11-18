@@ -89,7 +89,9 @@ describe('the library page', () => {
     await settle(page)
 
     expect(page.get('h1').text()).toBe('Bibliothek')
-    expect(page.text()).toContain('Deine Spiele')
+    // No line above the title (#804): the title says where the User is.
+    expect(page.get('h1').element.previousElementSibling).toBeNull()
+    expect(page.text()).not.toContain('Deine Spiele')
     const cards = page.findAll('main li')
     expect(cards.map(card => card.text())).toEqual(['Brettspiel', 'Counter-Strike 2'])
     expect(cards[1]!.get('a').attributes('href')).toBe(`/bibliothek/${withClip.id}`)
@@ -224,8 +226,20 @@ describe('the game page', () => {
     expect(page.get('h1').text()).toBe('Counter-Strike 2')
     expect(page.text()).toContain('Clip 30 s')
     expect(page.text()).not.toContain('Angelegt von')
+    expect(page.text()).toContain('Zuletzt aktualisiert: Januar 2026')
     expect(page.text()).toContain('Ausschnitt 1:12 – 1:42')
     expect(page.get('a[href="/bibliothek"]').text()).toContain('Bibliothek')
+  })
+
+  it('shows the month of the last change in Berlin time as one line without a name (#805)', async () => {
+    // 23:30 UTC on 31 Oct is already 1 Nov in Berlin.
+    detail = { ...withClip, updatedAt: '2026-10-31T23:30:00.000Z' }
+    const page = await mountSuspended(DetailPage, { route: `/bibliothek/${withClip.id}` })
+    await vi.waitFor(() => expect(page.find('h1').exists()).toBe(true))
+
+    const line = page.findAll('p').find(element => element.text().startsWith('Zuletzt aktualisiert'))
+    expect(line?.text()).toBe('Zuletzt aktualisiert: November 2026')
+    expect(page.text()).not.toContain('Angelegt von')
   })
 
   // The longest name allowed, without a space, made the heading wider than the page at 390 px (b337, #332): the heading breaks inside the word.
@@ -399,7 +413,7 @@ describe('the new game page', () => {
     registerEndpoint('/api/games', { method: 'POST', handler: () => withClip })
     useState('toasts').value = []
     const page = await mountSuspended(NewGamePage, { route: '/bibliothek/neu' })
-    const name = page.findAll('label').find(label => label.text() === 'Name')!
+    const name = page.findAll('label').find(label => label.text() === 'Titel')!
     await page.get(`[id="${name.attributes('for')}"]`).setValue('Counter-Strike 2')
 
     await page.get('form').trigger('submit')
@@ -414,6 +428,7 @@ describe('the new game page', () => {
     const page = await mountSuspended(NewGamePage, { route: '/bibliothek/neu' })
 
     expect(page.get('h1').text()).toBe('Spiel anlegen')
+    expect(page.get('h1').element.parentElement!.children).toHaveLength(1)
     expect(page.text()).toContain('Bibliothek')
     expect(page.find('input').exists()).toBe(true)
   })
@@ -470,7 +485,7 @@ describe('the library cards and filters (#142, #173)', () => {
 
     const [halo, cs] = page.findAll('main li')
     expect(halo!.text()).toContain('bis 10')
-    expect(halo!.text()).toContain('Teams, Jeder gegen jeden')
+    expect(halo!.text()).toContain('Teams, FFA')
     expect(cs!.text()).not.toContain('Teams')
   })
 
@@ -538,7 +553,7 @@ describe('the library cards and filters (#142, #173)', () => {
     await page.get('select[aria-label="Spielerzahl"]').setValue('3')
 
     expect(names(page)).toEqual(['Halo'])
-    expect(page.get('select[aria-label="Spielerzahl"]').text()).toContain('3 Spieler')
+    expect(page.get('select[aria-label="Spielerzahl"]').text()).toContain('3 Spielende')
     await vi.waitFor(() => expect(query().players).toBe('3'))
   })
 
@@ -585,7 +600,7 @@ describe('the library cards and filters (#142, #173)', () => {
     await settle(page)
 
     expect(page.findAll('h2').map(heading => heading.text())).toContain('„Stardew Valley“ kennen wir noch nicht.')
-    expect(page.text()).toContain('Anders schreiben, oder das Spiel neu anlegen.')
+    expect(page.text()).toContain('Anders schreiben oder das Spiel neu anlegen.')
     expect(page.findAll('main a').some(link => link.text().includes('Spiel anlegen'))).toBe(true)
   })
 
@@ -949,7 +964,7 @@ describe('the game page for its editors (#142)', () => {
 
     expect(page.text()).toContain('bis 10')
     expect(page.text()).not.toContain('2 bis')
-    expect(page.text()).toContain('Teams, Jeder gegen jeden')
+    expect(page.text()).toContain('Teams, FFA')
   })
 })
 
@@ -974,30 +989,32 @@ describe('the edit page (#142)', () => {
     await vi.waitFor(() => expect(page.find('h1').exists()).toBe(true))
 
     expect(page.get('h1').text()).toBe('Counter-Strike 2')
-    expect(page.text()).toContain('Bearbeiten')
-    expect((field(page, 'Name').element as HTMLInputElement).value).toBe('Counter-Strike 2')
-    expect(page.get('button[type="submit"]').text()).toContain('Änderungen speichern')
+    expect(page.get('h1').element.parentElement!.children).toHaveLength(1)
+    expect((field(page, 'Titel').element as HTMLInputElement).value).toBe('Counter-Strike 2')
+    expect(page.get('button[type="submit"]').text()).toContain('Speichern')
   })
 
   it('saves the changes, says so and goes back to the game', async () => {
     useState('toasts').value = []
     const page = await mountSuspended(EditPage, { route: `/bibliothek/${withClip.id}/bearbeiten` })
     await vi.waitFor(() => expect(page.find('h1').exists()).toBe(true))
-    await field(page, 'Name').setValue('Counter-Strike 2 HD')
+    await field(page, 'Titel').setValue('Counter-Strike 2 HD')
 
     await page.get('form').trigger('submit')
 
     await vi.waitFor(() => expect(useRouter().currentRoute.value.path).toBe(`/bibliothek/${withClip.id}`))
     expect(patched).toHaveBeenCalledWith(expect.objectContaining({ name: 'Counter-Strike 2 HD' }))
     expect(useState<{ text: string }[]>('toasts').value.map(toast => toast.text)).toEqual(['Gespeichert.'])
+    // #806: the edit page's toast offers no action.
+    expect(useState<{ action?: unknown }[]>('toasts').value[0]?.action).toBeUndefined()
   })
 
   it('Strg + Enter in the name saves the changes too and goes back to the game (#465)', async () => {
     const page = await mountSuspended(EditPage, { route: `/bibliothek/${withClip.id}/bearbeiten` })
     await vi.waitFor(() => expect(page.find('h1').exists()).toBe(true))
-    await field(page, 'Name').setValue('Counter-Strike 2 HD')
+    await field(page, 'Titel').setValue('Counter-Strike 2 HD')
 
-    field(page, 'Name').element.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', ctrlKey: true, bubbles: true, cancelable: true }))
+    field(page, 'Titel').element.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', ctrlKey: true, bubbles: true, cancelable: true }))
 
     await vi.waitFor(() => expect(useRouter().currentRoute.value.path).toBe(`/bibliothek/${withClip.id}`))
     expect(patched).toHaveBeenCalledWith(expect.objectContaining({ name: 'Counter-Strike 2 HD' }))

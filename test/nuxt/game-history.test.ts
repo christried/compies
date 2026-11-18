@@ -303,7 +303,7 @@ describe('the Host\'s Corrections (#275)', () => {
     await flushPromises()
 
     expect(sheet()!.querySelector('h2')?.textContent).toBe('Spiel 2 korrigieren')
-    expect(sheet()!.textContent).toContain('Korrektur: Spiel 2 von 6')
+    expect(sheet()!.textContent).not.toContain('Korrektur:')
     expect(sheet()!.textContent).toContain('Kart')
     expect(sheetNames()).toEqual(['Wilde Gurken', 'Die Füchse', 'Team Gelb'])
     expect(sheetPlaces()).toEqual(['1', '1', '3'])

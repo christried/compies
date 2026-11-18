@@ -56,7 +56,7 @@ describe('the pool warning on the stage (#234)', () => {
     expect(notice?.text()).toContain('Wird knapp.')
     expect(notice?.text()).toContain('Im schlimmsten Fall brauchst du noch 14 Spiele, übrig sind 4.')
     expect(notice?.text()).toContain('Nur du siehst das')
-    expect(notice?.text()).toContain('Blockiert nichts')
+    expect(notice?.text()).not.toContain('Blockiert nichts')
   })
 
   it('says „noch 1 Spiel“ in the singular (F22)', async () => {

@@ -61,7 +61,7 @@ describe('home page', () => {
     await settle(page)
 
     expect(page.text()).toContain('Compies')
-    expect(page.get('h1').text()).toBe('Wann zocken wir?')
+    expect(page.get('h1').text()).toBe('Wann wird gezockt?')
     expect(page.get('h3').text()).toBe('Freitags-Zocken')
     expect(page.text()).not.toContain('Hallo')
   })
@@ -89,13 +89,14 @@ describe('home page', () => {
     expect(header.findAll('span:not([aria-hidden])')).toEqual([])
   })
 
-  it('says on the construction card what is still being built, and what already works (#196)', async () => {
+  it('says on the construction card that the rest is still a shell, with the old chip text as its headline and no chip (#793)', async () => {
     homeEvents = [card({ name: 'Freitags-Zocken' })]
     const page = await mountSuspended(IndexPage)
     await settle(page)
 
-    expect(page.text()).toContain('Glücksrad, Live-Tabelle und Siegerehrung bauen wir gerade. Terminumfrage und Spielbrett funktionieren schon.')
-    expect(page.text()).toContain('Kommt in einer der nächsten Versionen')
+    expect(page.text().split('Kommt in einer der nächsten Versionen')).toHaveLength(2)
+    expect(page.text()).toContain('Der Rest ist noch Rohbau.')
+    expect(page.text()).not.toContain('Glücksrad, Live-Tabelle')
   })
 
   it('keeps „Deine Events“ as a second-level heading', async () => {
@@ -277,7 +278,7 @@ describe('home page', () => {
     const page = await mountSuspended(IndexPage)
     await vi.waitFor(() => expect(page.text()).toContain('Da ist was schiefgelaufen.'))
 
-    expect(page.get('h1').text()).toBe('Wann zocken wir?')
+    expect(page.get('h1').text()).toBe('Wann wird gezockt?')
 
     mode = 'ok'
     homeEvents = [card({ name: 'Wieder da' })]

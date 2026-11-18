@@ -394,6 +394,7 @@ describe('the Host\'s skip', () => {
     expect(dot.getAttribute('aria-hidden')).toBe('true')
     expect(status.classList).not.toContain('border')
     expect(status.classList).not.toContain('rounded-pill')
+    expect(status.className).not.toMatch(/\bbg-/)
     expect(page!.element.querySelector('.aspect-video')!.contains(status)).toBe(false)
   })
 

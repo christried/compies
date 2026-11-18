@@ -97,6 +97,22 @@ export function createBudget(limit = SIGHTINGS_PER_KEY) {
   }
 }
 
+/**
+ * The keys of the Hidden wheel's placeholders a spin shows (#810). They are drawn by the server (`WHEEL_PLACEHOLDERS`, `wheel.placeholders.<i>`) and reach
+ * the page as plain strings in the Member's `wheel.spin.labels`, so no key tag carries them: a label equal to `placeholders[i]` gives `wheel.placeholders.<i>`,
+ * once, in label order. The „???“ of a wheel at rest, a game's real name and any other string give nothing.
+ * @param {string[]} labels the wheel's labels as the Member reads them
+ * @param {string[]} placeholders `de.wheel.placeholders`
+ * @returns {string[]}
+ */
+export function wheelPlaceholderKeys(labels, placeholders) {
+  const keys = labels.flatMap((label) => {
+    const index = placeholders.indexOf(label)
+    return index === -1 ? [] : [`wheel.placeholders.${index}`]
+  })
+  return [...new Set(keys)]
+}
+
 /** @param {string} component */
 const fileName = component => component.split('/').at(-1) ?? component
 

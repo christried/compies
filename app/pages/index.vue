@@ -93,8 +93,8 @@ useRefreshOnReturn(refresh)
       </section>
 
       <BaustelleZone
-        :title="t('mvp.zone.homeTitle')"
-        :text="t('mvp.zone.homeText')"
+        :title="t('mvp.zone.chip')"
+        :text="t('mvp.zone.homeTitle')"
         compact
       />
     </div>

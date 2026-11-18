@@ -30,10 +30,19 @@ describe('field chrome', () => {
     }
   })
 
+  it('a TagInput shows no error before the User typed a Tag (#797)', async () => {
+    const tagInput = await mountSuspended(TagInput, { props: { modelValue: [], suggestions: tags, label: 'Tags' } })
+
+    expect(tagBox(tagInput).classList).not.toContain('border-error-fg')
+    expect(tagInput.get('input[role="combobox"]').attributes('aria-invalid')).toBeUndefined()
+  })
+
   it('an invalid TagInput box (a Tag too long) and an invalid TextField input (an error) carry the 3 px error border', async () => {
     const tagInput = await mountSuspended(TagInput, { props: { modelValue: [], suggestions: tags, label: 'Tags' } })
     await tagInput.get('input[role="combobox"]').setValue('x'.repeat(TAG_MAX + 1))
     const textField = await mountSuspended(TextField, { props: { modelValue: '', label: 'Name', error: 'Pflichtfeld' } })
+    // A TextField's message shows once the field was touched (#797).
+    await textField.get('input').trigger('input')
 
     const box = tagBox(tagInput)
     const input = textField.get('input')
@@ -47,7 +56,7 @@ describe('field chrome', () => {
 
   it('the DateTimeField date and time inputs take the same field box, valid and invalid (#362)', async () => {
     const valid = await mountSuspended(DateTimeField, { props: { modelValue: '', label: 'Beginn' } })
-    const invalid = await mountSuspended(DateTimeField, { props: { modelValue: '', label: 'Beginn', error: 'Pflichtfeld' } })
+    const invalid = await mountSuspended(DateTimeField, { props: { modelValue: '', label: 'Beginn', error: 'Pflichtfeld', attempted: true } })
 
     for (const input of valid.findAll('input[type="text"]')) {
       expect(input.element.classList).toContain('rounded-md')

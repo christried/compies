@@ -59,6 +59,17 @@ function buttonWithText(text: string) {
   return [...document.querySelectorAll('button')].find(button => button.textContent?.includes(text))
 }
 
+/** Types into the date or the time input of the field with this label, as a person does: one `input` event with the text. */
+function typeInto(label: string, part: 'Datum' | 'Uhrzeit', value: string) {
+  const group = document.querySelector(`[role="group"][aria-label="${label}"]`)!
+  const name = [...group.querySelectorAll('label')].find(item => item.textContent?.trim() === part)!
+  const input = group.querySelector<HTMLInputElement>(`[id="${name.htmlFor}"]`)!
+  input.value = value
+  input.dispatchEvent(new Event('input'))
+}
+
+const INCOMPLETE = 'Bitte Datum und Uhrzeit ausfüllen.'
+
 function shownToasts() {
   return useState<{ text: string }[]>('toasts').value.map(toast => toast.text)
 }
@@ -126,13 +137,54 @@ describe('SlotEditSheet', () => {
       props: { open: true, slug: endpoint.slug, slots: [JUNE_10] },
     })
 
-    // JUNE_10 is 20:00 in Berlin, so this is the same minute.
-    page.findComponent(DateTimeField).vm.$emit('update:modelValue', '2030-06-10T20:00')
+    // JUNE_10 is 20:00 in Berlin, so this is the same minute. Typed, as a person does: the row error shows after the input (#797).
+    typeInto('Neuer Termin', 'Datum', '10062030')
+    typeInto('Neuer Termin', 'Uhrzeit', '2000')
 
     await vi.waitFor(() => expect(document.body.textContent).toContain('Diesen Termin gibt es schon.'))
+    expect(page.findComponent(DateTimeField).props('error')).toBe('Diesen Termin gibt es schon.')
     expect(buttonWithText('Termin hinzufügen')?.getAttribute('aria-disabled')).toBe('true')
     buttonWithText('Termin hinzufügen')?.click()
     expect(endpoint.posted).toEqual([])
+  })
+
+  it('shows a past Slot typed into the add field with its row error, and no row error before (#797)', async () => {
+    const endpoint = serve()
+    endpoint.add()
+    const page = await mountSuspended(SlotEditSheet, {
+      props: { open: true, slug: endpoint.slug, slots: [JUNE_10] },
+    })
+    page.findComponent(DateTimeField).vm.$emit('update:modelValue', '2001-06-10T20:00')
+    await vi.waitFor(() => expect(page.findComponent(DateTimeField).props('error')).toBe('Der Termin liegt in der Vergangenheit.'))
+    expect(document.body.textContent).not.toContain('Der Termin liegt in der Vergangenheit.')
+
+    typeInto('Neuer Termin', 'Datum', '10062001')
+
+    await vi.waitFor(() => expect(document.body.textContent).toContain('Der Termin liegt in der Vergangenheit.'))
+  })
+
+  it('shows no „Bitte Datum und Uhrzeit ausfüllen.“ on open, red after a press of „Termin hinzufügen“ on an empty field, and not again after an add (#797)', async () => {
+    const endpoint = serve()
+    endpoint.add()
+    const page = await mountSuspended(SlotEditSheet, {
+      props: { open: true, slug: endpoint.slug, slots: [JUNE_10] },
+    })
+    expect(document.body.textContent).not.toContain(INCOMPLETE)
+    expect(buttonWithText('Termin hinzufügen')?.getAttribute('aria-describedby')).toBeNull()
+
+    buttonWithText('Termin hinzufügen')?.click()
+
+    await vi.waitFor(() => expect(document.body.textContent).toContain(INCOMPLETE))
+    const line = [...document.querySelectorAll('span')].find(span => span.textContent === INCOMPLETE)!
+    expect(line.classList.contains('text-error-fg')).toBe(true)
+    expect(buttonWithText('Termin hinzufügen')?.getAttribute('aria-describedby')).toBe(line.id)
+
+    page.findComponent(DateTimeField).vm.$emit('update:modelValue', '2030-06-12T20:00')
+    await vi.waitFor(() => expect(buttonWithText('Termin hinzufügen')?.getAttribute('aria-disabled')).toBeNull())
+    buttonWithText('Termin hinzufügen')?.click()
+    await vi.waitFor(() => expect(page.emitted('changed')).toHaveLength(1))
+
+    expect(document.body.textContent).not.toContain(INCOMPLETE)
   })
 
   it('hides the add row at 16 Slots and says why', async () => {
@@ -270,16 +322,34 @@ describe('SlotEditSheet', () => {
       expect(endpoint.patched).toEqual([])
     })
 
-    it('says that the Votes stay when the Slot has Votes', async () => {
-      await mountSuspended(SlotEditSheet, {
+    it('shows the row error of a change that is blocked only after a press of „Speichern“ (#797)', async () => {
+      const endpoint = serve()
+      endpoint.change(JUNE_10.id)
+      const page = await mountSuspended(SlotEditSheet, {
+        props: { open: true, slug: endpoint.slug, slots: [JUNE_10, JUNE_11] },
+      })
+      buttonWithText('Ändern')?.click()
+      await vi.waitFor(() => expect(changeField(page, 'Mo 10.06. 20:00')).toBeDefined())
+      const field = changeField(page, 'Mo 10.06. 20:00')!
+
+      field.vm.$emit('update:modelValue', '2030-06-11T20:00')
+      await vi.waitFor(() => expect(field.props('error')).toBe('Diesen Termin gibt es schon.'))
+      expect(document.body.textContent).not.toContain('Diesen Termin gibt es schon.')
+      buttonWithText('Speichern')?.click()
+
+      await vi.waitFor(() => expect(document.body.textContent).toContain('Diesen Termin gibt es schon.'))
+      expect(endpoint.patched).toEqual([])
+    })
+
+    it('says nothing about the Votes when the Slot has Votes (#799: no line on what stays)', async () => {
+      const page = await mountSuspended(SlotEditSheet, {
         props: { open: true, slug: 'votes-kept', slots: [{ ...JUNE_10, votes: 2 }] },
       })
-      const kept = 'Die Stimmen bleiben erhalten – sag der Gruppe Bescheid.'
-      expect(document.body.textContent).not.toContain(kept)
 
       buttonWithText('Ändern')?.click()
 
-      await vi.waitFor(() => expect(document.body.textContent).toContain(kept))
+      await vi.waitFor(() => expect(changeField(page, 'Mo 10.06. 20:00')).toBeDefined())
+      expect(document.body.textContent).not.toContain('Die Stimmen bleiben erhalten')
     })
 
     it('says nothing about Votes for a Slot without any', async () => {

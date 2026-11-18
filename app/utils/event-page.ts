@@ -68,7 +68,7 @@ export function unevenNoticeIn(kind: Kind): boolean {
 }
 
 /**
- * Why "Termin festlegen" cannot set a Date right now (#52), as an i18n key, or null: no open Slot at all, or none in the
+ * Why "Termin fixieren" cannot set a Date right now (#52), as an i18n key, or null: no open Slot at all, or none in the
  * future. The dock shows it as the action's reason and the confirm dialog as a toast.
  */
 export function dateBlockedKey(slots: readonly { past: boolean }[]): 'mvp.set.noSlots' | 'mvp.set.noFutureSlot' | null {

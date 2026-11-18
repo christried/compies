@@ -9,6 +9,7 @@ export const RETIRED = {
   'Admin-Wahl': 'Host-Wahl',
   'Passende Formate': 'Passt zu',
   'Tiebreaker': 'Unentschieden',
+  'Termin festlegen': 'Termin fixieren',
   'Lobby': 'Event',
   'Bench': 'Tribüne',
   'Zuschauer': 'Tribüne',

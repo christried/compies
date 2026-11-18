@@ -61,9 +61,10 @@
         "scripts/wording/review.mjs!",
         // The review page's script is loaded by the browser from the server (index.html, #631), nothing imports it.
         "scripts/wording/review-page/page.mjs!",
-        // The review page imports these in the browser, from the server's /modules/, so no import of a file reaches them (#631, #628).
+        // The review page imports these in the browser, from the server's /modules/, so no import of a file reaches them (#631, #628, #811).
         "scripts/wording/review-model.mjs!",
         "scripts/wording/answers.mjs!",
+        "scripts/wording/review-keys.mjs!",
         // Run by hand with node by the operator's skill christried-tag-review (#619); nothing imports it.
         ".claude/skills/christried-tag-review/library-tags.mjs!"
       ],

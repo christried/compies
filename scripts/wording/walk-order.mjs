@@ -13,8 +13,8 @@ export const SECTIONS = [
   { id: 'library', groups: ['library'] },
   { id: 'stepper', groups: ['stepper'] },
   // 0.12's states were appended at the end of dark-states-event.mjs: the groups, not the file order, put them where the Event shows them.
-  { id: 'event', groups: ['event-poll', 'event-board', 'event-live', 'event-finished'] },
-  { id: 'profil', names: ['profil', 'profil-fehler', 'profil-gespeichert', 'baustelle-archiv', 'baustelle-admin', 'baustelle-allgemein', 'baustelle-event'] },
+  { id: 'event', groups: ['event-tour', 'event-poll', 'event-board', 'event-live', 'event-finished'] },
+  { id: 'profil', names: ['profil', 'profil-fehler', 'profil-gespeichert', 'profil-rundgang', 'baustelle-archiv', 'baustelle-admin', 'baustelle-allgemein', 'baustelle-event'] },
 ]
 
 /**

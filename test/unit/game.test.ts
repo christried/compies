@@ -320,7 +320,7 @@ describe('filterGames (#173)', () => {
       playersMin: null,
       playersMax: null,
       suitabilities: [],
-      createdAt: '2026-01-15T10:00:00.000Z',
+      updatedAt: '2026-01-15T10:00:00.000Z',
       notes: null,
       tags: [],
       archived: false,

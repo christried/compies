@@ -115,7 +115,7 @@ describe('the Game library API (#141)', () => {
       expect(game).toEqual({
         id: row!.id, name: 'Mario Kart', imageUrl: null, youtubeId: 'dQw4w9WgXcQ', clipStart: 72, clipLength: 45,
         playersMin: null, playersMax: null, suitabilities: [], tags: [{ key: 'free-to-play', label: 'Free-to-play' }], price: null,
-        createdAt: row!.createdAt.toISOString(), notes: null, archived: false,
+        updatedAt: row!.updatedAt.toISOString(), notes: null, archived: false,
       })
     })
 
@@ -126,7 +126,8 @@ describe('the Game library API (#141)', () => {
 
       expect(game).not.toHaveProperty('createdBy')
       expect(game).not.toHaveProperty('canEdit')
-      expect(game).toHaveProperty('createdAt')
+      expect(game).toHaveProperty('updatedAt')
+      expect(game).not.toHaveProperty('createdAt')
     })
 
     it('stores a game without a link as a game without a clip', async () => {
@@ -710,6 +711,34 @@ describe('the Game library API (#141)', () => {
         { key: 'retro', label: 'Retro', position: 0 },
         { key: 'co-op', label: 'Co-op', position: 1 },
       ])
+    })
+
+    it('answers the last change of each game, and a save that changes only the Tags moves it (#805)', async () => {
+      const cookie = await cookieOf(host)
+      const { id } = await created(cookie, { price: { cents: 1999, source: 'steam' }, name: 'Mario Kart', tags: ['Co-op', 'Party'] })
+      const untouched = await created(cookie, { name: 'Halo' })
+      await testDb.client.query(`UPDATE games SET updated_at = '2020-01-01T00:00:00Z'`)
+      const backdated = Date.parse('2021-01-01T00:00:00Z')
+
+      const response = await edit(cookie, id, { name: 'Mario Kart', tags: ['Retro', 'Co-op'] })
+
+      const answered = (await response.json()) as GameView
+      expect(Date.parse(answered.updatedAt)).toBeGreaterThan(backdated)
+      const [row] = await testDb.db.select().from(games).where(eq(games.id, id))
+      expect(row!.updatedAt.toISOString()).toBe(answered.updatedAt)
+      expect(((await (await read(id, cookie)).json()) as GameView).updatedAt).toBe(answered.updatedAt)
+      const listed = ((await (await list(cookie)).json()) as GameList).games
+      expect(listed.find(game => game.id === id)!.updatedAt).toBe(answered.updatedAt)
+      expect(listed.find(game => game.id === untouched.id)!.updatedAt).toBe('2020-01-01T00:00:00.000Z')
+    })
+
+    it('reads the stored last change of a game nobody edited, one and in the list (#805)', async () => {
+      const cookie = await cookieOf(host)
+      const { id } = await created(cookie, { name: 'Mario Kart' })
+      const [row] = await testDb.db.select().from(games)
+
+      expect(((await (await read(id, cookie)).json()) as GameView).updatedAt).toBe(row!.updatedAt.toISOString())
+      expect(((await (await list(cookie)).json()) as GameList).games[0]!.updatedAt).toBe(row!.updatedAt.toISOString())
     })
 
     it('clears every Tag with an empty list', async () => {

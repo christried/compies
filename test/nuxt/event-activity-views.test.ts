@@ -116,7 +116,7 @@ describe('the Activity feed on the Event page', () => {
     it('says what the feed promises while nothing happened', async () => {
       const { page } = await mountEvent()
 
-      await vi.waitFor(() => expect(page.findAll('[role="tabpanel"]')[1]!.text()).toContain('Noch nichts passiert. Ab jetzt steht hier, wer dazukommt und wechselt.'))
+      await vi.waitFor(() => expect(page.findAll('[role="tabpanel"]')[1]!.text()).toContain('Noch nichts passiert. Bald aber bestimmt. Vielleicht.'))
     })
   })
 

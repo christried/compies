@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { CircleAlert } from '@lucide/vue'
 import { characterCount, cutToCharacters } from '~~/shared/text'
 import { fieldBox } from '~/utils/field-chrome'
 
 // Labelled input or, with `multiline`, text area (02-components § TextField). Help and error are linked with
 // aria-describedby. With `maxlength` it shows a counter, announced only from 80 % of the maximum.
-// `invalid` turns the help text into the reason for an invalid field (announced); `cutAtMax` cuts longer input
+// The `error` is the problem the field has; it shows (red, with the 3 px border) only once the field was touched or the
+// form tried to submit (#797), and inside a FieldGroup as the group's one line. `cutAtMax` cuts longer input
 // to the maximum instead of showing an error. `multiline` (#223) is a text area that grows with its text and keeps
 // its line breaks; its counter shows only near the maximum.
 const props = withDefaults(defineProps<{
@@ -14,15 +14,13 @@ const props = withDefaults(defineProps<{
   /** A text area for several lines (#223) instead of one input. */
   multiline?: boolean
   help?: string
-  /** Shown under the field and marks it invalid. */
+  /** The problem of the field: shown under it and marking it invalid, once it was touched or a submit was tried (#797). */
   error?: string
   type?: string
   /** The maximum in characters; enables the counter. */
   maxlength?: number
   /** The input's id; the help and error ids derive from it. A generated one by default. */
   id?: string
-  /** Marks the field invalid with the help text as the reason: bold, in the error colour, announced. For a field whose help turns into the error (profile setup). */
-  invalid?: boolean
   autocomplete?: string
   /** The on-screen keyboard to offer, e.g. `numeric` (#141). */
   inputmode?: 'numeric' | 'text' | 'url'
@@ -30,7 +28,9 @@ const props = withDefaults(defineProps<{
   cutAtMax?: boolean
   /** Muted and not editable: the Price amount of a source that takes none (#337). */
   disabled?: boolean
-}>(), { multiline: false, help: undefined, error: undefined, type: 'text', maxlength: undefined, id: undefined, invalid: false, autocomplete: undefined, inputmode: undefined, cutAtMax: false, disabled: false })
+  /** The hint shown in the empty field, in the muted colour (#804). A prop: as an attribute it would fall to the root `<div>`. */
+  placeholder?: string
+}>(), { multiline: false, help: undefined, error: undefined, type: 'text', maxlength: undefined, id: undefined, autocomplete: undefined, inputmode: undefined, cutAtMax: false, disabled: false, placeholder: undefined })
 
 const emit = defineEmits<{ 'update:modelValue': [value: string] }>()
 
@@ -39,7 +39,13 @@ const generatedId = useId()
 const inputId = computed(() => props.id ?? generatedId)
 const helpId = computed(() => `${inputId.value}-help`)
 const errorId = computed(() => `${inputId.value}-error`)
-const describedBy = computed(() => [props.error ? errorId.value : null, props.help ? helpId.value : null].filter(Boolean).join(' ') || undefined)
+const { message, touch } = useTouched(() => props.error)
+// A value that moves without an input of its own (a form that follows another field, as Länge follows Ende) is touched by
+// that edit: the message of the field the User's edit hit must not wait for a blur.
+watch(() => props.modelValue, touch)
+// In a group the group draws the line; the field only points at it while its own message shows.
+const groupErrorId = useGroupMember(() => message.value)
+const describedBy = computed(() => [message.value ? (groupErrorId ?? errorId.value) : null, props.help ? helpId.value : null].filter(Boolean).join(' ') || undefined)
 const count = computed(() => characterCount(props.modelValue))
 const nearLimit = computed(() => props.maxlength !== undefined && count.value >= props.maxlength * 0.8)
 // A multiline field has no counter until it nears the maximum (#223); a single-line one always shows it.
@@ -49,6 +55,7 @@ const textareaEl = useTemplateRef<HTMLTextAreaElement>('textarea')
 useAutoHeight(textareaEl, () => props.modelValue)
 
 function onInput(event: Event) {
+  touch()
   const input = event.target as HTMLInputElement | HTMLTextAreaElement
   let value = input.value
   if (props.cutAtMax && props.maxlength !== undefined && characterCount(value) > props.maxlength) {
@@ -73,12 +80,14 @@ defineExpose({ focus: () => (props.multiline ? textareaEl.value : inputEl.value)
       :id="inputId"
       ref="textarea"
       :value="modelValue"
-      :aria-invalid="error || invalid ? 'true' : undefined"
+      :aria-invalid="message ? 'true' : undefined"
       :aria-describedby="describedBy"
       :disabled="disabled"
-      class="field-sizing-content min-h-[9.5rem] resize-none overflow-hidden px-3.5 py-2.5 text-[17px] leading-[1.45] text-ink disabled:cursor-not-allowed disabled:opacity-60"
-      :class="fieldBox(Boolean(error || invalid))"
+      :placeholder="placeholder"
+      class="field-sizing-content min-h-[9.5rem] resize-none overflow-hidden px-3.5 py-2.5 text-[17px] leading-[1.45] text-ink placeholder:text-ink-2 disabled:cursor-not-allowed disabled:opacity-60"
+      :class="fieldBox(Boolean(message))"
       @input="onInput"
+      @blur="touch"
     />
     <input
       v-else
@@ -88,31 +97,27 @@ defineExpose({ focus: () => (props.multiline ? textareaEl.value : inputEl.value)
       :type="type"
       :autocomplete="autocomplete"
       :inputmode="inputmode"
-      :aria-invalid="error || invalid ? 'true' : undefined"
+      :aria-invalid="message ? 'true' : undefined"
       :aria-describedby="describedBy"
       :disabled="disabled"
-      class="h-control-lg px-3.5 text-[17px] text-ink disabled:cursor-not-allowed disabled:opacity-60"
-      :class="fieldBox(Boolean(error || invalid))"
+      :placeholder="placeholder"
+      class="h-control-lg px-3.5 text-[17px] text-ink placeholder:text-ink-2 disabled:cursor-not-allowed disabled:opacity-60"
+      :class="fieldBox(Boolean(message))"
       @input="onInput"
+      @blur="touch"
     >
     <div class="flex items-start gap-3 text-small">
       <div class="flex flex-1 flex-col gap-0.5">
-        <span
-          v-if="error"
+        <FieldError
+          v-if="message && !groupErrorId"
           :id="errorId"
-          class="flex items-center gap-1.5 font-bold text-error-fg"
         >
-          <AppIcon
-            :icon="CircleAlert"
-            :size="14"
-          />
-          {{ error }}
-        </span>
+          {{ message }}
+        </FieldError>
         <span
           v-if="help"
           :id="helpId"
-          :class="invalid ? 'font-bold text-error-fg' : 'text-ink-2'"
-          :aria-live="invalid ? 'polite' : undefined"
+          class="text-ink-2"
         >{{ help }}</span>
       </div>
       <span

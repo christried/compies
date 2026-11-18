@@ -2,7 +2,9 @@ import { mountSuspended } from '@nuxt/test-utils/runtime'
 import { nextTick } from 'vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import Compibert from '~/components/Compibert.vue'
+import CompibertRig from '~/components/CompibertRig.vue'
 import EmptyState from '~/components/EmptyState.vue'
+import FullScreenState from '~/components/FullScreenState.vue'
 import { motion } from './motion'
 
 // The party hat (#38, 02-components § Compibert, 04-motion § Compibert): the header head wears it on the Event page; it pops once when it
@@ -31,8 +33,8 @@ afterEach(() => {
 describe('Compibert', () => {
   // The bust is a framed upper-body pose: its round sticker frame belongs to the pose, so every place
   // that shows it gets the frame. The full body and the head have no frame.
-  it('frames the bust as a round sticker wherever it is shown', async () => {
-    const page = await mountSuspended(EmptyState, { props: { title: 'Noch keine Events' } })
+  it('frames the bust as a round sticker', async () => {
+    const page = await mountSuspended(Compibert, { props: { variant: 'bust' } })
 
     expect(page.get('.compibert').classes()).toEqual(expect.arrayContaining(['rounded-full', 'shadow-sticker']))
   })
@@ -41,6 +43,29 @@ describe('Compibert', () => {
     const page = await mountSuspended(Compibert, { props: { variant: 'full' } })
 
     expect(page.get('.compibert').classes()).not.toContain('rounded-full')
+  })
+
+  // The empty and full-page states show the head, not the framed bust (#794). The head's crop is pinned by its
+  // viewBox (the bust's is 150 36 254 254). No rig loads for them: the head ships without an emotion.
+  describe('on the empty and full-page states', () => {
+    const HEAD_VIEWBOX = '212 40 192 192'
+
+    function expectHead(page: Awaited<ReturnType<typeof mountSuspended>>) {
+      const face = page.get('.compibert')
+      expect(face.classes()).not.toContain('rounded-full')
+      expect(face.classes()).not.toContain('shadow-sticker')
+      expect(face.html().toLowerCase()).toContain(`viewbox="${HEAD_VIEWBOX}"`)
+      expect(face.html().toLowerCase()).not.toContain('viewbox="150 36 254 254"')
+      expect(page.findComponent(CompibertRig).exists()).toBe(false)
+    }
+
+    it('EmptyState shows the head', async () => {
+      expectHead(await mountSuspended(EmptyState, { props: { title: 'Noch keine Events' } }))
+    })
+
+    it.each(['notFound', 'noPermission', 'generic', 'invalid', 'deleted'] as const)('FullScreenState %s shows the head', async (kind) => {
+      expectHead(await mountSuspended(FullScreenState, { props: { kind } }))
+    })
   })
 
   describe('accessories', () => {

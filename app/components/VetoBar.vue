@@ -66,10 +66,10 @@ watch(secondsLeft, () => {
         <span
           ref="clock"
           role="timer"
+          :aria-label="t('veto.timeLeft', { time: clockText(secondsLeft) })"
           class="timer text-[34px] tabular-nums sideways:text-[28px] md:text-[40px]"
           :class="urgent ? 'text-error-fg' : 'text-ink'"
         >{{ clockText(secondsLeft) }}</span>
-        <span class="text-[10px] font-extrabold tracking-[0.06em] text-ink-2 uppercase">{{ t('veto.timeLabel') }}</span>
       </span>
       <div class="flex min-w-[calc(100%-90px)] flex-1 flex-col leading-snug md:min-w-40">
         <b class="text-[14px] sideways:line-clamp-3 sideways:text-[13px] sideways:leading-tight">{{ title }}</b>

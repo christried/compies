@@ -4,6 +4,8 @@ import { Check, X } from '@lucide/vue'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import { flushPromises } from '@vue/test-utils'
 import { describe, expect, it } from 'vitest'
+import { defineComponent, h } from 'vue'
+import { provideFormAttempt } from '~/composables/useFormAttempt'
 import DateTimeField from '~/components/DateTimeField.vue'
 import IconButton from '~/components/IconButton.vue'
 import SegmentedControl from '~/components/SegmentedControl.vue'
@@ -23,17 +25,50 @@ describe('IconButton', () => {
   })
 })
 
+// A form that owns the attempt flag (#797): its button is the blocked submit.
+function formOf(child: () => ReturnType<typeof h>) {
+  return defineComponent({
+    setup() {
+      const { attempt } = provideFormAttempt()
+      return () => h('div', [child(), h('button', { 'data-submit': '', 'onClick': attempt }, 'Speichern')])
+    },
+  })
+}
+
 describe('TextField', () => {
   it('labels the input and links the error and the help text to it', async () => {
     const page = await mountSuspended(TextField, {
       props: { modelValue: '', label: 'Name der Event', help: 'Sehen alle in der Einladung.', error: 'Gib der Event einen Namen.' },
     })
+    await page.get('input').trigger('input')
 
     const input = page.get('input')
     expect(page.get('label').attributes('for')).toBe(input.attributes('id'))
     expect(input.attributes('aria-invalid')).toBe('true')
     const described = input.attributes('aria-describedby')!.split(' ').map(id => page.get(`[id="${id}"]`).text())
     expect(described).toEqual(['Gib der Event einen Namen.', 'Sehen alle in der Einladung.'])
+  })
+
+  it('puts its placeholder on the input, not on the root (#804)', async () => {
+    const page = await mountSuspended(TextField, { props: { modelValue: '', label: 'Betrag', placeholder: 'z. B. 19,99' } })
+
+    expect(page.get('input').attributes('placeholder')).toBe('z. B. 19,99')
+    expect(page.attributes('placeholder')).toBeUndefined()
+    expect(page.get('input').classes()).toContain('placeholder:text-ink-2')
+  })
+
+  it('puts its placeholder on the text area with multiline (#804)', async () => {
+    const page = await mountSuspended(TextField, { props: { modelValue: '', label: 'Text', multiline: true, placeholder: 'Schreib los' } })
+
+    expect(page.get('textarea').attributes('placeholder')).toBe('Schreib los')
+    expect(page.attributes('placeholder')).toBeUndefined()
+    expect(page.get('textarea').classes()).toContain('placeholder:text-ink-2')
+  })
+
+  it('has no placeholder unless it is given (#804)', async () => {
+    const page = await mountSuspended(TextField, { props: { modelValue: '', label: 'Name' } })
+
+    expect(page.get('input').attributes('placeholder')).toBeUndefined()
   })
 
   it('emits what is typed', async () => {
@@ -77,17 +112,64 @@ describe('TextField', () => {
     expect((page.get('input').element as HTMLInputElement).value).toBe('👍🏽👍🏽👍🏽👍🏽')
   })
 
-  it('marks the field invalid with the help text as the reason, announced, under the given id', async () => {
-    const page = await mountSuspended(TextField, {
-      props: { modelValue: '', label: 'Name', help: 'Ohne Namen geht’s nicht.', invalid: true, id: 'x' },
-    })
+  it('shows no message before the field was touched (#797)', async () => {
+    const page = await mountSuspended(TextField, { props: { modelValue: '', label: 'Name', error: 'Gib einen Namen an.', help: 'Sehen alle.', id: 'x' } })
 
-    expect(page.get('input').attributes('id')).toBe('x')
+    expect(page.text()).not.toContain('Gib einen Namen an.')
+    expect(page.get('input').attributes('aria-invalid')).toBeUndefined()
+    expect(page.get('input').classes()).not.toContain('border-error-fg')
+    expect(page.get('input').attributes('aria-describedby')).toBe('x-help')
+  })
+
+  it('shows the message in red after an input (#797)', async () => {
+    const page = await mountSuspended(TextField, { props: { modelValue: '', label: 'Name', error: 'Gib einen Namen an.', id: 'x' } })
+
+    await page.get('input').trigger('input')
+
+    const line = page.get('#x-error')
+    expect(line.text()).toBe('Gib einen Namen an.')
+    expect(line.classes()).toContain('text-error-fg')
     expect(page.get('input').attributes('aria-invalid')).toBe('true')
-    const help = page.get('#x-help')
-    expect(help.text()).toBe('Ohne Namen geht’s nicht.')
-    expect(help.attributes('aria-live')).toBe('polite')
-    expect(page.get('label').attributes('for')).toBe('x')
+    expect(page.get('input').classes()).toContain('border-error-fg')
+  })
+
+  it('announces its message: the line has role="alert" once it shows (#825)', async () => {
+    const page = await mountSuspended(TextField, { props: { modelValue: '', label: 'Name', error: 'Gib einen Namen an.', id: 'x' } })
+    expect(page.find('[role="alert"]').exists()).toBe(false)
+
+    await page.get('input').trigger('input')
+
+    expect(page.get('[role="alert"]').text()).toBe('Gib einen Namen an.')
+  })
+
+  it('shows the message after the field was left, and keeps it touched (#797)', async () => {
+    const page = await mountSuspended(TextField, { props: { modelValue: '', label: 'Name', error: 'Gib einen Namen an.' } })
+
+    await page.get('input').trigger('blur')
+    expect(page.text()).toContain('Gib einen Namen an.')
+
+    await page.setProps({ error: undefined })
+    await page.setProps({ error: 'Wieder falsch.' })
+    expect(page.text()).toContain('Wieder falsch.')
+  })
+
+  it('counts a value that moved without an input as touched: the form followed another field (#797)', async () => {
+    const page = await mountSuspended(TextField, { props: { modelValue: '30', label: 'Länge', error: 'Das Ende liegt vor dem Start.' } })
+    expect(page.text()).not.toContain('Das Ende liegt vor dem Start.')
+
+    await page.setProps({ modelValue: '' })
+
+    expect(page.text()).toContain('Das Ende liegt vor dem Start.')
+  })
+
+  it('shows the message of an untouched field once the form tried to submit (#797)', async () => {
+    const page = await mountSuspended(formOf(() => h(TextField, { modelValue: '', label: 'Name', error: 'Gib einen Namen an.' })))
+    expect(page.text()).not.toContain('Gib einen Namen an.')
+
+    await page.get('button').trigger('click')
+
+    expect(page.text()).toContain('Gib einen Namen an.')
+    expect(page.get('input').attributes('aria-invalid')).toBe('true')
   })
 })
 
@@ -152,10 +234,117 @@ describe('DateTimeField', () => {
       props: { modelValue: '2001-01-01T20:00', label: 'Termin 1', error: 'Der Termin liegt in der Vergangenheit.' },
     })
 
+    await type(page.element, 'Datum', '01.01.2001')
+
     const group = page.get('[role="group"]')
     expect(group.attributes('aria-label')).toBe('Termin 1')
     expect(part(page.element, 'Datum').getAttribute('aria-invalid')).toBe('true')
     expect(page.text()).toContain('Der Termin liegt in der Vergangenheit.')
+  })
+
+  describe('message (#797)', () => {
+    const error = 'Der Termin liegt in der Vergangenheit.'
+    const mountWithError = (props: Record<string, unknown> = {}) =>
+      mountSuspended(DateTimeField, { props: { modelValue: '2001-01-01T20:00', label: 'Termin 1', error, ...props }, attachTo: document.body })
+
+    it('shows no message, no invalid mark and no description before the field was touched', async () => {
+      const page = await mountWithError()
+
+      expect(page.text()).not.toContain(error)
+      expect(part(page.element, 'Datum').getAttribute('aria-invalid')).toBeNull()
+      expect(part(page.element, 'Uhrzeit').getAttribute('aria-invalid')).toBeNull()
+      expect(page.get('[role="group"]').attributes('aria-describedby')).toBeUndefined()
+      page.unmount()
+    })
+
+    it('shows it in red after an input in the date', async () => {
+      const page = await mountWithError()
+
+      await type(page.element, 'Datum', '01.01.2001')
+
+      const line = page.get('[id$="-error"]')
+      expect(line.text()).toBe(error)
+      expect(line.classes()).toContain('text-error-fg')
+      expect(page.get('[role="group"]').attributes('aria-describedby')).toBe(line.attributes('id'))
+      page.unmount()
+    })
+
+    it('announces its message: the line has role="alert" once it shows (#825)', async () => {
+      const page = await mountWithError()
+      expect(page.find('[role="alert"]').exists()).toBe(false)
+
+      await type(page.element, 'Datum', '01.01.2001')
+
+      expect(page.get('[role="alert"]').text()).toBe(error)
+      page.unmount()
+    })
+
+    it('shows it after the time input was left', async () => {
+      const page = await mountWithError()
+
+      await leave(page.element, 'Uhrzeit')
+
+      expect(page.text()).toContain(error)
+      expect(part(page.element, 'Uhrzeit').getAttribute('aria-invalid')).toBe('true')
+      page.unmount()
+    })
+
+    it('shows it after the date input was left', async () => {
+      const page = await mountWithError()
+
+      await leave(page.element, 'Datum')
+
+      expect(page.text()).toContain(error)
+      page.unmount()
+    })
+
+    it('shows it after a pick from the time list', async () => {
+      const page = await mountWithError()
+
+      part(page.element, 'Uhrzeit').click()
+      await flushPromises()
+      document.querySelector<HTMLElement>('[data-time="20:15"]')!.click()
+      await flushPromises()
+
+      expect(page.text()).toContain(error)
+      page.unmount()
+    })
+
+    it('shows it after a pick from the calendar', async () => {
+      const page = await mountWithError({ modelValue: '' })
+
+      part(page.element, 'Datum').click()
+      await flushPromises()
+      document.querySelector<HTMLElement>('[role="gridcell"]:not([aria-disabled="true"]) [data-value]')!.click()
+      await flushPromises()
+
+      expect(page.text()).toContain(error)
+      page.unmount()
+    })
+
+    it('shows it at once with the attempted override', async () => {
+      const page = await mountWithError({ attempted: true })
+
+      expect(page.get('[id$="-error"]').text()).toBe(error)
+      page.unmount()
+    })
+
+    it('shows it once the form tried to submit', async () => {
+      const page = await mountSuspended(formOf(() => h(DateTimeField, { modelValue: '2001-01-01T20:00', label: 'Termin 1', error })))
+      expect(page.text()).not.toContain(error)
+
+      await page.get('button[data-submit]').trigger('click')
+
+      expect(page.text()).toContain(error)
+    })
+
+    it('keeps the impossible hour red without any touch of the message, as it arises from typing', async () => {
+      const page = await mountSuspended(DateTimeField, { props: { modelValue: '2090-10-30', label: 'Termin 1' } })
+
+      await type(page.element, 'Uhrzeit', '2460')
+
+      expect(part(page.element, 'Uhrzeit').getAttribute('aria-invalid')).toBe('true')
+    })
   })
 
   it('types the time as four digits and fills in the colon', async () => {

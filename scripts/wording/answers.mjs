@@ -270,6 +270,28 @@ export function changedSince(answers, messagesNow, fixedNow = []) {
 }
 
 /**
+ * The answers of several sweeps as one baseline (#810): `files` oldest first (the caller sorts by name, as `newestAnswersName`
+ * compares). `texts`, `fixed`, `unused` and `mono` merge per key, a later file's entry replacing an earlier one's entirely (an entry
+ * that is only a comment still counts as held), `sweptAt` and `version` are the last file's. Throws on an empty list: the caller
+ * passes `null` as the baseline then. Never mutates its input.
+ * @param {AnswersFile[]} files
+ * @returns {AnswersFile}
+ */
+export function mergeAnswers(files) {
+  const last = files[files.length - 1]
+  if (!last) throw new Error('mergeAnswers: no files to merge')
+  /** @type {AnswersFile} */
+  const merged = { version: last.version, sweptAt: last.sweptAt, texts: {}, fixed: {}, unused: {}, mono: {} }
+  for (const file of files) {
+    for (const [key, entry] of Object.entries(file.texts)) merged.texts[key] = { ...entry, alternatives: [...entry.alternatives] }
+    for (const [key, entry] of Object.entries(file.fixed)) merged.fixed[key] = { ...entry, alternatives: [...entry.alternatives] }
+    Object.assign(merged.unused, file.unused)
+    for (const [key, entry] of Object.entries(file.mono)) merged.mono[key] = { ...entry }
+  }
+  return merged
+}
+
+/**
  * @param {string | Date} date 'YYYY-MM-DD', or a Date (its local day)
  */
 export function answersFileName(date) {

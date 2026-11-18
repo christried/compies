@@ -1,7 +1,9 @@
 <!doctype html>
 <!-- Served by the service worker when a navigation fails. Self-contained on purpose (no app,
      no i18n runtime, no network): copy follows de.json (connectionG.reload) and the token colours.
-     The dark block follows the device and the dark tokens (#402). -->
+     The dark block follows the device and the dark tokens (#402). The page has the look of „Link
+     ungültig“ (FullScreenState.vue, #808). Only this file and the favicon are precached, so the head
+     is inline: a static copy of the app's head (the left eye, the brow, the smile), outlines as the app draws them. -->
 <html lang="de">
 <head>
   <meta charset="utf-8">
@@ -13,36 +15,47 @@
   <style>
     :root {
       color-scheme: light;
-      --paper: #fff3df; --surface: #fffdf8; --ink: #151515; --ink-2: #5d5650;
+      --paper: #fff3df; --ink: #151515; --ink-2: #5d5650;
       --primary: #ffd23f; --on-primary: #151515; --focus: #1f5fe0;
       --bw: 3px; --shadow-card: 6px 6px 0 #151515; --shadow-btn: 4px 4px 0 #151515;
+      --tex-image: radial-gradient(rgba(21,21,21,.10) 1.4px, transparent 1.6px); --tex-size: 22px 22px;
     }
     @media (prefers-color-scheme: dark) {
       :root {
         color-scheme: dark;
-        --paper: #17121d; --surface: #221b2b; --ink: #f7efe1; --ink-2: #b9ad9f;
+        --paper: #17121d; --ink: #f7efe1; --ink-2: #b9ad9f;
         --primary: #ffd23f; --on-primary: #17121d; --focus: #8fb3ff;
         --bw: 2.5px; --shadow-card: 6px 6px 0 #ff5a36; --shadow-btn: 4px 4px 0 #0b0810;
+        --tex-image: radial-gradient(ellipse at 50% -10%, rgba(255,176,32,.14), transparent 55%), radial-gradient(ellipse at 50% 120%, rgba(0,0,0,.5), transparent 60%); --tex-size: 100% 100%;
       }
     }
     * { box-sizing: border-box; }
     body {
-      margin: 0; min-height: 100dvh; display: grid; place-items: center; padding: 16px;
-      background: var(--paper); color: var(--ink);
-      font: 500 15px/1.45 "Bricolage Grotesque", system-ui, sans-serif;
+      margin: 0; min-height: 100dvh; display: flex; flex-direction: column; padding: 0 22px;
+      background-color: var(--paper); background-image: var(--tex-image); background-size: var(--tex-size); color: var(--ink);
+      font-family: "Bricolage Grotesque", system-ui, sans-serif; font-size: 15px; font-weight: 500; line-height: 1.45;
     }
     main {
-      width: 100%; max-width: 480px; display: flex; flex-direction: column; align-items: center; gap: 14px;
-      padding: 28px 22px; text-align: center;
-      background: var(--surface); border: var(--bw) solid var(--ink); border-radius: 20px; box-shadow: var(--shadow-card);
+      flex: 1; width: 100%; max-width: 560px; margin-inline: auto; padding-block: 40px;
+      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; text-align: center;
     }
-    img { width: 72px; height: 72px; }
-    h1 { margin: 0; font: 400 32px/1 "Lilita One", "Bricolage Grotesque", system-ui, sans-serif; text-wrap: balance; }
-    p { margin: 0; color: var(--ink-2); text-wrap: pretty; }
+    svg { width: 140px; height: 140px; }
+    h1 {
+      margin: 0; font-family: "Lilita One", "Bricolage Grotesque", system-ui, sans-serif; font-size: 36px; font-weight: 800;
+      font-synthesis: none; line-height: 1; text-wrap: balance;
+    }
+    p { margin: 0; color: var(--ink-2); font-size: 16px; text-wrap: pretty; }
     button {
-      display: inline-flex; align-items: center; height: 52px; padding: 0 20px; margin-top: 6px;
+      display: inline-flex; align-items: center; height: 52px; padding: 0 20px; margin-top: 6px; white-space: nowrap;
       border: var(--bw) solid var(--ink); border-radius: 999px; box-shadow: var(--shadow-btn);
       background: var(--primary); color: var(--on-primary); font-family: inherit; font-size: 15px; font-weight: 800; cursor: pointer;
+    }
+    @media (min-width: 61.25rem) {
+      body { padding: 40px; }
+      h1 { font-size: 44px; }
+    }
+    @media (hover: hover) and (prefers-reduced-motion: no-preference) {
+      button:hover { translate: 0 -2px; box-shadow: var(--shadow-card); }
     }
     @media (prefers-reduced-motion: no-preference) {
       button:active { translate: 4px 4px; box-shadow: none; }
@@ -52,7 +65,20 @@
 </head>
 <body>
   <main>
-    <img src="/icons/favicon.svg" alt="">
+    <svg viewBox="212 40 192 192" aria-hidden="true" focusable="false">
+      <path d="M230.9 111.4 L221.7 76.9 L256.2 93 Z" style="fill:#ff70c3;stroke:#151515;stroke-width:6;stroke-linejoin:round;stroke-linecap:round"/>
+      <path d="M256.2 86.1 L272.3 53.9 L290.7 79.2 Z" style="fill:#ff70c3;stroke:#151515;stroke-width:6;stroke-linejoin:round;stroke-linecap:round"/>
+      <path d="M224 139 C224 93 265.4 70 311.4 79.2 C357.4 88.4 391.9 120.6 391.9 152.8 C391.9 185 357.4 201.1 316 201.1 C270 203.4 224 185 224 139 Z" style="fill:#2ec4b6;stroke:#151515;stroke-width:6;stroke-linejoin:round;stroke-linecap:round"/>
+      <ellipse cx="334.4" cy="159.7" rx="13.8" ry="9.2" style="fill:#ff70c3;opacity:.8"/>
+      <circle cx="368.9" cy="136.7" r="4.4" style="fill:#151515"/>
+      <ellipse cx="299.9" cy="125.2" rx="24.2" ry="24.2" style="fill:#fffdf8"/>
+      <circle cx="306.8" cy="127.5" r="11.5" style="fill:#151515"/>
+      <circle cx="310.5" cy="123.1" r="3.9" style="fill:#fffdf8"/>
+      <ellipse cx="299.9" cy="125.2" rx="24.2" ry="24.2" style="fill:none;stroke:#151515;stroke-width:6;stroke-linejoin:round;stroke-linecap:round"/>
+      <path d="M270 93 Q297.6 74.6 327.5 93" style="fill:none;stroke:#151515;stroke-width:7;stroke-linecap:round"/>
+      <path d="M336.7 180.4 L343.6 194.2 L350.5 182.7 Z" style="fill:#fffdf8;stroke:#151515;stroke-width:4;stroke-linejoin:round"/>
+      <path d="M316 173.5 Q350.5 191.9 382.7 162" style="fill:none;stroke:#151515;stroke-width:6;stroke-linejoin:round;stroke-linecap:round"/>
+    </svg>
     <h1>Keine Verbindung.</h1>
     <p>Wir warten, bis du wieder online bist. Dann geht’s hier weiter.</p>
     <button type="button" onclick="location.reload()">Seite neu laden</button>

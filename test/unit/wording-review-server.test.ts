@@ -78,7 +78,7 @@ afterEach(async () => {
   rmSync(root, { recursive: true, force: true })
 })
 
-async function start(overrides: Partial<{ recordingDir: string, answersPath: string }> = {}) {
+async function start(overrides: Partial<{ recordingDir: string, answersPath: string, trackedAnswers: (dir: string) => string[] | null }> = {}) {
   const server: Server = await createReviewServer({ recordingDir, answersPath, localePath, rulesPath, ...overrides })
   await new Promise<void>(listening => server.listen(0, '127.0.0.1', listening))
   servers.push(server)
@@ -406,8 +406,25 @@ describe('the answers file', () => {
       writeOlder()
       writeFileSync(join(root, 'reviews', 'wording_2026-03-01.json'), serializeAnswers(emptyAnswers('2026-03-01')))
       const { info } = await startNew(() => null)
-      expect(info.baselineName).toBe('wording_2026-03-01.json')
+      expect(info.baselineName).toBe(`${older} + wording_2026-03-01.json`)
     })
+  })
+
+  it('merges every tracked file into the baseline, the newer entry winning, and leaves an untracked newer one out (#810)', async () => {
+    const first = 'wording_2026-01-01.json'
+    const second = 'wording_2026-02-01.json'
+    writeFileSync(join(root, 'reviews', first), expectedFile((file) => {
+      file = answerText(file, 'common.save', { text: 'Speichern', answer: 'passt' })
+      return answerText(file, 'home.title', { text: 'Deine Events', answer: 'passt' })
+    }))
+    writeFileSync(join(root, 'reviews', second), expectedFile(file => answerText(file, 'home.title', { text: 'Alle Events', answer: 'passt' })))
+    writeFileSync(join(root, 'reviews', 'wording_2026-03-01.json'), expectedFile(file => answerText(file, 'home.hello', { text: 'Hallo {name}', answer: 'passt' })))
+    const { state, server } = await start({ trackedAnswers: () => [first, second] })
+    const got = await state()
+    expect(Object.keys(got.baseline.texts).sort()).toEqual(['common.save', 'home.title'])
+    expect(got.baseline.texts['home.title'].text).toBe('Alle Events')
+    expect(got.baselineName).toBe(`${first} + ${second}`)
+    expect((server as Server & { info: { baselineName: string } }).info.baselineName).toBe(`${first} + ${second}`)
   })
 
   it('has no baseline when there is no other file', async () => {
@@ -441,9 +458,9 @@ describe('files', () => {
     }
   })
 
-  it('serves the five modules the page imports and no other script', async () => {
+  it('serves the six modules the page imports and no other script', async () => {
     const { base } = await start()
-    for (const name of ['answers', 'review-model', 'check-replacement', 'messages', 'retired-words']) {
+    for (const name of ['answers', 'review-model', 'check-replacement', 'messages', 'retired-words', 'review-keys']) {
       const response = await fetch(`${base}/modules/${name}.mjs`)
       expect(response.status, name).toBe(200)
       expect(response.headers.get('content-type')).toContain('text/javascript')

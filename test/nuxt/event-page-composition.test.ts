@@ -29,7 +29,7 @@ describe('the stage of the Event page', () => {
         const page = await mount(slug)
 
         expect(regionHeadings(page)).toEqual(['Termin für Session 1', 'Spielbrett', 'Sessions', 'So wird gespielt'])
-        expect(page.get('h1').text()).toBe('Wann zocken wir?')
+        expect(page.get('h1').text()).toBe('Wann Zockung?')
       })
 
       it(`puts the Game board first once a Session is dated and the poll of another one below it, for ${who}`, async () => {
@@ -89,7 +89,7 @@ describe('the stage of the Event page', () => {
       const page = await mount(slug)
 
       expect(toggle(page)).toBeUndefined()
-      expect(page.findAll('h3').map(heading => heading.text())).toContain('Wer kann wann?')
+      expect(page.findAll('h2').map(heading => heading.text())).toContain('Wer kann wann?')
     })
 
     it('is quiet once another Session is dated: „Wer kann wann?“ is folded behind a button that says how many voted', async () => {
@@ -100,21 +100,21 @@ describe('the stage of the Event page', () => {
       const button = toggle(page)!
       expect(button.text()).toBe('Wer kann wann? · 2 von 3')
       expect(button.attributes('aria-expanded')).toBe('false')
-      expect(page.findAll('h3').map(heading => heading.text())).not.toContain('Wer kann wann?')
+      expect(page.findAll('h2').map(heading => heading.text())).not.toContain('Wer kann wann?')
 
       await button.trigger('click')
 
       expect(button.attributes('aria-expanded')).toBe('true')
-      expect(page.findAll('h3').map(heading => heading.text())).toContain('Wer kann wann?')
+      expect(page.findAll('h2').map(heading => heading.text())).toContain('Wer kann wann?')
       expect(page.find(`[id="${button.attributes('aria-controls')}"]`).text()).toContain('Wer kann wann?')
     })
 
-    it('leaves „Termin festlegen“ on a Slot card primary only in the full poll', async () => {
+    it('leaves „Termin fixieren“ on a Slot card primary only in the full poll', async () => {
       const full = serveState({ sessions: [SESSION(1, null), SESSION(2, null)], missing: 2, host: true })
       const quiet = serveState({ sessions: [SESSION(1, FIRST), SESSION(2, null)], missing: 1, host: true })
 
       // One page at a time: the page follows the route, so a second mount would move the first.
-      const pick = (page: Awaited<ReturnType<typeof mount>>) => page.findAll('article button').filter(button => button.text() === 'Termin festlegen')
+      const pick = (page: Awaited<ReturnType<typeof mount>>) => page.findAll('article button').filter(button => button.text() === 'Termin fixieren')
       const fullPage = await mount(full.slug)
       expect(pick(fullPage).some(button => button.classes().includes('bg-primary'))).toBe(true)
       fullPage.unmount()
@@ -155,7 +155,7 @@ describe('the stage of the Event page', () => {
       const member = serveState({ sessions: [SESSION(1, FIRST)], missing: 0, phase: 'date_set', teamChoiceOpen: true, overrides: uneven })
       const host = serveState({ sessions: [SESSION(1, FIRST)], missing: 0, host: true, phase: 'date_set', teamChoiceOpen: true, overrides: uneven })
 
-      expect(has(await mount(member.slug), 'Team Orange sucht noch jemanden. Rück rein, dann kann’s losgehen.')).toBe(true)
+      expect(has(await mount(member.slug), 'Team Orange sucht noch jemanden. Dich vielleicht?')).toBe(true)
       const hostPage = await mount(host.slug)
       expect(has(hostPage, 'Team Orange hat 0, die anderen haben 2.')).toBe(true)
       expect(has(hostPage, 'sucht noch jemanden')).toBe(false)
@@ -166,7 +166,7 @@ describe('the stage of the Event page', () => {
       const between = serveState({ sessions: [SESSION(1, FIRST, { startedAt: STARTED, endedAt: ENDED }), SESSION(2, SECOND)], missing: 0, phase: 'running' })
 
       const runningPage = await mount(running.slug)
-      expect(has(runningPage, 'Gesperrt seit dem Start')).toBe(false)
+      expect(has(runningPage, 'Dein Teamwort kannst du weiter ändern')).toBe(false)
       expect(has(runningPage, 'Das Event läuft.')).toBe(true)
       expect(has(runningPage, 'Die Teams bleiben fürs ganze Event')).toBe(false)
 

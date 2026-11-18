@@ -26,8 +26,8 @@ const props = defineProps<{
   locks?: StepLocks
   /** The step list's heading; `stepper.heading` by default. */
   navTitle?: string
-  /** Replaces „Schritt n von m“ above the step's title. */
-  kicker?: string
+  /** Replaces „Schritt n von m“ above the step's title; `null` leaves the kicker out (#807). */
+  kicker?: string | null
   /** Weiter on the last step („Event erstellen“, „Speichern“) and while `submit` is running. */
   lastLabel: string
   savingLabel: string
@@ -40,6 +40,8 @@ const props = defineProps<{
 const draft = defineModel<EventDraft>({ required: true })
 
 const { t } = useI18n()
+// „Weiter was pressed while blocked“ (#797): the steps' fields show their messages and the dock its reason, until the step changes.
+const { attempted, attempt, reset } = provideFormAttempt()
 
 const STEPS: Record<StepKey, { component: Component, props?: Record<string, unknown> }> = {
   name: { component: StepName },
@@ -78,6 +80,7 @@ const nextLabel = computed(() => {
 })
 
 function go(index: number) {
+  reset()
   current.value = index
   failure.value = null
 }
@@ -114,9 +117,11 @@ async function next() {
     :info-title="infoTitle"
     :next-label="nextLabel"
     :next-blocked="blocker"
+    :reason-shown="attempted"
     :busy="saving"
     @go="go"
     @next="next"
+    @blocked-press="attempt"
     @back="go(current - 1)"
   >
     <component

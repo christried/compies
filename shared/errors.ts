@@ -138,7 +138,7 @@ export const API_ERROR_STATUS = {
   veto_already_cast: 409,
   /** The Party has no Veto left: the allowance and its Bonus Vetoes are used up (#231). */
   no_vetoes_left: 409,
-  /** Rad verdecken and the Veto allowance cannot change while a Round is being drawn (#231, review 1.4 A3). */
+  /** Pseudo-Games and the Veto allowance cannot change while a Round is being drawn (#231, review 1.4 A3). */
   locked_while_drawn: 409,
   /** The game has a draw in a Round that was not put back: it was drawn, set or vetoed already, and cannot be set again (review 0.7, F14). */
   game_already_drawn: 409,

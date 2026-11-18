@@ -134,6 +134,15 @@ describe('the count and the limit', () => {
     expect(counter(page).text()).toBe('noch 200 Zeichen')
   })
 
+  it('mounts a stored note at the limit with no message and nothing red: a message arises from typing (#797)', async () => {
+    const page = await mountEditor({ modelValue: letters(2000) })
+
+    expect(page.text()).not.toContain('Höchstens 2000 Zeichen.')
+    expect(contentOf(page).attributes('aria-invalid')).toBeUndefined()
+    expect(counter(page).classes()).not.toContain('text-error-fg')
+    expect(page.invalids).toEqual([])
+  })
+
   it('takes exactly 2000 characters without an error and without invalid(true)', async () => {
     const page = await mountEditor()
 
