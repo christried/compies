@@ -441,9 +441,9 @@ describe('files', () => {
     }
   })
 
-  it('serves the five modules the page imports and no other script', async () => {
+  it('serves the six modules the page imports and no other script', async () => {
     const { base } = await start()
-    for (const name of ['answers', 'review-model', 'check-replacement', 'messages', 'retired-words']) {
+    for (const name of ['answers', 'review-model', 'check-replacement', 'messages', 'retired-words', 'review-keys']) {
       const response = await fetch(`${base}/modules/${name}.mjs`)
       expect(response.status, name).toBe(200)
       expect(response.headers.get('content-type')).toContain('text/javascript')
