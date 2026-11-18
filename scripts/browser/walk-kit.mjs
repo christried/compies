@@ -118,6 +118,20 @@ export async function releaseToasts(tab, identifier) {
 }
 
 /**
+ * Makes every request whose URL matches one of `patterns` (Chrome's wildcard syntax: `*` is any run of characters) fail, from now on and in every page the tab loads, until
+ * `unblockUrls`: what a script from the load cannot do, a dynamic import that fails (#826). Call it before the page opens.
+ */
+export async function blockUrls(tab, patterns) {
+  await tab.send('Network.enable', {})
+  await tab.send('Network.setBlockedURLs', { urls: patterns })
+}
+
+/** Takes the block of `blockUrls` away again, so later loads of the tab are as they were. Safe to call when nothing was blocked. */
+export async function unblockUrls(tab) {
+  await tab.send('Network.setBlockedURLs', { urls: [] })
+}
+
+/**
  * Puts the caret into the notes editor of `scope` (#810: the Tiptap editor of `RichNotesEditor.vue`, a contenteditable `div[role=textbox][data-notes-editor]` from a lazy,
  * client-only chunk). Waits until it exists and is not `aria-disabled`, at most 10 s, scrolls it into view, focuses it and puts the caret at its end, or with `select`
  * selects the whole content, so the next input replaces it. Throws `no notes editor` on a timeout.
