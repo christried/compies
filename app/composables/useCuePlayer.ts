@@ -2,6 +2,7 @@ import { createCuePlayer, exposesCueLog, type CueLogEntry, type CuePlayer } from
 import { reducedMotion } from '~/utils/motion'
 import { coinCuePlan, cueFileUrl, cueFilesOf, reachableGroups, vetoArrivalCues, vetoCuePlan, wheelCuePlan, wheelVoicePlan, type Cue, type GroupInput, type VetoArrivalState } from '~/utils/sound-cues'
 import type { EventView } from '~~/shared/event'
+import { TOUR_CALM_MS, tourMayStart } from '~~/shared/tour'
 
 // The sound of the Event page (#531, spec #504 § The cue player): the page's one Web Audio context, the cue player on it, and the plan the
 // Event read gives it. The page's read is what carries a plan to a device, so a refetch (the room's `event.changed`, which reaches a hidden
@@ -14,7 +15,7 @@ import type { EventView } from '~~/shared/event'
  * What the group rule reads of a read (#740): a few flags, so no file is requested from anything the viewer may not know. Which groups they
  * reach and which files each group holds are `reachableGroups` and `CUE_GROUPS` in sound-cues.ts (#531, #532).
  */
-function groupInputOf(view: EventView | null | undefined): GroupInput {
+function groupInputOf(view: EventView | null | undefined, storedTourVersion: number | null = null): GroupInput {
   return {
     wheel: view?.wheel != null,
     vetoAllowance: view?.settings?.vetoAllowance ?? 0,
@@ -25,6 +26,12 @@ function groupInputOf(view: EventView | null | undefined): GroupInput {
     finished: view?.event.phase === 'finished',
     // The Event is set up and not finished, the page's own rule of `useStandingsNews`: the Host's read and a Member's hold both fields (#741).
     standings: view?.standings != null && view.event.phase !== 'finished',
+    // The Tour may start for this Member (#747): the Tour's own rule, asked with the layer closed and the calm second over, so the files are there before
+    // the greeting. It reads the Member's stored version and the Event's host flag, phase and running Session, nothing of a draw, a Result or a ceremony.
+    tour: tourMayStart({
+      storedVersion: storedTourVersion, role: view?.event.isHost ? 'host' : 'member', phase: view?.event.phase ?? null,
+      sessionRunning: view != null && view.runningSessionId !== null, layerOpen: false, calmFor: TOUR_CALM_MS,
+    }),
   }
 }
 
@@ -81,6 +88,8 @@ export function useCuePlayer(input: {
 }): { suspended: Readonly<Ref<boolean>>, resume: () => Promise<void>, playNow: CuePlayer['playNow'] } {
   // Order matters: `useSound` registers its read of the stored switch first, so Ton has its stored value when `mounted` turns true.
   const { enabled } = useSound()
+  // The Member's stored Tour version: the one thing of the Tour's start rule that is not in the Event read (#747).
+  const { stored: tourSeen } = useTourSeen()
   const mounted = ref(false)
   onMounted(() => {
     mounted.value = true
@@ -135,13 +144,13 @@ export function useCuePlayer(input: {
     if (!made) return
     made.setEnabled(true)
     const view = input.view()
-    made.preload(cueFilesOf(reachableGroups(groupInputOf(view))))
+    made.preload(cueFilesOf(reachableGroups(groupInputOf(view, tourSeen.value))))
     made.setPlan(view ? planOf(view) : [])
     made.setPlan(input.ceremony?.() ?? [], 'ceremony')
   }
 
   // Not a sync watch: a refetch of the same read is a new object every time, and the player diffs the plan, so it schedules nothing twice.
-  watch([() => input.view(), () => input.ready(), () => enabled.value, mounted, () => input.ceremony?.()], sync)
+  watch([() => input.view(), () => input.ready(), () => enabled.value, mounted, () => input.ceremony?.(), () => tourSeen.value], sync)
 
   // The server clock's offset changed (the first answer, a re-sync): a cue scheduled on the old reading moves with it (#594).
   watch(input.moved, () => player?.refresh())

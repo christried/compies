@@ -1,6 +1,6 @@
 import { STAMP_DELAY_MS } from '~/utils/motion'
 import {
-  CUE_IDS, TICK_MIN_GAP_MS, ceremonyCuePlan, coinCuePlan, cueFileUrl, standingsCues, thinTicks, vetoArrivalCues, vetoCuePlan, wheelCuePlan, wheelVoicePlan,
+  CUE_IDS, TICK_MIN_GAP_MS, ceremonyCuePlan, coinCuePlan, cueFileUrl, standingsCues, thinTicks, tourStepCue, vetoArrivalCues, vetoCuePlan, wheelCuePlan, wheelVoicePlan,
   type ArrivalCue, type Cue, type CueId, type VetoArrivalState,
 } from '~/utils/sound-cues'
 import { isText, parseCredits, type CueCredit, type Licence } from '~/utils/sound-credits'
@@ -11,6 +11,7 @@ import { COIN_DURATION_MS } from '~~/shared/coin'
 import type { RoundGame } from '~~/shared/game'
 import { isRecord } from '~~/shared/record'
 import type { ClipView, SpinView, VetoCastView, VetoDrawView, WheelView } from '~~/shared/stage'
+import { MEMBER_TOUR } from '~~/shared/tour'
 
 // The logic of the listening page for the cue sounds (#534, the session of #535): what each cue is meant to sound like, the candidates, a
 // test run built through the REAL cue plan functions, and the choices as the agent reads them back. Pure: no Vue, no DOM, no clock
@@ -59,6 +60,7 @@ export const CUE_BRIEF: Record<CueId, { character: string }> = {
   'cer-trip': { character: 'Stolpern: he trips over the trophy' },
   'cer-bonk': { character: 'Volltreffer: the trophy lands on his head' },
   // tour
+  'cb-hi': { character: 'short happy chirp, 3 variants' },
 }
 
 /**
@@ -66,7 +68,7 @@ export const CUE_BRIEF: Record<CueId, { character: string }> = {
  * a member here (a union takes no group lines, so it is the one line two tickets may both touch), a `MOMENT_LABEL` row and a runner in the
  * page's `MOMENT_RUNNERS`, under its group's line.
  */
-export type Moment = 'spin' | 'window' | 'arrival' | 'voice' | 'coin' | 'standings' | 'ceremony'
+export type Moment = 'spin' | 'window' | 'arrival' | 'voice' | 'coin' | 'standings' | 'ceremony' | 'tour'
 
 export const MOMENT_OF: Record<CueId, Moment> = {
   // wheel
@@ -82,6 +84,7 @@ export const MOMENT_OF: Record<CueId, Moment> = {
   // ceremony
   'cer-drop': 'ceremony', 'cer-row': 'ceremony', 'cer-run': 'ceremony', 'cer-trip': 'ceremony', 'cer-bonk': 'ceremony',
   // tour
+  'cb-hi': 'tour',
 }
 
 /** What the page prints beside the moment button. */
@@ -100,6 +103,7 @@ export const MOMENT_LABEL: Record<Moment, string> = {
   // ceremony
   ceremony: 'Test ceremony',
   // tour
+  tour: 'Test Tour voice',
 }
 
 /** The controls a cue's moment button sets before it runs, for a cue that needs more than its moment: `wheel-morph` needs the Hidden wheel. */
@@ -391,6 +395,15 @@ export function standingsChangeCues(reducedMotion: boolean, countMs: number): Ar
     countMs,
     stampDelayMs: STAMP_DELAY_MS,
   })
+}
+
+/** Where the Tour's second cue sounds in a test run after the first: the real Tour's step change takes about as long (#747). */
+export const TOUR_RUN_GAP_MS = 1500
+
+/** The Tour's two cues in the order the real Tour shows them: `tourStepCue` over the steps of `MEMBER_TOUR`, the silent steps left out. */
+export function tourVoiceCues(): ArrivalCue[] {
+  const ids = MEMBER_TOUR.map(step => tourStepCue(step.id)).filter((id): id is CueId => id !== null)
+  return ids.map((id, index) => ({ id, delayMs: index === 0 ? 0 : TOUR_RUN_GAP_MS }))
 }
 
 // Arrival cues -----------------------------------------------------------------------------------------------------------------------

@@ -883,6 +883,40 @@
         "licence": "generated",
         "note": "Glocke auf dem Kopf, klingt wabernd nach"
       }
+    ],
+    "cb-hi": [
+      {
+        "name": "zwei-ton-piep",
+        "file": "cb-hi/zwei-ton-piep.wav",
+        "source": "scripts/make-cue-candidates.mjs, Rezept zwei-ton-piep",
+        "author": null,
+        "licence": "generated",
+        "note": "Zwei-Ton-Piepser nach oben, vogelartig"
+      },
+      {
+        "name": "gleiter-mit-wobble",
+        "file": "cb-hi/gleiter-mit-wobble.wav",
+        "source": "scripts/make-cue-candidates.mjs, Rezept gleiter-mit-wobble",
+        "author": null,
+        "licence": "generated",
+        "note": "schneller Gleiter nach oben mit Wobble"
+      },
+      {
+        "name": "chip-blip-paar",
+        "file": "cb-hi/chip-blip-paar.wav",
+        "source": "scripts/make-cue-candidates.mjs, Rezept chip-blip-paar",
+        "author": null,
+        "licence": "generated",
+        "note": "zwei Arcade-Blips, der zweite höher"
+      },
+      {
+        "name": "quieker-mit-klang",
+        "file": "cb-hi/quieker-mit-klang.wav",
+        "source": "scripts/make-cue-candidates.mjs, Rezept quieker-mit-klang",
+        "author": null,
+        "licence": "generated",
+        "note": "kurzer Quieker, danach ein heller Klang"
+      }
     ]
   }
 }
