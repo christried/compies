@@ -65,7 +65,7 @@
     "label": "Host-Steuerung",
     "delete": "Event löschen",
     "deleteBlocked": "Geht erst, wenn keine Session läuft.",
-    "setDate": "Termin festlegen",
+    "setDate": "Termin fixieren",
     "settings": "Einstellungen",
     "setup": "Event einrichten",
     "proposeDate": "Termin vorschlagen",
@@ -674,7 +674,7 @@
     "sum": "Summe",
     "sumText": "{y} Ja, {m} Meh",
     "best": "Bester Termin",
-    "confirm": "Termin festlegen: {slot}",
+    "confirm": "Termin fixieren: {slot}",
     "confirmed": "Termin steht",
     "confirmedBanner": "Termin steht: {slot} Uhr",
     "confirmedText": "Alle wurden benachrichtigt. Erinnerung 1 Stunde vorher. Die Teamwahl ist jetzt offen.",
@@ -1483,13 +1483,12 @@
       "past": "vorbei",
       "notVoted": "noch nicht abgestimmt",
       "savedNote": "Gespeichert. Du kannst deine Stimmen ändern, bis der Host den Termin fixiert.",
-      "pickThis": "Termin festlegen",
+      "pickThis": "Termin fixieren",
       "whoWhen": "Wer kann wann?",
       "exportCsv": "Als CSV exportieren",
       "csvName": "Name",
       "you": "{name} (du)",
-      "confirmSeeAll": "Alle sehen den Termin sofort hier.",
-      "confirmCta": "Festlegen",
+      "confirmCta": "Fixieren",
       "cancel": "Abbrechen"
     },
     "zone": {
@@ -1524,7 +1523,6 @@
       "remove": "Termin entfernen",
       "votesLost": "{n} Stimme geht verloren | {n} Stimmen gehen verloren",
       "change": "Ändern",
-      "votesKept": "Die Stimmen bleiben erhalten – sag der Gruppe Bescheid.",
       "newLabel": "Neuer Termin",
       "add": "Termin hinzufügen",
       "addHelp": "Die Zeit gilt für alle (Europe/Berlin). Bis zu {max} Termine.",
@@ -1547,7 +1545,7 @@
       "session": "Session {n} · {day}"
     },
     "set": {
-      "confirmTitle": "Termin festlegen?",
+      "confirmTitle": "Termin fixieren?",
       "pickLabel": "Welcher Termin?",
       "slotLabel": "{day}, {time} Uhr",
       "noFutureSlot": "Kein Termin liegt mehr in der Zukunft.",
@@ -1560,7 +1558,6 @@
     "reschedule": {
       "title": "Termin verschieben?",
       "label": "Neuer Termin",
-      "text": "Alle sehen den neuen Termin sofort hier.",
       "cta": "Termin verschieben"
     },
     "reopen": {

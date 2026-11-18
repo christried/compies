@@ -124,12 +124,6 @@ function remove(slotId: string) {
               :label="row.label"
               :error="changeProblem"
             />
-            <p
-              v-if="row.votes > 0"
-              class="m-0 text-small font-bold text-pretty text-ink-2"
-            >
-              {{ t('mvp.slots.votesKept') }}
-            </p>
             <div class="flex flex-wrap items-center gap-3">
               <AppButton
                 type="submit"
