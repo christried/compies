@@ -53,4 +53,5 @@ export const CUE_LENGTHS: Record<CueId, CueLength> = {
   'cer-trip': { ms: 400, loop: false, docRow: false },
   'cer-bonk': { ms: 400, loop: false, docRow: false },
   // tour
+  'cb-hi': { ms: 300, loop: false, docRow: true },
 }

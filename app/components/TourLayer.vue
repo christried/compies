@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { bubbleIn, bubbleOut, canAnimate, cancelQuietly, glideScroll, moveHole, tourEnter, tourExit, tourTick, type TourHole, type TourPlay } from '~/utils/tour-motion'
 import { placeTour, TOUR_BUBBLE_WIDTH, tourBubbleWidth, TOUR_NARROW_BELOW, type TourPlacement, type TourThing } from '~/utils/tour-placement'
+import { tourStepCue } from '~/utils/sound-cues'
 import { tourFace, tourMove, tourThing, type TourStep } from '~~/shared/tour'
 
 // The Tour's layer (#647, #460, ADR 0017): the controller of the Rundgang. It measures the thing a step points at, asks `placeTour` where the hole and the
@@ -19,6 +20,8 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
+// The Event page's immediate-play function (#747): the layer never makes a player of its own, and with none provided it is silent.
+const playNow = useImmediateCue()
 
 /** The step the User is on, and the one whose texts the bubble shows (it lags while a change plays: the swap is at 150 ms). */
 const at = ref(0)
@@ -194,12 +197,19 @@ async function start() {
   focusForward()
   if (canAnimate() && root.value && bubble.value?.root) tourEnter(root.value, bubble.value.root)
   nodIfPointing(0)
+  sing(0)
 }
 
 /** The face nods on a pointing step when the bubble arrives (the rig does nothing under reduced motion). */
 function nodIfPointing(index: number) {
   const current = props.steps[index]
   if (current && tourFace(current) === 'points') face.value?.nod()
+}
+
+/** The step that just showed sounds its cue, if it has one (#747): once per showing, so also after „Zurück“. A re-place of the same step (resize, scroll) is no showing. */
+function sing(index: number) {
+  const id = tourStepCue(props.steps[index]?.id ?? '')
+  if (id) playNow(id)
 }
 
 /** One move of the Tour: next and back change the step, skip and the end are over. */
@@ -249,6 +259,7 @@ async function change(next: number) {
     if (canAnimate() && bubble.value?.root) bubbleIn(bubble.value.root, target.side)
     focusForward()
     nodIfPointing(next)
+    sing(next)
     return
   }
   changing = true
@@ -279,6 +290,7 @@ async function change(next: number) {
     const arrival = bubbleIn(bubble.value.root, target.side)
     if (arrival) plays.push(arrival)
     nodIfPointing(next)
+    sing(next)
   })
   later(520, () => {
     // The page's scroll lands with the glide; the layer holds what it was told. The glide lives on frames: one that lost them (a starved main thread) stopped

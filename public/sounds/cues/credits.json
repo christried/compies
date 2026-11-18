@@ -149,6 +149,12 @@
       "source": "scripts/make-cue-candidates.mjs, Rezept holz-bonk",
       "author": null,
       "licence": "generated"
+    },
+    "cb-hi": {
+      "candidate": "zwei-ton-piep",
+      "source": "scripts/make-cue-candidates.mjs, Rezept zwei-ton-piep",
+      "author": null,
+      "licence": "generated"
     }
   }
 }
