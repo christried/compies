@@ -80,8 +80,8 @@ describe('Einstellungen in the Host controls', () => {
 
     const page = await mountSuspended(EventPage, { route: `/e/${slug}` })
 
-    expect(toolbarLabels(page)).toEqual(['Termin festlegen', 'Einladen', 'Mehr'])
-    expect(await menuLabels(page)).toEqual(['Termin festlegen', 'Termine bearbeiten', 'Einladen', 'Einstellungen', 'Event löschen'])
+    expect(toolbarLabels(page)).toEqual(['Termin fixieren', 'Einladen', 'Mehr'])
+    expect(await menuLabels(page)).toEqual(['Termin fixieren', 'Termine bearbeiten', 'Einladen', 'Einstellungen', 'Event löschen'])
   })
 
   it('is listed in Mehr once the Date is set, next to Session starten and Einladen', async () => {

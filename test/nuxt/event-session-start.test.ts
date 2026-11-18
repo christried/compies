@@ -49,12 +49,12 @@ describe('the Host dock per state', () => {
     expect(pill(page)).toEqual(['Event einrichten', 'Einladen', 'Mehr'])
   })
 
-  it('offers Termin festlegen while no Session is dated', async () => {
+  it('offers Termin fixieren while no Session is dated', async () => {
     const { slug } = serve(s => hostView(s, [{ number: null, startsAt: null }], { event: { isHost: true, phase: 'poll' }, start: { sessionId: null, number: null, rejection: 'no_dated_session' }, slots: [{ id: 'fri', startsAt: '2090-10-23T18:00:00.000Z', past: false }] }))
 
     const page = await mountSuspended(EventPage, { route: `/e/${slug}` })
 
-    expect(pill(page)).toEqual(['Termin festlegen', 'Einladen', 'Mehr'])
+    expect(pill(page)).toEqual(['Termin fixieren', 'Einladen', 'Mehr'])
   })
 
   it('offers Session 1 starten and, while Session 2 polls, Termin für Session 2', async () => {

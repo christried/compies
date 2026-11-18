@@ -289,7 +289,7 @@ describe('the Event poll', () => {
     const hostPage = await mountSuspended(EventPage, { route: `/e/${hostView.slug}` })
     expect(hostPage.get('[role="toolbar"]').attributes('aria-label')).toBe('Host-Steuerung')
     expect(hostPage.get('[role="toolbar"]').text()).toContain('Einladen')
-    expect((await openHostMenu(hostPage)).textContent).toContain('Termin festlegen')
+    expect((await openHostMenu(hostPage)).textContent).toContain('Termin fixieren')
   })
 
   it('renders no stray markup as text for the Host', async () => {

@@ -8,14 +8,14 @@ import { settingsPath } from '~~/shared/links'
 import { leadersOf } from '~~/shared/finish'
 
 // The Host's dock actions (11-event-seite § HostDock, #155, #164): hostDockState says which primary the Event offers (Event
-// einrichten, Termin festlegen, Session starten, Nächstes Spiel setzen, Rad drehen, Event abschließen, Siegerehrung starten, or none after the last Session) and
+// einrichten, Termin fixieren, Session starten, Nächstes Spiel setzen, Rad drehen, Event abschließen, Siegerehrung starten, or none after the last Session) and
 // dockLayout which actions sit where (named parts: primary, secondary, more; review 1.4 A4). Each action is one entry below.
 // „Session starten“, „Nächstes Spiel setzen“ and „Rad drehen“ look disabled with the rule's reason when they cannot run; „Session beenden“ is
 // a secondary hold. At a Tie (#278) „Unentschieden beenden“ takes the primary's place as a hold, and „Letztes Spiel hinzufügen“ is a plain
 // button beside it; the finish holds send the Parties on Place 1 they showed (review 0.8 S2). „Termin für Session m“ stays while another
 // Session still polls, and „Termine bearbeiten“ while the Date poll is open. „Event löschen“ (#333) is in Mehr in every state; it opens the
 // delete sheet, whose hold deletes, and it is disabled with its reason while a Session runs.
-// Every Phase before the Event finishes has Einstellungen and Einladen (#147). „Termin festlegen“ looks disabled with its reason
+// Every Phase before the Event finishes has Einstellungen and Einladen (#147). „Termin fixieren“ looks disabled with its reason
 // when no open future Slot can become a Date (#52). What each action does is the stage's change or a dialog the page owns (#283): the page passes `actions` and `dialogs`.
 
 /** What the dock opens of the Host's dialogs (EventHostDialogs exposes them; the page passes its template ref). */
@@ -100,7 +100,7 @@ export function useHostActions(
       slots: { key: 'slots', label: t('mvp.slots.title'), icon: CalendarClock, group: t('dock.group.dates'), run: handlers.editSlots },
       setDate: {
         key: 'setDate',
-        // Named by its Session once another Session is dated or started; before that it is simply „Termin festlegen“.
+        // Named by its Session once another Session is dated or started; before that it is simply „Termin fixieren“.
         label: t(state.pollNumber !== null && ['teams', 'running', 'between'].includes(state.kind) ? 'dock.setDateN' : 'dock.setDate', { n: state.pollNumber }),
         icon: CalendarCheck,
         group: t('dock.group.dates'),

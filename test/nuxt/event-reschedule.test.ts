@@ -97,6 +97,7 @@ describe('rescheduling and reopening the Date', () => {
     // Matched by title: a confirm dialog from an earlier test can still sit in the body.
     const rescheduleDialog = [...document.querySelectorAll<HTMLElement>('[role="dialog"]')].find(element => element.textContent?.includes('Termin verschieben?'))
     expect(rescheduleDialog).toBeDefined()
+    expect(rescheduleDialog?.textContent).not.toContain('Alle sehen den neuen Termin sofort hier.')
     await clickButton(rescheduleDialog, 'Termin verschieben')
 
     await vi.waitFor(() => expect(sent).toEqual({ startsAt: '2026-10-24T20:00' }))

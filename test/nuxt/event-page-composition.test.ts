@@ -109,12 +109,12 @@ describe('the stage of the Event page', () => {
       expect(page.find(`[id="${button.attributes('aria-controls')}"]`).text()).toContain('Wer kann wann?')
     })
 
-    it('leaves „Termin festlegen“ on a Slot card primary only in the full poll', async () => {
+    it('leaves „Termin fixieren“ on a Slot card primary only in the full poll', async () => {
       const full = serveState({ sessions: [SESSION(1, null), SESSION(2, null)], missing: 2, host: true })
       const quiet = serveState({ sessions: [SESSION(1, FIRST), SESSION(2, null)], missing: 1, host: true })
 
       // One page at a time: the page follows the route, so a second mount would move the first.
-      const pick = (page: Awaited<ReturnType<typeof mount>>) => page.findAll('article button').filter(button => button.text() === 'Termin festlegen')
+      const pick = (page: Awaited<ReturnType<typeof mount>>) => page.findAll('article button').filter(button => button.text() === 'Termin fixieren')
       const fullPage = await mount(full.slug)
       expect(pick(fullPage).some(button => button.classes().includes('bg-primary'))).toBe(true)
       fullPage.unmount()

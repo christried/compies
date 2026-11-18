@@ -7,7 +7,7 @@ import { kitty, signInAs } from './auth'
 import { clickHostAction, dialog, LARSI, radio, SANNE, serve, shownToasts, view, type Vote, type Wrapper } from './event-page'
 
 // The Note on a Vote (#102) on the Event page: the Slot card's button and field, the matrix marker, the lists in
-// „Termin festlegen“ and on the DateSetCard.
+// „Termin fixieren“ and on the DateSetCard.
 
 const NOTE = 'kann maximal bis 20:30'
 const kittyMaybe: Vote = { slotId: 'fri', userId: kitty.id, value: 'maybe', note: null }
@@ -409,12 +409,12 @@ describe('Notes on Votes', () => {
     })
   })
 
-  describe('„Termin festlegen“ and the DateSetCard', () => {
+  describe('„Termin fixieren“ and the DateSetCard', () => {
     it('lists the Notes of each option in the dialog', async () => {
       const { slug } = serve(s => view(s, [larsiNote], { event: { isHost: true } }))
       const page = await mountSuspended(EventPage, { route: `/e/${slug}` })
 
-      await clickHostAction(page, 'Termin festlegen')
+      await clickHostAction(page, 'Termin fixieren')
 
       const option = dialog()!.querySelector('[data-slot="fri"]')!.parentElement!
       expect(option.textContent).toContain('Anmerkungen')

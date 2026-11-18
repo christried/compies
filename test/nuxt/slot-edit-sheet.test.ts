@@ -270,16 +270,15 @@ describe('SlotEditSheet', () => {
       expect(endpoint.patched).toEqual([])
     })
 
-    it('says that the Votes stay when the Slot has Votes', async () => {
-      await mountSuspended(SlotEditSheet, {
+    it('says nothing about the Votes when the Slot has Votes (#799: no line on what stays)', async () => {
+      const page = await mountSuspended(SlotEditSheet, {
         props: { open: true, slug: 'votes-kept', slots: [{ ...JUNE_10, votes: 2 }] },
       })
-      const kept = 'Die Stimmen bleiben erhalten – sag der Gruppe Bescheid.'
-      expect(document.body.textContent).not.toContain(kept)
 
       buttonWithText('Ändern')?.click()
 
-      await vi.waitFor(() => expect(document.body.textContent).toContain(kept))
+      await vi.waitFor(() => expect(changeField(page, 'Mo 10.06. 20:00')).toBeDefined())
+      expect(document.body.textContent).not.toContain('Die Stimmen bleiben erhalten')
     })
 
     it('says nothing about Votes for a Slot without any', async () => {

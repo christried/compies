@@ -36,7 +36,7 @@ describe('several Sessions on the Event page', () => {
     expect(page.findAll('button').filter(button => button.text() === 'Einladen')).toHaveLength(1)
     expect(page.get('[role="toolbar"]').findAll('button').filter(button => button.text() === 'Einladen')).toHaveLength(1)
     for (const label of ['Verschieben', 'Neue Terminsuche', 'Entfernen']) expect(labelled(page, label), label).toHaveLength(0)
-    expect(page.text()).not.toContain('Termin festlegen')
+    expect(page.text()).not.toContain('Termin fixieren')
   })
 
   it('reschedules the Session whose card was used, sending its own id', async () => {
@@ -189,7 +189,7 @@ describe('several Sessions on the Event page', () => {
     expect(page.find('button[aria-label="Session ohne Termin entfernen"]').exists()).toBe(false)
   })
 
-  it('says how many Dates are still missing above the poll, and the dock offers Termin festlegen next to Termine bearbeiten', async () => {
+  it('says how many Dates are still missing above the poll, and the dock offers Termin fixieren next to Termine bearbeiten', async () => {
     const { slug } = serve(s => viewWithSessions(s, [
       { number: null, startsAt: null },
       { number: null, startsAt: null },
@@ -202,7 +202,7 @@ describe('several Sessions on the Event page', () => {
     expect(page.text()).not.toContain('1 Termin gesucht')
     expect(page.get('[role="toolbar"]').text()).toContain('Einladen')
     const menu = await openHostMenu(page)
-    expect(menu.textContent).toContain('Termin festlegen')
+    expect(menu.textContent).toContain('Termin fixieren')
     expect(menu.textContent).toContain('Termine bearbeiten')
   })
 
@@ -220,11 +220,11 @@ describe('several Sessions on the Event page', () => {
       },
     })
     const page = await mountSuspended(EventPage, { route: `/e/${store.slug}` })
-    await clickHostAction(page, 'Termin festlegen')
+    await clickHostAction(page, 'Termin fixieren')
 
     expect(dialog()?.textContent).toContain('Danach fehlt noch 1 Termin.')
-    expect(dialog()?.textContent).toContain('Alle sehen den Termin sofort hier.')
-    await clickButton(dialog(), 'Festlegen')
+    expect(dialog()?.textContent).not.toContain('Alle sehen den Termin sofort hier.')
+    await clickButton(dialog(), 'Fixieren')
 
     await vi.waitFor(() => expect(sent).toEqual({ slotId: 'fri' }))
   })
@@ -236,7 +236,7 @@ describe('several Sessions on the Event page', () => {
       { number: null, startsAt: null },
     ], 3, { event: { phase: 'poll', isHost: true } }))
     const pluralPage = await mountSuspended(EventPage, { route: `/e/${plural.slug}` })
-    await clickHostAction(pluralPage, 'Termin festlegen')
+    await clickHostAction(pluralPage, 'Termin fixieren')
     expect(dialog()?.textContent).toContain('Danach fehlen noch 2 Termine.')
     await clickButton(dialog(), 'Abbrechen')
     pluralPage.unmount()
@@ -246,24 +246,24 @@ describe('several Sessions on the Event page', () => {
       { number: null, startsAt: null },
     ], 1, { event: { phase: 'poll', isHost: true } }))
     const lastPage = await mountSuspended(EventPage, { route: `/e/${last.slug}` })
-    await clickHostAction(lastPage, 'Termin festlegen')
+    await clickHostAction(lastPage, 'Termin fixieren')
     expect(dialog()?.textContent).not.toContain('Danach')
   })
 
-  it('shows "Termin festlegen" disabled with the reason when no Slot is open, and answers a click with a neutral toast', async () => {
+  it('shows "Termin fixieren" disabled with the reason when no Slot is open, and answers a click with a neutral toast', async () => {
     const { slug } = serve(s => view(s, [], { event: { isHost: true }, slots: [], bestSlotId: null }))
     const page = await mountSuspended(EventPage, { route: `/e/${slug}` })
-    const set = await hostActionElement(page, 'Termin festlegen')
+    const set = await hostActionElement(page, 'Termin fixieren')
 
     expect(set.getAttribute('aria-disabled')).toBe('true')
     expect(set.disabled).toBe(false)
-    await clickHostAction(page, 'Termin festlegen')
+    await clickHostAction(page, 'Termin fixieren')
 
     expect(dialog()).toBeNull()
     expect(shownToasts()).toEqual([expect.objectContaining({ text: 'Schlag erst einen Termin vor.', tone: 'info' })])
   })
 
-  it('shows "Termin festlegen" disabled with the future reason when only past Slots are left', async () => {
+  it('shows "Termin fixieren" disabled with the future reason when only past Slots are left', async () => {
     const { slug } = serve(s => view(s, [], {
       event: { isHost: true },
       slots: [{ id: 'old', startsAt: '2026-10-20T18:00:00.000Z', past: true }],
@@ -271,18 +271,18 @@ describe('several Sessions on the Event page', () => {
     }))
     const page = await mountSuspended(EventPage, { route: `/e/${slug}` })
 
-    const set = await hostActionElement(page, 'Termin festlegen')
+    const set = await hostActionElement(page, 'Termin fixieren')
     expect(set.getAttribute('aria-disabled')).toBe('true')
-    await clickHostAction(page, 'Termin festlegen')
+    await clickHostAction(page, 'Termin fixieren')
 
     expect(shownToasts()).toEqual([expect.objectContaining({ text: 'Kein Termin liegt mehr in der Zukunft.', tone: 'info' })])
   })
 
-  it('leaves "Termin festlegen" enabled while a future Slot is open', async () => {
+  it('leaves "Termin fixieren" enabled while a future Slot is open', async () => {
     const { slug } = serve(s => view(s, [], { event: { isHost: true } }))
     const page = await mountSuspended(EventPage, { route: `/e/${slug}` })
 
-    const set = await hostActionElement(page, 'Termin festlegen')
+    const set = await hostActionElement(page, 'Termin fixieren')
     expect(set.getAttribute('aria-disabled')).toBeNull()
   })
 

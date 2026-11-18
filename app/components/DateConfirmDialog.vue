@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { CalendarCheck, Eye } from '@lucide/vue'
+import { CalendarCheck } from '@lucide/vue'
 import type { NoteRow } from '~/utils/notes'
 
 // The Host sets a Date (02-components § DateConfirmDialog, screen M3 confirm, #52). A ConfirmModal with
@@ -101,16 +101,12 @@ function confirm() {
           />
         </div>
       </div>
-      <ul class="m-0 flex list-none flex-col gap-2 p-0 text-[14px]">
-        <li v-if="missingAfter > 0">
+      <ul
+        v-if="missingAfter > 0"
+        class="m-0 flex list-none flex-col gap-2 p-0 text-[14px]"
+      >
+        <li>
           {{ t('mvp.set.missingAfter', { n: missingAfter }, missingAfter) }}
-        </li>
-        <li class="flex items-center gap-2">
-          <AppIcon
-            :icon="Eye"
-            :size="16"
-          />
-          {{ t('mvp.poll.confirmSeeAll') }}
         </li>
       </ul>
     </div>
