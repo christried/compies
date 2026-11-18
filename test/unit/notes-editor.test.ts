@@ -56,17 +56,9 @@ describe('editorContent', () => {
     expect(editorContent(doc as never)).toEqual(doc)
   })
 
-  it('takes bold off the text of a heading, which the editor has no place for, and keeps its other marks', () => {
-    const marks = [{ type: 'bold' }, { type: 'italic' }]
-    const doc = { type: 'doc', content: [{ type: 'heading', attrs: { level: 3 }, content: [{ type: 'text', text: 'Titel', marks }] }] }
-    expect(editorContent(doc as never)).toEqual({ type: 'doc', content: [{ type: 'heading', attrs: { level: 3 }, content: [{ type: 'text', text: 'Titel', marks: [{ type: 'italic' }] }] }] })
-    // The stored document is not touched.
-    expect(doc.content[0]!.content![0]!.marks).toEqual(marks)
-  })
-
-  it('leaves a text node without a mark in a heading without a marks key', () => {
-    const doc = { type: 'doc', content: [{ type: 'heading', attrs: { level: 3 }, content: [{ type: 'text', text: 'T', marks: [{ type: 'bold' }] }] }] }
-    expect(editorContent(doc as never).content[0]).toEqual({ type: 'heading', attrs: { level: 3 }, content: [{ type: 'text', text: 'T' }] })
+  it('hands a heading with italic over as it is', () => {
+    const doc = { type: 'doc', content: [{ type: 'heading', attrs: { level: 3 }, content: [{ type: 'text', text: 'Titel', marks: [{ type: 'italic' }] }] }] }
+    expect(editorContent(doc as never)).toEqual(doc)
   })
 })
 

@@ -1,4 +1,4 @@
-import { and, count, eq, inArray, isNull } from 'drizzle-orm'
+import { and, asc, count, eq, inArray, isNotNull, isNull, sql, type SQLWrapper } from 'drizzle-orm'
 import type { H3Event } from 'h3'
 import type { EventView } from '../../shared/event'
 import { canSeeLibrary, type GamePrice, type GamePriceInput, type GameTag, type GameView, type HostGameFacts, type PoolGame, type PoolGameFace, type RoundGame } from '../../shared/game'
@@ -12,6 +12,43 @@ import { loadTags } from './game-tags'
 import { getUser } from './user'
 
 // Shared parts of the Game library routes (#141).
+
+// The three terms every query about the library spells (#820, review 0.16 S3 = F1): whose a game is, whether it is Archived, and what a live Event is. Each has this one home, so a
+// reader added later cannot forget one; a second hand-written copy of `games.createdBy`, `games.archivedAt` or the live-Event rule is a finding.
+
+/** A game in the library of `hostId` (ADR 0018: the owner is the Host; another Host's copy is a different row). A column of an outer query works as `hostId` too, in a correlated subquery. */
+export function ownedBy(hostId: string | SQLWrapper) {
+  return eq(games.createdBy, hostId)
+}
+
+/** A game that is not Archived (#725): the games a wheel, a count, a draw and a Member's list are made of. */
+export const notArchived = isNull(games.archivedAt)
+
+/** A game that is Archived (#467). */
+export const archivedGame = isNotNull(games.archivedAt)
+
+/** The phases in which an Event is still live: it has not finished (`beforeFinish`). */
+const LIVE_PHASES = PHASES.filter(beforeFinish)
+
+/** An Event of `hostId` that is live: not deleted and not finished (#725, #733). The one sentence behind „who is told when a game is archived“ and „in how many Events a game sits“. */
+export function liveEventOf(hostId: string) {
+  return and(eq(events.hostId, hostId), isNull(events.deletedAt), inArray(events.phase, LIVE_PHASES))
+}
+
+/**
+ * The games of an Event's Game pool, the Host's own only (`games.created_by = events.host_id`, #722: a pool row of another Host's game, which the 0.15 code could still write
+ * while a migration ran, ADR 0007, is in no list), by name. `archived: 'any'` is the Host's list, which carries every pool game; 'no' leaves the Archived ones out, as every
+ * Member surface does (#725). The one join behind `readPool` (the ids) and `eventPool` (the views).
+ */
+export async function poolGames(db: Db, eventId: string, hostId: string, archived: 'any' | 'no'): Promise<(typeof games.$inferSelect)[]> {
+  const rows = await db
+    .select({ game: games })
+    .from(eventPoolGames)
+    .innerJoin(games, eq(eventPoolGames.gameId, games.id))
+    .where(and(eq(eventPoolGames.eventId, eventId), ownedBy(hostId), archived === 'no' ? notArchived : undefined))
+    .orderBy(asc(sql`lower(${games.name})`), asc(games.id))
+  return rows.map(row => row.game)
+}
 
 /** The answer a missing route gets; the library gives it to everyone who may not see it, and for a game that is not the viewer's own (#455). */
 export function libraryNotFound() {
@@ -31,7 +68,7 @@ export async function requireLibraryViewer(event: H3Event): Promise<AuthUser> {
  */
 export async function loadGame(db: Db, id: string, ownerId: string): Promise<typeof games.$inferSelect> {
   if (!isUuid(id)) throw libraryNotFound()
-  const [row] = await db.select().from(games).where(and(eq(games.id, id), eq(games.createdBy, ownerId)))
+  const [row] = await db.select().from(games).where(and(eq(games.id, id), ownedBy(ownerId)))
   if (!row) throw libraryNotFound()
   return row
 }
@@ -155,7 +192,7 @@ export async function liveEventCounts(db: Db, hostId: string): Promise<Record<st
     .select({ gameId: eventPoolGames.gameId, n: count() })
     .from(eventPoolGames)
     .innerJoin(events, eq(events.id, eventPoolGames.eventId))
-    .where(and(eq(events.hostId, hostId), isNull(events.deletedAt), inArray(events.phase, PHASES.filter(beforeFinish))))
+    .where(liveEventOf(hostId))
     .groupBy(eventPoolGames.gameId)
   return Object.fromEntries(rows.map(row => [row.gameId, Number(row.n)]))
 }

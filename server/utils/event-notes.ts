@@ -10,7 +10,7 @@ import { apiError } from './errors'
 import { assertGamesExist } from './pools'
 
 // The Host's Event notes (#731, spec #717 § E, GLOSSARY: Event notes): one document per Event and game, kept in `event_game_notes`. A save is an
-// ordinary Event change (ADR 0013): the instants come from `EventChange.now`, the Event's `event.changed` follows after the commit, and it writes no
+// ordinary Event change (ADR 0013): the instants come from `EventChange.now`, an `event.changed` to the Host alone follows after the commit (#820), and it writes no
 // Activity entry, so nothing but the Host's own read ever carries a note.
 
 /**
@@ -18,7 +18,7 @@ import { assertGamesExist } from './pools'
  * document is `invalid_game_notes`. The game must be in the Event's Host's library, archived or not (#722); another Host's game and an unknown id
  * answer alike.
  */
-export async function saveEventNotes({ tx, eventRow, now, body }: Pick<EventChange, 'tx' | 'eventRow' | 'now' | 'body'>, rawGameId: string): Promise<EventNotesSaved> {
+export async function saveEventNotes({ tx, eventRow, user, now, body, publishTo }: Pick<EventChange, 'tx' | 'eventRow' | 'user' | 'now' | 'body' | 'publishTo'>, rawGameId: string): Promise<EventNotesSaved> {
   if (!isUuid(rawGameId)) throw apiError('invalid_value')
   const gameId = rawGameId.toLowerCase()
   // A stray request that lacks the key must never clear a note.
@@ -28,6 +28,9 @@ export async function saveEventNotes({ tx, eventRow, now, body }: Pick<EventChan
   if (notes === undefined) throw apiError('invalid_game_notes')
 
   await assertGamesExist(tx, eventRow.hostId, [gameId])
+
+  // A save wakes the Host's own tabs only (#820): a Member's Event read does not change, so no Member refetches it or learns that the Host edits notes.
+  publishTo([user.id], { type: 'event.changed' })
 
   if (notes === null) {
     await tx.delete(eventGameNotes).where(and(eq(eventGameNotes.eventId, eventRow.id), eq(eventGameNotes.gameId, gameId)))

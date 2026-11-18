@@ -1,11 +1,11 @@
-import { and, eq, isNotNull, isNull } from 'drizzle-orm'
+import { and, eq } from 'drizzle-orm'
 import { defineEventHandler, getRouterParam, readBody } from 'h3'
 import { games } from '../../../db/schema'
 import { asRecord } from '../../../../shared/record'
 import { useClock } from '../../../utils/clock'
 import { useDb } from '../../../utils/db'
 import { apiError } from '../../../utils/errors'
-import { loadGame, readGameViews, requireLibraryViewer } from '../../../utils/library'
+import { archivedGame, loadGame, notArchived, readGameViews, requireLibraryViewer } from '../../../utils/library'
 import { liveEventsHolding } from '../../../utils/pools'
 import { publishAfterResponse } from '../../../utils/room-notifier'
 import { envelope } from '../../../../shared/realtime'
@@ -32,7 +32,7 @@ export default defineEventHandler(async (event): Promise<GameView> => {
       .update(games)
       .set({ archivedAt: archived ? now : null, updatedAt: now })
       // The state the request read: a concurrent request that already moved the game wins and this one writes nothing.
-      .where(and(eq(games.id, game.id), archived ? isNull(games.archivedAt) : isNotNull(games.archivedAt)))
+      .where(and(eq(games.id, game.id), archived ? notArchived : archivedGame))
       .returning()
     if (changed) {
       game = changed

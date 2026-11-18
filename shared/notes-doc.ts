@@ -35,13 +35,21 @@ export function notesLinkHref(raw: unknown): string | null {
   }
 }
 
-function parseMarks(raw: unknown): NotesMark[] | null {
+/** The `rel` of every link in a note, rendered (RichNotes) and written by the editor's Link: no `nofollow`, since the links are the Host's own (#454, #820). */
+export const NOTES_LINK_REL = 'noopener noreferrer'
+
+/** The marks a text node may carry in a paragraph or a list item; a heading takes the editor's `NotesHeading` list (app/utils/notes-extensions.ts), no bold (Lilita has one weight, #820). */
+const PARAGRAPH_MARKS: readonly NotesMark['type'][] = ['bold', 'italic', 'link']
+const HEADING_MARKS: readonly NotesMark['type'][] = ['italic', 'link']
+
+function parseMarks(raw: unknown, allowed: readonly NotesMark['type'][]): NotesMark[] | null {
   if (raw === undefined) return []
   if (!Array.isArray(raw)) return null
   const marks: NotesMark[] = []
   const seen = new Set<string>()
   for (const entry of raw) {
     const mark = asRecord(entry)
+    if (typeof mark.type !== 'string' || !(allowed as readonly string[]).includes(mark.type)) return null
     if (mark.type === 'bold' || mark.type === 'italic') {
       if (seen.has(mark.type)) continue
       seen.add(mark.type)
@@ -62,14 +70,14 @@ function parseMarks(raw: unknown): NotesMark[] | null {
 }
 
 /** The text nodes of a paragraph or heading; none when it has no content. Null when anything in it is not a text node of the list. */
-function parseTexts(raw: unknown): NotesText[] | null {
+function parseTexts(raw: unknown, allowed: readonly NotesMark['type'][]): NotesText[] | null {
   if (raw === undefined) return []
   if (!Array.isArray(raw)) return null
   const texts: NotesText[] = []
   for (const entry of raw) {
     const node = asRecord(entry)
     if (node.type !== 'text' || typeof node.text !== 'string' || node.text === '' || node.content !== undefined) return null
-    const marks = parseMarks(node.marks)
+    const marks = parseMarks(node.marks, allowed)
     if (marks === null) return null
     texts.push(marks.length > 0 ? { type: 'text', text: node.text, marks } : { type: 'text', text: node.text })
   }
@@ -79,7 +87,7 @@ function parseTexts(raw: unknown): NotesText[] | null {
 function parseParagraph(raw: unknown): NotesParagraph | null {
   const node = asRecord(raw)
   if (node.type !== 'paragraph') return null
-  const texts = parseTexts(node.content)
+  const texts = parseTexts(node.content, PARAGRAPH_MARKS)
   if (texts === null) return null
   return texts.length > 0 ? { type: 'paragraph', content: texts } : { type: 'paragraph' }
 }
@@ -101,7 +109,7 @@ function parseBlock(raw: unknown): NotesBlock | null {
   if (node.type === 'paragraph') return parseParagraph(node)
   if (node.type === 'heading') {
     if (asRecord(node.attrs).level !== NOTES_HEADING_LEVEL) return null
-    const texts = parseTexts(node.content)
+    const texts = parseTexts(node.content, HEADING_MARKS)
     if (texts === null) return null
     const attrs = { level: NOTES_HEADING_LEVEL } as const
     return texts.length > 0 ? { type: 'heading', attrs, content: texts } : { type: 'heading', attrs }

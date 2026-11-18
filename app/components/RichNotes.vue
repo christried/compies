@@ -2,7 +2,7 @@
 import { ArrowUpRight } from '@lucide/vue'
 import { defineComponent, h, type PropType, type VNodeChild } from 'vue'
 import { asRecord } from '~~/shared/record'
-import { notesLinkHref, type NotesDoc } from '~~/shared/notes-doc'
+import { NOTES_LINK_REL, notesLinkHref, type NotesDoc } from '~~/shared/notes-doc'
 
 // The renderer of a notes document (#728, ADR 0019): every place that shows notes calls it. It walks the document into the app's own elements and
 // never builds HTML (ADR 0019): no raw-HTML directive or property, also not as a prop of h(), and no sanitiser. A text node's string is a child, so Vue escapes it.
@@ -52,7 +52,7 @@ const shortAddress = (address: string) => address.replace(/^https?:\/\//i, '').r
 function renderLink(nodes: unknown[], href: string, newTab: string): VNodeChild {
   const only = nodes.length === 1 ? nodes[0] : null
   const shown = only !== null && textOf(only) === href ? shortAddress(href) : null
-  return h('a', { href, target: '_blank', rel: 'noopener noreferrer', title: href }, [
+  return h('a', { href, target: '_blank', rel: NOTES_LINK_REL, title: href }, [
     ...nodes.map(node => renderText(node, shown ?? textOf(node))),
     '⁠',
     h(ArrowUpRight, { 'class': 'cp-note-arrow', 'aria-hidden': 'true' }),
