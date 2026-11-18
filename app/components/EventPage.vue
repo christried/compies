@@ -32,6 +32,8 @@ const cues = useCuePlayer({
   moved: () => serverClock.moves.value,
   ceremony: () => ceremonyCues.value,
 })
+// What this device shows is heard through the same player (#741): the Standings' sequence asks for its sounds with the function handed down here.
+provideImmediateCue(cues.playNow)
 const onlineState = (userId: string) => (presence.known.value ? presence.isOnline(userId) : undefined)
 
 useHead({ title: () => data.value?.event.name })

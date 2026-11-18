@@ -84,6 +84,24 @@
       "author": null,
       "licence": "generated"
     },
+    "lb-swap": {
+      "candidate": "doppel-wisch",
+      "source": "scripts/make-cue-candidates.mjs, Rezept doppel-wisch",
+      "author": null,
+      "licence": "generated"
+    },
+    "lb-count": {
+      "candidate": "zaehlwerk-tick",
+      "source": "scripts/make-cue-candidates.mjs, Rezept zaehlwerk-tick",
+      "author": null,
+      "licence": "generated"
+    },
+    "lb-winner": {
+      "candidate": "troete-knall",
+      "source": "scripts/make-cue-candidates.mjs, Rezept troete-knall",
+      "author": null,
+      "licence": "generated"
+    },
     "cer-drop": {
       "candidate": "holz-brett",
       "source": "scripts/make-cue-candidates.mjs, Rezept holz-brett",

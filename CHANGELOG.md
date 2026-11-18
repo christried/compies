@@ -11,6 +11,7 @@
 - **Notizen formatieren:** Notizen zu einem Spiel lassen sich jetzt formatieren: fett, kursiv, eine Überschrift, Listen und Links. Sie dürfen jetzt 2000 Zeichen lang sein statt 1000. ([#454](https://github.com/christried/compies/issues/454))
 - **Notizen für dieses Event:** Im Dialog eines Spiels auf der Eventseite schreibst du jetzt Notizen nur für dieses Event, zum Beispiel „heute nur Bo1“, mit denselben Formaten wie bei den Notizen eines Spiels. Nur du siehst sie, und nach dem Ende des Events bleiben sie so stehen. ([#464](https://github.com/christried/compies/issues/464))
 - **Die App-Figur hat eine Stimme:** Am Glücksrad macht die App-Figur jetzt Laute, ganz ohne Worte: Sie ist aufgeregt, wenn das Rad anläuft, schluckt an der Bremse und jubelt beim Stopp. Beim verdeckten Rad jubelt sie erst mit der Auflösung, für alle gleichzeitig, auch für den Host. Bei reduzierter Bewegung hörst du nur den Jubel. Der Schalter „Ton“ schaltet auch das aus. ([#671](https://github.com/christried/compies/issues/671))
+- **Ton in der Tabelle:** Wenn ein neues Ergebnis die Tabelle verändert, hörst du es: ein Wischen, wenn Teams die Plätze tauschen, ein Ticken beim Hochzählen der Punkte und zum Stempel „Sieg in Spiel …“ einen kleinen Jubel. Beim Laden der Seite, in einem Tab im Hintergrund und in einem beendeten Event bleibt die Tabelle still, und bei reduzierter Bewegung tickt der Zähler nicht. ([#741](https://github.com/christried/compies/issues/741))
 
 ### Geändert
 

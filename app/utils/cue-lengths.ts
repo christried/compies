@@ -37,6 +37,9 @@ export const CUE_LENGTHS: Record<CueId, CueLength> = {
   'veto-reveal': { ms: 800, loop: false, docRow: true },
   // coin
   // standings
+  'lb-swap': { ms: 300, loop: false, docRow: true },
+  'lb-count': { ms: 25, loop: false, docRow: true },
+  'lb-winner': { ms: 800, loop: false, docRow: true },
   // board
   // ceremony
   'cer-drop': { ms: 300, loop: false, docRow: true },
