@@ -14,6 +14,10 @@ export const API_ERROR_STATUS = {
   note_too_long: 400,
   /** A Message's text is empty after trimming or longer than MESSAGE_MAX characters (#758). */
   invalid_message: 400,
+  /** No Message with this id in this Event, or the id is no uuid: an unknown, a foreign and a malformed id answer alike (#760). */
+  message_not_found: 404,
+  /** The Message is another Member's, and the User is not the Host (#760). */
+  not_your_message: 403,
   /** A game name is empty or longer than GAME_NAME_MAX characters (#141). */
   invalid_game_name: 400,
   /** A game's YouTube link is not a link to a video (#141). */

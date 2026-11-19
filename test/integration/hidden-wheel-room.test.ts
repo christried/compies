@@ -1,6 +1,6 @@
 import { eq } from 'drizzle-orm'
 import { beforeEach, describe, expect, it } from 'vitest'
-import { events, pollSlots } from '../../server/db/schema'
+import { events, messages, pollSlots } from '../../server/db/schema'
 import type { Db } from '../../server/utils/db'
 import { ACTIVITY_TYPES, type ActivityEntry, type ActivityPage } from '../../shared/activity'
 import type { Place } from '../../shared/board'
@@ -36,7 +36,7 @@ describe('Hidden wheel secrecy (#148)', () => {
   // Every message type Nuxt sends to the room must be produced by this flow (#165): the type check fails until a new
   // type is added to SERVER_SENT and to a step of lobbyFlow. The Worker sends its own types (presence, the clock, the Emote).
   describe('the room and the Activity feed under a Hidden wheel (#165)', () => {
-    const SERVER_SENT = ['event.changed', 'activity.added', 'member.moved', 'veto.cast', 'chat.added'] as const satisfies readonly RoomMessageType[]
+    const SERVER_SENT = ['event.changed', 'activity.added', 'member.moved', 'veto.cast', 'chat.added', 'chat.deleted'] as const satisfies readonly RoomMessageType[]
     type WorkerSent = 'presence.sync' | 'presence.join' | 'presence.leave' | 'clock.pong' | 'emote.sent'
     const everyTypeListed: Exclude<RoomMessageType, (typeof SERVER_SENT)[number] | WorkerSent> extends never ? true : never = true
 
@@ -137,6 +137,12 @@ describe('Hidden wheel secrecy (#148)', () => {
       expect((await send('POST', `/api/e/${slug}/messages`, playerCookie, { id: crypto.randomUUID(), text: 'Bin gleich da' })).status).toBe(200)
       expect((await send('POST', `/api/e/${slug}/messages`, hostCookie, { id: crypto.randomUUID(), text: 'Wir fangen um halb an' })).status).toBe(200)
 
+      // 9c. The Host deletes Player 1's Message and then their own (chat.deleted, #760): the room hears the id and the deleter, no text.
+      for (const writerId of [ids.player, hostSigned.id]) {
+        const [stored] = await db.select().from(messages).where(eq(messages.writerId, writerId))
+        expect((await send('DELETE', `/api/e/${slug}/messages/${stored!.id}`, hostCookie)).status).toBe(200)
+      }
+
       // 10. The Host starts the Session, sets a game that is in no pool and puts it back (event.changed, activity.added), then ends
       // the Session. That game is everyone's from the moment it is set (#228).
       expect((await send('POST', `/api/e/${slug}/sessions/start`, hostCookie)).status).toBe(200)
@@ -200,6 +206,11 @@ describe('Hidden wheel secrecy (#148)', () => {
       // The Messages of the flow ride the room with exactly their own fields: no name, colour, zone or game (#758).
       const chat = notifier.messages(eventId).filter(message => message.type === 'chat.added')
       expect(chat).toHaveLength(2)
+      // A deleted Message leaves as its id and its deleter only (#760): the Host's delete of Player 1's Message is 'host', of their own 'writer'.
+      const deletes = notifier.messages(eventId).filter(message => message.type === 'chat.deleted')
+      expect(deletes).toHaveLength(2)
+      for (const envelope of deletes) expect(Object.keys(envelope).sort()).toEqual(['deletedBy', 'id', 'serverTime', 'type', 'v'])
+      expect(deletes.map(envelope => (envelope as { deletedBy: string }).deletedBy)).toEqual(['host', 'writer'])
       for (const envelope of chat) {
         expect(Object.keys(envelope).sort()).toEqual(['message', 'serverTime', 'type', 'v'])
         expect(Object.keys((envelope as { message: object }).message).sort()).toEqual(['at', 'id', 'text', 'writerId'])

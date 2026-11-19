@@ -17,6 +17,7 @@ const ROOM_TYPES: Record<RoomMessageType, true> = {
   'veto.cast': true,
   'emote.sent': true,
   'chat.added': true,
+  'chat.deleted': true,
 }
 
 const root = resolve(import.meta.dirname, '../..')
