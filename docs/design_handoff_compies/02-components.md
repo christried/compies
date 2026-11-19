@@ -1039,9 +1039,11 @@ Event chat for everyone incl. bench and stands.
 - **Props / variants:** `messages[]`, `me`, `role`
 - **States:** grouped (2 min) · own (right, yellow) · sending · failed + retry · deleted by host („Vom Host gelöscht“) · empty
 - **Slots:** —
-- **Desktop / mobile:** Desktop side panel; mobile tab / bottom sheet.
+- **Desktop / mobile:** Desktop side panel; mobile tab / bottom sheet. On a phone it is the Chat tab's view (0.18, #765): the same component under the h1 „Chat“, mounted only while the view is shown.
 - **Accessibility:** `role="log"` + `aria-live="polite"`; input labelled „Nachricht an alle“.
 - **Motion:** new message `y 8→0, fade` `dur-base`.
+- **Deviation (0.18, #761):** the artboard's „Bench“ is the Stands' „Tribüne“ (GLOSSARY: Stands), so a Member who sits there has „Tribüne“ in the name line; there is no „Leute“ tab. The side panel's tabs are Chat, Aktivität, Tabelle, in that order, and it opens on Chat. The empty state is a dashed box with a bold „Noch still hier.“ and the text, not `EmptyState`, whose 120 px Compibert is too wide for the panel. The curve of the rise is `--cp-ease-out`, the UI default, since 04-motion has no Chat entry (`chatRise`, `app/utils/motion.ts`); under reduced motion it fades only.
+- **Deviation (0.18, #667):** the composer is one line, an `<input>` of 44 px (16 px type, so iOS does not zoom), and it has no `maxlength`: that counts UTF-16 units, the limit is 500 characters as a User sees them, so the input cuts at 500 graphemes (the Anmerkung's way). The counter shows from 400 as in the Anmerkung (`400/500`, warning colour from 492) above the row, with a screen-reader line „Noch {n} Zeichen“. A sent Message shows at once in its bubble at 60 % opacity with „wird gesendet …“ under it, and settles by id from the answer or the room's `chat.added`, whichever comes first. A failed one keeps its text and shows „Nicht gesendet. Erneut senden“ as one button that sends the same id again; after a rate limit the line „Langsam, langsam. Versuch es in ein paar Sekunden.“ stands above it. An own Message never rises. A finished Event has no composer: a note „Das Event ist beendet. Du kannst nur noch lesen.“ takes its place.
 
 ## ActivityFeed
 **Scope:** [1.0] · **Ref:** DS Communication
@@ -1066,6 +1068,7 @@ Automatic events with timestamps.
 - **Desktop / mobile:** Desktop pill bottom-left of the stage; mobile floating bottom-left.
 - **Accessibility:** `role="toolbar"`; each button labelled; cooldown as `aria-disabled` + „Kurz warten“.
 - **Motion:** cooldown ring stroke-dashoffset linear 2 s.
+- **Deviation (0.18, #668):** the row sits on the Game board, bottom-left inside the board, in its flow, for the Host and the Members alike: not in the dock and not beside the composer (DS Communication: „an emote button in the dock opens this row as a popover“). The four pictures are the SVGs of `reference/assets/emotes/`, served from `public/emotes/` (`EMOTE_PICTURE`, `app/utils/emote-art.ts`). The tapped button carries the ring and the other three are dimmed; the DS draws a ring on all four. No `cooldownMs` prop: the wait is `EMOTE_COOLDOWN_MS` (`shared/emote.ts`), the number the room's rule uses. Below md the row gives way to one button (`md:hidden`, `Smile`, 48 px) at the same place, which opens `AppSheet` with the four, 72 px each, pictures 56 px (#768). Source: `EmoteBar.vue`.
 
 ## FloatingEmote
 **Scope:** [1.0] · **Ref:** DS Communication
@@ -1078,6 +1081,7 @@ Emote rising above the sender's avatar.
 - **Desktop / mobile:** —
 - **Accessibility:** `aria-hidden`; feed does not log emotes.
 - **Motion:** see 04-motion § Emote.
+- **Deviation (0.18, #668):** it is the picture, not the rig's `emote` crop: an `<img>` of the static SVG, 48 px (this build's pick; the art is 100 × 100 and „readable at 32 px“), in a fixed layer of the page at the top edge of the avatar's button, `aria-hidden`. Source: `FloatingEmote.vue`, `useRisingEmotes`.
 
 ## PushAsk
 **Scope:** [1.0] · **Ref:** App Systemzustände 28

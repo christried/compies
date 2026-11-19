@@ -603,6 +603,110 @@
         "licence": "generated",
         "note": "schneller Gleiter nach oben mit Wobble"
       }
+    ],
+    "emo-clap": [
+      {
+        "name": "drei-klatscher",
+        "file": "emo-clap/drei-klatscher.wav",
+        "source": "scripts/cue-recipes/emote.mjs, Rezept drei-klatscher",
+        "author": null,
+        "licence": "generated",
+        "note": "drei trockene Klatscher, je ein kurzer Rauschstoß"
+      },
+      {
+        "name": "holz-klapper",
+        "file": "emo-clap/holz-klapper.wav",
+        "source": "scripts/cue-recipes/emote.mjs, Rezept holz-klapper",
+        "author": null,
+        "licence": "generated",
+        "note": "zwei hohle Holzklötze, nicht ganz Hände"
+      },
+      {
+        "name": "chip-klatsch",
+        "file": "emo-clap/chip-klatsch.wav",
+        "source": "scripts/cue-recipes/emote.mjs, Rezept chip-klatsch",
+        "author": null,
+        "licence": "generated",
+        "note": "drei körnige Arcade-Klatscher"
+      }
+    ],
+    "emo-haha": [
+      {
+        "name": "keuch-kichern",
+        "file": "emo-haha/keuch-kichern.wav",
+        "source": "scripts/cue-recipes/emote.mjs, Rezept keuch-kichern",
+        "author": null,
+        "licence": "generated",
+        "note": "fünf fallende Pulse mit Atem dazwischen, ein Keuchen"
+      },
+      {
+        "name": "chip-gickser",
+        "file": "emo-haha/chip-gickser.wav",
+        "source": "scripts/cue-recipes/emote.mjs, Rezept chip-gickser",
+        "author": null,
+        "licence": "generated",
+        "note": "sechs fallende Arcade-Blips, ein Gickern"
+      },
+      {
+        "name": "quietschtier",
+        "file": "emo-haha/quietschtier.wav",
+        "source": "scripts/cue-recipes/emote.mjs, Rezept quietschtier",
+        "author": null,
+        "licence": "generated",
+        "note": "vier Quietscher wie ein Gummitier, mit Luft"
+      }
+    ],
+    "emo-grr": [
+      {
+        "name": "saege-knurren",
+        "file": "emo-grr/saege-knurren.wav",
+        "source": "scripts/cue-recipes/emote.mjs, Rezept saege-knurren",
+        "author": null,
+        "licence": "generated",
+        "note": "tiefe Säge mit 32-Hz-Wackeln, ein kurzes Knurren"
+      },
+      {
+        "name": "puls-rasseln",
+        "file": "emo-grr/puls-rasseln.wav",
+        "source": "scripts/cue-recipes/emote.mjs, Rezept puls-rasseln",
+        "author": null,
+        "licence": "generated",
+        "note": "schmale Pulse mit Rauschen, ein rasselndes Grollen"
+      },
+      {
+        "name": "schnurr-saettigung",
+        "file": "emo-grr/schnurr-saettigung.wav",
+        "source": "scripts/cue-recipes/emote.mjs, Rezept schnurr-saettigung",
+        "author": null,
+        "licence": "generated",
+        "note": "übersteuertes Dreieck, ein Schnurren, das beißt"
+      }
+    ],
+    "emo-roar": [
+      {
+        "name": "mini-dino",
+        "file": "emo-roar/mini-dino.wav",
+        "source": "scripts/cue-recipes/emote.mjs, Rezept mini-dino",
+        "author": null,
+        "licence": "generated",
+        "note": "Säge und Puls fallen von 320 auf 160 Hz, ein kleines Dino-Brüllen"
+      },
+      {
+        "name": "dino-schnauben",
+        "file": "emo-roar/dino-schnauben.wav",
+        "source": "scripts/cue-recipes/emote.mjs, Rezept dino-schnauben",
+        "author": null,
+        "licence": "generated",
+        "note": "viel Atem, ein Band nach unten, ein Schnauben mit Ton darunter"
+      },
+      {
+        "name": "chip-gebruell",
+        "file": "emo-roar/chip-gebruell.wav",
+        "source": "scripts/cue-recipes/emote.mjs, Rezept chip-gebruell",
+        "author": null,
+        "licence": "generated",
+        "note": "Arcade-Rechteck mit wanderndem Tastverhältnis, auf fünf Bit gestaucht"
+      }
     ]
   }
 }

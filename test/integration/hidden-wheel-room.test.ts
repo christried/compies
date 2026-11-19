@@ -1,6 +1,6 @@
 import { eq } from 'drizzle-orm'
 import { beforeEach, describe, expect, it } from 'vitest'
-import { events, pollSlots } from '../../server/db/schema'
+import { events, messages, pollSlots } from '../../server/db/schema'
 import type { Db } from '../../server/utils/db'
 import { ACTIVITY_TYPES, type ActivityEntry, type ActivityPage } from '../../shared/activity'
 import type { Place } from '../../shared/board'
@@ -34,10 +34,10 @@ describe('Hidden wheel secrecy (#148)', () => {
   })
 
   // Every message type Nuxt sends to the room must be produced by this flow (#165): the type check fails until a new
-  // type is added to SERVER_SENT and to a step of lobbyFlow. The Worker sends its own types (presence, the clock).
+  // type is added to SERVER_SENT and to a step of lobbyFlow. The Worker sends its own types (presence, the clock, the Emote).
   describe('the room and the Activity feed under a Hidden wheel (#165)', () => {
-    const SERVER_SENT = ['event.changed', 'activity.added', 'member.moved', 'veto.cast'] as const satisfies readonly RoomMessageType[]
-    type WorkerSent = 'presence.sync' | 'presence.join' | 'presence.leave' | 'clock.pong'
+    const SERVER_SENT = ['event.changed', 'activity.added', 'member.moved', 'veto.cast', 'chat.added', 'chat.deleted'] as const satisfies readonly RoomMessageType[]
+    type WorkerSent = 'presence.sync' | 'presence.join' | 'presence.leave' | 'clock.pong' | 'emote.sent'
     const everyTypeListed: Exclude<RoomMessageType, (typeof SERVER_SENT)[number] | WorkerSent> extends never ? true : never = true
 
     const LOBBY_SLOTS = ['2090-10-30T20:30', '2090-10-31T19:00']
@@ -133,6 +133,16 @@ describe('Hidden wheel secrecy (#148)', () => {
       // 9. The Host rotates the Invite link.
       expect((await send('POST', `/api/e/${slug}/rotate`, hostCookie)).status).toBe(200)
 
+      // 9b. Player 1 and the Host each write a Message (chat.added, #758): ordinary words that name no game.
+      expect((await send('POST', `/api/e/${slug}/messages`, playerCookie, { id: crypto.randomUUID(), text: 'Bin gleich da' })).status).toBe(200)
+      expect((await send('POST', `/api/e/${slug}/messages`, hostCookie, { id: crypto.randomUUID(), text: 'Wir fangen um halb an' })).status).toBe(200)
+
+      // 9c. The Host deletes Player 1's Message and then their own (chat.deleted, #760): the room hears the id and the deleter, no text.
+      for (const writerId of [ids.player, hostSigned.id]) {
+        const [stored] = await db.select().from(messages).where(eq(messages.writerId, writerId))
+        expect((await send('DELETE', `/api/e/${slug}/messages/${stored!.id}`, hostCookie)).status).toBe(200)
+      }
+
       // 10. The Host starts the Session, sets a game that is in no pool and puts it back (event.changed, activity.added), then ends
       // the Session. That game is everyone's from the moment it is set (#228).
       expect((await send('POST', `/api/e/${slug}/sessions/start`, hostCookie)).status).toBe(200)
@@ -193,6 +203,35 @@ describe('Hidden wheel secrecy (#148)', () => {
       expect(feed).not.toContain('"price"')
       // Neither carries a game fact key: no player count, no Suitabilities (#444). The Event reads do, for the set game's Round, so they are not in this check.
       expectNoGameFacts(room, feed)
+      // The Messages of the flow ride the room with exactly their own fields: no name, colour, zone or game (#758).
+      const chat = notifier.messages(eventId).filter(message => message.type === 'chat.added')
+      expect(chat).toHaveLength(2)
+      // A deleted Message leaves as its id and its deleter only (#760): the Host's delete of Player 1's Message is 'host', of their own 'writer'.
+      const deletes = notifier.messages(eventId).filter(message => message.type === 'chat.deleted')
+      expect(deletes).toHaveLength(2)
+      for (const envelope of deletes) expect(Object.keys(envelope).sort()).toEqual(['deletedBy', 'id', 'serverTime', 'type', 'v'])
+      expect(deletes.map(envelope => (envelope as { deletedBy: string }).deletedBy)).toEqual(['host', 'writer'])
+      for (const envelope of chat) {
+        expect(Object.keys(envelope).sort()).toEqual(['message', 'serverTime', 'type', 'v'])
+        expect(Object.keys((envelope as { message: object }).message).sort()).toEqual(['at', 'id', 'text', 'writerId'])
+      }
+
+      // The Chat's read, as a Player and as the Host (#848, review P5): the flow's two Messages are deleted, so one live Message (ordinary words, no game) is written first and
+      // read back too. The read carries the Message and the two lines, and no game fact or trace.
+      expect((await send('POST', `/api/e/${slug}/messages`, playerCookie, { id: crypto.randomUUID(), text: 'Alles klar bei mir' })).status).toBe(200)
+      const chatRead = async (cookie: string) => {
+        const response = await request(`/api/e/${slug}/messages`, { headers: { cookie } })
+        expect(response.status).toBe(200)
+        return response.text()
+      }
+      const asPlayer = await chatRead(playerCookie)
+      const asHost = await chatRead(hostCookie)
+      for (const raw of [asPlayer, asHost]) {
+        expect((JSON.parse(raw) as { messages: unknown[] }).messages).toHaveLength(3)
+        expect(raw).toContain('Alles klar bei mir')
+      }
+      expectNone({ 'the Chat read of Player 1': asPlayer, 'the Chat read of the Host': asHost }, games)
+      expectNoGameFacts(asPlayer, asHost)
     })
 
     it('carries the Team names of renamed teams in the room and the feed alike, and still no pool game (#440)', async () => {

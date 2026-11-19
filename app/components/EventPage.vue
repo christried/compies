@@ -6,7 +6,9 @@ import { ceremonyAwaitsSound } from '~/utils/ceremony'
 import { stageInstants, stageUnsettled } from '~/utils/event-stage'
 import { dateBlockedKey, eventPageState, headerPill, waitsForCeremony, wearsPartyhat } from '~/utils/event-page'
 import { historyCorrections } from '~/utils/history-corrections'
-import type { Cue } from '~/utils/sound-cues'
+import { emoteCue, type Cue } from '~/utils/sound-cues'
+import type { EmoteId } from '~~/shared/emote'
+import type { TourStep } from '~~/shared/tour'
 import { datePollOpen, sessionsEditable } from '~~/shared/event'
 
 // The Event link (`/e/<slug>`, ADR 0006) in the event shell (screen M3): useEventView loads the Event (live, #156), the stage is the
@@ -35,6 +37,13 @@ const cues = useCuePlayer({
 })
 // What this device shows is heard through the same player (#741): the Standings' sequence asks for its sounds with the function handed down here.
 provideImmediateCue(cues.playNow)
+// An Emote is heard through the same player (#770): its cue is the rule `emoteCue`'s, at the volume it gives, and the player's own Ton and context gates
+// apply. The handler calls it first, before anything that may keep the rise from being drawn (#769): the reaction is heard with the board covered, the
+// avatar scrolled away or the tab hidden.
+const playEmoteCue = (message: { userId: string, emote: EmoteId, sound: boolean, serverTime: number }) => {
+  const heard = emoteCue({ emote: message.emote, sound: message.sound, own: message.userId === data.value?.viewerId, serverTime: message.serverTime, now: serverClock.now() })
+  if (heard) cues.playNow(heard.id, 0, heard.volume)
+}
 const onlineState = (userId: string) => (presence.known.value ? presence.isOnline(userId) : undefined)
 
 useHead({ title: () => data.value?.event.name })
@@ -85,6 +94,15 @@ const feed = computed(() => feedSessions(data.value?.sessions ?? []))
 
 // The cast reaches the casting Party's Users only (a named send, no `event.changed`): their pages read again to show the seal.
 room.on('veto.cast', () => void refresh())
+// An Emote that arrives (#668) rises above its sender's avatar, wherever the room says it came from (the sender's own too: the room passes it back). It is drawn at once: no
+// `serverTime`, no instant ahead (spec § C). An Emote never reaches Nuxt: it writes no Activity entry and no read changes. Compibert does not react (#673).
+const { rising, rise, done: riseDone } = useRisingEmotes({ covered: () => covered.value })
+room.on('emote.sent', (message) => {
+  playEmoteCue(message)
+  // #769: a cover, a hidden tab and an avatar scrolled away are decided inside `rise` by `emoteSeen`; an Emote that is not seen is dropped, not held.
+  rise(message.userId, message.emote)
+})
+const sendEmote = (emote: EmoteId) => room.send({ type: 'emote.send', emote })
 
 /** Whether the Veto bar covers the bottom of the page: the stage then gets room under its last block (F4), and the Clip shares the width with it held sideways (#584). */
 const vetoBarShown = ref(false)
@@ -134,8 +152,10 @@ const accessory = computed(() => (data.value && wearsPartyhat(data.value, waits.
 // The header pill follows the page state, not the Event's Phase, which is running from the first start on (headerPill, #166).
 const pill = computed(() => headerPill(pageState.value, data.value?.event.phase, t))
 
-// The phone's views and the side panel's tabs are useEventTabs' (#257): the Event page, the Standings (#274) or the Activity feed.
-const { wide, panelTab, activeView, tabs, panelTabs, selectView } = useEventTabs(room)
+// The phone's views and the side panel's tabs are useEventTabs' (#257): the Event page, the Standings (#274), the Chat or the Activity feed (#765).
+const { wide, panelTab, activeView, tabs, panelTabs, selectView } = useEventTabs(room, () => data.value?.viewerId)
+/** The phone shows the Chat view: the Host's crown would cover its send button, so the dock is not shown there (#765). */
+const chatOnPhone = computed(() => wide.value === false && activeView.value === 'chat')
 
 // What is new on the Standings (#276): a Result the page has not seen. One owner for the stage block and the panel's tab, which are mounted
 // together, and for the live region below.
@@ -145,6 +165,24 @@ const { news } = useStandingsNews(data, slug)
 // drawing one: `covered` is the one flag for both, since the Tour's layer, like the Clip, stays usable in the `layers` slot.
 const tour = useTour({ view: () => data.value, clipShown: () => clipShown.value, wide: () => wide.value === true })
 const covered = computed(() => clipShown.value || tour.shown.value)
+
+// The Tour's Aktivität step shows the Aktivität tab (#766): the Member's own tab is put back when the Tour leaves the step or ends. The page behind is inert
+// while the Tour shows, so the Member cannot change the tab meanwhile.
+let tabBeforeTour: string | null = null
+function tourShows(step: TourStep) {
+  if (step.panelTab === undefined) return restoreTab()
+  tabBeforeTour ??= panelTab.value
+  panelTab.value = step.panelTab
+}
+function restoreTab() {
+  if (tabBeforeTour === null) return
+  panelTab.value = tabBeforeTour
+  tabBeforeTour = null
+}
+// Every end of the Tour, the ones by itself too (a Session starts, the Event goes), which send no `over`.
+watch(() => tour.shown.value, (isShown) => {
+  if (!isShown) restoreTab()
+})
 </script>
 
 <template>
@@ -218,9 +256,23 @@ const covered = computed(() => clipShown.value || tour.shown.value)
         :label="t('app.sidePanel')"
         :tabs="panelTabs"
       >
+        <!-- The Chat listens for `chat.added` itself (#761); the panel hides its tabs with `v-show`, so both logs stay mounted. -->
+        <template #chat>
+          <ChatPanel
+            v-if="wide"
+            :slug="slug"
+            :room="room"
+            :members="data.members"
+            :teams="data.teams"
+            :viewer-id="data.viewerId"
+            :active="panelTab === 'chat'"
+            :finished="pageState?.kind === 'finished'"
+          />
+        </template>
         <template #activity>
           <ActivityFeed
             v-if="wide"
+            :active="panelTab === 'activity'"
             :slug="slug"
             :room="room"
             :sessions="feed.started"
@@ -294,9 +346,10 @@ const covered = computed(() => clipShown.value || tour.shown.value)
       @calendar="calendarOpen = true"
       @share="shareOpen = true"
       @replay="ceremonyLayer?.replay()"
+      @emote="sendEmote"
     />
 
-    <!-- A phone's other views (11-event-seite § TabBar): the Standings or the feed alone, with the Head's place taken by their title. -->
+    <!-- A phone's other views (11-event-seite § TabBar): the Standings, the Chat or the feed alone, with the Head's place taken by their title. -->
     <div
       v-else-if="data && wide === false"
       class="mx-auto flex w-full max-w-[1100px] flex-col gap-3 px-3.5 pt-4 pb-7"
@@ -308,6 +361,16 @@ const covered = computed(() => clipShown.value || tour.shown.value)
         :news="news"
         :waiting="waits"
       />
+      <EventChatView v-else-if="activeView === 'chat'">
+        <ChatPanel
+          :slug="slug"
+          :room="room"
+          :members="data.members"
+          :teams="data.teams"
+          :viewer-id="data.viewerId"
+          :finished="pageState?.kind === 'finished'"
+        />
+      </EventChatView>
       <EventActivityView
         v-else
         :slug="slug"
@@ -376,6 +439,16 @@ const covered = computed(() => clipShown.value || tour.shown.value)
     <!-- Fixed layers (#587): outside <main>, so they stay usable while the backdrop makes the rest of the page inert. The backdrop comes first,
          it lies under the Clip and the Veto bar by its layer. -->
     <template #layers>
+      <!-- The Emotes that are rising (#668): over the board, under the header, the backdrop, the dock, the sheets, the Clip and the Veto bar by `layer-sticky`. -->
+      <FloatingEmote
+        v-for="entry in rising"
+        :key="entry.key"
+        :emote="entry.emote"
+        :user-id="entry.userId"
+        :anchor-el="entry.anchor"
+        @done="riseDone(entry.key)"
+      />
+
       <ClipBackdrop :shown="clipShown" />
 
       <!-- The synced clip (#230) over the stage; keyed by the draw, so a clip closed on this device shows again with the next draw. The Transition
@@ -414,11 +487,12 @@ const covered = computed(() => clipShown.value || tour.shown.value)
         :open="tour.shown.value"
         :steps="tour.run.value"
         @over="tour.over"
+        @show="tourShows"
       />
 
       <!-- The Host has the dock in every Phase; in a finished Event it holds Siegerehrung starten and Einladen (#277, #309). -->
       <HostDock
-        v-if="data?.event.isHost"
+        v-if="data?.event.isHost && !chatOnPhone"
         :actions="hostActions"
         panel
       />

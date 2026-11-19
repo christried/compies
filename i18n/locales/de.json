@@ -595,9 +595,18 @@
     "send": "Senden",
     "sending": "wird gesendet …",
     "failed": "Nicht gesendet. Erneut senden",
+    "remaining": "Noch {n} Zeichen",
+    "finished": "Das Event ist beendet. Du kannst nur noch lesen.",
     "deleted": "Vom Host gelöscht",
+    "deletedByWriter": "Gelöscht",
+    "loadFailed": "Der Chat konnte nicht geladen werden.",
+    "older": "Ältere laden",
+    "retry": "Nochmal versuchen",
     "delete": "Löschen",
-    "deleteAria": "Nachricht von {name} löschen"
+    "deleteAria": "Nachricht von {name} löschen",
+    "deleteAnyAria": "Nachricht löschen",
+    "deletedToast": "Nachricht gelöscht",
+    "undo": "Rückgängig"
   },
   "activity": {
     "title": "Aktivität",
@@ -650,8 +659,9 @@
     "eventFinishedPlain": "Event beendet"
   },
   "emote": {
+    "label": "Emotes",
     "send": "Emote senden: {name}",
-    "sent": "Gesendet. Nächstes Emote in 2 Sekunden.",
+    "wait": "Kurz warten",
     "clap": "Klatschen",
     "tears": "Freudentränen",
     "angry": "Wütend",
@@ -1776,6 +1786,9 @@
     "saveFailed": "Konnte nicht speichern. Nochmal versuchen?",
     "voteFailed": "Deine Stimme ist nicht angekommen",
     "noteTooLong": "Die Anmerkung ist zu lang.",
+    "messageInvalid": "Die Nachricht ist leer oder zu lang.",
+    "messageNotFound": "Diese Nachricht gibt es nicht mehr.",
+    "messageNotYours": "Du kannst nur deine eigenen Nachrichten löschen.",
     "gameNameInvalid": "Gib dem Spiel einen Namen, höchstens 60 Zeichen.",
     "clipInvalid": "Der Clip passt nicht: Die Länge liegt zwischen 10 und 120 Sekunden.",
     "playersInvalid": "Die Spielerzahl passt nicht: von 1 bis 99, und „von“ nicht größer als „bis“.",
@@ -1882,7 +1895,7 @@
     },
     "chat": {
       "title": "Noch still hier.",
-      "text": "Sag Hallo. Alle in der Session lesen mit."
+      "text": "Sag Hallo. Alle im Event lesen mit."
     },
     "activity": {
       "title": "Noch nichts passiert.",

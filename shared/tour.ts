@@ -41,6 +41,11 @@ export interface TourStep {
   applies?: (page: TourPage) => boolean
   /** Compibert's face at the bubble (#460): `hello` waves, `points` looks at the thing, `cheers` hops. Default: see `tourFace`. */
   face?: TourFace
+  /**
+   * The key of the side panel's tab the step shows on a computer: the page opens that tab while the step shows and puts the Member's own back after (#766).
+   * `EventTabKey` lives in `app/` and `shared/` imports nothing of it, so this is a string.
+   */
+  panelTab?: string
 }
 
 export type TourFace = 'hello' | 'points' | 'cheers'
@@ -63,7 +68,7 @@ export const MEMBER_TOUR: readonly TourStep[] = [
   { id: 'boardOpen', target: 'board', anchor: 'me', applies: page => page.teamChoiceOpen },
   { id: 'boardLocked', target: 'board', anchor: 'me', applies: page => !page.teamChoiceOpen && page.phase === 'running' },
   { id: 'how', target: 'how' },
-  { id: 'activity', target: 'panel', anchor: 'tab-activity', applies: page => page.wide },
+  { id: 'activity', target: 'panel', anchor: 'tab-activity', applies: page => page.wide, panelTab: 'activity' },
   { id: 'tabs', target: 'tab-activity', applies: page => !page.wide },
   { id: 'sound', target: 'sound' },
   { id: 'end', target: null, face: 'cheers' },

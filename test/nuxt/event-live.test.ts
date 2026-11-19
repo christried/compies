@@ -140,8 +140,10 @@ describe('the live Event page', () => {
 
     lastSocket().options.onMessage(JSON.stringify(envelope({ type: 'activity.added', entry } as RoomMessage, Date.now())))
 
-    await vi.waitFor(() => expect(page.find('[role="log"]').text()).toContain('Larsi ist dem Event beigetreten'))
-    expect(page.find('[role="tabpanel"] [role="log"]').exists()).toBe(true)
+    // The panel opens on the Chat (#761); the feed is the tab after it.
+    await page.findAll('[role="tab"]').find(tab => tab.text() === 'Aktivität')!.trigger('click')
+    await vi.waitFor(() => expect(page.find('[role="log"][aria-label="Aktivität"]').text()).toContain('Larsi ist dem Event beigetreten'))
+    expect(page.find('[role="tabpanel"] [role="log"][aria-label="Aktivität"]').exists()).toBe(true)
     expect(page.get('[role="tab"][aria-selected="true"]').text()).toBe('Aktivität')
     expect(sockets).toHaveLength(1)
   })

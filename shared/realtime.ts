@@ -1,10 +1,13 @@
 // What the room and the app say to each other (spec #153 § Protocol, ADR 0012, ADR 0013). The app and the Worker
 // (realtime/) import this file, so it holds types and tiny helpers only. No message carries a game's name, id,
 // image or clip: `event.changed` has no payload and the client refetches the Event read, which filters per viewer (#258).
-// The one exception is an Activity entry of a game everyone may know (`activity.added`, #228, #229).
+// The one exception is an Activity entry of a game everyone may know (`activity.added`, #228, #229). A Message's text is the second thing the room
+// carries that a Member typed (`chat.added`, #758), and every Member may read every Message.
 
 import type { ActivityEntry } from './activity'
 import type { Place } from './board'
+import type { LiveMessage, MessageDeleter } from './chat'
+import type { EmoteId } from './emote'
 
 export const ROOM_PROTOCOL_VERSION = 1
 
@@ -32,6 +35,12 @@ export type RoomMessage
    * send, #227), the Host only when the Host plays in it; never broadcast, so no other Party learns that someone vetoed.
    */
     | { type: 'veto.cast', drawId: string, team: number }
+  /** A Member's Emote (#767), passed on by the room to every socket, the sender's included. `userId` is the token's, `sound`: the room's mark that it may play a cue (at most three a second). */
+    | { type: 'emote.sent', userId: string, emote: EmoteId, sound: boolean }
+  /** A new Message of the Chat (#758, spec #719 § A): the stored Message, to every socket of the Event, the writer's included; the page shows each Message once, by id. No `event.changed` goes with it, since nothing in the Event read changes (the write sets `broadcast: false`). */
+    | { type: 'chat.added', message: LiveMessage }
+  /** A Message that was deleted (#760, spec #719 § A): its id and who deleted it, to every socket of the Event; the text is gone and nothing else of the Message travels. The page turns the Message into its line by id. No `event.changed` goes with it (the delete sets `broadcast: false`). */
+    | { type: 'chat.deleted', id: string, deletedBy: MessageDeleter }
 
 export type RoomMessageType = RoomMessage['type']
 
@@ -46,8 +55,10 @@ export function envelope<M extends RoomMessage>(message: M, serverTime: number):
   return { ...message, v: ROOM_PROTOCOL_VERSION, serverTime }
 }
 
-/** What a client says to the room. Moves, words and Session actions are HTTP calls to Nuxt, never socket messages. */
-export type ClientMessage = { type: 'clock.ping', t0: number }
+/** What a client says to the room. Moves, words and Session actions are HTTP calls to Nuxt, never socket messages; the Emote is the one exception (ADR 0013, amendment of 2026-11-16), and it names no sender: the room knows it from the token. */
+export type ClientMessage
+  = | { type: 'clock.ping', t0: number }
+    | { type: 'emote.send', emote: EmoteId }
 
 // The heartbeat is plain text, not JSON, so the runtime answers it without waking the room (#162): the client sends
 // `ping` every HEARTBEAT_MS and the room's auto-response says `pong`.

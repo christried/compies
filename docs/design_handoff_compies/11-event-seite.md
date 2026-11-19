@@ -85,9 +85,11 @@ Same position and actions wherever the host sits (team, Bench, Tribüne) [6a, 6b
 - 1.4 renders the tabs pattern with a single tab „Aktivität“ (`role="tablist"` › `role="tab" aria-selected="true" aria-controls` › `role="tabpanel"`). Chat, Tabelle, Leute are appended later; nothing else changes.
 - Tabpanel holds ActivityFeed (`role="log"`, `aria-live="polite"`), newest at the bottom, scrolled to the end on load. Sticky group headers: „Vor dem Start“ until the first Session starts, then „Session 1“, „Vor Session 2“, …
 - Empty (old Events): dashed box „Noch nichts passiert. Ab jetzt steht hier, wer dazukommt, wechselt und abstimmt.“
+- **Deviation (0.18, #778):** the panel's tabs „Chat“ and „Aktivität“ carry the phone's count, named „{label}, {n} neu“; „Tabelle“ carries none. The artboard shows no count there.
 
 ## TabBar (change)
 - Mobile Event page: `placement: bottom`, two items **Event** (layout-grid) and **Aktivität** (history, unread badge). Grid grows to 5 when Tabelle, Chat, Leute arrive (as AppFrame). Badge in the accessible name („Aktivität, 3 neu“).
+- **Deviation (0.18, #765):** the phone's bar has four items, Event, Tabelle, Chat, Aktivität, in that order, and no „Leute“. The badge is on Chat and on Aktivität alike, and its accessible name is „{label}, {n} neu“ where the artboard says „ungelesen“; the viewer's own Message is not counted. The Chat item opens a view of the Chat alone under its h1 „Chat“, as the feed has its own view, with the composer above the keyboard. The Host's crown is not shown on that view, since it would cover the send button.
 
 ## NoticeBanner (usage)
 - uneven (host-only, warning, action „Bea nachziehen“), uneven member variant, locked (running), „Teams bleiben“ (between), „Event einrichten“ (host-only, primary icon, secondary action „Jetzt einrichten“), „Sanne richtet das Event noch ein“ (member, info), host seat note (host-only, crown) [6a, 6b].

@@ -34,7 +34,7 @@ describe('several Sessions on the Event page', () => {
     expect(page.findAll('button[aria-label$="in den Kalender"]')).toHaveLength(0)
     // Einladen is in the Host controls only; the Sessions card has none (#147, #166).
     expect(page.findAll('button').filter(button => button.text() === 'Einladen')).toHaveLength(1)
-    expect(page.get('[role="toolbar"]').findAll('button').filter(button => button.text() === 'Einladen')).toHaveLength(1)
+    expect(page.get('[role="toolbar"][aria-label="Host-Steuerung"]').findAll('button').filter(button => button.text() === 'Einladen')).toHaveLength(1)
     for (const label of ['Verschieben', 'Neue Terminsuche', 'Entfernen']) expect(labelled(page, label), label).toHaveLength(0)
     expect(page.text()).not.toContain('Termin fixieren')
   })
@@ -200,7 +200,7 @@ describe('several Sessions on the Event page', () => {
 
     expect(page.text()).toContain('3 Termine gesucht')
     expect(page.text()).not.toContain('1 Termin gesucht')
-    expect(page.get('[role="toolbar"]').text()).toContain('Einladen')
+    expect(page.get('[role="toolbar"][aria-label="Host-Steuerung"]').text()).toContain('Einladen')
     const menu = await openHostMenu(page)
     expect(menu.textContent).toContain('Termin fixieren')
     expect(menu.textContent).toContain('Termine bearbeiten')

@@ -1,5 +1,5 @@
 import { mockNuxtImport, mountSuspended, registerEndpoint } from '@nuxt/test-utils/runtime'
-import { flushPromises } from '@vue/test-utils'
+import { flushPromises, type DOMWrapper } from '@vue/test-utils'
 import { createError, readBody } from 'h3'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import AppSheet from '~/components/AppSheet.vue'
@@ -65,6 +65,8 @@ function serveEvent(build: (slug: string) => Read = slug => poll(slug)) {
     },
   })
   registerEndpoint(`/api/e/${slug}/activity`, { method: 'GET', handler: () => ({ entries: [], next: null }) })
+  // The panel opens on the Chat (#761), which reads its first page when it mounts (#766).
+  registerEndpoint(`/api/e/${slug}/messages`, { method: 'GET', handler: () => ({ messages: [], next: null }) })
   return {
     slug,
     set: (next: Read) => void (state.body = next),
@@ -423,6 +425,148 @@ describe('the stations of the run (#648)', () => {
     expect(tourTitle()).toBe('Terminumfrage')
     const hole = document.querySelector<HTMLElement>('[data-tour-spotlight]')!
     await vi.waitFor(() => expect([hole.style.left, hole.style.width, hole.style.height]).toEqual(['8px', '212px', '112px']))
+  })
+})
+
+// The Aktivität step shows the Aktivität tab (#766): the panel opens on „Chat“ from 0.18, and the Tour only points, so the page opens the tab while
+// the step shows and puts the Member's own back when the Tour leaves the step or ends. A phone's run has no such step.
+describe('the panel\'s tab (#766)', () => {
+  const joined = (slug: string) => `https://compies.test/join/${slug}`
+  const pollSetUp = (slug: string): Read => view(slug, [], { event: { phase: 'poll', isHost: false }, inviteUrl: joined(slug), settings: defaultSettings(), teams: [team(1), team(2)], members: members() })
+
+  const tabs = (): DOMWrapper<Element>[] => page!.get('aside[aria-label="Seitenleiste"]').findAll('[role="tab"]')
+  /** The label of the panel's selected tab. */
+  const selected = () => tabs().filter(tab => tab.attributes('aria-selected') === 'true').map(tab => tab.text())
+  const panelOf = (label: string) => page!.get(`aside[aria-label="Seitenleiste"] [role="tabpanel"][aria-labelledby="${tabs().find(tab => tab.text() === label)!.attributes('id')}"]`)
+  async function open(label: string) {
+    await tabs().find(tab => tab.text() === label)!.trigger('click')
+    await flushPromises()
+  }
+  /** Goes on with „Weiter“ until the step titled `title` shows. */
+  async function on(title: string) {
+    while (tourTitle() !== title) await click('Weiter')
+  }
+  async function start(build: (slug: string) => Read = pollSetUp) {
+    const served = serveEvent(build)
+    await mount(served.slug)
+    return served
+  }
+
+  it('is „Chat“ on the greeting and every step before the Aktivität step, „Aktivität“ on it, and „Chat“ again after it', async () => {
+    await start()
+    await shown()
+
+    expect(selected()).toEqual(['Chat'])
+    for (const title of ['Das Event', 'Terminumfrage', 'Spielbrett', 'So wird gespielt']) {
+      await on(title)
+      expect(selected()).toEqual(['Chat'])
+    }
+    await on('Aktivität')
+    expect(selected()).toEqual(['Aktivität'])
+    expect(panelOf('Aktivität').element.style.display).not.toBe('none')
+    expect(panelOf('Chat').element.style.display).toBe('none')
+
+    await click('Weiter')
+    expect(tourTitle()).toBe('Ton')
+    expect(selected()).toEqual(['Chat'])
+  })
+
+  it('shows „Aktivität“ again on „Zurück“ to the step, and „Chat“ on „Zurück“ past it', async () => {
+    await start()
+    await shown()
+    await on('Ton')
+
+    await click('Zurück')
+    expect(tourTitle()).toBe('Aktivität')
+    expect(selected()).toEqual(['Aktivität'])
+
+    await click('Zurück')
+    expect(tourTitle()).toBe('So wird gespielt')
+    expect(selected()).toEqual(['Chat'])
+  })
+
+  it('leaves the Member\'s own tab on every other step and has it back after the Aktivität step and after „Fertig“', async () => {
+    await start()
+    await open('Tabelle')
+    await shown()
+
+    for (const title of ['Willkommen!', 'Das Event', 'Terminumfrage', 'Spielbrett', 'So wird gespielt']) {
+      await on(title)
+      expect(selected()).toEqual(['Tabelle'])
+    }
+    await on('Aktivität')
+    expect(selected()).toEqual(['Aktivität'])
+    await on('Ton')
+    expect(selected()).toEqual(['Tabelle'])
+    await walk()
+    await click('Fertig')
+
+    expect(tour()).toBeNull()
+    expect(selected()).toEqual(['Tabelle'])
+  })
+
+  it('moves nothing when the Member is on the Aktivität tab already', async () => {
+    await start()
+    await open('Aktivität')
+    await shown()
+
+    await on('Aktivität')
+    expect(selected()).toEqual(['Aktivität'])
+    await on('Ton')
+
+    expect(selected()).toEqual(['Aktivität'])
+  })
+
+  it.each([
+    ['„Überspringen“', async () => click('Überspringen')],
+    ['Escape', async () => {
+      pressEscape()
+      await flushPromises()
+    }],
+  ])('puts the Member\'s tab back when %s ends the Tour on the Aktivität step', async (_how, end) => {
+    await start()
+    await open('Tabelle')
+    await shown()
+    await on('Aktivität')
+    expect(selected()).toEqual(['Aktivität'])
+
+    await end()
+
+    expect(tour()).toBeNull()
+    expect(selected()).toEqual(['Tabelle'])
+  })
+
+  // The Tour ends by itself, with no `over` from the layer: a Session starts while it shows (the Event gone has no panel left to read).
+  it('puts the Member\'s tab back when the Tour ends by itself on the Aktivität step', async () => {
+    const served = await start()
+    await open('Tabelle')
+    await shown()
+    await on('Aktivität')
+    expect(selected()).toEqual(['Aktivität'])
+
+    served.set(running(served.slug))
+    await served.read()
+
+    expect(tour()).toBeNull()
+    expect(selected()).toEqual(['Tabelle'])
+  })
+
+  it('points a phone\'s „Aktivität“ step at the bar\'s item and switches no tab', async () => {
+    windowWidth(390)
+    stubScreen(false)
+    await start()
+    await shown()
+    // happy-dom has no layout: the tab bar stands at the window's bottom, and the item has a rect of its own.
+    ;(page!.get('[data-tour-edge="tabs"]').element as HTMLElement).getBoundingClientRect = () => ({ left: 0, top: 700, width: 390, height: 68, x: 0, y: 700, right: 390, bottom: 768, toJSON() {} }) as DOMRect
+    const item = page!.get('[data-tour="tab-activity"]').element as HTMLElement
+    item.getBoundingClientRect = () => ({ left: 260, top: 706, width: 100, height: 56, x: 260, y: 706, right: 360, bottom: 762, toJSON() {} }) as DOMRect
+
+    await on('Aktivität')
+
+    expect(stepText().text).toContain('Unten findest du den Reiter')
+    const hole = document.querySelector<HTMLElement>('[data-tour-spotlight]')!
+    await vi.waitFor(() => expect([hole.style.left, hole.style.top, hole.style.width, hole.style.height]).toEqual(['254px', '700px', '112px', '68px']))
+    expect(selected()).toEqual(['Chat'])
   })
 })
 

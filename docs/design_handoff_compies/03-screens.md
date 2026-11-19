@@ -139,6 +139,7 @@ Every screen exists in the design files at desktop 1280 and mobile 390, light an
 
 - **Layout:** As M3 plus side panel (Chat default) on desktop and the mobile tab bar (Spielbrett, Tabelle, Chat, Aktivität, Leute).
 - **Components:** as M3 + SidePanel, ChatPanel, PushAsk
+- **Deviation (0.18, #761):** the desktop side panel's tabs are Chat, Aktivität, Tabelle, with Chat the default; there is no „Leute“ tab. **Deviation (0.18, #765):** the phone's bar has four items, Event, Tabelle, Chat, Aktivität, in that order, and no „Leute“. The badge is on Chat and on Aktivität alike, and its accessible name is „{label}, {n} neu“ where the artboard says „ungelesen“; the viewer's own Message is not counted. The Chat item opens a view of the Chat alone under its h1 „Chat“, as the feed has its own view, with the composer above the keyboard. The Host's crown is not shown on that view, since it would cover the send button.
 - **Data:** as M3.
 - **Host vs player:** as M3.
 - **States:** Abstimmen · Abgestimmt · Host-Ansicht · Host: festlegen · Termin steht + .ics · Host: verschieben
@@ -154,6 +155,8 @@ Every screen exists in the design files at desktop 1280 and mobile 390, light an
 - **Host vs player:** Players move only themselves; host moves everyone, sees the uneven-teams notice and „Von der Bench nachziehen“. Host can sit anywhere (Tribüne, Bench, Team).
 - **States:** Terminumfrage: Teams gesperrt · Teamwahl offen + Teamwort · Ziehen · Platz verloren · Teams ungleich · Verschieben nach … (Tastatur) · Läuft: Teams gesperrt · Emote · Chat als Sheet (mobil) · Host auf der Tribüne / Bench / im Team
 - **Realtime:** **„player moved“** `member.moved {userId, from, to, by}` → Flip avatar to new slot · `member.moveRejected {userId, winnerId}` (to the loser) → bounce-back + toast · `team.wordSet` · `team.nameFrozen` at start · `team.nameReset` · `presence.join/leave` (online dot) · `emote.sent {userId, emote}` → FloatingEmote over that avatar · `session.started` → lock teams.
+- **Deviation (0.18, #668):** „EmoteBar bottom-left“ stands, but it is the board's own bottom-left, in the flow, for the Host and the Members alike. `emote.sent {userId, emote, sound}`: the room's message has no `at` and carries `sound`. The finished page has no board, so no Emote buttons.
+- **Deviation (0.18, #769):** an Emote is drawn only where the board is seen (no Clip or Tour up, the tab visible, the sender's avatar inside the window), decided on arrival and never held; the Award ceremony and the phone's other views have no board, and a spin of the Lucky Wheel has no rule of its own.
 
 
 ### 10 Host-Steuerung

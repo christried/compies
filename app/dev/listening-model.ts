@@ -68,6 +68,11 @@ export const CUE_BRIEF: Record<CueId, { character: string }> = {
   'cb-laugh': { character: 'Compibert gets up and laughs after the trophy lands, wordless' },
   // tour
   'cb-hi': { character: 'short happy chirp, one file' },
+  // emote
+  'emo-clap': { character: '2–3 claps' },
+  'emo-haha': { character: 'wheezy giggle' },
+  'emo-grr': { character: 'short growl' },
+  'emo-roar': { character: 'small-dino roar, cute not scary' },
 }
 
 /**
@@ -76,7 +81,7 @@ export const CUE_BRIEF: Record<CueId, { character: string }> = {
  * a member here (a union takes no group lines, so it is the one line two tickets may both touch), a `MOMENT_LABEL` row and a runner in the
  * page's `MOMENT_RUNNERS`, under its group's line.
  */
-export type Moment = 'spin' | 'window' | 'arrival' | 'voice' | 'coin' | 'standings' | 'drag' | 'ceremony' | 'tour'
+export type Moment = 'spin' | 'window' | 'arrival' | 'voice' | 'coin' | 'standings' | 'drag' | 'ceremony' | 'tour' | 'emote'
 
 export const MOMENT_OF: Record<CueId, Moment> = {
   // wheel
@@ -96,6 +101,8 @@ export const MOMENT_OF: Record<CueId, Moment> = {
   'cb-laugh': 'ceremony',
   // tour
   'cb-hi': 'tour',
+  // emote
+  'emo-clap': 'emote', 'emo-haha': 'emote', 'emo-grr': 'emote', 'emo-roar': 'emote',
 }
 
 /** What the page prints beside the moment button. */
@@ -116,6 +123,8 @@ export const MOMENT_LABEL: Record<Moment, string> = {
   ceremony: 'Test ceremony',
   // tour
   tour: 'Test Tour voice',
+  // emote
+  emote: 'Test Emote',
 }
 
 /** The controls a cue's moment button sets before it runs, for a cue that needs more than its moment: `wheel-morph` needs the Hidden wheel. */

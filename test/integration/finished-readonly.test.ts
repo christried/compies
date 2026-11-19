@@ -3,7 +3,7 @@ import { join, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { eq } from 'drizzle-orm'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
-import { activity, countdowns, eventGameNotes, events, rounds, sessions } from '../../server/db/schema'
+import { activity, countdowns, eventGameNotes, events, messages, rounds, sessions } from '../../server/db/schema'
 import { testClock } from '../../server/utils/clock'
 import { memoryRoomNotifier } from '../../server/utils/room-notifier'
 import { notesFromLines } from '../../shared/notes-doc'
@@ -127,13 +127,15 @@ describe('a finished Event is read-only', () => {
       { file: 'countdown/reset.post.ts', name: 'reset the Countdown', as: 'host', method: 'POST', path: `/api/e/${slug}/countdown/reset` },
       { file: 'finish.post.ts', name: 'finish the Event again', as: 'host', method: 'POST', path: `/api/e/${slug}/finish`, body: { outcome: 'winner', winners: [1] } },
       { file: 'last-game.post.ts', name: 'add a last game', as: 'host', method: 'POST', path: `/api/e/${slug}/last-game` },
+      { file: 'messages/index.post.ts', name: 'write a Message', as: 'player', method: 'POST', path: `/api/e/${slug}/messages`, body: { id: '00000000-0000-4000-8000-00000000f001', text: 'Hallo' } },
       { file: 'games/[gameId]/notes.put.ts', name: 'save Event notes', as: 'host', method: 'PUT', path: `/api/e/${slug}/games/${kart}/notes`, body: { notes: notesFromLines(['Eine Notiz']) } },
     ]
   }
 
   /** The writes a finished Event still takes or that write nothing: a new write must be in the table above, or here with its reason. */
-  // The ceremony is the second write a finished Event takes (#309): the Host starts it there, and a Player is refused with not_host (own case below).
-  const STILL_TAKEN = new Set(['rotate.post.ts', 'ceremony.post.ts'])
+  // The ceremony is the second write a finished Event takes (#309): the Host starts it there, and a Player is refused with not_host (own case below). Deleting a Message is the third (#760, own case below);
+  // the Event's own delete sits outside the folder this guard reads.
+  const STILL_TAKEN = new Set(['rotate.post.ts', 'ceremony.post.ts', 'messages/[id].delete.ts'])
   const WRITES_NOTHING = new Set(['room.post.ts'])
 
   /** What a refused write must leave as it was: the Event row, its Sessions, its open and drawn Rounds, its Countdown and the feed. */
@@ -145,6 +147,7 @@ describe('a finished Event is read-only', () => {
       countdowns: await testDb.db.select().from(countdowns).where(eq(countdowns.eventId, eventId)),
       activity: await testDb.db.select().from(activity).where(eq(activity.eventId, eventId)),
       eventGameNotes: await testDb.db.select().from(eventGameNotes).where(eq(eventGameNotes.eventId, eventId)),
+      messages: await testDb.db.select().from(messages).where(eq(messages.eventId, eventId)),
     }
   }
 
@@ -172,6 +175,36 @@ describe('a finished Event is read-only', () => {
     expect(player.status).toBe(403)
     expect((await player.json() as { statusMessage: string }).statusMessage).toBe('not_host')
     expect((await send('POST', `/api/e/${game.slug}/ceremony`, game.hostCookie)).status).toBe(200)
+  })
+
+  it('still takes the delete of a Message: the Host deletes any, a Member their own, and a Message of somebody else is not_your_message, while writing one is still wrong_phase (#760)', async () => {
+    const game = await finishedWheel()
+    const before = new Date(T0)
+    const [a, b, c] = ['00000000-0000-4000-8000-00000000f0a1', '00000000-0000-4000-8000-00000000f0b2', '00000000-0000-4000-8000-00000000f0c3']
+    // Written before the Finish; the write is refused after it, so the rows are inserted.
+    await testDb.db.insert(messages).values([
+      { id: a, eventId: game.eventId, writerId: game.ids.three, text: 'A', writtenAt: before },
+      { id: b, eventId: game.eventId, writerId: game.ids.four, text: 'B', writtenAt: before },
+      { id: c, eventId: game.eventId, writerId: game.ids.one, text: 'C', writtenAt: before },
+    ])
+    const remove = (cookie: string, id: string) => send('DELETE', `/api/e/${game.slug}/messages/${id}`, cookie)
+    const row = async (id: string) => (await testDb.db.select().from(messages).where(eq(messages.id, id)))[0]!
+
+    expect((await remove(game.hostCookie, a)).status).toBe(200)
+    expect(await row(a)).toMatchObject({ text: null, deletedBy: 'host' })
+    expect((await remove(game.cookies.four, b)).status).toBe(200)
+    expect(await row(b)).toMatchObject({ text: null, deletedBy: 'writer' })
+    const refused = await remove(game.cookies.three, c)
+    expect(refused.status).toBe(403)
+    expect((await refused.json() as { statusMessage: string }).statusMessage).toBe('not_your_message')
+    expect(await row(c)).toMatchObject({ text: 'C', deletedAt: null })
+    expect(notifier.messages(game.eventId).map(message => message.type)).toEqual(['chat.deleted', 'chat.deleted'])
+
+    const stored = await testDb.db.select().from(messages).where(eq(messages.eventId, game.eventId))
+    const write = await send('POST', `/api/e/${game.slug}/messages`, game.cookies.three, { id: '00000000-0000-4000-8000-00000000f0d4', text: 'Zu spät' })
+    expect(write.status).toBe(409)
+    expect((await write.json() as { statusMessage: string }).statusMessage).toBe('wrong_phase')
+    expect(await testDb.db.select().from(messages).where(eq(messages.eventId, game.eventId))).toEqual(stored)
   })
 
   it('lists every write route of the Event API in the table, or in the explicit lists of writes that stay open', async () => {

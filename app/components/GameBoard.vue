@@ -6,6 +6,7 @@ import { placeFromKey, placeKey, teamName, teamNameAt } from '~/utils/board'
 import { startedIn, unevenNoticeIn, type EventPageState } from '~/utils/event-page'
 import { fade, glide, pop } from '~/utils/motion'
 import { countSeats, moveRejection, type Place } from '~~/shared/board'
+import type { EmoteId } from '~~/shared/emote'
 import type { BoardTeam, MemberView } from '~~/shared/event'
 import type { EventSettings } from '~~/shared/settings'
 
@@ -36,6 +37,10 @@ const props = withDefaults(defineProps<{
   /** Whether somebody is online in the room (#162); undefined while presence is not known (no dots then). */
   online?: (userId: string) => boolean | undefined
 }>(), { online: undefined })
+const emit = defineEmits<{
+  /** A tap on one of the Emote buttons at the board's bottom-left (#668): the page sends it to the room. */
+  emote: [emote: EmoteId]
+}>()
 
 const { t } = useI18n()
 const root = useTemplateRef<HTMLElement>('root')
@@ -360,6 +365,12 @@ const meta = computed(() => {
         v-bind="personBindings(person)"
       />
     </StandsZone>
+
+    <!-- The Emote buttons (#668): the board's own bottom-left, in the flow, for the Host and the Members alike; not in the Host's dock. -->
+    <EmoteBar
+      class="self-start"
+      @send="emit('emote', $event)"
+    />
 
     <div
       class="sr-only"

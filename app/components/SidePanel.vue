@@ -2,10 +2,11 @@
 import type { Component } from 'vue'
 
 // The tabs of the side panel on a desktop (02-components § SidePanel, 11-event-seite § SidePanel): the tabs pattern
-// (tablist, tab, tabpanel) with the tabs the page has, which are „Tabelle“ and „Aktivität“ (#274); Chat and Leute are appended later as more
-// tabs and nothing else changes. The panel of the current tab is the slot named after its key. The AppShell's `panel`
+// (tablist, tab, tabpanel) with the tabs the page has, which are „Chat“, „Aktivität“ and „Tabelle“ (#274, #761); a tab added later is one more row
+// and nothing else changes. The panel of the current tab is the slot named after its key. The AppShell's `panel`
 // slot holds this; the arrow keys, Home and End move between the tabs.
-export interface PanelTab { key: string, label: string, icon: Component }
+// A counting tab carries `badge` and `ariaLabel` (#778): the chip after its label, and the name „{label}, {n} neu“ while there is a count.
+export interface PanelTab { key: string, label: string, icon: Component, badge?: number, ariaLabel?: string }
 
 const props = defineProps<{
   label: string
@@ -45,6 +46,7 @@ function move(event: KeyboardEvent) {
         :data-tour-anchor="`tab-${tab.key}`"
         :aria-selected="tab.key === current"
         :aria-controls="panelId(tab.key)"
+        :aria-label="tab.ariaLabel"
         :tabindex="tab.key === current ? 0 : -1"
         class="-mb-0.5 flex h-[46px] cursor-pointer items-center gap-2 border-0 bg-transparent px-3 font-extrabold text-ink"
         :class="tab.key === current && 'shadow-[inset_0_-3px_0_var(--cp-hot)]'"
@@ -57,6 +59,12 @@ function move(event: KeyboardEvent) {
           offset="var(--cp-hot)"
         />
         {{ tab.label }}
+        <span
+          v-if="tab.badge"
+          data-tab-count
+          class="ml-1.5 grid h-[18px] min-w-[18px] place-items-center rounded-pill border-[1.5px] border-surface bg-ink px-[5px] text-[10px] font-extrabold text-paper"
+          aria-hidden="true"
+        >{{ tab.badge }}</span>
       </button>
     </div>
     <div
