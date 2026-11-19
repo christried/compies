@@ -794,6 +794,13 @@ describe('ChatPanel', () => {
       expect(controlOf(wrapper, 'c')).toBeUndefined()
     })
 
+    it('gives the Host no control on a Member\'s Message (#764 replaces this case)', async () => {
+      const { wrapper } = await mountDeleting([live('a', SANNE, 0, 'von Sanne'), live('b', KITTY, 10, 'vom Host')], { viewerId: KITTY })
+
+      expect(controls(wrapper).map(control => control.attributes('aria-label'))).toEqual(['Nachricht von Kitty löschen'])
+      expect(controlOf(wrapper, 'a')).toBeUndefined()
+    })
+
     it('names the control „Du“ for a writer the Event no longer lists', async () => {
       const { wrapper } = await mountDeleting([live('a', SANNE, 0)], { members: [] })
 

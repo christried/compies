@@ -16,7 +16,7 @@ import { NOTES_LINK_REL } from '~~/shared/notes-doc'
 // again whenever the connection opens (a message sent while the socket was down is gone), and „Ältere laden“ for the page before the oldest one shown. A Message
 // the page and the room both bring shows once (by id). A Message stores no name and no place (ADR 0016's opposite, on purpose): the name line of each group
 // takes the writer's current Display name, Team and place from the Event read's Members, so a rename or a move shows in old Messages. The composer is #667's, links #762's
-// and the delete control #763's.
+// and the delete control, its undo and the line a deleted Message turns into (`chat.deleted`) #763's.
 const props = withDefaults(defineProps<{
   slug: string
   room: Pick<ReturnType<typeof useEventRoom>, 'state' | 'on'>
