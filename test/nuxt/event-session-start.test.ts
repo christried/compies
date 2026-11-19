@@ -584,7 +584,7 @@ describe('a Tie at the end', () => {
     await last.trigger('click')
     await flushPromises()
 
-    expect(shownToasts().map(toast => toast.text)).toEqual(['Mehr Spiele gehen nicht. Du kannst das Event noch als Unentschieden beenden.'])
+    expect(shownToasts().map(toast => toast.text)).toEqual(['Mehr Spiele gehen nicht. Du kannst das Event noch mit „Unentschieden“ beenden.'])
     expect(calls).toBe(0)
   })
 })

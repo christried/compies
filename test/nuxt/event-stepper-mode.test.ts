@@ -80,7 +80,7 @@ describe('the Selection mode step', () => {
 
     expect(page.get('h1').text()).toContain('Schritt 5 von 7')
     expect(page.get('h1').text()).toContain('Wie wird das nächste Spiel bestimmt?')
-    expect(stepItems(page).map(item => item.text())).toEqual(['✓ Name', '✓ Format', '✓ Spieleanzahl', '✓ Punkte', '5 Auswahlmodus', '6 Spielepool', '7 Termin'])
+    expect(stepItems(page).map(item => item.text())).toEqual(['✓ Name', '✓ Format', '✓ Anzahl Spiele', '✓ Punkte', '5 Auswahlmodus', '6 Spielepool', '7 Termin'])
   })
 
   it('offers all five modes in the design’s order, with Host-Wahl chosen', async () => {
@@ -262,7 +262,7 @@ describe('the Selection mode step', () => {
     expect(aside.text()).toContain('Glücksrad')
     expect(aside.text()).toContain('Du legst Spiele auf das Glücksrad und drehst es.')
     expect(aside.text()).toContain('Pseudo-Games')
-    expect(aside.text()).toContain('Du als Host siehst die Spiele auf dem verdeckten Rad trotzdem, auch wenn du mitspielst.')
+    expect(aside.text()).toContain('Du als Host siehst bei Pseudo-Games die echten Spiele trotzdem, auch wenn du mitspielst.')
   })
 
   it('keeps the Glücksrad options while Host-Wahl is chosen, and restores them when the Glücksrad comes back', async () => {

@@ -11,11 +11,11 @@ import { BLANK_NOTES, FORMATTED_NOTES } from './helpers/formatted-notes'
 const doc = notesFromLines(['Heute nur Bo1'])!
 
 describe('NoteBlock (#729)', () => {
-  it('shows the game block with its disc, the title „Notizen“ as an h3 and the notes in a paper-2 panel without a border', async () => {
+  it('shows the game block with its disc, the title „Notizen“ as an h3 at 15 px (#812) and the notes in a paper-2 panel without a border', async () => {
     const block = await mountSuspended(NoteBlock, { props: { kind: 'game', doc, size: 'md' } })
 
     expect(block.get('h3').text()).toBe('Notizen')
-    expect(block.get('h3').classes()).toEqual(expect.arrayContaining(['text-[13px]', 'font-extrabold']))
+    expect(block.get('h3').classes()).toEqual(expect.arrayContaining(['text-[15px]', 'font-extrabold']))
     expect(block.find('svg.lucide-sticky-note, svg[class*="sticky-note"]').exists()).toBe(true)
     const panel = block.get('.cp-note').element.parentElement!
     expect(panel.classList).toContain('bg-paper-2')

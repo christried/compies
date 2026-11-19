@@ -67,7 +67,7 @@ describe('the stepper', () => {
 
     expect(page.get('h1').text()).toContain('Schritt 1 von 7')
     expect(page.get('h1').text()).toContain('Wie soll das Event heißen?')
-    expect(stepItems(page).map(item => item.text())).toEqual(['1 Name', '2 Format', '3 Spieleanzahl', '4 Punkte', '5 Auswahlmodus', '6 Spielepool', '7 Termin'])
+    expect(stepItems(page).map(item => item.text())).toEqual(['1 Name', '2 Format', '3 Anzahl Spiele', '4 Punkte', '5 Auswahlmodus', '6 Spielepool', '7 Termin'])
     expect(saved).not.toHaveBeenCalled()
   })
 
@@ -190,7 +190,7 @@ describe('the stepper', () => {
       const page = await mountCreate()
       await stepTo(page, 1)
 
-      expect(radios(page).map(radio => radio.get('b').text())).toEqual(['Jeder gegen jeden (FFA)', 'Teams', 'Turnierbaum', 'Liga'])
+      expect(radios(page).map(radio => radio.get('b').text())).toEqual(['Alle gegen alle (FFA)', 'Teams', 'Turnierbaum', 'Liga'])
       expect(radios(page).map(radio => radio.attributes('aria-disabled'))).toEqual(['true', undefined, 'true', 'true'])
       expect(radios(page).map(radio => radio.attributes('aria-checked'))).toEqual(['false', 'true', 'false', 'false'])
       expect(radios(page)[0]!.text()).toContain('Bald verfügbar')
@@ -355,7 +355,7 @@ describe('the stepper', () => {
       const page = await mountCreate()
       await stepTo(page, 2)
 
-      expect(tieHint(page)!.text()).toBe('Gleichstand möglich. Das Event kann unentschieden enden. Dann entscheidest du: Unentschieden beenden oder ein letztes Spiel hinzufügen.')
+      expect(tieHint(page)!.text()).toBe('Gleichstand möglich. Das Event kann unentschieden enden. Dann entscheidest du: „Unentschieden“ oder „Letztes Spiel“.')
     })
 
     it('is hidden at an odd Game count with 2 teams', async () => {

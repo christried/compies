@@ -22,8 +22,9 @@ const SIZE = { md: 'h-control-md px-4 text-small', card: 'h-12 px-4.5 text-body'
 const VARIANT = {
   primary: 'bg-primary text-on-primary',
   secondary: 'bg-surface text-ink',
-  discord: 'bg-discord text-on-discord',
-  twitch: 'bg-twitch text-on-twitch',
+  // The reduced-motion hover tint darkens these fills with black, so the white text keeps 4.5:1 in Dunkel too (#812).
+  discord: 'bg-discord text-on-discord [--cp-tint-ink:#000]',
+  twitch: 'bg-twitch text-on-twitch [--cp-tint-ink:#000]',
 }
 
 // Primary weighs 800 except on a card, where it matches the secondary 700.

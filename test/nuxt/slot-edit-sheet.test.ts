@@ -210,7 +210,7 @@ describe('SlotEditSheet', () => {
 
     document.querySelector<HTMLButtonElement>('button[aria-label="Termin entfernen"]')?.click()
 
-    await vi.waitFor(() => expect(shownToasts()).toContain('Termine lassen sich nur ändern, solange noch kein Termin festliegt.'))
+    await vi.waitFor(() => expect(shownToasts()).toContain('Termine lassen sich nur ändern, solange noch kein Termin fixiert ist.'))
     await vi.waitFor(() => expect(page.emitted('changed')).toHaveLength(1))
   })
 
@@ -242,7 +242,7 @@ describe('SlotEditSheet', () => {
 
     hold.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))
     await vi.waitFor(() => expect(endpoint.deleted).toEqual([JUNE_10.id]), { timeout: 3000 })
-    await vi.waitFor(() => expect(shownToasts()).toContain('Termine lassen sich nur ändern, solange noch kein Termin festliegt.'))
+    await vi.waitFor(() => expect(shownToasts()).toContain('Termine lassen sich nur ändern, solange noch kein Termin fixiert ist.'))
 
     expect(buttonWithText('Termin entfernen')).toBe(hold)
     hold.dispatchEvent(new KeyboardEvent('keyup', { key: 'Enter', bubbles: true }))
