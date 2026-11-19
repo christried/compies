@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { MEMBER_TOUR, TOUR_CALM_MS, TOUR_VERSION, tourMayStart, tourFace, tourMove, tourRun, tourThing, type TourPage, type TourStartInput, type TourStep } from '../../shared/tour'
+import type { Phase } from '../../shared/phase'
+import { MEMBER_TOUR, TOUR_CALM_MS, TOUR_VERSION, tourMayStart, tourFace, tourMove, tourRun, tourStartInputOf, tourThing, type TourPage, type TourStartInput, type TourStep } from '../../shared/tour'
 
 // The Tour's pure rules (#647, ADR 0017): which steps a run holds for the page it opens on, when it may start, and how a step moves.
 
@@ -168,6 +169,29 @@ describe('tourMayStart', () => {
 
   it.each(['draft', 'poll', 'date_set', 'running'] as const)('starts in the %s Phase', (phase) => {
     expect(tourMayStart({ ...calm, phase })).toBe(true)
+  })
+})
+
+// The one mapping from the Event read to the start rule's input (#829): `useTour` and `useCuePlayer` both call it, so the Tour and the files requested for it agree.
+describe('tourStartInputOf', () => {
+  const read = (over: { isHost?: boolean, phase?: Phase, runningSessionId?: string | null } = {}) => ({
+    event: { isHost: over.isHost ?? false, phase: over.phase ?? 'poll' },
+    runningSessionId: over.runningSessionId ?? null,
+  })
+
+  it('reads a Member\'s calm page before the finish as the rule\'s starting input', () => {
+    expect(tourStartInputOf(read(), 0, false, TOUR_CALM_MS)).toEqual({ storedVersion: 0, role: 'member', phase: 'poll', sessionRunning: false, layerOpen: false, calmFor: TOUR_CALM_MS })
+    expect(tourMayStart(tourStartInputOf(read(), 0, false, TOUR_CALM_MS))).toBe(true)
+  })
+
+  it('maps the host flag, the phase and a running Session of the read, and passes the page\'s own values on', () => {
+    expect(tourStartInputOf(read({ isHost: true }), 1, true, 40)).toMatchObject({ storedVersion: 1, role: 'host', layerOpen: true, calmFor: 40 })
+    expect(tourStartInputOf(read({ phase: 'finished' }), 0, false, 0).phase).toBe('finished')
+    expect(tourStartInputOf(read({ runningSessionId: 's-1' }), 0, false, 0).sessionRunning).toBe(true)
+  })
+
+  it.each([[null], [undefined]])('reads no Event (%s) as a Member on no Phase with no Session, and a signed-out User\'s null version as it is', (nothing) => {
+    expect(tourStartInputOf(nothing, null, false, TOUR_CALM_MS)).toEqual({ storedVersion: null, role: 'member', phase: null, sessionRunning: false, layerOpen: false, calmFor: TOUR_CALM_MS })
   })
 })
 

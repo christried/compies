@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import {
+  CEREMONY_BONK_MS,
   CEREMONY_LEAD_MS,
+  CEREMONY_ROW_MS,
   CEREMONY_RUN_MS,
+  CHIP_STEP_MS,
   ceremonyEndsAt,
   ceremonyPlays,
   ceremonyRejection,
@@ -9,6 +12,7 @@ import {
   ceremonyTimeline,
   nextGag,
   type CeremonyGag,
+  type RunShape,
 } from '../../shared/ceremony'
 import { ceremonyLayout } from '../../app/utils/ceremony'
 import type { Phase } from '../../shared/phase'
@@ -85,6 +89,39 @@ describe('the timing (spec #308 § Shared ceremony rules)', () => {
     expect(ceremonyEndsAt(STARTS, { partyCount: 2, gag: 'trip', winners: 1 })).toBe(expected)
     expect(ceremonyEndsAt(new Date(STARTS), { partyCount: 2, gag: 'trip', winners: 1 })).toBe(expected)
     expect(ceremonyEndsAt(new Date(STARTS).toISOString(), { partyCount: 2, gag: 'trip', winners: 1 })).toBe(expected)
+  })
+})
+
+// The moments the sound needs (#743, #745, spec #718): `ceremonyCuePlan` takes its instants from these fields (test/unit/ceremony-cues.test.ts).
+describe('ceremonyTimeline: the moments the sound needs', () => {
+  const shape = (partyCount: number, gag: CeremonyGag = 'trip', fields: Partial<RunShape> = {}): RunShape => ({ partyCount, winners: 1, gag, grid: false, ...fields })
+
+  it('gives each place below its own instant, 450 ms apart up to 2 Winners, the last Place first', () => {
+    expect(ceremonyTimeline(shape(4)).rowAtMs).toEqual([600, 600 + CEREMONY_ROW_MS, 600 + 2 * CEREMONY_ROW_MS])
+    expect(ceremonyTimeline({ partyCount: 5, winners: 2, gag: 'trip', grid: false }).rowAtMs).toEqual([600, 1050, 1500])
+  })
+
+  it('gives chips 200 ms apart from 3 Winners on', () => {
+    const { rowAtMs } = ceremonyTimeline({ partyCount: 7, winners: 3, gag: 'bonk', grid: false })
+
+    expect(rowAtMs).toEqual([600, 600 + CHIP_STEP_MS, 600 + 2 * CHIP_STEP_MS, 600 + 3 * CHIP_STEP_MS])
+  })
+
+  it('is empty when nobody finished below the Winners', () => {
+    expect(ceremonyTimeline(shape(1)).rowAtMs).toEqual([])
+    expect(ceremonyTimeline({ partyCount: 3, winners: 3, gag: 'trip', grid: false }).rowAtMs).toEqual([])
+  })
+
+  it('has the bonk land 920 ms after the run, which is where the picture\'s trophy ends its fall', () => {
+    const timeline = ceremonyTimeline(shape(4, 'bonk'))
+
+    expect(CEREMONY_BONK_MS).toBe(920)
+    expect(timeline.bonkAtMs).toBe(timeline.runEndAtMs + 920)
+    expect(timeline.bonkAtMs).toBe(3870)
+  })
+
+  it('keeps its other moments as they were (the hand-worked example of 4 Parties and one Winner)', () => {
+    expect(ceremonyTimeline(shape(4))).toMatchObject({ rowAtMs: [600, 1050, 1500], runAtMs: 2250, runEndAtMs: 2950 })
   })
 })
 

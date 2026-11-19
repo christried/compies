@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { LEAD_MS, MOMENT_LABEL, MOMENT_OF, buildRun, configFor, type RunConfig } from '../../app/dev/listening-model'
+import { LEAD_MS, buildRun, configFor, type RunConfig } from '../../app/dev/listening-model'
 import { TICK_MIN_GAP_MS, wheelVoicePlan } from '../../app/utils/sound-cues'
 import { REVEAL_AFTER_MS } from '../../app/utils/wheel'
 
@@ -51,14 +51,5 @@ describe('configFor a voice run', () => {
     expect(configFor('voice', controls)).toMatchObject({ spinMs: 6000, windowMs: 0, voice: true })
     expect(configFor('voice', { ...controls, spin: '10' })).toMatchObject({ spinMs: 10_000, voice: true })
     expect(configFor('spin', controls).voice).not.toBe(true)
-  })
-})
-
-describe('the voice cues\' moment', () => {
-  it('is one the page labels, the same for the three cues', () => {
-    const moments = (['cb-hype', 'cb-gulp', 'cb-yay'] as const).map(id => MOMENT_OF[id])
-
-    expect(new Set(moments).size).toBe(1)
-    expect(MOMENT_LABEL[moments[0]!]).toBe('Test voice run')
   })
 })
