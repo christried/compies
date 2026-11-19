@@ -6,7 +6,7 @@
 
 import type { ActivityEntry } from './activity'
 import type { Place } from './board'
-import type { LiveMessage } from './chat'
+import type { LiveMessage, MessageDeleter } from './chat'
 import type { EmoteId } from './emote'
 
 export const ROOM_PROTOCOL_VERSION = 1
@@ -39,6 +39,8 @@ export type RoomMessage
     | { type: 'emote.sent', userId: string, emote: EmoteId, sound: boolean }
   /** A new Message of the Chat (#758, spec #719 § A): the stored Message, to every socket of the Event, the writer's included; the page shows each Message once, by id. No `event.changed` goes with it, since nothing in the Event read changes (the write sets `broadcast: false`). */
     | { type: 'chat.added', message: LiveMessage }
+  /** A Message that was deleted (#760, spec #719 § A): its id and who deleted it, to every socket of the Event; the text is gone and nothing else of the Message travels. The page turns the Message into its line by id. No `event.changed` goes with it (the delete sets `broadcast: false`). */
+    | { type: 'chat.deleted', id: string, deletedBy: MessageDeleter }
 
 export type RoomMessageType = RoomMessage['type']
 

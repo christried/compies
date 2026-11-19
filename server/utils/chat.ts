@@ -1,4 +1,4 @@
-import { and, desc, eq, sql } from 'drizzle-orm'
+import { and, desc, eq, isNull, sql } from 'drizzle-orm'
 import { messages } from '../db/schema'
 import { isUuid } from '../domain/uuid'
 import type { LiveMessage, Message, MessagePage } from '../../shared/chat'
@@ -67,4 +67,35 @@ export async function writeMessage({ tx, eventRow, user, now, body, publish }: P
   const [existing] = await tx.select().from(messages).where(eq(messages.id, id))
   if (!existing || existing.eventId !== eventRow.id || existing.writerId !== user.id) throw apiError('invalid_value')
   return messageOfRow(existing)
+}
+
+/**
+ * Deletes a Message (#760): the Host deletes any, a Member their own. One UPDATE erases the text and records the instant and the deleter, and one
+ * `chat.deleted` goes to the whole room. An unknown, a foreign-Event and a malformed id answer alike (`message_not_found`), so an id probe learns nothing;
+ * a Message that is deleted already answers the stored deleted Message and queues nothing, also for the loser of two deletes that race.
+ */
+export async function deleteMessage({ tx, eventRow, user, now, publish }: Pick<EventChange, 'tx' | 'eventRow' | 'user' | 'now' | 'publish'>, rawId: string | undefined): Promise<Message> {
+  if (!isUuid(rawId)) throw apiError('message_not_found')
+  const id = rawId.toLowerCase()
+  const [row] = await tx.select().from(messages).where(and(eq(messages.id, id), eq(messages.eventId, eventRow.id)))
+  if (!row) throw apiError('message_not_found')
+  const isHost = user.id === eventRow.hostId
+  if (!isHost && row.writerId !== user.id) throw apiError('not_your_message')
+  if (row.deletedAt !== null) return messageOfRow(row)
+
+  // The Host deleting their own Message counts as the writer (the schema cannot check it, a comment at `messages` in schema.ts).
+  const deletedBy = isHost && row.writerId !== user.id ? 'host' : 'writer'
+  const [updated] = await tx
+    .update(messages)
+    .set({ text: null, deletedAt: now, deletedBy })
+    .where(and(eq(messages.id, id), isNull(messages.deletedAt)))
+    .returning()
+  if (updated) {
+    publish({ type: 'chat.deleted', id, deletedBy })
+    return messageOfRow(updated)
+  }
+
+  // Lost a race against another delete: a new statement sees the winner's commit, which queued the message already.
+  const [winner] = await tx.select().from(messages).where(eq(messages.id, id))
+  return messageOfRow(winner!)
 }
