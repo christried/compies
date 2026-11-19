@@ -1,7 +1,8 @@
+import { LayoutGrid } from '@lucide/vue'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import { afterEach, describe, expect, it } from 'vitest'
 import { defineComponent, nextTick } from 'vue'
-import { useEventTabs } from '~/composables/useEventTabs'
+import { TABS, useEventTabs, type EventTabRow } from '~/composables/useEventTabs'
 import type { useEventRoom } from '~/composables/useEventRoom'
 import { restoreScreen, stubScreen } from './event-page'
 
@@ -135,5 +136,39 @@ describe('useEventTabs', () => {
 
     expect(tabs().unread.value).toBe(0)
     expect(tabs().wide.value).toBe(true)
+  })
+})
+
+// The tabs table gives each tab a place on each surface (#756): a position, or null when the tab is not on that surface. The
+// order of a surface comes from its places, so a row without a place or two rows at one place would leave the order to chance.
+describe('the tabs table (#756)', () => {
+  it('gives every row a place for both surfaces, each a position or null', () => {
+    for (const row of TABS) {
+      expect(Object.keys(row.place).sort()).toEqual(['panel', 'phone'])
+      for (const at of [row.place.phone, row.place.panel]) {
+        expect(at === null || typeof at === 'number').toBe(true)
+      }
+    }
+  })
+
+  it('gives no two rows the same position on one surface', () => {
+    for (const surface of ['phone', 'panel'] as const) {
+      const places = TABS.map(row => row.place[surface]).filter(at => at !== null)
+      expect(new Set(places).size).toBe(places.length)
+    }
+  })
+
+  it('pins where each tab sits on each surface', () => {
+    expect(TABS.map(row => [row.key, row.place])).toEqual([
+      ['event', { phone: 0, panel: null }],
+      ['standings', { phone: 1, panel: 0 }],
+      ['activity', { phone: 2, panel: 1 }],
+    ])
+  })
+
+  it('does not compile a row that has no place for a surface', () => {
+    // @ts-expect-error a row needs a place for the phone and for the panel
+    const row: EventTabRow = { key: 'event', labelKey: 'event.tabs.event', icon: LayoutGrid, place: { phone: 0 } }
+    expect(row.key).toBe('event')
   })
 })
