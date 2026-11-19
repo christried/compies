@@ -50,7 +50,7 @@ Each concern below has one home. New code calls it; a second copy is a finding e
 | The number of the pool a Host sees, for any count the wheel and the pool lists show | `wheelPoolSize` in `app/utils/event-draft.ts` |
 | Archiving and restoring a game from the browser | `useGameArchive` in `app/composables/useGameArchive.ts` (#467) |
 | Tags in label order | `sortTagsByLabel` in `shared/game.ts` |
-| The Emote bar, the rise and where an arrived Emote finds its avatar | `EmoteBar`, `FloatingEmote`, `useRisingEmotes` (`app/composables/`), `emoteRise` and `emoteRing` in `app/utils/motion.ts`, the pictures in `app/utils/emote-art.ts` (#668) |
+| The Emote bar, the rise and where an arrived Emote finds its avatar | `EmoteBar`, `FloatingEmote`, `useRisingEmotes` (`app/composables/`), `emoteRise` and `emoteRing` in `app/utils/motion.ts`, the pictures in `app/utils/emote-art.ts` (#668), `emoteSeen` in `app/utils/emote-seen.ts` (where an Emote is drawn at all, #769) |
 
 A second page, flow or component that does what an existing one does needs its reason in the PR description. Without one, the review asks for the existing module to grow instead.
 

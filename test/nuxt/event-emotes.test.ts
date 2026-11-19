@@ -9,6 +9,8 @@ import { defaultSettings } from '~~/shared/settings'
 import { kitty, signInAs } from './auth'
 import { LARSI, restoreScreen, SANNE, stubScreen, viewWithSessions } from './event-page'
 import { ENDED, FIRST, members, SESSION, STARTED, team } from './event-page-states'
+import type { RoundGame } from '~~/shared/game'
+import type { CeremonyView, ClipView } from '~~/shared/stage'
 
 // Emotes on the Game board (#668, spec #719 § C): the four buttons, the two-second wait, and the rise above the sender's avatar of an `emote.sent`.
 // The room is a fake socket the test opens and sends messages on, as event-presence.test.ts has it; jsdom has no layout, so the avatar's rectangle is stubbed.
@@ -32,22 +34,25 @@ const PICTURES: Record<EmoteId, string> = { clap: '/emotes/emote-klatschen.svg',
 let testNumber = 0
 const served = { event: 0, activity: 0, room: 0 }
 
-interface Setup { host?: boolean, finished?: boolean }
+interface Setup { host?: boolean, finished?: boolean, clip?: ClipView, ceremony?: CeremonyView }
 
 /** An Event with a board (Larsi in team 1, Kitty and Sanne on the Tribüne), or a finished one, with a live room and every endpoint counted. */
-async function mountLive({ host = false, finished = false }: Setup = {}) {
+async function mountLive({ host = false, finished = false, clip, ceremony }: Setup = {}) {
   testNumber += 1
   const slug = `emotes-${testNumber}`
-  const sessions = finished ? [SESSION(1, FIRST, { startedAt: STARTED, endedAt: ENDED })] : [SESSION(1, FIRST)]
+  // A Clip is up in a running Event (#769): the Event read carries it, as event-clip.test.ts serves one.
+  const sessions = finished ? [SESSION(1, FIRST, { startedAt: STARTED, endedAt: ENDED })] : clip ? [SESSION(1, FIRST, { startedAt: STARTED })] : [SESSION(1, FIRST)]
   registerEndpoint(`/api/e/${slug}`, {
     method: 'GET',
     handler: () => {
       served.event += 1
       return viewWithSessions(slug, sessions, 0, {
-        event: { phase: finished ? 'finished' : 'poll', isHost: host },
+        event: { phase: finished ? 'finished' : clip ? 'running' : 'poll', isHost: host },
         settings: defaultSettings(),
         teams: [team(1), team(2)],
         members: members({ larsi: { zone: 'team', team: 1 } }),
+        ...(clip ? { runningSessionId: `session-${slug}-0`, clip } : {}),
+        ...(ceremony ? { ceremonyShown: true, ceremony } : {}),
       })
     },
   })
@@ -84,6 +89,17 @@ const sent = () => lastSocket().send.mock.calls.map(([text]) => String(text)).fi
 const bar = (page: Page) => page.find('[role="toolbar"][aria-label="Emotes"]')
 const buttons = (page: Page) => bar(page).findAll('button')
 const rises = () => [...document.querySelectorAll<HTMLElement>('[data-emote]')]
+const risenFor = () => rises().map(rise => rise.getAttribute('data-emote-for')).sort()
+
+const kart: RoundGame = { id: 'g-kart', name: 'Kart', imageUrl: null, youtubeId: null, clipStart: 0, clipLength: 30, playersMin: 2, playersMax: 4, suitabilities: [], price: null }
+/** A Clip that is running now by the page's own clock, as event-clip.test.ts has it: started a second ago, 30 s long. */
+function runningClip(): ClipView {
+  const now = Date.now()
+  return { drawId: 'd1', startAt: new Date(now - 1000).toISOString(), endsAt: new Date(now + 29_000).toISOString(), game: kart }
+}
+const clipSection = () => document.querySelector('section[aria-label^="Clip"]')
+const buttonNamed = (root: Element | null, name: string) => [...(root?.querySelectorAll('button') ?? [])].find(button => (button.getAttribute('aria-label') ?? button.textContent?.trim()) === name)
+
 // The phone's button (#768) sits outside the row; the sheet it opens is teleported to the body, so it is found in the document.
 const phoneButton = (page: Page) => page.find('button[aria-label="Emotes"][aria-haspopup="dialog"]')
 const sheet = () => document.querySelector<HTMLElement>('[role="dialog"]')
@@ -91,7 +107,10 @@ const sheetButtons = () => [...document.querySelectorAll<HTMLElement>('[role="di
 
 /** The avatar button of a Member, which jsdom gives no rectangle: the test places each at its own spot. */
 const AT = { [kitty.id]: { left: 40, top: 300 }, [LARSI]: { left: 200, top: 120 }, [SANNE]: { left: 340, top: 300 } } as Record<string, { left: number, top: number }>
+const HOME = { ...AT }
 function stubRects() {
+  // A test that moves an avatar (#769) leaves the next one its places.
+  Object.assign(AT, HOME)
   vi.spyOn(Element.prototype, 'getBoundingClientRect').mockImplementation(function (this: Element) {
     const at = AT[this.getAttribute('data-user-id') ?? '']
     const { left, top } = at ?? { left: 0, top: 0 }
@@ -356,6 +375,97 @@ describe.each([{ host: false }, { host: true }])('Emotes on the Game board, Host
 
     expect(bar(page).exists()).toBe(false)
     expect(rises()).toHaveLength(0)
+  })
+
+  // Where the Game board is seen (#769, spec #719 § C): an Emote is drawn only with no cover up, the tab visible and the sender's avatar in the window. It is decided on
+  // arrival and never held: what arrives unseen is gone when the cover leaves, the avatar returns or the tab comes back.
+  describe('where the board is not seen', () => {
+    it('draws nothing while the Clip is up, holds nothing for when it leaves, and draws the next one', async () => {
+      await mountLive({ host, clip: runningClip() })
+      open()
+      expect(document.querySelector(`[data-user-id="${LARSI}"]`)).not.toBeNull()
+      expect(clipSection()).not.toBeNull()
+      const error = vi.spyOn(console, 'error')
+
+      emoteSent(LARSI)
+      await settle()
+      expect(rises()).toHaveLength(0)
+      expect(Element.prototype.animate).not.toHaveBeenCalled()
+
+      buttonNamed(clipSection(), 'Für mich schließen')!.click()
+      await settle()
+      expect(clipSection()).toBeNull()
+      expect(rises()).toHaveLength(0)
+      expect(Element.prototype.animate).not.toHaveBeenCalled()
+
+      emoteSent(LARSI)
+      await settle()
+      expect(risenFor()).toEqual([LARSI])
+      expect(error).not.toHaveBeenCalled()
+    })
+
+    it('draws nothing for an avatar that is scrolled away but the others, holds nothing for when it returns, and draws the next one', async () => {
+      await mountLive({ host })
+      open()
+      expect(document.querySelector(`[data-user-id="${LARSI}"]`)).not.toBeNull()
+      const larsi = AT[LARSI]!
+      AT[LARSI] = { left: larsi.left, top: window.innerHeight + 200 }
+      const error = vi.spyOn(console, 'error')
+
+      emoteSent(LARSI)
+      emoteSent(kitty.id)
+      await settle()
+      expect(risenFor()).toEqual([kitty.id])
+
+      AT[LARSI] = larsi
+      await settle()
+      expect(risenFor()).toEqual([kitty.id])
+
+      emoteSent(LARSI)
+      await settle()
+      expect(risenFor()).toEqual([kitty.id, LARSI].sort())
+      expect(error).not.toHaveBeenCalled()
+    })
+
+    it('draws nothing while the tab is hidden, holds nothing for when it comes back, and draws the next one', async () => {
+      await mountLive({ host })
+      open()
+      expect(document.querySelector(`[data-user-id="${LARSI}"]`)).not.toBeNull()
+      const visibility = vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('hidden')
+      const error = vi.spyOn(console, 'error')
+
+      emoteSent(LARSI)
+      await settle()
+      expect(rises()).toHaveLength(0)
+      expect(Element.prototype.animate).not.toHaveBeenCalled()
+
+      visibility.mockReturnValue('visible')
+      document.dispatchEvent(new Event('visibilitychange'))
+      await settle()
+      expect(rises()).toHaveLength(0)
+
+      emoteSent(LARSI)
+      await settle()
+      expect(risenFor()).toEqual([LARSI])
+      expect(error).not.toHaveBeenCalled()
+    })
+
+    it('draws nothing during the Award ceremony: the finished page has no board, so there is no avatar to rise from', async () => {
+      const startsAt = Date.now() - 1000
+      const ceremony: CeremonyView = { startsAt: new Date(startsAt).toISOString(), endsAt: new Date(startsAt + 30_000).toISOString(), gag: 'bonk' }
+      await mountLive({ host, finished: true, ceremony })
+      open()
+      // By construction: the ceremony starts only on a finished Event, and the finished stage has no `board` row, so `rise` finds no `[data-user-id]`.
+      expect(document.querySelector('[data-user-id]')).toBeNull()
+      const error = vi.spyOn(console, 'error')
+
+      emoteSent(LARSI)
+      await settle()
+
+      expect(rises()).toHaveLength(0)
+      expect(Element.prototype.animate).not.toHaveBeenCalled()
+      expect(error).not.toHaveBeenCalled()
+    })
   })
 
   describe('on a phone', () => {

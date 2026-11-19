@@ -95,10 +95,10 @@ const feed = computed(() => feedSessions(data.value?.sessions ?? []))
 room.on('veto.cast', () => void refresh())
 // An Emote that arrives (#668) rises above its sender's avatar, wherever the room says it came from (the sender's own too: the room passes it back). It is drawn at once: no
 // `serverTime`, no instant ahead (spec § C). An Emote never reaches Nuxt: it writes no Activity entry and no read changes. Compibert does not react (#673).
-const { rising, rise, done: riseDone } = useRisingEmotes()
+const { rising, rise, done: riseDone } = useRisingEmotes({ covered: () => covered.value })
 room.on('emote.sent', (message) => {
   playEmoteCue(message)
-  // #769: whether the board is covered, the avatar scrolled away or the tab hidden decides here, before the rise.
+  // #769: a cover, a hidden tab and an avatar scrolled away are decided inside `rise` by `emoteSeen`; an Emote that is not seen is dropped, not held.
   rise(message.userId, message.emote)
 })
 const sendEmote = (emote: EmoteId) => room.send({ type: 'emote.send', emote })

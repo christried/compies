@@ -155,6 +155,7 @@ Every screen exists in the design files at desktop 1280 and mobile 390, light an
 - **States:** Terminumfrage: Teams gesperrt · Teamwahl offen + Teamwort · Ziehen · Platz verloren · Teams ungleich · Verschieben nach … (Tastatur) · Läuft: Teams gesperrt · Emote · Chat als Sheet (mobil) · Host auf der Tribüne / Bench / im Team
 - **Realtime:** **„player moved“** `member.moved {userId, from, to, by}` → Flip avatar to new slot · `member.moveRejected {userId, winnerId}` (to the loser) → bounce-back + toast · `team.wordSet` · `team.nameFrozen` at start · `team.nameReset` · `presence.join/leave` (online dot) · `emote.sent {userId, emote}` → FloatingEmote over that avatar · `session.started` → lock teams.
 - **Deviation (0.18, #668):** „EmoteBar bottom-left“ stands, but it is the board's own bottom-left, in the flow, for the Host and the Members alike. `emote.sent {userId, emote, sound}`: the room's message has no `at` and carries `sound`. The finished page has no board, so no Emote buttons.
+- **Deviation (0.18, #769):** an Emote is drawn only where the board is seen (no Clip or Tour up, the tab visible, the sender's avatar inside the window), decided on arrival and never held; the Award ceremony and the phone's other views have no board, and a spin of the Lucky Wheel has no rule of its own.
 
 
 ### 10 Host-Steuerung
