@@ -1,5 +1,5 @@
 import { mountSuspended, registerEndpoint } from '@nuxt/test-utils/runtime'
-import { getQuery } from 'h3'
+import { getQuery, readBody } from 'h3'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import ChatPanel from '~/components/ChatPanel.vue'
 import TeamMark from '~/components/TeamMark.vue'
@@ -7,6 +7,7 @@ import UserAvatar from '~/components/UserAvatar.vue'
 import type { DeletedMessage, LiveMessage, Message, MessagePage } from '~~/shared/chat'
 import type { BoardTeam, MemberView } from '~~/shared/event'
 import { MESSAGE_MAX } from '~~/shared/message-text'
+import { characterCount } from '~~/shared/text'
 import { envelope, type RoomMessage } from '~~/shared/realtime'
 import { memberView } from './event-page'
 
@@ -28,11 +29,46 @@ const members = [
 ]
 const teams: BoardTeam[] = [{ position: 1, name: 'Die Füchse' }, { position: 2, name: null }]
 
-/** A Chat endpoint for one test: pages by `before`, newest first, `pageSize` Messages; counts its reads and can fail or hold its answer. */
-function serveChat(all: Message[], { pageSize = 50, failing = false }: { pageSize?: number, failing?: boolean } = {}) {
+/** How the write answers: 200 with the Message, 200 with it deleted meanwhile, or a refusal. */
+type WriteAnswer = 'ok' | 'deleted' | 'server-error' | 'rate-limited'
+
+/**
+ * A Chat endpoint for one test: pages by `before`, newest first, `pageSize` Messages; counts its reads and can fail or hold its answer.
+ * The write (#667) sits on the same path: one `registerEndpoint` call per method, each `{ method, handler }`, serves both (the registry keeps a list per URL).
+ */
+function serveChat(all: Message[], { pageSize = 50, failing = false, viewerId = KITTY }: { pageSize?: number, failing?: boolean, viewerId?: string } = {}) {
   testNumber += 1
   const slug = `chat-${testNumber}`
-  const served = { reads: 0, failing, all, hold: null as Promise<void> | null }
+  const served = {
+    reads: 0,
+    failing,
+    all,
+    hold: null as Promise<void> | null,
+    posts: [] as { id: string, text: string }[],
+    answer: 'ok' as WriteAnswer,
+    postHold: null as Promise<void> | null,
+    releasePost: () => {},
+    /** The write's answer waits until `releasePost()`. */
+    holdPost() {
+      served.postHold = new Promise<void>((resolve) => {
+        served.releasePost = resolve
+      })
+    },
+  }
+  registerEndpoint(`/api/e/${slug}/messages`, {
+    method: 'POST',
+    handler: async (event) => {
+      const body = await readBody<{ id: string, text: string }>(event)
+      served.posts.push(body)
+      const hold = served.postHold
+      if (hold) await hold
+      if (served.answer === 'server-error') throw createError({ statusCode: 500 })
+      if (served.answer === 'rate-limited') throw createError({ statusCode: 429, statusMessage: 'rate_limited' })
+      const at = new Date().toISOString()
+      if (served.answer === 'deleted') return { id: body.id, writerId: viewerId, text: null, at, deletedBy: 'writer' } satisfies Message
+      return { id: body.id, writerId: viewerId, text: body.text, at } satisfies Message
+    },
+  })
   registerEndpoint(`/api/e/${slug}/messages`, {
     method: 'GET',
     handler: async (event) => {
@@ -73,7 +109,7 @@ function fakeRoom() {
 
 const settle = () => new Promise(resolve => setTimeout(resolve))
 
-interface MountOptions { pageSize?: number, failing?: boolean, hold?: boolean, viewerId?: string, active?: boolean, members?: MemberView[] }
+interface MountOptions { pageSize?: number, failing?: boolean, hold?: boolean, viewerId?: string, active?: boolean, members?: MemberView[], finished?: boolean }
 
 async function mountChat(all: Message[], options: MountOptions = {}) {
   const chat = serveChat(all, options)
@@ -85,7 +121,7 @@ async function mountChat(all: Message[], options: MountOptions = {}) {
   }
   const live = fakeRoom()
   const wrapper = await mountSuspended(ChatPanel, {
-    props: { slug: chat.slug, room: live.room, members: options.members ?? members, teams, viewerId: options.viewerId ?? KITTY, active: options.active },
+    props: { slug: chat.slug, room: live.room, members: options.members ?? members, teams, viewerId: options.viewerId ?? KITTY, active: options.active, finished: options.finished },
     attachTo: document.body,
   })
   await vi.waitFor(() => expect(chat.served.reads).toBeGreaterThan(0))
@@ -380,5 +416,320 @@ describe('ChatPanel', () => {
     send({ type: 'chat.added', message: live('d', LARSI, 40) })
     await settle()
     expect(animated).toHaveLength(1)
+  })
+
+  describe('writing (#667)', () => {
+    const ID = '11111111-1111-4111-8111-111111111111'
+    const ID2 = '22222222-2222-4222-8222-222222222222'
+    const input = (wrapper: Mounted['wrapper']) => wrapper.find('input[type="text"]')
+    const sendButton = (wrapper: Mounted['wrapper']) => wrapper.find('button[aria-label="Senden"]')
+    const bubble = (wrapper: Mounted['wrapper'], id: string) => wrapper.find(`[data-message-id="${id}"]`)
+    /** Types into the field the way the browser does: the value, then an `input` event. */
+    async function type(wrapper: Mounted['wrapper'], value: string) {
+      const field = input(wrapper)
+      ;(field.element as HTMLInputElement).value = value
+      await field.trigger('input')
+    }
+    async function write(wrapper: Mounted['wrapper'], value: string) {
+      await type(wrapper, value)
+      await input(wrapper).trigger('keydown', { key: 'Enter' })
+    }
+    /** The next ids `crypto.randomUUID()` gives. */
+    function pinIds(...ids: string[]) {
+      const spy = vi.spyOn(globalThis.crypto, 'randomUUID')
+      for (const id of ids) spy.mockReturnValueOnce(id as `${string}-${string}-${string}-${string}-${string}`)
+    }
+
+    it('shows a sent Message at once as „wird gesendet …“ with the field empty and focused, and settles it from the answer', async () => {
+      pinIds(ID)
+      const { wrapper, served } = await mountChat([live('a', SANNE, 0, 'Moin')])
+      ;(input(wrapper).element as HTMLInputElement).focus()
+      served.holdPost()
+
+      await write(wrapper, 'Hallo')
+      await vi.waitFor(() => expect(served.posts).toHaveLength(1))
+
+      expect(served.posts).toEqual([{ id: ID, text: 'Hallo' }])
+      expect(bubble(wrapper, ID).text()).toBe('Hallo')
+      expect(bubble(wrapper, ID).attributes('data-outgoing-state')).toBe('sending')
+      expect(wrapper.text()).toContain('wird gesendet …')
+      expect((input(wrapper).element as HTMLInputElement).value).toBe('')
+      expect(document.activeElement).toBe(input(wrapper).element)
+
+      served.releasePost()
+      await vi.waitFor(() => expect(wrapper.text()).not.toContain('wird gesendet …'))
+      expect(wrapper.findAll(`[data-message-id="${ID}"]`)).toHaveLength(1)
+      expect(bubble(wrapper, ID).attributes('data-outgoing-state')).toBeUndefined()
+    })
+
+    it('shows a Message once when the answer and the room\'s chat.added meet by id, in either order, and reads nothing again', async () => {
+      pinIds(ID, ID2)
+      const { wrapper, served, send } = await mountChat([])
+
+      // The answer first.
+      await write(wrapper, 'eins')
+      await vi.waitFor(() => expect(wrapper.text()).not.toContain('wird gesendet …'))
+      send({ type: 'chat.added', message: live(ID, KITTY, 5, 'eins') })
+      await settle()
+      expect(wrapper.findAll(`[data-message-id="${ID}"]`)).toHaveLength(1)
+
+      // The room first, while the answer is held.
+      served.holdPost()
+      await write(wrapper, 'zwei')
+      await settle()
+      send({ type: 'chat.added', message: live(ID2, KITTY, 6, 'zwei') })
+      await settle()
+      expect(wrapper.findAll(`[data-message-id="${ID2}"]`)).toHaveLength(1)
+      expect(wrapper.text()).not.toContain('wird gesendet …')
+      served.releasePost()
+      await settle()
+
+      expect(wrapper.findAll('[data-message-id]')).toHaveLength(2)
+      expect(wrapper.text()).not.toContain('Nicht gesendet')
+      expect(served.reads).toBe(1)
+    })
+
+    it('keeps the text of a failed send in its bubble under „Nicht gesendet. Erneut senden“, and the retry sends the same id and text, once', async () => {
+      pinIds(ID, ID2)
+      const { wrapper, served } = await mountChat([])
+      served.answer = 'server-error'
+
+      await write(wrapper, 'Hallo')
+      await vi.waitFor(() => expect(buttonNamed(wrapper, 'Nicht gesendet. Erneut senden')).toBeDefined())
+      expect(bubble(wrapper, ID).text()).toBe('Hallo')
+      expect(bubble(wrapper, ID).attributes('data-outgoing-state')).toBe('failed')
+      expect(bubble(wrapper, ID).classes()).not.toContain('opacity-60')
+      expect((input(wrapper).element as HTMLInputElement).value).toBe('')
+      expect(wrapper.text()).not.toContain('Langsam, langsam')
+
+      served.answer = 'ok'
+      await buttonNamed(wrapper, 'Nicht gesendet. Erneut senden')!.trigger('click')
+      await vi.waitFor(() => expect(bubble(wrapper, ID).attributes('data-outgoing-state')).toBeUndefined())
+
+      expect(served.posts).toEqual([{ id: ID, text: 'Hallo' }, { id: ID, text: 'Hallo' }])
+      expect(wrapper.findAll('[data-message-id]')).toHaveLength(1)
+      expect(wrapper.text()).not.toContain('Nicht gesendet')
+    })
+
+    it('shows the deleted line, never the text, when the retry\'s answer is a Message deleted meanwhile', async () => {
+      pinIds(ID)
+      const { wrapper, served } = await mountChat([])
+      served.answer = 'server-error'
+      await write(wrapper, 'geheim')
+      await vi.waitFor(() => expect(buttonNamed(wrapper, 'Nicht gesendet. Erneut senden')).toBeDefined())
+
+      served.answer = 'deleted'
+      await buttonNamed(wrapper, 'Nicht gesendet. Erneut senden')!.trigger('click')
+
+      await vi.waitFor(() => expect(bubble(wrapper, ID).text()).toBe('Gelöscht'))
+      expect(wrapper.text()).not.toContain('geheim')
+    })
+
+    it('says „Langsam, langsam …“ above the retry button on a rate limit and keeps the text, and a 500 shows no such line', async () => {
+      pinIds(ID, ID2)
+      const { wrapper, served } = await mountChat([])
+      served.answer = 'rate-limited'
+
+      await write(wrapper, 'zu schnell')
+      await vi.waitFor(() => expect(wrapper.text()).toContain('Langsam, langsam. Versuch es in ein paar Sekunden.'))
+      expect(bubble(wrapper, ID).text()).toBe('zu schnell')
+      expect(buttonNamed(wrapper, 'Nicht gesendet. Erneut senden')).toBeDefined()
+      expect(wrapper.find('[role="status"]').text()).toBe('Langsam, langsam. Versuch es in ein paar Sekunden.')
+
+      served.answer = 'server-error'
+      await write(wrapper, 'kaputt')
+      await vi.waitFor(() => expect(bubble(wrapper, ID2).attributes('data-outgoing-state')).toBe('failed'))
+      // Only the first line carries the limiter's words.
+      expect(wrapper.findAll('[role="status"]')).toHaveLength(1)
+
+      served.answer = 'ok'
+      await buttonNamed(wrapper, 'Nicht gesendet. Erneut senden')!.trigger('click')
+      await vi.waitFor(() => expect(wrapper.text()).not.toContain('Langsam, langsam'))
+    })
+
+    it('shows no failure for an id the Chat already holds', async () => {
+      pinIds(ID)
+      const { wrapper, served, send } = await mountChat([])
+      served.answer = 'server-error'
+      served.holdPost()
+
+      await write(wrapper, 'Hallo')
+      await vi.waitFor(() => expect(served.posts).toHaveLength(1))
+      send({ type: 'chat.added', message: live(ID, KITTY, 5, 'Hallo') })
+      await settle()
+      served.releasePost()
+      await settle()
+
+      expect(wrapper.findAll(`[data-message-id="${ID}"]`)).toHaveLength(1)
+      expect(wrapper.text()).not.toContain('Nicht gesendet')
+      expect(bubble(wrapper, ID).attributes('data-outgoing-state')).toBeUndefined()
+    })
+
+    it('sends on Enter but not while an IME composes, treats Shift+Enter as Enter, and sends nothing for an empty or blank draft', async () => {
+      pinIds(ID, ID2)
+      const { wrapper, served } = await mountChat([])
+
+      await type(wrapper, 'komponiert')
+      await input(wrapper).trigger('keydown', { key: 'Enter', isComposing: true })
+      await settle()
+      expect(served.posts).toHaveLength(0)
+
+      await input(wrapper).trigger('keydown', { key: 'Enter', shiftKey: true })
+      await vi.waitFor(() => expect(served.posts).toHaveLength(1))
+      expect(served.posts[0]).toEqual({ id: ID, text: 'komponiert' })
+
+      await type(wrapper, '   ')
+      expect(sendButton(wrapper).attributes('aria-disabled')).toBe('true')
+      await sendButton(wrapper).trigger('click')
+      await input(wrapper).trigger('keydown', { key: 'Enter' })
+      await settle()
+      expect(served.posts).toHaveLength(1)
+
+      await type(wrapper, 'per Knopf')
+      expect(sendButton(wrapper).attributes('aria-disabled')).toBe('false')
+      await sendButton(wrapper).trigger('click')
+      await vi.waitFor(() => expect(served.posts).toHaveLength(2))
+      expect(served.posts[1]).toEqual({ id: ID2, text: 'per Knopf' })
+    })
+
+    it('shows the counter from 400 characters, warns from 492, and cuts the field at 500 characters', async () => {
+      const { wrapper } = await mountChat([])
+      const counter = () => wrapper.find('.font-mono')
+      const live = () => wrapper.find('.sr-only[aria-live="polite"]')
+
+      await type(wrapper, 'a'.repeat(399))
+      expect(counter().exists()).toBe(false)
+      expect(live().text()).toBe('')
+
+      await type(wrapper, 'a'.repeat(400))
+      expect(counter().text()).toBe('400/500')
+      expect(counter().classes()).toContain('text-ink-2')
+      expect(live().text()).toBe('Noch 100 Zeichen')
+
+      await type(wrapper, 'a'.repeat(492))
+      expect(counter().classes()).toContain('text-warning-fg')
+
+      await type(wrapper, 'a'.repeat(501))
+      expect((input(wrapper).element as HTMLInputElement).value).toHaveLength(500)
+      expect(counter().text()).toBe('500/500')
+      expect(counter().classes()).toContain('text-warning-fg')
+    })
+
+    it('counts characters as a User sees them: 500 emoji go out, a 501st is cut', async () => {
+      pinIds(ID)
+      const { wrapper, served } = await mountChat([])
+      const thumbs = '👍🏽'
+
+      await type(wrapper, thumbs.repeat(501))
+      expect(characterCount((input(wrapper).element as HTMLInputElement).value)).toBe(500)
+      expect(wrapper.find('.font-mono').text()).toBe('500/500')
+      await input(wrapper).trigger('keydown', { key: 'Enter' })
+
+      await vi.waitFor(() => expect(served.posts).toHaveLength(1))
+      expect(served.posts[0]!.text).toBe(thumbs.repeat(500))
+    })
+
+    it('sends a pasted line break as a space and the text trimmed', async () => {
+      pinIds(ID, ID2)
+      const { wrapper, served } = await mountChat([])
+
+      // A text input strips a pasted line break on its own; the field here keeps it, as the page must not rely on the browser for that.
+      const field = input(wrapper).element as HTMLInputElement
+      let raw = 'a\nb'
+      const set = (value: string) => {
+        raw = value
+      }
+      Object.defineProperty(field, 'value', { configurable: true, get: () => raw, set })
+      await input(wrapper).trigger('input')
+      expect(raw).toBe('a b')
+      await input(wrapper).trigger('keydown', { key: 'Enter' })
+      await vi.waitFor(() => expect(served.posts).toHaveLength(1))
+      delete (field as { value?: string }).value
+      await write(wrapper, '   Moin  ')
+      await vi.waitFor(() => expect(served.posts).toHaveLength(2))
+
+      expect(served.posts.map(post => post.text)).toEqual(['a b', 'Moin'])
+    })
+
+    it('lets a Member on the Stands and the Host write', async () => {
+      pinIds(ID, ID2)
+      const stands = await mountChat([], { viewerId: LARSI })
+      await write(stands.wrapper, 'von der Tribüne')
+      await vi.waitFor(() => expect(stands.served.posts).toHaveLength(1))
+      expect(stands.wrapper.find('b').text()).toBe('Du')
+      expect(stands.wrapper.find('[data-message-id]').text()).toBe('von der Tribüne')
+
+      const host = await mountChat([], { viewerId: KITTY })
+      await write(host.wrapper, 'vom Host')
+      await vi.waitFor(() => expect(host.served.posts).toHaveLength(1))
+      expect(host.served.posts[0]!.text).toBe('vom Host')
+    })
+
+    it('has no composer on a finished page, only the note, and the log stays readable; and none while the read has failed', async () => {
+      const done = await mountChat([live('a', SANNE, 0, 'Servus')], { finished: true })
+
+      expect(done.wrapper.find('input').exists()).toBe(false)
+      expect(sendButton(done.wrapper).exists()).toBe(false)
+      expect(done.wrapper.text()).toContain('Das Event ist beendet. Du kannst nur noch lesen.')
+      expect(texts(done.wrapper)).toEqual(['Servus'])
+
+      const failed = await mountChat([], { failing: true })
+      expect(failed.wrapper.find('input').exists()).toBe(false)
+      expect(sendButton(failed.wrapper).exists()).toBe(false)
+    })
+
+    it('lets no own Message rise, neither pending nor settled by the answer or by the room', async () => {
+      pinIds(ID, ID2)
+      const { wrapper, served, send } = await mountChat([])
+
+      await write(wrapper, 'eins')
+      await vi.waitFor(() => expect(wrapper.text()).not.toContain('wird gesendet …'))
+      served.holdPost()
+      await write(wrapper, 'zwei')
+      await vi.waitFor(() => expect(served.posts).toHaveLength(2))
+      send({ type: 'chat.added', message: live(ID2, KITTY, 5, 'zwei') })
+      await settle()
+      served.releasePost()
+      await settle()
+
+      expect(wrapper.findAll('[data-message-id]')).toHaveLength(2)
+      expect(animated).toHaveLength(0)
+    })
+
+    it('puts two own sends within two minutes under one „Du“, and keeps a pending line below a Message another Member wrote meanwhile', async () => {
+      pinIds(ID, ID2)
+      const { wrapper, served, send } = await mountChat([])
+
+      await write(wrapper, 'eins')
+      await vi.waitFor(() => expect(wrapper.text()).not.toContain('wird gesendet …'))
+      served.holdPost()
+      await write(wrapper, 'zwei')
+      await vi.waitFor(() => expect(served.posts).toHaveLength(2))
+      expect(wrapper.findAll('b').map(name => name.text())).toEqual(['Du'])
+
+      // A clock that runs ahead: the other Member's Message is stamped later than the pending line, yet it shows above it.
+      send({ type: 'chat.added', message: { ...live('x', LARSI, 0, 'dazwischen'), at: new Date(Date.now() + 60_000).toISOString() } })
+      await settle()
+      expect(texts(wrapper)).toEqual(['eins', 'dazwischen', 'zwei'])
+      expect(bubble(wrapper, ID2).attributes('data-outgoing-state')).toBe('sending')
+    })
+
+    it('shows a held outgoing line once when a re-read of the Chat already holds its Message', async () => {
+      pinIds(ID)
+      const { wrapper, served, state } = await mountChat([])
+      served.holdPost()
+      await write(wrapper, 'Hallo')
+      await vi.waitFor(() => expect(served.posts).toHaveLength(1))
+
+      served.all = [live(ID, KITTY, 0, 'Hallo')]
+      state.value = 'closed'
+      await settle()
+      state.value = 'open'
+      await vi.waitFor(() => expect(served.reads).toBe(2))
+      await settle()
+
+      expect(wrapper.findAll(`[data-message-id="${ID}"]`)).toHaveLength(1)
+      expect(wrapper.text()).not.toContain('wird gesendet …')
+    })
   })
 })

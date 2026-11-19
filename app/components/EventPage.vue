@@ -266,6 +266,7 @@ watch(() => tour.shown.value, (isShown) => {
             :teams="data.teams"
             :viewer-id="data.viewerId"
             :active="panelTab === 'chat'"
+            :finished="pageState?.kind === 'finished'"
           />
         </template>
         <template #activity>

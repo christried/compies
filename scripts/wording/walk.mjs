@@ -56,10 +56,11 @@ const MONO_WHAT = {
   'app/components/RichNotesToolbar.vue': 'Tastenkürzel im Tipp der Notizen-Werkzeugleiste',
 }
 
-/** The ten uses of `font-mono` in app/ (`grep -rn "font-mono" app --include=*.vue`) and how each is recorded; the report says where each was seen. */
+/** The eleven uses of `font-mono` in app/ (`grep -rn "font-mono" app --include=*.vue`) and how each is recorded; the report says where each was seen. */
 const MONO_USES = [
   { site: 'ChangelogInline.vue:39 code', component: 'app/components/ChangelogInline.vue', entry: true, element: 'code' },
   { site: 'ChangelogInline.vue:48 issue chip', component: 'app/components/ChangelogInline.vue', entry: true, notElement: 'code' },
+  { site: 'ChatPanel.vue:392 common.counter', component: 'app/components/ChatPanel.vue', keys: ['common.counter'] },
   { site: 'ClipPreview.vue:122 times', component: 'app/components/ClipPreview.vue', entry: true },
   { site: 'InviteLinkCard.vue:37 input', component: 'app/components/InviteLinkCard.vue', entry: true },
   { site: 'GameImageField.vue:310 gameEdit.imageRatio', component: 'app/components/GameImageField.vue', keys: ['gameEdit.imageRatio'] },
