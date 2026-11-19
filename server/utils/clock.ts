@@ -4,7 +4,7 @@ import type { H3Event } from 'h3'
  * The server's "now" (ADR 0013: Nuxt owns every timed moment). A change of an Event reads the clock once, in `changeEvent`
  * (`EventChange.now`, #259); only reads and creating an Event ask `useClock(event)` themselves. Either way a test can put a clock
  * into the request context and move it past an instant (#226).
- * Not behind it, because those systems keep their own clock: the vote rate limiter, the R2 signature date, the room
+ * The Messages' rate limiter uses the request's clock (`beforeBody` gets it, #758). Not behind it, because those systems keep their own clock: the vote rate limiter, the R2 signature date, the room
  * token's `exp` and the room-call signature. Database-side `now()` orders rows inside one transaction and stays as it is.
  */
 export interface Clock {
