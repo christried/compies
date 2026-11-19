@@ -16,6 +16,7 @@ const ROOM_TYPES: Record<RoomMessageType, true> = {
   'clock.pong': true,
   'veto.cast': true,
   'emote.sent': true,
+  'chat.added': true,
 }
 
 const root = resolve(import.meta.dirname, '../..')

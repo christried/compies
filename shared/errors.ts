@@ -12,6 +12,8 @@ export const API_ERROR_STATUS = {
   invalid_value: 400,
   /** A Note on a Vote is longer than NOTE_MAX characters (#102). */
   note_too_long: 400,
+  /** A Message's text is empty after trimming or longer than MESSAGE_MAX characters (#758). */
+  invalid_message: 400,
   /** A game name is empty or longer than GAME_NAME_MAX characters (#141). */
   invalid_game_name: 400,
   /** A game's YouTube link is not a link to a video (#141). */

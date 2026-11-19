@@ -1778,6 +1778,7 @@
     "saveFailed": "Konnte nicht speichern. Nochmal versuchen?",
     "voteFailed": "Deine Stimme ist nicht angekommen",
     "noteTooLong": "Die Anmerkung ist zu lang.",
+    "messageInvalid": "Die Nachricht ist leer oder zu lang.",
     "gameNameInvalid": "Gib dem Spiel einen Namen, höchstens 60 Zeichen.",
     "clipInvalid": "Der Clip passt nicht: Die Länge liegt zwischen 10 und 120 Sekunden.",
     "playersInvalid": "Die Spielerzahl passt nicht: von 1 bis 99, und „von“ nicht größer als „bis“.",
