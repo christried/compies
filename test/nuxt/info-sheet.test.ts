@@ -45,7 +45,7 @@ describe('InfoSheet', () => {
     const page = await mountSuspended(InfoSheet, { props: { topic: 'wheel' } })
 
     const hidden = page.findAll('section').find(section => section.find('h3').text() === 'Pseudo-Games')
-    expect(hidden!.text()).toContain('Du als Host siehst die Spiele auf dem verdeckten Rad trotzdem, auch wenn du mitspielst.')
+    expect(hidden!.text()).toContain('Du als Host siehst bei Pseudo-Games die echten Spiele trotzdem, auch wenn du mitspielst.')
   })
 
   it('explains the Veto allowance in the words of the product brief (#145)', async () => {

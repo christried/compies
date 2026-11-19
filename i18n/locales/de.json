@@ -90,7 +90,7 @@
     "ceremony": "Siegerehrung starten",
     "lastGame": "Letztes Spiel",
     "lastGameBlocked": {
-      "game_count_range": "Mehr Spiele gehen nicht. Du kannst das Event noch als Unentschieden beenden."
+      "game_count_range": "Mehr Spiele gehen nicht. Du kannst das Event noch mit „Unentschieden“ beenden."
     },
     "setDateN": "Termin für Session {n}",
     "startBlocked": {
@@ -323,7 +323,7 @@
       "howItWorks": "So läuft's",
       "goodFor": "Gut für",
       "hideWheel": "Pseudo-Games",
-      "hideWheelHelp": "Erfundene Namen bis das Rad stoppt.",
+      "hideWheelHelp": "Erfundene Namen, bis das Rad stoppt.",
       "poolPreview": "Pool vorher zeigen",
       "poolPreviewHelp": "Die Teilnehmenden sehen den Spielepool schon vorher.",
       "poolPreviewHidden": "Mit Pseudo-Games sieht niemand den Pool von Spielen.",
@@ -359,7 +359,7 @@
         "hideWheel": "Pseudo-Games"
       },
       "ffa": {
-        "title": "Jeder gegen jeden (FFA)",
+        "title": "Alle gegen alle (FFA)",
         "how": "Jede Person spielt für sich. Nach jedem Spiel bringst du als Host alle in die richtige Reihenfolge, und die Punktetabelle verteilt die Punkte. Wer am Ende die meisten Punkte hat, gewinnt.",
         "good": "Battle-Royales, Rennspiele, Party- und Brettspiele mit 3 bis 8 Leuten.",
         "warn": "Bei vielen Spielenden lohnt sich eine Punktetabelle, die gute Plätze stärker belohnt."
@@ -381,7 +381,7 @@
         "how": "Du legst Spiele auf das Glücksrad und drehst es. Das Spiel fliegt vom Rad, der Clip startet. Während des Clips und noch 30 Sekunden danach kann jede Partei ein Veto einlegen. Jede Partei hat gleich viele Vetos für das ganze Event, die Zahl legst du fest. Im Team darf jedes Mitglied sie einsetzen. Pro Spiel kann eine Partei höchstens 1 Veto einlegen. Welche Partei ein Veto eingelegt hat, siehst du erst, wenn die Zeit abläuft. Dann werden alle gleichzeitig aufgedeckt. Gibt es ein Veto, wird neu gedreht.",
         "vetoHidden": "Die Teilnehmenden sehen die Zahl der Vetos erst, wenn die erste Session startet.",
         "hideWheel": "Die Teilnehmenden sehen statt der echten Spiele nur Platzhalter oder erfundene Namen. Erst wenn das Rad stoppt, zeigt sich, was es wirklich ist.",
-        "hostSees": "Du als Host siehst die Spiele auf dem verdeckten Rad trotzdem, auch wenn du mitspielst.",
+        "hostSees": "Du als Host siehst bei Pseudo-Games die echten Spiele trotzdem, auch wenn du mitspielst.",
         "good": "Maximale Spannung und Chaos.",
         "warn": "Leg genug Spiele aufs Rad. Alles, was ausgelost wird, fliegt runter, auch per Veto abgelehnte Spiele. Wird es knapp, warnt dich die App, die Teilnehmenden merken nichts davon."
       },
@@ -406,7 +406,7 @@
         "title": "Glücksrad – Loser's Advantage",
         "how": "Wie Glücksrad, mit einem Bonus für die Letzten: Vor jedem Dreh (außer dem ersten) darf die Partei auf dem letzten Platz ein Spiel vom Rad bannen. Dann wird gedreht, und danach läuft wie gewohnt das Veto-Fenster.",
         "good": "Zufall mit einem kleinen Vorteil für die, die hinten liegen.",
-        "warn": "Das Rad kann hier nicht verdeckt werden, sonst wüsste niemand, was er bannt."
+        "warn": "Hier gibt es keine Pseudo-Games, sonst wüsste niemand, was gebannt wird."
       }
     }
   },
@@ -990,7 +990,6 @@
   },
   "gameEvents": {
     "title": "Deine Events mit diesem Spiel",
-    "inPool": "im Pool",
     "none": "Dieses Spiel ist noch in keinem deiner Events.",
     "failed": "Die Events dieses Spiels lassen sich gerade nicht laden."
   },
@@ -1027,10 +1026,9 @@
     "endBeforeStart": "Das Ende liegt vor dem Start.",
     "length": "Länge",
     "lengthMax": "max. {max} s",
-    "lengthInvalid": "Nur zw. 10 und 120 Sekunden möglich.",
+    "lengthInvalid": "Nur zwischen 10 und 120 Sekunden möglich.",
     "lengthDefault": "30 s",
     "previewTitle": "Vorschau des Clips",
-    "noPreview": "Link ungültig.",
     "noClip": "Kein Clip.",
     "barLabel": "Ausschnitt im Video",
     "excerpt": "Ausschnitt {from} – {to}",
@@ -1339,11 +1337,11 @@
       },
       "database": {
         "heading": "4. Datenbank (Neon)",
-        "text": "Anwendungsdaten werden in einer PostgreSQL-Datenbank der Neon Inc. (US-Unternehmen, heute Teil der Databricks Inc.) gespeichert. Datenbankstandort: Frankfurt am Main (AWS-Region eu-central-1). Gespeichert werden deine Kontodaten (Abschnitt 6), Sitzungs- und Sicherheitsdaten (Abschnitt 10) sowie deine Events, Terminvorschläge, Stimmen und Anmerkungen und die Spiele der Bibliothek mit ihren Notizen (Abschnitt 11). Rechtsgrundlage ist Art. 6 Abs. 1 lit. b und lit. f DSGVO. Mit Neon besteht ein Auftragsverarbeitungsvertrag."
+        "text": "Anwendungsdaten werden in einer PostgreSQL-Datenbank der Neon Inc. (US-Unternehmen, heute Teil der Databricks Inc.) gespeichert. Datenbankstandort: Frankfurt am Main (AWS-Region eu-central-1). Gespeichert werden deine Kontodaten (Abschnitt 6), Sitzungs- und Sicherheitsdaten (Abschnitt 10) sowie deine Events, Terminvorschläge, Stimmen und Anmerkungen, die Spiele in der Bibliothek jedes Hosts mit ihren Notizen und die Notizen eines Hosts für ein Event (Abschnitt 11). Rechtsgrundlage ist Art. 6 Abs. 1 lit. b und lit. f DSGVO. Mit Neon besteht ein Auftragsverarbeitungsvertrag."
       },
       "storage": {
         "heading": "5. Spielbilder (Cloudflare R2)",
-        "text": "Bilder, die zu einem Spiel in der Bibliothek hochgeladen werden, speichern wir in einem Objektspeicher von Cloudflare R2. Anbieter ist die Cloudflare, Inc., 101 Townsend St, San Francisco, CA 94107, USA. Die Daten liegen in der EU-Jurisdiktion, also auf Servern in der Europäischen Union. Cloudflare verarbeitet sie in unserem Auftrag; mit Cloudflare besteht ein Auftragsverarbeitungsvertrag (Art. 28 DSGVO).\n\nDein Browser ruft Bilder nicht bei Cloudflare ab. Er fragt sie bei Compies unter /api/images/ an; unser Server holt sie aus dem Speicher und reicht sie an dich weiter. Cloudflare erhält deshalb nur Anfragen unseres Servers, nicht deine IP-Adresse und nicht deine Browserangaben. Gespeichert werden das Bild selbst und seine Kennung aus Spiel-ID und einer Zufallsfolge.\n\nSehen dürfen ein Bild Personen mit Host-Berechtigung (Abschnitt 6) und Admins, außerdem Mitglieder eines Events, sobald das Spiel dort gezogen oder gesetzt ist, und vorher, wenn der Spielepool des Events das Spiel enthält, solange der Host ihnen die Pools vorher zeigt (Einstellung „Pool vorher zeigen“; bei verdecktem Rad nie). Wird ein Bild ersetzt, löschen wir das alte aus dem Speicher. Möchtest du ein Bild entfernen lassen, genügt eine Nachricht an die unter Abschnitt 1 genannte Adresse.\n\nRechtsgrundlage ist Art. 6 Abs. 1 lit. b DSGVO (Bereitstellung der Spiele in der Bibliothek und in den Events)."
+        "text": "Bilder, die zu einem Spiel in der Bibliothek hochgeladen werden, speichern wir in einem Objektspeicher von Cloudflare R2. Anbieter ist die Cloudflare, Inc., 101 Townsend St, San Francisco, CA 94107, USA. Die Daten liegen in der EU-Jurisdiktion, also auf Servern in der Europäischen Union. Cloudflare verarbeitet sie in unserem Auftrag; mit Cloudflare besteht ein Auftragsverarbeitungsvertrag (Art. 28 DSGVO).\n\nDein Browser ruft Bilder nicht bei Cloudflare ab. Er fragt sie bei Compies unter /api/images/ an; unser Server holt sie aus dem Speicher und reicht sie an dich weiter. Cloudflare erhält deshalb nur Anfragen unseres Servers, nicht deine IP-Adresse und nicht deine Browserangaben. Gespeichert werden das Bild selbst und seine Kennung aus Spiel-ID und einer Zufallsfolge.\n\nSehen darf ein Bild der Host, in dessen Bibliothek das Spiel liegt, außerdem Mitglieder eines Events, sobald das Spiel dort gezogen oder gesetzt ist, und vorher, wenn der Spielepool des Events das Spiel enthält, solange der Host ihnen die Pools vorher zeigt (Einstellung „Pool vorher zeigen“; bei verdecktem Rad nie). Andere Hosts und Admins sehen es nicht. Dasselbe Bild kann zu Kopien eines Spiels in den Bibliotheken mehrerer Hosts gehören (Abschnitt 11). Wird ein Bild ersetzt, löschen wir das alte aus dem Speicher, sobald kein Spiel es mehr nutzt. Möchtest du ein Bild entfernen lassen, genügt eine Nachricht an die unter Abschnitt 1 genannte Adresse; wir entfernen es dann für alle Kopien.\n\nRechtsgrundlage ist Art. 6 Abs. 1 lit. b DSGVO (Bereitstellung der Spiele in der Bibliothek und in den Events)."
       },
       "signIn": {
         "heading": "6. Anmeldung über Discord oder Twitch und Anzeigename",
@@ -1367,7 +1365,7 @@
       },
       "events": {
         "heading": "11. Events, Terminvorschläge und Stimmen",
-        "text": "Ein Host legt ein Event mit Namen an und schlägt Termine vor oder legt direkt einen Termin fest. Zu jedem Event speichern wir, wer es angelegt hat, seinen Namen und seine Terminvorschläge. Ein Event besteht aus einer oder mehreren Sessions, jede mit eigenem Termin: zu jeder Session speichern wir ihren Termin sowie einen früheren, wieder aufgehobenen Termin. Zu deiner Mitgliedschaft speichern wir, wann du beigetreten bist; zu jeder deiner Stimmen (Ja, Meh, Nein), zu welchem Terminvorschlag sie gehört und wann du sie zuletzt geändert hast, sowie eine kurze Anmerkung dazu, wenn du eine schreibst.\n\nZu jedem Event gehört ein Spielbrett. Zu deiner Mitgliedschaft speichern wir deshalb auch, wo du sitzt (Tribüne oder ein Team), seit wann du in deinem Team bist und dein Teamwort, wenn du eins abgibst. Zu jeder Session speichern wir, wann der Host sie gestartet und beendet hat. Zu jeder Runde eines Events speichern wir das gezogene oder gesetzte Spiel und, sobald der Host es einträgt, das Ergebnis: die Platzierung jedes Teams und, wenn angegeben, seinen Score. Zu jedem Veto speichern wir, welches Team es eingelegt hat und wer aus dem Team, zu jedem Bonus-Veto, welches Team es bekam, und zu jedem Münzwurf, wer geworfen hat. Zum Event selbst speichern wir, wann der Host es abgeschlossen hat und wann er zuletzt die Siegerehrung gestartet hat. Außerdem führt Compies zu jedem Event einen Aktivitäts-Feed. Er hält fest, wer wann beigetreten ist, wer den Platz gewechselt hat oder von wem verschoben wurde, wer Termine festgelegt, verschoben oder aufgehoben hat, wer Sessions hinzugefügt, entfernt, gestartet oder beendet hat, wer die Anzahl der Spiele oder die Teamgröße geändert hat und wer einen Teamnamen zurückgesetzt hat, welche Spiele gezogen, gesetzt oder zurückgelegt wurden, welches Team ein Veto eingelegt hat, welches Team ein Bonus-Veto bekam, wie ein Münzwurf ausging, welche Ergebnisse eingetragen oder korrigiert wurden und wie das Event endete. Zu jedem Eintrag, der ein Team nennt, speichert der Feed den Namen, den das Team in diesem Moment hatte, und damit die Teamwörter darin. Dein Teamwort bleibt in diesen Einträgen deshalb stehen, solange das Event besteht, auch wenn du dein Team verlässt oder dein Teamwort änderst.\n\nName, Terminvorschläge und die Termine der Sessions eines Events, das Spielbrett mit Plätzen, Teamwörtern und Teamnamen, die Runden mit ihren Ergebnissen, die Tabelle und der Aktivitäts-Feed sowie Anzeigename, Profilbild, Stimmen und Anmerkungen ihrer Mitglieder sind für alle Mitglieder dieses Events sichtbar. Dass ein Team ein Veto eingelegt hat, sieht bis zum Aufdecken nur dieses Team; welcher Spieler es war, erfährt niemand. Wer den Einladungslink eines Events erhält, kann ihm nach der Anmeldung beitreten; ohne Anmeldung zeigt der Link nur den Namen des Events sowie Anzeigename und Profilbild des Hosts. Teile Einladungslinks daher nur mit Personen, die mitmachen sollen. Der Host kann den Link jederzeit erneuern; der alte Link funktioniert dann nicht mehr. Der Host kann ein Event jederzeit löschen, nur nicht, solange eine Session läuft. Ein gelöschtes Event ist für alle Mitglieder sofort nicht mehr erreichbar: nicht auf der Startseite, nicht über den Link zum Event und nicht über den Einladungslink. Dort steht dann nur, dass das Event gelöscht wurde.\n\nIst ein Event abgeschlossen und die Siegerehrung gestartet, kann jedes Mitglied ein Ergebnisbild herunterladen oder teilen. Es zeigt Namen und Datum des Events, wie viele Leute mitgespielt haben, die Tabelle mit Teamnamen und Punkten und die gespielten Spiele, aber keine Anzeigenamen und keine Profilbilder. Compies erzeugt das Bild bei jedem Abruf neu und speichert es nicht. Teilst du es über die Teilen-Funktion deines Geräts, gibt dein Gerät es an die App weiter, die du wählst; ab dann gelten deren Datenschutzbestimmungen.\n\nHosts füllen außerdem eine gemeinsame Spielebibliothek. Zu jedem Spiel speichern wir, wer es angelegt hat, seine Angaben und seine Notizen: freien Text, den der Host schreibt, etwa zu Einstellungen, Aufwärmen und Hausregeln. Notizen können deshalb auch andere Personen nennen. Lesen können sie Personen mit Host-Berechtigung und Admins, außerdem der Host eines Events, dessen Spielepool das Spiel enthält oder in dem es gespielt wird oder wurde. Ändern oder löschen können sie nur, wer das Spiel angelegt hat, und Admins.\n\nRechtsgrundlage ist Art. 6 Abs. 1 lit. b DSGVO."
+        "text": "Ein Host legt ein Event mit Namen an und schlägt Termine vor oder legt direkt einen Termin fest. Zu jedem Event speichern wir, wer es angelegt hat, seinen Namen und seine Terminvorschläge. Ein Event besteht aus einer oder mehreren Sessions, jede mit eigenem Termin: zu jeder Session speichern wir ihren Termin sowie einen früheren, wieder aufgehobenen Termin. Zu deiner Mitgliedschaft speichern wir, wann du beigetreten bist; zu jeder deiner Stimmen (Ja, Meh, Nein), zu welchem Terminvorschlag sie gehört und wann du sie zuletzt geändert hast, sowie eine kurze Anmerkung dazu, wenn du eine schreibst.\n\nZu jedem Event gehört ein Spielbrett. Zu deiner Mitgliedschaft speichern wir deshalb auch, wo du sitzt (Tribüne oder ein Team), seit wann du in deinem Team bist und dein Teamwort, wenn du eins abgibst. Zu jeder Session speichern wir, wann der Host sie gestartet und beendet hat. Zu jeder Runde eines Events speichern wir das gezogene oder gesetzte Spiel und, sobald der Host es einträgt, das Ergebnis: die Platzierung jedes Teams und, wenn angegeben, seinen Score. Zu jedem Veto speichern wir, welches Team es eingelegt hat und wer aus dem Team, zu jedem Bonus-Veto, welches Team es bekam, und zu jedem Münzwurf, wer geworfen hat. Zum Event selbst speichern wir, wann der Host es abgeschlossen hat und wann er zuletzt die Siegerehrung gestartet hat. Außerdem führt Compies zu jedem Event einen Aktivitäts-Feed. Er hält fest, wer wann beigetreten ist, wer den Platz gewechselt hat oder von wem verschoben wurde, wer Termine festgelegt, verschoben oder aufgehoben hat, wer Sessions hinzugefügt, entfernt, gestartet oder beendet hat, wer die Anzahl der Spiele oder die Teamgröße geändert hat und wer einen Teamnamen zurückgesetzt hat, welche Spiele gezogen, gesetzt oder zurückgelegt wurden, welches Team ein Veto eingelegt hat, welches Team ein Bonus-Veto bekam, wie ein Münzwurf ausging, welche Ergebnisse eingetragen oder korrigiert wurden und wie das Event endete. Zu jedem Eintrag, der ein Team nennt, speichert der Feed den Namen, den das Team in diesem Moment hatte, und damit die Teamwörter darin. Dein Teamwort bleibt in diesen Einträgen deshalb stehen, solange das Event besteht, auch wenn du dein Team verlässt oder dein Teamwort änderst.\n\nName, Terminvorschläge und die Termine der Sessions eines Events, das Spielbrett mit Plätzen, Teamwörtern und Teamnamen, die Runden mit ihren Ergebnissen, die Tabelle und der Aktivitäts-Feed sowie Anzeigename, Profilbild, Stimmen und Anmerkungen ihrer Mitglieder sind für alle Mitglieder dieses Events sichtbar. Dass ein Team ein Veto eingelegt hat, sieht bis zum Aufdecken nur dieses Team; welcher Spieler es war, erfährt niemand. Wer den Einladungslink eines Events erhält, kann ihm nach der Anmeldung beitreten; ohne Anmeldung zeigt der Link nur den Namen des Events sowie Anzeigename und Profilbild des Hosts. Teile Einladungslinks daher nur mit Personen, die mitmachen sollen. Der Host kann den Link jederzeit erneuern; der alte Link funktioniert dann nicht mehr. Der Host kann ein Event jederzeit löschen, nur nicht, solange eine Session läuft. Ein gelöschtes Event ist für alle Mitglieder sofort nicht mehr erreichbar: nicht auf der Startseite, nicht über den Link zum Event und nicht über den Einladungslink. Dort steht dann nur, dass das Event gelöscht wurde.\n\nIst ein Event abgeschlossen und die Siegerehrung gestartet, kann jedes Mitglied ein Ergebnisbild herunterladen oder teilen. Es zeigt Namen und Datum des Events, wie viele Leute mitgespielt haben, die Tabelle mit Teamnamen und Punkten und die gespielten Spiele, aber keine Anzeigenamen und keine Profilbilder. Compies erzeugt das Bild bei jedem Abruf neu und speichert es nicht. Teilst du es über die Teilen-Funktion deines Geräts, gibt dein Gerät es an die App weiter, die du wählst; ab dann gelten deren Datenschutzbestimmungen.\n\nJeder Host hat außerdem eine eigene Spielebibliothek. Zu jedem Spiel speichern wir, in wessen Bibliothek es liegt, seine Angaben, ob und seit wann es archiviert ist, und seine Notizen: freien Text, den der Host schreibt, etwa zu Einstellungen, Aufwärmen und Hausregeln, auf Wunsch formatiert und mit Links. Zu einem Spiel in einem Event kann der Host dieses Events außerdem Notizen nur für dieses Event schreiben. Notizen können deshalb auch andere Personen nennen. Die Notizen eines Spiels liest und ändert nur der Host, in dessen Bibliothek es liegt, die Notizen für ein Event nur der Host dieses Events; andere Hosts, Admins und die Mitglieder eines Events sehen sie nicht. Gelöscht wird ein Spiel nicht: Der Host kann es archivieren und jederzeit zurückholen. Öffnest du einen Link aus Notizen, gelangst du auf eine fremde Seite; ab dann gelten deren Datenschutzbestimmungen.\n\nRechtsgrundlage ist Art. 6 Abs. 1 lit. b DSGVO."
       },
       "calendar": {
         "heading": "12. Kalenderdatei",
@@ -1387,7 +1385,7 @@
       },
       "retention": {
         "heading": "16. Speicherdauer",
-        "text": "Kontodaten, Events, Terminvorschläge, Stimmen und Anmerkungen werden gespeichert, solange dein Nutzerkonto besteht bzw. bis sie gelöscht werden. Plätze, Teamwörter, Runden mit ihren Vetos und Ergebnissen, Münzwürfe und der Aktivitäts-Feed eines Events bleiben gespeichert, solange das Event besteht. Die Daten eines gelöschten Events bleiben zunächst gespeichert, als gelöscht markiert, aber in Compies für niemanden mehr abrufbar. Auf Anfrage an die unter Abschnitt 1 genannte Adresse entfernen wir sie aus der Datenbank. Eine automatische Löschung gibt es nicht. Ein Teamwort wird gelöscht, sobald du dein Team verlässt; im aktuellen Namen des Teams steht es dann nicht mehr. Ausgenommen sind die Einträge des Aktivitäts-Feeds: Sie behalten den Teamnamen von damals, das Wort bleibt dort, solange das Event besteht (Abschnitt 11). In Events, die vor Version 0.12 abgeschlossen wurden, bleibt außerdem der Teamname gespeichert, der beim Start der ersten Session eingefroren wurde, mit den Teamwörtern darin, solange das Event besteht. Spielbilder bleiben gespeichert, solange das Spiel besteht und das Bild nicht ersetzt wird (Abschnitt 5). Entfernt ein Host einen Terminvorschlag, werden die Stimmen und Anmerkungen dazu mitgelöscht. Anmeldesitzungen werden mit ihrem Ablauf bzw. beim Abmelden gelöscht. Missbrauchszähler gelten nur für kurze Zeitfenster (Abschnitt 10). Server-Logs des Hosters werden nur für die zur Fehleranalyse und Sicherheit erforderliche Dauer vorgehalten und danach automatisch gelöscht. Möchtest du dein Nutzerkonto löschen lassen, genügt eine Nachricht an die unter Abschnitt 1 genannte Adresse."
+        "text": "Kontodaten, Events, Terminvorschläge, Stimmen und Anmerkungen werden gespeichert, solange dein Nutzerkonto besteht bzw. bis sie gelöscht werden. Plätze, Teamwörter, Runden mit ihren Vetos und Ergebnissen, Münzwürfe und der Aktivitäts-Feed eines Events bleiben gespeichert, solange das Event besteht. Die Daten eines gelöschten Events bleiben zunächst gespeichert, als gelöscht markiert, aber in Compies für niemanden mehr abrufbar. Auf Anfrage an die unter Abschnitt 1 genannte Adresse entfernen wir sie aus der Datenbank. Eine automatische Löschung gibt es nicht. Ein Teamwort wird gelöscht, sobald du dein Team verlässt; im aktuellen Namen des Teams steht es dann nicht mehr. Ausgenommen sind die Einträge des Aktivitäts-Feeds: Sie behalten den Teamnamen von damals, das Wort bleibt dort, solange das Event besteht (Abschnitt 11). In Events, die vor Version 0.12 abgeschlossen wurden, bleibt außerdem der Teamname gespeichert, der beim Start der ersten Session eingefroren wurde, mit den Teamwörtern darin, solange das Event besteht. Spiele der Bibliothek bleiben mit ihren Notizen gespeichert, auch archiviert; ihre Notizen kann der Host jederzeit ändern oder leeren. Die Notizen eines Hosts für ein Event bleiben gespeichert, solange das Event besteht. Ein Spielbild bleibt gespeichert, solange ein Spiel es nutzt (Abschnitt 5). Entfernt ein Host einen Terminvorschlag, werden die Stimmen und Anmerkungen dazu mitgelöscht. Anmeldesitzungen werden mit ihrem Ablauf bzw. beim Abmelden gelöscht. Missbrauchszähler gelten nur für kurze Zeitfenster (Abschnitt 10). Server-Logs des Hosters werden nur für die zur Fehleranalyse und Sicherheit erforderliche Dauer vorgehalten und danach automatisch gelöscht. Möchtest du dein Nutzerkonto löschen lassen, genügt eine Nachricht an die unter Abschnitt 1 genannte Adresse."
       },
       "obligation": {
         "heading": "17. Pflicht zur Bereitstellung und automatisierte Entscheidungen",
@@ -1411,7 +1409,7 @@
       },
       "changes": {
         "heading": "22. Änderungen und Stand",
-        "text": "Diese Datenschutzerklärung wird angepasst, wenn sich die Anwendung oder die Rechtslage ändert; es gilt die jeweils hier veröffentlichte Fassung. Stand: 17. November 2026."
+        "text": "Diese Datenschutzerklärung wird angepasst, wenn sich die Anwendung oder die Rechtslage ändert; es gilt die jeweils hier veröffentlichte Fassung. Stand: 19. November 2026."
       }
     }
   },
@@ -1447,7 +1445,7 @@
       "slotsTitle": "Vorschläge für die Umfrage",
       "addSlot": "Termin vorschlagen",
       "removeSlot": "Vorschlag entfernen",
-      "slotsHelp": "Abgestimmt wird mit Ja, Meh oder Nein. Bis zu 16 Vorschläge. Das wird ja wohl für alle reichen. Bestimmt.",
+      "slotsHelp": "Abgestimmt wird mit Ja, Meh oder Nein. Bis zu 16 Vorschläge, das wird ja wohl für alle reichen. Bestimmt. Die Zeiten gelten für alle (Europe/Berlin).",
       "blockedPast": "Erst den Termin in der Vergangenheit ändern.",
       "doneText": "Schick den Link an deine Leute, dann können sie sich anmelden und abstimmen.",
       "doneDirectTextPlural": "Die Termine stehen. Schick den Link an deine Leute, dann können sie sich hier anmelden.",
@@ -1513,7 +1511,7 @@
       "toPoll": "Zur Terminumfrage",
       "toHome": "Zur Startseite",
       "archiv": {
-        "title": "Das Archiv kommt bald. Bestimmt.",
+        "title": "Das Archiv kommt irgendwann. Bestimmt.",
         "text": "Hier landen später alle Abende mit Tabelle, Chat und Siegerbild. Bis dahin zählt: einen Termin finden."
       },
       "admin": {
@@ -1536,7 +1534,7 @@
       "add": "Termin hinzufügen",
       "addHelp": "Die Zeit gilt für alle (Europe/Berlin). Bis zu {max} Termine.",
       "incomplete": "Bitte Datum und Uhrzeit ausfüllen.",
-      "locked": "Termine lassen sich nur ändern, solange noch kein Termin festliegt."
+      "locked": "Termine lassen sich nur ändern, solange noch kein Termin fixiert ist."
     },
     "ics": {
       "summary": "{event} (Compies)",
@@ -1594,7 +1592,7 @@
     "steps": {
       "name": { "label": "Name", "title": "Wie soll das Event heißen?" },
       "format": { "label": "Format", "title": "Wer gegen wen und wie?" },
-      "games": { "label": "Spieleanzahl", "title": "Wie viele Spiele?" },
+      "games": { "label": "Anzahl Spiele", "title": "Wie viele Spiele?" },
       "points": { "label": "Punkte", "title": "Wer kriegt wie viele Punkte?" },
       "mode": { "label": "Auswahlmodus", "title": "Wie wird das nächste Spiel bestimmt?" },
       "pool": { "label": "Spielepool", "title": "Welche Spiele?" },
@@ -1612,10 +1610,10 @@
     },
     "format": {
       "label": "Format",
-      "ffa": { "name": "Jeder gegen jeden (FFA)", "desc": "Jede Person ist eine eigene Partei. 2 bis 8." },
+      "ffa": { "name": "Alle gegen alle (FFA)", "desc": "Jede Person ist eine eigene Partei. 2 bis 8." },
       "teams": { "name": "Teams", "desc": "2 bis 8 gleich große Teams, max. 6 pro Team." },
       "bracket": { "name": "Turnierbaum", "desc": "K.-o.-Runden bis zum Finale." },
-      "league": { "name": "Liga", "desc": "Jeder gegen jeden in Spieltagen." },
+      "league": { "name": "Liga", "desc": "Alle gegen alle in Spieltagen." },
       "teamCount": "Anzahl Teams",
       "teamCountHelp": "2 bis 8",
       "teamSize": "Spielende pro Team",
@@ -1636,7 +1634,7 @@
       "floor": "Schon {n} gestartet.",
       "help": "Nach {n} Spiel mit Ergebnis kannst du das Event abschließen. | Nach {n} Spielen mit Ergebnis kannst du das Event abschließen.",
       "tieTitle": "Gleichstand möglich.",
-      "tie": "Das Event kann unentschieden enden. Dann entscheidest du: Unentschieden beenden oder ein letztes Spiel hinzufügen."
+      "tie": "Das Event kann unentschieden enden. Dann entscheidest du: „Unentschieden“ oder „Letztes Spiel“."
     },
     "points": {
       "label": "Punktetabelle",
@@ -1761,7 +1759,7 @@
     "text": "Im schlimmsten Fall brauchst du noch {needed}, übrig ist {have}. | Im schlimmsten Fall brauchst du noch {needed}, übrig sind {have}."
   },
   "rounds": {
-    "title": "Läuft aktuell.",
+    "title": "Läuft aktuell",
     "list": "Offene Spiele",
     "playing": "wird gespielt",
     "putBack": "Zurücklegen",

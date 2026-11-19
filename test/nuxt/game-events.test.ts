@@ -65,7 +65,7 @@ describe('the Events list on the game\'s page (#656)', () => {
     expect(items(page)).toHaveLength(0)
   })
 
-  it('shows one Event whose pool holds the game: a link to the Event, „im Pool“, no disclosure', async () => {
+  it('shows one Event whose pool holds the game and never played it: a link to the Event, no label beside it, no disclosure (#843)', async () => {
     rows = [row('freitag-ab1', 'Freitags-Zocken', 0)]
     const page = await mountPage()
     await vi.waitFor(() => expect(items(page)).toHaveLength(1))
@@ -74,8 +74,8 @@ describe('the Events list on the game\'s page (#656)', () => {
     const link = item!.get('a')
     expect(link.text()).toBe('Freitags-Zocken')
     expect(link.attributes('href')).toBe('/e/freitag-ab1')
-    expect(item!.text()).toContain('im Pool')
-    expect(item!.text()).not.toContain('gespielt')
+    expect(item!.text()).toBe('Freitags-Zocken')
+    expect(item!.text()).not.toContain('im Pool')
     expect(item!.find('button').exists()).toBe(false)
   })
 

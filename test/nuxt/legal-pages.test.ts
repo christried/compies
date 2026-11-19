@@ -54,12 +54,15 @@ describe('legal pages', () => {
     expect(text).not.toContain('solange das Rad nicht verdeckt ist')
   })
 
-  it('say in the events section that only Hosts, the Host of the Event whose pool holds the game or where it is or was played, and admins read a game\'s notes (#224, #280, #446)', async () => {
+  it('say in the events section that only the owning Host reads a game\'s notes and only the Event\'s Host its Event notes, and who sees a game image (#735, 0.16)', async () => {
     const page = await mountSuspended(DatenschutzPage, { route: '/datenschutz' })
 
     const text = page.get('main').text()
-    expect(text).toContain('Lesen können sie Personen mit Host-Berechtigung und Admins, außerdem der Host eines Events, dessen Spielepool das Spiel enthält oder in dem es gespielt wird oder wurde.')
-    expect(text).not.toContain('das Spiel enthält, solange sie die Spiele dieses Pools sehen')
+    expect(text).toContain('Die Notizen eines Spiels liest und ändert nur der Host, in dessen Bibliothek es liegt, die Notizen für ein Event nur der Host dieses Events; andere Hosts, Admins und die Mitglieder eines Events sehen sie nicht.')
+    expect(text).toContain('Sehen darf ein Bild der Host, in dessen Bibliothek das Spiel liegt,')
+    expect(text).toContain('Andere Hosts und Admins sehen es nicht.')
+    expect(text).not.toContain('gemeinsame Spielebibliothek')
+    expect(text).not.toContain('Lesen können sie Personen mit Host-Berechtigung und Admins')
   })
 
   it('name the Rounds, Vetoes, coin tosses and Results, who sees them and how long they stay (#280, spec #272)', async () => {
@@ -138,8 +141,8 @@ describe('legal pages', () => {
     expect(text.indexOf('Sitzungs-Cookies (Better Auth)')).toBeLessThan(text.indexOf(cookie))
     expect(text.indexOf(cookie)).toBeLessThan(text.indexOf('Lokaler Speicher (compies-sound)'))
     expect(section!.findAll('p')).toHaveLength(8)
-    // The one place the date is pinned: the day of the last change, 17 November 2026 (0.15's cut, §6 gained the Rundgang's sentence, #650).
-    expect(page.get('main').text()).toContain('Stand: 17. November 2026.')
+    // The one place the date is pinned: the day of the last change, 19 November 2026 (the cut of 0.16.0 to 0.17.0, §4, §5, §11 and §16 rewritten for each Host's library, #735).
+    expect(page.get('main').text()).toContain('Stand: 19. November 2026.')
   })
 
   it('keep the Datenschutzerklärung\'s sections in order: the unnumbered intro, then 1 to 22 (#405)', async () => {

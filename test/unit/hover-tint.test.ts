@@ -7,7 +7,7 @@ import { build, darkVariant, themeBlock } from './css-tokens'
 const tint = themeBlock(/@utility tint/)
 const lift = themeBlock(/@utility lift/)
 
-/** The percentage of the first `var(--cp-ink) N%` after the pattern's match. */
+/** The percentage of the first `var(--cp-tint-ink, var(--cp-ink)) N%` after the pattern's match (the ink a fill of its own may replace, #812). */
 const percentAfter = (css: string, pattern: RegExp) => Number(css.match(pattern)?.[1])
 
 describe('the hover tint', () => {
@@ -26,23 +26,23 @@ describe('the hover tint', () => {
 
     it('is 8 % outside any dark rule: Hell does not change', async () => {
       const css = await buildTint(['hover:tint'])
-      expect(percentAfter(css, /\.hover\\:tint:hover \{[\s\S]*?var\(--cp-ink\) (\d+)%/)).toBe(8)
+      expect(percentAfter(css, /\.hover\\:tint:hover \{[\s\S]*?var\(--cp-tint-ink, var\(--cp-ink\)\) (\d+)%/)).toBe(8)
     })
 
     it('is 14 % on Dunkel', async () => {
       const css = await buildTint(['hover:tint'])
-      expect(percentAfter(css, /\.hover\\:tint:hover:where\(\[data-theme=dark\], \[data-theme=dark\] \*\) \{[\s\S]*?var\(--cp-ink\) (\d+)%/)).toBe(14)
+      expect(percentAfter(css, /\.hover\\:tint:hover:where\(\[data-theme=dark\], \[data-theme=dark\] \*\) \{[\s\S]*?var\(--cp-tint-ink, var\(--cp-ink\)\) (\d+)%/)).toBe(14)
     })
 
     it('is 14 % on System with a device that asks for dark', async () => {
       const css = await buildTint(['hover:tint'])
-      expect(percentAfter(css, /@media \(prefers-color-scheme: dark\) \{ \.hover\\:tint:hover:where\(\[data-theme=system\], \[data-theme=system\] \*\) \{[\s\S]*?var\(--cp-ink\) (\d+)%/)).toBe(14)
+      expect(percentAfter(css, /@media \(prefers-color-scheme: dark\) \{ \.hover\\:tint:hover:where\(\[data-theme=system\], \[data-theme=system\] \*\) \{[\s\S]*?var\(--cp-tint-ink, var\(--cp-ink\)\) (\d+)%/)).toBe(14)
     })
 
     it('stays between 14 % and 16 % on Dunkel', async () => {
       // Below 14 % the 1.45:1 target (hover against resting) is missed; above 16 % `text-ink-2` on the nav falls under 4.5:1.
       const css = await buildTint(['hover:tint'])
-      const dark = percentAfter(css, /\.hover\\:tint:hover:where\(\[data-theme=dark\], \[data-theme=dark\] \*\) \{[\s\S]*?var\(--cp-ink\) (\d+)%/)
+      const dark = percentAfter(css, /\.hover\\:tint:hover:where\(\[data-theme=dark\], \[data-theme=dark\] \*\) \{[\s\S]*?var\(--cp-tint-ink, var\(--cp-ink\)\) (\d+)%/)
       expect(dark).toBeGreaterThanOrEqual(14)
       expect(dark).toBeLessThanOrEqual(16)
     })
@@ -52,7 +52,7 @@ describe('the hover tint', () => {
       expect(css).toContain('[data-theme=dark]')
       expect(css).toContain('@media (prefers-color-scheme: dark) {')
       expect(css).toContain('[data-theme=system]')
-      expect(css).toContain('var(--cp-ink) 14%')
+      expect(css).toContain('var(--cp-tint-ink, var(--cp-ink)) 14%')
     })
   })
 })

@@ -139,7 +139,7 @@ describe('the settings editor', () => {
 
     const page = await mountEditor(slug)
 
-    expect(stepItems(page).map(item => item.text().replace(/^\d\s*|^✓\s*/, ''))).toEqual(['Format', 'Spieleanzahl', 'Punkte', 'Auswahlmodus', 'Spielepool'])
+    expect(stepItems(page).map(item => item.text().replace(/^\d\s*|^✓\s*/, ''))).toEqual(['Format', 'Anzahl Spiele', 'Punkte', 'Auswahlmodus', 'Spielepool'])
     expect(stepItems(page).slice(1).every(item => item.find('button').exists())).toBe(true)
     expect(page.get('nav[aria-label="Schritte"]').text()).toContain('Einstellungen')
     expect(page.get('h1').text()).toContain('Wer gegen wen und wie?')
@@ -216,7 +216,7 @@ describe('the settings editor', () => {
     const page = await mountEditor(slug)
     expect(spin(page, 'Spielende pro Team').text()).toBe('4')
 
-    await goTo(page, 'Spieleanzahl')
+    await goTo(page, 'Anzahl Spiele')
     expect(page.get('output').text()).toBe('7')
 
     await goTo(page, 'Auswahlmodus')
@@ -233,7 +233,7 @@ describe('the settings editor', () => {
   it('saves what the Host changed, from the last step, and goes back to the Event with a toast', async () => {
     const { slug, patched } = setUp({ settings: wheel, pool: [kart] })
     const page = await mountEditor(slug)
-    await goTo(page, 'Spieleanzahl')
+    await goTo(page, 'Anzahl Spiele')
     await button(page, 'Anzahl Spiele: mehr').trigger('click')
     await goTo(page, 'Spielepool')
     await settle(page)
@@ -260,7 +260,7 @@ describe('the settings editor', () => {
     await vi.waitFor(() => expect(eventSettings().text()).toContain('7 Spiele'))
 
     set(view(slug, [], { event: { isHost: true, phase: 'poll' }, settings: { ...wheel, gameCount: 8 }, pool: [kart] }))
-    await goTo(page, 'Spieleanzahl')
+    await goTo(page, 'Anzahl Spiele')
     await button(page, 'Anzahl Spiele: mehr').trigger('click')
     await goTo(page, 'Spielepool')
     await settle(page)
@@ -348,7 +348,7 @@ describe('the settings editor', () => {
     it('keeps the Game count from going below the Rounds already started, and says why (#228)', async () => {
       const { slug } = setUp({ settings: { ...defaultSettings(), gameCount: 4 }, floors: { teamSize: 1, vetoAllowance: 0, gameCount: 3 } })
       const page = await mountEditor(slug)
-      await goTo(page, 'Spieleanzahl')
+      await goTo(page, 'Anzahl Spiele')
 
       const less = button(page, 'Anzahl Spiele: weniger')
       expect(less.attributes('aria-disabled')).toBeUndefined()
@@ -521,7 +521,7 @@ describe('the settings editor', () => {
     it('lets the Game count change and shows no lock on that step', async () => {
       const { slug, patched } = setUp({ settings: wheel, phase: 'running' })
       const page = await mountEditor(slug)
-      await goTo(page, 'Spieleanzahl')
+      await goTo(page, 'Anzahl Spiele')
 
       expect(page.text()).not.toContain(LOCKED)
       await button(page, 'Anzahl Spiele: weniger').trigger('click')
@@ -548,7 +548,7 @@ describe('the settings editor', () => {
     it('shows on the Spiele step at an even Game count, and follows a change of it', async () => {
       const { slug } = setUp({ settings: defaultSettings() })
       const page = await mountEditor(slug)
-      await goTo(page, 'Spieleanzahl')
+      await goTo(page, 'Anzahl Spiele')
       expect(tieHint(page)!.text()).toContain('Das Event kann unentschieden enden.')
 
       await button(page, 'Anzahl Spiele: weniger').trigger('click')
@@ -559,7 +559,7 @@ describe('the settings editor', () => {
     it('shows on a running Event too', async () => {
       const { slug } = setUp({ settings: { ...defaultSettings(), gameCount: 8 }, phase: 'running' })
       const page = await mountEditor(slug)
-      await goTo(page, 'Spieleanzahl')
+      await goTo(page, 'Anzahl Spiele')
 
       expect(tieHint(page)).toBeDefined()
     })

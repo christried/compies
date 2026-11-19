@@ -31,20 +31,20 @@
       "licence": "generated"
     },
     "cb-hype": {
-      "candidate": "chip-arpeggio",
-      "source": "scripts/cue-recipes/wheel-voice.mjs, Rezept chip-arpeggio",
+      "candidate": "huepf-blips",
+      "source": "scripts/cue-recipes/wheel-voice.mjs, Rezept huepf-blips",
       "author": null,
       "licence": "generated"
     },
     "cb-gulp": {
-      "candidate": "schluck-wumms",
-      "source": "scripts/cue-recipes/wheel-voice.mjs, Rezept schluck-wumms",
+      "candidate": "glup-bogen",
+      "source": "scripts/cue-recipes/wheel-voice.mjs, Rezept glup-bogen",
       "author": null,
       "licence": "generated"
     },
     "cb-yay": {
-      "candidate": "chirp-fanfare",
-      "source": "scripts/cue-recipes/wheel-voice.mjs, Rezept chirp-fanfare",
+      "candidate": "quiek-hoch",
+      "source": "scripts/cue-recipes/wheel-voice.mjs, Rezept quiek-hoch",
       "author": null,
       "licence": "generated"
     },
@@ -85,20 +85,20 @@
       "licence": "generated"
     },
     "coin-toss": {
-      "candidate": "daumen-flick",
-      "source": "scripts/cue-recipes/coin.mjs, Rezept daumen-flick",
+      "candidate": "filz-wusch",
+      "source": "scripts/cue-recipes/coin.mjs, Rezept filz-wusch",
       "author": null,
       "licence": "generated"
     },
     "coin-spin": {
-      "candidate": "muenz-schimmer",
-      "source": "scripts/cue-recipes/coin.mjs, Rezept muenz-schimmer",
+      "candidate": "glocken-hauch",
+      "source": "scripts/cue-recipes/coin.mjs, Rezept glocken-hauch",
       "author": null,
       "licence": "generated"
     },
     "coin-land": {
-      "candidate": "klirr-wobble",
-      "source": "scripts/cue-recipes/coin.mjs, Rezept klirr-wobble",
+      "candidate": "filz-plumps-klimper",
+      "source": "scripts/cue-recipes/coin.mjs, Rezept filz-plumps-klimper",
       "author": null,
       "licence": "generated"
     },
@@ -109,20 +109,20 @@
       "licence": "generated"
     },
     "lb-swap": {
-      "candidate": "doppel-wisch",
-      "source": "scripts/cue-recipes/standings.mjs, Rezept doppel-wisch",
+      "candidate": "karten-schnipp",
+      "source": "scripts/cue-recipes/standings.mjs, Rezept karten-schnipp",
       "author": null,
       "licence": "generated"
     },
     "lb-count": {
-      "candidate": "zaehlwerk-tick",
-      "source": "scripts/cue-recipes/standings.mjs, Rezept zaehlwerk-tick",
+      "candidate": "chip-blip",
+      "source": "scripts/cue-recipes/standings.mjs, Rezept chip-blip",
       "author": null,
       "licence": "generated"
     },
     "lb-winner": {
-      "candidate": "troete-knall",
-      "source": "scripts/cue-recipes/standings.mjs, Rezept troete-knall",
+      "candidate": "ratsche-konfetti",
+      "source": "scripts/cue-recipes/standings.mjs, Rezept ratsche-konfetti",
       "author": null,
       "licence": "generated"
     },
@@ -133,8 +133,8 @@
       "licence": "generated"
     },
     "drag-snap": {
-      "candidate": "magnet-klick",
-      "source": "scripts/cue-recipes/board.mjs, Rezept magnet-klick",
+      "candidate": "stift-ins-loch",
+      "source": "scripts/cue-recipes/board.mjs, Rezept stift-ins-loch",
       "author": null,
       "licence": "generated"
     },
@@ -145,26 +145,26 @@
       "licence": "generated"
     },
     "cer-drop": {
-      "candidate": "holz-brett",
-      "source": "scripts/cue-recipes/ceremony-run.mjs, Rezept holz-brett",
+      "candidate": "tuch-klatsch",
+      "source": "scripts/cue-recipes/ceremony-run.mjs, Rezept tuch-klatsch",
       "author": null,
       "licence": "generated"
     },
     "cer-row": {
-      "candidate": "holz-marimba",
-      "source": "scripts/cue-recipes/ceremony-run.mjs, Rezept holz-marimba",
+      "candidate": "schwupp-pfeife",
+      "source": "scripts/cue-recipes/ceremony-run.mjs, Rezept schwupp-pfeife",
       "author": null,
       "licence": "generated"
     },
     "cer-run": {
-      "candidate": "holz-stapfen",
-      "source": "scripts/cue-recipes/ceremony-run.mjs, Rezept holz-stapfen",
+      "candidate": "klapper-trab",
+      "source": "scripts/cue-recipes/ceremony-run.mjs, Rezept klapper-trab",
       "author": null,
       "licence": "generated"
     },
     "cer-trip": {
-      "candidate": "holz-stolper",
-      "source": "scripts/cue-recipes/ceremony-run.mjs, Rezept holz-stolper",
+      "candidate": "purzel-ticks",
+      "source": "scripts/cue-recipes/ceremony-run.mjs, Rezept purzel-ticks",
       "author": null,
       "licence": "generated"
     },
@@ -175,20 +175,20 @@
       "licence": "generated"
     },
     "cer-stamp": {
-      "candidate": "gummi-stempel",
-      "source": "scripts/cue-recipes/ceremony-peak.mjs, Rezept gummi-stempel",
+      "candidate": "holz-griff",
+      "source": "scripts/cue-recipes/ceremony-peak.mjs, Rezept holz-griff",
       "author": null,
       "licence": "generated"
     },
     "cer-fanfare": {
-      "candidate": "spielzeug-trompete",
-      "source": "scripts/cue-recipes/ceremony-peak.mjs, Rezept spielzeug-trompete",
+      "candidate": "chip-arpeggio",
+      "source": "scripts/cue-recipes/ceremony-peak.mjs, Rezept chip-arpeggio",
       "author": null,
       "licence": "generated"
     },
     "cer-crowd": {
-      "candidate": "saal-publikum",
-      "source": "scripts/cue-recipes/ceremony-peak.mjs, Rezept saal-publikum",
+      "candidate": "klatsch-publikum",
+      "source": "scripts/cue-recipes/ceremony-peak.mjs, Rezept klatsch-publikum",
       "author": null,
       "licence": "generated"
     },
@@ -199,8 +199,8 @@
       "licence": "generated"
     },
     "cb-hi": {
-      "candidate": "zwei-ton-piep",
-      "source": "scripts/cue-recipes/tour.mjs, Rezept zwei-ton-piep",
+      "candidate": "gleiter-mit-wobble",
+      "source": "scripts/cue-recipes/tour.mjs, Rezept gleiter-mit-wobble",
       "author": null,
       "licence": "generated"
     },

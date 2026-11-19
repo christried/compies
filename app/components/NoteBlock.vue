@@ -46,7 +46,7 @@ const padding = computed(() => (props.size === 'sm' ? 'px-3 py-2.5' : 'px-3.5 py
         <component
           :is="level"
           :id="titleId"
-          class="m-0 font-sans text-[13px] leading-tight font-extrabold text-balance"
+          class="m-0 font-sans text-[15px] leading-tight font-extrabold text-balance"
         >
           {{ kind === 'event' ? t('eventNotes.title') : t('library.notes') }}
         </component>
