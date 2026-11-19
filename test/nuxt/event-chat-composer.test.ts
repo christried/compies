@@ -49,7 +49,7 @@ async function mountLive({ host = false, finished = false, stands = false, wide 
         event: { phase: finished ? 'finished' : 'poll', isHost: host },
         settings: defaultSettings(),
         teams: [team(1), team(2)],
-        members: members({ kitty: stands ? { zone: 'stands' } : { zone: 'team', team: 1 }, larsi: { zone: 'team', team: 2 } }),
+        members: members({ kitty: stands ? { zone: 'stands' } : { zone: 'team', team: 1 }, larsi: { zone: 'team', team: 2 } }).map(member => ({ ...member, isHost: member.id === kitty.id ? host : false })),
         standings: [{ team: 1, rank: 1, points: 0 }, { team: 2, rank: 1, points: 0 }],
         end: { played: 0, gameCount: 6, complete: false, tie: null, finish: null, lastGame: null },
       })
@@ -155,8 +155,15 @@ describe.each([{ host: false }, { host: true }])('deleting in the Chat on the Ev
     const { page } = await mountLive({ host, finished: true, messages: [others, own] })
     await vi.waitFor(() => expect(panel(page).findAll('[data-message-id]')).toHaveLength(2))
 
-    expect(panel(page).findAll('button[aria-label^="Nachricht von"]')).toHaveLength(1)
+    expect(panel(page).findAll('button[aria-label^="Nachricht von"]')).toHaveLength(host ? 2 : 1)
     expect(panel(page).find('input').exists()).toBe(false)
+  })
+
+  it('gives the control of another writer\'s Message to the Host only (#764)', async () => {
+    const { page } = await mountLive({ host, messages: [others, own] })
+    await vi.waitFor(() => expect(panel(page).findAll('[data-message-id]')).toHaveLength(2))
+
+    expect(panel(page).findAll('button[aria-label^="Nachricht von"]').map((control: { attributes: (name: string) => string | undefined }) => control.attributes('aria-label'))).toEqual(host ? ['Nachricht von Larsi löschen', 'Nachricht von Kitty löschen'] : ['Nachricht von Kitty löschen'])
   })
 })
 
