@@ -429,25 +429,25 @@ export interface CeremonyCueInput {
 const ROW_STEP_SEMITONES = 1
 
 /**
- * The cues of the Award ceremony of ONE Winner, ascending by `at` (#743): the banner's drop at the start, a row for each place below (the last
+ * The cues of the Award ceremony, one Winner or a Tie, ascending by `at` (#743, #745): the banner's drop at the start, a row for each place below (the last
  * Place first, at the file's own pitch, each next a semitone higher), the run, then the trip or the bonk by the server's gag, never both, and
  * last the stamp, the fanfare and the crowd, all three at `stampAtMs` (#744). Under reduced motion the plan is the fanfare alone, at `startsAt`,
  * the instant the end frame shows. Every instant is `startsAt` plus a field of `ceremonyTimeline`, the function the tweens are built from, so
- * sound and picture cannot drift. It has no `now` and drops nothing for being past: the player skips a late cue, which is what a late joiner needs.
+ * sound and picture cannot drift. A Tie's instants come from the same function for its Winner count and its grid (a chain for 2 and 3 Winners,
+ * a grid from 4 and, on a phone, for 3), so each device's cues follow its own picture; the trophy's hops and the cards' stamps have no cue.
+ * It has no `now` and drops nothing for being past: the player skips a late cue, which is what a late joiner needs.
  */
 export function ceremonyCuePlan(input: CeremonyCueInput): Cue[] {
   const { startsAt, shape, reducedMotion } = input
   // Reduced motion: the end frame is the whole show, and its sound is the fanfare alone, at the instant the end frame shows (#744, spec #718).
   if (reducedMotion) return [{ id: 'cer-fanfare', at: startsAt }]
-  // #745 gives a Tie the moments it has; until then a ceremony with several Winners is silent under full motion.
-  if (shape.winners > 1) return []
 
   const m = ceremonyTimeline(shape)
   const cues: Cue[] = [{ id: 'cer-drop', at: startsAt }]
   m.rowAtMs.forEach((ms, index) => cues.push({ id: 'cer-row', at: startsAt + ms, rate: 2 ** (index * ROW_STEP_SEMITONES / 12) }))
   cues.push({ id: 'cer-run', at: startsAt + m.runAtMs })
   cues.push(shape.gag === 'trip' ? { id: 'cer-trip', at: startsAt + m.runEndAtMs } : { id: 'cer-bonk', at: startsAt + m.bonkAtMs })
-  // The stamp, and with it the fanfare and the crowd: the peak of the ceremony, at the instant the stamp's tween starts (#744).
+  // The stamp, and with it the fanfare and the crowd: the peak of the ceremony, at the instant the stamp's tween starts (#744). In a Tie it is the plate's „UNENTSCHIEDEN“ (#745).
   cues.push({ id: 'cer-stamp', at: startsAt + m.stampAtMs }, { id: 'cer-fanfare', at: startsAt + m.stampAtMs }, { id: 'cer-crowd', at: startsAt + m.stampAtMs })
   return cues
 }

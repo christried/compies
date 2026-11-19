@@ -9,7 +9,7 @@ import { defaultSettings } from '~~/shared/settings'
 import type { CeremonyView, ResultView, SpinView, WheelView } from '~~/shared/stage'
 import { FakeAudioContext } from '../fake-audio'
 import { kitty, signInAs } from './auth'
-import { serve, viewWithSessions } from './event-page'
+import { restoreScreen, serve, stubScreen, viewWithSessions } from './event-page'
 import { ENDED, FIRST, members, mount, SESSION, STARTED, team, unmountPage } from './event-page-states'
 import { motion } from './motion'
 
@@ -82,6 +82,21 @@ function planAt(startsAt: number, gag: CeremonyGag) {
     { id: 'cer-crowd', at: startsAt + m.stampAtMs, rate: 1 },
   ]
 }
+/** The plan of a Tie of `winners` Winners of four Parties on a screen that lays it out as `grid` (a chain or a grid), by the shared timeline (#745). */
+function tiePlanAt(startsAt: number, gag: CeremonyGag, winners: number, grid: boolean) {
+  const m = ceremonyTimeline({ partyCount: PARTIES, winners, gag, grid })
+  return [
+    { id: 'cer-drop', at: startsAt, rate: 1 },
+    ...m.rowAtMs.map((ms, index) => ({ id: 'cer-row', at: startsAt + ms, rate: 2 ** (index / 12) })),
+    { id: 'cer-run', at: startsAt + m.runAtMs, rate: 1 },
+    gag === 'trip' ? { id: 'cer-trip', at: startsAt + m.runEndAtMs, rate: 1 } : { id: 'cer-bonk', at: startsAt + m.bonkAtMs, rate: 1 },
+    { id: 'cer-stamp', at: startsAt + m.stampAtMs, rate: 1 },
+    { id: 'cer-fanfare', at: startsAt + m.stampAtMs, rate: 1 },
+    { id: 'cer-crowd', at: startsAt + m.stampAtMs, rate: 1 },
+  ]
+}
+/** The cues of the stamp, the fanfare and the crowd: the part of a Tie's plan that follows the screen's grid. */
+const PEAK = ['cer-stamp', 'cer-fanfare', 'cer-crowd']
 /** Drop, three rows, run, the gag, then the stamp, the fanfare and the crowd. */
 const CEREMONY_CUES = 9
 /** A run whose stamp is `ahead` ms away: the page has the time to load and schedule the fanfare, and the test waits (`fanfareSounds`) until it sounds. */
@@ -91,19 +106,18 @@ const fanfareSounds = (ceremony: CeremonyView, gag: CeremonyGag) =>
   vi.waitFor(() => expect(Date.now()).toBeGreaterThanOrEqual(Date.parse(ceremony.startsAt) + ceremonyTimeline({ partyCount: PARTIES, winners: 1, gag, grid: false }).stampAtMs + 50), { timeout: 5000, interval: 20 })
 const shapeOf = (lines: readonly Line[]) => lines.map(({ id, at, rate }) => ({ id, at, rate }))
 
-interface Read { host: boolean, tie?: boolean, ceremony: CeremonyView | null, wheel?: WheelView | null }
+interface Read { host: boolean, tie?: boolean, winners?: number, ceremony: CeremonyView | null, wheel?: WheelView | null }
 
-/** A finished Event of four Parties with the viewer (Kitty) in the first; with a Tie the first two share rank 1. */
+/** A finished Event of four Parties with the viewer (Kitty) in the first; with a Tie the first two share rank 1, with `winners` the first `winners` do (#745). */
 function serveFinished(first: Read) {
-  const read = (slug: string, { host, tie = false, ceremony, wheel = null }: Read) => viewWithSessions(slug, [ENDED_ONE], 0, {
+  const read = (slug: string, { host, tie = false, winners = tie ? 2 : 1, ceremony, wheel = null }: Read) => viewWithSessions(slug, [ENDED_ONE], 0, {
     event: { phase: 'finished', isHost: host },
     settings: defaultSettings(),
     members: members({ kitty: { zone: 'team', team: 1 } }),
     teams: [1, 2, 3, 4].map(position => team(position, `Party ${position}`)),
     results: [resultOf(1), resultOf(2), resultOf(3)],
-    standings: [
-      { team: 1, rank: 1, points: 9 }, { team: 2, rank: tie ? 1 : 2, points: tie ? 9 : 6 }, { team: 3, rank: 3, points: 3 }, { team: 4, rank: 4, points: 0 },
-    ],
+    // The Parties below the Winners keep their position as rank (with 3 Winners Party 4 has rank 4).
+    standings: [1, 2, 3, 4].map(position => (position <= winners ? { team: position, rank: 1, points: 9 } : { team: position, rank: position, points: (4 - position) * 3 })),
     end: { played: 3, gameCount: 3, complete: true, tie: null, finish: null, lastGame: null },
     // The read of a started ceremony says so (#445): the finished stage then shows its row of buttons, „Siegerehrung ansehen“ among them.
     ceremonyShown: ceremony !== null,
@@ -153,6 +167,7 @@ beforeEach(() => {
 
 afterEach(() => {
   unmountPage()
+  restoreScreen()
   vi.restoreAllMocks()
   vi.unstubAllGlobals()
   FakeAudioContext.follows = false
@@ -440,13 +455,162 @@ describe.each([['the Host', true], ['a Member', false]])('the ceremony of one Wi
     expect(served.posts()).toBe(0)
   })
 
-  it('is silent for a Tie (#745), and its files are still requested', async () => {
-    await mount(serveFinished({ host, tie: true, ceremony: ceremonyIn(4000, 'trip', 2) }).slug)
-    await vi.waitFor(() => expect(requestedOf('ceremony')).toEqual(expect.arrayContaining(OWN_FILES)), { timeout: 5000 })
-    await flushPromises()
-    await new Promise(resolve => setTimeout(resolve, 50))
+  // A ceremony that ends a Tie sounds (#745): the same plan on the Tie's own timeline, for its Winner count and this screen's grid.
+  describe('a ceremony that ends a Tie', () => {
+    /** The page schedules exactly this plan, once, every line `scheduled`, the player's sources in the log's order and pitch. */
+    async function expectPlan(plan: ReturnType<typeof tiePlanAt>) {
+      await settled(plan.length)
+      expect(shapeOf(log())).toEqual(plan)
+      expect(log().every(line => line.outcome === 'scheduled')).toBe(true)
+      expect(started().map(source => source.id)).toEqual(log().map(line => line.id))
+      expect(started().map(source => source.rate)).toEqual(log().map(line => line.rate))
+    }
 
-    expect(started()).toEqual([])
+    describe.each<CeremonyGag>(['trip', 'bonk'])('with the gag %s', (gag) => {
+      it('schedules the plan of 2 Winners, a chain on every screen', async () => {
+        stubScreen(true)
+        const ceremony = ceremonyIn(4000, gag, 2)
+        await mount(serveFinished({ host, winners: 2, ceremony }).slug)
+
+        await expectPlan(tiePlanAt(Date.parse(ceremony.startsAt), gag, 2, false))
+      })
+    })
+
+    it('schedules the plan of 3 Winners as a chain on a wide screen and as a grid on a phone: only the stamp, the fanfare and the crowd differ, the phone\'s earlier', async () => {
+      const ceremony = ceremonyIn(4000, 'trip', 3)
+      const startsAt = Date.parse(ceremony.startsAt)
+      stubScreen(true)
+      await mount(serveFinished({ host, winners: 3, ceremony }).slug)
+      await expectPlan(tiePlanAt(startsAt, 'trip', 3, false))
+      const wide = shapeOf(log())
+      unmountPage()
+      FakeAudioContext.instances = []
+      Reflect.deleteProperty(globalThis, '__compiesCueLog')
+
+      stubScreen(false)
+      await mount(serveFinished({ host, winners: 3, ceremony }).slug)
+      await expectPlan(tiePlanAt(startsAt, 'trip', 3, true))
+      const phone = shapeOf(log())
+
+      expect(phone.filter(line => !PEAK.includes(line.id))).toEqual(wide.filter(line => !PEAK.includes(line.id)))
+      for (const id of PEAK) expect(phone.find(line => line.id === id)!.at, id).toBeLessThan(wide.find(line => line.id === id)!.at)
+    })
+
+    it('has no row for 4 Winners of 4 Parties (a grid, nobody below), and still drops, runs, trips and stamps', async () => {
+      stubScreen(true)
+      const ceremony = ceremonyIn(4000, 'trip', 4)
+      await mount(serveFinished({ host, winners: 4, ceremony }).slug)
+
+      await expectPlan(tiePlanAt(Date.parse(ceremony.startsAt), 'trip', 4, true))
+      expect(log().map(line => line.id)).not.toContain('cer-row')
+    })
+
+    it('gives a viewer who crosses the phone\'s width the plan of the new layout: the stamp, the fanfare and the crowd move, the rest is untouched', async () => {
+      const resize = stubScreen(false)
+      const ceremony = ceremonyIn(4000, 'trip', 3)
+      const startsAt = Date.parse(ceremony.startsAt)
+      const grid = tiePlanAt(startsAt, 'trip', 3, true)
+      const chain = tiePlanAt(startsAt, 'trip', 3, false)
+      await mount(serveFinished({ host, winners: 3, ceremony }).slug)
+      await expectPlan(grid)
+      const lines = (plan: typeof grid) => log().filter(line => PEAK.includes(line.id) && plan.some(cue => cue.id === line.id && cue.at === line.at))
+
+      resize(true)
+      await vi.waitFor(() => expect(lines(chain).filter(line => line.outcome === 'scheduled')).toHaveLength(PEAK.length), { timeout: 5000 })
+      await flushPromises()
+
+      expect(lines(grid).map(line => line.outcome)).toEqual(['cancelled', 'cancelled', 'cancelled'])
+      expect(log().filter(line => !PEAK.includes(line.id)).every(line => line.outcome === 'scheduled')).toBe(true)
+      expect(started().filter(source => !PEAK.includes(source.id!)).every(source => source.stopCalls === 0)).toBe(true)
+      expect(started()).toHaveLength(grid.length + PEAK.length)
+
+      resize(false)
+      await vi.waitFor(() => expect(lines(grid).filter(line => line.outcome === 'scheduled')).toHaveLength(PEAK.length), { timeout: 5000 })
+      await flushPromises()
+
+      expect(lines(chain).map(line => line.outcome)).toEqual(['cancelled', 'cancelled', 'cancelled'])
+      expect(started()).toHaveLength(grid.length + 2 * PEAK.length)
+    })
+
+    describe.each<[string, string]>([['skips it („Überspringen“)', 'Überspringen'], ['closes it', 'Schließen']])('a viewer who %s mid-run', (_name, label) => {
+      it('cancels the pending cues, stops the one that sounds and schedules nothing more, as for one Winner', async () => {
+        stubScreen(true)
+        const ceremony = ceremonyIn(2000, 'trip', 2)
+        const cues = tiePlanAt(0, 'trip', 2, false).length
+        await mount(serveFinished({ host, winners: 2, ceremony }).slug)
+        await vi.waitFor(() => expect(started().filter(source => source.id!.startsWith('cer-'))).toHaveLength(cues), { timeout: 5000 })
+
+        await vi.waitFor(() => expect(dialogButton(label)).toBeDefined(), { timeout: 5000 })
+        dialogButton(label)!.click()
+        await flushPromises()
+        await new Promise(resolve => setTimeout(resolve, 20))
+
+        expect(started().find(source => source.id === 'cer-drop')!.stopCalls).toBeGreaterThanOrEqual(1)
+        expect(started().filter(source => source.id !== 'cer-drop').every(source => source.stopCalls >= 1)).toBe(true)
+        expect(log().filter(line => line.id !== 'cer-drop').every(line => line.outcome === 'cancelled')).toBe(true)
+        expect(log().find(line => line.id === 'cer-drop')!.outcome).toBe('scheduled')
+
+        await new Promise(resolve => setTimeout(resolve, 100))
+        expect(started()).toHaveLength(cues)
+      })
+    })
+
+    it('sounds a replay („Nochmal ansehen“) from the click, on this device only', async () => {
+      stubScreen(true)
+      const served = serveFinished({ host, winners: 2, ceremony: ceremonyIn(2000, 'trip', 2) })
+      const cues = tiePlanAt(0, 'trip', 2, false).length
+      await mount(served.slug)
+      await settled(cues)
+      await vi.waitFor(() => expect(dialogButton('Überspringen')).toBeDefined(), { timeout: 5000 })
+      dialogButton('Überspringen')!.click()
+      await vi.waitFor(() => expect(dialogButton('Nochmal ansehen')).toBeDefined(), { timeout: 5000 })
+
+      const clicked = Date.now()
+      dialogButton('Nochmal ansehen')!.click()
+      await settled(2 * cues)
+
+      const replay = log().slice(cues)
+      expect(replay[0]!.id).toBe('cer-drop')
+      for (const line of replay) expect(line.at).toBeGreaterThanOrEqual(clicked)
+      expect(shapeOf(replay)).toEqual(tiePlanAt(replay[0]!.at, 'trip', 2, false))
+      expect(served.posts()).toBe(0)
+    })
+
+    it('gives a late joiner only what is still to come, as for one Winner', async () => {
+      stubScreen(true)
+      // 2.5 s into the run with the bonk: the rows and the run are past, the bonk (3.42 s) and the peak are still ahead.
+      const ceremony = ceremonyIn(-2500, 'bonk', 2)
+      const ahead = tiePlanAt(Date.parse(ceremony.startsAt), 'bonk', 2, false).filter(cue => cue.at > Date.now())
+      await mount(serveFinished({ host, winners: 2, ceremony }).slug)
+      await vi.waitFor(() => expect(started().map(source => source.id)).toContain('cer-bonk'), { timeout: 5000 })
+      await flushPromises()
+
+      expect(ahead.map(cue => cue.id)).toEqual(['cer-bonk', 'cer-stamp', 'cer-fanfare', 'cer-crowd'])
+      expect(log().filter(line => line.outcome === 'scheduled' || line.outcome === 'late').map(({ id, at, rate }) => ({ id, at, rate }))).toEqual(ahead)
+    })
+
+    it('plays the fanfare alone under reduced motion, at the start', async () => {
+      motion('reduced')
+      stubScreen(true)
+      const ceremony = ceremonyIn(4000, 'trip', 2)
+      await mount(serveFinished({ host, winners: 2, ceremony }).slug)
+      await vi.waitFor(() => expect(requestedOf('ceremony')).toEqual(expect.arrayContaining(OWN_FILES)), { timeout: 5000 })
+      await settled(1)
+
+      expect(log().map(line => line.id)).toEqual(['cer-fanfare'])
+      expect(log()[0]!.at).toBe(Date.parse(ceremony.startsAt))
+    })
+
+    it('sounds nothing, logs nothing and requests no file with Ton off', async () => {
+      localStorage.setItem('compies-sound', 'off')
+      await mount(serveFinished({ host, tie: true, ceremony: ceremonyIn(4000, 'trip', 2) }).slug)
+      await flushPromises()
+      await new Promise(resolve => setTimeout(resolve, 80))
+
+      expect(started()).toEqual([])
+      expect(log()).toEqual([])
+      expect(requested()).toEqual([])
+    })
   })
 
   it('cuts what is left when the GSAP chunk fails to load at the start (the static end frame has no show)', async () => {

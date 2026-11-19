@@ -3,7 +3,7 @@ import { buildRun, runGeometry, runPartsOf, type RunBox } from '~/utils/ceremony
 import type { Box } from '~/utils/ceremony-tie-run'
 import { loadGsap } from '~/utils/gsap'
 import { ceremonyCuePlan } from '~/utils/sound-cues'
-import { ceremonyTimeline } from '~~/shared/ceremony'
+import { CEREMONY_ROW_MS, CHIP_STEP_MS, ceremonyTimeline } from '~~/shared/ceremony'
 
 // The Pokal-Lauf's easing and duration (CODING_STANDARDS § Motion, ADR 0015, S1 of the 0.9 review): the tweens of the built timeline carry the
 // named eases and durations of 04-motion § Award ceremony 6b and 12-siegerehrung-unentschieden.md § 6b-T. GSAP's eases are not `--cp-ease-*`
@@ -63,7 +63,7 @@ async function tweensOf(shape: { rows: number, winners: number, grid?: boolean, 
   }
   const timeline = buildRun(gsap, parts, runGeometry(box), { partyCount, winners: shape.winners, grid: shape.grid === true, gag, rigState: () => {}, onBurst: () => {} })
   return (timeline.getChildren(false, true, false) as unknown as Tween[])
-    .filter(tween => tween.targets().every(target => target instanceof HTMLElement))
+    .filter(tween => tween.targets().length > 0 && tween.targets().every(target => target instanceof HTMLElement))
     .map(tween => ({
       part: (tween.targets()[0] as HTMLElement).dataset.part!,
       // Where the tween starts on the timeline, in seconds (#743: the ceremony's cues are held against it).
@@ -127,6 +127,44 @@ describe('the ceremony\'s cues sound where their tweens start (#743)', () => {
     const stamp = seen.find(tween => tween.part === 'stamp' && tween.ease === 'back.out(2.4)' && tween.duration === 0.3)!
     expect(cuesOf('cer-stamp')).toHaveLength(1)
     expect(ms(stamp.start)).toBe(cuesOf('cer-stamp')[0]!.at)
+    expect(cuesOf('cer-fanfare').map(cue => cue.at)).toEqual([cuesOf('cer-stamp')[0]!.at])
+    expect(cuesOf('cer-crowd').map(cue => cue.at)).toEqual([cuesOf('cer-stamp')[0]!.at])
+  })
+
+  // A Tie (#745): the same moments on the Tie's own tweens. `[Parties, Winners, grid]`; the phone's grid of 3 and the cases with nobody below are the edges.
+  const TIES = [[4, 2, false], [5, 3, false], [5, 3, true], [6, 4, true], [2, 2, false], [3, 3, false], [4, 4, true]] as const
+  it.each(TIES.flatMap(([parties, winners, grid]) => (['trip', 'bonk'] as const).map(gag => [parties, winners, grid, gag] as const)))('for %i Parties and %i Winners (grid %s), the %s', async (parties, winners, grid, gag) => {
+    const below = parties - winners
+    const seen = await tweensOf({ rows: below, winners, grid, chips: winners >= 3 && below > 0 }, parties, gag)
+    const cues = ceremonyCuePlan({ startsAt: 0, shape: { partyCount: parties, winners, gag, grid }, reducedMotion: false })
+    const cuesOf = (id: string) => cues.filter(cue => cue.id === id)
+    const m = ceremonyTimeline({ partyCount: parties, winners, gag, grid })
+
+    expect(ms(seen.find(tween => tween.part === 'banner')!.start)).toBe(cuesOf('cer-drop')[0]!.at)
+    // The places below: a row per Party, 450 ms apart up to 2 Winners, a chip 200 ms apart from 3; with none below, no cue and no tween with targets.
+    const rows = seen.find(tween => tween.part === 'row')
+    expect(cuesOf('cer-row')).toHaveLength(below)
+    if (below === 0) expect(rows).toBeUndefined()
+    else {
+      expect(rows!.stagger).toBe(winners >= 3 ? CHIP_STEP_MS / 1000 : CEREMONY_ROW_MS / 1000)
+      cuesOf('cer-row').forEach((cue, index) => expect(ms(rows!.start + index * rows!.stagger!), `row ${index}`).toBe(cue.at))
+    }
+    const run = seen.find(tween => tween.part === 'compibert' && tween.ease === 'none')!
+    expect(ms(run.start)).toBe(cuesOf('cer-run')[0]!.at)
+    expect(ms(run.start + run.duration)).toBe(m.runEndAtMs)
+    if (gag === 'trip') {
+      expect(cuesOf('cer-bonk')).toEqual([])
+      expect(ms(seen.find(tween => tween.part === 'compibert' && tween.ease === 'power2.in' && tween.duration === 0.38)!.start)).toBe(cuesOf('cer-trip')[0]!.at)
+    }
+    else {
+      expect(cuesOf('cer-trip')).toEqual([])
+      const fall = seen.find(tween => tween.part === 'trophy' && tween.ease === 'power2.in' && tween.duration === 0.42)!
+      expect(ms(fall.start + fall.duration)).toBe(cuesOf('cer-bonk')[0]!.at)
+    }
+    // The peak is the plate's „UNENTSCHIEDEN“, not a card's „SIEGER“ stamp or a hop: one stamp cue, with the fanfare and the crowd.
+    const plate = seen.find(tween => tween.part === 'plate-stamp' && tween.ease === 'back.out(2.4)' && tween.duration === 0.32)!
+    expect(cuesOf('cer-stamp')).toHaveLength(1)
+    expect(ms(plate.start)).toBe(cuesOf('cer-stamp')[0]!.at)
     expect(cuesOf('cer-fanfare').map(cue => cue.at)).toEqual([cuesOf('cer-stamp')[0]!.at])
     expect(cuesOf('cer-crowd').map(cue => cue.at)).toEqual([cuesOf('cer-stamp')[0]!.at])
   })
