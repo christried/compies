@@ -121,7 +121,7 @@ describe('the Activity feed on the Event page', () => {
       expect(page.findAll('h1').map(heading => heading.text())).toEqual(['Gleich geht’s los'])
     })
 
-    it('counts nothing while the panel shows the feed, so a narrowed window starts at zero', async () => {
+    it('keeps the count the panel took when the window narrows (#778)', async () => {
       const resize = stubScreen(true)
       const { page } = await mountEvent()
 
@@ -129,9 +129,9 @@ describe('the Activity feed on the Event page', () => {
       resize(false)
       await settle()
 
-      expect(tabs(page)[3]!.attributes('aria-label')).toBeUndefined()
-      await joined('b')
       expect(tabs(page)[3]!.attributes('aria-label')).toBe('Aktivität, 1 neu')
+      await joined('b')
+      expect(tabs(page)[3]!.attributes('aria-label')).toBe('Aktivität, 2 neu')
     })
 
     it('says what the feed promises while nothing happened', async () => {
@@ -173,7 +173,7 @@ describe('the Activity feed on the Event page', () => {
       expect(page.find('[role="log"]').exists()).toBe(false)
     })
 
-    it('forgets the count when the layout turns wide', async () => {
+    it('keeps the count of the feed when the layout turns wide and narrow again, since the panel opens on the Chat (#778)', async () => {
       const resize = stubScreen(false)
       const { page } = await mountEvent()
       await joined('a')
@@ -184,7 +184,7 @@ describe('the Activity feed on the Event page', () => {
       resize(false)
       await settle()
 
-      expect(tabs(page)[3]!.attributes('aria-label')).toBeUndefined()
+      expect(tabs(page)[3]!.attributes('aria-label')).toBe('Aktivität, 1 neu')
     })
 
     it('counts the entries that arrive while the Event tab is shown, says so in the name, and resets when the feed opens', async () => {
