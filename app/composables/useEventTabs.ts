@@ -9,7 +9,7 @@ import type { PanelTab } from '~/components/SidePanel.vue'
 // which tabs exist and where they show: a phone's tab bar (`phone`), the side panel from md up (`panel`). A tab added to the
 // table gets its item in both lists and its view in the page's template (#274 added „Tabelle“ this way). The feed is mounted once,
 // in the side panel from md up and in its own view below; the wide layout is known after mount only, so nothing of the feed
-// renders before. The Chat has its own phone view (#765), and it counts, like the feed, what arrives while another view is shown.
+// renders before. The Chat has its own phone view (#765), and it counts, like the feed, what arrives while another view is shown; the side panel's tabs count by the same rule (#778).
 
 export type EventTabKey = 'event' | 'standings' | 'activity' | 'chat'
 
@@ -47,7 +47,7 @@ const PANEL_DEFAULT: EventTabKey = 'chat'
 /** The tabs that count what they receive while another view is shown: the feed (#274) and the Chat (#765). „Tabelle“ counts nothing. */
 type CountedTab = 'activity' | 'chat'
 
-function isCounted(key: EventTabKey): key is CountedTab {
+function isCounted(key: string): key is CountedTab {
   return key === 'activity' || key === 'chat'
 }
 
@@ -62,39 +62,48 @@ export function useEventTabs(room: Pick<ReturnType<typeof useEventRoom>, 'on'>, 
   const activeView = ref<EventTabKey>('event')
   const unread = reactive<Record<CountedTab, number>>({ activity: 0, chat: 0 })
 
-  // One rule for both counting tabs (#765; #778 reuses it for the panel). Only the phone counts: on a desktop the panel shows them, and a count from there would
-  // be stale once the window narrows. The shown tab counts nothing, and neither does the viewer's own Message. The room sends once and replays nothing, so no de-duplication.
+  // The tab the screen shows: the phone's view below md, the panel's tab from md up (and before the answer, when nothing is on the phone yet) (#778).
+  const shown = computed<string>(() => (wide.value === false ? activeView.value : panelTab.value))
+
+  // One rule for both counting tabs and both layouts (#765, #778). The shown tab counts nothing, and neither does the viewer's own Message.
+  // The room sends once and replays nothing, so no de-duplication.
   function arrived(tab: CountedTab, own = false) {
-    if (own || wide.value !== false || activeView.value === tab) return
+    if (own || shown.value === tab) return
     unread[tab] += 1
   }
   room.on('activity.added', () => arrived('activity'))
   room.on('chat.added', ({ message }) => arrived('chat', message.writerId === viewerId()))
-  watch(wide, (isWide) => {
-    if (isWide) {
-      unread.activity = 0
-      unread.chat = 0
-    }
-  })
+  // Any change of the shown tab clears the count of the tab now shown: a phone's tap, a click or arrow key in the panel, the Tour's switch and its restore, a resize.
+  // Synchronous, so a count is gone the moment the tab is selected, before the next render.
+  watch(shown, (tab) => {
+    if (isCounted(tab)) unread[tab] = 0
+  }, { flush: 'sync' })
 
   function selectView(key: string) {
     activeView.value = isTabKey(key) ? key : 'event'
-    if (isCounted(activeView.value)) unread[activeView.value] = 0
+  }
+
+  /** The badge and the accessible name of a counting tab, `{}` for a tab that does not count. The same for a phone's item and a panel's tab (#778). */
+  function countFields(key: EventTabKey, label: string): { badge?: number, ariaLabel?: string } {
+    if (!isCounted(key)) return {}
+    const open = shown.value === key
+    return {
+      badge: open ? 0 : unread[key],
+      ariaLabel: !open && unread[key] > 0 ? t('event.tabs.unread', { label, n: unread[key] }) : undefined,
+    }
   }
 
   const tabs = computed<TabBarItem[]>(() => PHONE_TABS.map((tab) => {
-    const item = { key: tab.key, label: t(tab.labelKey), icon: tab.icon, current: activeView.value === tab.key }
-    if (!isCounted(tab.key)) return item
-    const counted = {
-      ...item,
-      badge: activeView.value === tab.key ? 0 : unread[tab.key],
-      ariaLabel: activeView.value !== tab.key && unread[tab.key] > 0 ? t('event.tabs.unread', { label: item.label, n: unread[tab.key] }) : undefined,
-    }
+    const label = t(tab.labelKey)
+    const item = { key: tab.key, label, icon: tab.icon, current: activeView.value === tab.key, ...countFields(tab.key, label) }
     // The Tour's step „Aktivität“ points at this item on a phone (#648).
-    return tab.key === 'activity' ? { ...counted, tour: 'tab-activity' } : counted
+    return tab.key === 'activity' ? { ...item, tour: 'tab-activity' } : item
   }))
 
-  const panelTabs = computed<PanelTab[]>(() => PANEL_TABS.map(tab => ({ key: tab.key, label: t(tab.labelKey), icon: tab.icon })))
+  const panelTabs = computed<PanelTab[]>(() => PANEL_TABS.map((tab) => {
+    const label = t(tab.labelKey)
+    return { key: tab.key, label, icon: tab.icon, ...countFields(tab.key, label) }
+  }))
 
   return { wide, panelTab, activeView, unread, tabs, panelTabs, selectView }
 }
