@@ -59,6 +59,8 @@ export const CUE_LENGTHS: Record<CueId, CueLength> = {
   'cer-stamp': { ms: 200, loop: false, docRow: true },
   'cer-fanfare': { ms: 2500, loop: false, docRow: true },
   'cer-crowd': { ms: 2000, loop: false, docRow: true },
+  // No row in compibert-sound.md: the document has no laugh of Compibert's. 500 ms is the spec's table (#718).
+  'cb-laugh': { ms: 500, loop: false, docRow: false },
   // tour
   'cb-hi': { ms: 300, loop: false, docRow: true },
 }

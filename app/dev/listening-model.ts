@@ -65,6 +65,7 @@ export const CUE_BRIEF: Record<CueId, { character: string }> = {
   'cer-stamp': { character: 'heavy rubber stamp „SIEGER“' },
   'cer-fanfare': { character: 'stereo, brassy toy fanfare' },
   'cer-crowd': { character: 'stereo cheer under the fanfare' },
+  'cb-laugh': { character: 'Compibert gets up and laughs after the trophy lands, wordless' },
   // tour
   'cb-hi': { character: 'short happy chirp, 3 variants' },
 }
@@ -91,6 +92,7 @@ export const MOMENT_OF: Record<CueId, Moment> = {
   // ceremony
   'cer-drop': 'ceremony', 'cer-row': 'ceremony', 'cer-run': 'ceremony', 'cer-trip': 'ceremony', 'cer-bonk': 'ceremony',
   'cer-stamp': 'ceremony', 'cer-fanfare': 'ceremony', 'cer-crowd': 'ceremony',
+  'cb-laugh': 'ceremony',
   // tour
   'cb-hi': 'tour',
 }

@@ -1088,6 +1088,40 @@
         "note": "Jubel mit Pfiffen, die nach oben gleiten"
       }
     ],
+    "cb-laugh": [
+      {
+        "name": "kichern-blips",
+        "file": "cb-laugh/kichern-blips.wav",
+        "source": "scripts/make-cue-candidates.mjs, Rezept kichern-blips",
+        "author": null,
+        "licence": "generated",
+        "note": "vier kurze Blips, jeder gleitet eine Quinte hoch und zurück, kichernd"
+      },
+      {
+        "name": "kiekser",
+        "file": "cb-laugh/kiekser.wav",
+        "source": "scripts/make-cue-candidates.mjs, Rezept kiekser",
+        "author": null,
+        "licence": "generated",
+        "note": "ein Kiekser: schneller Gleiter nach oben, fällt zurück, dünn und hell"
+      },
+      {
+        "name": "bauch-glucks",
+        "file": "cb-laugh/bauch-glucks.wav",
+        "source": "scripts/make-cue-candidates.mjs, Rezept bauch-glucks",
+        "author": null,
+        "licence": "generated",
+        "note": "tiefes Bauchglucksen, drei weiche Stöße, leiser werdend"
+      },
+      {
+        "name": "kratz-lacher",
+        "file": "cb-laugh/kratz-lacher.wav",
+        "source": "scripts/make-cue-candidates.mjs, Rezept kratz-lacher",
+        "author": null,
+        "licence": "generated",
+        "note": "drei rauschende Lacher, auf vier Bit zerkratzt"
+      }
+    ],
     "cb-hi": [
       {
         "name": "zwei-ton-piep",

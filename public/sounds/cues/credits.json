@@ -192,6 +192,12 @@
       "author": null,
       "licence": "generated"
     },
+    "cb-laugh": {
+      "candidate": "kichern-blips",
+      "source": "scripts/make-cue-candidates.mjs, Rezept kichern-blips",
+      "author": null,
+      "licence": "generated"
+    },
     "cb-hi": {
       "candidate": "zwei-ton-piep",
       "source": "scripts/make-cue-candidates.mjs, Rezept zwei-ton-piep",
