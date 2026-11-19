@@ -24,5 +24,7 @@ export const CUE_IDS = [
   'cb-laugh',
   // tour
   'cb-hi',
+  // emote
+  'emo-clap', 'emo-haha', 'emo-grr', 'emo-roar',
 ] as const
 export type CueId = (typeof CUE_IDS)[number]

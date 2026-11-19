@@ -203,6 +203,30 @@
       "source": "scripts/cue-recipes/tour.mjs, Rezept zwei-ton-piep",
       "author": null,
       "licence": "generated"
+    },
+    "emo-clap": {
+      "candidate": "drei-klatscher",
+      "source": "scripts/cue-recipes/emote.mjs, Rezept drei-klatscher",
+      "author": null,
+      "licence": "generated"
+    },
+    "emo-haha": {
+      "candidate": "keuch-kichern",
+      "source": "scripts/cue-recipes/emote.mjs, Rezept keuch-kichern",
+      "author": null,
+      "licence": "generated"
+    },
+    "emo-grr": {
+      "candidate": "saege-knurren",
+      "source": "scripts/cue-recipes/emote.mjs, Rezept saege-knurren",
+      "author": null,
+      "licence": "generated"
+    },
+    "emo-roar": {
+      "candidate": "mini-dino",
+      "source": "scripts/cue-recipes/emote.mjs, Rezept mini-dino",
+      "author": null,
+      "licence": "generated"
     }
   }
 }
