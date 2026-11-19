@@ -35,6 +35,7 @@ export const CUE_IDS = [
   // ceremony
   'cer-drop', 'cer-row', 'cer-run', 'cer-trip', 'cer-bonk',
   'cer-stamp', 'cer-fanfare', 'cer-crowd',
+  'cb-laugh',
   // tour
   'cb-hi',
 ] as const
@@ -56,6 +57,7 @@ export const CUE_VOLUME: Record<CueId, number> = {
   // ceremony
   'cer-drop': 55, 'cer-row': 40, 'cer-run': 40, 'cer-trip': 60, 'cer-bonk': 60,
   'cer-stamp': 75, 'cer-fanfare': 100, 'cer-crowd': 60,
+  'cb-laugh': 40,
   // tour
   'cb-hi': 50,
 }
@@ -79,6 +81,7 @@ export const CUE_GROUPS: Record<CueId, readonly [CueGroup, ...CueGroup[]]> = {
   // ceremony
   'cer-drop': ['ceremony'], 'cer-row': ['ceremony'], 'cer-run': ['ceremony'], 'cer-trip': ['ceremony'], 'cer-bonk': ['ceremony'],
   'cer-stamp': ['ceremony'], 'cer-fanfare': ['ceremony'], 'cer-crowd': ['ceremony'],
+  'cb-laugh': ['ceremony'],
   // tour
   'cb-hi': ['tour'],
 }
@@ -431,7 +434,7 @@ const ROW_STEP_SEMITONES = 1
 /**
  * The cues of the Award ceremony, one Winner or a Tie, ascending by `at` (#743, #745): the banner's drop at the start, a row for each place below (the last
  * Place first, at the file's own pitch, each next a semitone higher), the run, then the trip or the bonk by the server's gag, never both, and
- * last the stamp, the fanfare and the crowd, all three at `stampAtMs` (#744). Under reduced motion the plan is the fanfare alone, at `startsAt`,
+ * then the stamp, the fanfare and the crowd, all three at `stampAtMs` (#744), and last the laugh at `getUpAtMs` (#746). Under reduced motion the plan is the fanfare alone, at `startsAt`,
  * the instant the end frame shows. Every instant is `startsAt` plus a field of `ceremonyTimeline`, the function the tweens are built from, so
  * sound and picture cannot drift. A Tie's instants come from the same function for its Winner count and its grid (a chain for 2 and 3 Winners,
  * a grid from 4 and, on a phone, for 3), so each device's cues follow its own picture; the trophy's hops and the cards' stamps have no cue.
@@ -449,5 +452,7 @@ export function ceremonyCuePlan(input: CeremonyCueInput): Cue[] {
   cues.push(shape.gag === 'trip' ? { id: 'cer-trip', at: startsAt + m.runEndAtMs } : { id: 'cer-bonk', at: startsAt + m.bonkAtMs })
   // The stamp, and with it the fanfare and the crowd: the peak of the ceremony, at the instant the stamp's tween starts (#744). In a Tie it is the plate's „UNENTSCHIEDEN“ (#745).
   cues.push({ id: 'cer-stamp', at: startsAt + m.stampAtMs }, { id: 'cer-fanfare', at: startsAt + m.stampAtMs }, { id: 'cer-crowd', at: startsAt + m.stampAtMs })
+  // The laugh: he gets up after the trophy lands and laughs, at the instant the rig turns to `laugh` (#746, spec #718).
+  cues.push({ id: 'cb-laugh', at: startsAt + m.getUpAtMs })
   return cues
 }

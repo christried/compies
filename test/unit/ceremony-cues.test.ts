@@ -67,6 +67,7 @@ describe('ceremonyCuePlan', () => {
       { id: 'cer-stamp', at: START + m.stampAtMs },
       { id: 'cer-fanfare', at: START + m.stampAtMs },
       { id: 'cer-crowd', at: START + m.stampAtMs },
+      { id: 'cb-laugh', at: START + m.getUpAtMs },
     ])
   })
 
@@ -74,14 +75,14 @@ describe('ceremonyCuePlan', () => {
     const m = ceremonyTimeline(shape(4, 'bonk'))
     const cues = plan(shape(4, 'bonk'))
 
-    expect(ids(cues)).toEqual(['cer-drop', 'cer-row', 'cer-row', 'cer-row', 'cer-run', 'cer-bonk', 'cer-stamp', 'cer-fanfare', 'cer-crowd'])
+    expect(ids(cues)).toEqual(['cer-drop', 'cer-row', 'cer-row', 'cer-row', 'cer-run', 'cer-bonk', 'cer-stamp', 'cer-fanfare', 'cer-crowd', 'cb-laugh'])
     expect(cues.find(cue => cue.id === 'cer-bonk')).toEqual({ id: 'cer-bonk', at: START + m.bonkAtMs })
     expect(cues.find(cue => cue.id === 'cer-stamp')).toEqual({ id: 'cer-stamp', at: START + m.stampAtMs })
     expect(ids(plan(shape(4, 'trip')))).not.toContain('cer-bonk')
   })
 
   it('has no row when the Winner is the only Party, and still drops, runs and trips', () => {
-    expect(ids(plan(shape(1)))).toEqual(['cer-drop', 'cer-run', 'cer-trip', 'cer-stamp', 'cer-fanfare', 'cer-crowd'])
+    expect(ids(plan(shape(1)))).toEqual(['cer-drop', 'cer-run', 'cer-trip', 'cer-stamp', 'cer-fanfare', 'cer-crowd', 'cb-laugh'])
   })
 
   it('is ascending by instant for every Party count and both gags', () => {
@@ -98,7 +99,7 @@ describe('ceremonyCuePlan', () => {
   })
 
   it('drops nothing for being past: a plan far in the past is the whole plan', () => {
-    expect(ceremonyCuePlan({ startsAt: 0, shape: shape(4), reducedMotion: false })).toHaveLength(9)
+    expect(ceremonyCuePlan({ startsAt: 0, shape: shape(4), reducedMotion: false })).toHaveLength(10)
   })
 
   it('is the fanfare alone under reduced motion, at the start', () => {
@@ -122,14 +123,15 @@ describe('ceremonyCuePlan', () => {
       { id: 'cer-stamp', at: START + m.stampAtMs },
       { id: 'cer-fanfare', at: START + m.stampAtMs },
       { id: 'cer-crowd', at: START + m.stampAtMs },
+      { id: 'cb-laugh', at: START + m.getUpAtMs },
     ])
   })
 
-  it('lays 3 Winners out as a chain or a grid: the same cues, and only the stamp trio differs, the grid\'s earlier', () => {
+  it('lays 3 Winners out as a chain or a grid: the same cues, and only the stamp trio and the laugh differ, the grid\'s earlier', () => {
     const chain = plan(shape(5, 'trip', { winners: 3, grid: false }))
     const grid = plan(shape(5, 'trip', { winners: 3, grid: true }))
     const earlier = ceremonyTimeline({ partyCount: 5, winners: 3, gag: 'trip', grid: false }).plateAtMs - ceremonyTimeline({ partyCount: 5, winners: 3, gag: 'trip', grid: true }).plateAtMs
-    const peak = ['cer-stamp', 'cer-fanfare', 'cer-crowd']
+    const peak = ['cer-stamp', 'cer-fanfare', 'cer-crowd', 'cb-laugh']
 
     expect(ids(grid)).toEqual(ids(chain))
     expect(grid.filter(cue => !peak.includes(cue.id))).toEqual(chain.filter(cue => !peak.includes(cue.id)))
@@ -161,7 +163,7 @@ describe('ceremonyCuePlan', () => {
   })
 
   it('has no row when nobody finished below the Winners, and still drops, runs, trips and stamps', () => {
-    const none = ['cer-drop', 'cer-run', 'cer-trip', 'cer-stamp', 'cer-fanfare', 'cer-crowd']
+    const none = ['cer-drop', 'cer-run', 'cer-trip', 'cer-stamp', 'cer-fanfare', 'cer-crowd', 'cb-laugh']
 
     expect(ids(plan(shape(2, 'trip', { winners: 2 })))).toEqual(none)
     expect(ids(plan(shape(3, 'trip', { winners: 3 })))).toEqual(none)
