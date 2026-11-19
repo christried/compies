@@ -81,6 +81,7 @@ Each entry: trigger · targets · timeline · reduced twin. Durations in seconds
 - Drop rejected (`member.moveRejected`): `x/y → origin`, 0.6 `EASE.spring`; toast „X war schneller“; `drag-reject`.
 - Others moving: same Flip, no sound.
 - Reduced: no lift scale; position changes with a 0.14 fade.
+- **Deviation (0.17, #742):** the sounds. `drag-pick` at the pick-up of the User's own drag: a mouse after 4 px (`DRAG_DISTANCE`), a finger when the long press arms (300 ms, `LONG_PRESS_MS`), so not at pointerdown. `drag-snap` when the server takes the User's own move (a drop, or the menu's pick), `drag-reject` when it refuses it and on a release over no place, Escape, a cancelled pointer or a drop on the own place. The "for me or others" of the drop line above is the User's own moves only: another Member's move is silent, as the line "Others moving" says. A Host's move of somebody else is the Host's own act. `drag-over` and `drag-longpress` are not built. Under reduced motion the three play. Source: `GameBoard.vue` (`requestMove`, `release`, `pickedUp`), `app/composables/useBoardDrag.ts`.
 
 ### Emote rise [1.0]
 - Trigger: `emote.sent`. Target: sticker above sender avatar.
@@ -126,6 +127,7 @@ Server sends `{startAt, durationMs (3–10 s host setting; reduced clients still
 - **Deviation (0.13.2, #526):** Compibert at the wheel is the bust behind the disc (hand-off 16, option 1b "Hinterm Rad"), not the full figure rising: in along the radius `x −130→0, y 100→0` (sm: `x −100, y 80`), 0.45 `back.out(1.8)` with the opacity over the first 0.14; out the way he came, 0.4 `power2.in`, with the drawn slice (@stop + 2.2 s, Hidden +2.8 s). `excited` from the spin's start, `suspense` at 0.6·D, `cheer` at the stop for 1.6 s (under a Hidden wheel at stop + 0.5 s, reduced motion too), then `idle`. He is told the spin's two instants `{spinStartAt, stopAt}`, `hidden`, `reduced` and the width, never `{startAt, durationMs, hidden}`; his state is a function of the server time (`app/utils/wheel-mascot.ts`) and his travel is one paused GSAP timeline that the wheel's clock moves. Reduced: opacity only, 0.22 s. The reference's eye-follow is not built.
 - **Deviation (0.13.2, #584):** reduced motion's spin carries one turn where the full spin carries 5 to 8: the calm 1.2 s `EASE.snap` run ends at the same stop and sweeps 360 to 720 degrees (one turn plus the way to the drawn slice; peak 3.4 to 6.7 turns a second), not up to 8 turns (peak up to 30 turns a second).
 - **Deviation (0.13.3, #530, #536):** `wheel-tick` is capped in time, not „rate-limited by speed“: of the pin crossings the sound keeps the first and each one at least `TICK_MIN_GAP_MS` = 40 ms after the last kept (at most 25 ticks a second; the sample is 28 ms), and the flapper still kicks at every crossing. The operator kept the 40 ms by ear in the listening session (#535, 2026-11-15).
+- **Deviation (0.17, #671):** Compibert's voice, at his own beats (`mascotMoments`, `app/utils/wheel-mascot.ts`): `cb-hype` at the spin's start (`spinStartAt`), `cb-gulp` at `brakeAt` (`spinStartAt` + 3/5 of the spin, the same instant as the brake at 60 % of `D` above), `cb-yay` at `cheerAt` (`stopAt`; under a Hidden wheel `stopAt` + `REVEAL_AFTER_MS`, 500 ms, for every viewer). The three are the wheel's group's files. Reduced motion: `cb-yay` alone, at the cheer. Source: `wheelVoicePlan`, `app/utils/sound-cues.ts`.
 
 ### Clip overlay [1.0]
 - Open at `clip.startAt`: `scale .96→1, opacity`, 0.36 `EASE.out`. Auto-close at startAt + 30 s: 0.22 `EASE.in` + `veto-clip-close`.
@@ -153,6 +155,7 @@ Times from `round.determined`: `determinedAt`, `vetoEndsAt = determinedAt + 60 s
   - shadow: scale .4/.12 opacity .22 → .3/.08 in the air → 1/.35 on landing.
 - Result banner `scale .4→1.1→1, rotate −4`, 0.38 `EASE.pop`. Sounds `coin-toss` 0, `coin-spin` .18, `coin-land` .74, `coin-result` 1.0.
 - Reduced: coin fades out/in with the final face (0.5), banner appears.
+- **Deviation (0.17, #669):** what plays. `coin-toss` at `startedAt` (the flight's start, progress 0; the commit is `COIN_LEAD_MS`, 1500 ms, before it), `coin-spin` at `startedAt` + 0.18 × 3600 ms (+648 ms), `coin-land` at `startedAt` + 0.74 × 3600 ms (+2664 ms), `coin-result` at `landsAt` (`startedAt` + 3600 ms). The four are the same for Kopf and Schwanz. Reduced motion: `coin-land` and `coin-result` at the same instants; `coin-toss` and `coin-spin` are left out. Source: `coinCuePlan`, `app/utils/sound-cues.ts`; `COIN_SPIN_AT`, `COIN_LAND_AT`, `shared/coin.ts`.
 
 ### Pick & Ban [1.0]
 - Turn change: banner slides `x −24→0` 0.3 `EASE.out` in the acting team's colour; `pb-turn`.
@@ -165,6 +168,7 @@ Times from `round.determined`: `determinedAt`, `vetoEndsAt = determinedAt + 60 s
 - **Deviation (0.12, #425):** on the stage the Standings first rise to the top (11-event-seite § EventPage, 0.12 deviation), and the sequence below starts once the block has arrived; when it is already on top, after the same 0.5 s pause. The side panel's and the phone's Tabelle tab play it as before. Until then the stage's table shows the Standings the page saw before the Result; two Results inside the wait play as one sequence.
 - Rows: Flip reorder, 0.62 `EASE.spring`, stagger 0.04 (`lb-swap`). Points: CpNum count-up 0.6 `power2.out` (`lb-count`, max 15 ticks/s). Delta pill `scale .3→1.15→1` 0.42 pop, delay 0.3. Winner stamp `scale 2→.9→1, rotation 8` 0.48, delay 0.52. Mini celebration: 18 sticker confetti from the winner row + Compibert bust `cheer` beside it (4 s); last place → `sad`. `lb-winner`.
 - Reduced: rows reorder instantly with a 0.2 highlight; numbers jump; no confetti.
+- **Deviation (0.17, #741):** what plays, where the Releases' specs said „No Compibert, no sound“ (#272). At the sequence's start `lb-swap` plays when some Party's rank changed. The counter's ticks (`lb-count`: one per step of `COUNT_TICK_MS`, 1000/15 ms, so at most 15 a second, over the 0.6 s count) follow the one Party whose points change most, up or down (a Correction can lower them); the other counters count silently. `lb-winner` plays 520 ms after the start (`STAMP_DELAY_MS`), only where the stage block draws the stamp. Reduced motion: `lb-swap` and `lb-winner` (at once), no ticks. Source: `standingsCues`, `app/utils/sound-cues.ts`; `countTicks`, `app/utils/count-up.ts`; `STAMP_DELAY_MS`, `app/utils/motion.ts`.
 
 ### Tiebreaker [1.0]
 - „Gleichstand!“ slam: `scale 2→1, rotation −6`, 0.4 `back.out(2.4)`, screen shake `x ±6` ×3 0.05; `tie-alarm`; `tie-drum` loop until spin. Then the wheel as above.
@@ -182,6 +186,7 @@ Started by `ceremony.started {startAt, gag}` and played with `playAt`. Labels `b
 - dance: Compibert gets up (`rotation→0` 0.45 `back.out(2)`) → `laugh` then `dance` synced to the fanfare (120 bpm), `cer-fanfare` + `cer-crowd`.
 - share (+1.4): share card `y 16→0, opacity` 0.35 `back.out(2)`.
 - Skip / reduced: end frame (everything set), no run, no confetti; winner announced via live region.
+- **Deviation (0.17, #743, #744, #745, #746):** what plays, at the instants of `ceremonyTimeline` (`shared/ceremony.ts`), counted from `startsAt`. `cer-drop` at 0. `cer-row` for each place below the Winners at 600 ms, then every 450 ms (every 200 ms from three Winners on, as chips), the last Place first, each next one a semitone higher (playback rate 2^(n/12)). `cer-run` is one 0.7 s file (`CEREMONY_RUN_MS`) for the run, in place of `boot-steps` and the rattle. The gag's sound at the end of the run: `cer-trip`, or `cer-bonk` 920 ms after it (`CEREMONY_BONK_MS`). `cer-stamp`, `cer-fanfare` and `cer-crowd` all at `stampAtMs`, 150 ms after the landing (`STAMP_AFTER_LAND_MS`), not at the dance. `cb-laugh` at `getUpAtMs`, 300 ms after the landing, when the rig turns to `laugh`. Reduced motion: `cer-fanfare` alone, at `startsAt`, the instant the end frame shows. A skip, a close or a new start cuts a fanfare or a crowd that is sounding. Source: `ceremonyCuePlan`, `app/utils/sound-cues.ts`.
 
 ### Countdown [1.4]
 - Its motion is specified in `13-countdown.md` § „04-motion addition“ (state changes `dur-fast` `ease-snap`, the tick and the zero burst, the entrance, reduced motion). § Motion citations of a Countdown animation resolve there.
@@ -192,6 +197,7 @@ Started by `ceremony.started {startAt, gag}` and played with `playAt`. Labels `b
 
 ### Compibert moment slots (4a) [1.0]
 - Rise in beside the wheel (the bust, see § Lucky Wheel, Deviation (0.13.2, #526)) / winner row: `y 180→0` 0.45 `back.out(1.8)`; leave `y 0→180` 0.4 `power2.in`. Header head-logo is always there and reacts (idle · cheer · confused).
+- **Deviation (0.17, #671, #746, #747):** Compibert has a voice, wordless, at three moments: the wheel (`cb-hype`, `cb-gulp`, `cb-yay`, see § Lucky Wheel), the Award ceremony (`cb-laugh`, see § Award ceremony) and the Tour (`cb-hi` when the greeting step shows, `cb-yay` when the end step shows). No speech bubble, no text. Source: `wheelVoicePlan`, `ceremonyCuePlan`, `tourStepCue`, `app/utils/sound-cues.ts`.
 
 ### Construction page [MVP]
 - No motion except Compibert idle (breath, blink, eye-follow) in full motion. The tape does not scroll. Reduced: still pose.
