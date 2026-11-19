@@ -2,10 +2,11 @@
 import { Crown } from '@lucide/vue'
 import { teamNameAt } from '~/utils/board'
 import { formatActivityTime } from '~/utils/berlin-time'
-import { groupMessages, mergeMessages } from '~/utils/chat'
+import { groupMessages, mergeMessages, splitMessageText } from '~/utils/chat'
 import { chatRise } from '~/utils/motion'
 import type { Message, MessagePage } from '~~/shared/chat'
 import type { BoardTeam, MemberView } from '~~/shared/event'
+import { NOTES_LINK_REL } from '~~/shared/notes-doc'
 
 // The Chat (#761, GLOSSARY: Chat, 02-components § ChatPanel, spec #719 § A), read only: the Event's Messages, oldest at the top and the newest at the bottom, scrolled to the
 // end on load. It follows the Activity feed (`ActivityFeed.vue`): the first page from the Chat's endpoint, what the room sends (`chat.added`) at once, the first page
@@ -242,7 +243,16 @@ const groups = computed(() => groupMessages(messages.value).map((group) => {
                 class="border-2 border-line px-3 py-2 text-[14px] leading-[1.4]"
                 :class="[group.own ? 'rounded-[14px_14px_4px_14px] bg-primary text-on-primary' : 'rounded-[14px_14px_14px_4px] bg-surface text-ink']"
               >
-                <span class="[overflow-wrap:anywhere]">{{ message.text }}</span>
+                <span class="[overflow-wrap:anywhere]"><template
+                  v-for="(piece, index) in splitMessageText(message.text)"
+                  :key="index"
+                ><a
+                  v-if="piece.href"
+                  :href="piece.href"
+                  target="_blank"
+                  :rel="NOTES_LINK_REL"
+                  class="underline underline-offset-2"
+                >{{ piece.text }}</a><template v-else>{{ piece.text }}</template></template></span>
               </div>
             </template>
           </div>
