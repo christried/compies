@@ -15,6 +15,7 @@ const ROOM_TYPES: Record<RoomMessageType, true> = {
   'presence.leave': true,
   'clock.pong': true,
   'veto.cast': true,
+  'emote.sent': true,
 }
 
 const root = resolve(import.meta.dirname, '../..')

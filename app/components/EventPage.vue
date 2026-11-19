@@ -85,6 +85,8 @@ const feed = computed(() => feedSessions(data.value?.sessions ?? []))
 
 // The cast reaches the casting Party's Users only (a named send, no `event.changed`): their pages read again to show the seal.
 room.on('veto.cast', () => void refresh())
+// An Emote that arrives: #668 draws it above the sender's avatar and plays its cue. Listened for from #767 on, since room-listeners.test.ts wants a page listener per message type.
+room.on('emote.sent', () => {})
 
 /** Whether the Veto bar covers the bottom of the page: the stage then gets room under its last block (F4), and the Clip shares the width with it held sideways (#584). */
 const vetoBarShown = ref(false)
