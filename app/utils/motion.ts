@@ -1,5 +1,5 @@
-import { EMOTE_COOLDOWN_MS } from '../../shared/emote'
 import { MD_QUERY } from '../composables/useMediaQuery'
+import { EMOTE_COOLDOWN_MS } from '~~/shared/emote'
 
 /** Whether motion is reduced, by the device or the in-app setting: the tokens put it in `--cp-motion` for JS. */
 export function reducedMotion() {
