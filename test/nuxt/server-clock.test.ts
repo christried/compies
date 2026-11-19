@@ -23,7 +23,7 @@ function fakeRoom(link: (n: number) => Link, enabled = true) {
   const state = ref<'connecting' | 'open' | 'closed'>('closed')
   const handlers = new Map<string, Handler[]>()
   const anyHandlers: Handler[] = []
-  const sent: ClientMessage[] = []
+  const sent: Extract<ClientMessage, { type: 'clock.ping' }>[] = []
   function say(message: RoomMessage, serverTime = serverNow()) {
     const wrapped = envelope(message, serverTime)
     for (const handler of anyHandlers) handler(wrapped)
@@ -41,6 +41,8 @@ function fakeRoom(link: (n: number) => Link, enabled = true) {
       return () => undefined
     },
     send: (message: ClientMessage) => {
+      // This room's clock only ever sends pings (the Emote is sent by #668).
+      if (message.type !== 'clock.ping') return
       const way = link(sent.length)
       sent.push(message)
       if (!way) return

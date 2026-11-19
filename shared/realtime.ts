@@ -5,6 +5,7 @@
 
 import type { ActivityEntry } from './activity'
 import type { Place } from './board'
+import type { EmoteId } from './emote'
 
 export const ROOM_PROTOCOL_VERSION = 1
 
@@ -32,6 +33,8 @@ export type RoomMessage
    * send, #227), the Host only when the Host plays in it; never broadcast, so no other Party learns that someone vetoed.
    */
     | { type: 'veto.cast', drawId: string, team: number }
+  /** A Member's Emote (#767), passed on by the room to every socket, the sender's included. `userId` is the token's, `sound`: the room's mark that it may play a cue (at most three a second). */
+    | { type: 'emote.sent', userId: string, emote: EmoteId, sound: boolean }
 
 export type RoomMessageType = RoomMessage['type']
 
@@ -46,8 +49,10 @@ export function envelope<M extends RoomMessage>(message: M, serverTime: number):
   return { ...message, v: ROOM_PROTOCOL_VERSION, serverTime }
 }
 
-/** What a client says to the room. Moves, words and Session actions are HTTP calls to Nuxt, never socket messages. */
-export type ClientMessage = { type: 'clock.ping', t0: number }
+/** What a client says to the room. Moves, words and Session actions are HTTP calls to Nuxt, never socket messages; the Emote is the one exception (ADR 0013, amendment of 2026-11-16), and it names no sender: the room knows it from the token. */
+export type ClientMessage
+  = | { type: 'clock.ping', t0: number }
+    | { type: 'emote.send', emote: EmoteId }
 
 // The heartbeat is plain text, not JSON, so the runtime answers it without waking the room (#162): the client sends
 // `ping` every HEARTBEAT_MS and the room's auto-response says `pong`.

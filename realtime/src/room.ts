@@ -1,4 +1,5 @@
 import { Server, type Connection, type ConnectionContext, type WSMessage } from 'partyserver'
+import { EMOTE_COOLDOWN_MS, EMOTE_SOUND_WINDOW_MS, isEmoteId, judgeEmote, type EmoteId } from '../../shared/emote'
 import { isRecord } from '../../shared/record'
 import { HEARTBEAT_PING, HEARTBEAT_PONG, ROOM_PROTOCOL_VERSION, SILENT_AFTER_MS, envelope, type RoomMessage } from '../../shared/realtime'
 
@@ -23,12 +24,20 @@ export interface RoomConnectionState {
  * One room per Event, named by the Event id (ADR 0012, ADR 0013). It holds sockets and fans messages out; it keeps no
  * Event state, so nothing is lost when it hibernates or the Worker is deployed. Nuxt decides everything and tells
  * the room what to send through the Worker's signed publish call. The room's own messages are presence (#162: who
- * is online, derived from the open sockets so it survives hibernation) and the clock (`clock.pong`); what else a
- * client sends is ignored. Nuxt's publish reaches every socket, or only the sockets of named Users (#227, sealed
- * Vetoes), and the room keeps no Event state either way.
+ * is online, derived from the open sockets so it survives hibernation), the clock (`clock.pong`) and, from 0.18
+ * (#767), the Emote: `emote.send` is passed on as `emote.sent` to every socket, under the first two rules the room
+ * holds (one Emote per Member every two seconds, at most three a second that carry a sound), whose counters live in
+ * its memory only. The room still keeps no Event state and no schedule, so a hibernation or a deploy loses only those
+ * counters; anything else a client sends is ignored. Nuxt's publish reaches every socket, or only the sockets of named
+ * Users (#227, sealed Vetoes), and the room keeps no Event state either way.
  */
 export class EventRoom extends Server {
   static options = { hibernate: true }
+
+  /** The accepted Emote times of each Member (by user, so two sockets share them), kept for the Member's cooldown. */
+  #emoteTimes = new Map<string, number[]>()
+  /** The times of the accepted Emotes of the whole room that carried a sound, kept for the sound window. */
+  #soundTimes: number[] = []
 
   constructor(ctx: DurableObjectState, env: Cloudflare.Env) {
     super(ctx, env)
@@ -64,8 +73,8 @@ export class EventRoom extends Server {
     await this.#keepSweeping()
   }
 
-  onMessage(connection: Connection, message: WSMessage): void {
-    // Moves, words and Session actions are HTTP calls to Nuxt, never socket messages (spec #153 § Protocol).
+  onMessage(connection: Connection<RoomConnectionState>, message: WSMessage): void {
+    // Moves, words and Session actions are HTTP calls to Nuxt, never socket messages (spec #153 § Protocol); the Emote is the one exception (ADR 0013, amendment of 2026-11-16).
     if (typeof message !== 'string') return
     let parsed: unknown
     try {
@@ -77,6 +86,31 @@ export class EventRoom extends Server {
     if (isRecord(parsed) && parsed.type === 'clock.ping' && typeof parsed.t0 === 'number' && Number.isFinite(parsed.t0)) {
       this.#send(connection, { type: 'clock.pong', t0: parsed.t0 })
     }
+    else if (isRecord(parsed) && parsed.type === 'emote.send' && isEmoteId(parsed.emote)) {
+      this.#emote(connection, parsed.emote)
+    }
+  }
+
+  /**
+   * Passes a Member's Emote on to every socket, the sender's included, when both rules allow it (#767). The sender is
+   * the user of the socket's token, never a field of the message. A refused Emote is dropped without an answer and
+   * without being recorded, so it does not extend the Member's wait. The counters are plain fields: a hibernation resets them.
+   */
+  #emote(connection: Connection<RoomConnectionState>, emote: EmoteId) {
+    const state = connection.state
+    if (!state?.sub || state.dropped) return
+    const now = Date.now()
+    this.#soundTimes = this.#soundTimes.filter(time => now - time < EMOTE_SOUND_WINDOW_MS)
+    for (const [sub, times] of this.#emoteTimes) {
+      const recent = times.filter(time => now - time < EMOTE_COOLDOWN_MS)
+      if (recent.length > 0) this.#emoteTimes.set(sub, recent)
+      else this.#emoteTimes.delete(sub)
+    }
+    const verdict = judgeEmote({ member: this.#emoteTimes.get(state.sub) ?? [], sounded: this.#soundTimes }, now)
+    if (!verdict.allowed) return
+    this.#emoteTimes.set(state.sub, [...this.#emoteTimes.get(state.sub) ?? [], now])
+    if (verdict.sound) this.#soundTimes.push(now)
+    this.#broadcast({ type: 'emote.sent', userId: state.sub, emote, sound: verdict.sound })
   }
 
   onClose(connection: Connection<RoomConnectionState>): void {

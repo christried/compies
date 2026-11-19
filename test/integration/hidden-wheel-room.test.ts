@@ -34,10 +34,10 @@ describe('Hidden wheel secrecy (#148)', () => {
   })
 
   // Every message type Nuxt sends to the room must be produced by this flow (#165): the type check fails until a new
-  // type is added to SERVER_SENT and to a step of lobbyFlow. The Worker sends its own types (presence, the clock).
+  // type is added to SERVER_SENT and to a step of lobbyFlow. The Worker sends its own types (presence, the clock, the Emote).
   describe('the room and the Activity feed under a Hidden wheel (#165)', () => {
     const SERVER_SENT = ['event.changed', 'activity.added', 'member.moved', 'veto.cast'] as const satisfies readonly RoomMessageType[]
-    type WorkerSent = 'presence.sync' | 'presence.join' | 'presence.leave' | 'clock.pong'
+    type WorkerSent = 'presence.sync' | 'presence.join' | 'presence.leave' | 'clock.pong' | 'emote.sent'
     const everyTypeListed: Exclude<RoomMessageType, (typeof SERVER_SENT)[number] | WorkerSent> extends never ? true : never = true
 
     const LOBBY_SLOTS = ['2090-10-30T20:30', '2090-10-31T19:00']
