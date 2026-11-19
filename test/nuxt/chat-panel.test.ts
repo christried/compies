@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { DOMWrapper } from '@vue/test-utils'
 import ChatPanel from '~/components/ChatPanel.vue'
 import ToastStack from '~/components/ToastStack.vue'
+import { useToast } from '~/composables/useToast'
 import TeamMark from '~/components/TeamMark.vue'
 import UserAvatar from '~/components/UserAvatar.vue'
 import type { DeletedMessage, LiveMessage, Message, MessagePage } from '~~/shared/chat'
@@ -766,8 +767,8 @@ describe('ChatPanel', () => {
     const bubble = (wrapper: Mounted['wrapper'], id: string) => wrapper.find(`[data-message-id="${id}"]`)
     /** The control of one Message: the button in the row of its bubble. */
     const controlOf = (wrapper: Mounted['wrapper'], id: string) => {
-      const found = bubble(wrapper, id).element.parentElement?.querySelector('button')
-      return found ? new DOMWrapper(found) : undefined
+      const found = bubble(wrapper, id).element.nextElementSibling
+      return found?.tagName === 'BUTTON' ? new DOMWrapper(found) : undefined
     }
     const controls = (wrapper: Mounted['wrapper']) => wrapper.findAll('button[aria-label^="Nachricht von"]')
     const undoButton = (stack: Deleting['stack']) => stack.findAll('button').find(button => button.text() === 'Rückgängig')
@@ -847,6 +848,261 @@ describe('ChatPanel', () => {
       expect(stack.find('[role="status"]').exists()).toBe(false)
       await settle()
       expect(served.deletes).toEqual([])
+    })
+
+    describe('each end of the toast sends the call once', () => {
+      /** Deletes the Message `a` on a fresh page and returns it. */
+      async function deleteA() {
+        const page = await mountDeleting([live('a', SANNE, 0, 'weg')])
+        await controlOf(page.wrapper, 'a')!.trigger('click')
+        await settle()
+        expect(page.served.deletes).toEqual([])
+        return page
+      }
+      /** What a second end does after the first one sent: nothing more. */
+      async function endAgain({ wrapper, served }: Deleting) {
+        window.dispatchEvent(new Event('pagehide'))
+        wrapper.unmount()
+        await settle()
+        expect(served.deletes).toEqual(['a'])
+      }
+
+      it('sends nothing at 4999 ms and the call at 5000 ms', async () => {
+        const page = await mountDeleting([live('a', SANNE, 0)])
+        vi.useFakeTimers()
+        await controlOf(page.wrapper, 'a')!.trigger('click')
+
+        await vi.advanceTimersByTimeAsync(4999)
+        expect(page.stack.find('[role="status"]').exists()).toBe(true)
+        expect(page.served.deletes).toEqual([])
+
+        await vi.advanceTimersByTimeAsync(1)
+        expect(page.stack.find('[role="status"]').exists()).toBe(false)
+        vi.useRealTimers()
+        await vi.waitFor(() => expect(page.served.deletes).toEqual(['a']))
+        await endAgain(page)
+      })
+
+      it('sends the call at once when the toast is dismissed with ✕', async () => {
+        const page = await deleteA()
+
+        await closeButton(page.stack)!.trigger('click')
+        await vi.waitFor(() => expect(page.served.deletes).toEqual(['a']))
+        await endAgain(page)
+      })
+
+      it('sends the call at once when the page is left (the panel unmounts), and dismisses the toast', async () => {
+        const page = await deleteA()
+
+        page.wrapper.unmount()
+        await vi.waitFor(() => expect(page.served.deletes).toEqual(['a']))
+        await settle()
+        expect(page.stack.find('[role="status"]').exists()).toBe(false)
+        await endAgain(page)
+      })
+
+      it('sends the call at once on pagehide', async () => {
+        const page = await deleteA()
+
+        window.dispatchEvent(new Event('pagehide'))
+        await vi.waitFor(() => expect(page.served.deletes).toEqual(['a']))
+        await endAgain(page)
+      })
+
+      it('sends the call at once when a fourth toast evicts this one from the stack', async () => {
+        const page = await deleteA()
+
+        for (const text of ['eins', 'zwei', 'drei']) useToast().toast({ tone: 'info', text })
+        await vi.waitFor(() => expect(page.served.deletes).toEqual(['a']))
+        await endAgain(page)
+      })
+    })
+
+    it('shows the line in place of the Message, in its group, once the call is answered, and nothing before', async () => {
+      const { wrapper, stack, served } = await mountDeleting([live('a', SANNE, 0, 'eins'), live('b', SANNE, 10, 'zwei'), live('c', SANNE, 20, 'drei')])
+
+      await controlOf(wrapper, 'b')!.trigger('click')
+      await settle()
+      expect(texts(wrapper)).toEqual(['eins', 'drei'])
+      await closeButton(stack)!.trigger('click')
+      await vi.waitFor(() => expect(texts(wrapper)).toEqual(['eins', 'Gelöscht', 'drei']))
+
+      expect(served.deletes).toEqual(['b'])
+      expect(wrapper.findAll('time')).toHaveLength(1)
+      expect(wrapper.findAll('b')).toHaveLength(1)
+      expect(controlOf(wrapper, 'b')).toBeUndefined()
+      expect(controls(wrapper)).toHaveLength(2)
+    })
+
+    it('shows the line once when the room\'s chat.deleted comes before the answer, and when it comes after', async () => {
+      const first = await mountDeleting([live('a', SANNE, 0, 'eins')])
+      await controlOf(first.wrapper, 'a')!.trigger('click')
+      await settle()
+      first.send({ type: 'chat.deleted', id: 'a', deletedBy: 'writer' })
+      await settle()
+      await closeButton(first.stack)!.trigger('click')
+      await vi.waitFor(() => expect(first.served.deletes).toEqual(['a']))
+      await settle()
+      expect(texts(first.wrapper)).toEqual(['Gelöscht'])
+
+      const second = await mountDeleting([live('a', SANNE, 0, 'eins')])
+      await controlOf(second.wrapper, 'a')!.trigger('click')
+      await settle()
+      await closeButton(second.stack)!.trigger('click')
+      await vi.waitFor(() => expect(texts(second.wrapper)).toEqual(['Gelöscht']))
+      second.send({ type: 'chat.deleted', id: 'a', deletedBy: 'writer' })
+      await settle()
+      expect(texts(second.wrapper)).toEqual(['Gelöscht'])
+    })
+
+    describe('chat.deleted from the room', () => {
+      it('turns another writer\'s shown Message into „Vom Host gelöscht“ or „Gelöscht“ in place, group and name line kept, without a rise', async () => {
+        const { wrapper, send } = await mountDeleting([live('a', LARSI, 0, 'eins'), live('b', LARSI, 10, 'zwei'), live('c', LARSI, 20, 'drei')])
+        expect(texts(wrapper)).toEqual(['eins', 'zwei', 'drei'])
+
+        send({ type: 'chat.deleted', id: 'b', deletedBy: 'host' })
+        send({ type: 'chat.deleted', id: 'c', deletedBy: 'writer' })
+        await settle()
+
+        expect(texts(wrapper)).toEqual(['eins', 'Vom Host gelöscht', 'Gelöscht'])
+        expect(wrapper.findAll('b')).toHaveLength(1)
+        expect(wrapper.findAll('time')).toHaveLength(1)
+        expect(animated).toHaveLength(0)
+      })
+
+      it('changes nothing for an id it does not hold or a Message that is deleted already', async () => {
+        const { wrapper, send } = await mountDeleting([live('a', LARSI, 0, 'eins'), gone('b', LARSI, 10, 'host')])
+
+        send({ type: 'chat.deleted', id: 'zzz', deletedBy: 'host' })
+        send({ type: 'chat.deleted', id: 'b', deletedBy: 'writer' })
+        await settle()
+
+        expect(texts(wrapper)).toEqual(['eins', 'Vom Host gelöscht'])
+      })
+
+      it('keeps a pending Message hidden through a re-read that brings it again, and the undo shows it', async () => {
+        const { wrapper, stack, state, served } = await mountDeleting([live('a', SANNE, 0, 'meins'), live('b', LARSI, 10, 'deins')])
+        await controlOf(wrapper, 'a')!.trigger('click')
+        await settle()
+
+        state.value = 'closed'
+        await settle()
+        state.value = 'open'
+        await vi.waitFor(() => expect(served.reads).toBe(2))
+        await settle()
+        expect(texts(wrapper)).toEqual(['deins'])
+
+        await undoButton(stack)!.trigger('click')
+        await settle()
+        expect(texts(wrapper)).toEqual(['meins', 'deins'])
+        expect(served.reads).toBe(2)
+      })
+
+      it('does not unhide a pending Message when the room says it is deleted', async () => {
+        const { wrapper, send } = await mountDeleting([live('a', SANNE, 0, 'meins')])
+        await controlOf(wrapper, 'a')!.trigger('click')
+        await settle()
+
+        send({ type: 'chat.deleted', id: 'a', deletedBy: 'writer' })
+        await settle()
+
+        expect(texts(wrapper)).toEqual([])
+      })
+    })
+
+    it('keeps the undo of each of two deletes in a row: the first „Rückgängig“ restores the first only, the second ends and sends its id only', async () => {
+      const { wrapper, stack, served } = await mountDeleting([live('a', SANNE, 0, 'eins'), live('b', SANNE, 10, 'zwei')])
+
+      await controlOf(wrapper, 'a')!.trigger('click')
+      await controlOf(wrapper, 'b')!.trigger('click')
+      await settle()
+      expect(stack.findAll('[role="status"]')).toHaveLength(2)
+      expect(texts(wrapper)).toEqual([])
+
+      await undoButton(stack)!.trigger('click')
+      await settle()
+      expect(texts(wrapper)).toEqual(['eins'])
+      expect(stack.findAll('[role="status"]')).toHaveLength(1)
+
+      await closeButton(stack)!.trigger('click')
+      await vi.waitFor(() => expect(texts(wrapper)).toEqual(['eins', 'Gelöscht']))
+      expect(served.deletes).toEqual(['b'])
+    })
+
+    it.each([
+      { answer: 'server-error' as const, words: 'Konnte nicht speichern. Nochmal versuchen?' },
+      { answer: 'refused' as const, words: 'Du kannst nur deine eigenen Nachrichten löschen.' },
+    ])('puts the Message back with its control and an error toast when the call fails ($answer)', async ({ answer, words }) => {
+      const { wrapper, stack, served } = await mountDeleting([live('a', SANNE, 0, 'meins')])
+      served.deleteAnswer = answer
+
+      await controlOf(wrapper, 'a')!.trigger('click')
+      await settle()
+      expect(texts(wrapper)).toEqual([])
+      await closeButton(stack)!.trigger('click')
+
+      await vi.waitFor(() => expect(texts(wrapper)).toEqual(['meins']))
+      expect(controlOf(wrapper, 'a')).toBeDefined()
+      expect(served.deletes).toEqual(['a'])
+      await vi.waitFor(() => expect(stack.get('[role="alert"]').text()).toContain(words))
+    })
+
+    it('keeps the control on a finished page, where the composer is gone, and deletes end to end', async () => {
+      const { wrapper, stack, served } = await mountDeleting([live('a', SANNE, 0, 'meins')], { finished: true })
+
+      expect(wrapper.find('input').exists()).toBe(false)
+      expect(controls(wrapper)).toHaveLength(1)
+      await controlOf(wrapper, 'a')!.trigger('click')
+      await settle()
+      await closeButton(stack)!.trigger('click')
+
+      await vi.waitFor(() => expect(texts(wrapper)).toEqual(['Gelöscht']))
+      expect(served.deletes).toEqual(['a'])
+      expect(wrapper.text()).toContain('Das Event ist beendet. Du kannst nur noch lesen.')
+    })
+
+    describe('with 0, 1 and 2 Messages and the longest text', () => {
+      it('has no control without a Message', async () => {
+        const { wrapper } = await mountDeleting([])
+
+        expect(controls(wrapper)).toHaveLength(0)
+        expect(wrapper.text()).toContain('Alle')
+      })
+
+      it('shows no empty box while the only Message is pending, and its line when the call is answered', async () => {
+        const { wrapper, stack } = await mountDeleting([live('a', SANNE, 0, 'allein')])
+
+        await controlOf(wrapper, 'a')!.trigger('click')
+        await settle()
+        expect(texts(wrapper)).toEqual([])
+        expect(wrapper.text()).not.toContain('Alle')
+        await closeButton(stack)!.trigger('click')
+
+        await vi.waitFor(() => expect(texts(wrapper)).toEqual(['Gelöscht']))
+        expect(wrapper.text()).not.toContain('Alle')
+      })
+
+      it('lets the other of two Messages keep its text and its control while one is deleted', async () => {
+        const { wrapper, stack } = await mountDeleting([live('a', SANNE, 0, 'eins'), live('b', SANNE, 10, 'zwei')])
+
+        await controlOf(wrapper, 'a')!.trigger('click')
+        await settle()
+        await closeButton(stack)!.trigger('click')
+
+        await vi.waitFor(() => expect(texts(wrapper)).toEqual(['Gelöscht', 'zwei']))
+        expect(controlOf(wrapper, 'a')).toBeUndefined()
+        expect(controlOf(wrapper, 'b')).toBeDefined()
+      })
+
+      it('keeps the control of a 500-character own Message in the same row as its bubble', async () => {
+        const text = 'x'.repeat(MESSAGE_MAX)
+        const { wrapper } = await mountDeleting([live('a', SANNE, 0, text)])
+
+        const control = controlOf(wrapper, 'a')!
+        expect(bubble(wrapper, 'a').text()).toBe(text)
+        expect(control.element.parentElement).toBe(bubble(wrapper, 'a').element.parentElement)
+        expect(control.classes()).toContain('flex-none')
+      })
     })
   })
 })

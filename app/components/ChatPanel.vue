@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { CircleAlert, Crown, Send, Trash2 } from '@lucide/vue'
-import { apiFailure } from '~/utils/api-error'
+import { apiErrorKey, apiFailure } from '~/utils/api-error'
 import { teamNameAt } from '~/utils/board'
 import { formatActivityTime } from '~/utils/berlin-time'
-import { groupMessages, mergeMessages, splitMessageText } from '~/utils/chat'
+import { groupMessages, markDeleted, mergeMessages, splitMessageText } from '~/utils/chat'
 import { chatRise } from '~/utils/motion'
 import { MESSAGE_MAX, parseMessageText } from '~~/shared/message-text'
 import { characterCount, cutToCharacters } from '~~/shared/text'
@@ -182,18 +182,62 @@ function onEnter(event: KeyboardEvent) {
 // that brings it again leaves it hidden), a toast offers „Rückgängig“ for 5 s, and the call goes out when the toast ends.
 const UNDO_MS = 5000
 const hidden = ref<string[]>([])
-const { toast } = useToast()
+const { toast, toasts, dismiss } = useToast()
+/** Message id → the id of its toast, for each delete not sent yet. Not reactive: nothing is drawn from it. */
+const pending = new Map<string, number>()
+
+const unhide = (id: string) => {
+  hidden.value = hidden.value.filter(item => item !== id)
+}
+
+/** The call: the answer is the Message as stored (the line, also when the Host or a racing delete was first); a failure puts the Message back. Sent once, whoever asks first. */
+async function flush(id: string) {
+  if (!pending.delete(id)) return
+  try {
+    // `keepalive` lets the call outlive a page that is being left.
+    const answer = await $fetch<Message>(`/api/e/${props.slug}/messages/${id}`, { method: 'DELETE', keepalive: true })
+    messages.value = mergeMessages(messages.value, [answer])
+    unhide(id)
+  }
+  catch (error) {
+    unhide(id)
+    toast({ tone: 'error', text: t(apiErrorKey(error, 'error.saveFailed')) })
+  }
+}
 
 function requestDelete(id: string) {
   hidden.value = [...hidden.value, id]
-  toast({ tone: 'info', text: t('chat.deletedToast'), duration: UNDO_MS, action: { label: t('chat.undo'), run: () => undo(id) } })
+  const toastId = toast({ tone: 'info', text: t('chat.deletedToast'), duration: UNDO_MS, action: { label: t('chat.undo'), run: () => undo(id) } })
+  pending.set(id, toastId)
   // The pressed control leaves the DOM: the log takes the focus (not the composer, which would open the phone's keyboard).
   scroller.value?.focus({ preventScroll: true })
 }
 
+/** „Rückgängig“: nothing was sent, so nothing is undone on the server. The pending entry goes first, so the toast's own dismissal finds none. */
 function undo(id: string) {
-  hidden.value = hidden.value.filter(item => item !== id)
+  pending.delete(id)
+  unhide(id)
 }
+
+// The toast's end sends the call: its timer, its ✕ and the eviction of the oldest toast by a fourth all take its id out of the list (`useToast` has no end hook and needs none).
+watch(() => toasts.value.map(item => item.id), (ids) => {
+  for (const [id, toastId] of pending) {
+    if (!ids.includes(toastId)) void flush(id)
+  }
+})
+
+/** Leaving the page, or this panel: every pending delete goes out now and its toast goes. */
+function flushAll() {
+  for (const [id, toastId] of [...pending]) {
+    dismiss(toastId)
+    void flush(id)
+  }
+}
+onMounted(() => window.addEventListener('pagehide', flushAll))
+onBeforeUnmount(() => {
+  window.removeEventListener('pagehide', flushAll)
+  flushAll()
+})
 
 const stopListening = props.room.on('chat.added', ({ message }) => {
   // A Message of an outgoing line settles by the room's copy (the answer then merges nothing new), and an own Message never rises: its held opacity would end the pending bubble's look.
@@ -207,6 +251,13 @@ const stopListening = props.room.on('chat.added', ({ message }) => {
   if (follow) scrollToEnd()
 })
 onScopeDispose(stopListening)
+
+// A Message deleted, by the Host or its writer (also this page's own, once the call went out): its line takes its place. It changes `messages` only, never `hidden`, so a Message the
+// deleter still has pending stays hidden until the call is answered. No scroll, rise or sound.
+const stopListeningDeleted = props.room.on('chat.deleted', ({ id, deletedBy }) => {
+  messages.value = markDeleted(messages.value, id, deletedBy)
+})
+onScopeDispose(stopListeningDeleted)
 
 watch(props.room.state, (state) => {
   if (state === 'open' && status.value === 'ready') void loadFirst()
