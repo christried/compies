@@ -3,7 +3,7 @@ import { join, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { eq } from 'drizzle-orm'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
-import { activity, countdowns, eventGameNotes, events, rounds, sessions } from '../../server/db/schema'
+import { activity, countdowns, eventGameNotes, events, messages, rounds, sessions } from '../../server/db/schema'
 import { testClock } from '../../server/utils/clock'
 import { memoryRoomNotifier } from '../../server/utils/room-notifier'
 import { notesFromLines } from '../../shared/notes-doc'
@@ -127,6 +127,7 @@ describe('a finished Event is read-only', () => {
       { file: 'countdown/reset.post.ts', name: 'reset the Countdown', as: 'host', method: 'POST', path: `/api/e/${slug}/countdown/reset` },
       { file: 'finish.post.ts', name: 'finish the Event again', as: 'host', method: 'POST', path: `/api/e/${slug}/finish`, body: { outcome: 'winner', winners: [1] } },
       { file: 'last-game.post.ts', name: 'add a last game', as: 'host', method: 'POST', path: `/api/e/${slug}/last-game` },
+      { file: 'messages/index.post.ts', name: 'write a Message', as: 'player', method: 'POST', path: `/api/e/${slug}/messages`, body: { id: '00000000-0000-4000-8000-00000000f001', text: 'Hallo' } },
       { file: 'games/[gameId]/notes.put.ts', name: 'save Event notes', as: 'host', method: 'PUT', path: `/api/e/${slug}/games/${kart}/notes`, body: { notes: notesFromLines(['Eine Notiz']) } },
     ]
   }
@@ -145,6 +146,7 @@ describe('a finished Event is read-only', () => {
       countdowns: await testDb.db.select().from(countdowns).where(eq(countdowns.eventId, eventId)),
       activity: await testDb.db.select().from(activity).where(eq(activity.eventId, eventId)),
       eventGameNotes: await testDb.db.select().from(eventGameNotes).where(eq(eventGameNotes.eventId, eventId)),
+      messages: await testDb.db.select().from(messages).where(eq(messages.eventId, eventId)),
     }
   }
 

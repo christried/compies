@@ -36,7 +36,7 @@ describe('Hidden wheel secrecy (#148)', () => {
   // Every message type Nuxt sends to the room must be produced by this flow (#165): the type check fails until a new
   // type is added to SERVER_SENT and to a step of lobbyFlow. The Worker sends its own types (presence, the clock, the Emote).
   describe('the room and the Activity feed under a Hidden wheel (#165)', () => {
-    const SERVER_SENT = ['event.changed', 'activity.added', 'member.moved', 'veto.cast'] as const satisfies readonly RoomMessageType[]
+    const SERVER_SENT = ['event.changed', 'activity.added', 'member.moved', 'veto.cast', 'chat.added'] as const satisfies readonly RoomMessageType[]
     type WorkerSent = 'presence.sync' | 'presence.join' | 'presence.leave' | 'clock.pong' | 'emote.sent'
     const everyTypeListed: Exclude<RoomMessageType, (typeof SERVER_SENT)[number] | WorkerSent> extends never ? true : never = true
 
@@ -133,6 +133,10 @@ describe('Hidden wheel secrecy (#148)', () => {
       // 9. The Host rotates the Invite link.
       expect((await send('POST', `/api/e/${slug}/rotate`, hostCookie)).status).toBe(200)
 
+      // 9b. Player 1 and the Host each write a Message (chat.added, #758): ordinary words that name no game.
+      expect((await send('POST', `/api/e/${slug}/messages`, playerCookie, { id: crypto.randomUUID(), text: 'Bin gleich da' })).status).toBe(200)
+      expect((await send('POST', `/api/e/${slug}/messages`, hostCookie, { id: crypto.randomUUID(), text: 'Wir fangen um halb an' })).status).toBe(200)
+
       // 10. The Host starts the Session, sets a game that is in no pool and puts it back (event.changed, activity.added), then ends
       // the Session. That game is everyone's from the moment it is set (#228).
       expect((await send('POST', `/api/e/${slug}/sessions/start`, hostCookie)).status).toBe(200)
@@ -193,6 +197,13 @@ describe('Hidden wheel secrecy (#148)', () => {
       expect(feed).not.toContain('"price"')
       // Neither carries a game fact key: no player count, no Suitabilities (#444). The Event reads do, for the set game's Round, so they are not in this check.
       expectNoGameFacts(room, feed)
+      // The Messages of the flow ride the room with exactly their own fields: no name, colour, zone or game (#758).
+      const chat = notifier.messages(eventId).filter(message => message.type === 'chat.added')
+      expect(chat).toHaveLength(2)
+      for (const envelope of chat) {
+        expect(Object.keys(envelope).sort()).toEqual(['message', 'serverTime', 'type', 'v'])
+        expect(Object.keys((envelope as { message: object }).message).sort()).toEqual(['at', 'id', 'text', 'writerId'])
+      }
     })
 
     it('carries the Team names of renamed teams in the room and the feed alike, and still no pool game (#440)', async () => {

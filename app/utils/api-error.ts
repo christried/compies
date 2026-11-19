@@ -33,6 +33,7 @@ const SHARED: Record<ApiErrorCode, string | null> = {
   no_host_permission: 'error.noHostRight',
   rate_limited: 'error.rateLimited',
   note_too_long: 'error.noteTooLong',
+  invalid_message: 'error.messageInvalid',
   format_unavailable: 'error.formatUnavailable',
   team_count_range: 'error.teamCountRange',
   team_size_range: 'error.teamSizeRange',
