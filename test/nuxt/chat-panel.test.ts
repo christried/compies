@@ -82,7 +82,7 @@ function serveChat(all: Message[], { pageSize = 50, failing = false, viewerId = 
         served.deletes.push(message.id)
         if (served.deleteAnswer === 'server-error') throw createError({ statusCode: 500 })
         if (served.deleteAnswer === 'refused') throw createError({ statusCode: 403, statusMessage: 'not_your_message' })
-        return { id: message.id, writerId: message.writerId, text: null, at: message.at, deletedBy: 'writer' } satisfies Message
+        return { id: message.id, writerId: message.writerId, text: null, at: message.at, deletedBy: message.writerId === viewerId ? 'writer' : 'host' } satisfies Message
       },
     })
   }
@@ -794,13 +794,6 @@ describe('ChatPanel', () => {
       expect(controlOf(wrapper, 'c')).toBeUndefined()
     })
 
-    it('gives the Host no control on a Member\'s Message (#764 replaces this case)', async () => {
-      const { wrapper } = await mountDeleting([live('a', SANNE, 0, 'von Sanne'), live('b', KITTY, 10, 'vom Host')], { viewerId: KITTY })
-
-      expect(controls(wrapper).map(control => control.attributes('aria-label'))).toEqual(['Nachricht von Kitty löschen'])
-      expect(controlOf(wrapper, 'a')).toBeUndefined()
-    })
-
     it('names the control „Du“ for a writer the Event no longer lists', async () => {
       const { wrapper } = await mountDeleting([live('a', SANNE, 0)], { members: [] })
 
@@ -1109,6 +1102,94 @@ describe('ChatPanel', () => {
         expect(bubble(wrapper, 'a').text()).toBe(text)
         expect(control.element.parentElement).toBe(bubble(wrapper, 'a').element.parentElement)
         expect(control.classes()).toContain('flex-none')
+      })
+    })
+
+    // The Host deletes any Message (#764, spec #719 § A): her control is on every live Message, her own included, and a Member's delete runs the same flow as an own one.
+    describe('the Host deletes any (#764)', () => {
+      const HOST = KITTY
+      const three = () => [live('a', SANNE, 0, 'eins'), live('b', LARSI, 10, 'zwei'), live('c', SANNE, 20, 'drei')]
+      const labels = (wrapper: Mounted['wrapper']) => wrapper.findAll('button[aria-label^="Nachricht"]').map(control => control.attributes('aria-label'))
+
+      it('gives the Host a control on every live Message, her own and a Member\'s, and none on a deleted one', async () => {
+        const { wrapper } = await mountDeleting([live('a', SANNE, 0, 'von Sanne'), live('b', KITTY, 10, 'vom Host'), live('c', LARSI, 20, 'von Larsi'), gone('d', LARSI, 30, 'host')], { viewerId: HOST })
+
+        expect(labels(wrapper)).toEqual(['Nachricht von Sanne löschen', 'Nachricht von Kitty löschen', 'Nachricht von Larsi löschen'])
+        expect(controlOf(wrapper, 'd')).toBeUndefined()
+        for (const control of controls(wrapper)) {
+          expect(control.attributes('type')).toBe('button')
+          expect(control.attributes('tabindex')).toBeUndefined()
+        }
+      })
+
+      it('names the control of a writer the Event no longer lists without a name', async () => {
+        const { wrapper } = await mountDeleting([live('c', LARSI, 20, 'von einer Ehemaligen')], { viewerId: HOST, members: members.filter(member => member.id !== LARSI) })
+
+        expect(labels(wrapper)).toEqual(['Nachricht löschen'])
+      })
+
+      it('hides a Member\'s Message at once on the Host\'s click, sends it once when the toast ends, and then reads „Vom Host gelöscht“ in place', async () => {
+        const { wrapper, stack, served } = await mountDeleting(three(), { viewerId: HOST })
+
+        await controlOf(wrapper, 'b')!.trigger('click')
+        await settle()
+        expect(texts(wrapper)).toEqual(['eins', 'drei'])
+        expect(served.deletes).toEqual([])
+
+        await closeButton(stack)!.trigger('click')
+        await vi.waitFor(() => expect(served.deletes).toEqual(['b']))
+        await settle()
+        expect(texts(wrapper)).toEqual(['eins', 'Vom Host gelöscht', 'drei'])
+      })
+
+      it('brings a Member\'s Message back with its control on „Rückgängig“, and sends nothing', async () => {
+        const { wrapper, stack, served } = await mountDeleting(three(), { viewerId: HOST })
+
+        await controlOf(wrapper, 'b')!.trigger('click')
+        await settle()
+        await undoButton(stack)!.trigger('click')
+        await settle()
+
+        expect(texts(wrapper)).toEqual(['eins', 'zwei', 'drei'])
+        expect(controlOf(wrapper, 'b')).toBeDefined()
+        await settle()
+        expect(served.deletes).toEqual([])
+      })
+
+      it('reads the Host\'s own Message „Gelöscht“ once the call is answered', async () => {
+        const { wrapper, stack, served } = await mountDeleting([live('a', HOST, 0, 'meins')], { viewerId: HOST })
+
+        await controlOf(wrapper, 'a')!.trigger('click')
+        await settle()
+        await closeButton(stack)!.trigger('click')
+
+        await vi.waitFor(() => expect(served.deletes).toEqual(['a']))
+        await vi.waitFor(() => expect(texts(wrapper)).toEqual(['Gelöscht']))
+      })
+
+      it('puts a Member\'s Message back with its control and an error toast when the call fails', async () => {
+        const { wrapper, stack, served } = await mountDeleting(three(), { viewerId: HOST })
+        served.deleteAnswer = 'server-error'
+
+        await controlOf(wrapper, 'b')!.trigger('click')
+        await settle()
+        await closeButton(stack)!.trigger('click')
+
+        await vi.waitFor(() => expect(texts(wrapper)).toEqual(['eins', 'zwei', 'drei']))
+        expect(controlOf(wrapper, 'b')).toBeDefined()
+        await vi.waitFor(() => expect(stack.get('[role="alert"]').text()).toContain('Konnte nicht speichern. Nochmal versuchen?'))
+      })
+
+      it('keeps the Host\'s control on a Member\'s Message on a finished page, where the composer is gone', async () => {
+        const { wrapper, stack, served } = await mountDeleting([live('b', LARSI, 10, 'zwei')], { viewerId: HOST, finished: true })
+
+        await controlOf(wrapper, 'b')!.trigger('click')
+        await settle()
+        await closeButton(stack)!.trigger('click')
+
+        await vi.waitFor(() => expect(served.deletes).toEqual(['b']))
+        await vi.waitFor(() => expect(texts(wrapper)).toEqual(['Vom Host gelöscht']))
+        expect(wrapper.find('input').exists()).toBe(false)
       })
     })
   })

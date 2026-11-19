@@ -16,7 +16,7 @@ import { NOTES_LINK_REL } from '~~/shared/notes-doc'
 // again whenever the connection opens (a message sent while the socket was down is gone), and „Ältere laden“ for the page before the oldest one shown. A Message
 // the page and the room both bring shows once (by id). A Message stores no name and no place (ADR 0016's opposite, on purpose): the name line of each group
 // takes the writer's current Display name, Team and place from the Event read's Members, so a rename or a move shows in old Messages. The composer is #667's, links #762's
-// and the delete control, its undo and the line a deleted Message turns into (`chat.deleted`) #763's.
+// and the delete control, its undo and the line a deleted Message turns into (`chat.deleted`) #763's, the Host's control on any Message #764's.
 const props = withDefaults(defineProps<{
   slug: string
   room: Pick<ReturnType<typeof useEventRoom>, 'state' | 'on'>
@@ -269,8 +269,11 @@ onMounted(() => void loadFirst())
 
 const memberById = computed(() => new Map(props.members.map(member => [member.id, member])))
 
-/** Only the writer's own live Message has the control; a line the page sent and has not seen settle may not exist on the server yet. */
-const canDelete = (message: Message) => message.writerId === props.viewerId && message.text !== null && !outgoingById.value.has(message.id)
+const viewerIsHost = computed(() => memberById.value.get(props.viewerId)?.isHost === true)
+/** The writer's own live Message, and for the Host any live Message (#764). A line the page sent and has not seen settle may not exist on the server yet, so it has none. */
+const canDelete = (message: Message) => message.text !== null && !outgoingById.value.has(message.id) && (message.writerId === props.viewerId || viewerIsHost.value)
+/** The control's name: the writer's name; „Du“ for the viewer's own Message of a writer the Event does not list; else no name (`chat.deleteAnyAria`, #764). */
+const deleteLabel = (group: { own: boolean, member?: MemberView }) => group.member || group.own ? t('chat.deleteAria', { name: group.member?.name ?? t('common.you') }) : t('chat.deleteAnyAria')
 
 /** The groups with what their name line shows, all computed from the Members the page holds. */
 const groups = computed(() => groupMessages([
@@ -434,7 +437,7 @@ const groups = computed(() => groupMessages([
                 <button
                   v-if="canDelete(message)"
                   type="button"
-                  :aria-label="t('chat.deleteAria', { name: group.member?.name ?? t('common.you') })"
+                  :aria-label="deleteLabel(group)"
                   :title="t('chat.delete')"
                   class="hit-44 grid size-8 flex-none place-items-center rounded-pill text-ink-2 hover:bg-surface-2 hover:text-error-fg"
                   @click="requestDelete(message.id)"
