@@ -15,8 +15,8 @@ import { hostCreatesEvent, hostEntersResult, hostFinishes, hostPutsBack, hostSet
 import { TEST_SETTINGS } from './fixtures'
 import { setAllowlist, stubAuthEnv } from './sign-in'
 
-// The Events of a game on its page (#656, spec #717 § F): `GET /api/games/:id/events` lists the Events of the game's User that hold the game in their
-// pool or played it, newest first, with the Host's Event notes for it. Every name and id is invented.
+// The Events of a game on its page (#656, spec #717 § F): `GET /api/games/:id/events` lists the Events of the game's User whose pool holds the game
+// (#843: an Event that only played it makes no row), newest first, with the Host's Event notes for it. Every name and id is invented.
 
 const profile = (id: string, name: string) => ({ provider: 'discord', id, name, email: `${name.toLowerCase()}@example.com`, image: undefined }) as const
 const hostProfile = profile('1', 'Hostess')
@@ -121,7 +121,7 @@ describe('the Events of a game (#656)', () => {
   })
 
   describe('played', () => {
-    it('counts a game that was set and given a Result: played 1, also while it is still in the pool', async () => {
+    it('counts a game given a Result in an Event whose pool holds it, and leaves out an Event that played it outside its pool (#843)', async () => {
       const halo = await newGame('Halo')
       const inPool = await newEvent('Mit Pool', { pool: [halo.id] })
       const direct = await newEvent('Direkt gesetzt')
@@ -132,12 +132,12 @@ describe('the Events of a game (#656)', () => {
 
       const listed = await eventsOf(halo.id)
 
-      expect(listed.map(({ name, played }) => ({ name, played }))).toEqual([{ name: 'Direkt gesetzt', played: 1 }, { name: 'Mit Pool', played: 1 }])
+      expect(listed.map(({ name, played }) => ({ name, played }))).toEqual([{ name: 'Mit Pool', played: 1 }])
     })
 
     it('counts 3 Rounds with a Result as 3', async () => {
       const halo = await newGame('Halo')
-      const party = await newEvent('Dreimal')
+      const party = await newEvent('Dreimal', { pool: [halo.id] })
       // The API never allows it (game_already_drawn refuses a second set of a taken game), so the Rounds go straight into the table.
       await counted.insert(rounds).values([1, 2, 3].map(number => ({
         eventId: party.eventId, gameId: halo.id, number, startedAt: new Date(T0), setAt: new Date(T0), resultAt: new Date(T0),
@@ -146,7 +146,7 @@ describe('the Events of a game (#656)', () => {
       expect(await eventsOf(halo.id)).toMatchObject([{ slug: party.slug, played: 3 }])
     })
 
-    it('does not count a put-back Round: no row when the game is in no pool, „im Pool“ (0) when it is', async () => {
+    it('does not count a put-back Round: no row when the game is in no pool, a row with 0 when it is', async () => {
       const halo = await newGame('Halo')
       const bare = await newEvent('Ohne Pool')
       const pooled = await newEvent('Mit Pool', { pool: [halo.id] })
@@ -160,7 +160,7 @@ describe('the Events of a game (#656)', () => {
 
     it('counts the scored Round only when one was scored and one put back in the same Event', async () => {
       const halo = await newGame('Halo')
-      const party = await newEvent('Eins von zwei')
+      const party = await newEvent('Eins von zwei', { pool: [halo.id] })
       await startSession(party)
       await hostPutsBack(rig, party, await play(party, halo.id, { result: false }))
       await play(party, halo.id)
@@ -177,9 +177,9 @@ describe('the Events of a game (#656)', () => {
       expect(await eventsOf(halo.id)).toEqual([])
     })
 
-    it('lists a finished Event that played the game', async () => {
+    it('lists a finished Event whose pool holds the game and that played it', async () => {
       const halo = await newGame('Halo')
-      const party = await newEvent('Vorbei', { settings: { gameCount: 1, teamCount: 2, teamSize: 1 } })
+      const party = await newEvent('Vorbei', { pool: [halo.id], settings: { gameCount: 1, teamCount: 2, teamSize: 1 } })
       await startSession(party)
       await play(party, halo.id)
       await hostFinishes(rig, party, { outcome: 'winner', winners: [1] })
@@ -192,7 +192,7 @@ describe('the Events of a game (#656)', () => {
     it('leaves out a deleted Event, also one with a Result and notes', async () => {
       const halo = await newGame('Halo')
       const gone = await newEvent('Gelöscht', { pool: [halo.id] })
-      const played = await newEvent('Gespielt und gelöscht')
+      const played = await newEvent('Gespielt und gelöscht', { pool: [halo.id] })
       const kept = await newEvent('Bleibt', { pool: [halo.id] })
       expect((await send('PUT', `/api/e/${gone.slug}/games/${halo.id}/notes`, host.cookie, { notes: doc('Weg') })).status).toBe(200)
       // The delete route refuses a running Event, so the one with a Result is marked deleted straight.
@@ -273,7 +273,7 @@ describe('the Events of a game (#656)', () => {
       ])
     })
 
-    it('keeps the note in a row that stays after the game left the pool and was played; without the pool and without play there is no row', async () => {
+    it('makes no row once the game left the pool, also when it was played there (#843); the note stays stored and shows when the game is back', async () => {
       const halo = await newGame('Halo')
       const kart = await newGame('Kart')
       const party = await newEvent('Freitag', { pool: [halo.id, kart.id] })
@@ -283,8 +283,11 @@ describe('the Events of a game (#656)', () => {
       await play(party, halo.id)
       expect((await send('PATCH', `/api/e/${party.slug}/settings`, host.cookie, { pool: [] })).status).toBe(200)
 
-      expect(await eventsOf(halo.id)).toEqual([{ slug: party.slug, name: 'Freitag', played: 1, notes: doc('Bleibt') }])
+      expect(await eventsOf(halo.id)).toEqual([])
       expect(await eventsOf(kart.id)).toEqual([])
+
+      expect((await send('PATCH', `/api/e/${party.slug}/settings`, host.cookie, { pool: [halo.id] })).status).toBe(200)
+      expect(await eventsOf(halo.id)).toEqual([{ slug: party.slug, name: 'Freitag', played: 1, notes: doc('Bleibt') }])
     })
 
     it('has no note in the row once the Host cleared it', async () => {

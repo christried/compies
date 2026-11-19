@@ -43,7 +43,6 @@ export const CLAIMS = {
   'gameEvents.failed': 'bibliothek-spiel-events-fehler',
   // The dark check's own states reach these: the 60-character game sits in the walk's Event, and the library's cards count the live Events.
   'gameEvents.title': 'bibliothek-spiel',
-  'gameEvents.inPool': 'bibliothek-spiel',
   'library.inEvents': 'bibliothek',
   'notesEditor.label': 'bibliothek-neu-editor',
   'notesEditor.help': 'bibliothek-neu-editor',

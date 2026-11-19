@@ -3,8 +3,8 @@ import type { GameEventRow } from '~~/shared/game-events'
 import { eventPath } from '~~/shared/links'
 import { notesHasText } from '~~/shared/notes-doc'
 
-// The Events of a game on its library page (#656, spec #717 § F): every Event of the game's User that holds the game in its pool or played it,
-// newest first, as the server sends them. A row links to the Event, says „im Pool“ or „n× gespielt“ and shows the Host's Event notes for the game
+// The Events of a game on its library page (#656, spec #717 § F): every Event of the game's User whose pool holds the game (#843),
+// newest first, as the server sends them. A row links to the Event, says „n× gespielt“ once the game was played there and shows the Host's Event notes for the game
 // read-only in the Round card's disclosure (#729, Q8: no design of its own): the Event block at sm, its title an h3 below this section's h2 (RichNotes only, ADR 0019).
 defineProps<{ events: GameEventRow[] }>()
 
@@ -46,8 +46,11 @@ const headingId = useId()
           >
             {{ row.name }}
           </NuxtLink>
-          <span class="text-[13px] font-semibold text-ink-2">
-            {{ row.played > 0 ? t('library.played', { n: row.played }) : t('gameEvents.inPool') }}
+          <span
+            v-if="row.played > 0"
+            class="text-[13px] font-semibold text-ink-2"
+          >
+            {{ t('library.played', { n: row.played }) }}
           </span>
         </div>
         <GameNotesDisclosure
