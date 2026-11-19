@@ -42,20 +42,20 @@ afterEach(() => {
 })
 
 describe('useEventTabs', () => {
-  it('lists Event, Tabelle and Aktivität on a phone, and Tabelle and Aktivität in the side panel (#274)', async () => {
+  it('lists Event, Tabelle and Aktivität on a phone, and Chat, Aktivität and Tabelle in the side panel (#274, #761)', async () => {
     stubScreen(false)
     const { tabs } = await setUp()
 
     expect(tabs().tabs.value.map(item => item.key)).toEqual(['event', 'standings', 'activity'])
     expect(tabs().tabs.value.map(item => item.label)).toEqual(['Event', 'Tabelle', 'Aktivität'])
-    expect(tabs().panelTabs.value.map(item => item.key)).toEqual(['standings', 'activity'])
+    expect(tabs().panelTabs.value.map(item => item.key)).toEqual(['chat', 'activity', 'standings'])
   })
 
-  it('opens the side panel on the feed, as in 0.7 (#274)', async () => {
+  it('opens the side panel on the Chat (#761)', async () => {
     stubScreen(true)
     const { tabs } = await setUp()
 
-    expect(tabs().panelTab.value).toBe('activity')
+    expect(tabs().panelTab.value).toBe('chat')
   })
 
   it('selects the Tabelle view without clearing the unread count of the feed, and gives it no badge (#274)', async () => {
@@ -161,8 +161,9 @@ describe('the tabs table (#756)', () => {
   it('pins where each tab sits on each surface', () => {
     expect(TABS.map(row => [row.key, row.place])).toEqual([
       ['event', { phone: 0, panel: null }],
-      ['standings', { phone: 1, panel: 0 }],
+      ['standings', { phone: 1, panel: 2 }],
       ['activity', { phone: 2, panel: 1 }],
+      ['chat', { phone: null, panel: 0 }],
     ])
   })
 

@@ -338,8 +338,9 @@ describe.each([{ host: false }, { host: true }])('Emotes on the Game board, Host
   it('writes no Activity entry and shows nowhere in the feed, and makes no request', async () => {
     const page = await mountLive({ host })
     open()
-    await vi.waitFor(() => expect(page.find('[role="log"]').exists()).toBe(true))
-    const feed = () => page.get('[role="log"]').text()
+    // The panel's first log is the Chat's now (#761): the feed's is the one named „Aktivität“.
+    await vi.waitFor(() => expect(page.find('[role="log"][aria-label="Aktivität"]').exists()).toBe(true))
+    const feed = () => page.get('[role="log"][aria-label="Aktivität"]').text()
     const before = { text: feed(), ...served }
 
     await buttons(page)[0]!.trigger('click')

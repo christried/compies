@@ -28,7 +28,15 @@ let testNumber = 0
 function serveEvent() {
   testNumber += 1
   const slug = `activity-views-${testNumber}`
-  const served = { feedReads: 0 }
+  const served = { feedReads: 0, chatReads: 0 }
+  // The Chat's read (#761): the side panel opens on the Chat, and an unregistered read would just fail quietly.
+  registerEndpoint(`/api/e/${slug}/messages`, {
+    method: 'GET',
+    handler: () => {
+      served.chatReads += 1
+      return { messages: [], next: null }
+    },
+  })
   registerEndpoint(`/api/e/${slug}`, { method: 'GET', handler: () => ({ ...view(slug, []), event: { slug, name: 'Freitags-Zocken', phase: 'poll', isHost: false } }) })
   registerEndpoint(`/api/e/${slug}/activity`, {
     method: 'GET',
@@ -77,21 +85,34 @@ describe('the Activity feed on the Event page', () => {
   describe('from 980 px', () => {
     beforeEach(() => stubScreen(true))
 
-    it('is the tab „Aktivität“, after „Tabelle“, of a side panel built as tabs: tablist, tab, tabpanel with the log', async () => {
+    it('is the tab „Aktivität“, between „Chat“ and „Tabelle“, of a side panel built as tabs: tablist, tab, tabpanel with the log', async () => {
       const { page, served } = await mountEvent()
 
       const panel = page.get('aside[aria-label="Seitenleiste"]')
       const tab = panel.findAll('[role="tablist"] [role="tab"]')[1]!
-      expect(panel.findAll('[role="tab"]')).toHaveLength(2)
+      expect(panel.findAll('[role="tab"]')).toHaveLength(3)
       expect(tab.text()).toBe('Aktivität')
+      // The panel opens on the Chat (#761); the feed's tab is one click away.
+      expect(tab.attributes('aria-selected')).toBe('false')
+      await tab.trigger('click')
       expect(tab.attributes('aria-selected')).toBe('true')
       const tabpanel = panel.get(`[id="${tab.attributes('aria-controls')}"]`)
       expect(tabpanel.attributes('role')).toBe('tabpanel')
       expect(tabpanel.attributes('aria-labelledby')).toBe(tab.attributes('id'))
       expect(tabpanel.get('[role="log"]').attributes('aria-live')).toBe('polite')
-      // The feed is mounted once: one log, one read.
-      expect(page.findAll('[role="log"]')).toHaveLength(1)
+      // The feed is mounted once: one log of its own beside the Chat's, one read.
+      expect(page.findAll('[role="log"][aria-label="Aktivität"]')).toHaveLength(1)
       expect(served.feedReads).toBe(1)
+    })
+
+    it('opens the panel on „Chat“, in the order Chat, Aktivität, Tabelle, and reads the Chat once', async () => {
+      const { page, served } = await mountEvent()
+
+      const tabs = page.get('aside[aria-label="Seitenleiste"]').findAll('[role="tab"]')
+      expect(tabs.map(tab => tab.text())).toEqual(['Chat', 'Aktivität', 'Tabelle'])
+      expect(tabs.map(tab => tab.attributes('aria-selected'))).toEqual(['true', 'false', 'false'])
+      expect(page.find('[role="log"][aria-label="Chatverlauf"]').exists()).toBe(true)
+      expect(served.chatReads).toBe(1)
     })
 
     it('keeps the Event stage whole, with the Head\'s h1 and no Aktivität h1', async () => {
@@ -131,6 +152,8 @@ describe('the Activity feed on the Event page', () => {
       expect(page.find('[role="log"]').exists()).toBe(false)
       expect(page.find('[role="tab"]').exists()).toBe(true)
       expect(served.feedReads).toBe(0)
+      // The Chat has no view on a phone until #765: nothing of it mounts or is read.
+      expect(served.chatReads).toBe(0)
     })
 
     it('switches to the feed with its own h1, and back to the stage', async () => {
