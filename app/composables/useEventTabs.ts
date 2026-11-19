@@ -13,11 +13,35 @@ import type { PanelTab } from '~/components/SidePanel.vue'
 
 export type EventTabKey = 'event' | 'standings' | 'activity'
 
-const TABS = [
-  { key: 'event', labelKey: 'event.tabs.event', icon: LayoutGrid, phone: true, panel: false },
-  { key: 'standings', labelKey: 'nav.tabs.table', icon: Trophy, phone: true, panel: true },
-  { key: 'activity', labelKey: 'nav.tabs.activity', icon: History, phone: true, panel: true },
-] as const satisfies readonly { key: EventTabKey, labelKey: string, icon: Component, phone: boolean, panel: boolean }[]
+type Surface = 'phone' | 'panel'
+
+/** One row of the table: its place on each surface, a position or `null` when the tab is not on that surface (#756). */
+export interface EventTabRow {
+  key: EventTabKey
+  labelKey: string
+  icon: Component
+  place: Record<Surface, number | null>
+}
+
+export const TABS = [
+  { key: 'event', labelKey: 'event.tabs.event', icon: LayoutGrid, place: { phone: 0, panel: null } },
+  { key: 'standings', labelKey: 'nav.tabs.table', icon: Trophy, place: { phone: 1, panel: 0 } },
+  { key: 'activity', labelKey: 'nav.tabs.activity', icon: History, place: { phone: 2, panel: 1 } },
+] as const satisfies readonly EventTabRow[]
+
+/** The tabs of one surface, in the order of their places there (#756). */
+function onSurface(surface: Surface) {
+  return TABS.flatMap((tab) => {
+    const at = tab.place[surface]
+    return at === null ? [] : [{ at, tab }]
+  }).sort((a, b) => a.at - b.at).map(({ tab }) => tab)
+}
+
+const PHONE_TABS = onSurface('phone')
+const PANEL_TABS = onSurface('panel')
+
+/** The tab the side panel opens on (#274, the feed). */
+const PANEL_DEFAULT: EventTabKey = 'activity'
 
 /** The tab that counts what the Activity feed receives while another view is shown. „Tabelle“ counts nothing (#274), and the panel still opens on the feed. */
 const COUNTING_TAB: EventTabKey = 'activity'
@@ -29,7 +53,7 @@ function isTabKey(key: string): key is EventTabKey {
 export function useEventTabs(room: Pick<ReturnType<typeof useEventRoom>, 'on'>) {
   const { t } = useI18n()
   const wide = useMediaQuery(MD_QUERY)
-  const panelTab = ref('activity')
+  const panelTab = ref<string>(PANEL_DEFAULT)
   const activeView = ref<EventTabKey>('event')
   const unread = ref(0)
 
@@ -46,7 +70,7 @@ export function useEventTabs(room: Pick<ReturnType<typeof useEventRoom>, 'on'>) 
     if (activeView.value === COUNTING_TAB) unread.value = 0
   }
 
-  const tabs = computed<TabBarItem[]>(() => TABS.filter(tab => tab.phone).map((tab) => {
+  const tabs = computed<TabBarItem[]>(() => PHONE_TABS.map((tab) => {
     const item = { key: tab.key, label: t(tab.labelKey), icon: tab.icon, current: activeView.value === tab.key }
     if (tab.key !== COUNTING_TAB) return item
     return {
@@ -58,7 +82,7 @@ export function useEventTabs(room: Pick<ReturnType<typeof useEventRoom>, 'on'>) 
     }
   }))
 
-  const panelTabs = computed<PanelTab[]>(() => TABS.filter(tab => tab.panel).map(tab => ({ key: tab.key, label: t(tab.labelKey), icon: tab.icon })))
+  const panelTabs = computed<PanelTab[]>(() => PANEL_TABS.map(tab => ({ key: tab.key, label: t(tab.labelKey), icon: tab.icon })))
 
   return { wide, panelTab, activeView, unread, tabs, panelTabs, selectView }
 }
