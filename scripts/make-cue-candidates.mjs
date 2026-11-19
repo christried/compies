@@ -1,5 +1,5 @@
 // Writes the sound candidates for the listening session of 0.13.3 (#535): three to four clearly different ideas for each of the
-// cue ids of app/utils/sound-cues.ts, synthesised here (no downloaded file, no dependency, nothing that needs a credit), and the manifest the
+// cue ids of app/utils/cue-ids.ts, synthesised here (no downloaded file, no dependency, nothing that needs a credit), and the manifest the
 // listening page (#534) reads. The cue world is compibert-sound.md: cartoony, dry and short, tabletop toys and a cheap arcade, never casino
 // or orchestral. Nothing here has been heard while writing it: every recipe reasons from the physics of the sound it names (attack, decay,
 // spectrum, pitch movement), and the operator's ear decides in the session.
@@ -31,28 +31,26 @@ const OUT = resolve(ROOT, 'sound-candidates')
 
 // ---- the contract: cue ids and lengths come from the repo, so a drift fails here ------------------------------------------------------
 
-const CUE_IDS = [...readFileSync(resolve(ROOT, 'app/utils/sound-cues.ts'), 'utf8').match(/export const CUE_IDS = \[([^\]]*)\]/)[1].matchAll(/'([a-z-]+)'/g)].map(m => m[1])
-
-// The lengths are the table of app/utils/cue-lengths.ts (#740), a leaf file Node can import as it is (type stripping, as bake-compibert.mjs
-// does); test/unit/cue-lengths.test.ts holds it against compibert-sound.md.
+// Both are leaf files Node can import as they are (type stripping, as bake-compibert.mjs does): the ids (#828) and the lengths (#740). Their
+// types keep the tables in step with the ids (typecheck), and test/unit/cue-lengths.test.ts holds the lengths against compibert-sound.md.
+const { CUE_IDS } = await import('../app/utils/cue-ids.ts')
 const { CUE_LENGTHS } = await import('../app/utils/cue-lengths.ts')
 /** The longest a cue's file may be, per cue id, in ms. */
 const MAX_MS = {}
-for (const id of CUE_IDS) {
-  if (!CUE_LENGTHS[id]) throw new Error(`no length for ${id} in app/utils/cue-lengths.ts`)
-  MAX_MS[id] = CUE_LENGTHS[id].ms
-}
-for (const id of Object.keys(CUE_LENGTHS)) if (!CUE_IDS.includes(id)) throw new Error(`${id}: a length for no cue id`)
+for (const id of CUE_IDS) MAX_MS[id] = CUE_LENGTHS[id].ms
 
 // ---- the recipes: one file per moment in scripts/cue-recipes/, found by listing the folder, so a new moment adds a file and no line here ----
 
 const RECIPES = {}
+/** The recipe file each cue's recipes come from, for a candidate's source (#828). */
+const RECIPE_FILE = {}
 const recipeFolder = resolve(ROOT, 'scripts/cue-recipes')
 for (const file of readdirSync(recipeFolder).filter(name => name.endsWith('.mjs')).sort()) {
   const recipes = (await import(pathToFileURL(resolve(recipeFolder, file)).href)).default
   for (const id of Object.keys(recipes)) {
-    if (RECIPES[id]) throw new Error(`${id}: recipes in two files (${file} and another)`)
+    if (RECIPES[id]) throw new Error(`${id}: recipes in two files (${file} and ${RECIPE_FILE[id]})`)
     RECIPES[id] = recipes[id]
+    RECIPE_FILE[id] = file
   }
 }
 
@@ -120,7 +118,7 @@ for (const id of CUE_IDS) {
     manifest.cues[id].push({
       name: recipe.name,
       file,
-      source: `scripts/make-cue-candidates.mjs, Rezept ${recipe.name}`,
+      source: `scripts/cue-recipes/${RECIPE_FILE[id]}, Rezept ${recipe.name}`,
       author: null,
       licence: 'generated',
       note: recipe.note,

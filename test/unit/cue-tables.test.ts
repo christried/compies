@@ -1,5 +1,3 @@
-import { readFileSync } from 'node:fs'
-import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { CUE_BRIEF, MOMENT_LABEL, MOMENT_OF, MOMENT_SETUP } from '../../app/dev/listening-model'
 import { CUE_LENGTHS } from '../../app/utils/cue-lengths'
@@ -33,16 +31,5 @@ describe('the tables keyed by cue id', () => {
   it('gives every moment a label, and a setup only to a cue', () => {
     for (const id of CUE_IDS) expect(MOMENT_LABEL[MOMENT_OF[id]], id).toBeTruthy()
     for (const id of Object.keys(MOMENT_SETUP)) expect(ids, id).toContain(id)
-  })
-})
-
-// The two plain-Node scripts cannot import sound-cues.ts (aliases) and read the ids from its text with this regex: a comment or a
-// row in the array that breaks it would break them silently.
-describe('CUE_IDS as the scripts read it', () => {
-  it('gives exactly the ids, with the regex of make-cue-candidates.mjs and ship-cue-sound.mjs', () => {
-    const text = readFileSync(resolve(import.meta.dirname, '../../app/utils/sound-cues.ts'), 'utf8')
-    const read = [...text.match(/export const CUE_IDS = \[([^\]]*)\]/)![1]!.matchAll(/'([a-z-]+)'/g)].map(match => match[1])
-
-    expect(read).toEqual([...CUE_IDS])
   })
 })
