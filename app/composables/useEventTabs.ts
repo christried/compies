@@ -7,9 +7,9 @@ import type { PanelTab } from '~/components/SidePanel.vue'
 
 // The Event page's tabs (11-event-seite § TabBar and § SidePanel, #166): the Event page, the Standings („Tabelle“), the Activity feed or the Chat (#761, #765). One table says
 // which tabs exist and where they show: a phone's tab bar (`phone`), the side panel from md up (`panel`). A tab added to the
-// table gets its item in both lists and its view in the page's template (#274 added „Tabelle“ this way). The feed is mounted once,
-// in the side panel from md up and in its own view below; the wide layout is known after mount only, so nothing of the feed
-// renders before. The Chat has its own phone view (#765), and it counts, like the feed, what arrives while another view is shown; the side panel's tabs count by the same rule (#778).
+// table gets its item in both lists and its view in the page's template (#274 added „Tabelle“ this way). The feed and the Chat are each mounted once:
+// in the side panel from md up (the panel's tab) and in a view of its own below md (#765 gave the Chat its phone view); the wide layout is known after mount only,
+// so nothing of either renders before. Both count what arrives while another view is shown, and the side panel's tabs count by the same rule (#778).
 
 export type EventTabKey = 'event' | 'standings' | 'activity' | 'chat'
 

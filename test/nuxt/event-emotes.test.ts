@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import EventPage from '~/pages/e/[slug]/index.vue'
 import type { RoomSocketOptions } from '~/utils/room-socket'
-import { EMOTE_COOLDOWN_MS, EMOTE_IDS, type EmoteId } from '~~/shared/emote'
+import { EMOTE_COOLDOWN_MS, EMOTE_IDS, EMOTE_PAGE_WAIT_MS, type EmoteId } from '~~/shared/emote'
 import { envelope, type RoomMessage } from '~~/shared/realtime'
 import { defaultSettings } from '~~/shared/settings'
 import { kitty, signInAs } from './auth'
@@ -188,14 +188,14 @@ describe.each([{ host: false }, { host: true }])('Emotes on the Game board, Host
 
     for (const [index, id] of EMOTE_IDS.entries()) {
       await buttons(page)[index]!.trigger('click')
-      vi.advanceTimersByTime(EMOTE_COOLDOWN_MS)
+      vi.advanceTimersByTime(EMOTE_PAGE_WAIT_MS)
       await settle2()
       expect(sent().at(-1), id).toBe(JSON.stringify({ type: 'emote.send', emote: id }))
     }
     expect(sent()).toHaveLength(EMOTE_IDS.length)
   })
 
-  it('waits two seconds after a tap: the buttons are aria-disabled and described by „Kurz warten“, the tapped one carries the ring and the others are dimmed', async () => {
+  it('waits EMOTE_PAGE_WAIT_MS after a tap (the room\'s two seconds and a margin): the buttons are aria-disabled and described by „Kurz warten“, the tapped one carries the ring and the others are dimmed', async () => {
     const page = await mountLive({ host })
     open()
     vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
@@ -215,7 +215,14 @@ describe.each([{ host: false }, { host: true }])('Emotes on the Game board, Host
     await buttons(page)[3]!.trigger('click')
     expect(sent()).toHaveLength(1)
 
-    vi.advanceTimersByTime(EMOTE_COOLDOWN_MS - 1)
+    // The room's two seconds are over, the page's wait (the room's and a margin, #848) is not: a tap now could arrive early and be dropped by the room.
+    vi.advanceTimersByTime(EMOTE_COOLDOWN_MS)
+    await settle2()
+    expect(buttons(page)[0]!.attributes('aria-disabled')).toBe('true')
+    await buttons(page)[3]!.trigger('click')
+    expect(sent()).toHaveLength(1)
+
+    vi.advanceTimersByTime(EMOTE_PAGE_WAIT_MS - EMOTE_COOLDOWN_MS - 1)
     await settle2()
     expect(buttons(page)[0]!.attributes('aria-disabled')).toBe('true')
 
@@ -559,7 +566,7 @@ describe.each([{ host: false }, { host: true }])('Emotes on the Game board, Host
       expect(sheet()).toBeNull()
       expect(sent()).toHaveLength(1)
 
-      vi.advanceTimersByTime(EMOTE_COOLDOWN_MS - exit - 1)
+      vi.advanceTimersByTime(EMOTE_PAGE_WAIT_MS - exit - 1)
       await settle2()
       expect(phoneButton(page).attributes('aria-disabled')).toBe('true')
       vi.advanceTimersByTime(1)

@@ -230,6 +230,28 @@ describe('ChatPanel', () => {
     expect(wrapper.text()).not.toContain('geheim')
   })
 
+  // A re-read after a long disconnect (#848, review Q2/P2, spec story 17): more Messages were missed than a page holds, so the page and the held Messages share no id.
+  it('replaces the held Messages by a re-read page that shares no id with them, and „Ältere laden“ then loads the page before it', async () => {
+    const all = ['a', 'b', 'c', 'd', 'e'].map((id, index) => live(id, SANNE, index * 10))
+    const { wrapper, state, served } = await mountChat(all, { pageSize: 2 })
+    expect(texts(wrapper)).toEqual(['text d', 'text e'])
+
+    served.all = [...all, ...['f', 'g', 'h', 'i'].map((id, index) => live(id, LARSI, 50 + index * 10))]
+    state.value = 'closed'
+    await settle()
+    state.value = 'open'
+    await vi.waitFor(() => expect(served.reads).toBe(2))
+    await settle()
+
+    expect(texts(wrapper)).toEqual(['text h', 'text i'])
+    await buttonNamed(wrapper, 'Ältere laden')!.trigger('click')
+    await vi.waitFor(() => expect(texts(wrapper)).toHaveLength(4))
+    expect(texts(wrapper)).toEqual(['text f', 'text g', 'text h', 'text i'])
+    await buttonNamed(wrapper, 'Ältere laden')!.trigger('click')
+    await vi.waitFor(() => expect(texts(wrapper)).toHaveLength(6))
+    expect(texts(wrapper)).toEqual(['text d', 'text e', 'text f', 'text g', 'text h', 'text i'])
+  })
+
   it('shows a failed first read with „Nochmal versuchen“, which reads again', async () => {
     const { wrapper, served } = await mountChat([live('a', SANNE, 0)], { failing: true })
 
@@ -669,6 +691,18 @@ describe('ChatPanel', () => {
       expect(served.posts.map(post => post.text)).toEqual(['a b', 'Moin'])
     })
 
+    // One line-break rule (#848, review S7): the field takes every break Unicode knows out of the draft, not only CR and LF, so the counter counts what is sent.
+    it('shows a pasted U+2028 in the field as a space', async () => {
+      const { wrapper } = await mountChat([])
+
+      const field = input(wrapper).element as HTMLInputElement
+      let raw = `a${String.fromCharCode(0x2028)}b`
+      Object.defineProperty(field, 'value', { configurable: true, get: () => raw, set: (value: string) => void (raw = value) })
+      await input(wrapper).trigger('input')
+
+      expect(raw).toBe('a b')
+    })
+
     it('lets a Member on the Stands and the Host write', async () => {
       pinIds(ID, ID2)
       const stands = await mountChat([], { viewerId: LARSI })
@@ -970,14 +1004,61 @@ describe('ChatPanel', () => {
         expect(animated).toHaveLength(0)
       })
 
-      it('changes nothing for an id it does not hold or a Message that is deleted already', async () => {
+      it('shows nothing for an id it does not hold, keeps the first deleter of a Message that is deleted already, and remembers the unknown id for its Message', async () => {
         const { wrapper, send } = await mountDeleting([live('a', LARSI, 0, 'eins'), gone('b', LARSI, 10, 'host')])
 
         send({ type: 'chat.deleted', id: 'zzz', deletedBy: 'host' })
         send({ type: 'chat.deleted', id: 'b', deletedBy: 'writer' })
         await settle()
+        expect(texts(wrapper)).toEqual(['eins', 'Vom Host gelöscht'])
+
+        // The Message of the unknown id arrives later, by the room: it comes as its line (#848).
+        send({ type: 'chat.added', message: live('zzz', LARSI, 20, 'spät') })
+        await settle()
+        expect(texts(wrapper)).toEqual(['eins', 'Vom Host gelöscht', 'Vom Host gelöscht'])
+      })
+
+      // A delete that came before its Message (#848, review Q1): the room announces it while a page is on its way, or before the `chat.added` it follows.
+      it('shows the line, never the text, for a delete the room announced while the first read was on its way', async () => {
+        const { wrapper, send, release } = await mountChat([live('a', LARSI, 0, 'geheim'), live('b', LARSI, 10, 'bleibt')], { hold: true })
+
+        send({ type: 'chat.deleted', id: 'a', deletedBy: 'host' })
+        release()
+        await vi.waitFor(() => expect(texts(wrapper)).toHaveLength(2))
+
+        expect(texts(wrapper)).toEqual(['Vom Host gelöscht', 'bleibt'])
+        expect(wrapper.text()).not.toContain('geheim')
+      })
+
+      it('shows the line, never the text, for a delete the room announced before „Ältere laden“ answered', async () => {
+        const all = ['a', 'b', 'c', 'd', 'e'].map((id, index) => live(id, LARSI, index * 10, `geheim ${id}`))
+        const { wrapper, send, served } = await mountChat(all, { pageSize: 2 })
+        expect(texts(wrapper)).toEqual(['geheim d', 'geheim e'])
+        let release = () => {}
+        served.hold = new Promise<void>((resolve) => {
+          release = resolve
+        })
+
+        await buttonNamed(wrapper, 'Ältere laden')!.trigger('click')
+        await vi.waitFor(() => expect(served.reads).toBe(2))
+        send({ type: 'chat.deleted', id: 'c', deletedBy: 'writer' })
+        release()
+        await vi.waitFor(() => expect(texts(wrapper)).toHaveLength(4))
+
+        expect(texts(wrapper)).toEqual(['geheim b', 'Gelöscht', 'geheim d', 'geheim e'])
+        expect(wrapper.text()).not.toContain('geheim c')
+      })
+
+      it('shows the line, never the text, for a delete that arrives before its chat.added, and the line does not rise', async () => {
+        const { wrapper, send } = await mountChat([live('a', LARSI, 0, 'eins')])
+
+        send({ type: 'chat.deleted', id: 'b', deletedBy: 'host' })
+        send({ type: 'chat.added', message: live('b', LARSI, 10, 'geheim') })
+        await settle()
 
         expect(texts(wrapper)).toEqual(['eins', 'Vom Host gelöscht'])
+        expect(wrapper.text()).not.toContain('geheim')
+        expect(animated).toHaveLength(0)
       })
 
       it('keeps a pending Message hidden through a re-read that brings it again, and the undo shows it', async () => {
@@ -1008,6 +1089,31 @@ describe('ChatPanel', () => {
 
         expect(texts(wrapper)).toEqual([])
       })
+    })
+
+    it('keeps an outgoing line and a pending delete through a re-read that replaces the held Messages (#848)', async () => {
+      pinIds(ID)
+      const all = ['a', 'b', 'c', 'd', 'e'].map((id, index) => live(id, SANNE, index * 10))
+      const { wrapper, stack, state, served } = await mountDeleting(all, { pageSize: 2 })
+      await controlOf(wrapper, 'e')!.trigger('click')
+      served.holdPost()
+      await write(wrapper, 'Hallo')
+      await vi.waitFor(() => expect(served.posts).toHaveLength(1))
+      expect(texts(wrapper)).toEqual(['text d', 'Hallo'])
+
+      served.all = [...all, ...['f', 'g', 'h', 'i'].map((id, index) => live(id, LARSI, 50 + index * 10))]
+      state.value = 'closed'
+      await settle()
+      state.value = 'open'
+      await vi.waitFor(() => expect(served.reads).toBe(2))
+      await settle()
+
+      // The page replaced what was held; the line the page sent is still there, and so is the toast of the delete, which is sent when it ends.
+      expect(texts(wrapper)).toEqual(['text h', 'text i', 'Hallo'])
+      expect(wrapper.find(`[data-message-id="${ID}"]`).attributes('data-outgoing-state')).toBe('sending')
+      expect(served.deletes).toEqual([])
+      await closeButton(stack)!.trigger('click')
+      await vi.waitFor(() => expect(served.deletes).toEqual(['e']))
     })
 
     it('keeps the undo of each of two deletes in a row: the first „Rückgängig“ restores the first only, the second ends and sends its id only', async () => {

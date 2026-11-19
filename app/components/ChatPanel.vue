@@ -5,18 +5,19 @@ import { teamNameAt } from '~/utils/board'
 import { formatActivityTime } from '~/utils/berlin-time'
 import { groupMessages, markDeleted, mergeMessages, splitMessageText } from '~/utils/chat'
 import { chatRise } from '~/utils/motion'
-import { MESSAGE_MAX, parseMessageText } from '~~/shared/message-text'
+import { MESSAGE_MAX, normaliseMessageLineBreaks, parseMessageText } from '~~/shared/message-text'
 import { characterCount, cutToCharacters } from '~~/shared/text'
-import type { Message, MessagePage } from '~~/shared/chat'
+import type { Message, MessageDeleter, MessagePage } from '~~/shared/chat'
 import type { BoardTeam, MemberView } from '~~/shared/event'
 import { NOTES_LINK_REL } from '~~/shared/notes-doc'
 
-// The Chat (#761, GLOSSARY: Chat, 02-components § ChatPanel, spec #719 § A), read only: the Event's Messages, oldest at the top and the newest at the bottom, scrolled to the
-// end on load. It follows the Activity feed (`ActivityFeed.vue`): the first page from the Chat's endpoint, what the room sends (`chat.added`) at once, the first page
-// again whenever the connection opens (a message sent while the socket was down is gone), and „Ältere laden“ for the page before the oldest one shown. A Message
+// The Chat (#761, GLOSSARY: Chat, 02-components § ChatPanel, spec #719 § A): the Event's Messages, oldest at the top and the newest at the bottom, scrolled to the
+// end on load, and the composer at the foot (#667). It follows the Activity feed (`ActivityFeed.vue`): the first page from the Chat's endpoint, what the room sends (`chat.added`) at once, the first page
+// again whenever the connection opens (a message sent while the socket was down is gone; a page that shares no id with what is held replaces it, #848), and „Ältere laden“ for the page before the oldest one shown. A Message
 // the page and the room both bring shows once (by id). A Message stores no name and no place (ADR 0016's opposite, on purpose): the name line of each group
-// takes the writer's current Display name, Team and place from the Event read's Members, so a rename or a move shows in old Messages. The composer is #667's, links #762's
-// and the delete control, its undo and the line a deleted Message turns into (`chat.deleted`) #763's, the Host's control on any Message #764's.
+// takes the writer's current Display name, Team and place from the Event read's Members, so a rename or a move shows in old Messages. An address in a Message is a link (#762).
+// A writer deletes their own Message, and the Host any Message (#764): it is hidden at once, a toast offers „Rückgängig“ and the call goes out when the toast ends (#763); a delete
+// the room announces (`chat.deleted`) turns the Message into its line, also one that is not held yet (#848). The line a Message the page sent shows as until it settles is an `Outgoing`.
 const props = withDefaults(defineProps<{
   slug: string
   room: Pick<ReturnType<typeof useEventRoom>, 'state' | 'on'>
@@ -35,6 +36,8 @@ const { t } = useI18n()
 
 /** Oldest first. */
 const messages = ref<Message[]>([])
+/** The deletes the room announced, id → deleter, kept next to `messages` for Messages the Chat does not hold yet (#848). Not reactive: it only feeds `mergeMessages`. */
+const deleted = new Map<string, MessageDeleter>()
 /** The cursor of the page before the oldest one loaded; null when there is none. */
 const next = ref<string | null>(null)
 const status = ref<'loading' | 'ready' | 'failed'>('loading')
@@ -52,9 +55,12 @@ async function loadFirst() {
   try {
     const page = await $fetch<MessagePage>(`/api/e/${props.slug}/messages`)
     const first = status.value !== 'ready'
-    messages.value = mergeMessages(messages.value, pageMessages(page))
+    // A re-read that shares no id with what is held while older Messages remain: more was missed than a page holds, and the Messages between would be a hole „Ältere laden“ cannot reach
+    // (its cursor lies below the held ones). Start over as on a fresh open (#848, spec story 17); the outgoing lines and the pending deletes are not `messages` and stay.
+    const missedMore = !first && page.next !== null && !page.messages.some(message => isHeld(message.id))
+    messages.value = mergeMessages(missedMore ? [] : messages.value, pageMessages(page), deleted)
     dropSettled()
-    if (first) next.value = page.next
+    if (first || missedMore) next.value = page.next
     status.value = 'ready'
     scrollToEnd()
   }
@@ -71,7 +77,7 @@ async function loadOlder() {
     const page = await $fetch<MessagePage>(`/api/e/${props.slug}/messages`, { query: { before: next.value } })
     // The list grows above what is read: keep what the reader looks at where it is.
     const before = scroller.value?.scrollHeight ?? 0
-    messages.value = mergeMessages(messages.value, pageMessages(page))
+    messages.value = mergeMessages(messages.value, pageMessages(page), deleted)
     next.value = page.next
     await nextTick()
     if (scroller.value) scroller.value.scrollTop += scroller.value.scrollHeight - before
@@ -125,7 +131,7 @@ async function post(id: string, text: string) {
   try {
     const answer = await $fetch<Message>(`/api/e/${props.slug}/messages`, { method: 'POST', body: { id, text } })
     // No refetch of anything: the answer is the Message as stored (a deleted one shows as its line, never its text).
-    messages.value = mergeMessages(messages.value, [answer])
+    messages.value = mergeMessages(messages.value, [answer], deleted)
     outgoing.value = outgoing.value.filter(entry => entry.id !== id)
   }
   catch (error) {
@@ -161,7 +167,7 @@ function resend(entry: Outgoing) {
 
 function onInput(event: Event) {
   const el = event.target as HTMLInputElement
-  let value = el.value.replace(/\r\n|[\r\n]/g, ' ')
+  let value = normaliseMessageLineBreaks(el.value)
   if (characterCount(value) > MESSAGE_MAX) value = cutToCharacters(value, MESSAGE_MAX)
   // Written back directly, as `NoteEditor` does: when the cut value equals the draft, Vue would not patch the field.
   if (value !== el.value) {
@@ -196,7 +202,7 @@ async function flush(id: string) {
   try {
     // `keepalive` lets the call outlive a page that is being left.
     const answer = await $fetch<Message>(`/api/e/${props.slug}/messages/${id}`, { method: 'DELETE', keepalive: true })
-    messages.value = mergeMessages(messages.value, [answer])
+    messages.value = mergeMessages(messages.value, [answer], deleted)
     unhide(id)
   }
   catch (error) {
@@ -245,9 +251,9 @@ const stopListening = props.room.on('chat.added', ({ message }) => {
   outgoing.value = outgoing.value.filter(entry => entry.id !== message.id)
   if (isHeld(message.id)) return
   const follow = atEnd()
-  messages.value = mergeMessages(messages.value, [message])
-  // The bubble that arrived rises alone, also where it joins a group; the first page, an older page and a re-read never do.
-  if (!own) riseOf(message.id)
+  messages.value = mergeMessages(messages.value, [message], deleted)
+  // The bubble that arrived rises alone, also where it joins a group; the first page, an older page and a re-read never do. A line (its delete came first) does not rise.
+  if (!own && !deleted.has(message.id)) riseOf(message.id)
   if (follow) scrollToEnd()
 })
 onScopeDispose(stopListening)
@@ -255,6 +261,8 @@ onScopeDispose(stopListening)
 // A Message deleted, by the Host or its writer (also this page's own, once the call went out): its line takes its place. It changes `messages` only, never `hidden`, so a Message the
 // deleter still has pending stays hidden until the call is answered. No scroll, rise or sound.
 const stopListeningDeleted = props.room.on('chat.deleted', ({ id, deletedBy }) => {
+  // Remembered for an id the Chat does not hold yet too: its page or its `chat.added` may still be on the way (#848). The first deleter stays, as `markDeleted` keeps it.
+  if (!deleted.has(id)) deleted.set(id, deletedBy)
   messages.value = markDeleted(messages.value, id, deletedBy)
 })
 onScopeDispose(stopListeningDeleted)

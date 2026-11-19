@@ -1,5 +1,5 @@
 import { MD_QUERY } from '../composables/useMediaQuery'
-import { EMOTE_COOLDOWN_MS } from '~~/shared/emote'
+import { EMOTE_PAGE_WAIT_MS } from '~~/shared/emote'
 
 /** Whether motion is reduced, by the device or the in-app setting: the tokens put it in `--cp-motion` for JS. */
 export function reducedMotion() {
@@ -105,13 +105,13 @@ export function emoteRise(element: Element): Animation | undefined {
 }
 
 /**
- * The ring of a tapped Emote button draining over the wait (02-components § EmoteBar: „ring stroke-dashoffset linear 2 s“): the circle's `pathLength` is 1, so the
+ * The ring of a tapped Emote button draining over the page's wait, `EMOTE_PAGE_WAIT_MS` (02-components § EmoteBar: „ring stroke-dashoffset linear 2 s“; the margin of #848 makes it 2.15 s, so the ring and the buttons agree): the circle's `pathLength` is 1, so the
  * dash offset runs 0 → 1. It plays under reduced motion too: the ring is information (the hold-to-confirm precedent, 04-motion: „identical fill“). The wait itself is
  * the bar's timer, not this animation.
  */
 export function emoteRing(element: Element): void {
   if (typeof element.animate !== 'function') return
-  element.animate([{ strokeDashoffset: 0 }, { strokeDashoffset: 1 }], { duration: EMOTE_COOLDOWN_MS, easing: 'linear' })
+  element.animate([{ strokeDashoffset: 0 }, { strokeDashoffset: 1 }], { duration: EMOTE_PAGE_WAIT_MS, easing: 'linear' })
 }
 
 /** How an element travels: `glide` to a new place, `bounce` back after a refusal. */

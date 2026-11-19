@@ -51,6 +51,9 @@ Each concern below has one home. New code calls it; a second copy is a finding e
 | Archiving and restoring a game from the browser | `useGameArchive` in `app/composables/useGameArchive.ts` (#467) |
 | Tags in label order | `sortTagsByLabel` in `shared/game.ts` |
 | The Emote bar, the rise and where an arrived Emote finds its avatar | `EmoteBar`, `FloatingEmote`, `useRisingEmotes` (`app/composables/`), `emoteRise` and `emoteRing` in `app/utils/motion.ts`, the pictures in `app/utils/emote-art.ts` (#668), `emoteSeen` in `app/utils/emote-seen.ts` (where an Emote is drawn at all, #769) |
+| The text of a Message, its limit and its line breaks | `shared/message-text.ts` (#758, #848): `parseMessageText` (the parser behind the write route and the composer's send), `MESSAGE_MAX`, and `normaliseMessageLineBreaks`, the one rule for line breaks that the parser and the composer's field both call; a second regex for a break is a finding |
+| The Chat: reading, writing, deleting | `server/utils/chat.ts` (`messageOfRow`, `readMessagePage`, `writeMessage`, `deleteMessage`; the paged query is `parsePageQuery` in `server/domain/paging.ts`, shared with the Activity feed), the wire shape in `shared/chat.ts`, and in the page `ChatPanel` with `app/utils/chat.ts` (`groupMessages`, `mergeMessages`, `markDeleted`, and `splitMessageText` for links on `notesLinkHref` and `NOTES_LINK_REL` of `shared/notes-doc.ts`, #761, #762, #763) |
+| Which tabs exist, in which order, on which surface, and which count | `TABS` in `app/composables/useEventTabs.ts` (#756, #778): its `place` per surface, and the one `arrived` rule for the unread count of the tab bar and the panel's tabs |
 
 A second page, flow or component that does what an existing one does needs its reason in the PR description. Without one, the review asks for the existing module to grow instead.
 

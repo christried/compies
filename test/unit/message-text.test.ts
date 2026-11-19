@@ -1,8 +1,32 @@
 import { describe, expect, it } from 'vitest'
-import { MESSAGE_MAX, parseMessageText } from '../../shared/message-text'
+import { MESSAGE_MAX, normaliseMessageLineBreaks, parseMessageText } from '../../shared/message-text'
 
 const ok = (text: string) => ({ ok: true, text })
 const refused = (error: 'invalid_value' | 'invalid_message') => ({ ok: false, error })
+
+// The one line-break rule the composer and the parser share (#848, review S7).
+describe('normaliseMessageLineBreaks', () => {
+  it.each([
+    ['LF', 'a\nb'],
+    ['CR', 'a\rb'],
+    ['VT', 'a\vb'],
+    ['FF', 'a\fb'],
+    ['NEL', 'a\u0085b'],
+    ['LS (U+2028)', `a${String.fromCharCode(0x2028)}b`],
+    ['PS (U+2029)', `a${String.fromCharCode(0x2029)}b`],
+  ])('turns %s into one space', (_name, raw) => {
+    expect(normaliseMessageLineBreaks(raw)).toBe('a b')
+  })
+
+  it('turns CRLF into one space, not two, and every other break into one each', () => {
+    expect(normaliseMessageLineBreaks('a\r\nb')).toBe('a b')
+    expect(normaliseMessageLineBreaks('a\n\r\nb')).toBe('a  b')
+  })
+
+  it('leaves a tab, runs of spaces and the ends as typed: trimming is the parser\'s', () => {
+    expect(normaliseMessageLineBreaks(' a\t b  \n')).toBe(' a\t b   ')
+  })
+})
 
 describe('parseMessageText', () => {
   it('refuses a text of nothing but spaces and line breaks as empty', () => {
