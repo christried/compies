@@ -77,6 +77,25 @@ describe('mergeMessages', () => {
     expect(merged).toEqual([held])
   })
 
+  // A delete that came before its page (#848, review Q1): the room announced `chat.deleted` while the page was still on its way, and the page then brings the text.
+  it('turns an incoming live Message whose delete came before it into its line, for the writer and for the Host', () => {
+    const deleted = new Map<string, DeletedMessage['deletedBy']>([['a', 'writer'], ['b', 'host']])
+    const merged = mergeMessages([], [live('a', 'u1', 0, 'geheim'), live('b', 'u2', 10, 'auch geheim'), live('c', 'u1', 20)], deleted)
+    expect(merged).toEqual([gone('a', 'u1', 0, 'writer'), gone('b', 'u2', 10, 'host'), live('c', 'u1', 20)])
+  })
+
+  it('applies a remembered delete to a Message that a later merge adds, and keeps the line when a live copy comes again', () => {
+    const deleted = new Map<string, DeletedMessage['deletedBy']>([['a', 'host']])
+    const first = mergeMessages([live('b', 'u1', 10)], [live('a', 'u1', 0, 'geheim')], deleted)
+    expect(first).toEqual([gone('a', 'u1', 0, 'host'), live('b', 'u1', 10)])
+    expect(mergeMessages(first, [live('a', 'u1', 0, 'geheim')], deleted)).toEqual(first)
+  })
+
+  it('does not change an incoming Message that is already deleted when the remembered delete names another deleter', () => {
+    const merged = mergeMessages([], [gone('a', 'u1', 0, 'host')], new Map([['a', 'writer']]))
+    expect(merged).toEqual([gone('a', 'u1', 0, 'host')])
+  })
+
   it('does not change by merging the same page twice, and does not touch its arguments', () => {
     const page = [live('a', 'u1', 0), gone('b', 'u2', 10), live('c', 'u1', 20)]
     const once = mergeMessages([], page)
@@ -99,6 +118,7 @@ describe('markDeleted', () => {
     expect(marked).toEqual([live('a', 'u1', 0), gone('b', 'u2', 10, 'host'), live('c', 'u1', 20)])
   })
 
+  // It forgets an id it does not hold on purpose: the page remembers such a delete itself and hands it to `mergeMessages` (#848).
   it('leaves the list as it is for an id it does not hold', () => {
     const held = [live('a', 'u1', 0)]
     expect(markDeleted(held, 'zzz', 'host')).toEqual(held)

@@ -42,10 +42,14 @@ function byTimeThenId(a: Message, b: Message): number {
 /**
  * What the Chat holds after Messages arrive, by id, oldest first. A Message the Chat does not know is added. A live Message that arrives deleted is replaced (a read after a missed
  * `chat.deleted`); a deleted Message stays deleted when a stale page brings its text again. Any other known id keeps what is held.
+ * `deleted` is what the room announced (id → deleter), also for Messages the Chat did not hold then: an incoming live Message with such an id arrives as its line, so a page that was
+ * in flight when its `chat.deleted` came, or a `chat.added` that came after it, never shows the text (#848).
  */
-export function mergeMessages(held: readonly Message[], incoming: readonly Message[]): Message[] {
+export function mergeMessages(held: readonly Message[], incoming: readonly Message[], deleted: ReadonlyMap<string, MessageDeleter> = new Map()): Message[] {
   const byId = new Map(held.map(message => [message.id, message]))
-  for (const message of incoming) {
+  for (const arrived of incoming) {
+    const deletedBy = deleted.get(arrived.id)
+    const message: Message = arrived.text !== null && deletedBy !== undefined ? { id: arrived.id, writerId: arrived.writerId, text: null, at: arrived.at, deletedBy } : arrived
     const known = byId.get(message.id)
     if (!known || (known.text !== null && message.text === null)) byId.set(message.id, message)
   }

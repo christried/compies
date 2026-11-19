@@ -7,7 +7,7 @@ import { groupMessages, markDeleted, mergeMessages, splitMessageText } from '~/u
 import { chatRise } from '~/utils/motion'
 import { MESSAGE_MAX, parseMessageText } from '~~/shared/message-text'
 import { characterCount, cutToCharacters } from '~~/shared/text'
-import type { Message, MessagePage } from '~~/shared/chat'
+import type { Message, MessageDeleter, MessagePage } from '~~/shared/chat'
 import type { BoardTeam, MemberView } from '~~/shared/event'
 import { NOTES_LINK_REL } from '~~/shared/notes-doc'
 
@@ -35,6 +35,8 @@ const { t } = useI18n()
 
 /** Oldest first. */
 const messages = ref<Message[]>([])
+/** The deletes the room announced, id → deleter, kept next to `messages` for Messages the Chat does not hold yet (#848). Not reactive: it only feeds `mergeMessages`. */
+const deleted = new Map<string, MessageDeleter>()
 /** The cursor of the page before the oldest one loaded; null when there is none. */
 const next = ref<string | null>(null)
 const status = ref<'loading' | 'ready' | 'failed'>('loading')
@@ -52,7 +54,7 @@ async function loadFirst() {
   try {
     const page = await $fetch<MessagePage>(`/api/e/${props.slug}/messages`)
     const first = status.value !== 'ready'
-    messages.value = mergeMessages(messages.value, pageMessages(page))
+    messages.value = mergeMessages(messages.value, pageMessages(page), deleted)
     dropSettled()
     if (first) next.value = page.next
     status.value = 'ready'
@@ -71,7 +73,7 @@ async function loadOlder() {
     const page = await $fetch<MessagePage>(`/api/e/${props.slug}/messages`, { query: { before: next.value } })
     // The list grows above what is read: keep what the reader looks at where it is.
     const before = scroller.value?.scrollHeight ?? 0
-    messages.value = mergeMessages(messages.value, pageMessages(page))
+    messages.value = mergeMessages(messages.value, pageMessages(page), deleted)
     next.value = page.next
     await nextTick()
     if (scroller.value) scroller.value.scrollTop += scroller.value.scrollHeight - before
@@ -125,7 +127,7 @@ async function post(id: string, text: string) {
   try {
     const answer = await $fetch<Message>(`/api/e/${props.slug}/messages`, { method: 'POST', body: { id, text } })
     // No refetch of anything: the answer is the Message as stored (a deleted one shows as its line, never its text).
-    messages.value = mergeMessages(messages.value, [answer])
+    messages.value = mergeMessages(messages.value, [answer], deleted)
     outgoing.value = outgoing.value.filter(entry => entry.id !== id)
   }
   catch (error) {
@@ -196,7 +198,7 @@ async function flush(id: string) {
   try {
     // `keepalive` lets the call outlive a page that is being left.
     const answer = await $fetch<Message>(`/api/e/${props.slug}/messages/${id}`, { method: 'DELETE', keepalive: true })
-    messages.value = mergeMessages(messages.value, [answer])
+    messages.value = mergeMessages(messages.value, [answer], deleted)
     unhide(id)
   }
   catch (error) {
@@ -245,9 +247,9 @@ const stopListening = props.room.on('chat.added', ({ message }) => {
   outgoing.value = outgoing.value.filter(entry => entry.id !== message.id)
   if (isHeld(message.id)) return
   const follow = atEnd()
-  messages.value = mergeMessages(messages.value, [message])
-  // The bubble that arrived rises alone, also where it joins a group; the first page, an older page and a re-read never do.
-  if (!own) riseOf(message.id)
+  messages.value = mergeMessages(messages.value, [message], deleted)
+  // The bubble that arrived rises alone, also where it joins a group; the first page, an older page and a re-read never do. A line (its delete came first) does not rise.
+  if (!own && !deleted.has(message.id)) riseOf(message.id)
   if (follow) scrollToEnd()
 })
 onScopeDispose(stopListening)
@@ -255,6 +257,8 @@ onScopeDispose(stopListening)
 // A Message deleted, by the Host or its writer (also this page's own, once the call went out): its line takes its place. It changes `messages` only, never `hidden`, so a Message the
 // deleter still has pending stays hidden until the call is answered. No scroll, rise or sound.
 const stopListeningDeleted = props.room.on('chat.deleted', ({ id, deletedBy }) => {
+  // Remembered for an id the Chat does not hold yet too: its page or its `chat.added` may still be on the way (#848). The first deleter stays, as `markDeleted` keeps it.
+  if (!deleted.has(id)) deleted.set(id, deletedBy)
   messages.value = markDeleted(messages.value, id, deletedBy)
 })
 onScopeDispose(stopListeningDeleted)
