@@ -215,6 +215,23 @@ describe('Hidden wheel secrecy (#148)', () => {
         expect(Object.keys(envelope).sort()).toEqual(['message', 'serverTime', 'type', 'v'])
         expect(Object.keys((envelope as { message: object }).message).sort()).toEqual(['at', 'id', 'text', 'writerId'])
       }
+
+      // The Chat's read, as a Player and as the Host (#848, review P5): the flow's two Messages are deleted, so one live Message (ordinary words, no game) is written first and
+      // read back too. The read carries the Message and the two lines, and no game fact or trace.
+      expect((await send('POST', `/api/e/${slug}/messages`, playerCookie, { id: crypto.randomUUID(), text: 'Alles klar bei mir' })).status).toBe(200)
+      const chatRead = async (cookie: string) => {
+        const response = await request(`/api/e/${slug}/messages`, { headers: { cookie } })
+        expect(response.status).toBe(200)
+        return response.text()
+      }
+      const asPlayer = await chatRead(playerCookie)
+      const asHost = await chatRead(hostCookie)
+      for (const raw of [asPlayer, asHost]) {
+        expect((JSON.parse(raw) as { messages: unknown[] }).messages).toHaveLength(3)
+        expect(raw).toContain('Alles klar bei mir')
+      }
+      expectNone({ 'the Chat read of Player 1': asPlayer, 'the Chat read of the Host': asHost }, games)
+      expectNoGameFacts(asPlayer, asHost)
     })
 
     it('carries the Team names of renamed teams in the room and the feed alike, and still no pool game (#440)', async () => {
