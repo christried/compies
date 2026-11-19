@@ -54,9 +54,12 @@ async function loadFirst() {
   try {
     const page = await $fetch<MessagePage>(`/api/e/${props.slug}/messages`)
     const first = status.value !== 'ready'
-    messages.value = mergeMessages(messages.value, pageMessages(page), deleted)
+    // A re-read that shares no id with what is held while older Messages remain: more was missed than a page holds, and the Messages between would be a hole „Ältere laden“ cannot reach
+    // (its cursor lies below the held ones). Start over as on a fresh open (#848, spec story 17); the outgoing lines and the pending deletes are not `messages` and stay.
+    const missedMore = !first && page.next !== null && !page.messages.some(message => isHeld(message.id))
+    messages.value = mergeMessages(missedMore ? [] : messages.value, pageMessages(page), deleted)
     dropSettled()
-    if (first) next.value = page.next
+    if (first || missedMore) next.value = page.next
     status.value = 'ready'
     scrollToEnd()
   }

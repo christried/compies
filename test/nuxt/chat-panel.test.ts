@@ -230,6 +230,28 @@ describe('ChatPanel', () => {
     expect(wrapper.text()).not.toContain('geheim')
   })
 
+  // A re-read after a long disconnect (#848, review Q2/P2, spec story 17): more Messages were missed than a page holds, so the page and the held Messages share no id.
+  it('replaces the held Messages by a re-read page that shares no id with them, and „Ältere laden“ then loads the page before it', async () => {
+    const all = ['a', 'b', 'c', 'd', 'e'].map((id, index) => live(id, SANNE, index * 10))
+    const { wrapper, state, served } = await mountChat(all, { pageSize: 2 })
+    expect(texts(wrapper)).toEqual(['text d', 'text e'])
+
+    served.all = [...all, ...['f', 'g', 'h', 'i'].map((id, index) => live(id, LARSI, 50 + index * 10))]
+    state.value = 'closed'
+    await settle()
+    state.value = 'open'
+    await vi.waitFor(() => expect(served.reads).toBe(2))
+    await settle()
+
+    expect(texts(wrapper)).toEqual(['text h', 'text i'])
+    await buttonNamed(wrapper, 'Ältere laden')!.trigger('click')
+    await vi.waitFor(() => expect(texts(wrapper)).toHaveLength(4))
+    expect(texts(wrapper)).toEqual(['text f', 'text g', 'text h', 'text i'])
+    await buttonNamed(wrapper, 'Ältere laden')!.trigger('click')
+    await vi.waitFor(() => expect(texts(wrapper)).toHaveLength(6))
+    expect(texts(wrapper)).toEqual(['text d', 'text e', 'text f', 'text g', 'text h', 'text i'])
+  })
+
   it('shows a failed first read with „Nochmal versuchen“, which reads again', async () => {
     const { wrapper, served } = await mountChat([live('a', SANNE, 0)], { failing: true })
 
@@ -1055,6 +1077,31 @@ describe('ChatPanel', () => {
 
         expect(texts(wrapper)).toEqual([])
       })
+    })
+
+    it('keeps an outgoing line and a pending delete through a re-read that replaces the held Messages (#848)', async () => {
+      pinIds(ID)
+      const all = ['a', 'b', 'c', 'd', 'e'].map((id, index) => live(id, SANNE, index * 10))
+      const { wrapper, stack, state, served } = await mountDeleting(all, { pageSize: 2 })
+      await controlOf(wrapper, 'e')!.trigger('click')
+      served.holdPost()
+      await write(wrapper, 'Hallo')
+      await vi.waitFor(() => expect(served.posts).toHaveLength(1))
+      expect(texts(wrapper)).toEqual(['text d', 'Hallo'])
+
+      served.all = [...all, ...['f', 'g', 'h', 'i'].map((id, index) => live(id, LARSI, 50 + index * 10))]
+      state.value = 'closed'
+      await settle()
+      state.value = 'open'
+      await vi.waitFor(() => expect(served.reads).toBe(2))
+      await settle()
+
+      // The page replaced what was held; the line the page sent is still there, and so is the toast of the delete, which is sent when it ends.
+      expect(texts(wrapper)).toEqual(['text h', 'text i', 'Hallo'])
+      expect(wrapper.find(`[data-message-id="${ID}"]`).attributes('data-outgoing-state')).toBe('sending')
+      expect(served.deletes).toEqual([])
+      await closeButton(stack)!.trigger('click')
+      await vi.waitFor(() => expect(served.deletes).toEqual(['e']))
     })
 
     it('keeps the undo of each of two deletes in a row: the first „Rückgängig“ restores the first only, the second ends and sends its id only', async () => {
