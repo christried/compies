@@ -87,6 +87,7 @@ Each entry: trigger · targets · timeline · reduced twin. Durations in seconds
 - Trigger: `emote.sent`. Target: sticker above sender avatar.
 - `0→.15`: `y 10→−6, scale .4→1.15, opacity 0→1` (pop); `.15→.8`: `y −6→−44`, `scale 1`; `.8→1.4`: `y −64, opacity 0`. Total 1.4. Sender's own: plus Compibert reaction (clap/laugh/angry/roar) if in view.
 - Reduced: pop in place (`scale .8→1`, 0.2), hold 0.8, fade 0.3.
+- **Deviation (0.18, #668):** the keyframes as built (`emoteRise`, `app/utils/motion.ts`): the times above are seconds, so the offsets are their fractions of 1.4 s (0, 0.15/1.4, 0.8/1.4, 1). The pop runs on `--cp-ease-pop`, the climb and the fade on `--cp-ease-out` (04-motion names no curve for them). No Compibert reaction (#673). Reduced motion totals 1.3 s and moves nothing: the picture stays on the avatar's top edge.
 
 ### UI enters (sheet, modal, toast, banner) [MVP]
 - Sheet: `x 100%→0` (bottom: `y`), 0.36 `EASE.out`; out 0.22 `EASE.in`; overlay `opacity` 0.14.

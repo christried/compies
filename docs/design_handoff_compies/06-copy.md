@@ -76,4 +76,5 @@ Tone: friendly, clear, a little cheeky. Short sentences. Du-form. No „·“ se
 - Team names, game names and user names are data, never translated.
 - Dates: `Intl.DateTimeFormat('de-DE', { weekday: 'short', day: '2-digit', month: '2-digit' })` → „Sa 25.10.“; time „20:30“; long form „Samstag, 25. Oktober, 20:30 Uhr“. Time zone Europe/Berlin.
 - Numbers in live UI go through `CpNum`; the screen-reader text is its own key (e.g. `veto.timerSay`).
+- The `emote.*` keys are the four ids (`clap`, `tears`, `angry`, `roar`) plus `label`, `send` and `wait`. The Emote is called „Brüller“, never with Compibert. The wait is „Kurz warten“: a description of the buttons while they are `aria-disabled`, not a toast.
 - Hidden-wheel placeholders: shuffle per spin, never repeat on one wheel; more slices than names → „???“ for the rest.
