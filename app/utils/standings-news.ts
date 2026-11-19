@@ -1,4 +1,5 @@
 import type { ResultView, StandingView } from '~~/shared/stage'
+import type { CueId } from './sound-cues'
 
 // What is new on the Standings (#276, spec #272): the Result the page has not seen yet, and how the Standings moved. Pure, so the rules
 // hold without Vue. The page keeps the marks it last read (`marksOf`); a Result is fresh when its Round is new to the page, or when its
@@ -64,4 +65,6 @@ export interface StandingsNews {
   at: number
   /** The sentence for the polite live region, built by `useStandingsNews` (the Standings announce rank changes once per page). */
   announcement: string
+  /** Which of this news's sounds a Leaderboard has already asked for (`claimCues`), so one Result plays one set per page however many Leaderboards are mounted (#741). Shared by reference with their copies. */
+  cuesAsked: Set<CueId>
 }

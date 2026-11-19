@@ -16,7 +16,8 @@ const CANDIDATES = resolve(ROOT, 'sound-candidates')
 const SHIPPED = resolve(ROOT, 'public/sounds/cues')
 const CREDITS = resolve(SHIPPED, 'credits.json')
 
-const CUE_IDS = [...readFileSync(resolve(ROOT, 'app/utils/sound-cues.ts'), 'utf8').match(/export const CUE_IDS = \[([^\]]*)\]/)[1].matchAll(/'([a-z-]+)'/g)].map(m => m[1])
+// The ids are the leaf app/utils/cue-ids.ts (#828), which Node imports as it is (type stripping).
+const { CUE_IDS } = await import('../app/utils/cue-ids.ts')
 
 const pairs = process.argv.slice(2)
 if (pairs.length === 0) {

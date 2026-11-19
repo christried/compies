@@ -1,4 +1,4 @@
-import { GRID_FROM_WINNERS } from '~~/shared/ceremony'
+import { ceremonyRunning, GRID_FROM_WINNERS } from '~~/shared/ceremony'
 import type { EventView } from '~~/shared/event'
 import { leadersOf } from '~~/shared/finish'
 import { teamNameAt } from './board'
@@ -94,4 +94,15 @@ export function ceremonyLayout(winners: number, below: number, roomy: boolean): 
   if (!chain) return { stage: 'grid', rows: below > 0 ? 'chips' : 'none', cols: roomy ? 4 : 2 }
   const rows = below === 0 ? 'none' : winners === 2 ? (roomy ? 'side' : 'below') : 'chips'
   return { stage: 'chain', rows, cols: winners }
+}
+
+/**
+ * Whether the Award ceremony is pending or running on this page (#755, spec #718 § Engine changes): a finished Event (with settings, as pageFacts
+ * reads it) whose ceremony the Host has not started, or whose latest run has not reached its stored end (ceremonyRunning: the end every device reads).
+ * No role here: the Host's read and a Member's are the same. Not finished: false, so a Tour page (tourMayStart needs beforeFinish, shared/phase.ts)
+ * never reaches it.
+ */
+export function ceremonyAwaitsSound(view: Pick<EventView, 'ceremony' | 'settings'> & { event: Pick<EventView['event'], 'phase'> }, nowMs: number): boolean {
+  if (view.event.phase !== 'finished' || view.settings === null) return false
+  return view.ceremony === null || ceremonyRunning(view.ceremony, nowMs)
 }

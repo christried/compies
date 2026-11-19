@@ -21,7 +21,8 @@ export function useSoundUnlock(input: {
   resume: () => Promise<void>
   /** The server clock's readiness: the cue player makes its context only after it. */
   ready: () => boolean
-  sessionRunning: () => boolean
+  /** A Session runs, or the Award ceremony is pending or running (ceremonyAwaitsSound, #755). */
+  moment: () => boolean
 }): { noticeShown: Readonly<Ref<boolean>>, unlock: () => void } {
   // Order matters: `useSound` registers its read of the stored switch first, so Ton has its stored value when `mounted` turns true.
   const { enabled } = useSound()
@@ -84,7 +85,7 @@ export function useSoundUnlock(input: {
     if (on && mounted.value) unlock()
   }, { flush: 'sync' })
 
-  const wanted = computed(() => mounted.value && hasAudio.value && enabled.value && input.ready() && input.sessionRunning() && input.suspended.value && !tapped.value)
+  const wanted = computed(() => mounted.value && hasAudio.value && enabled.value && input.ready() && input.moment() && input.suspended.value && !tapped.value)
   const settled = ref(false)
   let timer: ReturnType<typeof setTimeout> | undefined
   watch(wanted, (now) => {

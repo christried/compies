@@ -49,6 +49,7 @@ describe('the offset of a cue', () => {
     expect(source!.id).toBe('wheel-stop')
     expect(source!.startedAt).toBeCloseTo(12, 3)
     expect(source!.gain).toBe(0.7)
+    expect(source!.rate).toBe(1) // the player sets no playback rate (the fake source has one since #740)
   })
 
   it('starts a tick half a second ahead at 10.5 with its gain of 0.30', async () => {

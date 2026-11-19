@@ -2,67 +2,205 @@
   "cues": {
     "wheel-windup": {
       "candidate": "filz-zug",
-      "source": "scripts/make-cue-candidates.mjs, Rezept filz-zug",
+      "source": "scripts/cue-recipes/wheel.mjs, Rezept filz-zug",
       "author": null,
       "licence": "generated"
     },
     "wheel-tick": {
       "candidate": "filz-tupf",
-      "source": "scripts/make-cue-candidates.mjs, Rezept filz-tupf",
+      "source": "scripts/cue-recipes/wheel.mjs, Rezept filz-tupf",
       "author": null,
       "licence": "generated"
     },
     "wheel-stop": {
       "candidate": "holz-dur",
-      "source": "scripts/make-cue-candidates.mjs, Rezept holz-dur",
+      "source": "scripts/cue-recipes/wheel.mjs, Rezept holz-dur",
       "author": null,
       "licence": "generated"
     },
     "wheel-morph": {
       "candidate": "reissverschluss",
-      "source": "scripts/make-cue-candidates.mjs, Rezept reissverschluss",
+      "source": "scripts/cue-recipes/wheel.mjs, Rezept reissverschluss",
       "author": null,
       "licence": "generated"
     },
     "wheel-slice-out": {
       "candidate": "schwupp-gleiter",
-      "source": "scripts/make-cue-candidates.mjs, Rezept schwupp-gleiter",
+      "source": "scripts/cue-recipes/wheel.mjs, Rezept schwupp-gleiter",
+      "author": null,
+      "licence": "generated"
+    },
+    "cb-hype": {
+      "candidate": "chip-arpeggio",
+      "source": "scripts/cue-recipes/wheel-voice.mjs, Rezept chip-arpeggio",
+      "author": null,
+      "licence": "generated"
+    },
+    "cb-gulp": {
+      "candidate": "schluck-wumms",
+      "source": "scripts/cue-recipes/wheel-voice.mjs, Rezept schluck-wumms",
+      "author": null,
+      "licence": "generated"
+    },
+    "cb-yay": {
+      "candidate": "chirp-fanfare",
+      "source": "scripts/cue-recipes/wheel-voice.mjs, Rezept chirp-fanfare",
       "author": null,
       "licence": "generated"
     },
     "veto-open": {
       "candidate": "rollladen",
-      "source": "scripts/make-cue-candidates.mjs, Rezept rollladen",
+      "source": "scripts/cue-recipes/veto.mjs, Rezept rollladen",
       "author": null,
       "licence": "generated"
     },
     "veto-clock": {
       "candidate": "uhr-tick",
-      "source": "scripts/make-cue-candidates.mjs, Rezept uhr-tick",
+      "source": "scripts/cue-recipes/veto.mjs, Rezept uhr-tick",
       "author": null,
       "licence": "generated"
     },
     "veto-clip-close": {
       "candidate": "schalter-aus",
-      "source": "scripts/make-cue-candidates.mjs, Rezept schalter-aus",
+      "source": "scripts/cue-recipes/veto.mjs, Rezept schalter-aus",
       "author": null,
       "licence": "generated"
     },
     "veto-seal": {
       "candidate": "chip-bumm",
-      "source": "scripts/make-cue-candidates.mjs, Rezept chip-bumm",
+      "source": "scripts/cue-recipes/veto.mjs, Rezept chip-bumm",
       "author": null,
       "licence": "generated"
     },
     "veto-drumroll": {
       "candidate": "tom-wirbel",
-      "source": "scripts/make-cue-candidates.mjs, Rezept tom-wirbel",
+      "source": "scripts/cue-recipes/veto.mjs, Rezept tom-wirbel",
       "author": null,
       "licence": "generated"
     },
     "veto-reveal": {
       "candidate": "becken-spielzeug",
-      "source": "scripts/make-cue-candidates.mjs, Rezept becken-spielzeug",
+      "source": "scripts/cue-recipes/veto.mjs, Rezept becken-spielzeug",
+      "author": null,
+      "licence": "generated"
+    },
+    "coin-toss": {
+      "candidate": "daumen-flick",
+      "source": "scripts/cue-recipes/coin.mjs, Rezept daumen-flick",
+      "author": null,
+      "licence": "generated"
+    },
+    "coin-spin": {
+      "candidate": "muenz-schimmer",
+      "source": "scripts/cue-recipes/coin.mjs, Rezept muenz-schimmer",
+      "author": null,
+      "licence": "generated"
+    },
+    "coin-land": {
+      "candidate": "klirr-wobble",
+      "source": "scripts/cue-recipes/coin.mjs, Rezept klirr-wobble",
+      "author": null,
+      "licence": "generated"
+    },
+    "coin-result": {
+      "candidate": "ting-zweiklang",
+      "source": "scripts/cue-recipes/coin.mjs, Rezept ting-zweiklang",
+      "author": null,
+      "licence": "generated"
+    },
+    "lb-swap": {
+      "candidate": "doppel-wisch",
+      "source": "scripts/cue-recipes/standings.mjs, Rezept doppel-wisch",
+      "author": null,
+      "licence": "generated"
+    },
+    "lb-count": {
+      "candidate": "zaehlwerk-tick",
+      "source": "scripts/cue-recipes/standings.mjs, Rezept zaehlwerk-tick",
+      "author": null,
+      "licence": "generated"
+    },
+    "lb-winner": {
+      "candidate": "troete-knall",
+      "source": "scripts/cue-recipes/standings.mjs, Rezept troete-knall",
+      "author": null,
+      "licence": "generated"
+    },
+    "drag-pick": {
+      "candidate": "blubb-hoch",
+      "source": "scripts/cue-recipes/board.mjs, Rezept blubb-hoch",
+      "author": null,
+      "licence": "generated"
+    },
+    "drag-snap": {
+      "candidate": "magnet-klick",
+      "source": "scripts/cue-recipes/board.mjs, Rezept magnet-klick",
+      "author": null,
+      "licence": "generated"
+    },
+    "drag-reject": {
+      "candidate": "gummi-boing",
+      "source": "scripts/cue-recipes/board.mjs, Rezept gummi-boing",
+      "author": null,
+      "licence": "generated"
+    },
+    "cer-drop": {
+      "candidate": "holz-brett",
+      "source": "scripts/cue-recipes/ceremony-run.mjs, Rezept holz-brett",
+      "author": null,
+      "licence": "generated"
+    },
+    "cer-row": {
+      "candidate": "holz-marimba",
+      "source": "scripts/cue-recipes/ceremony-run.mjs, Rezept holz-marimba",
+      "author": null,
+      "licence": "generated"
+    },
+    "cer-run": {
+      "candidate": "holz-stapfen",
+      "source": "scripts/cue-recipes/ceremony-run.mjs, Rezept holz-stapfen",
+      "author": null,
+      "licence": "generated"
+    },
+    "cer-trip": {
+      "candidate": "holz-stolper",
+      "source": "scripts/cue-recipes/ceremony-run.mjs, Rezept holz-stolper",
+      "author": null,
+      "licence": "generated"
+    },
+    "cer-bonk": {
+      "candidate": "holz-bonk",
+      "source": "scripts/cue-recipes/ceremony-run.mjs, Rezept holz-bonk",
+      "author": null,
+      "licence": "generated"
+    },
+    "cer-stamp": {
+      "candidate": "gummi-stempel",
+      "source": "scripts/cue-recipes/ceremony-peak.mjs, Rezept gummi-stempel",
+      "author": null,
+      "licence": "generated"
+    },
+    "cer-fanfare": {
+      "candidate": "spielzeug-trompete",
+      "source": "scripts/cue-recipes/ceremony-peak.mjs, Rezept spielzeug-trompete",
+      "author": null,
+      "licence": "generated"
+    },
+    "cer-crowd": {
+      "candidate": "saal-publikum",
+      "source": "scripts/cue-recipes/ceremony-peak.mjs, Rezept saal-publikum",
+      "author": null,
+      "licence": "generated"
+    },
+    "cb-laugh": {
+      "candidate": "kichern-blips",
+      "source": "scripts/cue-recipes/ceremony-laugh.mjs, Rezept kichern-blips",
+      "author": null,
+      "licence": "generated"
+    },
+    "cb-hi": {
+      "candidate": "zwei-ton-piep",
+      "source": "scripts/cue-recipes/tour.mjs, Rezept zwei-ton-piep",
       "author": null,
       "licence": "generated"
     }

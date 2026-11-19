@@ -1,0 +1,66 @@
+import type { CueId } from './cue-ids'
+
+// The one table of the cues' lengths (#740), read by the file test (test/unit/sound-files.test.ts), the listening page (app/dev/) and the
+// candidate generator (scripts/make-cue-candidates.mjs). The generator imports it with plain Node, so this file is a leaf: a type import and
+// nothing at runtime, no alias. Its rows are the Length column of `reference/docs/compibert-sound.md` where the document has a clean row.
+
+export interface CueLength {
+  /** The longest the cue's file may be, in ms. */
+  ms: number
+  /** The cue loops until it is stopped ("1.2 s loop"). */
+  loop: boolean
+  /**
+   * The document has a row whose Cue-id cell is exactly this id and whose Length cell is this `ms` and `loop`: test/unit/cue-lengths.test.ts
+   * checks it both ways. `false` for a cue with no clean row (a cell that names several ids, or no row at all); say which in a comment.
+   */
+  docRow: boolean
+}
+
+// A cue's row sits under its group's line (`CUE_GROUPS`), so two tickets of different groups never touch the same lines.
+export const CUE_LENGTHS: Record<CueId, CueLength> = {
+  // wheel
+  'wheel-windup': { ms: 500, loop: false, docRow: true },
+  'wheel-tick': { ms: 30, loop: false, docRow: true },
+  'wheel-stop': { ms: 600, loop: false, docRow: true },
+  'wheel-morph': { ms: 500, loop: false, docRow: true },
+  'wheel-slice-out': { ms: 300, loop: false, docRow: true },
+  // The document's row is one cell, `cb-hype` / `cb-gulp` / `cb-yay` (0.6 / 0.25 / 0.5 s), so no clean row; the lengths are the spec table's (#718).
+  'cb-hype': { ms: 600, loop: false, docRow: false },
+  'cb-gulp': { ms: 250, loop: false, docRow: false },
+  'cb-yay': { ms: 500, loop: false, docRow: false },
+  // veto
+  'veto-open': { ms: 400, loop: false, docRow: true },
+  'veto-clock': { ms: 40, loop: false, docRow: true },
+  'veto-clip-close': { ms: 300, loop: false, docRow: true },
+  'veto-seal': { ms: 300, loop: false, docRow: true },
+  'veto-drumroll': { ms: 1200, loop: true, docRow: true },
+  'veto-reveal': { ms: 800, loop: false, docRow: true },
+  // coin
+  'coin-toss': { ms: 300, loop: false, docRow: true },
+  'coin-spin': { ms: 800, loop: false, docRow: true },
+  'coin-land': { ms: 500, loop: false, docRow: true },
+  'coin-result': { ms: 400, loop: false, docRow: true },
+  // standings
+  'lb-swap': { ms: 300, loop: false, docRow: true },
+  'lb-count': { ms: 25, loop: false, docRow: true },
+  'lb-winner': { ms: 800, loop: false, docRow: true },
+  // board
+  'drag-pick': { ms: 120, loop: false, docRow: true },
+  'drag-snap': { ms: 150, loop: false, docRow: true },
+  'drag-reject': { ms: 350, loop: false, docRow: true },
+  // ceremony
+  'cer-drop': { ms: 300, loop: false, docRow: true },
+  'cer-row': { ms: 250, loop: false, docRow: true },
+  // No row of its own (the document's is `boot-steps` + `cer-trophy-rattle`, „run length“): 700 = `CEREMONY_RUN_MS`.
+  'cer-run': { ms: 700, loop: false, docRow: false },
+  // One document row names both (`cer-trip` / `cer-bonk`), so neither is clean.
+  'cer-trip': { ms: 400, loop: false, docRow: false },
+  'cer-bonk': { ms: 400, loop: false, docRow: false },
+  'cer-stamp': { ms: 200, loop: false, docRow: true },
+  'cer-fanfare': { ms: 2500, loop: false, docRow: true },
+  'cer-crowd': { ms: 2000, loop: false, docRow: true },
+  // No row in compibert-sound.md: the document has no laugh of Compibert's. 500 ms is the spec's table (#718).
+  'cb-laugh': { ms: 500, loop: false, docRow: false },
+  // tour
+  'cb-hi': { ms: 300, loop: false, docRow: true },
+}

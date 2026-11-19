@@ -1,24 +1,116 @@
-import type { ClipView, SpinView, VetoDrawView } from '~~/shared/stage'
+import type { ClipView, SpinView, StandingView, VetoDrawView } from '~~/shared/stage'
+import { ceremonyTimeline, type RunShape } from '~~/shared/ceremony'
+import { COIN_DURATION_MS, COIN_LAND_AT, COIN_SPIN_AT, type CoinToss } from '~~/shared/coin'
 import { msOf } from '~~/shared/instant'
+import { countTicks } from './count-up'
+import { pointsDelta, rankMoves } from './standings-news'
 import { REVEAL_AFTER_MS, removalStart } from './wheel'
 import { pinCrossings } from './wheel-pins'
+import { mascotMoments } from './wheel-mascot'
 
 // Which sound cue is due at which server time (#530, spec #504 § The cue plan): a pure function of the viewer's own Event read, so every
 // device, a late joiner included, holds the same plan (ADR 0013). Nothing here plays or knows a clock: the cue player (#531) schedules what
-// `wheelCuePlan` and `vetoCuePlan` return, skips a cue that is too late and never works a time out itself. What the arrival of a read causes
-// (the own Party's cast, the stamps, a set game's opening) is no time known ahead: `vetoArrivalCues` decides it (#532).
+// the plans return (`wheelCuePlan`, `wheelVoicePlan`, `vetoCuePlan`, `coinCuePlan`, `ceremonyCuePlan`; the Tour's step cue is `tourStepCue`),
+// skips a cue that is too late and never works a time out itself. What the arrival of a read causes (the own Party's cast, the stamps, a set
+// game's opening) is no time known ahead: `vetoArrivalCues` decides it (#532). So does what the Standings' sequence causes on this device:
+// `standingsCues` (#741); `claimCues` lets each of those cues sound once.
 
-/** The eleven cue ids of 0.13.3 (#504), = the cue id of `compibert-sound.md` and the file name in the sound folder. */
-export const CUE_IDS = [
-  'wheel-windup', 'wheel-tick', 'wheel-stop', 'wheel-morph', 'wheel-slice-out',
-  'veto-open', 'veto-clock', 'veto-clip-close', 'veto-seal', 'veto-drumroll', 'veto-reveal',
-] as const
-export type CueId = (typeof CUE_IDS)[number]
+import { CUE_IDS, type CueId } from './cue-ids'
+
+// The ids live in a leaf Node imports (#828); this module is where the app takes them from.
+export { CUE_IDS, type CueId } from './cue-ids'
 
 /** `Vol` of `reference/docs/compibert-sound.md`, 0 to 100, relative to the loudest cue (the fanfare = 100); the player's gain is Vol / 100. */
 export const CUE_VOLUME: Record<CueId, number> = {
+  // wheel
   'wheel-windup': 45, 'wheel-tick': 30, 'wheel-stop': 70, 'wheel-morph': 50, 'wheel-slice-out': 35,
+  'cb-hype': 40, 'cb-gulp': 40, 'cb-yay': 40,
+  // veto
   'veto-open': 50, 'veto-clock': 25, 'veto-clip-close': 35, 'veto-seal': 55, 'veto-drumroll': 60, 'veto-reveal': 85,
+  // coin
+  'coin-toss': 50, 'coin-spin': 30, 'coin-land': 60, 'coin-result': 55,
+  // standings
+  'lb-swap': 35, 'lb-count': 20, 'lb-winner': 60,
+  // board
+  'drag-pick': 30, 'drag-snap': 40, 'drag-reject': 40,
+  // ceremony
+  'cer-drop': 55, 'cer-row': 40, 'cer-run': 40, 'cer-trip': 60, 'cer-bonk': 60,
+  'cer-stamp': 75, 'cer-fanfare': 100, 'cer-crowd': 60,
+  'cb-laugh': 40,
+  // tour
+  'cb-hi': 50,
+}
+
+/** The moments whose cue files an Event page requests together (#740): each has its flag in `GroupInput` and its rule in `reachableGroups`. */
+export type CueGroup = 'wheel' | 'veto' | 'coin' | 'standings' | 'board' | 'ceremony' | 'tour'
+
+/** The groups a cue's file is requested for, at least one: a cue that two moments play (a voice cue) names both, and its file comes once. */
+export const CUE_GROUPS: Record<CueId, readonly [CueGroup, ...CueGroup[]]> = {
+  // wheel
+  'wheel-windup': ['wheel'], 'wheel-tick': ['wheel'], 'wheel-stop': ['wheel'], 'wheel-morph': ['wheel'], 'wheel-slice-out': ['wheel'],
+  'cb-hype': ['wheel'], 'cb-gulp': ['wheel'], 'cb-yay': ['wheel', 'tour'],
+  // veto
+  'veto-open': ['veto'], 'veto-clock': ['veto'], 'veto-clip-close': ['veto'], 'veto-seal': ['veto'], 'veto-drumroll': ['veto'], 'veto-reveal': ['veto'],
+  // coin
+  'coin-toss': ['coin'], 'coin-spin': ['coin'], 'coin-land': ['coin'], 'coin-result': ['coin'],
+  // standings
+  'lb-swap': ['standings'], 'lb-count': ['standings'], 'lb-winner': ['standings'],
+  // board
+  'drag-pick': ['board'], 'drag-snap': ['board'], 'drag-reject': ['board'],
+  // ceremony
+  'cer-drop': ['ceremony'], 'cer-row': ['ceremony'], 'cer-run': ['ceremony'], 'cer-trip': ['ceremony'], 'cer-bonk': ['ceremony'],
+  'cer-stamp': ['ceremony'], 'cer-fanfare': ['ceremony'], 'cer-crowd': ['ceremony'],
+  'cb-laugh': ['ceremony'],
+  // tour
+  'cb-hi': ['tour'],
+}
+
+/**
+ * What the group rule reads of the viewer's Event read: flags and one count, nothing of the draw or the toss (§ Secrecy), so it cannot carry a
+ * game, a label, a side or an instant. Every field is required (#829): a group's flag a caller forgets is a compile error, not a silent "no files".
+ */
+export interface GroupInput {
+  /** `view.wheel != null`. */
+  wheel: boolean
+  /** `view.settings?.vetoAllowance ?? 0`. */
+  vetoAllowance: number
+  /** `view.wheel?.vetoes.draw != null`. */
+  vetoWindow: boolean
+  /** `view.runningSessionId != null`: the Event has a running Session, so the Host can toss (#669). */
+  sessionRunning: boolean
+  /** `view.coin != null`: the read carries a toss; never its side (#669). */
+  toss: boolean
+  /** `view.standings != null && view.event.phase !== 'finished'`: the Event is set up and not finished (#741); no Result is needed, no game. */
+  standings: boolean
+  /** The same rule as `standings` today: the Event is set up and not finished. The Game board's own field, so the two groups can part later (#742). */
+  board: boolean
+  /** `view.event.phase === 'finished'` (#743): the Award ceremony's files, whether or not the Host has started it. */
+  finished: boolean
+  /** The Tour may start for this Member (`tourMayStart` without the layer and the calm second, #747): a rule of the Member's own state. */
+  tour: boolean
+}
+
+/**
+ * The groups whose files this read can need, ascending in the order of the `CueGroup` union. The wheel's are reached with a wheel. The Veto
+ * window's too when the Event allows Vetoes (the early signal: a set game's window opens at its commit and the files must be decoded by
+ * then) or has a window (the late one). Everyone gets all of a group's files, whether their Party casts or not: no request may depend on a cast.
+ */
+export function reachableGroups(input: GroupInput): CueGroup[] {
+  const groups: CueGroup[] = []
+  if (input.wheel) groups.push('wheel')
+  if (input.wheel && (input.vetoAllowance > 0 || input.vetoWindow)) groups.push('veto')
+  if (input.sessionRunning || input.toss) groups.push('coin')
+  if (input.standings) groups.push('standings')
+  if (input.board) groups.push('board')
+  // The ceremony's files depend on „the Event is finished“ and nothing else: no request may tell a Member who won, that it is a Tie or which gag (#743).
+  if (input.finished) groups.push('ceremony')
+  if (input.tour) groups.push('tour')
+  return groups
+}
+
+/** The cue files of these groups, in the order of `CUE_IDS`, each once. */
+export function cueFilesOf(groups: readonly CueGroup[]): CueId[] {
+  return CUE_IDS.filter(id => CUE_GROUPS[id].some(group => groups.includes(group)))
 }
 
 /** Where the cue files are served from (`public/sounds/cues/`) and their extension: the one place that names either (#531). */
@@ -30,8 +122,11 @@ export function cueFileUrl(id: CueId): string {
   return `${CUE_FILE_FOLDER}/${id}.${CUE_FILE_EXTENSION}`
 }
 
-/** One cue of a plan: which, and when (server time, epoch ms). Its volume is `CUE_VOLUME[id]`, not a field: the plan holds only what a time decides. */
-export interface Cue { id: CueId, at: number }
+/**
+ * One cue of a plan: which, and when (server time, epoch ms). Its volume is `CUE_VOLUME[id]`, not a field: the plan holds only what a time decides.
+ * `rate` is the playback rate, 1 = the file's own pitch, absent = 1 (#743: the places of the Award ceremony rise by a semitone a step).
+ */
+export interface Cue { id: CueId, at: number, rate?: number }
 
 /** What the plan reads: the viewer's own Event read and the viewer's reduced-motion setting, nothing of the draw's game (§ Secrecy). */
 export interface WheelCueInput {
@@ -95,6 +190,40 @@ export function wheelCuePlan(input: WheelCueInput): Cue[] {
   return cues
 }
 
+/** What the voice's plan reads: the spin's two instants, the Event's Hidden wheel setting and reduced motion: exactly what Compibert is told (`mascotMoments`). */
+export interface WheelVoiceInput {
+  /** `view.wheel.spin`, only the two instants the read sends every viewer from the spin's commit on (ISO strings); null before the first spin. No slice, no result, no label, no game, and no `isHost`. */
+  spin: Pick<SpinView, 'spinStartAt' | 'stopAt'> | null
+  /** `view.settings?.hiddenWheel ?? false`. It delays his cheer for EVERY viewer, the Host included: do not use the Host's `concealed`. */
+  hiddenWheel: boolean
+  /** `reducedMotion()`, passed in; this module reads no DOM. */
+  reducedMotion: boolean
+}
+
+/**
+ * Compibert's voice at the wheel (#671, spec #718): `cb-hype` when the spin starts, `cb-gulp` at his brake and `cb-yay` at his cheer, ascending
+ * by `at`. The instants are `mascotMoments`' own (the 3/5 of the spin and the reveal's half second are never worked out here), so a change of
+ * his beats moves his voice with them. Reduced motion leaves only the cheer, at the same instant. No slice, result, label or game can reach it
+ * (the type has none, § Secrecy), and no cue's presence or time depends on `isHost`: the Host's and a Member's voice are the same, only the
+ * wheel's morph differs. It has no `now` and drops nothing for being past: the player skips a cue more than `CUE_LATE_MS` late.
+ */
+export function wheelVoicePlan(input: WheelVoiceInput): Cue[] {
+  const { spin, hiddenWheel, reducedMotion } = input
+  if (spin === null) return []
+
+  const spinStartAt = msOf(spin.spinStartAt)
+  const moments = mascotMoments({ spinStartAt, stopAt: msOf(spin.stopAt) }, hiddenWheel, reducedMotion)
+  const yay: Cue = { id: 'cb-yay', at: moments.cheerAt }
+  if (reducedMotion) return [yay]
+  return [{ id: 'cb-hype', at: spinStartAt }, { id: 'cb-gulp', at: moments.brakeAt }, yay]
+}
+
+const TOUR_STEP_CUES: Readonly<Record<string, CueId>> = { greeting: 'cb-hi', end: 'cb-yay' }
+/** The cue a Tour step sounds when it shows (#747), by the step's id in `MEMBER_TOUR`; null = silent. */
+export function tourStepCue(stepId: string): CueId | null {
+  return TOUR_STEP_CUES[stepId] ?? null
+}
+
 /**
  * What the Veto window's plan reads (#532): the fields of the viewer's own Event read that locate the window, nothing of the Vetoes. `own`,
  * `left`, `revealed` and the draw's `game` are not in the type, so the plan cannot read another Party's Veto, or a cast, by mistake (§ Secrecy).
@@ -144,6 +273,30 @@ export function vetoCuePlan(input: VetoCueInput): Cue[] {
   return cues.filter(cue => cue.at >= stop).sort((a, b) => a.at - b.at)
 }
 
+/** What the Coin flip's plan reads: the toss's two instants and reduced motion. `side` and `id` are not in the type (§ Secrecy, ADR 0013 amendment). */
+export interface CoinCueInput { toss: CoinToss | null, reducedMotion: boolean }
+
+/**
+ * The cues of a toss (#669, spec #718), ascending by `at`: `coin-toss` at the start, `coin-spin` where the coin turns in the air, `coin-land`
+ * where it reaches the ground and `coin-result` at the landing. The beats are the picture's (`COIN_SPIN_AT`, `COIN_LAND_AT` of the flight's
+ * keyframes), measured from `startedAt` as `CoinFlip.vue` seeks; the result is `landsAt`, as the picture's `coinLanded`. Reduced motion leaves
+ * out the throw and the turn and keeps the other two at the same instants. The toss has no side, so no cue can depend on it: `coin-result` is
+ * one file for Kopf and Schwanz. It has no `now` and drops nothing for being past: the player skips a late cue.
+ */
+export function coinCuePlan({ toss, reducedMotion }: CoinCueInput): Cue[] {
+  if (toss === null) return []
+
+  const start = msOf(toss.startedAt)
+  const cues: Cue[] = []
+  if (!reducedMotion) {
+    cues.push({ id: 'coin-toss', at: start })
+    cues.push({ id: 'coin-spin', at: start + COIN_DURATION_MS * COIN_SPIN_AT })
+  }
+  cues.push({ id: 'coin-land', at: start + COIN_DURATION_MS * COIN_LAND_AT })
+  cues.push({ id: 'coin-result', at: msOf(toss.landsAt) })
+  return cues
+}
+
 /** What the arrival cues read of one Event read (the viewer's own): the page keeps the previous one. `draw: null` = no window. */
 export interface VetoArrivalState {
   draw: Pick<VetoDrawView, 'drawId' | 'kind' | 'stopAt' | 'vetoEndsAt'> | null
@@ -179,5 +332,107 @@ export function vetoArrivalCues(previous: VetoArrivalState | null, next: VetoArr
     && next.draw.vetoEndsAt !== null && now - msOf(next.draw.vetoEndsAt) <= ARRIVAL_LATE_MS) {
     for (let index = 0; index < next.revealedCount; index++) cues.push({ id: 'veto-seal', delayMs: index * STAMP_GAP_MS })
   }
+  return cues
+}
+
+/**
+ * What the Standings' cues read (#741): ranks, points and team positions of the Standings the page saw and the ones it shows now, the winners'
+ * team positions and the two settings of the picture. No game, label, name, score or Result field, so a cue cannot depend on what the viewer
+ * may not know yet (§ Secrecy): the Result that makes the news is already in the picture.
+ */
+export interface StandingsCueInput {
+  /** `news.before`: the Standings the page saw before the Result. */
+  before: readonly StandingView[]
+  /** The Standings shown now. */
+  after: readonly StandingView[]
+  /** `news.winners`: team positions on Place 1. */
+  winners: readonly number[]
+  /** The stamp is drawn here (the stage block). */
+  celebrate: boolean
+  /** `reducedMotion()`, passed in: this module reads no DOM. */
+  reducedMotion: boolean
+  /** How long the counter counts (`countDurationMs()` of motion.ts). */
+  countMs: number
+  /** How long after the sequence's start the stamp lands (`STAMP_DELAY_MS` of motion.ts). */
+  stampDelayMs: number
+}
+
+/**
+ * The cues of one Standings sequence (#741), `delayMs` from its start, ascending and stable: `lb-swap` when some Party's rank changed (the glide, or
+ * under reduced motion the highlight, start there), `lb-count` once per displayed change of the Party that changed most (absolute: a Correction
+ * can lower points; a tie goes to the first in the order of `after`), and `lb-winner` where the stamp is drawn. Reduced motion has no count, so no
+ * ticks, and the stamp is a fade with no delay, so the winner goes with it at once. The beats are the picture's own (`countTicks`, the counter's
+ * duration, the stamp's delay): nothing here is a number of its own, and `countTicks` uses the counter's
+ * constants and curve.
+ */
+export function standingsCues(input: StandingsCueInput): ArrivalCue[] {
+  const { before, after, winners, celebrate, reducedMotion, countMs, stampDelayMs } = input
+  const cues: ArrivalCue[] = []
+  if (rankMoves(before, after).length > 0) cues.push({ id: 'lb-swap', delayMs: 0 })
+  if (!reducedMotion) {
+    let most: { team: number, change: number } | null = null
+    for (const [team, change] of pointsDelta(before, after)) {
+      if (change !== 0 && (most === null || Math.abs(change) > Math.abs(most.change))) most = { team, change }
+    }
+    if (most !== null) {
+      const to = after.find(standing => standing.team === most.team)!.points
+      for (const delayMs of countTicks(to - most.change, to, countMs)) cues.push({ id: 'lb-count', delayMs })
+    }
+  }
+  if (celebrate && winners.length > 0) cues.push({ id: 'lb-winner', delayMs: reducedMotion ? 0 : stampDelayMs })
+  // The sort is stable: on one instant the order above stays.
+  return cues.sort((a, b) => a.delayMs - b.delayMs)
+}
+
+/**
+ * The cues whose id this news has not asked for yet, and the ids marked as asked (#741): the stage block and the side panel's tab are both
+ * mounted on a wide screen and each plays the sequence, but one Result sounds once per page. One id is claimed for all of its ticks.
+ */
+export function claimCues(asked: Set<CueId>, cues: readonly ArrivalCue[]): ArrivalCue[] {
+  const own = cues.filter(cue => !asked.has(cue.id))
+  for (const cue of own) asked.add(cue.id)
+  return own
+}
+
+/**
+ * What the Award ceremony's plan reads (#743, spec #718): the run's start, its shape on THIS screen and the viewer's reduced-motion setting.
+ * Nothing the viewer may not know: the Party count, the Winner count and the gag are in every Member's read once the Host has started the
+ * ceremony (§ Secrecy), and until then no plan exists.
+ */
+export interface CeremonyCueInput {
+  /** The run's start instant, epoch ms: the Event read's `ceremony.startsAt`, or a replay's click. */
+  startsAt: number
+  /** The run's shape on THIS screen: the same `RunShape` the layer's run takes (partyCount, winners, gag, grid). */
+  shape: RunShape
+  /** `reducedMotion()`, passed in: this module reads no DOM. */
+  reducedMotion: boolean
+}
+
+/** Each place that slides in sounds a semitone higher than the one before it, so the pitch rises toward rank 1. The listening session may change the step (#718). */
+export const ROW_STEP_SEMITONES = 1
+
+/**
+ * The cues of the Award ceremony, one Winner or a Tie, ascending by `at` (#743, #745): the banner's drop at the start, a row for each place below (the last
+ * Place first, at the file's own pitch, each next a semitone higher), the run, then the trip or the bonk by the server's gag, never both, and
+ * then the stamp, the fanfare and the crowd, all three at `stampAtMs` (#744), and last the laugh at `getUpAtMs` (#746). Under reduced motion the plan is the fanfare alone, at `startsAt`,
+ * the instant the end frame shows. Every instant is `startsAt` plus a field of `ceremonyTimeline`, the function the tweens are built from, so
+ * sound and picture cannot drift. A Tie's instants come from the same function for its Winner count and its grid (a chain for 2 and 3 Winners,
+ * a grid from 4 and, on a phone, for 3), so each device's cues follow its own picture; the trophy's hops and the cards' stamps have no cue.
+ * It has no `now` and drops nothing for being past: the player skips a late cue, which is what a late joiner needs.
+ */
+export function ceremonyCuePlan(input: CeremonyCueInput): Cue[] {
+  const { startsAt, shape, reducedMotion } = input
+  // Reduced motion: the end frame is the whole show, and its sound is the fanfare alone, at the instant the end frame shows (#744, spec #718).
+  if (reducedMotion) return [{ id: 'cer-fanfare', at: startsAt }]
+
+  const timeline = ceremonyTimeline(shape)
+  const cues: Cue[] = [{ id: 'cer-drop', at: startsAt }]
+  timeline.rowAtMs.forEach((ms, index) => cues.push({ id: 'cer-row', at: startsAt + ms, rate: 2 ** (index * ROW_STEP_SEMITONES / 12) }))
+  cues.push({ id: 'cer-run', at: startsAt + timeline.runAtMs })
+  cues.push(shape.gag === 'trip' ? { id: 'cer-trip', at: startsAt + timeline.runEndAtMs } : { id: 'cer-bonk', at: startsAt + timeline.bonkAtMs })
+  // The stamp, and with it the fanfare and the crowd: the peak of the ceremony, at the instant the stamp's tween starts (#744). In a Tie it is the plate's „UNENTSCHIEDEN“ (#745).
+  cues.push({ id: 'cer-stamp', at: startsAt + timeline.stampAtMs }, { id: 'cer-fanfare', at: startsAt + timeline.stampAtMs }, { id: 'cer-crowd', at: startsAt + timeline.stampAtMs })
+  // The laugh: he gets up after the trophy lands and laughs, at the instant the rig turns to `laugh` (#746, spec #718).
+  cues.push({ id: 'cb-laugh', at: startsAt + timeline.getUpAtMs })
   return cues
 }

@@ -10,6 +10,8 @@ export class FakeSource {
   buffer: { id: string } | null = null
   startedAt: number | null = null
   stopCalls = 0
+  /** The Web Audio source's `playbackRate` (an AudioParam): 1 until a player sets one (#740). */
+  playbackRate = { value: 1 }
   private target: FakeGain | null = null
 
   connect(node: FakeGain) {
@@ -31,6 +33,10 @@ export class FakeSource {
 
   get gain() {
     return this.target?.gain.value
+  }
+
+  get rate() {
+    return this.playbackRate.value
   }
 }
 

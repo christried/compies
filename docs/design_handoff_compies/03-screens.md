@@ -387,6 +387,7 @@ Every screen exists in the design files at desktop 1280 and mobile 390, light an
 - **Data:** —
 - **Host vs player:** —
 - **States:** Autoplay blockiert · Ton an
+- **Deviation (0.17, #755):** the notice also shows with no clip: on a finished Event's page while its Award ceremony is not started yet or still runs (until the run's stored end), with Ton on, for the Host too, until that device's first gesture (`ceremonyAwaitsSound`, `app/utils/ceremony.ts`). Its text is unchanged.
 - **Realtime:** —
 
 
