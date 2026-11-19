@@ -1,48 +1,29 @@
-import { mountSuspended, registerEndpoint } from '@nuxt/test-utils/runtime'
+import { mountSuspended } from '@nuxt/test-utils/runtime'
 import { flushPromises } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { refreshEvent } from '~/composables/useEventView'
 import { NOTICE_SETTLE_MS } from '~/composables/useSoundUnlock'
 import EventPage from '~/pages/e/[slug]/index.vue'
-import { CUE_GROUPS, CUE_IDS, type CueGroup, type CueId } from '~/utils/sound-cues'
+import type { CueId } from '~/utils/sound-cues'
 import { defaultSettings } from '~~/shared/settings'
 import type { WheelView } from '~~/shared/stage'
 import { TOUR_VERSION } from '~~/shared/tour'
 import { FakeAudioContext } from '../fake-audio'
 import { kitty, signInAs } from './auth'
+import { context, cueLog, HeldContext, requested, requestedOf, requests, resetRequests, serveCueFiles, setUpCuePage, started, startedOf, tearDownCuePage } from './cue-harness'
 import { serve, view, viewWithSessions } from './event-page'
+import { FIRST, STARTED } from './event-page-states'
 
 // The Tour's voice on the Event page (#747, spec #718): `cb-hi` at the greeting and `cb-yay` at the end, played through the page's immediate-play
 // function each time the step shows, and the two files requested at page load for a Member the Tour may start for. The layer's own calls are in
 // tour-layer-cues.test.ts and the group rule in test/unit/tour-cues.test.ts. The audio context is the fake; the calm second is a real one.
 
-const FIRST = '2026-10-30T19:00:00.000Z'
-const STARTED = '2026-10-30T19:30:00.000Z'
 const TOUR_FILES = ['cb-hi', 'cb-yay']
 
-/** A browser that lets no sound through before a gesture: the context is made suspended. */
-class HeldContext extends FakeAudioContext {
-  override state = 'suspended'
-}
+serveCueFiles()
 
-/** The requests each cue file got. */
-const requests: Record<string, number> = {}
-for (const id of CUE_IDS) {
-  registerEndpoint(`/sounds/cues/${id}.wav`, () => {
-    requests[id] = (requests[id] ?? 0) + 1
-    return new TextEncoder().encode(id)
-  })
-}
-const requested = () => Object.keys(requests).filter(id => requests[id]).sort()
-/** The requested files of these groups: an assertion names the groups it is about, so another moment's files never break it (#718). */
-const requestedOf = (...groups: CueGroup[]) => requested().filter(id => CUE_GROUPS[id as CueId].some(group => groups.includes(group)))
-
-const context = () => FakeAudioContext.instances.at(-1)
-const started = () => context()?.started() ?? []
-const startedOf = (id: CueId) => started().filter(source => source.id === id)
-const log = () => (globalThis as { __compiesCueLog?: () => { id: CueId, outcome: string }[] }).__compiesCueLog?.() ?? []
 /** The log by id and outcome only: a line carries more (`at`, `rate`) that this file does not pin. */
-const logOf = (...ids: CueId[]) => log().filter(entry => ids.includes(entry.id)).map(entry => ({ id: entry.id, outcome: entry.outcome }))
+const logOf = (...ids: CueId[]) => cueLog().filter(entry => ids.includes(entry.id)).map(entry => ({ id: entry.id, outcome: entry.outcome }))
 
 const poll = (slug: string, overrides: { isHost?: boolean, phase?: string } = {}) =>
   view(slug, [], { event: { phase: overrides.phase ?? 'poll', isHost: overrides.isHost ?? false }, inviteUrl: overrides.isHost ? null : `https://compies.test/join/${slug}` })
@@ -86,13 +67,7 @@ const pastCalm = async () => {
 const ownAnimate = Element.prototype.animate
 
 beforeEach(() => {
-  signInAs({ ...kitty, tourSeen: 0 })
-  document.body.innerHTML = ''
-  FakeAudioContext.instances = []
-  FakeAudioContext.follows = true
-  for (const id of CUE_IDS) requests[id] = 0
-  vi.stubGlobal('AudioContext', FakeAudioContext)
-  useRuntimeConfig().public.staging = true
+  setUpCuePage({ user: { ...kitty, tourSeen: 0 }, staging: true })
   useState('open-layers').value = 0
   // As event-page-tour.test.ts: without `Element.animate` a step changes at once.
   Reflect.deleteProperty(Element.prototype, 'animate')
@@ -103,13 +78,8 @@ afterEach(() => {
   Element.prototype.animate = ownAnimate
   page?.unmount()
   page = undefined
-  vi.unstubAllGlobals()
-  FakeAudioContext.follows = false
-  localStorage.removeItem('compies-sound')
-  document.documentElement.style.removeProperty('--cp-motion')
   Reflect.deleteProperty(document.documentElement, 'clientWidth')
-  useRuntimeConfig().public.staging = false
-  Reflect.deleteProperty(globalThis, '__compiesCueLog')
+  tearDownCuePage()
 })
 
 describe('secrecy: the Tour\'s files are a rule of the Member\'s own state', () => {
@@ -120,9 +90,9 @@ describe('secrecy: the Tour\'s files are a rule of the Member\'s own state', () 
     await shown()
     await vi.waitFor(() => expect(logOf('cb-hi')).toHaveLength(1))
     const filesOfFirst = requested()
-    const logOfFirst = log().map(entry => entry.id)
+    const logOfFirst = cueLog().map(entry => entry.id)
     page!.unmount()
-    for (const id of CUE_IDS) requests[id] = 0
+    resetRequests()
     FakeAudioContext.instances = []
 
     const second = serve(slug => view(slug, [], { event: { phase: 'poll', isHost: false, startsAt: '2026-10-23T18:00:00.000Z' }, settings: defaultSettings() }))
@@ -132,7 +102,7 @@ describe('secrecy: the Tour\'s files are a rule of the Member\'s own state', () 
 
     expect(filesOfFirst).toEqual(TOUR_FILES)
     expect(requested()).toEqual(TOUR_FILES)
-    expect(log().map(entry => entry.id)).toEqual(logOfFirst)
+    expect(cueLog().map(entry => entry.id)).toEqual(logOfFirst)
     expect(new Set(logOfFirst)).toEqual(new Set(['cb-hi']))
   })
 })
@@ -197,7 +167,7 @@ describe('the Tour\'s voice for a Member it may start for', () => {
 
     expect(tourTitle()).toBe('Das war’s')
     expect(started()).toEqual([])
-    expect(log()).toEqual([])
+    expect(cueLog()).toEqual([])
     expect(requested()).toEqual([])
   })
 })
@@ -211,7 +181,7 @@ describe('nothing of the Tour\'s voice for the others', () => {
     expect(tour()).toBeNull()
     expect(requested()).toEqual([])
     expect(started()).toEqual([])
-    expect(log()).toEqual([])
+    expect(cueLog()).toEqual([])
   })
 
   it('requests no Tour file for a Host, who gets no Tour', async () => {

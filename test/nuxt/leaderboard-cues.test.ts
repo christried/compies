@@ -9,6 +9,7 @@ import { STAMP_DELAY_MS } from '~/utils/motion'
 import type { StandingsNews } from '~/utils/standings-news'
 import type { BoardTeam } from '~~/shared/event'
 import type { EndView, StandingView } from '~~/shared/stage'
+import { motion } from './motion'
 
 // The Standings' sounds in the Leaderboard (#741, spec #718): a played news asks the player (handed down by the Event page, here a spy) for its
 // swap, its ticks and, where the stamp is drawn, its winner. Which news plays at all (fresh, not held) is the Leaderboard's old rule (#276, #442);
@@ -50,10 +51,6 @@ const TICKS = countTicks(3, 6, COUNT_MS)
 async function receives(page: VueWrapper, news: StandingsNews | null, standings = AFTER, extra: Props = {}) {
   await page.setProps({ standings, news, ...extra })
   await nextTick()
-}
-
-function motion(value: 'full' | 'reduced') {
-  vi.spyOn(window, 'getComputedStyle').mockReturnValue({ getPropertyValue: (name: string) => (name === '--cp-motion' ? value : '') } as CSSStyleDeclaration)
 }
 
 beforeEach(() => {

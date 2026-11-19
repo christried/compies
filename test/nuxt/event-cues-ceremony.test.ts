@@ -2,13 +2,14 @@ import { mockNuxtImport, registerEndpoint } from '@nuxt/test-utils/runtime'
 import { flushPromises } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { refreshEvent } from '~/composables/useEventView'
-import { CUE_GROUPS, CUE_IDS, cueFilesOf, type CueGroup, type CueId } from '~/utils/sound-cues'
+import type { CueLogEntry } from '~/utils/cue-player'
+import { CUE_GROUPS, ceremonyCuePlan, cueFilesOf, ROW_STEP_SEMITONES, type CueId } from '~/utils/sound-cues'
 import { ceremonyTimeline, type CeremonyGag } from '~~/shared/ceremony'
 import type { RoundGame } from '~~/shared/game'
 import { defaultSettings } from '~~/shared/settings'
 import type { CeremonyView, ResultView, SpinView, WheelView } from '~~/shared/stage'
 import { FakeAudioContext } from '../fake-audio'
-import { kitty, signInAs } from './auth'
+import { cueLog, iso, requested, requestedOf, requests, resetRequests, serveCueFiles, setUpCuePage, started, tearDownCuePage } from './cue-harness'
 import { restoreScreen, serve, stubScreen, viewWithSessions } from './event-page'
 import { ENDED, FIRST, members, mount, SESSION, STARTED, team, unmountPage } from './event-page-states'
 import { motion } from './motion'
@@ -42,29 +43,13 @@ const resultOf = (number: number): ResultView => ({
 })
 const ENDED_ONE = SESSION(1, FIRST, { startedAt: STARTED, endedAt: ENDED })
 
-/** The nine files of #743, #744 and #746, the files of its group; a later ticket adds more, so no assertion lists the group's files. */
-const OWN_FILES = ['cer-drop', 'cer-row', 'cer-run', 'cer-trip', 'cer-bonk', 'cer-stamp', 'cer-fanfare', 'cer-crowd', 'cb-laugh']
+/** The files of the ceremony's group, read from `CUE_GROUPS`: a later ticket adds more, so no assertion lists them by hand. */
+const OWN_FILES: string[] = cueFilesOf(['ceremony'])
 
-/** The requests each cue file got. The handlers answer with the cue id as bytes, which the fake decodes back to `{ id }`. */
-const requests: Record<string, number> = {}
-for (const id of CUE_IDS) {
-  registerEndpoint(`/sounds/cues/${id}.wav`, () => {
-    requests[id] = (requests[id] ?? 0) + 1
-    return new TextEncoder().encode(id)
-  })
-}
-const requested = () => Object.keys(requests).filter(id => requests[id]).sort()
-/** The requested files of these groups: an assertion names the groups it is about, so another moment's files never break it (#718). */
-const requestedOf = (...groups: CueGroup[]) => requested().filter(id => CUE_GROUPS[id as CueId].some(group => groups.includes(group)))
+serveCueFiles()
 /** A cue of the Award ceremony's group (#746: the laugh is a voice cue, so its id has no `cer-` prefix). */
 const ceremonyCue = (id: string | undefined) => CUE_GROUPS[id as CueId]?.includes('ceremony') === true
 
-const context = () => FakeAudioContext.instances.at(-1)
-const started = () => context()?.started() ?? []
-type Line = { id: CueId, at: number, rate: number, outcome: string }
-const log = () => (globalThis as { __compiesCueLog?: () => readonly Line[] }).__compiesCueLog?.() ?? []
-
-const iso = (ms: number) => new Date(ms).toISOString()
 /** A run that starts `lead` ms from now (a negative lead: it started that long ago) for `parties` Parties and `winners` Winners. */
 function ceremonyIn(lead: number, gag: CeremonyGag, winners = 1): CeremonyView {
   const startsAt = Math.round(Date.now() + lead)
@@ -76,7 +61,7 @@ function planAt(startsAt: number, gag: CeremonyGag) {
   const m = ceremonyTimeline({ partyCount: PARTIES, winners: 1, gag, grid: false })
   return [
     { id: 'cer-drop', at: startsAt, rate: 1 },
-    ...m.rowAtMs.map((ms, index) => ({ id: 'cer-row', at: startsAt + ms, rate: 2 ** (index / 12) })),
+    ...m.rowAtMs.map((ms, index) => ({ id: 'cer-row', at: startsAt + ms, rate: 2 ** (index * ROW_STEP_SEMITONES / 12) })),
     { id: 'cer-run', at: startsAt + m.runAtMs, rate: 1 },
     gag === 'trip' ? { id: 'cer-trip', at: startsAt + m.runEndAtMs, rate: 1 } : { id: 'cer-bonk', at: startsAt + m.bonkAtMs, rate: 1 },
     { id: 'cer-stamp', at: startsAt + m.stampAtMs, rate: 1 },
@@ -90,7 +75,7 @@ function tiePlanAt(startsAt: number, gag: CeremonyGag, winners: number, grid: bo
   const m = ceremonyTimeline({ partyCount: PARTIES, winners, gag, grid })
   return [
     { id: 'cer-drop', at: startsAt, rate: 1 },
-    ...m.rowAtMs.map((ms, index) => ({ id: 'cer-row', at: startsAt + ms, rate: 2 ** (index / 12) })),
+    ...m.rowAtMs.map((ms, index) => ({ id: 'cer-row', at: startsAt + ms, rate: 2 ** (index * ROW_STEP_SEMITONES / 12) })),
     { id: 'cer-run', at: startsAt + m.runAtMs, rate: 1 },
     gag === 'trip' ? { id: 'cer-trip', at: startsAt + m.runEndAtMs, rate: 1 } : { id: 'cer-bonk', at: startsAt + m.bonkAtMs, rate: 1 },
     { id: 'cer-stamp', at: startsAt + m.stampAtMs, rate: 1 },
@@ -101,14 +86,21 @@ function tiePlanAt(startsAt: number, gag: CeremonyGag, winners: number, grid: bo
 }
 /** The cues of the stamp, the fanfare and the crowd, and the laugh (#746): the part of a Tie's plan that follows the plate, so the screen's grid. */
 const PEAK = ['cer-stamp', 'cer-fanfare', 'cer-crowd', 'cb-laugh']
-/** Drop, three rows, run, the gag, then the stamp, the fanfare and the crowd, and the laugh. */
-const CEREMONY_CUES = 10
+/** How many cues one Winner's run has (drop, three rows, run, the gag, the stamp, the fanfare, the crowd, the laugh), read from the plan, not counted here. */
+const CEREMONY_CUES = ceremonyCuePlan({ startsAt: 0, shape: { partyCount: PARTIES, winners: 1, gag: 'trip', grid: false }, reducedMotion: false }).length
 /** A run whose stamp is `ahead` ms away: the page has the time to load and schedule the fanfare, and the test waits (`fanfareSounds`) until it sounds. */
 const stampIn = (ahead: number, gag: CeremonyGag) => ceremonyIn(ahead - ceremonyTimeline({ partyCount: PARTIES, winners: 1, gag, grid: false }).stampAtMs, gag)
-/** Waits until the fanfare of a run `stampIn` made has been sounding for 50 ms (the audio clock of the fake follows the device's). */
-const fanfareSounds = (ceremony: CeremonyView, gag: CeremonyGag) =>
-  vi.waitFor(() => expect(Date.now()).toBeGreaterThanOrEqual(Date.parse(ceremony.startsAt) + ceremonyTimeline({ partyCount: PARTIES, winners: 1, gag, grid: false }).stampAtMs + 50), { timeout: 5000, interval: 20 })
-const shapeOf = (lines: readonly Line[]) => lines.map(({ id, at, rate }) => ({ id, at, rate }))
+/**
+ * Waits until the fanfare has been sounding for 50 ms, by its own log line: the player decides "sounding" by the device's `Date.now()` against the
+ * cue's `at`, so this wait stays a real-clock one (at most the `ahead` of `stampIn`, 1 s), and fake timers on the whole page are not worth it for one.
+ */
+const fanfareSounds = () =>
+  vi.waitFor(() => {
+    const fanfare = cueLog().find(line => line.id === 'cer-fanfare')
+    expect(fanfare).toBeDefined()
+    expect(Date.now()).toBeGreaterThanOrEqual(fanfare!.at + 50)
+  }, { timeout: 5000, interval: 20 })
+const shapeOf = (lines: readonly CueLogEntry[]) => lines.map(({ id, at, rate }) => ({ id, at, rate }))
 
 interface Read { host: boolean, tie?: boolean, winners?: number, ceremony: CeremonyView | null, wheel?: WheelView | null }
 
@@ -156,15 +148,8 @@ async function settled(sources: number) {
 }
 
 beforeEach(() => {
-  signInAs(kitty)
-  document.body.innerHTML = ''
-  FakeAudioContext.instances = []
-  FakeAudioContext.follows = true
+  setUpCuePage({ staging: true })
   chunk.fail = false
-  for (const id of CUE_IDS) requests[id] = 0
-  vi.stubGlobal('AudioContext', FakeAudioContext)
-  // The cue log is the page's own data, exposed in a staging build.
-  useRuntimeConfig().public.staging = true
   useState('sound-enabled').value = true
   motion('full')
 })
@@ -172,12 +157,7 @@ beforeEach(() => {
 afterEach(() => {
   unmountPage()
   restoreScreen()
-  vi.restoreAllMocks()
-  vi.unstubAllGlobals()
-  FakeAudioContext.follows = false
-  localStorage.removeItem('compies-sound')
-  useRuntimeConfig().public.staging = false
-  Reflect.deleteProperty(globalThis, '__compiesCueLog')
+  tearDownCuePage()
 })
 
 describe('the files of the ceremony (secrecy, #718 § Secrecy)', () => {
@@ -191,11 +171,11 @@ describe('the files of the ceremony (secrecy, #718 § Secrecy)', () => {
     const seen: Record<string, string[]> = {}
     for (const host of [false, true]) {
       for (const [name, variant] of variants) {
-        for (const id of CUE_IDS) requests[id] = 0
+        resetRequests()
         await mount(serveFinished({ host, ceremony: null, ...variant }).slug)
-        await vi.waitFor(() => expect(requestedOf('ceremony')).not.toEqual([]), { timeout: 5000 })
+        // Until the group's files are all in: the comparison below says whether a variant asked for others, so it waits for the files, not for a pause.
+        await vi.waitFor(() => expect(requestedOf('ceremony')).toEqual([...OWN_FILES].sort()), { timeout: 5000 })
         await flushPromises()
-        await new Promise(resolve => setTimeout(resolve, 30))
         seen[`${host ? 'Host' : 'Member'}, ${name}`] = requestedOf('ceremony')
         for (const id of requestedOf('ceremony')) expect(requests[id], id).toBe(1)
         unmountPage()
@@ -222,14 +202,14 @@ describe.each([['the Host', true], ['a Member', false]])('the ceremony of one Wi
       await mount(serveFinished({ host, ceremony }).slug)
       await settled(CEREMONY_CUES)
 
-      expect(shapeOf(log())).toEqual(planAt(Date.parse(ceremony.startsAt), gag))
-      expect(log().every(line => line.outcome === 'scheduled')).toBe(true)
-      expect(started().map(source => source.id)).toEqual(log().map(line => line.id))
-      expect(started().map(source => source.rate)).toEqual(log().map(line => line.rate))
+      expect(shapeOf(cueLog())).toEqual(planAt(Date.parse(ceremony.startsAt), gag))
+      expect(cueLog().every(line => line.outcome === 'scheduled')).toBe(true)
+      expect(started().map(source => source.id)).toEqual(cueLog().map(line => line.id))
+      expect(started().map(source => source.rate)).toEqual(cueLog().map(line => line.rate))
       expect(started()[1]!.rate).toBe(1)
       expect(started()[2]!.rate).toBeCloseTo(1.0595, 4)
-      expect(log().map(line => line.id)).toContain(gag === 'trip' ? 'cer-trip' : 'cer-bonk')
-      expect(log().map(line => line.id)).not.toContain(gag === 'trip' ? 'cer-bonk' : 'cer-trip')
+      expect(cueLog().map(line => line.id)).toContain(gag === 'trip' ? 'cer-trip' : 'cer-bonk')
+      expect(cueLog().map(line => line.id)).not.toContain(gag === 'trip' ? 'cer-bonk' : 'cer-trip')
     })
   })
 
@@ -243,7 +223,7 @@ describe.each([['the Host', true], ['a Member', false]])('the ceremony of one Wi
     await served.set({ ceremony: { ...ceremony } })
 
     expect(started()).toHaveLength(CEREMONY_CUES)
-    expect(log()).toHaveLength(CEREMONY_CUES)
+    expect(cueLog()).toHaveLength(CEREMONY_CUES)
     expect(started().every(source => source.stopCalls === 0)).toBe(true)
   })
 
@@ -257,10 +237,10 @@ describe.each([['the Host', true], ['a Member', false]])('the ceremony of one Wi
     await served.set({ ceremony: second })
     await settled(2 * CEREMONY_CUES)
 
-    expect(log().slice(0, CEREMONY_CUES).every(line => line.outcome === 'cancelled')).toBe(true)
+    expect(cueLog().slice(0, CEREMONY_CUES).every(line => line.outcome === 'cancelled')).toBe(true)
     expect(started().slice(0, CEREMONY_CUES).every(source => source.stopCalls === 1)).toBe(true)
-    expect(shapeOf(log().slice(CEREMONY_CUES))).toEqual(planAt(Date.parse(second.startsAt), 'bonk'))
-    expect(log().slice(CEREMONY_CUES).every(line => line.outcome === 'scheduled')).toBe(true)
+    expect(shapeOf(cueLog().slice(CEREMONY_CUES))).toEqual(planAt(Date.parse(second.startsAt), 'bonk'))
+    expect(cueLog().slice(CEREMONY_CUES).every(line => line.outcome === 'scheduled')).toBe(true)
   })
 
   it('gives a late joiner only what is still to come: nothing earlier than 150 ms ago is scheduled', async () => {
@@ -271,7 +251,7 @@ describe.each([['the Host', true], ['a Member', false]])('the ceremony of one Wi
     await vi.waitFor(() => expect(started().map(source => source.id)).toContain('cer-bonk'), { timeout: 5000 })
     await flushPromises()
 
-    const playing = log().filter(line => line.outcome === 'scheduled' || line.outcome === 'late')
+    const playing = cueLog().filter(line => line.outcome === 'scheduled' || line.outcome === 'late')
     expect(playing.map(line => line.id)).toEqual(['cer-bonk', 'cer-stamp', 'cer-fanfare', 'cer-crowd', 'cb-laugh'])
     for (const line of playing) expect(line.at).toBeGreaterThanOrEqual(before - 150)
   })
@@ -287,15 +267,15 @@ describe.each([['the Host', true], ['a Member', false]])('the ceremony of one Wi
     await new Promise(resolve => setTimeout(resolve, 50))
 
     expect(started().map(source => source.id)).not.toContain('cb-laugh')
-    expect(log().filter(line => line.id === 'cb-laugh' && (line.outcome === 'scheduled' || line.outcome === 'late'))).toEqual([])
+    expect(cueLog().filter(line => line.id === 'cb-laugh' && (line.outcome === 'scheduled' || line.outcome === 'late'))).toEqual([])
   })
 
   it('gives a late joiner just before the laugh the laugh, at its instant', async () => {
     const ceremony = ceremonyIn(-(getUp - 1000), 'trip')
     await mount(serveFinished({ host, ceremony }).slug)
-    await vi.waitFor(() => expect(log().find(line => line.id === 'cb-laugh')).toBeDefined(), { timeout: 5000 })
+    await vi.waitFor(() => expect(cueLog().find(line => line.id === 'cb-laugh')).toBeDefined(), { timeout: 5000 })
 
-    const laugh = log().find(line => line.id === 'cb-laugh')!
+    const laugh = cueLog().find(line => line.id === 'cb-laugh')!
     expect(['scheduled', 'late']).toContain(laugh.outcome)
     expect(laugh.at).toBe(Date.parse(ceremony.startsAt) + getUp)
   })
@@ -308,7 +288,7 @@ describe.each([['the Host', true], ['a Member', false]])('the ceremony of one Wi
     await new Promise(resolve => setTimeout(resolve, 50))
 
     expect(started()).toEqual([])
-    expect(log().filter(line => line.outcome === 'scheduled' || line.outcome === 'late')).toEqual([])
+    expect(cueLog().filter(line => line.outcome === 'scheduled' || line.outcome === 'late')).toEqual([])
   })
 
   // A wheel plan of the read is the page's other source: a cut of the ceremony never touches it.
@@ -334,15 +314,15 @@ describe.each([['the Host', true], ['a Member', false]])('the ceremony of one Wi
       await vi.waitFor(() => expect(dialogButton(label)).toBeDefined(), { timeout: 5000 })
       dialogButton(label)!.click()
       await flushPromises()
-      await new Promise(resolve => setTimeout(resolve, 20))
+      await vi.waitFor(() => expect(started().find(source => source.id === 'cer-drop')!.stopCalls).toBeGreaterThanOrEqual(1))
 
       const ceremonySources = started().filter(source => ceremonyCue(source.id))
       const drop = ceremonySources.find(source => source.id === 'cer-drop')!
       expect(drop.stopCalls).toBeGreaterThanOrEqual(1)
       expect(ceremonySources.filter(source => source.id !== 'cer-drop').every(source => source.stopCalls >= 1)).toBe(true)
-      expect(log().filter(line => ceremonyCue(line.id) && line.id !== 'cer-drop').every(line => line.outcome === 'cancelled')).toBe(true)
-      expect(log().find(line => line.id === 'cer-drop')!.outcome).toBe('scheduled')
-      expect(log().find(line => line.id === 'cb-laugh')!.outcome).toBe('cancelled')
+      expect(cueLog().filter(line => ceremonyCue(line.id) && line.id !== 'cer-drop').every(line => line.outcome === 'cancelled')).toBe(true)
+      expect(cueLog().find(line => line.id === 'cer-drop')!.outcome).toBe('scheduled')
+      expect(cueLog().find(line => line.id === 'cb-laugh')!.outcome).toBe('cancelled')
       expect(started().filter(source => !ceremonyCue(source.id))).toHaveLength(wheelCues)
       expect(started().filter(source => !ceremonyCue(source.id)).every(source => source.stopCalls === 0)).toBe(true)
 
@@ -357,8 +337,8 @@ describe.each([['the Host', true], ['a Member', false]])('the ceremony of one Wi
       const ceremony = stampIn(1000, 'trip')
       await mount(serveFinished({ host, ceremony, wheel: read }).slug)
       await vi.waitFor(() => expect(started().map(source => source.id)).toContain('cer-crowd'), { timeout: 5000 })
-      await fanfareSounds(ceremony, 'trip')
-      expect(log().filter(line => line.id === 'cer-fanfare' || line.id === 'cer-crowd').map(line => line.outcome)).toEqual(['scheduled', 'scheduled'])
+      await fanfareSounds()
+      expect(cueLog().filter(line => line.id === 'cer-fanfare' || line.id === 'cer-crowd').map(line => line.outcome)).toEqual(['scheduled', 'scheduled'])
       const wheelCues = started().filter(source => !ceremonyCue(source.id)).length
       expect(wheelCues).toBeGreaterThan(0)
 
@@ -366,7 +346,7 @@ describe.each([['the Host', true], ['a Member', false]])('the ceremony of one Wi
       const before = started().length
       dialogButton(label)!.click()
       await flushPromises()
-      await new Promise(resolve => setTimeout(resolve, 20))
+      await vi.waitFor(() => expect(started().filter(source => source.id === 'cer-fanfare' || source.id === 'cer-crowd').every(source => source.stopCalls >= 1)).toBe(true))
 
       for (const id of ['cer-fanfare', 'cer-crowd']) {
         expect(started().find(source => source.id === id)!.stopCalls, id).toBeGreaterThanOrEqual(1)
@@ -392,7 +372,7 @@ describe.each([['the Host', true], ['a Member', false]])('the ceremony of one Wi
     dialogButton('Nochmal ansehen')!.click()
     await settled(2 * CEREMONY_CUES)
 
-    const replay = log().slice(CEREMONY_CUES)
+    const replay = cueLog().slice(CEREMONY_CUES)
     expect(replay.map(line => line.id)).toEqual(planAt(0, 'trip').map(cue => cue.id))
     expect(replay[0]!.id).toBe('cer-drop')
     for (const line of replay) expect(line.at).toBeGreaterThanOrEqual(clicked)
@@ -407,7 +387,7 @@ describe.each([['the Host', true], ['a Member', false]])('the ceremony of one Wi
     await new Promise(resolve => setTimeout(resolve, 80))
 
     expect(started()).toEqual([])
-    expect(log()).toEqual([])
+    expect(cueLog()).toEqual([])
     expect(requested()).toEqual([])
   })
 
@@ -418,7 +398,7 @@ describe.each([['the Host', true], ['a Member', false]])('the ceremony of one Wi
     useState('sound-enabled').value = false
     await flushPromises()
 
-    expect(log().every(line => line.outcome === 'cancelled')).toBe(true)
+    expect(cueLog().every(line => line.outcome === 'cancelled')).toBe(true)
     expect(started().every(source => source.stopCalls >= 1)).toBe(true)
   })
 
@@ -426,7 +406,7 @@ describe.each([['the Host', true], ['a Member', false]])('the ceremony of one Wi
     const ceremony = stampIn(1000, 'trip')
     await mount(serveFinished({ host, ceremony }).slug)
     await vi.waitFor(() => expect(started().map(source => source.id)).toContain('cer-crowd'), { timeout: 5000 })
-    await fanfareSounds(ceremony, 'trip')
+    await fanfareSounds()
 
     useState('sound-enabled').value = false
     await flushPromises()
@@ -435,7 +415,7 @@ describe.each([['the Host', true], ['a Member', false]])('the ceremony of one Wi
     expect(started().find(source => source.id === 'cer-crowd')!.stopCalls).toBeGreaterThanOrEqual(1)
     // What already sounds keeps its line (the stamp, the fanfare, the crowd); nothing else is left to sound. The laugh is due 150 ms after the stamp: the
     // switch comes about 50 ms after it, so the laugh is pending, but the test does not hang on that timing.
-    expect(log().filter(line => line.outcome === 'scheduled' && line.id !== 'cb-laugh').map(line => line.id)).toEqual(['cer-stamp', 'cer-fanfare', 'cer-crowd'])
+    expect(cueLog().filter(line => line.outcome === 'scheduled' && line.id !== 'cb-laugh').map(line => line.id)).toEqual(['cer-stamp', 'cer-fanfare', 'cer-crowd'])
   })
 
   it('plays the fanfare alone under reduced motion, at the start, and requests its files', async () => {
@@ -445,8 +425,8 @@ describe.each([['the Host', true], ['a Member', false]])('the ceremony of one Wi
     await vi.waitFor(() => expect(requestedOf('ceremony')).toEqual(expect.arrayContaining(OWN_FILES)), { timeout: 5000 })
     await settled(1)
 
-    expect(log().map(line => line.id)).toEqual(['cer-fanfare'])
-    expect(log()[0]!.at).toBe(Date.parse(ceremony.startsAt))
+    expect(cueLog().map(line => line.id)).toEqual(['cer-fanfare'])
+    expect(cueLog()[0]!.at).toBe(Date.parse(ceremony.startsAt))
     expect(started().map(source => source.id)).toEqual(['cer-fanfare'])
   })
 
@@ -458,7 +438,7 @@ describe.each([['the Host', true], ['a Member', false]])('the ceremony of one Wi
     await new Promise(resolve => setTimeout(resolve, 50))
 
     expect(started().map(source => source.id)).not.toContain('cer-fanfare')
-    expect(log().filter(line => line.outcome === 'scheduled' || line.outcome === 'late')).toEqual([])
+    expect(cueLog().filter(line => line.outcome === 'scheduled' || line.outcome === 'late')).toEqual([])
   })
 
   it('plays the fanfare alone on this device when a replay is asked for under reduced motion, and sends no request', async () => {
@@ -472,14 +452,14 @@ describe.each([['the Host', true], ['a Member', false]])('the ceremony of one Wi
       expect(found).toBeDefined()
       return found!
     }, { timeout: 5000 })
-    const sounded = log().length
+    const sounded = cueLog().length
 
     const clicked = Date.now()
     await button.trigger('click')
-    await vi.waitFor(() => expect(log().length).toBeGreaterThan(sounded), { timeout: 5000 })
+    await vi.waitFor(() => expect(cueLog().length).toBeGreaterThan(sounded), { timeout: 5000 })
     await flushPromises()
 
-    const replay = log().slice(sounded)
+    const replay = cueLog().slice(sounded)
     expect(replay.map(line => line.id)).toEqual(['cer-fanfare'])
     expect(replay[0]!.at).toBeGreaterThanOrEqual(clicked)
     expect(served.posts()).toBe(0)
@@ -490,10 +470,10 @@ describe.each([['the Host', true], ['a Member', false]])('the ceremony of one Wi
     /** The page schedules exactly this plan, once, every line `scheduled`, the player's sources in the log's order and pitch. */
     async function expectPlan(plan: ReturnType<typeof tiePlanAt>) {
       await settled(plan.length)
-      expect(shapeOf(log())).toEqual(plan)
-      expect(log().every(line => line.outcome === 'scheduled')).toBe(true)
-      expect(started().map(source => source.id)).toEqual(log().map(line => line.id))
-      expect(started().map(source => source.rate)).toEqual(log().map(line => line.rate))
+      expect(shapeOf(cueLog())).toEqual(plan)
+      expect(cueLog().every(line => line.outcome === 'scheduled')).toBe(true)
+      expect(started().map(source => source.id)).toEqual(cueLog().map(line => line.id))
+      expect(started().map(source => source.rate)).toEqual(cueLog().map(line => line.rate))
     }
 
     describe.each<CeremonyGag>(['trip', 'bonk'])('with the gag %s', (gag) => {
@@ -512,7 +492,7 @@ describe.each([['the Host', true], ['a Member', false]])('the ceremony of one Wi
       stubScreen(true)
       await mount(serveFinished({ host, winners: 3, ceremony }).slug)
       await expectPlan(tiePlanAt(startsAt, 'trip', 3, false))
-      const wide = shapeOf(log())
+      const wide = shapeOf(cueLog())
       unmountPage()
       FakeAudioContext.instances = []
       Reflect.deleteProperty(globalThis, '__compiesCueLog')
@@ -520,7 +500,7 @@ describe.each([['the Host', true], ['a Member', false]])('the ceremony of one Wi
       stubScreen(false)
       await mount(serveFinished({ host, winners: 3, ceremony }).slug)
       await expectPlan(tiePlanAt(startsAt, 'trip', 3, true))
-      const phone = shapeOf(log())
+      const phone = shapeOf(cueLog())
 
       expect(phone.filter(line => !PEAK.includes(line.id))).toEqual(wide.filter(line => !PEAK.includes(line.id)))
       for (const id of PEAK) expect(phone.find(line => line.id === id)!.at, id).toBeLessThan(wide.find(line => line.id === id)!.at)
@@ -532,7 +512,7 @@ describe.each([['the Host', true], ['a Member', false]])('the ceremony of one Wi
       await mount(serveFinished({ host, winners: 4, ceremony }).slug)
 
       await expectPlan(tiePlanAt(Date.parse(ceremony.startsAt), 'trip', 4, true))
-      expect(log().map(line => line.id)).not.toContain('cer-row')
+      expect(cueLog().map(line => line.id)).not.toContain('cer-row')
     })
 
     it('gives a viewer who crosses the phone\'s width the plan of the new layout: the stamp, the fanfare, the crowd and the laugh move, the rest is untouched', async () => {
@@ -543,14 +523,14 @@ describe.each([['the Host', true], ['a Member', false]])('the ceremony of one Wi
       const chain = tiePlanAt(startsAt, 'trip', 3, false)
       await mount(serveFinished({ host, winners: 3, ceremony }).slug)
       await expectPlan(grid)
-      const lines = (plan: typeof grid) => log().filter(line => PEAK.includes(line.id) && plan.some(cue => cue.id === line.id && cue.at === line.at))
+      const lines = (plan: typeof grid) => cueLog().filter(line => PEAK.includes(line.id) && plan.some(cue => cue.id === line.id && cue.at === line.at))
 
       resize(true)
       await vi.waitFor(() => expect(lines(chain).filter(line => line.outcome === 'scheduled')).toHaveLength(PEAK.length), { timeout: 5000 })
       await flushPromises()
 
       expect(lines(grid).map(line => line.outcome)).toEqual(['cancelled', 'cancelled', 'cancelled', 'cancelled'])
-      expect(log().filter(line => !PEAK.includes(line.id)).every(line => line.outcome === 'scheduled')).toBe(true)
+      expect(cueLog().filter(line => !PEAK.includes(line.id)).every(line => line.outcome === 'scheduled')).toBe(true)
       expect(started().filter(source => !PEAK.includes(source.id!)).every(source => source.stopCalls === 0)).toBe(true)
       expect(started()).toHaveLength(grid.length + PEAK.length)
 
@@ -573,12 +553,12 @@ describe.each([['the Host', true], ['a Member', false]])('the ceremony of one Wi
         await vi.waitFor(() => expect(dialogButton(label)).toBeDefined(), { timeout: 5000 })
         dialogButton(label)!.click()
         await flushPromises()
-        await new Promise(resolve => setTimeout(resolve, 20))
+        await vi.waitFor(() => expect(started().find(source => source.id === 'cer-drop')!.stopCalls).toBeGreaterThanOrEqual(1))
 
         expect(started().find(source => source.id === 'cer-drop')!.stopCalls).toBeGreaterThanOrEqual(1)
         expect(started().filter(source => source.id !== 'cer-drop').every(source => source.stopCalls >= 1)).toBe(true)
-        expect(log().filter(line => line.id !== 'cer-drop').every(line => line.outcome === 'cancelled')).toBe(true)
-        expect(log().find(line => line.id === 'cer-drop')!.outcome).toBe('scheduled')
+        expect(cueLog().filter(line => line.id !== 'cer-drop').every(line => line.outcome === 'cancelled')).toBe(true)
+        expect(cueLog().find(line => line.id === 'cer-drop')!.outcome).toBe('scheduled')
 
         await new Promise(resolve => setTimeout(resolve, 100))
         expect(started()).toHaveLength(cues)
@@ -599,7 +579,7 @@ describe.each([['the Host', true], ['a Member', false]])('the ceremony of one Wi
       dialogButton('Nochmal ansehen')!.click()
       await settled(2 * cues)
 
-      const replay = log().slice(cues)
+      const replay = cueLog().slice(cues)
       expect(replay[0]!.id).toBe('cer-drop')
       for (const line of replay) expect(line.at).toBeGreaterThanOrEqual(clicked)
       expect(shapeOf(replay)).toEqual(tiePlanAt(replay[0]!.at, 'trip', 2, false))
@@ -616,7 +596,7 @@ describe.each([['the Host', true], ['a Member', false]])('the ceremony of one Wi
       await flushPromises()
 
       expect(ahead.map(cue => cue.id)).toEqual(['cer-bonk', 'cer-stamp', 'cer-fanfare', 'cer-crowd', 'cb-laugh'])
-      expect(log().filter(line => line.outcome === 'scheduled' || line.outcome === 'late').map(({ id, at, rate }) => ({ id, at, rate }))).toEqual(ahead)
+      expect(cueLog().filter(line => line.outcome === 'scheduled' || line.outcome === 'late').map(({ id, at, rate }) => ({ id, at, rate }))).toEqual(ahead)
     })
 
     it('plays the fanfare alone under reduced motion, at the start', async () => {
@@ -627,8 +607,8 @@ describe.each([['the Host', true], ['a Member', false]])('the ceremony of one Wi
       await vi.waitFor(() => expect(requestedOf('ceremony')).toEqual(expect.arrayContaining(OWN_FILES)), { timeout: 5000 })
       await settled(1)
 
-      expect(log().map(line => line.id)).toEqual(['cer-fanfare'])
-      expect(log()[0]!.at).toBe(Date.parse(ceremony.startsAt))
+      expect(cueLog().map(line => line.id)).toEqual(['cer-fanfare'])
+      expect(cueLog()[0]!.at).toBe(Date.parse(ceremony.startsAt))
     })
 
     it('sounds nothing, logs nothing and requests no file with Ton off', async () => {
@@ -638,7 +618,7 @@ describe.each([['the Host', true], ['a Member', false]])('the ceremony of one Wi
       await new Promise(resolve => setTimeout(resolve, 80))
 
       expect(started()).toEqual([])
-      expect(log()).toEqual([])
+      expect(cueLog()).toEqual([])
       expect(requested()).toEqual([])
     })
   })
@@ -649,7 +629,7 @@ describe.each([['the Host', true], ['a Member', false]])('the ceremony of one Wi
     await settled(CEREMONY_CUES)
 
     // The layer opens at the start instant, asks for the chunk and gives up.
-    await vi.waitFor(() => expect(log().filter(line => line.id !== 'cer-drop').every(line => line.outcome === 'cancelled')).toBe(true), { timeout: 5000 })
+    await vi.waitFor(() => expect(cueLog().filter(line => line.id !== 'cer-drop').every(line => line.outcome === 'cancelled')).toBe(true), { timeout: 5000 })
     expect(started().filter(source => source.id !== 'cer-drop').every(source => source.stopCalls >= 1)).toBe(true)
   })
 })

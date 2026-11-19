@@ -1,26 +1,24 @@
-import { mountSuspended, registerEndpoint } from '@nuxt/test-utils/runtime'
+import { mountSuspended } from '@nuxt/test-utils/runtime'
 import { flushPromises } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { refreshEvent } from '~/composables/useEventView'
 import EventPage from '~/pages/e/[slug]/index.vue'
-import { CUE_GROUPS, CUE_IDS, coinCuePlan, type CueGroup, type CueId } from '~/utils/sound-cues'
+import { CUE_GROUPS, CUE_IDS } from '~/utils/sound-cues'
 import { COIN_DURATION_MS, COIN_LAND_AT, COIN_SPIN_AT } from '~~/shared/coin'
 import { defaultSettings } from '~~/shared/settings'
 import type { CoinView } from '~~/shared/stage'
 import { FakeAudioContext } from '../fake-audio'
-import { kitty, signInAs } from './auth'
+import { cueLog, iso, requested, requestedOf, requests, resetRequests, serveCueFiles, setUpCuePage, started, startedOf, tearDownCuePage } from './cue-harness'
 import { serve, viewWithSessions } from './event-page'
+import { FIRST, STARTED } from './event-page-states'
 
 // The Coin flip's cues on the Event page (#669, spec #718 § The cue plan, § Secrecy): `coin-toss`, `coin-spin`, `coin-land` and `coin-result` are
 // scheduled once from the toss's two instants, the Host and a Member alike, never from the toss's side (ADR 0013 amendment: the Event read carries
 // `coin.side` before the landing, by decision). The files come while a Session runs or a toss is in the read. The plan's own instants are in
 // test/unit/coin-cues.test.ts; the player's rules in test/unit/cue-player.test.ts. The audio context is the fake.
 
-const FIRST = '2026-10-30T19:00:00.000Z'
-const STARTED = '2026-10-30T19:30:00.000Z'
 const COIN_IDS = CUE_IDS.filter(id => CUE_GROUPS[id].includes('coin'))
 
-const iso = (ms: number) => new Date(ms).toISOString()
 /** A toss that starts `lead` ms from now (negative: it started that long ago) and flies for its duration, by the page's own clock. */
 const tossIn = (lead: number, side: CoinView['side'] = 'heads', id = 'toss-1'): CoinView => {
   const start = Date.now() + lead
@@ -37,38 +35,29 @@ function serveCoin(coin: CoinView | null, { isHost = false, running = true }: { 
   return { slug: served.slug, set: (next: CoinView | null) => served.set(read(served.slug, next)) }
 }
 
-/** The requests each cue file got. */
-const requests: Record<string, number> = {}
-for (const id of CUE_IDS) {
-  registerEndpoint(`/sounds/cues/${id}.wav`, () => {
-    requests[id] = (requests[id] ?? 0) + 1
-    return new TextEncoder().encode(id)
-  })
-}
-const requested = () => Object.keys(requests).filter(id => requests[id]).sort()
-/** The requested files of these groups: an assertion names the groups it is about, so another moment's files never break it (#718). */
-const requestedOf = (...groups: CueGroup[]) => requested().filter(id => CUE_GROUPS[id as CueId].some(group => groups.includes(group)))
+serveCueFiles()
 
-const context = () => FakeAudioContext.instances.at(-1)
-const started = () => context()?.started() ?? []
-const startedOf = (id: CueId) => started().filter(source => source.id === id)
-type LogLine = { id: CueId, at: number, outcome: string }
-const log = () => (globalThis as { __compiesCueLog?: () => LogLine[] }).__compiesCueLog?.() ?? []
-const coinLog = () => log().filter(entry => entry.id.startsWith('coin-')).map(entry => ({ id: entry.id, at: entry.at, outcome: entry.outcome }))
-/** What a toss's plan is, from the same function the page uses and the toss's two instants. */
-const planOf = (coin: CoinView, reducedMotion = false) => coinCuePlan({ toss: { startedAt: coin.startedAt, landsAt: coin.landsAt }, reducedMotion })
+const coinLog = () => cueLog().filter(entry => entry.id.startsWith('coin-')).map(entry => ({ id: entry.id, at: entry.at, outcome: entry.outcome }))
+/**
+ * What a toss's plan is, from the fixture's own values: the toss's two instants and the picture's beats (`COIN_SPIN_AT`, `COIN_LAND_AT`), not from
+ * `coinCuePlan` with the narrowing the page does, which the test would then copy. Reduced motion leaves out the throw and the turn.
+ */
+const planOf = (coin: CoinView, reducedMotion = false) => {
+  const start = Date.parse(coin.startedAt)
+  const plan = [
+    { id: 'coin-toss', at: start },
+    { id: 'coin-spin', at: start + COIN_DURATION_MS * COIN_SPIN_AT },
+    { id: 'coin-land', at: start + COIN_DURATION_MS * COIN_LAND_AT },
+    { id: 'coin-result', at: Date.parse(coin.landsAt) },
+  ]
+  return reducedMotion ? plan.filter(cue => cue.id === 'coin-land' || cue.id === 'coin-result') : plan
+}
 
 let page: Awaited<ReturnType<typeof mountSuspended>> | undefined
 const ownAnimate = Element.prototype.animate
 
 beforeEach(() => {
-  signInAs(kitty)
-  document.body.innerHTML = ''
-  FakeAudioContext.instances = []
-  FakeAudioContext.follows = true
-  for (const id of CUE_IDS) requests[id] = 0
-  vi.stubGlobal('AudioContext', FakeAudioContext)
-  useRuntimeConfig().public.staging = true
+  setUpCuePage({ staging: true })
   // The picture is not under test: the coin on the page runs on a fake animation, so unmounting it cancels no real one (happy-dom rejects a cancel).
   Element.prototype.animate = (() => ({ currentTime: 0, pause() {}, play() {}, cancel() {}, finish() {}, onfinish: null })) as unknown as typeof Element.prototype.animate
 })
@@ -77,12 +66,7 @@ afterEach(() => {
   page?.unmount()
   page = undefined
   Element.prototype.animate = ownAnimate
-  vi.unstubAllGlobals()
-  FakeAudioContext.follows = false
-  localStorage.removeItem('compies-sound')
-  document.documentElement.style.removeProperty('--cp-motion')
-  useRuntimeConfig().public.staging = false
-  Reflect.deleteProperty(globalThis, '__compiesCueLog')
+  tearDownCuePage()
 })
 
 /** Waits for the page's coin files to be fetched, decoded and `count` sources scheduled. */
@@ -94,7 +78,7 @@ async function settled(count: number) {
 describe('the toss on the Event page keeps the side secret', () => {
   // The same instants with Kopf and with Schwanz: nothing the page requests, schedules or logs may differ.
   async function runOf(side: CoinView['side'], isHost: boolean) {
-    for (const id of CUE_IDS) requests[id] = 0
+    resetRequests()
     FakeAudioContext.instances = []
     Reflect.deleteProperty(globalThis, '__compiesCueLog')
     const start = Date.now() + 4000

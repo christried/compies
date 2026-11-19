@@ -1,16 +1,16 @@
-import { registerEndpoint } from '@nuxt/test-utils/runtime'
 import { flushPromises } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import Leaderboard from '~/components/Leaderboard.vue'
 import { refreshEvent } from '~/composables/useEventView'
 import { countTicks } from '~/utils/count-up'
 import { STAMP_DELAY_MS } from '~/utils/motion'
-import { CUE_GROUPS, CUE_IDS, cueFilesOf, type CueGroup, type CueId } from '~/utils/sound-cues'
+import { cueFilesOf } from '~/utils/sound-cues'
 import { defaultSettings } from '~~/shared/settings'
 import { FakeAudioContext } from '../fake-audio'
-import { kitty, signInAs } from './auth'
+import { filesReady, quiet, requestedOf, requests, resetRequests, serveCueFiles, setUpCuePage, started, tearDownCuePage } from './cue-harness'
 import { stubScreen, viewWithSessions, type EventOverrides } from './event-page'
 import { afterResult, ENDED, FIRST, halo, members, mount, mountedPage, openRound, played, SESSION, serveState, STARTED, team, unmountPage, type Setup } from './event-page-states'
+import { motion } from './motion'
 
 // The Standings' sounds on the Event page (#741, spec #718): a Result that this device shows as a change sounds once (swap, ticks, winner), a
 // reload, a hidden tab and a finished Event stay as calm as they are today, and the files are requested for an Event that is set up and not
@@ -22,21 +22,10 @@ const ENDED_ONE = SESSION(1, FIRST, { startedAt: STARTED, endedAt: ENDED })
 const STANDINGS_FILES = cueFilesOf(['standings'])
 const COUNT_MS = 600
 
-/** The requests each cue file got. The handlers answer with the cue id as bytes, which the fake decodes back to `{ id }`. */
-const requests: Record<string, number> = {}
-for (const id of CUE_IDS) {
-  registerEndpoint(`/sounds/cues/${id}.wav`, () => {
-    requests[id] = (requests[id] ?? 0) + 1
-    return new TextEncoder().encode(id)
-  })
-}
-const requested = () => Object.keys(requests).filter(id => requests[id]).sort()
-/** The requested files of these groups: an assertion names the groups it is about, so another moment's files never break it (#718). */
-const requestedOf = (...groups: CueGroup[]) => requested().filter(id => CUE_GROUPS[id as CueId].some(group => groups.includes(group)))
+serveCueFiles()
 
-const context = () => FakeAudioContext.instances.at(-1)
 /** The Standings' sounds that started, in order: [id, seconds on the audio clock]. */
-const sounds = () => (context()?.started() ?? []).filter(source => String(source.id).startsWith('lb-')).map(source => [String(source.id), source.startedAt!] as const)
+const sounds = () => started().filter(source => String(source.id).startsWith('lb-')).map(source => [String(source.id), source.startedAt!] as const)
 const idsStarted = () => sounds().map(([id]) => id)
 /** The sounds' ids and their delays after the first, in ms: the beats of one sequence, whatever the clock. */
 const beats = () => ({ ids: idsStarted(), delays: sounds().map(([, at]) => (at - sounds()[0]![1]) * 1000) })
@@ -72,35 +61,17 @@ async function readsResult(served: Served, overrides: EventOverrides = afterThre
   await flushPromises()
 }
 
-/** The page has asked for the three files, decoded them and is ready to play. */
-async function filesReady() {
-  await vi.waitFor(() => expect(requestedOf('standings')).toHaveLength(STANDINGS_FILES.length))
-  await flushPromises()
-  await new Promise(resolve => setTimeout(resolve, 20))
-}
-const settle = () => new Promise(resolve => setTimeout(resolve, 60))
 const showVisibility = (state: 'visible' | 'hidden') => Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => state })
-function reduced() {
-  vi.spyOn(window, 'getComputedStyle').mockReturnValue({ getPropertyValue: (name: string) => (name === '--cp-motion' ? 'reduced' : '') } as CSSStyleDeclaration)
-}
 const phoneTab = (index: number) => mountedPage()!.findAll('nav[aria-label="Event"] button')[index]!
 
 beforeEach(() => {
-  signInAs(kitty)
+  setUpCuePage()
   stubScreen(true)
-  FakeAudioContext.instances = []
-  FakeAudioContext.follows = true
-  for (const id of CUE_IDS) requests[id] = 0
-  vi.stubGlobal('AudioContext', FakeAudioContext)
 })
 
 afterEach(() => {
   unmountPage()
-  vi.restoreAllMocks()
-  vi.unstubAllGlobals()
-  FakeAudioContext.follows = false
-  localStorage.removeItem('compies-sound')
-  Reflect.deleteProperty(document, 'visibilityState')
+  tearDownCuePage()
 })
 
 for (const host of [true, false]) {
@@ -110,11 +81,11 @@ for (const host of [true, false]) {
     it('play one set for a Result that changes the order, with the stage and the panel\'s tab both mounted: the swap, three ticks, the winner', async () => {
       const served = serveResult(host)
       await mount(served.slug)
-      await filesReady()
+      await filesReady('standings')
 
       await readsResult(served, afterThree, { host })
       await vi.waitFor(() => expect(idsStarted()).toContain('lb-winner'))
-      await settle()
+      await quiet()
 
       // The stage block and the panel's tab: two Leaderboards, one set.
       expect(mountedPage()!.findAllComponents(Leaderboard).length).toBeGreaterThanOrEqual(2)
@@ -127,11 +98,11 @@ for (const host of [true, false]) {
     it('put the ticks where the counter changes its number, and the winner with the stamp, counted from the swap', async () => {
       const served = serveResult(host)
       await mount(served.slug)
-      await filesReady()
+      await filesReady('standings')
 
       await readsResult(served, afterThree, { host })
       await vi.waitFor(() => expect(idsStarted()).toContain('lb-winner'))
-      await settle()
+      await quiet()
 
       const ticks = countTicks(0, 3, COUNT_MS)
       const [, swapAt] = sounds()[0]!
@@ -145,13 +116,13 @@ for (const host of [true, false]) {
     it('play a Correction like a new Result: the set again', async () => {
       const served = serveResult(host)
       await mount(served.slug)
-      await filesReady()
+      await filesReady('standings')
       await readsResult(served, afterThree, { host })
       await vi.waitFor(() => expect(idsStarted()).toContain('lb-winner'))
 
       await readsResult(served, corrected, { host })
       await vi.waitFor(() => expect(idsStarted().filter(id => id === 'lb-winner')).toHaveLength(2))
-      await settle()
+      await quiet()
 
       expect(idsStarted().filter(id => id === 'lb-swap')).toHaveLength(2)
       expect(idsStarted().filter(id => id === 'lb-count')).toHaveLength(6)
@@ -160,11 +131,11 @@ for (const host of [true, false]) {
     it('stay silent for the first read with a Result already there (a reload), and a refetch of it', async () => {
       const served = serveState({ sessions: [RUNNING_ONE], missing: 0, phase: 'running', running: 0, host, overrides: afterThree })
       await mount(served.slug)
-      await filesReady()
+      await filesReady('standings')
 
       await refreshEvent(served.slug)
       await flushPromises()
-      await settle()
+      await quiet()
 
       expect(idsStarted()).toEqual([])
     })
@@ -172,15 +143,15 @@ for (const host of [true, false]) {
     it('stay silent in a tab nobody watches, and do not play the Result when it is shown again', async () => {
       const served = serveResult(host)
       await mount(served.slug)
-      await filesReady()
+      await filesReady('standings')
       showVisibility('hidden')
 
       await readsResult(served, afterThree, { host })
-      await settle()
+      await quiet()
       showVisibility('visible')
       document.dispatchEvent(new Event('visibilitychange'))
       await flushPromises()
-      await settle()
+      await quiet()
 
       expect(idsStarted()).toEqual([])
     })
@@ -188,10 +159,10 @@ for (const host of [true, false]) {
     it('stay silent in a finished Event, and request no Standings file there', async () => {
       const served = serveState({ sessions: [ENDED_ONE], missing: 0, phase: 'finished', host, overrides: beforeResult })
       await mount(served.slug)
-      await settle()
+      await quiet()
 
       await readsResult(served, afterThree, { host, phase: 'finished', sessions: [ENDED_ONE] })
-      await settle()
+      await quiet()
 
       expect(idsStarted()).toEqual([])
       expect(requestedOf('standings')).toEqual([])
@@ -204,14 +175,14 @@ for (const host of [true, false]) {
       await flushPromises()
 
       await readsResult(served, afterThree, { host })
-      await settle()
+      await quiet()
       expect(idsStarted()).toEqual([])
       expect(requestedOf('standings')).toEqual([])
       expect((globalThis as { __compiesCueLog?: () => unknown[] }).__compiesCueLog?.() ?? []).toEqual([])
 
       useState('sound-enabled').value = true
-      await filesReady()
-      await settle()
+      await filesReady('standings')
+      await quiet()
 
       expect(idsStarted()).toEqual([])
     })
@@ -219,12 +190,12 @@ for (const host of [true, false]) {
     it('play the swap and the winner and no ticks under reduced motion, the winner with the swap', async () => {
       const served = serveResult(host)
       await mount(served.slug)
-      await filesReady()
-      reduced()
+      await filesReady('standings')
+      motion('reduced')
 
       await readsResult(served, afterThree, { host })
       await vi.waitFor(() => expect(idsStarted()).toContain('lb-winner'))
-      await settle()
+      await quiet()
 
       expect(idsStarted()).toEqual(['lb-swap', 'lb-winner'])
       const [swap, winner] = sounds()
@@ -235,7 +206,7 @@ for (const host of [true, false]) {
       const served = serveResult(host)
 
       await mount(served.slug)
-      await filesReady()
+      await filesReady('standings')
 
       expect(requestedOf('standings')).toEqual([...STANDINGS_FILES].sort())
       for (const id of STANDINGS_FILES) expect(requests[id], id).toBe(1)
@@ -245,7 +216,7 @@ for (const host of [true, false]) {
       const served = serveState({ sessions: [RUNNING_ONE], missing: 0, phase: 'running', running: 0, host })
 
       await mount(served.slug)
-      await settle()
+      await quiet()
 
       expect(requestedOf('standings')).toEqual([])
     })
@@ -254,7 +225,7 @@ for (const host of [true, false]) {
       const served = serveState({ sessions: [ENDED_ONE], missing: 0, phase: 'finished', host, overrides: afterThree })
 
       await mount(served.slug)
-      await settle()
+      await quiet()
 
       expect(requestedOf('standings')).toEqual([])
     })
@@ -267,12 +238,12 @@ describe('the Standings\' sounds on a phone', () => {
   it('play the swap and the ticks and no winner on the Standings tab, where no stamp is drawn', async () => {
     const served = serveResult()
     await mount(served.slug)
-    await filesReady()
+    await filesReady('standings')
     await phoneTab(1).trigger('click')
 
     await readsResult(served)
     await vi.waitFor(() => expect(idsStarted()).toContain('lb-swap'))
-    await settle()
+    await quiet()
 
     expect(idsStarted()).toEqual(['lb-swap', 'lb-count', 'lb-count', 'lb-count'])
   })
@@ -280,11 +251,11 @@ describe('the Standings\' sounds on a phone', () => {
   it('play all three on the Event view, where the stage block draws the stamp', async () => {
     const served = serveResult()
     await mount(served.slug)
-    await filesReady()
+    await filesReady('standings')
 
     await readsResult(served)
     await vi.waitFor(() => expect(idsStarted()).toContain('lb-winner'))
-    await settle()
+    await quiet()
 
     expect(idsStarted().filter(id => id === 'lb-swap')).toHaveLength(1)
     expect(idsStarted().filter(id => id === 'lb-count')).toHaveLength(3)
@@ -294,16 +265,17 @@ describe('the Standings\' sounds on a phone', () => {
   it('play nothing more when the Standings tab is opened after the freshness window', async () => {
     const served = serveResult()
     await mount(served.slug)
-    await filesReady()
+    await filesReady('standings')
     await readsResult(served)
     await vi.waitFor(() => expect(idsStarted()).toContain('lb-winner'))
-    await settle()
+    await quiet()
     const before = sounds().length
 
+    // A real second on purpose: the rule is "a Result older than FRESH_MS (1 s, Leaderboard.vue) is not news", so the page's own clock has to pass it.
     await new Promise(resolve => setTimeout(resolve, 1100))
     await phoneTab(1).trigger('click')
     await flushPromises()
-    await settle()
+    await quiet()
 
     expect(sounds()).toHaveLength(before)
   })
@@ -313,14 +285,14 @@ describe('the Standings\' sounds on a phone', () => {
 // Event's settings. The same change with other games, and with a Hidden wheel, sounds and requests the same.
 describe('the Standings\' sounds and Secrecy', () => {
   async function runWith(game: typeof halo, settings = defaultSettings()) {
-    for (const id of CUE_IDS) requests[id] = 0
+    resetRequests()
     FakeAudioContext.instances = []
     const served = serveResult(false, { ...beforeResult, settings })
     await mount(served.slug)
-    await filesReady()
+    await filesReady('standings')
     await readsResult(served, { ...afterThree, settings, results: [{ ...afterThree.results![0]!, game }] })
     await vi.waitFor(() => expect(idsStarted()).toContain('lb-winner'))
-    await settle()
+    await quiet()
     const result = { beats: beats(), files: requestedOf('standings') }
     unmountPage()
     return result

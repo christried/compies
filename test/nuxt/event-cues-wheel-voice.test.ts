@@ -1,30 +1,27 @@
-import { mountSuspended, registerEndpoint } from '@nuxt/test-utils/runtime'
+import { mountSuspended } from '@nuxt/test-utils/runtime'
 import { flushPromises } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { refreshEvent } from '~/composables/useEventView'
 import EventPage from '~/pages/e/[slug]/index.vue'
-import { CUE_GROUPS, CUE_IDS, wheelVoicePlan, type CueGroup, type CueId } from '~/utils/sound-cues'
+import { CUE_GROUPS, CUE_IDS, wheelVoicePlan } from '~/utils/sound-cues'
 import { REVEAL_AFTER_MS } from '~/utils/wheel'
 import type { RoundGame } from '~~/shared/game'
 import { defaultSettings } from '~~/shared/settings'
 import type { SpinView, VetoView, WheelView } from '~~/shared/stage'
-import { FakeAudioContext } from '../fake-audio'
-import { kitty, signInAs } from './auth'
+import { cueLog, iso, requested, requestedOf, requests, resetRequests, serveCueFiles, setUpCuePage, started, startedOf, tearDownCuePage } from './cue-harness'
 import { serve, viewWithSessions } from './event-page'
+import { FIRST, STARTED } from './event-page-states'
 
 // Compibert's voice on the Event page (#671, spec #718 § Secrecy „The Hidden wheel“): `cb-hype`, `cb-gulp` and `cb-yay` are scheduled once with the
 // wheel's cues from the spin's two instants, the Host and a Member alike, never from the drawn game; their files come with the wheel's. The
 // plan's own instants are in test/unit/wheel-voice-cues.test.ts; the player's rules in test/unit/cue-player.test.ts. The audio context is the fake.
 
-const FIRST = '2026-10-30T19:00:00.000Z'
-const STARTED = '2026-10-30T19:30:00.000Z'
 const WHEEL_FILES = CUE_IDS.filter(id => CUE_GROUPS[id].includes('wheel'))
 const VOICE = ['cb-hype', 'cb-gulp', 'cb-yay'] as const
 
 const kart: RoundGame = { id: 'g-kart', name: 'Kart', imageUrl: null, youtubeId: null, clipStart: 0, clipLength: 30, playersMin: 2, playersMax: 4, suitabilities: [], price: null }
 const halo: RoundGame = { ...kart, id: 'g-halo', name: 'Halo' }
 
-const iso = (ms: number) => new Date(ms).toISOString()
 /** A spin of 6 s that starts at `start` (epoch ms). */
 const spinAt = (start: number, draw: Partial<SpinView> = {}): SpinView => ({
   roundId: 'r1', drawId: 'd1', spinStartAt: iso(start), stopAt: iso(start + 6000), slices: 5, resultIndex: 3, resultOffset: 0.25, labels: null, game: kart, current: true, ...draw,
@@ -49,45 +46,20 @@ function serveWheel(wheel: WheelView | null, { isHost = false, hiddenWheel = fal
   return { slug: served.slug, set: (next: WheelView | null) => served.set(read(served.slug, next)) }
 }
 
-/** The requests each cue file got. */
-const requests: Record<string, number> = {}
-for (const id of CUE_IDS) {
-  registerEndpoint(`/sounds/cues/${id}.wav`, () => {
-    requests[id] = (requests[id] ?? 0) + 1
-    return new TextEncoder().encode(id)
-  })
-}
-const requested = () => Object.keys(requests).filter(id => requests[id]).sort()
-/** The requested files of these groups: an assertion names the groups it is about, so another moment's files never break it (#718). */
-const requestedOf = (...groups: CueGroup[]) => requested().filter(id => CUE_GROUPS[id as CueId].some(group => groups.includes(group)))
+serveCueFiles()
 
-const context = () => FakeAudioContext.instances.at(-1)
-const started = () => context()?.started() ?? []
-const startedOf = (id: CueId) => started().filter(source => source.id === id)
-const log = () => (globalThis as { __compiesCueLog?: () => { id: CueId, at: number, outcome: string }[] }).__compiesCueLog?.() ?? []
-const voiceLog = () => log().filter(entry => entry.id.startsWith('cb-')).map(entry => ({ id: entry.id, at: entry.at, outcome: entry.outcome }))
+const voiceLog = () => cueLog().filter(entry => entry.id.startsWith('cb-')).map(entry => ({ id: entry.id, at: entry.at, outcome: entry.outcome }))
 
 let page: Awaited<ReturnType<typeof mountSuspended>> | undefined
 
 beforeEach(() => {
-  signInAs(kitty)
-  document.body.innerHTML = ''
-  FakeAudioContext.instances = []
-  FakeAudioContext.follows = true
-  for (const id of CUE_IDS) requests[id] = 0
-  vi.stubGlobal('AudioContext', FakeAudioContext)
-  useRuntimeConfig().public.staging = true
+  setUpCuePage({ staging: true })
 })
 
 afterEach(() => {
   page?.unmount()
   page = undefined
-  vi.unstubAllGlobals()
-  FakeAudioContext.follows = false
-  localStorage.removeItem('compies-sound')
-  document.documentElement.style.removeProperty('--cp-motion')
-  useRuntimeConfig().public.staging = false
-  Reflect.deleteProperty(globalThis, '__compiesCueLog')
+  tearDownCuePage()
 })
 
 describe('the voice on the Event page, for a Member', () => {
@@ -128,7 +100,7 @@ describe('the voice on the Event page, for the Host', () => {
     const memberVoice = voiceLog()
     const memberFiles = requestedOf('wheel')
     page.unmount()
-    for (const id of CUE_IDS) requests[id] = 0
+    resetRequests()
 
     const host = serveWheel(wheelWith(spin), { isHost: true })
     page = await mountSuspended(EventPage, { route: `/e/${host.slug}` })
@@ -164,7 +136,7 @@ describe('the voice on the Event page keeps the drawn game secret', () => {
     const voiceOne = voiceLog()
     const filesOne = requestedOf('wheel')
     page.unmount()
-    for (const id of CUE_IDS) requests[id] = 0
+    resetRequests()
 
     const two = serveWheel(wheelWith(second), { hiddenWheel: true })
     page = await mountSuspended(EventPage, { route: `/e/${two.slug}` })
