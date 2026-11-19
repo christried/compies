@@ -60,6 +60,18 @@ export function hatPop(element: Element): void {
   )
 }
 
+/**
+ * A Message that arrived in the Chat (#761, 02-components § ChatPanel: „new message `y 8→0, fade` `dur-base`“): it rises 8 px into place while it fades in. 04-motion has no Chat entry, so the curve
+ * is the UI default `--cp-ease-out`, the same pick `emoteRise` makes. Under reduced motion the opacity alone (04-motion § UI enters: „Reduced: opacity only“), in the same time.
+ * Returns the animation, or nothing where an element cannot animate.
+ */
+export function chatRise(element: Element): Animation | undefined {
+  if (typeof element.animate !== 'function') return undefined
+  const options = { duration: motionMs('--cp-dur-base', '220ms'), easing: motionToken('--cp-ease-out', 'cubic-bezier(.16,1,.3,1)'), fill: 'both' } as const
+  if (reducedMotion()) return element.animate([{ opacity: 0 }, { opacity: 1 }], options)
+  return element.animate([{ opacity: 0, transform: 'translateY(8px)' }, { opacity: 1, transform: 'translateY(0)' }], options)
+}
+
 // Emotes (04-motion § Emote rise, #668). Web Animations, not GSAP (ADR 0015): a picture that rises once and is gone.
 
 /** The rise of an Emote: 1.4 s (04-motion: „Total 1.4“). `FloatingEmote` lets go of its element this long after it starts (plus a frame's grace). */

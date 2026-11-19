@@ -102,8 +102,6 @@ room.on('emote.sent', (message) => {
   rise(message.userId, message.emote)
 })
 const sendEmote = (emote: EmoteId) => room.send({ type: 'emote.send', emote })
-// A Message that arrives: #761 adds it to the Chat by id. Listened for from #758 on, since room-listeners.test.ts wants a page listener per message type.
-room.on('chat.added', () => {})
 // A Message that is deleted: #763 turns it into its line by id. Listened for from #760 on, since room-listeners.test.ts wants a page listener per message type.
 room.on('chat.deleted', () => {})
 
@@ -239,9 +237,22 @@ const covered = computed(() => clipShown.value || tour.shown.value)
         :label="t('app.sidePanel')"
         :tabs="panelTabs"
       >
+        <!-- The Chat listens for `chat.added` itself (#761); the panel hides its tabs with `v-show`, so both logs stay mounted. -->
+        <template #chat>
+          <ChatPanel
+            v-if="wide"
+            :slug="slug"
+            :room="room"
+            :members="data.members"
+            :teams="data.teams"
+            :viewer-id="data.viewerId"
+            :active="panelTab === 'chat'"
+          />
+        </template>
         <template #activity>
           <ActivityFeed
             v-if="wide"
+            :active="panelTab === 'activity'"
             :slug="slug"
             :room="room"
             :sessions="feed.started"

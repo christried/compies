@@ -139,6 +139,7 @@ Every screen exists in the design files at desktop 1280 and mobile 390, light an
 
 - **Layout:** As M3 plus side panel (Chat default) on desktop and the mobile tab bar (Spielbrett, Tabelle, Chat, Aktivität, Leute).
 - **Components:** as M3 + SidePanel, ChatPanel, PushAsk
+- **Deviation (0.18, #761):** the desktop side panel's tabs are Chat, Aktivität, Tabelle, with Chat the default; there is no „Leute“ tab. The phone's bar is #765's.
 - **Data:** as M3.
 - **Host vs player:** as M3.
 - **States:** Abstimmen · Abgestimmt · Host-Ansicht · Host: festlegen · Termin steht + .ics · Host: verschieben

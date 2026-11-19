@@ -199,12 +199,15 @@ describe('the finished Event page', () => {
     expect(page.findAll('main tbody tr')).toHaveLength(8)
   })
 
-  it('keeps „Tabelle“ and „Aktivität“ in the side panel on a wide screen', async () => {
+  it('keeps „Chat“, „Aktivität“ and „Tabelle“ in the side panel on a wide screen (#761)', async () => {
     const { slug } = serveState({ sessions: [ENDED_ONE], missing: 0, phase: 'finished', host: true, overrides: finishedRead() })
 
     const page = await mount(slug)
 
-    expect(page.get('aside[aria-label="Seitenleiste"]').findAll('[role="tab"]').map(tab => tab.text())).toEqual(['Tabelle', 'Aktivität'])
+    const tabs = page.get('aside[aria-label="Seitenleiste"]').findAll('[role="tab"]')
+    expect(tabs.map(tab => tab.text())).toEqual(['Chat', 'Aktivität', 'Tabelle'])
+    // The Host's page opens on the Chat as a Member's does.
+    expect(tabs.map(tab => tab.attributes('aria-selected'))).toEqual(['true', 'false', 'false'])
   })
 
   it('keeps three items in the phone\'s bar', async () => {
@@ -399,21 +402,21 @@ describe('the Standings on the Event page', () => {
   })
 
   describe('as a tab', () => {
-    it('is the first of two tabs of the side panel, which still opens on „Aktivität“, and holds the Standings and the history', async () => {
+    it('is the last of three tabs of the side panel, which opens on „Chat“, and holds the Standings and the history', async () => {
       const { slug } = serveState({ sessions: [RUNNING_ONE], missing: 0, phase: 'running', running: 0, overrides: afterResult })
 
       const page = await mount(slug)
 
       const panel = page.get('aside[aria-label="Seitenleiste"]')
       const tabs = panel.findAll('[role="tab"]')
-      expect(tabs.map(tab => tab.text())).toEqual(['Tabelle', 'Aktivität'])
-      expect(tabs.map(tab => tab.attributes('aria-selected'))).toEqual(['false', 'true'])
-      const tabpanel = panel.get(`[id="${tabs[0]!.attributes('aria-controls')}"]`)
+      expect(tabs.map(tab => tab.text())).toEqual(['Chat', 'Aktivität', 'Tabelle'])
+      expect(tabs.map(tab => tab.attributes('aria-selected'))).toEqual(['true', 'false', 'false'])
+      const tabpanel = panel.get(`[id="${tabs[2]!.attributes('aria-controls')}"]`)
       expect(tabpanel.attributes('role')).toBe('tabpanel')
       expect(tabpanel.findAll('h2').map(heading => heading.text())).toEqual(['Tabelle', 'Spielverlauf'])
       expect(tabpanel.find('div.overflow-y-auto').exists()).toBe(true)
 
-      await tabs[0]!.trigger('click')
+      await tabs[2]!.trigger('click')
       expect(tabpanel.attributes('style') ?? '').not.toContain('display: none')
       expect(tabpanel.findAll('tbody tr')).toHaveLength(2)
     })
@@ -579,9 +582,9 @@ describe('the Standings on the Event page', () => {
 
       const page = await mount(slug)
       const tabs = page.get('aside[aria-label="Seitenleiste"]').findAll('[role="tab"]')
-      await tabs[0]!.trigger('click')
+      await tabs[2]!.trigger('click')
 
-      const panel = page.get(`[id="${tabs[0]!.attributes('aria-controls')}"]`)
+      const panel = page.get(`[id="${tabs[2]!.attributes('aria-controls')}"]`)
       expect(panel.findAll('button[aria-label="Spiel 1 korrigieren"]')).toHaveLength(1)
       expect(panel.findAll('button').filter(button => /korrigieren/i.test(button.attributes('aria-label') ?? ''))).toHaveLength(1)
     })

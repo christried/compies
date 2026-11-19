@@ -596,6 +596,10 @@
     "sending": "wird gesendet …",
     "failed": "Nicht gesendet. Erneut senden",
     "deleted": "Vom Host gelöscht",
+    "deletedByWriter": "Gelöscht",
+    "loadFailed": "Der Chat konnte nicht geladen werden.",
+    "older": "Ältere laden",
+    "retry": "Nochmal versuchen",
     "delete": "Löschen",
     "deleteAria": "Nachricht von {name} löschen"
   },
@@ -1888,7 +1892,7 @@
     },
     "chat": {
       "title": "Noch still hier.",
-      "text": "Sag Hallo. Alle in der Session lesen mit."
+      "text": "Sag Hallo. Alle im Event lesen mit."
     },
     "activity": {
       "title": "Noch nichts passiert.",

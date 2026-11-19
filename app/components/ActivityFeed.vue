@@ -23,7 +23,9 @@ const props = withDefaults(defineProps<{
   teams?: BoardTeam[]
   /** The finished page waits for the Award ceremony: the Event's end names nobody (#445). */
   winnersHidden?: boolean
-}>(), { sessions: () => [], nextNumber: null, refreshTick: 0, teams: () => [], winnersHidden: false })
+  /** The feed's tab is the one shown (#761): the side panel opens on the Chat, so the feed loads in a hidden tab, where scrolling to the end does nothing; it scrolls when it turns true. */
+  active?: boolean
+}>(), { sessions: () => [], nextNumber: null, refreshTick: 0, teams: () => [], winnersHidden: false, active: true })
 
 const { t } = useI18n()
 
@@ -106,6 +108,9 @@ onScopeDispose(stopListening)
 
 watch(props.room.state, (state) => {
   if (state === 'open' && status.value === 'ready') void loadFirst()
+})
+watch(() => props.active, (active) => {
+  if (active) scrollToEnd()
 })
 watch(() => props.refreshTick, () => void loadFirst())
 onMounted(() => void loadFirst())
