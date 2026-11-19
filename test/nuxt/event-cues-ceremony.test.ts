@@ -3,7 +3,7 @@ import { flushPromises } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { refreshEvent } from '~/composables/useEventView'
 import type { CueLogEntry } from '~/utils/cue-player'
-import { CUE_GROUPS, ceremonyCuePlan, cueFilesOf, type CueId } from '~/utils/sound-cues'
+import { CUE_GROUPS, ceremonyCuePlan, cueFilesOf, ROW_STEP_SEMITONES, type CueId } from '~/utils/sound-cues'
 import { ceremonyTimeline, type CeremonyGag } from '~~/shared/ceremony'
 import type { RoundGame } from '~~/shared/game'
 import { defaultSettings } from '~~/shared/settings'
@@ -61,7 +61,7 @@ function planAt(startsAt: number, gag: CeremonyGag) {
   const m = ceremonyTimeline({ partyCount: PARTIES, winners: 1, gag, grid: false })
   return [
     { id: 'cer-drop', at: startsAt, rate: 1 },
-    ...m.rowAtMs.map((ms, index) => ({ id: 'cer-row', at: startsAt + ms, rate: 2 ** (index / 12) })),
+    ...m.rowAtMs.map((ms, index) => ({ id: 'cer-row', at: startsAt + ms, rate: 2 ** (index * ROW_STEP_SEMITONES / 12) })),
     { id: 'cer-run', at: startsAt + m.runAtMs, rate: 1 },
     gag === 'trip' ? { id: 'cer-trip', at: startsAt + m.runEndAtMs, rate: 1 } : { id: 'cer-bonk', at: startsAt + m.bonkAtMs, rate: 1 },
     { id: 'cer-stamp', at: startsAt + m.stampAtMs, rate: 1 },
@@ -75,7 +75,7 @@ function tiePlanAt(startsAt: number, gag: CeremonyGag, winners: number, grid: bo
   const m = ceremonyTimeline({ partyCount: PARTIES, winners, gag, grid })
   return [
     { id: 'cer-drop', at: startsAt, rate: 1 },
-    ...m.rowAtMs.map((ms, index) => ({ id: 'cer-row', at: startsAt + ms, rate: 2 ** (index / 12) })),
+    ...m.rowAtMs.map((ms, index) => ({ id: 'cer-row', at: startsAt + ms, rate: 2 ** (index * ROW_STEP_SEMITONES / 12) })),
     { id: 'cer-run', at: startsAt + m.runAtMs, rate: 1 },
     gag === 'trip' ? { id: 'cer-trip', at: startsAt + m.runEndAtMs, rate: 1 } : { id: 'cer-bonk', at: startsAt + m.bonkAtMs, rate: 1 },
     { id: 'cer-stamp', at: startsAt + m.stampAtMs, rate: 1 },
