@@ -5,7 +5,7 @@ import { teamNameAt } from '~/utils/board'
 import { formatActivityTime } from '~/utils/berlin-time'
 import { groupMessages, markDeleted, mergeMessages, splitMessageText } from '~/utils/chat'
 import { chatRise } from '~/utils/motion'
-import { MESSAGE_MAX, parseMessageText } from '~~/shared/message-text'
+import { MESSAGE_MAX, normaliseMessageLineBreaks, parseMessageText } from '~~/shared/message-text'
 import { characterCount, cutToCharacters } from '~~/shared/text'
 import type { Message, MessageDeleter, MessagePage } from '~~/shared/chat'
 import type { BoardTeam, MemberView } from '~~/shared/event'
@@ -166,7 +166,7 @@ function resend(entry: Outgoing) {
 
 function onInput(event: Event) {
   const el = event.target as HTMLInputElement
-  let value = el.value.replace(/\r\n|[\r\n]/g, ' ')
+  let value = normaliseMessageLineBreaks(el.value)
   if (characterCount(value) > MESSAGE_MAX) value = cutToCharacters(value, MESSAGE_MAX)
   // Written back directly, as `NoteEditor` does: when the cut value equals the draft, Vue would not patch the field.
   if (value !== el.value) {

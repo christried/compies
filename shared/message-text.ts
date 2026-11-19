@@ -12,12 +12,20 @@ export type MessageTextResult = { ok: true, text: string } | { ok: false, error:
 const LINE_BREAK = /\r\n|[\r\n\v\f\u0085\u2028\u2029]/g
 
 /**
+ * Every line break of Unicode turned into one space (CRLF is one break), nothing else touched. The one home of the rule: the parser runs it and so does the composer's field, so the
+ * counter counts what is sent (#848).
+ */
+export function normaliseMessageLineBreaks(raw: string): string {
+  return raw.replace(LINE_BREAK, ' ')
+}
+
+/**
  * The text a request carries: every line break becomes one space and the ends are trimmed. Not a string, or a U+0000 (which Postgres refuses in `text`,
  * so it would be a 500), is `invalid_value`; empty or longer than MESSAGE_MAX is `invalid_message`.
  */
 export function parseMessageText(raw: unknown): MessageTextResult {
   if (typeof raw !== 'string' || raw.includes('\u0000')) return { ok: false, error: 'invalid_value' }
-  const text = raw.replace(LINE_BREAK, ' ').trim()
+  const text = normaliseMessageLineBreaks(raw).trim()
   if (text === '' || characterCount(text) > MESSAGE_MAX) return { ok: false, error: 'invalid_message' }
   return { ok: true, text }
 }

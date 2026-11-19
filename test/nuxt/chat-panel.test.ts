@@ -691,6 +691,18 @@ describe('ChatPanel', () => {
       expect(served.posts.map(post => post.text)).toEqual(['a b', 'Moin'])
     })
 
+    // One line-break rule (#848, review S7): the field takes every break Unicode knows out of the draft, not only CR and LF, so the counter counts what is sent.
+    it('shows a pasted U+2028 in the field as a space', async () => {
+      const { wrapper } = await mountChat([])
+
+      const field = input(wrapper).element as HTMLInputElement
+      let raw = `a${String.fromCharCode(0x2028)}b`
+      Object.defineProperty(field, 'value', { configurable: true, get: () => raw, set: (value: string) => void (raw = value) })
+      await input(wrapper).trigger('input')
+
+      expect(raw).toBe('a b')
+    })
+
     it('lets a Member on the Stands and the Host write', async () => {
       pinIds(ID, ID2)
       const stands = await mountChat([], { viewerId: LARSI })
