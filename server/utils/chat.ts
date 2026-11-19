@@ -1,9 +1,10 @@
-import { eq } from 'drizzle-orm'
+import { and, desc, eq, sql } from 'drizzle-orm'
 import { messages } from '../db/schema'
 import { isUuid } from '../domain/uuid'
-import type { LiveMessage, Message } from '../../shared/chat'
+import type { LiveMessage, Message, MessagePage } from '../../shared/chat'
 import { parseMessageText } from '../../shared/message-text'
 import { asRecord } from '../../shared/record'
+import type { Db } from './db'
 import type { EventChange } from './event-access'
 import { apiError } from './errors'
 
@@ -14,6 +15,28 @@ import { apiError } from './errors'
 export function messageOfRow(row: typeof messages.$inferSelect): Message {
   const base = { id: row.id, writerId: row.writerId, at: row.writtenAt.toISOString() }
   return row.text !== null ? { ...base, text: row.text } : { ...base, text: null, deletedBy: row.deletedBy! }
+}
+
+/**
+ * One page of an Event's Chat, newest first (keyset by `(written_at, id)`, the index of #757). `before` is the id of the oldest Message the caller
+ * already has; the page holds the Messages older than it. `next` is that cursor for the page after, null at the oldest Message. A `before` that is no
+ * Message of this Event is a 400, as the feed's is. A deleted Message is its line (messageOfRow). The read asks no clock: nothing in the Chat waits for an instant.
+ */
+export async function readMessagePage(db: Db, eventId: string, before: string | undefined, limit: number): Promise<MessagePage> {
+  if (before !== undefined) {
+    const [known] = await db.select({ id: messages.id }).from(messages).where(and(eq(messages.id, before), eq(messages.eventId, eventId)))
+    if (!known) throw apiError('invalid_cursor')
+  }
+  // The comparison runs on the stored values: a JS Date would cut the microseconds `written_at` has.
+  const older = before === undefined ? undefined : sql`(${messages.writtenAt}, ${messages.id}) < (select c.written_at, c.id from messages c where c.id = ${before})`
+  const rows = await db
+    .select()
+    .from(messages)
+    .where(and(eq(messages.eventId, eventId), older))
+    .orderBy(desc(messages.writtenAt), desc(messages.id))
+    .limit(limit + 1)
+  const page = rows.slice(0, limit)
+  return { messages: page.map(messageOfRow), next: rows.length > limit ? page[page.length - 1]!.id : null }
 }
 
 /**
