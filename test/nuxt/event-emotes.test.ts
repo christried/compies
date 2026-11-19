@@ -56,6 +56,8 @@ async function mountLive({ host = false, finished = false, clip, ceremony }: Set
       })
     },
   })
+  // The Chat's read (#765): a phone's Chat view reads it on opening.
+  registerEndpoint(`/api/e/${slug}/messages`, { method: 'GET', handler: () => ({ messages: [], next: null }) })
   registerEndpoint(`/api/e/${slug}/activity`, {
     method: 'GET',
     handler: () => {
@@ -620,6 +622,24 @@ describe.each([{ host: false }, { host: true }])('Emotes on the Game board, Host
       const tabs = page.findAll('nav[aria-label="Event"] button')
       await tabs.find(tab => tab.text() === 'Tabelle')!.trigger('click')
       await settle()
+      expect(page.find('[data-user-id]').exists()).toBe(false)
+      const error = vi.spyOn(console, 'error')
+
+      emoteSent(LARSI)
+      await settle()
+
+      expect(rises()).toHaveLength(0)
+      expect(Element.prototype.animate).not.toHaveBeenCalled()
+      expect(error).not.toHaveBeenCalled()
+    })
+
+    // The Chat's avatars carry no `data-user-id` (only the board's do), so an Emote finds no anchor on the Chat view (#765, the case #769's decision comment gives to it).
+    it('draws nothing on the Chat view', async () => {
+      const page = await mountLive({ host })
+      open()
+      const tabs = page.findAll('nav[aria-label="Event"] button')
+      await tabs.find(tab => tab.text() === 'Chat')!.trigger('click')
+      await vi.waitFor(() => expect(page.find('main [role="log"]').exists()).toBe(true))
       expect(page.find('[data-user-id]').exists()).toBe(false)
       const error = vi.spyOn(console, 'error')
 

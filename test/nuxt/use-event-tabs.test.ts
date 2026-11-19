@@ -12,13 +12,13 @@ import { restoreScreen, stubScreen } from './event-page'
 // up shows the feed and counts nothing. The room is a fake that keeps its handlers, so a test fires `activity.added`.
 
 function fakeRoom() {
-  const handlers = new Map<string, () => void>()
-  const on = (type: string, handler: () => void) => {
+  const handlers = new Map<string, (payload?: unknown) => void>()
+  const on = (type: string, handler: (payload?: unknown) => void) => {
     handlers.set(type, handler)
     return () => void handlers.delete(type)
   }
   return {
-    fire: (type: string) => handlers.get(type)?.(),
+    fire: (type: string, payload?: unknown) => handlers.get(type)?.(payload),
     // The real room's `on` is typed by its messages; the test fires without one, so the fake is cast to that type.
     room: { on } as unknown as Pick<ReturnType<typeof useEventRoom>, 'on'>,
   }
@@ -29,7 +29,7 @@ async function setUp() {
   let tabs: ReturnType<typeof useEventTabs> | undefined
   await mountSuspended(defineComponent({
     setup() {
-      tabs = useEventTabs(room)
+      tabs = useEventTabs(room, () => 'me')
       return () => null
     },
   }))
@@ -43,12 +43,12 @@ afterEach(() => {
 })
 
 describe('useEventTabs', () => {
-  it('lists Event, Tabelle and Aktivität on a phone, and Chat, Aktivität and Tabelle in the side panel (#274, #761)', async () => {
+  it('lists Event, Tabelle, Chat and Aktivität on a phone, and Chat, Aktivität and Tabelle in the side panel (#274, #761, #765)', async () => {
     stubScreen(false)
     const { tabs } = await setUp()
 
-    expect(tabs().tabs.value.map(item => item.key)).toEqual(['event', 'standings', 'activity'])
-    expect(tabs().tabs.value.map(item => item.label)).toEqual(['Event', 'Tabelle', 'Aktivität'])
+    expect(tabs().tabs.value.map(item => item.key)).toEqual(['event', 'standings', 'chat', 'activity'])
+    expect(tabs().tabs.value.map(item => item.label)).toEqual(['Event', 'Tabelle', 'Chat', 'Aktivität'])
     expect(tabs().panelTabs.value.map(item => item.key)).toEqual(['chat', 'activity', 'standings'])
   })
 
@@ -78,10 +78,10 @@ describe('useEventTabs', () => {
     room.fire('activity.added')
 
     expect(tabs().activeView.value).toBe('standings')
-    expect(tabs().unread.value).toBe(3)
+    expect(tabs().unread.activity).toBe(3)
     expect(tabs().tabs.value[1]).toMatchObject({ key: 'standings', current: true })
     expect(tabs().tabs.value[1]).not.toHaveProperty('badge')
-    expect(tabs().tabs.value[2]).toMatchObject({ key: 'activity', badge: 3, current: false })
+    expect(tabs().tabs.value[3]).toMatchObject({ key: 'activity', badge: 3, current: false })
   })
 
   it('counts what the feed receives while the Event view is shown, and shows it as a badge', async () => {
@@ -91,9 +91,9 @@ describe('useEventTabs', () => {
     room.fire('activity.added')
     room.fire('activity.added')
 
-    expect(tabs().unread.value).toBe(2)
-    expect(tabs().tabs.value[2]).toMatchObject({ key: 'activity', badge: 2, current: false })
-    expect(tabs().tabs.value[2]!.ariaLabel).toMatch(/2/)
+    expect(tabs().unread.activity).toBe(2)
+    expect(tabs().tabs.value[3]).toMatchObject({ key: 'activity', badge: 2, current: false })
+    expect(tabs().tabs.value[3]!.ariaLabel).toMatch(/2/)
   })
 
   it('stops counting while the Activity view is shown, and clears the count when it is selected', async () => {
@@ -105,11 +105,11 @@ describe('useEventTabs', () => {
     room.fire('activity.added')
 
     expect(tabs().activeView.value).toBe('activity')
-    expect(tabs().tabs.value[2]).toMatchObject({ badge: 0, current: true, ariaLabel: undefined })
+    expect(tabs().tabs.value[3]).toMatchObject({ badge: 0, current: true, ariaLabel: undefined })
 
     tabs().selectView('event')
     room.fire('activity.added')
-    expect(tabs().unread.value).toBe(1)
+    expect(tabs().unread.activity).toBe(1)
   })
 
   it('selects the Event view for a key it does not know', async () => {
@@ -127,13 +127,13 @@ describe('useEventTabs', () => {
     const { room, tabs } = await setUp()
 
     room.fire('activity.added')
-    expect(tabs().unread.value).toBe(0)
+    expect(tabs().unread.activity).toBe(0)
 
     setWide(false)
     await nextTick()
-    expect(tabs().unread.value).toBe(0)
+    expect(tabs().unread.activity).toBe(0)
     room.fire('activity.added')
-    expect(tabs().unread.value).toBe(1)
+    expect(tabs().unread.activity).toBe(1)
   })
 
   it('clears the count when the screen becomes wide', async () => {
@@ -141,11 +141,78 @@ describe('useEventTabs', () => {
     const { room, tabs } = await setUp()
 
     room.fire('activity.added')
+    room.fire('chat.added', { message: { writerId: 'other' } })
     setWide(true)
     await nextTick()
 
-    expect(tabs().unread.value).toBe(0)
+    expect(tabs().unread.activity).toBe(0)
+    expect(tabs().unread.chat).toBe(0)
     expect(tabs().wide.value).toBe(true)
+  })
+
+  // The phone's Chat counts by the rule of the feed (#765): one function decides, and the two tabs count apart.
+  describe('the Chat on a phone (#765)', () => {
+    it('counts what the Chat receives while another view is shown, as a badge and an accessible name', async () => {
+      stubScreen(false)
+      const { room, tabs } = await setUp()
+
+      room.fire('chat.added', { message: { writerId: 'other' } })
+      room.fire('chat.added', { message: { writerId: 'other' } })
+
+      expect(tabs().unread.chat).toBe(2)
+      expect(tabs().tabs.value[2]).toMatchObject({ key: 'chat', badge: 2, ariaLabel: 'Chat, 2 neu' })
+      expect(tabs().tabs.value[2]).not.toHaveProperty('tour')
+    })
+
+    it('does not count the viewer\'s own Message, and counts the next one of another writer', async () => {
+      stubScreen(false)
+      const { room, tabs } = await setUp()
+
+      room.fire('chat.added', { message: { writerId: 'me' } })
+      expect(tabs().unread.chat).toBe(0)
+
+      room.fire('chat.added', { message: { writerId: 'other' } })
+      expect(tabs().unread.chat).toBe(1)
+    })
+
+    it('counts the two tabs apart, and opening the Chat clears only its own count', async () => {
+      stubScreen(false)
+      const { room, tabs } = await setUp()
+
+      room.fire('activity.added')
+      room.fire('chat.added', { message: { writerId: 'other' } })
+      room.fire('chat.added', { message: { writerId: 'other' } })
+      expect(tabs().unread).toMatchObject({ activity: 1, chat: 2 })
+
+      tabs().selectView('chat')
+      expect(tabs().unread).toMatchObject({ activity: 1, chat: 0 })
+      expect(tabs().tabs.value[2]).toMatchObject({ badge: 0, current: true, ariaLabel: undefined })
+
+      room.fire('chat.added', { message: { writerId: 'other' } })
+      expect(tabs().unread.chat).toBe(0)
+      tabs().selectView('event')
+      room.fire('chat.added', { message: { writerId: 'other' } })
+      expect(tabs().unread.chat).toBe(1)
+    })
+
+    it('counts nothing on a wide screen', async () => {
+      stubScreen(true)
+      const { room, tabs } = await setUp()
+
+      room.fire('chat.added', { message: { writerId: 'other' } })
+
+      expect(tabs().unread.chat).toBe(0)
+    })
+
+    it('does not change a count for a deleted Message', async () => {
+      stubScreen(false)
+      const { room, tabs } = await setUp()
+
+      room.fire('chat.added', { message: { writerId: 'other' } })
+      room.fire('chat.deleted', { id: 'x', deletedBy: 'other' })
+
+      expect(tabs().unread.chat).toBe(1)
+    })
   })
 })
 
@@ -172,8 +239,8 @@ describe('the tabs table (#756)', () => {
     expect(TABS.map(row => [row.key, row.place])).toEqual([
       ['event', { phone: 0, panel: null }],
       ['standings', { phone: 1, panel: 2 }],
-      ['activity', { phone: 2, panel: 1 }],
-      ['chat', { phone: null, panel: 0 }],
+      ['activity', { phone: 3, panel: 1 }],
+      ['chat', { phone: 2, panel: 0 }],
     ])
   })
 

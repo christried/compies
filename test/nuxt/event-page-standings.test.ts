@@ -216,7 +216,7 @@ describe('the finished Event page', () => {
 
     const page = await mount(slug)
 
-    expect(page.findAll('nav[aria-label="Event"] button').map(item => item.text())).toEqual(['Event', 'Tabelle', 'Aktivität'])
+    expect(page.findAll('nav[aria-label="Event"] button').map(item => item.text())).toEqual(['Event', 'Tabelle', 'Chat', 'Aktivität'])
     expect(page.get('h1').text()).toBe('Wilde Gurken gewinnt das Event')
   })
 
@@ -428,13 +428,13 @@ describe('the Standings on the Event page', () => {
       const page = await mount(slug)
 
       const items = page.findAll('nav[aria-label="Event"] button')
-      expect(items.map(item => item.text())).toEqual(['Event', 'Tabelle', 'Aktivität'])
+      expect(items.map(item => item.text())).toEqual(['Event', 'Tabelle', 'Chat', 'Aktivität'])
       expect(page.get('h1').text()).toBe('Die Session läuft')
 
       await items[1]!.trigger('click')
 
       expect(page.findAll('h1').map(heading => heading.text())).toEqual(['Tabelle'])
-      expect(page.findAll('nav[aria-label="Event"] button').map(item => item.attributes('aria-current'))).toEqual([undefined, 'page', undefined])
+      expect(page.findAll('nav[aria-label="Event"] button').map(item => item.attributes('aria-current'))).toEqual([undefined, 'page', undefined, undefined])
       // One heading „Tabelle“: the h1 that the phone view shows; the Standings below it have no h2 of their own (#274).
       expect(page.findAll('main h2').map(heading => heading.text())).toEqual(['Spielverlauf'])
       expect(page.findAll('main h1, main h2').filter(heading => heading.text() === 'Tabelle').map(heading => heading.element.tagName)).toEqual(['H1'])
