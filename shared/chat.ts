@@ -21,3 +21,9 @@ export interface DeletedMessage {
 }
 
 export type Message = LiveMessage | DeletedMessage
+
+/** A page of the Chat, newest first; `next` is the `before` of the page after, null at the oldest Message. The shape of the Activity feed's page. */
+export interface MessagePage {
+  messages: Message[]
+  next: string | null
+}

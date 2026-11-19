@@ -32,6 +32,8 @@ function groupInputOf(view: EventView | null | undefined, storedTourVersion: num
     standings: setUp,
     // The Game board's field is the same rule as `standings`, kept as its own field: the two groups may part later (#742).
     board: setUp,
+    // The Emotes' sounds (#770): the same rule again, in its own field.
+    emote: setUp,
     // The Tour may start for this Member (#747): the Tour's own rule, asked with the layer closed and the calm second over, so the files are there before
     // the greeting. It reads the Member's stored version and the Event's host flag, phase and running Session, nothing of a draw, a Result or a ceremony.
     tour: tourMayStart(tourStartInputOf(view, storedTourVersion, false, TOUR_CALM_MS)),

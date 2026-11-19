@@ -63,4 +63,9 @@ export const CUE_LENGTHS: Record<CueId, CueLength> = {
   'cb-laugh': { ms: 500, loop: false, docRow: false },
   // tour
   'cb-hi': { ms: 300, loop: false, docRow: true },
+  // emote
+  'emo-clap': { ms: 600, loop: false, docRow: true },
+  'emo-haha': { ms: 700, loop: false, docRow: true },
+  'emo-grr': { ms: 600, loop: false, docRow: true },
+  'emo-roar': { ms: 1000, loop: false, docRow: true },
 }
