@@ -34,6 +34,8 @@ const SHARED: Record<ApiErrorCode, string | null> = {
   rate_limited: 'error.rateLimited',
   note_too_long: 'error.noteTooLong',
   invalid_message: 'error.messageInvalid',
+  message_not_found: 'error.messageNotFound',
+  not_your_message: 'error.messageNotYours',
   format_unavailable: 'error.formatUnavailable',
   team_count_range: 'error.teamCountRange',
   team_size_range: 'error.teamSizeRange',

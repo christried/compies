@@ -97,6 +97,8 @@ room.on('emote.sent', (message) => {
 const sendEmote = (emote: EmoteId) => room.send({ type: 'emote.send', emote })
 // A Message that arrives: #761 adds it to the Chat by id. Listened for from #758 on, since room-listeners.test.ts wants a page listener per message type.
 room.on('chat.added', () => {})
+// A Message that is deleted: #763 turns it into its line by id. Listened for from #760 on, since room-listeners.test.ts wants a page listener per message type.
+room.on('chat.deleted', () => {})
 
 /** Whether the Veto bar covers the bottom of the page: the stage then gets room under its last block (F4), and the Clip shares the width with it held sideways (#584). */
 const vetoBarShown = ref(false)
