@@ -2,10 +2,7 @@
 // make(rng) -> Float64Array, swell?: true, fadeOut?: seconds }. make-cue-candidates.mjs loads every file of this folder and calls each `make` once
 // with the noise seeded from the file path, so a rerun gives the same bytes. He has no words: every candidate is a sound (a glide, a chirp, a
 // blip, a squeak, a gulp), never a run of syllables or a vowel that moves like speech. Nobody has heard these yet: the operator picks by ear in #748.
-import { buf, mix, add, shape, expo, osc, crush, svf, bar, burst, thump, peakTo, pluckEnv } from '../cue-kit.mjs'
-
-/** A semitone ratio above `hz`. */
-const up = (hz, semitones) => hz * 2 ** (semitones / 12)
+import { buf, mix, add, shape, expo, osc, crush, svf, bar, burst, thump, peakTo, pluckEnv, up } from '../cue-kit.mjs'
 
 export default {
   // ---- cb-hype: excited as the spin starts, 0.6 s. Rising and bouncy, bright, the transient at once. -----------------------------------

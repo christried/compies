@@ -3,10 +3,7 @@
 // noise seeded from the file path, so a rerun gives the same bytes. `cb-hi` greets the Member when the Tour opens: a short happy chirp, wordless,
 // every candidate a sound (a chirp, a glide, a blip, a squeak), never a syllable. `cb-yay`, the Tour's cheer, is the wheel's (wheel-voice.mjs).
 // Nobody has heard these yet: the operator picks by ear in #748.
-import { buf, mix, add, shape, expo, osc, svf, bar, burst, peakTo, pluckEnv } from '../cue-kit.mjs'
-
-/** A semitone ratio above `hz`. */
-const up = (hz, semitones) => hz * 2 ** (semitones / 12)
+import { buf, mix, add, shape, expo, osc, svf, bar, burst, peakTo, pluckEnv, up } from '../cue-kit.mjs'
 
 export default {
   // ---- cb-hi: the greeting, 0.3 s. Short, happy and friendly, the transient at once, not as loud in character as the cheer. ----------------

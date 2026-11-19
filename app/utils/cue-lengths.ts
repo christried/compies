@@ -1,4 +1,4 @@
-import type { CueId } from './sound-cues'
+import type { CueId } from './cue-ids'
 
 // The one table of the cues' lengths (#740), read by the file test (test/unit/sound-files.test.ts), the listening page (app/dev/) and the
 // candidate generator (scripts/make-cue-candidates.mjs). The generator imports it with plain Node, so this file is a leaf: a type import and

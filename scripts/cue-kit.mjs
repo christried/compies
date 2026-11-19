@@ -1,5 +1,5 @@
 // The synthesis kit of the sound candidates (#535, moved out of make-cue-candidates.mjs by #740): the helpers the generator and the recipe
-// files of scripts/cue-recipes/ share. All buffers are Float64Array at RATE; times in seconds. A new helper goes here, not into a recipe file.
+// files of scripts/cue-recipes/ share. All buffers are Float64Array at RATE; times in seconds. A helper two recipe files share goes here (a one-file helper stays in its file).
 
 export const RATE = 44_100
 export const PEAK = 0.8913 // -1 dBFS
@@ -10,6 +10,8 @@ export const TAU = Math.PI * 2
 export const frames = seconds => Math.round(seconds * RATE)
 export const buf = seconds => new Float64Array(frames(seconds))
 export const clamp = (x, lo, hi) => Math.min(hi, Math.max(lo, x))
+/** A semitone ratio above `hz` (#828: tour.mjs and wheel-voice.mjs shared it as two copies). */
+export const up = (hz, semitones) => hz * 2 ** (semitones / 12)
 
 export function fnv(text) {
   let h = 0x811C9DC5
