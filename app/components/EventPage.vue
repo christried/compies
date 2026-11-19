@@ -247,6 +247,7 @@ const covered = computed(() => clipShown.value || tour.shown.value)
             :teams="data.teams"
             :viewer-id="data.viewerId"
             :active="panelTab === 'chat'"
+            :finished="pageState?.kind === 'finished'"
           />
         </template>
         <template #activity>

@@ -1,9 +1,12 @@
 <script setup lang="ts">
-import { Crown } from '@lucide/vue'
+import { CircleAlert, Crown, Send } from '@lucide/vue'
+import { apiFailure } from '~/utils/api-error'
 import { teamNameAt } from '~/utils/board'
 import { formatActivityTime } from '~/utils/berlin-time'
 import { groupMessages, mergeMessages } from '~/utils/chat'
 import { chatRise } from '~/utils/motion'
+import { MESSAGE_MAX, parseMessageText } from '~~/shared/message-text'
+import { characterCount, cutToCharacters } from '~~/shared/text'
 import type { Message, MessagePage } from '~~/shared/chat'
 import type { BoardTeam, MemberView } from '~~/shared/event'
 
@@ -23,7 +26,9 @@ const props = withDefaults(defineProps<{
   viewerId: string
   /** The panel's tab is the one shown: the log scrolls to its end when it turns true, since a log that mounted hidden could not (#761). */
   active?: boolean
-}>(), { active: true })
+  /** The page is finished: no composer, a note instead (#667). */
+  finished?: boolean
+}>(), { active: true, finished: false })
 
 const { t } = useI18n()
 
@@ -47,6 +52,7 @@ async function loadFirst() {
     const page = await $fetch<MessagePage>(`/api/e/${props.slug}/messages`)
     const first = status.value !== 'ready'
     messages.value = mergeMessages(messages.value, pageMessages(page))
+    dropSettled()
     if (first) next.value = page.next
     status.value = 'ready'
     scrollToEnd()
@@ -82,15 +88,104 @@ function retry() {
   void loadFirst()
 }
 
+// A Message of this writer that the page sent and has not seen settle (#667): it shows at once under the held Messages, as „wird gesendet …“, and is a Message
+// of the Chat when the answer or the room's `chat.added` brings it, whichever is first (by id). A failed one keeps its text for „Erneut senden“, which sends the same id.
+interface Outgoing {
+  id: string
+  text: string
+  at: string
+  state: 'sending' | 'failed'
+  /** The last failure was the limiter's (429). */
+  limited: boolean
+}
+const draft = ref('')
+const outgoing = ref<Outgoing[]>([])
+const fieldId = useId()
+const draftCount = computed(() => characterCount(draft.value))
+const nearLimit = computed(() => draftCount.value >= MESSAGE_MAX * 0.8)
+const sendable = computed(() => parseMessageText(draft.value).ok)
+const outgoingById = computed(() => new Map(outgoing.value.map(entry => [entry.id, entry])))
+
+const isHeld = (id: string) => messages.value.some(held => held.id === id)
+/** A Message the Chat holds is settled, whatever a call says: its line leaves the outgoing ones. */
+const dropSettled = () => {
+  if (outgoing.value.some(entry => isHeld(entry.id))) outgoing.value = outgoing.value.filter(entry => !isHeld(entry.id))
+}
+
+/** The bubble of one Message rises, once, where it shows. */
+function riseOf(id: string) {
+  void nextTick(() => {
+    const bubble = [...scroller.value?.querySelectorAll<HTMLElement>('[data-message-id]') ?? []].find(element => element.dataset.messageId === id)
+    if (bubble) chatRise(bubble)
+  })
+}
+
+async function post(id: string, text: string) {
+  try {
+    const answer = await $fetch<Message>(`/api/e/${props.slug}/messages`, { method: 'POST', body: { id, text } })
+    // No refetch of anything: the answer is the Message as stored (a deleted one shows as its line, never its text).
+    messages.value = mergeMessages(messages.value, [answer])
+    outgoing.value = outgoing.value.filter(entry => entry.id !== id)
+  }
+  catch (error) {
+    if (isHeld(id)) {
+      dropSettled()
+      return
+    }
+    const entry = outgoing.value.find(item => item.id === id)
+    if (!entry) return
+    const failure = apiFailure(error)
+    entry.limited = failure.status === 429 || failure.code === 'rate_limited'
+    entry.state = 'failed'
+  }
+}
+
+function send() {
+  const parsed = parseMessageText(draft.value)
+  if (!parsed.ok) return
+  const id = crypto.randomUUID()
+  outgoing.value.push({ id, text: parsed.text, at: new Date().toISOString(), state: 'sending', limited: false })
+  draft.value = ''
+  // The writer sees their own line, wherever the log was scrolled to.
+  scrollToEnd()
+  void post(id, parsed.text)
+}
+
+/** Sends the same id and text again: a retry after a lost answer shows and stores the Message once. */
+function resend(entry: Outgoing) {
+  entry.state = 'sending'
+  entry.limited = false
+  void post(entry.id, entry.text)
+}
+
+function onInput(event: Event) {
+  const el = event.target as HTMLInputElement
+  let value = el.value.replace(/\r\n|[\r\n]/g, ' ')
+  if (characterCount(value) > MESSAGE_MAX) value = cutToCharacters(value, MESSAGE_MAX)
+  // Written back directly, as `NoteEditor` does: when the cut value equals the draft, Vue would not patch the field.
+  if (value !== el.value) {
+    const caret = Math.min(el.selectionStart ?? value.length, value.length)
+    el.value = value
+    el.setSelectionRange(caret, caret)
+  }
+  draft.value = value
+}
+
+// Enter sends; the field is one line. Not while an IME is composing.
+function onEnter(event: KeyboardEvent) {
+  if (event.isComposing) return
+  send()
+}
+
 const stopListening = props.room.on('chat.added', ({ message }) => {
-  if (messages.value.some(held => held.id === message.id)) return
+  // A Message of an outgoing line settles by the room's copy (the answer then merges nothing new), and an own Message never rises: its held opacity would end the pending bubble's look.
+  const own = outgoingById.value.has(message.id)
+  outgoing.value = outgoing.value.filter(entry => entry.id !== message.id)
+  if (isHeld(message.id)) return
   const follow = atEnd()
   messages.value = mergeMessages(messages.value, [message])
   // The bubble that arrived rises alone, also where it joins a group; the first page, an older page and a re-read never do.
-  void nextTick(() => {
-    const bubble = [...scroller.value?.querySelectorAll<HTMLElement>('[data-message-id]') ?? []].find(element => element.dataset.messageId === message.id)
-    if (bubble) chatRise(bubble)
-  })
+  if (!own) riseOf(message.id)
   if (follow) scrollToEnd()
 })
 onScopeDispose(stopListening)
@@ -106,7 +201,11 @@ onMounted(() => void loadFirst())
 const memberById = computed(() => new Map(props.members.map(member => [member.id, member])))
 
 /** The groups with what their name line shows, all computed from the Members the page holds. */
-const groups = computed(() => groupMessages(messages.value).map((group) => {
+const groups = computed(() => groupMessages([
+  ...messages.value,
+  // Appended after the held Messages, never sorted into them: a clock that is off must not put a pending line above a Message already shown.
+  ...outgoing.value.filter(entry => !isHeld(entry.id)).map((entry): Message => ({ id: entry.id, writerId: props.viewerId, text: entry.text, at: entry.at })),
+]).map((group) => {
   const member = memberById.value.get(group.writerId)
   const own = group.writerId === props.viewerId
   const first = group.messages[0]!
@@ -239,13 +338,93 @@ const groups = computed(() => groupMessages(messages.value).map((group) => {
               <div
                 v-else
                 :data-message-id="message.id"
+                :data-outgoing-state="outgoingById.get(message.id)?.state"
                 class="border-2 border-line px-3 py-2 text-[14px] leading-[1.4]"
-                :class="[group.own ? 'rounded-[14px_14px_4px_14px] bg-primary text-on-primary' : 'rounded-[14px_14px_14px_4px] bg-surface text-ink']"
+                :class="[group.own ? 'rounded-[14px_14px_4px_14px] bg-primary text-on-primary' : 'rounded-[14px_14px_14px_4px] bg-surface text-ink', outgoingById.get(message.id)?.state === 'sending' && 'opacity-60']"
               >
                 <span class="[overflow-wrap:anywhere]">{{ message.text }}</span>
               </div>
+              <!-- What became of the line the page sent (#667): sending, or failed with the one button that sends the same Message again. -->
+              <span
+                v-if="outgoingById.get(message.id)?.state === 'sending'"
+                class="self-end text-[11px] text-ink-2"
+              >{{ t('chat.sending') }}</span>
+              <template v-else-if="outgoingById.get(message.id)?.state === 'failed'">
+                <p
+                  v-if="outgoingById.get(message.id)?.limited"
+                  class="m-0 self-end text-[12px] text-error-fg"
+                  role="status"
+                >
+                  {{ t('error.rateLimited') }}
+                </p>
+                <button
+                  type="button"
+                  class="inline-flex items-center gap-1 self-end px-1 py-0.5 text-[12px] font-bold text-error-fg"
+                  @click="resend(outgoingById.get(message.id)!)"
+                >
+                  <AppIcon
+                    :icon="CircleAlert"
+                    :size="13"
+                  />{{ t('chat.failed') }}
+                </button>
+              </template>
             </template>
           </div>
+        </div>
+      </div>
+    </template>
+
+    <!-- The composer, or the note of a finished Event (#667). Every Member writes, whatever zone, seat, role or Phase; only the Finish and a failed read take it away. -->
+    <template v-if="status !== 'failed'">
+      <p
+        v-if="finished"
+        class="m-0 flex-none border-t-2 border-line-soft bg-surface-2 p-2.5 text-[13px] font-semibold text-ink-2"
+      >
+        {{ t('chat.finished') }}
+      </p>
+      <div
+        v-else
+        class="flex flex-none flex-col gap-1.5 border-t-2 border-line-soft bg-surface-2 p-2.5"
+      >
+        <span
+          v-if="nearLimit"
+          aria-hidden="true"
+          class="self-end font-mono text-[12px] font-bold"
+          :class="draftCount >= MESSAGE_MAX - 8 ? 'text-warning-fg' : 'text-ink-2'"
+        >{{ t('common.counter', { n: draftCount, max: MESSAGE_MAX }) }}</span>
+        <span
+          class="sr-only"
+          aria-live="polite"
+        >{{ nearLimit ? t('chat.remaining', { n: MESSAGE_MAX - draftCount }) : '' }}</span>
+        <div class="flex items-end gap-1.5">
+          <label
+            :for="fieldId"
+            class="sr-only"
+          >{{ t('chat.placeholder') }}</label>
+          <input
+            :id="fieldId"
+            type="text"
+            autocomplete="off"
+            enterkeyhint="send"
+            :value="draft"
+            :placeholder="t('chat.placeholder')"
+            class="h-11 min-w-0 flex-1 rounded-[12px] border-2 border-line bg-surface px-3 text-[16px] text-ink placeholder:text-ink-2"
+            @input="onInput"
+            @keydown.enter.prevent="onEnter"
+          >
+          <button
+            type="button"
+            :aria-label="t('chat.send')"
+            :aria-disabled="!sendable"
+            class="inline-flex size-11 flex-none items-center justify-center rounded-pill border-2 border-line"
+            :class="sendable ? 'bg-primary text-on-primary shadow-sm' : 'bg-surface-2 text-ink-2 shadow-none'"
+            @click="send"
+          >
+            <AppIcon
+              :icon="Send"
+              :size="18"
+            />
+          </button>
         </div>
       </div>
     </template>
