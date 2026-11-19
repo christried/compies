@@ -4,13 +4,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import EventPage from '~/pages/e/[slug]/index.vue'
 import { refreshEvent } from '~/composables/useEventView'
 import { NOTICE_SETTLE_MS } from '~/composables/useSoundUnlock'
-import { CUE_IDS, type CueId } from '~/utils/sound-cues'
 import { ceremonyTimeline, type CeremonyGag } from '~~/shared/ceremony'
 import type { RoundGame } from '~~/shared/game'
 import { defaultSettings } from '~~/shared/settings'
 import type { CeremonyView, ResultView } from '~~/shared/stage'
 import { FakeAudioContext } from '../fake-audio'
-import { kitty, signInAs } from './auth'
+import { context, cueLog, HeldContext, iso, serveCueFiles, setUpCuePage, tearDownCuePage } from './cue-harness'
 import { serve, viewWithSessions } from './event-page'
 import { ENDED, FIRST, members, SESSION, STARTED, team } from './event-page-states'
 
@@ -32,16 +31,8 @@ const resultOf = (number: number): ResultView => ({
 })
 const ENDED_ONE = SESSION(1, FIRST, { startedAt: STARTED, endedAt: ENDED })
 
-/** A browser that lets no sound through before a gesture: the context is made suspended. */
-class HeldContext extends FakeAudioContext {
-  override state = 'suspended'
-}
+serveCueFiles()
 
-for (const id of CUE_IDS) registerEndpoint(`/sounds/cues/${id}.wav`, () => new TextEncoder().encode(id))
-
-const context = () => FakeAudioContext.instances.at(-1)
-type Line = { id: CueId, at: number, rate: number, outcome: string }
-const log = () => (globalThis as { __compiesCueLog?: () => readonly Line[] }).__compiesCueLog?.() ?? []
 const gesture = {
   pointer: () => document.body.dispatchEvent(new PointerEvent('pointerup', { bubbles: true })),
   click: () => document.body.dispatchEvent(new MouseEvent('click', { bubbles: true })),
@@ -53,7 +44,6 @@ const settle = async () => {
   await flushPromises()
 }
 
-const iso = (ms: number) => new Date(ms).toISOString()
 /** A run that starts `lead` ms from now (a negative lead: it started that long ago) for four Parties and one Winner. */
 function ceremonyIn(lead: number, gag: CeremonyGag, winners = 1): CeremonyView {
   const startsAt = Math.round(Date.now() + lead)
@@ -101,24 +91,13 @@ const notice = () => [...document.querySelectorAll('[role="status"]')].find(elem
 const shown = () => vi.waitFor(() => expect(notice()).not.toBeNull())
 
 beforeEach(() => {
-  signInAs(kitty)
-  document.body.innerHTML = ''
-  FakeAudioContext.instances = []
-  FakeAudioContext.follows = true
-  vi.stubGlobal('AudioContext', HeldContext)
-  // The cue log is the page's own data, exposed in a staging build.
-  useRuntimeConfig().public.staging = true
+  setUpCuePage({ audio: HeldContext, staging: true })
 })
 
 afterEach(() => {
   page?.unmount()
   page = undefined
-  vi.restoreAllMocks()
-  vi.unstubAllGlobals()
-  FakeAudioContext.follows = false
-  localStorage.removeItem('compies-sound')
-  useRuntimeConfig().public.staging = false
-  Reflect.deleteProperty(globalThis, '__compiesCueLog')
+  tearDownCuePage()
 })
 
 describe('„Ton aktivieren“ at the Award ceremony', () => {
@@ -214,13 +193,13 @@ describe('„Ton aktivieren“ at the Award ceremony', () => {
     // 2.5 s into the run with the bonk: the drop, the rows and the run are past, the bonk (3.87 s) is still ahead.
     await mount(serveFinished(false, ceremonyIn(-2500, 'bonk')).slug)
     await shown()
-    expect(log().filter(line => line.id.startsWith('cer-') && line.outcome === 'scheduled')).toEqual([])
+    expect(cueLog().filter(line => line.id.startsWith('cer-') && line.outcome === 'scheduled')).toEqual([])
 
     gesture.pointer()
-    await vi.waitFor(() => expect(log().find(line => line.id === 'cer-bonk')).toBeDefined(), { timeout: 5000 })
+    await vi.waitFor(() => expect(cueLog().find(line => line.id === 'cer-bonk')).toBeDefined(), { timeout: 5000 })
     await flushPromises()
 
-    const ceremony = log().filter(line => line.id.startsWith('cer-'))
+    const ceremony = cueLog().filter(line => line.id.startsWith('cer-'))
     expect(ceremony.find(line => line.id === 'cer-bonk')!.outcome).toBe('scheduled')
     for (const line of ceremony.filter(line => line.id === 'cer-drop' || line.id === 'cer-row' || line.id === 'cer-run')) expect(line.outcome, line.id).toBe('skipped')
     expect(ceremony.some(line => line.id === 'cer-row')).toBe(true)

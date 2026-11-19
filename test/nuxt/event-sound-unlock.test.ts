@@ -7,6 +7,7 @@ import { STAGE_COLUMN_CLASS } from '~/utils/event-stage'
 import { defaultSettings } from '~~/shared/settings'
 import { FakeAudioContext } from '../fake-audio'
 import { kitty, signInAs } from './auth'
+import { context, HeldContext } from './cue-harness'
 import { serve, viewWithSessions } from './event-page'
 
 // „Ton aktivieren“ on the Event page (#533, spec #504 § Ton and „Ton aktivieren“): a page-wide listener lets sound through on the first
@@ -18,11 +19,6 @@ const FIRST = '2026-10-30T19:00:00.000Z'
 const STARTED = '2026-10-30T19:30:00.000Z'
 const ENDED = '2026-10-30T22:00:00.000Z'
 const SENTENCE = 'Dein Browser spielt Ton erst nach einem Tipp oder Tastendruck ab.'
-
-/** A browser that lets no sound through before a gesture: the context is made suspended. */
-class HeldContext extends FakeAudioContext {
-  override state = 'suspended'
-}
 
 /** A browser that does not count the first gesture: its first `resume()` stays pending and the context stays suspended, the second runs it. */
 class StuckContext extends HeldContext {
@@ -40,7 +36,6 @@ function serveRunning() {
   })).slug
 }
 
-const context = () => FakeAudioContext.instances.at(-1)
 const gesture = {
   pointer: () => document.body.dispatchEvent(new PointerEvent('pointerup', { bubbles: true })),
   key: (key = 'a') => document.body.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true })),

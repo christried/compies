@@ -4,14 +4,16 @@ import { createError, readBody } from 'h3'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { DRAG_DISTANCE } from '~/composables/useBoardDrag'
 import { refreshEvent } from '~/composables/useEventView'
-import { CUE_GROUPS, CUE_IDS, cueFilesOf, type CueGroup, type CueId } from '~/utils/sound-cues'
+import { cueFilesOf } from '~/utils/sound-cues'
 import type { Place } from '~~/shared/board'
 import type { MemberView } from '~~/shared/event'
 import { defaultSettings, type EventSettings } from '~~/shared/settings'
 import { FakeAudioContext } from '../fake-audio'
-import { kitty, signInAs } from './auth'
+import { kitty } from './auth'
+import { cueLog, filesReady, quiet, requested, requestedOf, requests, resetRequests, serveCueFiles, setUpCuePage, started, tearDownCuePage } from './cue-harness'
 import { LARSI, memberView, SANNE, stubScreen, viewWithSessions, type EventOverrides } from './event-page'
 import { FIRST, halo, mount, mountedPage, SESSION, serveState, team, unmountPage } from './event-page-states'
+import { motion } from './motion'
 
 // The Game board's sounds on the Event page (#742, spec #718): the viewer's own pick-up, snap and bounce through the page's player, the files an
 // Event that is set up and not finished requests, and the silence for somebody else's move. The board's calls are test/nuxt/game-board-cues.test.ts
@@ -23,23 +25,12 @@ const SETTINGS: EventSettings = { ...defaultSettings(), teamCount: 2, teamSize: 
 const STANDS: Place = { zone: 'stands' }
 const place = (n: number): Place => ({ zone: 'team', team: n })
 
-/** The requests each cue file got. The handlers answer with the cue id as bytes, which the fake decodes back to `{ id }`. */
-const requests: Record<string, number> = {}
-for (const id of CUE_IDS) {
-  registerEndpoint(`/sounds/cues/${id}.wav`, () => {
-    requests[id] = (requests[id] ?? 0) + 1
-    return new TextEncoder().encode(id)
-  })
-}
-const requested = () => Object.keys(requests).filter(id => requests[id]).sort()
-/** The requested files of these groups: an assertion names the groups it is about, so another moment's files never break it (#718). */
-const requestedOf = (...groups: CueGroup[]) => requested().filter(id => CUE_GROUPS[id as CueId].some(group => groups.includes(group)))
+serveCueFiles()
 
-const context = () => FakeAudioContext.instances.at(-1)
 /** The Game board's sounds that started, in order. */
-const dragSounds = () => (context()?.started() ?? []).map(source => String(source.id)).filter(id => id.startsWith('drag-'))
-const log = () => ((globalThis as { __compiesCueLog?: () => { id: CueId, outcome: string }[] }).__compiesCueLog?.() ?? []).filter(entry => entry.id.startsWith('drag-'))
-const logged = () => log().map(entry => entry.id)
+const dragSounds = () => started().map(source => String(source.id)).filter(id => id.startsWith('drag-'))
+const dragLog = () => cueLog().filter(entry => entry.id.startsWith('drag-'))
+const logged = () => dragLog().map(entry => entry.id)
 
 const standings = [{ team: 1, rank: 1, points: 0 }, { team: 2, rank: 1, points: 0 }]
 const end = { played: 0, gameCount: 6, complete: false, tie: null, finish: null, lastGame: null }
@@ -102,41 +93,20 @@ const NOWHERE = [900, 900] as const
 const menu = () => document.querySelector<HTMLElement>('[role="menu"]')
 const menuItem = (label: string) => [...(menu()?.querySelectorAll<HTMLElement>('[role="menuitem"]') ?? [])].find(item => item.textContent?.includes(label))!
 
-/** The page has asked for the three files, decoded them and is ready to play. */
-async function filesReady() {
-  await vi.waitFor(() => expect(requestedOf('board')).toHaveLength(BOARD_FILES.length))
-  await flushPromises()
-  await new Promise(resolve => setTimeout(resolve, 20))
-}
-const settle = () => new Promise(resolve => setTimeout(resolve, 60))
-function reduced() {
-  vi.spyOn(window, 'getComputedStyle').mockReturnValue({ getPropertyValue: (name: string) => (name === '--cp-motion' ? 'reduced' : '') } as CSSStyleDeclaration)
-}
-
 async function open(served: Served) {
   await mount(served.slug)
-  await filesReady()
+  await filesReady('board')
 }
 
 beforeEach(() => {
-  signInAs(kitty)
+  setUpCuePage({ staging: true })
   stubScreen(true)
   layOutBoard()
-  FakeAudioContext.instances = []
-  FakeAudioContext.follows = true
-  for (const id of CUE_IDS) requests[id] = 0
-  vi.stubGlobal('AudioContext', FakeAudioContext)
-  useRuntimeConfig().public.staging = true
 })
 
 afterEach(() => {
   unmountPage()
-  vi.restoreAllMocks()
-  vi.unstubAllGlobals()
-  FakeAudioContext.follows = false
-  localStorage.removeItem('compies-sound')
-  useRuntimeConfig().public.staging = false
-  Reflect.deleteProperty(globalThis, '__compiesCueLog')
+  tearDownCuePage()
 })
 
 for (const host of [true, false]) {
@@ -156,14 +126,14 @@ for (const host of [true, false]) {
     it('request no board file for an Event without settings, and none for a finished Event', async () => {
       const unset = serveBoard({ host, settings: null })
       await mount(unset.slug)
-      await settle()
+      await quiet()
       expect(requestedOf('board')).toEqual([])
       unmountPage()
 
       stubScreen(true)
       const finished = serveBoard({ host, phase: 'finished' })
       await mount(finished.slug)
-      await settle()
+      await quiet()
       expect(requestedOf('board')).toEqual([])
     })
 
@@ -176,11 +146,11 @@ for (const host of [true, false]) {
       pointer('pointermove', ...TEAM_ORANGE)
       pointer('pointerup', ...TEAM_ORANGE)
       await vi.waitFor(() => expect(dragSounds()).toEqual(['drag-pick', 'drag-snap']))
-      await settle()
+      await quiet()
 
       expect(dragSounds()).toEqual(['drag-pick', 'drag-snap'])
       expect(logged()).toEqual(['drag-pick', 'drag-snap'])
-      expect(log().every(entry => entry.outcome !== 'skipped')).toBe(true)
+      expect(dragLog().every(entry => entry.outcome !== 'skipped')).toBe(true)
     })
 
     it('lift and bounce for a refusal', async () => {
@@ -205,7 +175,7 @@ for (const host of [true, false]) {
       await press(own)
       pointer('pointermove', ...NOWHERE)
       pointer('pointerup', ...NOWHERE)
-      await settle()
+      await quiet()
 
       expect(dragSounds()).toEqual(['drag-pick', 'drag-reject'])
       expect(served.posted).toEqual([])
@@ -221,7 +191,7 @@ for (const host of [true, false]) {
       served.answer.current = () => {
         throw createError({ statusCode: 409, statusMessage: 'team_choice_closed' })
       }
-      await settle()
+      await quiet()
       await person(own).trigger('click')
       menuItem('Nach Team Rot').click()
 
@@ -235,7 +205,7 @@ for (const host of [true, false]) {
       served.set(readOf(served.slug, { host, seats: [STANDS, place(2), STANDS] }))
       await refreshEvent(served.slug)
       await flushPromises()
-      await settle()
+      await quiet()
       expect(person(LARSI).attributes('aria-label')).toBe('Larsi, Team Orange')
       expect(dragSounds()).toEqual([])
       expect(logged()).toEqual([])
@@ -248,7 +218,7 @@ for (const host of [true, false]) {
       await vi.waitFor(() => expect(dragSounds()).toEqual(['drag-pick', 'drag-snap']))
       await refreshEvent(served.slug)
       await flushPromises()
-      await settle()
+      await quiet()
 
       expect(dragSounds()).toEqual(['drag-pick', 'drag-snap'])
     })
@@ -256,7 +226,7 @@ for (const host of [true, false]) {
     it('keep all three sounding under reduced motion', async () => {
       const served = serveBoard({ host })
       await open(served)
-      reduced()
+      motion('reduced')
 
       await press(own)
       pointer('pointermove', ...TEAM_ORANGE)
@@ -279,11 +249,11 @@ for (const host of [true, false]) {
       pointer('pointermove', ...TEAM_ORANGE)
       pointer('pointerup', ...TEAM_ORANGE)
       await vi.waitFor(() => expect(served.posted).toHaveLength(1))
-      await settle()
+      await quiet()
 
       expect(requested()).toEqual([])
       expect(dragSounds()).toEqual([])
-      expect(log()).toEqual([])
+      expect(dragLog()).toEqual([])
     })
   })
 }
@@ -292,7 +262,7 @@ for (const host of [true, false]) {
 // secrets. The same own drop with a Hidden wheel setting and a drawn game, and with no wheel, requests and sounds the same.
 describe('the Game board\'s sounds and Secrecy', () => {
   async function dropWith(overrides: EventOverrides, settings: EventSettings) {
-    for (const id of CUE_IDS) requests[id] = 0
+    resetRequests()
     FakeAudioContext.instances = []
     const served = serveBoard({ settings, overrides })
     await open(served)
