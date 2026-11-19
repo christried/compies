@@ -113,6 +113,8 @@ export default defineNuxtConfig({
       realtimeUrl: process.env.REALTIME_URL ?? '',
     },
   },
+  // The cue ids' leaf is imported explicitly and re-exported by sound-cues.ts, so the auto-import scan would see CUE_IDS twice (#828).
+  ignore: ['app/utils/cue-ids.ts'],
 
   compatibilityDate: '2026-10-22',
   vite: { plugins: [tailwindcss()] },
