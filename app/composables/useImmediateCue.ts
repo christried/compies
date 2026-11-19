@@ -2,10 +2,10 @@ import type { InjectionKey } from 'vue'
 import type { CuePlayer } from '~/utils/cue-player'
 
 // The Event page's immediate-play function, handed down (#741, spec #718): the cue composable is called in the Event page only, and a component
-// that shows something a cue goes with (the Standings' sequence, later the Game board's drop and the Tour) asks for it here instead of making a
+// that shows something a cue goes with (the Standings' sequence, the Game board's drop, the Tour's steps) asks for it here instead of making a
 // player of its own. The pair is `provide` and `inject`, as `provideEventNotes` and its reader are (useEventNotes.ts).
 
-/** The player's immediate-play function, whatever its signature is: `(id, delayMs?)` today, and a rate later (#743) with no edit here. */
+/** The player's immediate-play function, `(id, delayMs?)`: one alias of `CuePlayer['playNow']`, so the signature has one home. */
 export type ImmediateCue = CuePlayer['playNow']
 
 export const immediateCueKey: InjectionKey<ImmediateCue> = Symbol('immediateCue')

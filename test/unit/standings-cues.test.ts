@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest'
 import { standingsChangeCues } from '../../app/dev/listening-model'
 import { COUNT_TICK_MS, countAt, countTicks } from '../../app/utils/count-up'
 import { STAMP_DELAY_MS } from '../../app/utils/motion'
-import { CUE_IDS, CUE_GROUPS, claimCues, cueFilesOf, reachableGroups, standingsCues, type ArrivalCue, type CueId, type StandingsCueInput } from '../../app/utils/sound-cues'
+import { CUE_IDS, CUE_GROUPS, claimCues, cueFilesOf, standingsCues, type ArrivalCue, type CueId, type StandingsCueInput } from '../../app/utils/sound-cues'
 import type { StandingView } from '../../shared/stage'
 
 // The Standings' sounds (#741, spec #718): which cue is due how long after the sequence starts, from ranks, points and team positions only.
@@ -134,7 +134,7 @@ describe('standingsCues', () => {
     expect(delaysOf(standingsCues(input({ stampDelayMs: 123 })), 'lb-winner')).toEqual([123])
   })
 
-  it('follows the Party that gains most: 30 and 3 give the ticks of 30, not of both', () => {
+  it('follows the Party whose points change most, up or down: 30 and 3 give the ticks of 30, not of both', () => {
     const cues = standingsCues(input({
       before: [standing(1, 1, 10), standing(2, 2, 5), standing(3, 3, 0)],
       after: [standing(3, 1, 30), standing(1, 2, 13), standing(2, 3, 5)],
@@ -200,11 +200,7 @@ describe('standingsCues', () => {
 })
 
 describe('the input of the Standings\' cues (Secrecy)', () => {
-  it('holds ranks, points, team positions and the setting, and no game, label, name, score or Result', () => {
-    expect(Object.keys(input()).sort()).toEqual(['after', 'before', 'celebrate', 'countMs', 'reducedMotion', 'stampDelayMs', 'winners'])
-    for (const row of [...input().before, ...input().after]) expect(Object.keys(row).sort()).toEqual(['points', 'rank', 'team'])
-  })
-
+  // The type holds ranks, points, team positions and the setting, no game, label, name, score or Result; the rows go in through a cast, as a read's would.
   it('gives the same cues whatever else a standing row carries', () => {
     const plain = standingsCues(input())
     const loaded = standingsCues(input({
@@ -244,21 +240,8 @@ describe('claimCues', () => {
   })
 })
 
+// The group's rule is a row of the table in sound-cues.test.ts.
 describe('the Standings\' group', () => {
-  it('is reached by the one flag, without a wheel', () => {
-    expect(reachableGroups({ wheel: false, vetoAllowance: 0, vetoWindow: false, standings: true })).toEqual(['standings'])
-  })
-
-  it('comes after the wheel\'s groups when there is a wheel', () => {
-    expect(reachableGroups({ wheel: true, vetoAllowance: 0, vetoWindow: false, standings: true })).toEqual(['wheel', 'standings'])
-    expect(reachableGroups({ wheel: true, vetoAllowance: 2, vetoWindow: false, standings: true })).toEqual(['wheel', 'veto', 'standings'])
-  })
-
-  it('is not reached when the flag is false or absent', () => {
-    expect(reachableGroups({ wheel: true, vetoAllowance: 0, vetoWindow: false, standings: false })).toEqual(['wheel'])
-    expect(reachableGroups({ wheel: false, vetoAllowance: 0, vetoWindow: false })).toEqual([])
-  })
-
   it('holds the three cues, in the order of CUE_IDS', () => {
     expect(cueFilesOf(['standings'])).toEqual(['lb-swap', 'lb-count', 'lb-winner'])
     for (const id of ['lb-swap', 'lb-count', 'lb-winner'] as const) {

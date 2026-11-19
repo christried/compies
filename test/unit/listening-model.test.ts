@@ -7,7 +7,7 @@ import {
 } from '../../app/dev/listening-model'
 import { CUE_LENGTHS } from '../../app/utils/cue-lengths'
 import { CUE_CREDITS_URL } from '../../app/utils/sound-credits'
-import { CUE_IDS, TICK_MIN_GAP_MS, cueFileUrl, wheelCuePlan } from '../../app/utils/sound-cues'
+import { CUE_IDS, TICK_MIN_GAP_MS, cueFileUrl, wheelCuePlan, type CueId } from '../../app/utils/sound-cues'
 import { REVEAL_AFTER_MS } from '../../app/utils/wheel'
 import { msOf } from '../../shared/instant'
 
@@ -27,12 +27,15 @@ const creditsOf = (fields: Record<string, unknown> = {}) => ({
 const credits = creditsOf()
 
 describe('CUE_BRIEF', () => {
-  it('is the character of compibert-sound.md, for every cue the document has a clean row for (its length is CUE_LENGTHS, #740)', () => {
+  // The document's row of `cb-hi` still says „3 variants“; one file ships (the document's own Deviation line of 0.17, #740, #747).
+  const DEVIATES: Partial<Record<CueId, string>> = { 'cb-hi': 'short happy chirp, one file' }
+
+  it('is the character of compibert-sound.md, for every cue the document has a clean row for (its length is CUE_LENGTHS, #740), but for the one that ships otherwise', () => {
     const doc = readFileSync(resolve(root, 'docs/design_handoff_compies/reference/docs/compibert-sound.md'), 'utf8')
     for (const id of CUE_IDS.filter(known => CUE_LENGTHS[known].docRow)) {
       const cells = doc.split('\n').map(line => line.split('|').map(cell => cell.trim())).find(row => row.includes(`\`${id}\``))!
       const at = cells.indexOf(`\`${id}\``)
-      expect(CUE_BRIEF[id], id).toEqual({ character: cells[at + 1] })
+      expect(CUE_BRIEF[id], id).toEqual({ character: DEVIATES[id] ?? cells[at + 1] })
     }
   })
 
@@ -265,7 +268,7 @@ describe('arrival buttons', () => {
 describe('choicesReport', () => {
   const { byCue } = candidatesOf({ cues: { 'wheel-stop': [{ name: 'thunk', file: 'wheel-stop/thunk.wav', source: 'sfxr preset hit, seed 3', author: null, licence: 'CC0' }] } }, credits)
 
-  it('has all eleven cues in order, undecided by default', () => {
+  it('has every cue in order, undecided by default', () => {
     const report = choicesReport(byCue, emptyChoices(), 40)
 
     expect(Object.keys(report.choices)).toEqual([...CUE_IDS])

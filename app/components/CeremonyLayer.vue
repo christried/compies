@@ -73,9 +73,10 @@ const open = computed(() => ceremony.value !== null && model.value !== null && o
 const cuePlan = computed<readonly Cue[]>(() => {
   const run = ceremony.value
   const shape = runShape.value
-  if (!import.meta.client || !run || !shape || !model.value) return []
+  const startsAt = startsMs.value
+  if (!import.meta.client || !run || startsAt === null || !shape || !model.value) return []
   if (closedFor.value === run.startsAt || skippedFor.value === run.startsAt || failedFor.value === run.startsAt) return []
-  return ceremonyCuePlan({ startsAt: Date.parse(run.startsAt), shape, reducedMotion: reducedMotion() })
+  return ceremonyCuePlan({ startsAt, shape, reducedMotion: reducedMotion() })
 })
 watch(cuePlan, plan => emit('cues', plan), { immediate: true })
 onBeforeUnmount(() => emit('cues', []))

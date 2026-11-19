@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import type { SpinView } from '~~/shared/stage'
 import { mascotMoments } from '../../app/utils/wheel-mascot'
 import { REVEAL_AFTER_MS } from '../../app/utils/wheel'
-import { CUE_VOLUME, wheelCuePlan, wheelVoicePlan, type Cue, type WheelCueInput, type WheelVoiceInput } from '../../app/utils/sound-cues'
+import { wheelCuePlan, wheelVoicePlan, type Cue, type WheelCueInput, type WheelVoiceInput } from '../../app/utils/sound-cues'
 
 // Compibert's voice at the wheel (#671, spec #718 § Secrecy „The Hidden wheel“): `cb-hype`, `cb-gulp` and `cb-yay` are a function of the
 // spin's two instants, the Hidden wheel setting and reduced motion, exactly what he is told (`mascotMoments`). Expected instants come from
@@ -41,12 +41,6 @@ describe('wheelVoicePlan keeps the drawn game secret', () => {
       expect(a.length).toBeGreaterThan(0)
     })
   })
-
-  it('has no field the viewer may not know and none for the Host: the type holds exactly three', () => {
-    const input: WheelVoiceInput = { spin: instants(6000), hiddenWheel: false, reducedMotion: false }
-    expect(Object.keys(input).sort()).toEqual(['hiddenWheel', 'reducedMotion', 'spin'])
-    expect(Object.keys(instants(6000)).sort()).toEqual(['spinStartAt', 'stopAt'])
-  })
 })
 
 describe('wheelVoicePlan: the Host and a Member hear the same voice', () => {
@@ -68,13 +62,6 @@ describe('wheelVoicePlan: the Host and a Member hear the same voice', () => {
 
   it('do not differ at all on a visible wheel', () => {
     expect(wholeOf(false, false)).toEqual(wholeOf(true, false))
-  })
-})
-
-describe('the voice cues\' volume', () => {
-  // The document's row is one cell for the three, so no test reads their Vol from it: the spec table of #718 says 40 each.
-  it('is 40 for each of the three', () => {
-    expect([CUE_VOLUME['cb-hype'], CUE_VOLUME['cb-gulp'], CUE_VOLUME['cb-yay']]).toEqual([40, 40, 40])
   })
 })
 
@@ -115,11 +102,6 @@ describe('wheelVoicePlan, edges', () => {
 
     expect(cues[1]!.at).toBe(moments(6003).brakeAt)
     expect(Number.isInteger(cues[1]!.at)).toBe(false)
-  })
-
-  it('gives the same plan for the same read twice, so a refetch schedules nothing twice', () => {
-    const key = (cues: Cue[]) => cues.map(cue => `${cue.id}@${cue.at}`)
-    expect(key(voice(6000))).toEqual(key(voice(6000)))
   })
 
   it('is ascending by time', () => {

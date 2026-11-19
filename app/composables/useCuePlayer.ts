@@ -2,7 +2,7 @@ import { createCuePlayer, exposesCueLog, type CueLogEntry, type CuePlayer } from
 import { reducedMotion } from '~/utils/motion'
 import { coinCuePlan, cueFileUrl, cueFilesOf, reachableGroups, vetoArrivalCues, vetoCuePlan, wheelCuePlan, wheelVoicePlan, type Cue, type GroupInput, type VetoArrivalState } from '~/utils/sound-cues'
 import type { EventView } from '~~/shared/event'
-import { TOUR_CALM_MS, tourMayStart } from '~~/shared/tour'
+import { TOUR_CALM_MS, tourMayStart, tourStartInputOf } from '~~/shared/tour'
 
 // The sound of the Event page (#531, spec #504 § The cue player): the page's one Web Audio context, the cue player on it, and the plan the
 // Event read gives it. The page's read is what carries a plan to a device, so a refetch (the room's `event.changed`, which reaches a hidden
@@ -16,24 +16,25 @@ import { TOUR_CALM_MS, tourMayStart } from '~~/shared/tour'
  * reach and which files each group holds are `reachableGroups` and `CUE_GROUPS` in sound-cues.ts (#531, #532).
  */
 function groupInputOf(view: EventView | null | undefined, storedTourVersion: number | null = null): GroupInput {
+  const phase = view?.event.phase
+  // The Event is set up and not finished, the page's own rule of `useStandingsNews`: the Host's read and a Member's hold both fields (#741).
+  const setUp = view?.standings != null && phase !== 'finished'
+  // „A Session is running“, spelled as `tourStartInputOf` spells it: `runningSessionId` is `string | null`.
+  const sessionRunning = view != null && view.runningSessionId !== null
   return {
     wheel: view?.wheel != null,
     vetoAllowance: view?.settings?.vetoAllowance ?? 0,
     vetoWindow: view?.wheel?.vetoes.draw != null,
     // Both are the same for every viewer's read; `view.coin` is only tested for null, its side is never read (#669).
-    sessionRunning: view?.runningSessionId != null,
+    sessionRunning,
     toss: view?.coin != null,
-    finished: view?.event.phase === 'finished',
-    // The Event is set up and not finished, the page's own rule of `useStandingsNews`: the Host's read and a Member's hold both fields (#741).
-    standings: view?.standings != null && view.event.phase !== 'finished',
-    // The Game board's field is the same rule on purpose, not a read of `standings`: the two groups may part later (#742).
-    board: view?.standings != null && view.event.phase !== 'finished',
+    finished: phase === 'finished',
+    standings: setUp,
+    // The Game board's field is the same rule as `standings`, kept as its own field: the two groups may part later (#742).
+    board: setUp,
     // The Tour may start for this Member (#747): the Tour's own rule, asked with the layer closed and the calm second over, so the files are there before
     // the greeting. It reads the Member's stored version and the Event's host flag, phase and running Session, nothing of a draw, a Result or a ceremony.
-    tour: tourMayStart({
-      storedVersion: storedTourVersion, role: view?.event.isHost ? 'host' : 'member', phase: view?.event.phase ?? null,
-      sessionRunning: view != null && view.runningSessionId !== null, layerOpen: false, calmFor: TOUR_CALM_MS,
-    }),
+    tour: tourMayStart(tourStartInputOf(view, storedTourVersion, false, TOUR_CALM_MS)),
   }
 }
 
@@ -45,25 +46,27 @@ function groupInputOf(view: EventView | null | undefined, storedTourVersion: num
 function planOf(view: EventView): Cue[] {
   const spin = view.wheel?.spin
   const draw = view.wheel?.vetoes.draw
+  const hiddenWheel = view.settings?.hiddenWheel ?? false
+  const reduced = reducedMotion()
   return [
     ...wheelCuePlan({
       spin: spin ? { spinStartAt: spin.spinStartAt, stopAt: spin.stopAt, slices: spin.slices, resultIndex: spin.resultIndex, resultOffset: spin.resultOffset } : null,
-      hiddenWheel: view.settings?.hiddenWheel ?? false,
+      hiddenWheel,
       isHost: view.event.isHost,
-      reducedMotion: reducedMotion(),
+      reducedMotion: reduced,
     }),
     ...wheelVoicePlan({
       spin: spin ? { spinStartAt: spin.spinStartAt, stopAt: spin.stopAt } : null,
-      hiddenWheel: view.settings?.hiddenWheel ?? false,
-      reducedMotion: reducedMotion(),
+      hiddenWheel,
+      reducedMotion: reduced,
     }),
     ...vetoCuePlan({
       draw: draw ? { drawId: draw.drawId, kind: draw.kind, stopAt: draw.stopAt, vetoEndsAt: draw.vetoEndsAt } : null,
       clip: view.clip ? { drawId: view.clip.drawId, endsAt: view.clip.endsAt } : null,
-      reducedMotion: reducedMotion(),
+      reducedMotion: reduced,
     }),
     // The Coin flip: the toss's two instants only, never its side (ADR 0013 amendment).
-    ...coinCuePlan({ toss: view.coin ? { startedAt: view.coin.startedAt, landsAt: view.coin.landsAt } : null, reducedMotion: reducedMotion() }),
+    ...coinCuePlan({ toss: view.coin ? { startedAt: view.coin.startedAt, landsAt: view.coin.landsAt } : null, reducedMotion: reduced }),
   ]
 }
 

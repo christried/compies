@@ -12,8 +12,9 @@ export function countAt(from: number, to: number, elapsedMs: number, durationMs:
 export const COUNT_TICK_MS = 1000 / 15
 
 /**
- * The delays (ms after the count starts, ascending) of the counter's displayed changes (#741): `lb-count` ticks with them, so the sound and the
- * counter share one rule. The counter writes on the first frame at or after each step of `COUNT_TICK_MS`; a tick is a step where `countAt` shows
+ * The delays (ms after the count starts, ascending) of the counter's displayed changes (#741): `lb-count` ticks with them. The sound and the
+ * counter use the same constants and curve (`COUNT_TICK_MS`, `countAt`), though not one loop: the counter's writes follow its frames, so they drift
+ * from this grid by a few frames. The counter writes on the first frame at or after each step of `COUNT_TICK_MS`; a tick is a step where `countAt` shows
  * another number than the one before, then one at `durationMs` when the last shown number is not `to` yet. Never closer than the step, so never
  * more than 15 a second. Empty for a count that goes nowhere or has no duration (the number is there at once).
  */
