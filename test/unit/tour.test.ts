@@ -70,6 +70,11 @@ describe('tourRun', () => {
     })
   })
 
+  it('has the side panel\'s tab on the activity step alone, and a run keeps it (#766)', () => {
+    expect(MEMBER_TOUR.filter(step => step.panelTab !== undefined).map(step => [step.id, step.panelTab])).toEqual([['activity', 'activity']])
+    expect(tourRun(MEMBER_TOUR, { ...page, present: EVERYTHING }).find(step => step.id === 'activity')?.panelTab).toBe('activity')
+  })
+
   it('points a step at its narrow child below the narrow width and at the thing otherwise (#648)', () => {
     const poll = MEMBER_TOUR.find(step => step.id === 'poll')!
     const board = MEMBER_TOUR.find(step => step.id === 'board')!

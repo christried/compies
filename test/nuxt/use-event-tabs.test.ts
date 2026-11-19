@@ -4,6 +4,7 @@ import { afterEach, describe, expect, it } from 'vitest'
 import { defineComponent, nextTick } from 'vue'
 import { TABS, useEventTabs, type EventTabRow } from '~/composables/useEventTabs'
 import type { useEventRoom } from '~/composables/useEventRoom'
+import { MEMBER_TOUR } from '~~/shared/tour'
 import { restoreScreen, stubScreen } from './event-page'
 
 // The Event page's phone tabs and side panel tabs (#257, B2): one table says which tabs exist, and the state of the views
@@ -49,6 +50,15 @@ describe('useEventTabs', () => {
     expect(tabs().tabs.value.map(item => item.key)).toEqual(['event', 'standings', 'activity'])
     expect(tabs().tabs.value.map(item => item.label)).toEqual(['Event', 'Tabelle', 'Aktivität'])
     expect(tabs().panelTabs.value.map(item => item.key)).toEqual(['chat', 'activity', 'standings'])
+  })
+
+  it('has a side panel tab for every panelTab the Tour names, so a renamed tab breaks the Tour\'s hook (#766)', async () => {
+    stubScreen(true)
+    const { tabs } = await setUp()
+    const named = MEMBER_TOUR.flatMap(step => step.panelTab ?? [])
+
+    expect(named.length).toBeGreaterThan(0)
+    for (const key of named) expect(tabs().panelTabs.value.map(item => item.key)).toContain(key)
   })
 
   it('opens the side panel on the Chat (#761)', async () => {
