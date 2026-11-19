@@ -172,47 +172,15 @@
     ],
     "cb-hype": [
       {
-        "name": "chip-arpeggio",
-        "file": "cb-hype/chip-arpeggio.wav",
-        "source": "scripts/cue-recipes/wheel-voice.mjs, Rezept chip-arpeggio",
-        "author": null,
-        "licence": "generated",
-        "note": "Arcade-Arpeggio nach oben, mit Vibrato"
-      },
-      {
-        "name": "glitzer-gleiter",
-        "file": "cb-hype/glitzer-gleiter.wav",
-        "source": "scripts/cue-recipes/wheel-voice.mjs, Rezept glitzer-gleiter",
-        "author": null,
-        "licence": "generated",
-        "note": "schneller Gleiter nach oben, hell"
-      },
-      {
         "name": "huepf-blips",
         "file": "cb-hype/huepf-blips.wav",
         "source": "scripts/cue-recipes/wheel-voice.mjs, Rezept huepf-blips",
         "author": null,
         "licence": "generated",
         "note": "drei hüpfende Blips, steigend"
-      },
-      {
-        "name": "xylophon-lauf",
-        "file": "cb-hype/xylophon-lauf.wav",
-        "source": "scripts/cue-recipes/wheel-voice.mjs, Rezept xylophon-lauf",
-        "author": null,
-        "licence": "generated",
-        "note": "Xylophon-Lauf nach oben"
       }
     ],
     "cb-gulp": [
-      {
-        "name": "schluck-wumms",
-        "file": "cb-gulp/schluck-wumms.wav",
-        "source": "scripts/cue-recipes/wheel-voice.mjs, Rezept schluck-wumms",
-        "author": null,
-        "licence": "generated",
-        "note": "Schlucken: tiefer Wumms, Klick, zweiter Wumms"
-      },
       {
         "name": "glup-bogen",
         "file": "cb-gulp/glup-bogen.wav",
@@ -220,49 +188,9 @@
         "author": null,
         "licence": "generated",
         "note": "ein Glup: Sinus fällt, steigt wieder"
-      },
-      {
-        "name": "tropfen-pluck",
-        "file": "cb-gulp/tropfen-pluck.wav",
-        "source": "scripts/cue-recipes/wheel-voice.mjs, Rezept tropfen-pluck",
-        "author": null,
-        "licence": "generated",
-        "note": "gedämpfter Wassertropfen"
-      },
-      {
-        "name": "chip-abwaerts",
-        "file": "cb-gulp/chip-abwaerts.wav",
-        "source": "scripts/cue-recipes/wheel-voice.mjs, Rezept chip-abwaerts",
-        "author": null,
-        "licence": "generated",
-        "note": "Arcade-Blip, fünf Stufen nach unten"
       }
     ],
     "cb-yay": [
-      {
-        "name": "chirp-fanfare",
-        "file": "cb-yay/chirp-fanfare.wav",
-        "source": "scripts/cue-recipes/wheel-voice.mjs, Rezept chirp-fanfare",
-        "author": null,
-        "licence": "generated",
-        "note": "Zwei-Ton-Chirp nach oben, kleiner Schnörkel"
-      },
-      {
-        "name": "glocken-dur",
-        "file": "cb-yay/glocken-dur.wav",
-        "source": "scripts/cue-recipes/wheel-voice.mjs, Rezept glocken-dur",
-        "author": null,
-        "licence": "generated",
-        "note": "heller Dur-Arpeggio auf Stäben"
-      },
-      {
-        "name": "party-troete",
-        "file": "cb-yay/party-troete.wav",
-        "source": "scripts/cue-recipes/wheel-voice.mjs, Rezept party-troete",
-        "author": null,
-        "licence": "generated",
-        "note": "Partytröte, Blat nach oben"
-      },
       {
         "name": "quiek-hoch",
         "file": "cb-yay/quiek-hoch.wav",
@@ -478,63 +406,15 @@
     ],
     "coin-toss": [
       {
-        "name": "daumen-flick",
-        "file": "coin-toss/daumen-flick.wav",
-        "source": "scripts/cue-recipes/coin.mjs, Rezept daumen-flick",
-        "author": null,
-        "licence": "generated",
-        "note": "Daumen-Schnipp, dann steigendes Rauschen"
-      },
-      {
-        "name": "chip-flick",
-        "file": "coin-toss/chip-flick.wav",
-        "source": "scripts/cue-recipes/coin.mjs, Rezept chip-flick",
-        "author": null,
-        "licence": "generated",
-        "note": "Arcade-Start, Pulswelle gleitet hoch"
-      },
-      {
         "name": "filz-wusch",
         "file": "coin-toss/filz-wusch.wav",
         "source": "scripts/cue-recipes/coin.mjs, Rezept filz-wusch",
         "author": null,
         "licence": "generated",
         "note": "weiches Wusch, kein scharfer Rand"
-      },
-      {
-        "name": "muenz-ping",
-        "file": "coin-toss/muenz-ping.wav",
-        "source": "scripts/cue-recipes/coin.mjs, Rezept muenz-ping",
-        "author": null,
-        "licence": "generated",
-        "note": "kurzer hoher Ping und etwas Luft"
       }
     ],
     "coin-spin": [
-      {
-        "name": "muenz-schimmer",
-        "file": "coin-spin/muenz-schimmer.wav",
-        "source": "scripts/cue-recipes/coin.mjs, Rezept muenz-schimmer",
-        "author": null,
-        "licence": "generated",
-        "note": "metallisches Schimmern mit langsamem Flimmern"
-      },
-      {
-        "name": "kreisel-surren",
-        "file": "coin-spin/kreisel-surren.wav",
-        "source": "scripts/cue-recipes/coin.mjs, Rezept kreisel-surren",
-        "author": null,
-        "licence": "generated",
-        "note": "Surren wie ein Kreisel, Tonhöhe wandert"
-      },
-      {
-        "name": "chip-trillern",
-        "file": "coin-spin/chip-trillern.wav",
-        "source": "scripts/cue-recipes/coin.mjs, Rezept chip-trillern",
-        "author": null,
-        "licence": "generated",
-        "note": "schneller Arcade-Triller, flimmert"
-      },
       {
         "name": "glocken-hauch",
         "file": "coin-spin/glocken-hauch.wav",
@@ -545,30 +425,6 @@
       }
     ],
     "coin-land": [
-      {
-        "name": "klirr-wobble",
-        "file": "coin-land/klirr-wobble.wav",
-        "source": "scripts/cue-recipes/coin.mjs, Rezept klirr-wobble",
-        "author": null,
-        "licence": "generated",
-        "note": "Klirren, Aufsetzer werden schneller und leiser, Wobbeln"
-      },
-      {
-        "name": "holz-tisch-klack",
-        "file": "coin-land/holz-tisch-klack.wav",
-        "source": "scripts/cue-recipes/coin.mjs, Rezept holz-tisch-klack",
-        "author": null,
-        "licence": "generated",
-        "note": "trockenes Holzklacken, drei Nachklacker"
-      },
-      {
-        "name": "chip-huepfer",
-        "file": "coin-land/chip-huepfer.wav",
-        "source": "scripts/cue-recipes/coin.mjs, Rezept chip-huepfer",
-        "author": null,
-        "licence": "generated",
-        "note": "Arcade-Hüpfer, werden kürzer und tiefer"
-      },
       {
         "name": "filz-plumps-klimper",
         "file": "coin-land/filz-plumps-klimper.wav",
@@ -586,49 +442,9 @@
         "author": null,
         "licence": "generated",
         "note": "zwei helle Stabspiel-Pings, schließender Abgang"
-      },
-      {
-        "name": "chip-stich",
-        "file": "coin-result/chip-stich.wav",
-        "source": "scripts/cue-recipes/coin.mjs, Rezept chip-stich",
-        "author": null,
-        "licence": "generated",
-        "note": "Arcade-Fanfärchen: drei Pulstöne"
-      },
-      {
-        "name": "holz-tusch",
-        "file": "coin-result/holz-tusch.wav",
-        "source": "scripts/cue-recipes/coin.mjs, Rezept holz-tusch",
-        "author": null,
-        "licence": "generated",
-        "note": "Holzblock, Tom und kurze Ratsche, ohne Tonhöhe"
-      },
-      {
-        "name": "glocken-stich",
-        "file": "coin-result/glocken-stich.wav",
-        "source": "scripts/cue-recipes/coin.mjs, Rezept glocken-stich",
-        "author": null,
-        "licence": "generated",
-        "note": "heller Glockenakkord, klingt kurz aus"
       }
     ],
     "lb-swap": [
-      {
-        "name": "doppel-wisch",
-        "file": "lb-swap/doppel-wisch.wav",
-        "source": "scripts/cue-recipes/standings.mjs, Rezept doppel-wisch",
-        "author": null,
-        "licence": "generated",
-        "note": "zwei schnelle Wisch-Geräusche, das zweite höher"
-      },
-      {
-        "name": "chip-doppelsprung",
-        "file": "lb-swap/chip-doppelsprung.wav",
-        "source": "scripts/cue-recipes/standings.mjs, Rezept chip-doppelsprung",
-        "author": null,
-        "licence": "generated",
-        "note": "zwei Arcade-Gleiter nach oben"
-      },
       {
         "name": "karten-schnipp",
         "file": "lb-swap/karten-schnipp.wav",
@@ -636,25 +452,9 @@
         "author": null,
         "licence": "generated",
         "note": "zwei Kartenschnipser, trocken"
-      },
-      {
-        "name": "schiebe-hin-her",
-        "file": "lb-swap/schiebe-hin-her.wav",
-        "source": "scripts/cue-recipes/standings.mjs, Rezept schiebe-hin-her",
-        "author": null,
-        "licence": "generated",
-        "note": "Kazoo-Gleiten hoch und wieder runter"
       }
     ],
     "lb-count": [
-      {
-        "name": "zaehlwerk-tick",
-        "file": "lb-count/zaehlwerk-tick.wav",
-        "source": "scripts/cue-recipes/standings.mjs, Rezept zaehlwerk-tick",
-        "author": null,
-        "licence": "generated",
-        "note": "feines Zählwerk-Klick, trocken"
-      },
       {
         "name": "chip-blip",
         "file": "lb-count/chip-blip.wav",
@@ -662,49 +462,9 @@
         "author": null,
         "licence": "generated",
         "note": "kurzer Arcade-Blip, ein Punkt"
-      },
-      {
-        "name": "filz-tipp",
-        "file": "lb-count/filz-tipp.wav",
-        "source": "scripts/cue-recipes/standings.mjs, Rezept filz-tipp",
-        "author": null,
-        "licence": "generated",
-        "note": "weiches Tippen auf Filz"
-      },
-      {
-        "name": "muenz-ting",
-        "file": "lb-count/muenz-ting.wav",
-        "source": "scripts/cue-recipes/standings.mjs, Rezept muenz-ting",
-        "author": null,
-        "licence": "generated",
-        "note": "winziges Münz-Ting, hell"
       }
     ],
     "lb-winner": [
-      {
-        "name": "troete-knall",
-        "file": "lb-winner/troete-knall.wav",
-        "source": "scripts/cue-recipes/standings.mjs, Rezept troete-knall",
-        "author": null,
-        "licence": "generated",
-        "note": "Partytröte, dann drei Konfetti-Knalle"
-      },
-      {
-        "name": "chip-jubel",
-        "file": "lb-winner/chip-jubel.wav",
-        "source": "scripts/cue-recipes/standings.mjs, Rezept chip-jubel",
-        "author": null,
-        "licence": "generated",
-        "note": "Arcade-Jingle, drei Rausch-Knalle"
-      },
-      {
-        "name": "glocken-jubel",
-        "file": "lb-winner/glocken-jubel.wav",
-        "source": "scripts/cue-recipes/standings.mjs, Rezept glocken-jubel",
-        "author": null,
-        "licence": "generated",
-        "note": "Glockenspiel steigt, drei weiche Papier-Knalle"
-      },
       {
         "name": "ratsche-konfetti",
         "file": "lb-winner/ratsche-konfetti.wav",
@@ -722,57 +482,9 @@
         "author": null,
         "licence": "generated",
         "note": "kleines Blubb nach oben, weich"
-      },
-      {
-        "name": "chip-huepfer",
-        "file": "drag-pick/chip-huepfer.wav",
-        "source": "scripts/cue-recipes/board.mjs, Rezept chip-huepfer",
-        "author": null,
-        "licence": "generated",
-        "note": "Arcade-Hüpfer nach oben"
-      },
-      {
-        "name": "filz-abheben",
-        "file": "drag-pick/filz-abheben.wav",
-        "source": "scripts/cue-recipes/board.mjs, Rezept filz-abheben",
-        "author": null,
-        "licence": "generated",
-        "note": "Filz löst sich vom Holz, kurz und leise"
-      },
-      {
-        "name": "korken-plopp",
-        "file": "drag-pick/korken-plopp.wav",
-        "source": "scripts/cue-recipes/board.mjs, Rezept korken-plopp",
-        "author": null,
-        "licence": "generated",
-        "note": "winziges Korken-Plopp"
       }
     ],
     "drag-snap": [
-      {
-        "name": "magnet-klick",
-        "file": "drag-snap/magnet-klick.wav",
-        "source": "scripts/cue-recipes/board.mjs, Rezept magnet-klick",
-        "author": null,
-        "licence": "generated",
-        "note": "trockenes Magnet-Klicken, kein Nachklang"
-      },
-      {
-        "name": "chip-einrasten",
-        "file": "drag-snap/chip-einrasten.wav",
-        "source": "scripts/cue-recipes/board.mjs, Rezept chip-einrasten",
-        "author": null,
-        "licence": "generated",
-        "note": "zwei kurze Arcade-Blips, der zweite höher"
-      },
-      {
-        "name": "karte-in-schlitz",
-        "file": "drag-snap/karte-in-schlitz.wav",
-        "source": "scripts/cue-recipes/board.mjs, Rezept karte-in-schlitz",
-        "author": null,
-        "licence": "generated",
-        "note": "Papier gleitet ein, trockenes Holz-Tock"
-      },
       {
         "name": "stift-ins-loch",
         "file": "drag-snap/stift-ins-loch.wav",
@@ -790,57 +502,9 @@
         "author": null,
         "licence": "generated",
         "note": "Gummiband-Boing, fällt zurück"
-      },
-      {
-        "name": "chip-nope",
-        "file": "drag-reject/chip-nope.wav",
-        "source": "scripts/cue-recipes/board.mjs, Rezept chip-nope",
-        "author": null,
-        "licence": "generated",
-        "note": "Arcade-Nope, zwei Stufen abwärts"
-      },
-      {
-        "name": "filz-plumps",
-        "file": "drag-reject/filz-plumps.wav",
-        "source": "scripts/cue-recipes/board.mjs, Rezept filz-plumps",
-        "author": null,
-        "licence": "generated",
-        "note": "weicher Plumps, dann Pfeifton nach unten"
-      },
-      {
-        "name": "tuerfeder",
-        "file": "drag-reject/tuerfeder.wav",
-        "source": "scripts/cue-recipes/board.mjs, Rezept tuerfeder",
-        "author": null,
-        "licence": "generated",
-        "note": "Türfeder-Sproing, schwingt aus"
       }
     ],
     "cer-drop": [
-      {
-        "name": "holz-brett",
-        "file": "cer-drop/holz-brett.wav",
-        "source": "scripts/cue-recipes/ceremony-run.mjs, Rezept holz-brett",
-        "author": null,
-        "licence": "generated",
-        "note": "Brett fällt auf den Tisch, trocken"
-      },
-      {
-        "name": "chip-plumps",
-        "file": "cer-drop/chip-plumps.wav",
-        "source": "scripts/cue-recipes/ceremony-run.mjs, Rezept chip-plumps",
-        "author": null,
-        "licence": "generated",
-        "note": "Arcade-Plumps, fallende Rechteckwelle"
-      },
-      {
-        "name": "filz-kissen",
-        "file": "cer-drop/filz-kissen.wav",
-        "source": "scripts/cue-recipes/ceremony-run.mjs, Rezept filz-kissen",
-        "author": null,
-        "licence": "generated",
-        "note": "Kissen plumpst, weich und tief"
-      },
       {
         "name": "tuch-klatsch",
         "file": "cer-drop/tuch-klatsch.wav",
@@ -852,30 +516,6 @@
     ],
     "cer-row": [
       {
-        "name": "holz-marimba",
-        "file": "cer-row/holz-marimba.wav",
-        "source": "scripts/cue-recipes/ceremony-run.mjs, Rezept holz-marimba",
-        "author": null,
-        "licence": "generated",
-        "note": "Holzstab, Marimba-Ton"
-      },
-      {
-        "name": "chip-blip",
-        "file": "cer-row/chip-blip.wav",
-        "source": "scripts/cue-recipes/ceremony-run.mjs, Rezept chip-blip",
-        "author": null,
-        "licence": "generated",
-        "note": "Arcade-Blip mit kleinem Aufstieg"
-      },
-      {
-        "name": "filz-glocke",
-        "file": "cer-row/filz-glocke.wav",
-        "source": "scripts/cue-recipes/ceremony-run.mjs, Rezept filz-glocke",
-        "author": null,
-        "licence": "generated",
-        "note": "weicher Glockenton, Filzhammer"
-      },
-      {
         "name": "schwupp-pfeife",
         "file": "cer-row/schwupp-pfeife.wav",
         "source": "scripts/cue-recipes/ceremony-run.mjs, Rezept schwupp-pfeife",
@@ -886,30 +526,6 @@
     ],
     "cer-run": [
       {
-        "name": "holz-stapfen",
-        "file": "cer-run/holz-stapfen.wav",
-        "source": "scripts/cue-recipes/ceremony-run.mjs, Rezept holz-stapfen",
-        "author": null,
-        "licence": "generated",
-        "note": "fünf Holzschritte, dazwischen das Pokal-Klingeln"
-      },
-      {
-        "name": "chip-lauf",
-        "file": "cer-run/chip-lauf.wav",
-        "source": "scripts/cue-recipes/ceremony-run.mjs, Rezept chip-lauf",
-        "author": null,
-        "licence": "generated",
-        "note": "Arcade-Lauf, Rauschschritte und Ding"
-      },
-      {
-        "name": "filz-tapsen",
-        "file": "cer-run/filz-tapsen.wav",
-        "source": "scripts/cue-recipes/ceremony-run.mjs, Rezept filz-tapsen",
-        "author": null,
-        "licence": "generated",
-        "note": "weiche Filzschritte, Papier raschelt mit"
-      },
-      {
         "name": "klapper-trab",
         "file": "cer-run/klapper-trab.wav",
         "source": "scripts/cue-recipes/ceremony-run.mjs, Rezept klapper-trab",
@@ -919,30 +535,6 @@
       }
     ],
     "cer-trip": [
-      {
-        "name": "holz-stolper",
-        "file": "cer-trip/holz-stolper.wav",
-        "source": "scripts/cue-recipes/ceremony-run.mjs, Rezept holz-stolper",
-        "author": null,
-        "licence": "generated",
-        "note": "zwei Holzticks, Rutsch nach unten, Plumps"
-      },
-      {
-        "name": "chip-stolper",
-        "file": "cer-trip/chip-stolper.wav",
-        "source": "scripts/cue-recipes/ceremony-run.mjs, Rezept chip-stolper",
-        "author": null,
-        "licence": "generated",
-        "note": "Arcade-Womp, drei fallende Töne, dumpfer Aufprall"
-      },
-      {
-        "name": "filz-stolper",
-        "file": "cer-trip/filz-stolper.wav",
-        "source": "scripts/cue-recipes/ceremony-run.mjs, Rezept filz-stolper",
-        "author": null,
-        "licence": "generated",
-        "note": "Schuh schleift, Wackeln, dumpfes Landen"
-      },
       {
         "name": "purzel-ticks",
         "file": "cer-trip/purzel-ticks.wav",
@@ -960,57 +552,9 @@
         "author": null,
         "licence": "generated",
         "note": "hohles Holzklopfen mit Boing"
-      },
-      {
-        "name": "chip-boing",
-        "file": "cer-bonk/chip-boing.wav",
-        "source": "scripts/cue-recipes/ceremony-run.mjs, Rezept chip-boing",
-        "author": null,
-        "licence": "generated",
-        "note": "Arcade-Boing, wackelnde Rechteckwelle"
-      },
-      {
-        "name": "filz-bonk",
-        "file": "cer-bonk/filz-bonk.wav",
-        "source": "scripts/cue-recipes/ceremony-run.mjs, Rezept filz-bonk",
-        "author": null,
-        "licence": "generated",
-        "note": "dumpfer Bonk, tiefes Nachwackeln"
-      },
-      {
-        "name": "glocke-bonk",
-        "file": "cer-bonk/glocke-bonk.wav",
-        "source": "scripts/cue-recipes/ceremony-run.mjs, Rezept glocke-bonk",
-        "author": null,
-        "licence": "generated",
-        "note": "Glocke auf dem Kopf, klingt wabernd nach"
       }
     ],
     "cer-stamp": [
-      {
-        "name": "gummi-stempel",
-        "file": "cer-stamp/gummi-stempel.wav",
-        "source": "scripts/cue-recipes/ceremony-peak.mjs, Rezept gummi-stempel",
-        "author": null,
-        "licence": "generated",
-        "note": "Gummistempel auf Karton, dumpf"
-      },
-      {
-        "name": "metall-stempel",
-        "file": "cer-stamp/metall-stempel.wav",
-        "source": "scripts/cue-recipes/ceremony-peak.mjs, Rezept metall-stempel",
-        "author": null,
-        "licence": "generated",
-        "note": "Metallstempel, kurzes Nachklingen"
-      },
-      {
-        "name": "filz-stempel",
-        "file": "cer-stamp/filz-stempel.wav",
-        "source": "scripts/cue-recipes/ceremony-peak.mjs, Rezept filz-stempel",
-        "author": null,
-        "licence": "generated",
-        "note": "Filzpolster, tiefer weicher Schlag"
-      },
       {
         "name": "holz-griff",
         "file": "cer-stamp/holz-griff.wav",
@@ -1022,55 +566,15 @@
     ],
     "cer-fanfare": [
       {
-        "name": "spielzeug-trompete",
-        "file": "cer-fanfare/spielzeug-trompete.wav",
-        "source": "scripts/cue-recipes/ceremony-peak.mjs, Rezept spielzeug-trompete",
-        "author": null,
-        "licence": "generated",
-        "note": "Spielzeugtrompete: C, E, G, dann ein langes C"
-      },
-      {
-        "name": "blech-kapelle",
-        "file": "cer-fanfare/blech-kapelle.wav",
-        "source": "scripts/cue-recipes/ceremony-peak.mjs, Rezept blech-kapelle",
-        "author": null,
-        "licence": "generated",
-        "note": "Blechbläser, Obertonreihe, langes Ausklingen"
-      },
-      {
         "name": "chip-arpeggio",
         "file": "cer-fanfare/chip-arpeggio.wav",
         "source": "scripts/cue-recipes/ceremony-peak.mjs, Rezept chip-arpeggio",
         "author": null,
         "licence": "generated",
         "note": "Arcade-Jingle, schneller Dreiklang, hohes C"
-      },
-      {
-        "name": "kazoo-fanfare",
-        "file": "cer-fanfare/kazoo-fanfare.wav",
-        "source": "scripts/cue-recipes/ceremony-peak.mjs, Rezept kazoo-fanfare",
-        "author": null,
-        "licence": "generated",
-        "note": "Partykazoo, brummend, vier steigende Töne"
       }
     ],
     "cer-crowd": [
-      {
-        "name": "saal-publikum",
-        "file": "cer-crowd/saal-publikum.wav",
-        "source": "scripts/cue-recipes/ceremony-peak.mjs, Rezept saal-publikum",
-        "author": null,
-        "licence": "generated",
-        "note": "Publikum im Saal, Rauschen, das anschwillt"
-      },
-      {
-        "name": "chip-publikum",
-        "file": "cer-crowd/chip-publikum.wav",
-        "source": "scripts/cue-recipes/ceremony-peak.mjs, Rezept chip-publikum",
-        "author": null,
-        "licence": "generated",
-        "note": "Arcade-Jubel, körniges Rauschen"
-      },
       {
         "name": "klatsch-publikum",
         "file": "cer-crowd/klatsch-publikum.wav",
@@ -1078,14 +582,6 @@
         "author": null,
         "licence": "generated",
         "note": "Applaus, viele einzelne Klatscher"
-      },
-      {
-        "name": "jubel-pfeifen",
-        "file": "cer-crowd/jubel-pfeifen.wav",
-        "source": "scripts/cue-recipes/ceremony-peak.mjs, Rezept jubel-pfeifen",
-        "author": null,
-        "licence": "generated",
-        "note": "Jubel mit Pfiffen, die nach oben gleiten"
       }
     ],
     "cb-laugh": [
@@ -1096,41 +592,9 @@
         "author": null,
         "licence": "generated",
         "note": "vier kurze Blips, jeder gleitet eine Quinte hoch und zurück, kichernd"
-      },
-      {
-        "name": "kiekser",
-        "file": "cb-laugh/kiekser.wav",
-        "source": "scripts/cue-recipes/ceremony-laugh.mjs, Rezept kiekser",
-        "author": null,
-        "licence": "generated",
-        "note": "ein Kiekser: schneller Gleiter nach oben, fällt zurück, dünn und hell"
-      },
-      {
-        "name": "bauch-glucks",
-        "file": "cb-laugh/bauch-glucks.wav",
-        "source": "scripts/cue-recipes/ceremony-laugh.mjs, Rezept bauch-glucks",
-        "author": null,
-        "licence": "generated",
-        "note": "tiefes Bauchglucksen, drei weiche Stöße, leiser werdend"
-      },
-      {
-        "name": "kratz-lacher",
-        "file": "cb-laugh/kratz-lacher.wav",
-        "source": "scripts/cue-recipes/ceremony-laugh.mjs, Rezept kratz-lacher",
-        "author": null,
-        "licence": "generated",
-        "note": "drei rauschende Lacher, auf vier Bit zerkratzt"
       }
     ],
     "cb-hi": [
-      {
-        "name": "zwei-ton-piep",
-        "file": "cb-hi/zwei-ton-piep.wav",
-        "source": "scripts/cue-recipes/tour.mjs, Rezept zwei-ton-piep",
-        "author": null,
-        "licence": "generated",
-        "note": "Zwei-Ton-Piepser nach oben, vogelartig"
-      },
       {
         "name": "gleiter-mit-wobble",
         "file": "cb-hi/gleiter-mit-wobble.wav",
@@ -1138,22 +602,6 @@
         "author": null,
         "licence": "generated",
         "note": "schneller Gleiter nach oben mit Wobble"
-      },
-      {
-        "name": "chip-blip-paar",
-        "file": "cb-hi/chip-blip-paar.wav",
-        "source": "scripts/cue-recipes/tour.mjs, Rezept chip-blip-paar",
-        "author": null,
-        "licence": "generated",
-        "note": "zwei Arcade-Blips, der zweite höher"
-      },
-      {
-        "name": "quieker-mit-klang",
-        "file": "cb-hi/quieker-mit-klang.wav",
-        "source": "scripts/cue-recipes/tour.mjs, Rezept quieker-mit-klang",
-        "author": null,
-        "licence": "generated",
-        "note": "kurzer Quieker, danach ein heller Klang"
       }
     ]
   }
