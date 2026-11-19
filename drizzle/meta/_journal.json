@@ -281,6 +281,13 @@
       "when": 1794855737927,
       "tag": "0039_event_game_notes",
       "breakpoints": true
+    },
+    {
+      "idx": 40,
+      "version": "7",
+      "when": 1795093670622,
+      "tag": "0040_chat_messages",
+      "breakpoints": true
     }
   ]
 }

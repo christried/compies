@@ -279,6 +279,29 @@ export const eventGameNotes = pgTable('event_game_notes', {
   index('event_game_notes_game_id_idx').on(table.gameId),
 ])
 
+// The Chat's Messages (#757, spec #719 § A, GLOSSARY: Message): what a Member wrote in an Event's Chat. A Message goes with its Event and is not an
+// Activity entry (ADR 0016). `id` has no database default: the page that writes it makes the id (0.18-3), so a retry is told from a new Message. `text` is
+// NULL once deleted, and the line says who deleted it: `deleted_by` is `host` or `writer`, and the Host's own Message records `writer`, which the schema
+// cannot check (the write does). The read filters by Event and orders by the instant, so that is the index.
+export const messageDeleter = pgEnum('message_deleter', ['host', 'writer'])
+
+export const messages = pgTable('messages', {
+  id: uuid('id').primaryKey(),
+  eventId: uuid('event_id').notNull().references(() => events.id, { onDelete: 'cascade' }),
+  // `writerId` has no index, as `vetoes.userId` has none: deleting a User scans this table, which is rare and small. A User with a Message is not deleted
+  // (no cascade, no null), as with every reference to a User.
+  writerId: uuid('writer_id').notNull().references(() => users.id),
+  text: text('text'),
+  writtenAt: timestamp('written_at', { withTimezone: true }).notNull(),
+  deletedAt: timestamp('deleted_at', { withTimezone: true }),
+  deletedBy: messageDeleter('deleted_by'),
+}, table => [
+  index('messages_event_id_written_at_idx').on(table.eventId, table.writtenAt),
+  // A deleted Message holds no text, and a live one holds text: the text of a deleted Message is gone from the row, not hidden (spec § A).
+  check('messages_deleted_text_check', sql`(${table.deletedAt} IS NULL) = (${table.text} IS NOT NULL)`),
+  check('messages_deleted_pair_check', sql`(${table.deletedAt} IS NULL) = (${table.deletedBy} IS NULL)`),
+])
+
 export const activityType = pgEnum('activity_type', ACTIVITY_TYPES)
 
 // The Activity feed (#159, GLOSSARY: Activity feed): what happened in an Event, written in the same transaction as the
