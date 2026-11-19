@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { CircleAlert, Crown, Send } from '@lucide/vue'
-import { apiFailure } from '~/utils/api-error'
+import { CircleAlert, Crown, Send, Trash2 } from '@lucide/vue'
+import { apiErrorKey, apiFailure } from '~/utils/api-error'
 import { teamNameAt } from '~/utils/board'
 import { formatActivityTime } from '~/utils/berlin-time'
-import { groupMessages, mergeMessages, splitMessageText } from '~/utils/chat'
+import { groupMessages, markDeleted, mergeMessages, splitMessageText } from '~/utils/chat'
 import { chatRise } from '~/utils/motion'
 import { MESSAGE_MAX, parseMessageText } from '~~/shared/message-text'
 import { characterCount, cutToCharacters } from '~~/shared/text'
@@ -16,7 +16,7 @@ import { NOTES_LINK_REL } from '~~/shared/notes-doc'
 // again whenever the connection opens (a message sent while the socket was down is gone), and „Ältere laden“ for the page before the oldest one shown. A Message
 // the page and the room both bring shows once (by id). A Message stores no name and no place (ADR 0016's opposite, on purpose): the name line of each group
 // takes the writer's current Display name, Team and place from the Event read's Members, so a rename or a move shows in old Messages. The composer is #667's, links #762's
-// and the delete control #763's.
+// and the delete control, its undo and the line a deleted Message turns into (`chat.deleted`) #763's.
 const props = withDefaults(defineProps<{
   slug: string
   room: Pick<ReturnType<typeof useEventRoom>, 'state' | 'on'>
@@ -178,6 +178,67 @@ function onEnter(event: KeyboardEvent) {
   send()
 }
 
+// Deleting a Message (#763, ADR 0013: no server timer, the undo is the page's). The Message is hidden at once (a view filter: `messages` itself is untouched, so a re-read
+// that brings it again leaves it hidden), a toast offers „Rückgängig“ for 5 s, and the call goes out when the toast ends.
+const UNDO_MS = 5000
+const hidden = ref<string[]>([])
+const { toast, toasts, dismiss } = useToast()
+/** Message id → the id of its toast, for each delete not sent yet. Not reactive: nothing is drawn from it. */
+const pending = new Map<string, number>()
+
+const unhide = (id: string) => {
+  hidden.value = hidden.value.filter(item => item !== id)
+}
+
+/** The call: the answer is the Message as stored (the line, also when the Host or a racing delete was first); a failure puts the Message back. Sent once, whoever asks first. */
+async function flush(id: string) {
+  if (!pending.delete(id)) return
+  try {
+    // `keepalive` lets the call outlive a page that is being left.
+    const answer = await $fetch<Message>(`/api/e/${props.slug}/messages/${id}`, { method: 'DELETE', keepalive: true })
+    messages.value = mergeMessages(messages.value, [answer])
+    unhide(id)
+  }
+  catch (error) {
+    unhide(id)
+    toast({ tone: 'error', text: t(apiErrorKey(error, 'error.saveFailed')) })
+  }
+}
+
+function requestDelete(id: string) {
+  hidden.value = [...hidden.value, id]
+  const toastId = toast({ tone: 'info', text: t('chat.deletedToast'), duration: UNDO_MS, action: { label: t('chat.undo'), run: () => undo(id) } })
+  pending.set(id, toastId)
+  // The pressed control leaves the DOM: the log takes the focus (not the composer, which would open the phone's keyboard).
+  scroller.value?.focus({ preventScroll: true })
+}
+
+/** „Rückgängig“: nothing was sent, so nothing is undone on the server. The pending entry goes first, so the toast's own dismissal finds none. */
+function undo(id: string) {
+  pending.delete(id)
+  unhide(id)
+}
+
+// The toast's end sends the call: its timer, its ✕ and the eviction of the oldest toast by a fourth all take its id out of the list (`useToast` has no end hook and needs none).
+watch(() => toasts.value.map(item => item.id), (ids) => {
+  for (const [id, toastId] of pending) {
+    if (!ids.includes(toastId)) void flush(id)
+  }
+})
+
+/** Leaving the page, or this panel: every pending delete goes out now and its toast goes. */
+function flushAll() {
+  for (const [id, toastId] of [...pending]) {
+    dismiss(toastId)
+    void flush(id)
+  }
+}
+onMounted(() => window.addEventListener('pagehide', flushAll))
+onBeforeUnmount(() => {
+  window.removeEventListener('pagehide', flushAll)
+  flushAll()
+})
+
 const stopListening = props.room.on('chat.added', ({ message }) => {
   // A Message of an outgoing line settles by the room's copy (the answer then merges nothing new), and an own Message never rises: its held opacity would end the pending bubble's look.
   const own = outgoingById.value.has(message.id)
@@ -191,6 +252,13 @@ const stopListening = props.room.on('chat.added', ({ message }) => {
 })
 onScopeDispose(stopListening)
 
+// A Message deleted, by the Host or its writer (also this page's own, once the call went out): its line takes its place. It changes `messages` only, never `hidden`, so a Message the
+// deleter still has pending stays hidden until the call is answered. No scroll, rise or sound.
+const stopListeningDeleted = props.room.on('chat.deleted', ({ id, deletedBy }) => {
+  messages.value = markDeleted(messages.value, id, deletedBy)
+})
+onScopeDispose(stopListeningDeleted)
+
 watch(props.room.state, (state) => {
   if (state === 'open' && status.value === 'ready') void loadFirst()
 })
@@ -201,9 +269,12 @@ onMounted(() => void loadFirst())
 
 const memberById = computed(() => new Map(props.members.map(member => [member.id, member])))
 
+/** Only the writer's own live Message has the control; a line the page sent and has not seen settle may not exist on the server yet. */
+const canDelete = (message: Message) => message.writerId === props.viewerId && message.text !== null && !outgoingById.value.has(message.id)
+
 /** The groups with what their name line shows, all computed from the Members the page holds. */
 const groups = computed(() => groupMessages([
-  ...messages.value,
+  ...messages.value.filter(message => !hidden.value.includes(message.id)),
   // Appended after the held Messages, never sorted into them: a clock that is off must not put a pending line above a Message already shown.
   ...outgoing.value.filter(entry => !isHeld(entry.id)).map((entry): Message => ({ id: entry.id, writerId: props.viewerId, text: entry.text, at: entry.at })),
 ]).map((group) => {
@@ -256,6 +327,7 @@ const groups = computed(() => groupMessages([
       <div
         ref="scroller"
         role="log"
+        tabindex="-1"
         aria-live="polite"
         :aria-busy="status === 'loading'"
         :aria-label="t('chat.logAria')"
@@ -326,7 +398,7 @@ const groups = computed(() => groupMessages([
               v-for="message in group.messages"
               :key="message.id"
             >
-              <!-- A deleted Message keeps its place and its group; #763 adds the control and the live turn into this line. -->
+              <!-- A deleted Message keeps its place and its group; `markDeleted` turns a live one into this line (#763). -->
               <div
                 v-if="message.text === null"
                 :data-message-id="message.id"
@@ -335,24 +407,43 @@ const groups = computed(() => groupMessages([
               >
                 {{ message.deletedBy === 'host' ? t('chat.deleted') : t('chat.deletedByWriter') }}
               </div>
-              <!-- The text is interpolated, never `v-html`; #762 swaps this span's content for links. -->
               <div
                 v-else
-                :data-message-id="message.id"
-                :data-outgoing-state="outgoingById.get(message.id)?.state"
-                class="border-2 border-line px-3 py-2 text-[14px] leading-[1.4]"
-                :class="[group.own ? 'rounded-[14px_14px_4px_14px] bg-primary text-on-primary' : 'rounded-[14px_14px_14px_4px] bg-surface text-ink', outgoingById.get(message.id)?.state === 'sending' && 'opacity-60']"
+                class="flex max-w-full min-w-0 items-center gap-1"
+                :class="group.own && 'flex-row-reverse'"
               >
-                <span class="[overflow-wrap:anywhere]"><template
-                  v-for="(piece, index) in splitMessageText(message.text)"
-                  :key="index"
-                ><a
-                  v-if="piece.href"
-                  :href="piece.href"
-                  target="_blank"
-                  :rel="NOTES_LINK_REL"
-                  class="underline underline-offset-2"
-                >{{ piece.text }}</a><template v-else>{{ piece.text }}</template></template></span>
+                <!-- The text is interpolated, never `v-html`; a link piece is an `a` (#762). -->
+                <div
+                  :data-message-id="message.id"
+                  :data-outgoing-state="outgoingById.get(message.id)?.state"
+                  class="min-w-0 border-2 border-line px-3 py-2 text-[14px] leading-[1.4]"
+                  :class="[group.own ? 'rounded-[14px_14px_4px_14px] bg-primary text-on-primary' : 'rounded-[14px_14px_14px_4px] bg-surface text-ink', outgoingById.get(message.id)?.state === 'sending' && 'opacity-60']"
+                >
+                  <span class="[overflow-wrap:anywhere]"><template
+                    v-for="(piece, index) in splitMessageText(message.text)"
+                    :key="index"
+                  ><a
+                    v-if="piece.href"
+                    :href="piece.href"
+                    target="_blank"
+                    :rel="NOTES_LINK_REL"
+                    class="underline underline-offset-2"
+                  >{{ piece.text }}</a><template v-else>{{ piece.text }}</template></template></span>
+                </div>
+                <!-- Always visible, in the tab order (the reference draws it so): a control that shows on hover would be none on a phone or for a keyboard (#763). -->
+                <button
+                  v-if="canDelete(message)"
+                  type="button"
+                  :aria-label="t('chat.deleteAria', { name: group.member?.name ?? t('common.you') })"
+                  :title="t('chat.delete')"
+                  class="hit-44 grid size-8 flex-none place-items-center rounded-pill text-ink-2 hover:bg-surface-2 hover:text-error-fg"
+                  @click="requestDelete(message.id)"
+                >
+                  <AppIcon
+                    :icon="Trash2"
+                    :size="15"
+                  />
+                </button>
               </div>
               <!-- What became of the line the page sent (#667): sending, or failed with the one button that sends the same Message again. -->
               <span

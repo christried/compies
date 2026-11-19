@@ -603,7 +603,9 @@
     "older": "Ältere laden",
     "retry": "Nochmal versuchen",
     "delete": "Löschen",
-    "deleteAria": "Nachricht von {name} löschen"
+    "deleteAria": "Nachricht von {name} löschen",
+    "deletedToast": "Nachricht gelöscht",
+    "undo": "Rückgängig"
   },
   "activity": {
     "title": "Aktivität",

@@ -1,7 +1,10 @@
 import { mountSuspended, registerEndpoint } from '@nuxt/test-utils/runtime'
 import { getQuery, readBody } from 'h3'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { DOMWrapper } from '@vue/test-utils'
 import ChatPanel from '~/components/ChatPanel.vue'
+import ToastStack from '~/components/ToastStack.vue'
+import { useToast } from '~/composables/useToast'
 import TeamMark from '~/components/TeamMark.vue'
 import UserAvatar from '~/components/UserAvatar.vue'
 import type { DeletedMessage, LiveMessage, Message, MessagePage } from '~~/shared/chat'
@@ -48,6 +51,9 @@ function serveChat(all: Message[], { pageSize = 50, failing = false, viewerId = 
     answer: 'ok' as WriteAnswer,
     postHold: null as Promise<void> | null,
     releasePost: () => {},
+    /** The ids the delete (#763) was called for, in order, and how it answers. */
+    deletes: [] as string[],
+    deleteAnswer: 'ok' as 'ok' | 'refused' | 'server-error',
     /** The write's answer waits until `releasePost()`. */
     holdPost() {
       served.postHold = new Promise<void>((resolve) => {
@@ -69,6 +75,17 @@ function serveChat(all: Message[], { pageSize = 50, failing = false, viewerId = 
       return { id: body.id, writerId: viewerId, text: body.text, at } satisfies Message
     },
   })
+  for (const message of all) {
+    registerEndpoint(`/api/e/${slug}/messages/${message.id}`, {
+      method: 'DELETE',
+      handler: () => {
+        served.deletes.push(message.id)
+        if (served.deleteAnswer === 'server-error') throw createError({ statusCode: 500 })
+        if (served.deleteAnswer === 'refused') throw createError({ statusCode: 403, statusMessage: 'not_your_message' })
+        return { id: message.id, writerId: message.writerId, text: null, at: message.at, deletedBy: 'writer' } satisfies Message
+      },
+    })
+  }
   registerEndpoint(`/api/e/${slug}/messages`, {
     method: 'GET',
     handler: async (event) => {
@@ -331,11 +348,11 @@ describe('ChatPanel', () => {
   it('shows the own Messages on the right as „Du“, with no avatar', async () => {
     const { wrapper } = await mountChat([live('a', KITTY, 0), live('b', LARSI, 10)])
 
-    const own = wrapper.find('[data-message-id="a"]').element.parentElement!.parentElement!
+    const own = wrapper.find('[data-message-id="a"]').element.closest('[role="log"] > div')!
     expect(own.classList.contains('flex-row-reverse')).toBe(true)
     expect(own.querySelector('b')?.textContent).toBe('Du')
     expect(own.querySelector('img, [aria-hidden="true"].inline-block')).toBeNull()
-    const other = wrapper.find('[data-message-id="b"]').element.parentElement!.parentElement!
+    const other = wrapper.find('[data-message-id="b"]').element.closest('[role="log"] > div')!
     expect(other.classList.contains('flex-row-reverse')).toBe(false)
     expect(wrapper.findAllComponents(UserAvatar)).toHaveLength(1)
   })
@@ -418,27 +435,28 @@ describe('ChatPanel', () => {
     expect(animated).toHaveLength(1)
   })
 
+  const ID = '11111111-1111-4111-8111-111111111111'
+  const ID2 = '22222222-2222-4222-8222-222222222222'
+  const input = (wrapper: Mounted['wrapper']) => wrapper.find('input[type="text"]')
+  /** Types into the field the way the browser does: the value, then an `input` event. */
+  async function type(wrapper: Mounted['wrapper'], value: string) {
+    const field = input(wrapper)
+    ;(field.element as HTMLInputElement).value = value
+    await field.trigger('input')
+  }
+  async function write(wrapper: Mounted['wrapper'], value: string) {
+    await type(wrapper, value)
+    await input(wrapper).trigger('keydown', { key: 'Enter' })
+  }
+  /** The next ids `crypto.randomUUID()` gives. */
+  function pinIds(...ids: string[]) {
+    const spy = vi.spyOn(globalThis.crypto, 'randomUUID')
+    for (const id of ids) spy.mockReturnValueOnce(id as `${string}-${string}-${string}-${string}-${string}`)
+  }
+
   describe('writing (#667)', () => {
-    const ID = '11111111-1111-4111-8111-111111111111'
-    const ID2 = '22222222-2222-4222-8222-222222222222'
-    const input = (wrapper: Mounted['wrapper']) => wrapper.find('input[type="text"]')
     const sendButton = (wrapper: Mounted['wrapper']) => wrapper.find('button[aria-label="Senden"]')
     const bubble = (wrapper: Mounted['wrapper'], id: string) => wrapper.find(`[data-message-id="${id}"]`)
-    /** Types into the field the way the browser does: the value, then an `input` event. */
-    async function type(wrapper: Mounted['wrapper'], value: string) {
-      const field = input(wrapper)
-      ;(field.element as HTMLInputElement).value = value
-      await field.trigger('input')
-    }
-    async function write(wrapper: Mounted['wrapper'], value: string) {
-      await type(wrapper, value)
-      await input(wrapper).trigger('keydown', { key: 'Enter' })
-    }
-    /** The next ids `crypto.randomUUID()` gives. */
-    function pinIds(...ids: string[]) {
-      const spy = vi.spyOn(globalThis.crypto, 'randomUUID')
-      for (const id of ids) spy.mockReturnValueOnce(id as `${string}-${string}-${string}-${string}-${string}`)
-    }
 
     it('shows a sent Message at once as „wird gesendet …“ with the field empty and focused, and settles it from the answer', async () => {
       pinIds(ID)
@@ -730,6 +748,368 @@ describe('ChatPanel', () => {
 
       expect(wrapper.findAll(`[data-message-id="${ID}"]`)).toHaveLength(1)
       expect(wrapper.text()).not.toContain('wird gesendet …')
+    })
+  })
+
+  // Deleting an own Message (#763, spec #719 § A): the Message hides at once, a toast offers „Rückgängig“ for 5 s, and the call goes out when the toast ends. The toast stack
+  // is mounted beside the panel, so „Rückgängig“ and ✕ are the real buttons.
+  describe('deleting (#763)', () => {
+    const mounted: { unmount: () => void }[] = []
+
+    async function mountDeleting(all: Message[], options: MountOptions = {}) {
+      const chat = await mountChat(all, { viewerId: SANNE, ...options })
+      const stack = await mountSuspended(ToastStack, { attachTo: document.body })
+      mounted.push(chat.wrapper, stack)
+      return { ...chat, stack }
+    }
+    type Deleting = Awaited<ReturnType<typeof mountDeleting>>
+
+    const bubble = (wrapper: Mounted['wrapper'], id: string) => wrapper.find(`[data-message-id="${id}"]`)
+    /** The control of one Message: the button in the row of its bubble. */
+    const controlOf = (wrapper: Mounted['wrapper'], id: string) => {
+      const found = bubble(wrapper, id).element.nextElementSibling
+      return found?.tagName === 'BUTTON' ? new DOMWrapper(found) : undefined
+    }
+    const controls = (wrapper: Mounted['wrapper']) => wrapper.findAll('button[aria-label^="Nachricht von"]')
+    const undoButton = (stack: Deleting['stack']) => stack.findAll('button').find(button => button.text() === 'Rückgängig')
+    const closeButton = (stack: Deleting['stack']) => stack.find('button[aria-label="Schließen"]')
+
+    beforeEach(() => {
+      useState('toasts').value = []
+    })
+
+    afterEach(() => {
+      for (const wrapper of mounted.splice(0)) wrapper.unmount()
+      vi.useRealTimers()
+    })
+
+    it('puts a delete control, named for the writer, on the viewer\'s own live Messages and on no other', async () => {
+      const { wrapper } = await mountDeleting([live('a', SANNE, 0, 'meins'), live('b', LARSI, 10, 'deins'), gone('c', SANNE, 20, 'writer')])
+
+      expect(controls(wrapper).map(control => control.attributes('aria-label'))).toEqual(['Nachricht von Sanne löschen'])
+      expect(controlOf(wrapper, 'a')!.attributes('title')).toBe('Löschen')
+      expect(controlOf(wrapper, 'a')!.attributes('type')).toBe('button')
+      expect(controlOf(wrapper, 'a')!.attributes('tabindex')).toBeUndefined()
+      expect(controlOf(wrapper, 'b')).toBeUndefined()
+      expect(controlOf(wrapper, 'c')).toBeUndefined()
+    })
+
+    it('gives the Host no control on a Member\'s Message (#764 replaces this case)', async () => {
+      const { wrapper } = await mountDeleting([live('a', SANNE, 0, 'von Sanne'), live('b', KITTY, 10, 'vom Host')], { viewerId: KITTY })
+
+      expect(controls(wrapper).map(control => control.attributes('aria-label'))).toEqual(['Nachricht von Kitty löschen'])
+      expect(controlOf(wrapper, 'a')).toBeUndefined()
+    })
+
+    it('names the control „Du“ for a writer the Event no longer lists', async () => {
+      const { wrapper } = await mountDeleting([live('a', SANNE, 0)], { members: [] })
+
+      expect(controls(wrapper).map(control => control.attributes('aria-label'))).toEqual(['Nachricht von Du löschen'])
+    })
+
+    it('has no control on a line that is sending or failed, and has it once the answer settled the line', async () => {
+      pinIds(ID)
+      const { wrapper, served } = await mountDeleting([])
+      served.holdPost()
+      await write(wrapper, 'Hallo')
+      await vi.waitFor(() => expect(served.posts).toHaveLength(1))
+      expect(controls(wrapper)).toHaveLength(0)
+
+      served.releasePost()
+      await vi.waitFor(() => expect(controls(wrapper)).toHaveLength(1))
+
+      pinIds(ID2)
+      served.answer = 'server-error'
+      await write(wrapper, 'Nochmal')
+      await vi.waitFor(() => expect(bubble(wrapper, ID2).attributes('data-outgoing-state')).toBe('failed'))
+      expect(controls(wrapper)).toHaveLength(1)
+    })
+
+    it('hides the Message at once on a click, sends nothing, shows a polite toast with „Rückgängig“ and puts focus on the log', async () => {
+      const { wrapper, stack, served } = await mountDeleting([live('a', SANNE, 0, 'weg damit'), live('b', LARSI, 10, 'bleibt')])
+
+      await controlOf(wrapper, 'a')!.trigger('click')
+      await settle()
+
+      expect(texts(wrapper)).toEqual(['bleibt'])
+      expect(served.deletes).toEqual([])
+      const toast = stack.get('[role="status"]')
+      expect(toast.text()).toContain('Nachricht gelöscht')
+      expect(undoButton(stack)).toBeDefined()
+      expect(document.activeElement).toBe(wrapper.get('[role="log"]').element)
+      expect(wrapper.get('[role="log"]').attributes('tabindex')).toBe('-1')
+    })
+
+    it('brings the Message back in its place and group on „Rückgängig“, with its control, and sends nothing, then or later', async () => {
+      const { wrapper, stack, served } = await mountDeleting([live('a', SANNE, 0, 'eins'), live('b', SANNE, 10, 'zwei'), live('c', SANNE, 20, 'drei')])
+
+      await controlOf(wrapper, 'b')!.trigger('click')
+      await settle()
+      expect(texts(wrapper)).toEqual(['eins', 'drei'])
+      await undoButton(stack)!.trigger('click')
+      await settle()
+
+      expect(texts(wrapper)).toEqual(['eins', 'zwei', 'drei'])
+      expect(wrapper.findAll('b')).toHaveLength(1)
+      expect(controlOf(wrapper, 'b')).toBeDefined()
+      expect(stack.find('[role="status"]').exists()).toBe(false)
+      await settle()
+      expect(served.deletes).toEqual([])
+    })
+
+    describe('each end of the toast sends the call once', () => {
+      /** Deletes the Message `a` on a fresh page and returns it. */
+      async function deleteA() {
+        const page = await mountDeleting([live('a', SANNE, 0, 'weg')])
+        await controlOf(page.wrapper, 'a')!.trigger('click')
+        await settle()
+        expect(page.served.deletes).toEqual([])
+        return page
+      }
+      /** What a second end does after the first one sent: nothing more. */
+      async function endAgain({ wrapper, served }: Deleting) {
+        window.dispatchEvent(new Event('pagehide'))
+        wrapper.unmount()
+        await settle()
+        expect(served.deletes).toEqual(['a'])
+      }
+
+      it('sends nothing at 4999 ms and the call at 5000 ms', async () => {
+        const page = await mountDeleting([live('a', SANNE, 0)])
+        vi.useFakeTimers()
+        await controlOf(page.wrapper, 'a')!.trigger('click')
+
+        await vi.advanceTimersByTimeAsync(4999)
+        expect(page.stack.find('[role="status"]').exists()).toBe(true)
+        expect(page.served.deletes).toEqual([])
+
+        await vi.advanceTimersByTimeAsync(1)
+        expect(page.stack.find('[role="status"]').exists()).toBe(false)
+        vi.useRealTimers()
+        await vi.waitFor(() => expect(page.served.deletes).toEqual(['a']))
+        await endAgain(page)
+      })
+
+      it('sends the call at once when the toast is dismissed with ✕', async () => {
+        const page = await deleteA()
+
+        await closeButton(page.stack)!.trigger('click')
+        await vi.waitFor(() => expect(page.served.deletes).toEqual(['a']))
+        await endAgain(page)
+      })
+
+      it('sends the call at once when the page is left (the panel unmounts), and dismisses the toast', async () => {
+        const page = await deleteA()
+
+        page.wrapper.unmount()
+        await vi.waitFor(() => expect(page.served.deletes).toEqual(['a']))
+        await settle()
+        expect(page.stack.find('[role="status"]').exists()).toBe(false)
+        await endAgain(page)
+      })
+
+      it('sends the call at once on pagehide', async () => {
+        const page = await deleteA()
+
+        window.dispatchEvent(new Event('pagehide'))
+        await vi.waitFor(() => expect(page.served.deletes).toEqual(['a']))
+        await endAgain(page)
+      })
+
+      it('sends the call at once when a fourth toast evicts this one from the stack', async () => {
+        const page = await deleteA()
+
+        for (const text of ['eins', 'zwei', 'drei']) useToast().toast({ tone: 'info', text })
+        await vi.waitFor(() => expect(page.served.deletes).toEqual(['a']))
+        await endAgain(page)
+      })
+    })
+
+    it('shows the line in place of the Message, in its group, once the call is answered, and nothing before', async () => {
+      const { wrapper, stack, served } = await mountDeleting([live('a', SANNE, 0, 'eins'), live('b', SANNE, 10, 'zwei'), live('c', SANNE, 20, 'drei')])
+
+      await controlOf(wrapper, 'b')!.trigger('click')
+      await settle()
+      expect(texts(wrapper)).toEqual(['eins', 'drei'])
+      await closeButton(stack)!.trigger('click')
+      await vi.waitFor(() => expect(texts(wrapper)).toEqual(['eins', 'Gelöscht', 'drei']))
+
+      expect(served.deletes).toEqual(['b'])
+      expect(wrapper.findAll('time')).toHaveLength(1)
+      expect(wrapper.findAll('b')).toHaveLength(1)
+      expect(controlOf(wrapper, 'b')).toBeUndefined()
+      expect(controls(wrapper)).toHaveLength(2)
+    })
+
+    it('shows the line once when the room\'s chat.deleted comes before the answer, and when it comes after', async () => {
+      const first = await mountDeleting([live('a', SANNE, 0, 'eins')])
+      await controlOf(first.wrapper, 'a')!.trigger('click')
+      await settle()
+      first.send({ type: 'chat.deleted', id: 'a', deletedBy: 'writer' })
+      await settle()
+      await closeButton(first.stack)!.trigger('click')
+      await vi.waitFor(() => expect(first.served.deletes).toEqual(['a']))
+      await settle()
+      expect(texts(first.wrapper)).toEqual(['Gelöscht'])
+
+      const second = await mountDeleting([live('a', SANNE, 0, 'eins')])
+      await controlOf(second.wrapper, 'a')!.trigger('click')
+      await settle()
+      await closeButton(second.stack)!.trigger('click')
+      await vi.waitFor(() => expect(texts(second.wrapper)).toEqual(['Gelöscht']))
+      second.send({ type: 'chat.deleted', id: 'a', deletedBy: 'writer' })
+      await settle()
+      expect(texts(second.wrapper)).toEqual(['Gelöscht'])
+    })
+
+    describe('chat.deleted from the room', () => {
+      it('turns another writer\'s shown Message into „Vom Host gelöscht“ or „Gelöscht“ in place, group and name line kept, without a rise', async () => {
+        const { wrapper, send } = await mountDeleting([live('a', LARSI, 0, 'eins'), live('b', LARSI, 10, 'zwei'), live('c', LARSI, 20, 'drei')])
+        expect(texts(wrapper)).toEqual(['eins', 'zwei', 'drei'])
+
+        send({ type: 'chat.deleted', id: 'b', deletedBy: 'host' })
+        send({ type: 'chat.deleted', id: 'c', deletedBy: 'writer' })
+        await settle()
+
+        expect(texts(wrapper)).toEqual(['eins', 'Vom Host gelöscht', 'Gelöscht'])
+        expect(wrapper.findAll('b')).toHaveLength(1)
+        expect(wrapper.findAll('time')).toHaveLength(1)
+        expect(animated).toHaveLength(0)
+      })
+
+      it('changes nothing for an id it does not hold or a Message that is deleted already', async () => {
+        const { wrapper, send } = await mountDeleting([live('a', LARSI, 0, 'eins'), gone('b', LARSI, 10, 'host')])
+
+        send({ type: 'chat.deleted', id: 'zzz', deletedBy: 'host' })
+        send({ type: 'chat.deleted', id: 'b', deletedBy: 'writer' })
+        await settle()
+
+        expect(texts(wrapper)).toEqual(['eins', 'Vom Host gelöscht'])
+      })
+
+      it('keeps a pending Message hidden through a re-read that brings it again, and the undo shows it', async () => {
+        const { wrapper, stack, state, served } = await mountDeleting([live('a', SANNE, 0, 'meins'), live('b', LARSI, 10, 'deins')])
+        await controlOf(wrapper, 'a')!.trigger('click')
+        await settle()
+
+        state.value = 'closed'
+        await settle()
+        state.value = 'open'
+        await vi.waitFor(() => expect(served.reads).toBe(2))
+        await settle()
+        expect(texts(wrapper)).toEqual(['deins'])
+
+        await undoButton(stack)!.trigger('click')
+        await settle()
+        expect(texts(wrapper)).toEqual(['meins', 'deins'])
+        expect(served.reads).toBe(2)
+      })
+
+      it('does not unhide a pending Message when the room says it is deleted', async () => {
+        const { wrapper, send } = await mountDeleting([live('a', SANNE, 0, 'meins')])
+        await controlOf(wrapper, 'a')!.trigger('click')
+        await settle()
+
+        send({ type: 'chat.deleted', id: 'a', deletedBy: 'writer' })
+        await settle()
+
+        expect(texts(wrapper)).toEqual([])
+      })
+    })
+
+    it('keeps the undo of each of two deletes in a row: the first „Rückgängig“ restores the first only, the second ends and sends its id only', async () => {
+      const { wrapper, stack, served } = await mountDeleting([live('a', SANNE, 0, 'eins'), live('b', SANNE, 10, 'zwei')])
+
+      await controlOf(wrapper, 'a')!.trigger('click')
+      await controlOf(wrapper, 'b')!.trigger('click')
+      await settle()
+      expect(stack.findAll('[role="status"]')).toHaveLength(2)
+      expect(texts(wrapper)).toEqual([])
+
+      await undoButton(stack)!.trigger('click')
+      await settle()
+      expect(texts(wrapper)).toEqual(['eins'])
+      expect(stack.findAll('[role="status"]')).toHaveLength(1)
+
+      await closeButton(stack)!.trigger('click')
+      await vi.waitFor(() => expect(texts(wrapper)).toEqual(['eins', 'Gelöscht']))
+      expect(served.deletes).toEqual(['b'])
+    })
+
+    it.each([
+      { answer: 'server-error' as const, words: 'Konnte nicht speichern. Nochmal versuchen?' },
+      { answer: 'refused' as const, words: 'Du kannst nur deine eigenen Nachrichten löschen.' },
+    ])('puts the Message back with its control and an error toast when the call fails ($answer)', async ({ answer, words }) => {
+      const { wrapper, stack, served } = await mountDeleting([live('a', SANNE, 0, 'meins')])
+      served.deleteAnswer = answer
+
+      await controlOf(wrapper, 'a')!.trigger('click')
+      await settle()
+      expect(texts(wrapper)).toEqual([])
+      await closeButton(stack)!.trigger('click')
+
+      await vi.waitFor(() => expect(texts(wrapper)).toEqual(['meins']))
+      expect(controlOf(wrapper, 'a')).toBeDefined()
+      expect(served.deletes).toEqual(['a'])
+      await vi.waitFor(() => expect(stack.get('[role="alert"]').text()).toContain(words))
+    })
+
+    it('keeps the control on a finished page, where the composer is gone, and deletes end to end', async () => {
+      const { wrapper, stack, served } = await mountDeleting([live('a', SANNE, 0, 'meins')], { finished: true })
+
+      expect(wrapper.find('input').exists()).toBe(false)
+      expect(controls(wrapper)).toHaveLength(1)
+      await controlOf(wrapper, 'a')!.trigger('click')
+      await settle()
+      await closeButton(stack)!.trigger('click')
+
+      await vi.waitFor(() => expect(texts(wrapper)).toEqual(['Gelöscht']))
+      expect(served.deletes).toEqual(['a'])
+      expect(wrapper.text()).toContain('Das Event ist beendet. Du kannst nur noch lesen.')
+    })
+
+    describe('with 0, 1 and 2 Messages and the longest text', () => {
+      it('has no control without a Message', async () => {
+        const { wrapper } = await mountDeleting([])
+
+        expect(controls(wrapper)).toHaveLength(0)
+        expect(wrapper.text()).toContain('Alle')
+      })
+
+      it('shows no empty box while the only Message is pending, and its line when the call is answered', async () => {
+        const { wrapper, stack } = await mountDeleting([live('a', SANNE, 0, 'allein')])
+
+        await controlOf(wrapper, 'a')!.trigger('click')
+        await settle()
+        expect(texts(wrapper)).toEqual([])
+        expect(wrapper.text()).not.toContain('Alle')
+        await closeButton(stack)!.trigger('click')
+
+        await vi.waitFor(() => expect(texts(wrapper)).toEqual(['Gelöscht']))
+        expect(wrapper.text()).not.toContain('Alle')
+      })
+
+      it('lets the other of two Messages keep its text and its control while one is deleted', async () => {
+        const { wrapper, stack } = await mountDeleting([live('a', SANNE, 0, 'eins'), live('b', SANNE, 10, 'zwei')])
+
+        await controlOf(wrapper, 'a')!.trigger('click')
+        await settle()
+        await closeButton(stack)!.trigger('click')
+
+        await vi.waitFor(() => expect(texts(wrapper)).toEqual(['Gelöscht', 'zwei']))
+        expect(controlOf(wrapper, 'a')).toBeUndefined()
+        expect(controlOf(wrapper, 'b')).toBeDefined()
+      })
+
+      it('keeps the control of a 500-character own Message in the same row as its bubble', async () => {
+        const text = 'x'.repeat(MESSAGE_MAX)
+        const { wrapper } = await mountDeleting([live('a', SANNE, 0, text)])
+
+        const control = controlOf(wrapper, 'a')!
+        expect(bubble(wrapper, 'a').text()).toBe(text)
+        expect(control.element.parentElement).toBe(bubble(wrapper, 'a').element.parentElement)
+        expect(control.classes()).toContain('flex-none')
+      })
     })
   })
 })

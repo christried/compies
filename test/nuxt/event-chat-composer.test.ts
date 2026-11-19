@@ -33,10 +33,10 @@ serveCueFiles()
 let testNumber = 0
 let mounted: Awaited<ReturnType<typeof mountSuspended>> | undefined
 
-interface Setup { host?: boolean, finished?: boolean, stands?: boolean, wide?: boolean }
+interface Setup { host?: boolean, finished?: boolean, stands?: boolean, wide?: boolean, messages?: Message[] }
 
 /** An Event that is set up (Kitty in a team, or on the Stands) or a finished one, with a live room; the Chat's read and write are served and the writes recorded. */
-async function mountLive({ host = false, finished = false, stands = false, wide = true }: Setup = {}) {
+async function mountLive({ host = false, finished = false, stands = false, wide = true, messages = [] }: Setup = {}) {
   testNumber += 1
   const slug = `chat-composer-${testNumber}`
   const served = { event: 0, chatReads: 0, posts: [] as { id: string, text: string }[] }
@@ -59,7 +59,7 @@ async function mountLive({ host = false, finished = false, stands = false, wide 
     method: 'GET',
     handler: () => {
       served.chatReads += 1
-      return { messages: [], next: null }
+      return { messages: [...messages].reverse(), next: null }
     },
   })
   registerEndpoint(`/api/e/${slug}/messages`, {
@@ -129,6 +129,34 @@ describe.each([{ host: false }, { host: true }])('the composer on the Event page
     await vi.waitFor(() => expect(panel(page).find('[data-message-id]').text()).toBe('Hallo zusammen'))
     expect(served.event).toBe(reads)
     expect(served.chatReads).toBe(1)
+  })
+})
+
+// A Message deleted (#763): `chat.deleted` through the room turns a shown Message into its line, for a Member's read and the Host's alike, and a finished page keeps the writer's control.
+describe.each([{ host: false }, { host: true }])('deleting in the Chat on the Event page, Host $host', ({ host }) => {
+  const OTHERS = '44444444-4444-4444-8444-444444444444'
+  const OWN = '55555555-5555-4555-8555-555555555555'
+  const at = (seconds: number) => new Date(Date.parse('2026-11-19T20:00:00.000Z') + seconds * 1000).toISOString()
+  const others: Message = { id: OTHERS, writerId: LARSI, text: 'Moin', at: at(0) }
+  const own: Message = { id: OWN, writerId: kitty.id, text: 'Servus', at: at(10) }
+  const deleted = (id: string, deletedBy: 'host' | 'writer') => lastSocket().options.onMessage(JSON.stringify(envelope({ type: 'chat.deleted', id, deletedBy } as RoomMessage, Date.now())))
+
+  it('turns a shown Message of another writer into its line in place, and leaves the own one', async () => {
+    const { page } = await mountLive({ host, messages: [others, own] })
+    await vi.waitFor(() => expect(panel(page).findAll('[data-message-id]').map((item: { text: () => string }) => item.text())).toEqual(['Moin', 'Servus']))
+
+    deleted(OTHERS, 'host')
+    await settle()
+
+    expect(panel(page).findAll('[data-message-id]').map((item: { text: () => string }) => item.text())).toEqual(['Vom Host gelöscht', 'Servus'])
+  })
+
+  it('keeps the writer\'s own control on a finished page, where the field is gone', async () => {
+    const { page } = await mountLive({ host, finished: true, messages: [others, own] })
+    await vi.waitFor(() => expect(panel(page).findAll('[data-message-id]')).toHaveLength(2))
+
+    expect(panel(page).findAll('button[aria-label^="Nachricht von"]')).toHaveLength(1)
+    expect(panel(page).find('input').exists()).toBe(false)
   })
 })
 
