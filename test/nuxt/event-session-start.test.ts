@@ -15,7 +15,7 @@ const SECOND = '2026-10-31T19:00:00.000Z'
 const STARTED = '2026-10-30T19:30:00.000Z'
 const ENDED = '2026-10-30T22:00:00.000Z'
 
-const pill = (page: Mounted) => [...page.element.querySelectorAll('[role="toolbar"] button')].map(button => button.textContent?.replace(/\s+/g, ' ').trim())
+const pill = (page: Mounted) => [...page.element.querySelectorAll('[role="toolbar"][aria-label="Host-Steuerung"] button')].map(button => button.textContent?.replace(/\s+/g, ' ').trim())
 
 type Sessions = Parameters<typeof viewWithSessions>[1]
 
@@ -87,7 +87,7 @@ describe('the Host dock per state', () => {
     const page = await mountSuspended(EventPage, { route: `/e/${slug}` })
 
     expect(pill(page)).toEqual(['Nächstes Spiel setzen', 'Session 1 beenden 1 s halten', 'Einladen', 'Mehr'])
-    expect(page.get('[role="toolbar"]').text()).toContain('1 Sekunde halten')
+    expect(page.get('[role="toolbar"][aria-label="Host-Steuerung"]').text()).toContain('1 Sekunde halten')
   })
 
   it('offers Rad drehen first in the Lucky Wheel, then Session 1 beenden, with Nächstes Spiel setzen in Mehr (#228, #229)', async () => {
@@ -153,7 +153,7 @@ describe('a start that the rule blocks', () => {
 
     const page = await mountSuspended(EventPage, { route: `/e/${slug}` })
 
-    const start = page.findAll('[role="toolbar"] button')[0]!
+    const start = page.findAll('[role="toolbar"][aria-label="Host-Steuerung"] button')[0]!
     expect(start.text()).toBe('Session 1 starten')
     expect(start.attributes('aria-disabled')).toBe('true')
     expect(page.get(`#${start.attributes('aria-describedby')}`).text()).toBe('Geht erst, wenn alle Teams gleich groß sind.')
@@ -169,7 +169,7 @@ describe('a start that the rule blocks', () => {
 
     const page = await mountSuspended(EventPage, { route: `/e/${slug}` })
 
-    const start = page.findAll('[role="toolbar"] button')[0]!
+    const start = page.findAll('[role="toolbar"][aria-label="Host-Steuerung"] button')[0]!
     expect(page.get(`#${start.attributes('aria-describedby')}`).text()).toBe(text)
   })
 
@@ -281,7 +281,7 @@ describe('ending a Session', () => {
       return { sessionId: 'session-running', phase: 'running' }
     } })
     const page = await mountSuspended(EventPage, { route: `/e/${store.slug}` })
-    const hold = page.findAll('[role="toolbar"] button').find(button => button.text().startsWith('Session 1 beenden'))!
+    const hold = page.findAll('[role="toolbar"][aria-label="Host-Steuerung"] button').find(button => button.text().startsWith('Session 1 beenden'))!
 
     await hold.trigger('click')
     expect(ended).toBe(0)
@@ -359,7 +359,7 @@ describe('finishing the Event', () => {
       throw createError({ statusCode: 409, statusMessage: 'standings_changed' })
     } })
     const page = await mountSuspended(EventPage, { route: `/e/${store.slug}` })
-    const button = page.findAll('[role="toolbar"] button').find(item => item.text().startsWith('Event abschließen'))!
+    const button = page.findAll('[role="toolbar"][aria-label="Host-Steuerung"] button').find(item => item.text().startsWith('Event abschließen'))!
 
     vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
     await button.trigger('pointerdown')
@@ -383,7 +383,7 @@ describe('finishing the Event', () => {
       return { phase: 'finished' }
     } })
     const page = await mountSuspended(EventPage, { route: `/e/${store.slug}` })
-    const button = page.findAll('[role="toolbar"] button').find(item => item.text().startsWith('Event abschließen'))!
+    const button = page.findAll('[role="toolbar"][aria-label="Host-Steuerung"] button').find(item => item.text().startsWith('Event abschließen'))!
 
     await button.trigger('click')
     expect(posted).toEqual([])
@@ -402,7 +402,7 @@ describe('finishing the Event', () => {
       throw createError({ statusCode: 409, statusMessage: 'standings_changed' })
     } })
     const page = await mountSuspended(EventPage, { route: `/e/${store.slug}` })
-    const button = page.findAll('[role="toolbar"] button').find(item => item.text().startsWith('Event abschließen'))!
+    const button = page.findAll('[role="toolbar"][aria-label="Host-Steuerung"] button').find(item => item.text().startsWith('Event abschließen'))!
 
     await hold(button)
 
@@ -418,7 +418,7 @@ describe('finishing the Event', () => {
       throw createError({ statusCode: 409, statusMessage: 'wrong_phase' })
     } })
     const page = await mountSuspended(EventPage, { route: `/e/${store.slug}` })
-    const button = page.findAll('[role="toolbar"] button').find(item => item.text().startsWith('Event abschließen'))!
+    const button = page.findAll('[role="toolbar"][aria-label="Host-Steuerung"] button').find(item => item.text().startsWith('Event abschließen'))!
 
     await hold(button)
 
@@ -436,7 +436,7 @@ describe('a Tie at the end', () => {
   const NO_DATED = { sessionId: null, number: null, rejection: 'no_dated_session' as const }
   const running = (slug: string, end: NonNullable<Overrides['end']> = tied) => hostView(slug, RUNNING_ONE, { event: { isHost: true, phase: 'running' }, running: 0, standings: [{ team: 1, rank: 1, points: 2 }, { team: 2, rank: 1, points: 2 }], end })
   const teams = [{ position: 1, name: 'Wilde Gurken' }, { position: 2, name: null }]
-  const button = (page: Awaited<ReturnType<typeof mountSuspended>>, label: string) => page.findAll('[role="toolbar"] button').find((item: { text: () => string }) => item.text().startsWith(label))!
+  const button = (page: Awaited<ReturnType<typeof mountSuspended>>, label: string) => page.findAll('[role="toolbar"][aria-label="Host-Steuerung"] button').find((item: { text: () => string }) => item.text().startsWith(label))!
 
   beforeEach(() => {
     signInAs(kitty)

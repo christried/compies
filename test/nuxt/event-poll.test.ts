@@ -294,12 +294,12 @@ describe('the Event poll', () => {
   it('shows the Host dock to the Host only', async () => {
     const member = serve(s => view(s, sanneAndLarsi))
     const memberPage = await mountSuspended(EventPage, { route: `/e/${member.slug}` })
-    expect(memberPage.find('[role="toolbar"]').exists()).toBe(false)
+    expect(memberPage.find('[role="toolbar"][aria-label="Host-Steuerung"]').exists()).toBe(false)
 
     const hostView = serve(s => view(s, sanneAndLarsi, { event: { isHost: true } }))
     const hostPage = await mountSuspended(EventPage, { route: `/e/${hostView.slug}` })
-    expect(hostPage.get('[role="toolbar"]').attributes('aria-label')).toBe('Host-Steuerung')
-    expect(hostPage.get('[role="toolbar"]').text()).toContain('Einladen')
+    expect(hostPage.get('[role="toolbar"][aria-label="Host-Steuerung"]').attributes('aria-label')).toBe('Host-Steuerung')
+    expect(hostPage.get('[role="toolbar"][aria-label="Host-Steuerung"]').text()).toContain('Einladen')
     expect((await openHostMenu(hostPage)).textContent).toContain('Termin fixieren')
   })
 
@@ -331,7 +331,7 @@ describe('the Event poll', () => {
     const inviteUrl = 'http://localhost/e/freitags-zocken-invite-AbCdEfGhIjKl'
     const hostView = serve(s => view(s, sanneAndLarsi, { event: { isHost: true }, inviteUrl }))
     const page = await mountSuspended(EventPage, { route: `/e/${hostView.slug}` })
-    const einladen = page.get('[role="toolbar"]').findAll('button').find((node: Wrapper) => node.text() === 'Einladen')!
+    const einladen = page.get('[role="toolbar"][aria-label="Host-Steuerung"]').findAll('button').find((node: Wrapper) => node.text() === 'Einladen')!
 
     await einladen.trigger('click')
 

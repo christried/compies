@@ -208,7 +208,7 @@ export function regionHeadings(page: Mounted): string[] {
 export type Mounted = { element: Element }
 
 function hostButtons(page: Mounted) {
-  return [...page.element.querySelectorAll<HTMLButtonElement>('[role="toolbar"] button')]
+  return [...page.element.querySelectorAll<HTMLButtonElement>('[role="toolbar"][aria-label="Host-Steuerung"] button')]
 }
 
 /** Opens „Mehr“ of the Host dock (once) and returns its menu. The header's user menu is a menu too, so the label scopes it. */
