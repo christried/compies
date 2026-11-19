@@ -421,4 +421,16 @@ Kept apart from the findings. Vocabulary of the codebase-design skill (module, i
 
 ## Fixed before `staging`
 
-To be filled in by the orchestrator once the fix ticket exists.
+Four fix tickets on the integration branch, before PR #827 leaves draft:
+
+- **#831** (this section's ticket): S1 = P1, the changelog lines of the Siegerehrung and of the Tour's voice; P3 and P4, the two notes of `04-motion.md`.
+- **#828:** Q1 (the cue ids as a leaf module that Node imports), S4 = Q5 (`up` in the kit), S5 (the Standards table), S11.5 (the credits' source), Q8's first bullet.
+- **#829:** the optional fields of `GroupInput` become required (S7, P6, Q3, Q6, the answer under Standards); Q3 for the unit tests; Q4, Q6, Q7, S2, S6, S8 (the comments only), S11.1 to S11.4, Q8, and the stale titles and comments the run had put off.
+- **#830:** S3 = Q2 (one harness for the Event-page cue tests) and Q3 for the Nuxt tests.
+
+Not fixed, by decision:
+
+- **P2 and P3:** the operator decided on 2026-11-19 (a comment on #718) that the code stays: the ticks follow the largest change in either direction, and the static end frame after a failed chunk is silent. The notes and one test title now say so.
+- **P7** (the Coin flip's files on a finished Event that still holds a toss) contradicts no sentence of the spec and waits for the operator's decision.
+- **S5b, S9, S10, S11.6, P5, P8:** notes; the code stays as it is. S5b's remark that the „Ton aktivieren“ condition reads the clock without being reactive is an item for the local check #751.
+- **Q9 and A1 to A5** are Ideas for later, not this Release's.

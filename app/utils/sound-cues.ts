@@ -62,7 +62,7 @@ export const CUE_VOLUME: Record<CueId, number> = {
   'cb-hi': 50,
 }
 
-/** The moments whose cue files an Event page requests together (#740). Only `wheel` and `veto` have cues and a rule so far. */
+/** The moments whose cue files an Event page requests together (#740): each has its flag in `GroupInput` and its rule in `reachableGroups`. */
 export type CueGroup = 'wheel' | 'veto' | 'coin' | 'standings' | 'board' | 'ceremony' | 'tour'
 
 /** The groups a cue's file is requested for, at least one: a cue that two moments play (a voice cue) names both, and its file comes once. */
@@ -88,7 +88,7 @@ export const CUE_GROUPS: Record<CueId, readonly [CueGroup, ...CueGroup[]]> = {
 
 /**
  * What the group rule reads of the viewer's Event read: flags and one count, nothing of the draw or the toss (§ Secrecy), so it cannot carry a
- * game, a label, a side or an instant. A flag that is absent counts as false (#718: a new group's field is optional).
+ * game, a label, a side or an instant. Every field is required (#829): a group's flag a caller forgets is a compile error, not a silent "no files".
  */
 export interface GroupInput {
   /** `view.wheel != null`. */
@@ -98,17 +98,17 @@ export interface GroupInput {
   /** `view.wheel?.vetoes.draw != null`. */
   vetoWindow: boolean
   /** `view.runningSessionId != null`: the Event has a running Session, so the Host can toss (#669). */
-  sessionRunning?: boolean
+  sessionRunning: boolean
   /** `view.coin != null`: the read carries a toss; never its side (#669). */
-  toss?: boolean
-  /** `view.standings != null && view.event.phase !== 'finished'`: the Event is set up and not finished (#741). Absent = not reached; no Result is needed, no game. */
-  standings?: boolean
-  /** `view.standings != null && view.event.phase !== 'finished'`: the Event is set up and not finished. The Game board's own field though the rule is the Standings' today, so the two groups can part later (#742). Absent = not reached. */
-  board?: boolean
-  /** `view.event.phase === 'finished'` (#743): the Award ceremony's files, whether or not the Host has started it. Optional: absent = not finished. */
-  finished?: boolean
-  /** The Tour may start for this Member (`tourMayStart` without the layer and the calm second, #747): a rule of the Member's own state. Absent = not reached. */
-  tour?: boolean
+  toss: boolean
+  /** `view.standings != null && view.event.phase !== 'finished'`: the Event is set up and not finished (#741); no Result is needed, no game. */
+  standings: boolean
+  /** The same rule as `standings` today: the Event is set up and not finished. The Game board's own field, so the two groups can part later (#742). */
+  board: boolean
+  /** `view.event.phase === 'finished'` (#743): the Award ceremony's files, whether or not the Host has started it. */
+  finished: boolean
+  /** The Tour may start for this Member (`tourMayStart` without the layer and the calm second, #747): a rule of the Member's own state. */
+  tour: boolean
 }
 
 /**
@@ -383,7 +383,8 @@ export interface StandingsCueInput {
  * under reduced motion the highlight, start there), `lb-count` once per displayed change of the Party that changed most (absolute: a Correction
  * can lower points; a tie goes to the first in the order of `after`), and `lb-winner` where the stamp is drawn. Reduced motion has no count, so no
  * ticks, and the stamp is a fade with no delay, so the winner goes with it at once. The beats are the picture's own (`countTicks`, the counter's
- * duration, the stamp's delay): nothing here is a number of its own.
+ * duration, the stamp's delay): nothing here is a number of its own, and `countTicks` uses the counter's
+ * constants and curve.
  */
 export function standingsCues(input: StandingsCueInput): ArrivalCue[] {
   const { before, after, winners, celebrate, reducedMotion, countMs, stampDelayMs } = input
@@ -429,7 +430,7 @@ export interface CeremonyCueInput {
 }
 
 /** Each place that slides in sounds a semitone higher than the one before it, so the pitch rises toward rank 1. The listening session may change the step (#718). */
-const ROW_STEP_SEMITONES = 1
+export const ROW_STEP_SEMITONES = 1
 
 /**
  * The cues of the Award ceremony, one Winner or a Tie, ascending by `at` (#743, #745): the banner's drop at the start, a row for each place below (the last
@@ -445,14 +446,14 @@ export function ceremonyCuePlan(input: CeremonyCueInput): Cue[] {
   // Reduced motion: the end frame is the whole show, and its sound is the fanfare alone, at the instant the end frame shows (#744, spec #718).
   if (reducedMotion) return [{ id: 'cer-fanfare', at: startsAt }]
 
-  const m = ceremonyTimeline(shape)
+  const timeline = ceremonyTimeline(shape)
   const cues: Cue[] = [{ id: 'cer-drop', at: startsAt }]
-  m.rowAtMs.forEach((ms, index) => cues.push({ id: 'cer-row', at: startsAt + ms, rate: 2 ** (index * ROW_STEP_SEMITONES / 12) }))
-  cues.push({ id: 'cer-run', at: startsAt + m.runAtMs })
-  cues.push(shape.gag === 'trip' ? { id: 'cer-trip', at: startsAt + m.runEndAtMs } : { id: 'cer-bonk', at: startsAt + m.bonkAtMs })
+  timeline.rowAtMs.forEach((ms, index) => cues.push({ id: 'cer-row', at: startsAt + ms, rate: 2 ** (index * ROW_STEP_SEMITONES / 12) }))
+  cues.push({ id: 'cer-run', at: startsAt + timeline.runAtMs })
+  cues.push(shape.gag === 'trip' ? { id: 'cer-trip', at: startsAt + timeline.runEndAtMs } : { id: 'cer-bonk', at: startsAt + timeline.bonkAtMs })
   // The stamp, and with it the fanfare and the crowd: the peak of the ceremony, at the instant the stamp's tween starts (#744). In a Tie it is the plate's „UNENTSCHIEDEN“ (#745).
-  cues.push({ id: 'cer-stamp', at: startsAt + m.stampAtMs }, { id: 'cer-fanfare', at: startsAt + m.stampAtMs }, { id: 'cer-crowd', at: startsAt + m.stampAtMs })
+  cues.push({ id: 'cer-stamp', at: startsAt + timeline.stampAtMs }, { id: 'cer-fanfare', at: startsAt + timeline.stampAtMs }, { id: 'cer-crowd', at: startsAt + timeline.stampAtMs })
   // The laugh: he gets up after the trophy lands and laughs, at the instant the rig turns to `laugh` (#746, spec #718).
-  cues.push({ id: 'cb-laugh', at: startsAt + m.getUpAtMs })
+  cues.push({ id: 'cb-laugh', at: startsAt + timeline.getUpAtMs })
   return cues
 }

@@ -3,10 +3,11 @@ import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import type { SpinView, VetoView } from '~~/shared/stage'
 import { CUE_LENGTHS } from '../../app/utils/cue-lengths'
+import { groupInput } from './group-input'
 import { pinCrossings } from '../../app/utils/wheel-pins'
 import {
   ARRIVAL_LATE_MS, CUE_GROUPS, CUE_IDS, CUE_VOLUME, STAMP_GAP_MS, TICK_MIN_GAP_MS, cueFilesOf, reachableGroups, thinTicks, vetoArrivalCues, vetoCuePlan, wheelCuePlan,
-  type ArrivalCue, type Cue, type GroupInput, type VetoArrivalState, type VetoCueInput, type WheelCueInput,
+  type ArrivalCue, type Cue, type CueGroup, type CueId, type GroupInput, type VetoArrivalState, type VetoCueInput, type WheelCueInput,
 } from '../../app/utils/sound-cues'
 
 // The wheel's cue plan (#530, spec #504 § The cue plan): which sound cue is due at which server time for a spin, as a pure function of the
@@ -488,7 +489,7 @@ describe('vetoArrivalCues', () => {
 })
 
 describe('the cue ids and their volumes', () => {
-  it('are eleven distinct ids', () => {
+  it('are distinct ids', () => {
     expect(new Set(CUE_IDS).size).toBe(CUE_IDS.length)
   })
 
@@ -505,32 +506,101 @@ describe('the cue ids and their volumes', () => {
     expect(Object.keys(vol).sort()).toEqual([...documented].sort())
     for (const id of documented) expect(CUE_VOLUME[id], id).toBe(vol[id])
   })
+
+  // The one place where a Vol (and a length) is a number in a test: the cues the document has no clean row for (`docRow: false` of CUE_LENGTHS), which the
+  // test above cannot read. Their Vol is the spec table of #718 (`cer-trip` and `cer-bonk` share a document row; `cer-run` has none; the three voice cues
+  // share one cell). `cb-laugh` has a length of its own there; `cer-run`'s is the run's, held in test/unit/ceremony-cues.test.ts. #748 may move any of them.
+  it('gives the cues without a clean document row the Vol of the spec table, and only those', () => {
+    const SPEC: Partial<Record<CueId, { vol: number, ms?: number }>> = {
+      'cb-hype': { vol: 40 }, 'cb-gulp': { vol: 40 }, 'cb-yay': { vol: 40 },
+      'cer-run': { vol: 40 }, 'cer-trip': { vol: 60 }, 'cer-bonk': { vol: 60 },
+      'cb-laugh': { vol: 40, ms: 500 },
+    }
+
+    expect(Object.keys(SPEC).sort()).toEqual(CUE_IDS.filter(id => !CUE_LENGTHS[id].docRow).sort())
+    for (const [id, spec] of Object.entries(SPEC) as [CueId, { vol: number, ms?: number }][]) {
+      expect(CUE_VOLUME[id], id).toBe(spec.vol)
+      if (spec.ms !== undefined) expect(CUE_LENGTHS[id].ms, id).toBe(spec.ms)
+    }
+  })
 })
 
-// Which cue files an Event read can need (#740): the group rule is a pure function of three flags of the viewer's own read, so a later
-// moment adds a field and a line, never a list in the composable.
+// Which cue files an Event read can need (#740): the group rule is a pure function of the flags of the viewer's own read, so a later moment adds a
+// field and a row of this table, never a list in the composable. It is the one place that tests the rule: the per-moment test files test their own
+// plan and files (#829).
 describe('reachableGroups', () => {
-  it('reaches no group without a wheel, whatever the other fields say', () => {
-    expect(reachableGroups({ wheel: false, vetoAllowance: 0, vetoWindow: false })).toEqual([])
-    expect(reachableGroups({ wheel: false, vetoAllowance: 2, vetoWindow: true })).toEqual([])
+  /** A group's place in the order of the `CueGroup` union, which `reachableGroups` returns ascending. A new group is a compile error until it has one. */
+  const PLACE: Record<CueGroup, number> = { wheel: 0, veto: 1, coin: 2, standings: 3, board: 4, ceremony: 5, tour: 6 }
+
+  /** Each case is a read with its flags and the groups it reaches: every group has one row where only its own flag is on. */
+  const ROWS: [name: string, over: Partial<GroupInput>, reached: CueGroup[]][] = [
+    ['no flag', {}, []],
+    ['a wheel', { wheel: true }, ['wheel']],
+    ['a wheel and a Veto allowance', { wheel: true, vetoAllowance: 2 }, ['wheel', 'veto']],
+    ['a wheel and a Veto window, without an allowance', { wheel: true, vetoWindow: true }, ['wheel', 'veto']],
+    ['a running Session', { sessionRunning: true }, ['coin']],
+    ['a toss in the read', { toss: true }, ['coin']],
+    ['the Standings\' flag', { standings: true }, ['standings']],
+    ['the Game board\'s flag', { board: true }, ['board']],
+    ['a finished Event', { finished: true }, ['ceremony']],
+    ['the Tour\'s flag', { tour: true }, ['tour']],
+  ]
+
+  it.each(ROWS)('reaches exactly the right groups with %s', (_name, over, reached) => {
+    expect(reachableGroups(groupInput(over))).toEqual(reached)
   })
 
-  it('reaches the wheel\'s group with a wheel alone', () => {
-    expect(reachableGroups({ wheel: true, vetoAllowance: 0, vetoWindow: false })).toEqual(['wheel'])
+  it('has a row for every group', () => {
+    expect(new Set(ROWS.flatMap(([, , reached]) => reached))).toEqual(new Set(Object.keys(PLACE)))
   })
 
-  it('reaches the Veto window\'s group too with an allowance', () => {
-    expect(reachableGroups({ wheel: true, vetoAllowance: 2, vetoWindow: false })).toEqual(['wheel', 'veto'])
+  it('reaches no Veto group without a wheel, whatever the allowance and the window say', () => {
+    expect(reachableGroups(groupInput({ vetoAllowance: 2, vetoWindow: true }))).toEqual([])
   })
 
-  it('reaches the Veto window\'s group too with a window, even without an allowance', () => {
-    expect(reachableGroups({ wheel: true, vetoAllowance: 0, vetoWindow: true })).toEqual(['wheel', 'veto'])
+  it('returns every group, in the order of the union, once, with every flag on', () => {
+    const all = reachableGroups(groupInput({ wheel: true, vetoAllowance: 2, vetoWindow: true, sessionRunning: true, toss: true, standings: true, board: true, finished: true, tour: true }))
+
+    expect(all).toEqual(Object.keys(PLACE).sort((a, b) => PLACE[a as CueGroup] - PLACE[b as CueGroup]))
   })
 
-  it('takes three flags and nothing of the draw (Secrecy)', () => {
-    const input: GroupInput = { wheel: true, vetoAllowance: 0, vetoWindow: false }
+  it('does not compile with a field missing: every field of the input is required (#829)', () => {
+    // @ts-expect-error `tour` is missing
+    const missing: GroupInput = { wheel: true, vetoAllowance: 0, vetoWindow: false, sessionRunning: false, toss: false, standings: false, board: false, finished: false }
 
-    expect(Object.keys(input).sort()).toEqual(['vetoAllowance', 'vetoWindow', 'wheel'])
+    expect(reachableGroups(missing)).toEqual(['wheel'])
+  })
+})
+
+// Secrecy (CODING_STANDARDS § Secrecy): the group rule decides which files a page requests, so its input may carry no game, label, side or instant.
+describe('the input of the group rule (Secrecy)', () => {
+  /**
+   * What each field of `GroupInput` may carry: a flag, or the one count. A field added to the type is a compile error here until somebody decides
+   * which of the two it is, and a field that is neither (a game, a label, a side, an instant) has no row it could take.
+   */
+  const KIND = {
+    wheel: 'flag', vetoAllowance: 'count', vetoWindow: 'flag', sessionRunning: 'flag', toss: 'flag', standings: 'flag', board: 'flag', finished: 'flag', tour: 'flag',
+  } satisfies Record<keyof GroupInput, 'flag' | 'count'>
+
+  it('holds only flags and one count, and every field of the type has a row', () => {
+    const input = groupInput()
+
+    expect(Object.keys(input).sort()).toEqual(Object.keys(KIND).sort())
+    for (const [field, value] of Object.entries(input)) expect(typeof value, field).toBe(KIND[field as keyof GroupInput] === 'flag' ? 'boolean' : 'number')
+  })
+
+  // The types let no read's game, side or label into a `GroupInput`; the variable carries them past the excess-property check, as a read does, so the
+  // rule is shown to look at none of them.
+  it.each([
+    ['a wheel', { wheel: true }],
+    ['a wheel with a Veto window', { wheel: true, vetoWindow: true }],
+    ['a toss and a finished Event', { toss: true, finished: true }],
+  ])('reaches the same groups for two reads that differ only in the drawn game, the side and a label: %s', (_name, over) => {
+    const one = { ...groupInput(over), game: 'Halo', side: 'heads', label: 'Kopf' }
+    const other = { ...groupInput(over), game: 'Kart', side: 'tails', label: 'Zahl' }
+
+    expect(reachableGroups(one)).toEqual(reachableGroups(other))
+    expect(reachableGroups(one)).toEqual(reachableGroups(groupInput(over)))
   })
 })
 

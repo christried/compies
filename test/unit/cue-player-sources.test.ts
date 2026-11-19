@@ -4,7 +4,7 @@ import type { Cue, CueId } from '../../app/utils/sound-cues'
 import { bytesOf, FakeAudioContext } from '../fake-audio'
 
 // What the cue player of #743 (spec #718 § Engine changes) added to the player of #531: a rate a cue is started at, plans by source (the read's
-// and the ceremony's), a cut of what sounds for the ceremony's source, and `playNow` with a rate that Ton off stops. The rest of the player is
+// and the ceremony's), a cut of what sounds for the ceremony's source, and the `playNow` sources that Ton off stops. The rest of the player is
 // in test/unit/cue-player.test.ts; the fake audio context's clock is the test's (test/fake-audio.ts).
 
 const NOW = 1_000_000
@@ -157,17 +157,8 @@ describe('the cut of the ceremony\'s source', () => {
   })
 })
 
-describe('playNow with a rate', () => {
-  it('starts at the rate and logs it', async () => {
-    const { context, player } = await ready(['veto-seal'])
-
-    player.playNow('veto-seal', 80, 2 ** (5 / 12))
-
-    expect(context.started()[0]!.rate).toBe(2 ** (5 / 12))
-    expect(outcomes(player)).toEqual([`veto-seal@80x${2 ** (5 / 12)}:scheduled`])
-  })
-
-  it('plays at the file\'s own pitch without one', async () => {
+describe('playNow beside the plans', () => {
+  it('plays at the file\'s own pitch: a rate comes with a plan\'s cue only', async () => {
     const { context, player } = await ready(['veto-seal'])
 
     player.playNow('veto-seal')
@@ -190,7 +181,7 @@ describe('playNow with a rate', () => {
   it('plays and logs nothing with Ton off', async () => {
     const { context, player } = await ready(['veto-seal'], { enabled: false })
 
-    player.playNow('veto-seal', 0, 2)
+    player.playNow('veto-seal')
 
     expect(context.started()).toEqual([])
     expect(player.log).toEqual([])
@@ -198,14 +189,14 @@ describe('playNow with a rate', () => {
 
   it('is skipped, and logged so, on a context that does not run or for a file that is not decoded', async () => {
     const { context, player } = setup()
-    player.playNow('veto-seal', 0, 2)
+    player.playNow('veto-seal')
     await settle()
-    player.playNow('veto-seal', 0, 2)
+    player.playNow('veto-seal')
     context.state = 'suspended'
-    player.playNow('veto-seal', 0, 2)
+    player.playNow('veto-seal')
 
     // The first is skipped (not decoded yet: it asks for the file), the second plays, the third (a suspended context) is skipped.
-    expect(outcomes(player)).toEqual(['veto-seal@0x2:skipped', 'veto-seal@0x2:scheduled', 'veto-seal@0x2:skipped'])
+    expect(outcomes(player)).toEqual(['veto-seal@0x1:skipped', 'veto-seal@0x1:scheduled', 'veto-seal@0x1:skipped'])
     expect(context.started()).toHaveLength(1)
   })
 })

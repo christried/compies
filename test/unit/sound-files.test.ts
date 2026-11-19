@@ -59,7 +59,7 @@ describe('the credits file', () => {
   // A missing file is a problem line, not a crash of the whole test file.
   const { credits, problems } = parseCredits(existsSync(creditsFile) ? JSON.parse(readFileSync(creditsFile, 'utf8')) : null)
 
-  it('sits beside exactly the eleven cue files', () => {
+  it('sits beside exactly the cue files', () => {
     expect(readdirSync(folder).sort()).toEqual([...CUE_IDS.map(id => `${id}.${CUE_FILE_EXTENSION}`), 'credits.json'].sort())
   })
 

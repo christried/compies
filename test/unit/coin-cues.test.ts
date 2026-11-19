@@ -2,10 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { COIN_DURATION_MS, COIN_LAND_AT, COIN_SPIN_AT } from '~~/shared/coin'
 import type { CoinView } from '~~/shared/stage'
 import { flightKeyframes } from '../../app/utils/coin-flight'
-import {
-  CUE_GROUPS, CUE_VOLUME, coinCuePlan, cueFilesOf, reachableGroups,
-  type CoinCueInput, type CueId, type GroupInput,
-} from '../../app/utils/sound-cues'
+import { CUE_GROUPS, coinCuePlan, cueFilesOf, type CoinCueInput, type CueId } from '../../app/utils/sound-cues'
 
 // The Coin flip's cues (#669, spec #718 § The cue plan): four cues from the toss's two instants, the beats of the picture, no side (ADR 0013
 // amendment: the Event read carries `coin.side` before the landing, the UI hides it). Expected instants come from the constants the picture
@@ -33,10 +30,7 @@ describe('coinCuePlan keeps the side secret', () => {
     expect(heads.length).toBeGreaterThan(0)
   })
 
-  it('has a toss of two instants and nothing else: the type holds no side', () => {
-    const input: CoinCueInput = { toss: TOSS, reducedMotion: false }
-    expect(Object.keys(input).sort()).toEqual(['reducedMotion', 'toss'])
-    expect(Object.keys(TOSS).sort()).toEqual(['landsAt', 'startedAt'])
+  it('takes a toss of two instants: the type holds no side', () => {
     // An excess property of a literal is a type error, so a side cannot be passed by mistake (`pnpm typecheck` checks this line).
     // @ts-expect-error the toss has no `side`
     expect(coinCuePlan({ toss: { startedAt: iso(START), landsAt: iso(LANDS), side: 'heads' }, reducedMotion: false })).toEqual(plan())
@@ -57,10 +51,10 @@ describe('coinCuePlan', () => {
 
   it('has the beats of the picture: the keyframes of the flight sit at the same two offsets', () => {
     const frames = flightKeyframes(false, { io: 'ease-in-out', out: 'ease-out' })
-    const onGround = frames.position.find(frame => frame.transform === 'translate3d(0px,83px,0)')
+    const onGround = frames.position.find(frame => frame.offset === COIN_LAND_AT)
     const turned = frames.spin.find(frame => frame.transform.startsWith('rotateX(540deg)'))
 
-    expect(onGround?.offset).toBe(COIN_LAND_AT)
+    expect(onGround, 'a keyframe of the position at the landing').toBeDefined()
     expect(turned?.offset).toBe(COIN_SPIN_AT)
     // 04-motion § Coin flip is the source of the two numbers.
     expect([COIN_SPIN_AT, COIN_LAND_AT]).toEqual([0.18, 0.74])
@@ -83,35 +77,10 @@ describe('coinCuePlan', () => {
     expect(cues.map(cue => cue.id)).toEqual(COIN_IDS)
     expect(cues.map(cue => cue.at - past)).toEqual(plan().map(cue => cue.at - START))
   })
-
-  it('has the Vol of the document for each cue', () => {
-    expect(COIN_IDS.map(id => CUE_VOLUME[id])).toEqual([50, 30, 60, 55])
-  })
 })
 
+// The group's rule is a row of the table in sound-cues.test.ts.
 describe('the Coin flip group', () => {
-  // Literals that name the fields the case is about; `sessionRunning` and `toss` are optional (absent = not reached).
-  const groupsOf = (input: GroupInput) => reachableGroups(input)
-
-  it('reaches nothing with no wheel, no running Session and no toss, whatever the Veto fields say', () => {
-    expect(groupsOf({ wheel: false, vetoAllowance: 0, vetoWindow: false })).toEqual([])
-    expect(groupsOf({ wheel: false, vetoAllowance: 2, vetoWindow: true })).toEqual([])
-  })
-
-  it('is reached by a running Session alone', () => {
-    expect(groupsOf({ wheel: false, vetoAllowance: 0, vetoWindow: false, sessionRunning: true })).toEqual(['coin'])
-  })
-
-  it('is reached by a toss in the read alone', () => {
-    expect(groupsOf({ wheel: false, vetoAllowance: 0, vetoWindow: false, toss: true })).toEqual(['coin'])
-  })
-
-  it('follows the wheel and the Veto window in the order of the groups', () => {
-    expect(groupsOf({ wheel: true, vetoAllowance: 0, vetoWindow: false, sessionRunning: true })).toEqual(['wheel', 'coin'])
-    expect(groupsOf({ wheel: true, vetoAllowance: 2, vetoWindow: false, sessionRunning: true })).toEqual(['wheel', 'veto', 'coin'])
-    expect(groupsOf({ wheel: true, vetoAllowance: 0, vetoWindow: false })).toEqual(['wheel'])
-  })
-
   it('has the four files in the order of the ids', () => {
     expect(cueFilesOf(['coin'])).toEqual(COIN_IDS)
   })

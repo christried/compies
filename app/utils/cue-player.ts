@@ -11,7 +11,7 @@ import { CUE_VOLUME, type Cue, type CueId } from './sound-cues'
 // plan does while it is due or sounding: the read's rings out (the Clip's close leaves the plan with the read that follows its own moment), the
 // ceremony's is cut (a skip, a close and a new start silence what it holds).
 
-/** The two sources of a plan (#743). Module-private: a caller names one as a string. */
+/** The two sources of a plan (#743). A caller names one as a string: `setPlan(cues, 'ceremony')`, or none for the Event read's. */
 type PlanSource = 'read' | 'ceremony'
 const PLAN_SOURCES: readonly PlanSource[] = ['read', 'ceremony']
 /** Whether a cue that leaves its source's plan is stopped even when it is due or sounding (a cut), or rings out. */
@@ -65,9 +65,9 @@ export interface CuePlayer {
    * Plays a cue `delayMs` from now, for one that the arrival of a read causes (`veto-seal`, a set game's `veto-open`, #532): it is no part of
    * any plan and never cancelled by one. Gated like every cue: Ton off plays nothing and logs nothing; a context that does not run, a file
    * that is not decoded yet or one that failed is logged `skipped`; otherwise it starts at the context's `currentTime` plus the delay and is
-   * logged `scheduled`. `rate` is the playback rate (1 = the file's own pitch, #743). Ton off, and `dispose`, stop a source it started, pending or sounding.
+   * logged `scheduled`. It plays at the file's own pitch: a rate comes only with a plan's `Cue.rate` (#743). Ton off, and `dispose`, stop a source it started, pending or sounding.
    */
-  playNow: (id: CueId, delayMs?: number, rate?: number) => void
+  playNow: (id: CueId, delayMs?: number) => void
   /** Looks at what is pending again against the clocks as they are now: moves what moved (#594). */
   refresh: () => void
   /** Asks the context to run (it needs a gesture) and reconciles. It never rejects. */
@@ -133,9 +133,9 @@ export function createCuePlayer(options: CuePlayerOptions): CuePlayer {
   }
 
   /** Stops a source that is pending or sounding; a source that already ended, or none, is nothing to stop. */
-  function stop(entry: Entry) {
+  function stopSource(source: AudioBufferSourceNode | null) {
     try {
-      entry.source?.stop()
+      source?.stop()
     }
     catch {
       // A source that never started, or one that already ended: nothing left to stop.
@@ -144,7 +144,7 @@ export function createCuePlayer(options: CuePlayerOptions): CuePlayer {
 
   /** Drops an entry. A cue that is not yet due is logged as cancelled; one that already sounded keeps its outcome and is just cut off. */
   function cancel(key: string, entry: Entry, now: number) {
-    stop(entry)
+    stopSource(entry.source)
     if (entry.source !== null && entry.cue.at > now) entry.line.outcome = 'cancelled'
     entries.delete(key)
   }
@@ -182,12 +182,7 @@ export function createCuePlayer(options: CuePlayerOptions): CuePlayer {
   /** Stops every source `playNow` started that is pending or sounding; one still ahead is logged cancelled. */
   function stopImmediates() {
     for (const held of immediates) {
-      try {
-        held.source.stop()
-      }
-      catch {
-        // A source that already ended: nothing left to stop.
-      }
+      stopSource(held.source)
       if (held.when > context.currentTime) held.line.outcome = 'cancelled'
     }
     immediates.clear()
@@ -224,7 +219,7 @@ export function createCuePlayer(options: CuePlayerOptions): CuePlayer {
   function replace(entry: Entry, buffer: AudioBuffer, now: number) {
     const lead = entry.cue.at - now
     const currentTime = context.currentTime
-    stop(entry)
+    stopSource(entry.source)
     if (lead < -CUE_LATE_MS) {
       entry.source = null
       entry.buffer = null
@@ -347,9 +342,9 @@ export function createCuePlayer(options: CuePlayerOptions): CuePlayer {
         if (asks(id, now)) load(id)
       }
     },
-    playNow(id, delayMs = 0, rate = 1) {
+    playNow(id, delayMs = 0) {
       if (disposed || !enabled) return
-      const cue: Cue = { id, at: serverNow() + delayMs, rate }
+      const cue: Cue = { id, at: serverNow() + delayMs }
       const slot = buffers.get(id)
       if (!running() || slot?.state !== 'ready') {
         // A seal that waits for a download would sound late: a file that is not there yet is asked for, and this cue is skipped.
@@ -358,7 +353,7 @@ export function createCuePlayer(options: CuePlayerOptions): CuePlayer {
         return
       }
       const when = context.currentTime + delayMs / 1000
-      const source = start(id, slot.buffer, when, rate)
+      const source = start(id, slot.buffer, when, 1)
       const held: Immediate = { source, when, line: record(cue, 'scheduled', when) }
       immediates.add(held)
       source.onended = () => immediates.delete(held)

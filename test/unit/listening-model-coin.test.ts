@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { COIN_DURATION_MS } from '../../shared/coin'
-import { LEAD_MS, MOMENT_LABEL, MOMENT_OF, buildCoinRun } from '../../app/dev/listening-model'
+import { LEAD_MS, buildCoinRun } from '../../app/dev/listening-model'
 import { coinCuePlan } from '../../app/utils/sound-cues'
 
 // The listening page's „Test toss“ (#669): the Coin flip's four cues through the real `coinCuePlan`, from the two instants `planOf` copies.
@@ -27,14 +27,5 @@ describe('buildCoinRun', () => {
 
   it('has two cues under reduced motion: the landing and the result', () => {
     expect(buildCoinRun(true, NOW).plan.map(cue => cue.id)).toEqual(['coin-land', 'coin-result'])
-  })
-
-  it('makes the same run twice for the same now', () => {
-    expect(buildCoinRun(false, NOW).plan.map(cue => `${cue.id}@${cue.at}`)).toEqual(buildCoinRun(false, NOW).plan.map(cue => `${cue.id}@${cue.at}`))
-  })
-
-  it('puts the four cues in the coin moment with its label', () => {
-    for (const id of ['coin-toss', 'coin-spin', 'coin-land', 'coin-result'] as const) expect(MOMENT_OF[id]).toBe('coin')
-    expect(MOMENT_LABEL.coin).toBe('Test toss')
   })
 })
