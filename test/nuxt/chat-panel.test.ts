@@ -239,6 +239,30 @@ describe('ChatPanel', () => {
     expect(texts(wrapper)).toEqual([longest])
   })
 
+  it('links an address in a Message in a new tab, and shows markup as text', async () => {
+    const typed = 'see https://x.de/a, <b>fett</b> and javascript:alert(1)'
+    const { wrapper } = await mountChat([live('a', SANNE, 0, typed)])
+
+    const bubble = wrapper.find('[data-message-id="a"]')
+    const links = bubble.findAll('a')
+    expect(links).toHaveLength(1)
+    expect(links[0]!.attributes('href')).toBe('https://x.de/a')
+    expect(links[0]!.attributes('target')).toBe('_blank')
+    expect(links[0]!.attributes('rel')).toBe('noopener noreferrer')
+    expect(bubble.find('b').exists()).toBe(false)
+    expect(bubble.text()).toBe(typed)
+  })
+
+  it('shows an address that is not http or https as text', async () => {
+    const typed = 'ftp://x.de und <img src=x onerror=alert(1)>'
+    const { wrapper } = await mountChat([live('a', SANNE, 0, typed)])
+
+    const bubble = wrapper.find('[data-message-id="a"]')
+    expect(bubble.find('a').exists()).toBe(false)
+    expect(bubble.find('img').exists()).toBe(false)
+    expect(bubble.text()).toBe(typed)
+  })
+
   it('names a team Member with their name, their team and its mark, and the time', async () => {
     const { wrapper } = await mountChat([live('a', SANNE, 0)])
 
