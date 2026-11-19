@@ -1066,6 +1066,7 @@ Automatic events with timestamps.
 - **Desktop / mobile:** Desktop pill bottom-left of the stage; mobile floating bottom-left.
 - **Accessibility:** `role="toolbar"`; each button labelled; cooldown as `aria-disabled` + „Kurz warten“.
 - **Motion:** cooldown ring stroke-dashoffset linear 2 s.
+- **Deviation (0.18, #668):** the row sits on the Game board, bottom-left inside the board, in its flow, for the Host and the Members alike: not in the dock and not beside the composer (DS Communication: „an emote button in the dock opens this row as a popover“). The four pictures are the SVGs of `reference/assets/emotes/`, served from `public/emotes/` (`EMOTE_PICTURE`, `app/utils/emote-art.ts`). The tapped button carries the ring and the other three are dimmed; the DS draws a ring on all four. No `cooldownMs` prop: the wait is `EMOTE_COOLDOWN_MS` (`shared/emote.ts`), the number the room's rule uses. Below md there is no button until #768. Source: `EmoteBar.vue`.
 
 ## FloatingEmote
 **Scope:** [1.0] · **Ref:** DS Communication
@@ -1078,6 +1079,7 @@ Emote rising above the sender's avatar.
 - **Desktop / mobile:** —
 - **Accessibility:** `aria-hidden`; feed does not log emotes.
 - **Motion:** see 04-motion § Emote.
+- **Deviation (0.18, #668):** it is the picture, not the rig's `emote` crop: an `<img>` of the static SVG, 48 px (this build's pick; the art is 100 × 100 and „readable at 32 px“), in a fixed layer of the page at the top edge of the avatar's button, `aria-hidden`. Source: `FloatingEmote.vue`, `useRisingEmotes`.
 
 ## PushAsk
 **Scope:** [1.0] · **Ref:** App Systemzustände 28

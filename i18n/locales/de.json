@@ -650,8 +650,9 @@
     "eventFinishedPlain": "Event beendet"
   },
   "emote": {
+    "label": "Emotes",
     "send": "Emote senden: {name}",
-    "sent": "Gesendet. Nächstes Emote in 2 Sekunden.",
+    "wait": "Kurz warten",
     "clap": "Klatschen",
     "tears": "Freudentränen",
     "angry": "Wütend",

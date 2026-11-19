@@ -354,7 +354,7 @@ describe('the backdrop behind the clip (#587)', () => {
       const lit = litIn(root).map(labelled)
       expect(lit).toContain('Clip überspringen')
       expect(lit).toContain('Für mich schließen')
-      const dock = root.querySelector('[role="toolbar"]')
+      const dock = root.querySelector('[role="toolbar"][aria-label="Host-Steuerung"]')
       expect(dock).not.toBeNull()
       expect(dock!.closest('[inert]')).toBeNull()
     })
@@ -370,7 +370,7 @@ describe('the backdrop behind the clip (#587)', () => {
       const lit = litIn(root).map(labelled)
       expect(lit).toContain('Für mich schließen')
       expect(lit).not.toContain('Clip überspringen')
-      expect(root.querySelector('[role="toolbar"]')).toBeNull()
+      expect(root.querySelector('[role="toolbar"][aria-label="Host-Steuerung"]')).toBeNull()
     })
 
     it('has the same for a Member on the Stands, with only the clip\'s own button lit', async () => {

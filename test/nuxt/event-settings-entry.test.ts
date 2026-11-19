@@ -68,7 +68,7 @@ describe('Einstellungen in the Host controls', () => {
     signInAs(kitty)
   })
 
-  const toolbarLabels = (page: Awaited<ReturnType<typeof mountSuspended>>) => page.get('[role="toolbar"]').findAll('button').map((button: { text: () => string }) => button.text())
+  const toolbarLabels = (page: Awaited<ReturnType<typeof mountSuspended>>) => page.get('[role="toolbar"][aria-label="Host-Steuerung"]').findAll('button').map((button: { text: () => string }) => button.text())
 
   // Opens „Mehr“ and returns what it lists, the pill's actions included.
   async function menuLabels(page: Mounted) {
@@ -136,6 +136,6 @@ describe('Einstellungen in the Host controls', () => {
 
     const page = await mountSuspended(EventPage, { route: `/e/${slug}` })
 
-    expect(page.find('[role="toolbar"]').exists()).toBe(false)
+    expect(page.find('[role="toolbar"][aria-label="Host-Steuerung"]').exists()).toBe(false)
   })
 })

@@ -7,6 +7,7 @@ import { stageInstants, stageUnsettled } from '~/utils/event-stage'
 import { dateBlockedKey, eventPageState, headerPill, waitsForCeremony, wearsPartyhat } from '~/utils/event-page'
 import { historyCorrections } from '~/utils/history-corrections'
 import type { Cue } from '~/utils/sound-cues'
+import type { EmoteId } from '~~/shared/emote'
 import { datePollOpen, sessionsEditable } from '~~/shared/event'
 
 // The Event link (`/e/<slug>`, ADR 0006) in the event shell (screen M3): useEventView loads the Event (live, #156), the stage is the
@@ -85,8 +86,15 @@ const feed = computed(() => feedSessions(data.value?.sessions ?? []))
 
 // The cast reaches the casting Party's Users only (a named send, no `event.changed`): their pages read again to show the seal.
 room.on('veto.cast', () => void refresh())
-// An Emote that arrives: #668 draws it above the sender's avatar and plays its cue. Listened for from #767 on, since room-listeners.test.ts wants a page listener per message type.
-room.on('emote.sent', () => {})
+// An Emote that arrives (#668) rises above its sender's avatar, wherever the room says it came from (the sender's own too: the room passes it back). It is drawn at once: no
+// `serverTime`, no instant ahead (spec § C). An Emote never reaches Nuxt: it writes no Activity entry and no read changes. Compibert does not react (#673).
+const { rising, rise, done: riseDone } = useRisingEmotes()
+room.on('emote.sent', (message) => {
+  // #769: whether the board is covered, the avatar scrolled away or the tab hidden decides here, before the rise.
+  rise(message.userId, message.emote)
+  // #770 plays the Emote's cue here, from `message.sound`, drawn or not. Nobody reads `sound` yet.
+})
+const sendEmote = (emote: EmoteId) => room.send({ type: 'emote.send', emote })
 // A Message that arrives: #761 adds it to the Chat by id. Listened for from #758 on, since room-listeners.test.ts wants a page listener per message type.
 room.on('chat.added', () => {})
 
@@ -298,6 +306,7 @@ const covered = computed(() => clipShown.value || tour.shown.value)
       @calendar="calendarOpen = true"
       @share="shareOpen = true"
       @replay="ceremonyLayer?.replay()"
+      @emote="sendEmote"
     />
 
     <!-- A phone's other views (11-event-seite § TabBar): the Standings or the feed alone, with the Head's place taken by their title. -->
@@ -380,6 +389,16 @@ const covered = computed(() => clipShown.value || tour.shown.value)
     <!-- Fixed layers (#587): outside <main>, so they stay usable while the backdrop makes the rest of the page inert. The backdrop comes first,
          it lies under the Clip and the Veto bar by its layer. -->
     <template #layers>
+      <!-- The Emotes that are rising (#668): over the board, under the header, the backdrop, the dock, the sheets, the Clip and the Veto bar by `layer-sticky`. -->
+      <FloatingEmote
+        v-for="entry in rising"
+        :key="entry.key"
+        :emote="entry.emote"
+        :user-id="entry.userId"
+        :anchor-el="entry.anchor"
+        @done="riseDone(entry.key)"
+      />
+
       <ClipBackdrop :shown="clipShown" />
 
       <!-- The synced clip (#230) over the stage; keyed by the draw, so a clip closed on this device shows again with the next draw. The Transition

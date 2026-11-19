@@ -33,7 +33,7 @@ const round = (id: string, game: PoolGame, notes?: NotesDoc): RoundView => {
 }
 
 const pool: EventView['pool'] = [halo, kart, pong]
-const pill = (page: Mounted) => [...page.element.querySelectorAll('[role="toolbar"] button')].map(button => button.textContent?.replace(/\s+/g, ' ').trim())
+const pill = (page: Mounted) => [...page.element.querySelectorAll('[role="toolbar"][aria-label="Host-Steuerung"] button')].map(button => button.textContent?.replace(/\s+/g, ' ').trim())
 
 type Options = { host: boolean, rounds?: RoundView[], setGame?: SetGameView | null, sessions?: Parameters<typeof viewWithSessions>[1], phase?: string, teams?: BoardTeam[], end?: EndView | null, hostGames?: EventView['hostGames'], eventNotes?: EventView['eventNotes'] }
 
@@ -602,7 +602,7 @@ describe('„Nächstes Spiel setzen“', () => {
     const { slug } = serveHostPick({ rejection: 'teams_uneven', spinRejection: 'no_wheel', respin: false, left: [], poolWarning: null })
     const stage = await mount(slug)
 
-    const action = stage.findAll('[role="toolbar"] button')[0]!
+    const action = stage.findAll('[role="toolbar"][aria-label="Host-Steuerung"] button')[0]!
     expect(action.text()).toBe('Nächstes Spiel setzen')
     expect(action.attributes('aria-disabled')).toBe('true')
     expect(stage.get(`#${action.attributes('aria-describedby')}`).text()).toBe('Geht erst, wenn alle Teams gleich groß sind.')
@@ -622,7 +622,7 @@ describe('„Nächstes Spiel setzen“', () => {
     const { slug } = serveHostPick({ rejection, spinRejection: 'no_wheel', respin: false, left: [], poolWarning: null })
     const stage = await mount(slug)
 
-    const action = stage.findAll('[role="toolbar"] button')[0]!
+    const action = stage.findAll('[role="toolbar"][aria-label="Host-Steuerung"] button')[0]!
     expect(stage.get(`#${action.attributes('aria-describedby')}`).text()).toBe(text)
   })
 
@@ -770,7 +770,7 @@ describe('„Nächstes Spiel setzen“', () => {
     const { slug } = serveRunning({ host: false })
     const stage = await mount(slug)
 
-    expect(stage.find('[role="toolbar"]').exists()).toBe(false)
+    expect(stage.find('[role="toolbar"][aria-label="Host-Steuerung"]').exists()).toBe(false)
     expect(pill(stage)).toEqual([])
   })
 })
@@ -833,7 +833,7 @@ describe('the Lucky Wheel on the stage (#229)', () => {
     const { slug } = serveWheel({ host: true, setGame: { rejection: null, spinRejection: 'pool_empty', respin: false, left: [], poolWarning: null } })
     const stage = await mount(slug)
 
-    const action = stage.findAll('[role="toolbar"] button')[0]!
+    const action = stage.findAll('[role="toolbar"][aria-label="Host-Steuerung"] button')[0]!
     expect(action.text()).toBe('Rad drehen')
     expect(action.attributes('aria-disabled')).toBe('true')
     expect(stage.get(`#${action.attributes('aria-describedby')}`).text()).toBe('Auf dem Rad ist kein Spiel mehr. Mit „Nächstes Spiel setzen“ kannst du eines aus der Bibliothek setzen.')
@@ -848,7 +848,7 @@ describe('the Lucky Wheel on the stage (#229)', () => {
     const { slug } = serveWheel({ host: true, setGame: { rejection: 'no_running_session', spinRejection: 'no_running_session', respin: false, left: [], poolWarning: null } })
     const stage = await mount(slug)
 
-    const action = stage.findAll('[role="toolbar"] button')[0]!
+    const action = stage.findAll('[role="toolbar"][aria-label="Host-Steuerung"] button')[0]!
     expect(action.text()).toBe('Rad drehen')
     expect(stage.get(`#${action.attributes('aria-describedby')}`).text()).toBe('Es läuft gerade keine Session.')
   })

@@ -7,6 +7,7 @@ import type { OptimisticVotes } from '~/composables/useOptimisticVotes'
 import type { StandingsNews } from '~/utils/standings-news'
 import { REFLOW_CLASS, reducedMotion, riseFade, unwatched } from '~/utils/motion'
 import { hasStarted } from '~~/shared/session-state'
+import type { EmoteId } from '~~/shared/emote'
 import type { EventView } from '~~/shared/event'
 import { settingsPath } from '~~/shared/links'
 import { leadersOf } from '~~/shared/finish'
@@ -59,6 +60,8 @@ const emit = defineEmits<{
   replay: []
   /** The notice's „Ton aktivieren“ (#533): the page's gesture handler takes it like any tap. */
   unlock: []
+  /** A tap on an Emote button of the Game board (#668): the page sends it to the room. */
+  emote: [emote: EmoteId]
 }>()
 
 const { t } = useI18n()
@@ -254,6 +257,7 @@ watch(() => ({ kind: props.pageState.kind, blocks: props.pageState.blocks, count
           :is-host="view.event.isHost"
           :room="room"
           :online="online"
+          @emote="emit('emote', $event)"
         />
 
         <!-- A Tie (#278): listed for everybody but the Host, who decides (event-stage.ts, #283). -->

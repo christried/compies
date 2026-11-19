@@ -45,7 +45,7 @@ describe('the finished Event page', () => {
     end: { played: 3, gameCount: 3, complete: true, tie: null, finish: null, lastGame: null },
     ...overrides,
   })
-  const toolbar = (page: { findAll: (selector: string) => { text: () => string }[] }) => page.findAll('[role="toolbar"] button').map(button => button.text())
+  const toolbar = (page: { findAll: (selector: string) => { text: () => string }[] }) => page.findAll('[role="toolbar"][aria-label="Host-Steuerung"] button').map(button => button.text())
 
   beforeEach(() => {
     signInAs(kitty)

@@ -28,6 +28,8 @@ Variants: head · bust · full · emote · tail (coin). Outline: light = hard sh
 
 `emotes/emote-klatschen.svg` (Klatschen) · `emote-freudentraenen.svg` (Tränen vor Lachen) · `emote-wuetend.svg` (Wütend) · `emote-bruellen.svg` (Compibert-Brüllen). 100 × 100, 96 px sticker disc + 4 px offset ink shadow. Static for `<img>`, chat log, push. Live floating emotes use the rig in the `emote` crop with the matching state (clap, laugh, angry, roar).
 
+- **Deviation (0.18, #668):** „Live floating emotes use the rig in the `emote` crop“ does not hold: the rise uses the static SVG (spec #719 § C: „No custom ones“, pictures only). The four files are in `public/emotes/`, drawn as `<img>` and never inlined.
+
 ## App, PWA icons, favicon
 
 | File | What |
