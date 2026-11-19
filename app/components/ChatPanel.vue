@@ -11,12 +11,13 @@ import type { Message, MessageDeleter, MessagePage } from '~~/shared/chat'
 import type { BoardTeam, MemberView } from '~~/shared/event'
 import { NOTES_LINK_REL } from '~~/shared/notes-doc'
 
-// The Chat (#761, GLOSSARY: Chat, 02-components § ChatPanel, spec #719 § A), read only: the Event's Messages, oldest at the top and the newest at the bottom, scrolled to the
-// end on load. It follows the Activity feed (`ActivityFeed.vue`): the first page from the Chat's endpoint, what the room sends (`chat.added`) at once, the first page
-// again whenever the connection opens (a message sent while the socket was down is gone), and „Ältere laden“ for the page before the oldest one shown. A Message
+// The Chat (#761, GLOSSARY: Chat, 02-components § ChatPanel, spec #719 § A): the Event's Messages, oldest at the top and the newest at the bottom, scrolled to the
+// end on load, and the composer at the foot (#667). It follows the Activity feed (`ActivityFeed.vue`): the first page from the Chat's endpoint, what the room sends (`chat.added`) at once, the first page
+// again whenever the connection opens (a message sent while the socket was down is gone; a page that shares no id with what is held replaces it, #848), and „Ältere laden“ for the page before the oldest one shown. A Message
 // the page and the room both bring shows once (by id). A Message stores no name and no place (ADR 0016's opposite, on purpose): the name line of each group
-// takes the writer's current Display name, Team and place from the Event read's Members, so a rename or a move shows in old Messages. The composer is #667's, links #762's
-// and the delete control, its undo and the line a deleted Message turns into (`chat.deleted`) #763's, the Host's control on any Message #764's.
+// takes the writer's current Display name, Team and place from the Event read's Members, so a rename or a move shows in old Messages. An address in a Message is a link (#762).
+// A writer deletes their own Message, and the Host any Message (#764): it is hidden at once, a toast offers „Rückgängig“ and the call goes out when the toast ends (#763); a delete
+// the room announces (`chat.deleted`) turns the Message into its line, also one that is not held yet (#848). The line a Message the page sent shows as until it settles is an `Outgoing`.
 const props = withDefaults(defineProps<{
   slug: string
   room: Pick<ReturnType<typeof useEventRoom>, 'state' | 'on'>
