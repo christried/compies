@@ -154,8 +154,10 @@ const accessory = computed(() => (data.value && wearsPartyhat(data.value, waits.
 // The header pill follows the page state, not the Event's Phase, which is running from the first start on (headerPill, #166).
 const pill = computed(() => headerPill(pageState.value, data.value?.event.phase, t))
 
-// The phone's views and the side panel's tabs are useEventTabs' (#257): the Event page, the Standings (#274) or the Activity feed.
-const { wide, panelTab, activeView, tabs, panelTabs, selectView } = useEventTabs(room)
+// The phone's views and the side panel's tabs are useEventTabs' (#257): the Event page, the Standings (#274), the Chat or the Activity feed (#765).
+const { wide, panelTab, activeView, tabs, panelTabs, selectView } = useEventTabs(room, () => data.value?.viewerId)
+/** The phone shows the Chat view: the Host's crown would cover its send button, so the dock is not shown there (#765). */
+const chatOnPhone = computed(() => wide.value === false && activeView.value === 'chat')
 
 // What is new on the Standings (#276): a Result the page has not seen. One owner for the stage block and the panel's tab, which are mounted
 // together, and for the live region below.
@@ -349,7 +351,7 @@ watch(() => tour.shown.value, (isShown) => {
       @emote="sendEmote"
     />
 
-    <!-- A phone's other views (11-event-seite § TabBar): the Standings or the feed alone, with the Head's place taken by their title. -->
+    <!-- A phone's other views (11-event-seite § TabBar): the Standings, the Chat or the feed alone, with the Head's place taken by their title. -->
     <div
       v-else-if="data && wide === false"
       class="mx-auto flex w-full max-w-[1100px] flex-col gap-3 px-3.5 pt-4 pb-7"
@@ -361,6 +363,16 @@ watch(() => tour.shown.value, (isShown) => {
         :news="news"
         :waiting="waits"
       />
+      <EventChatView v-else-if="activeView === 'chat'">
+        <ChatPanel
+          :slug="slug"
+          :room="room"
+          :members="data.members"
+          :teams="data.teams"
+          :viewer-id="data.viewerId"
+          :finished="pageState?.kind === 'finished'"
+        />
+      </EventChatView>
       <EventActivityView
         v-else
         :slug="slug"
@@ -482,7 +494,7 @@ watch(() => tour.shown.value, (isShown) => {
 
       <!-- The Host has the dock in every Phase; in a finished Event it holds Siegerehrung starten and Einladen (#277, #309). -->
       <HostDock
-        v-if="data?.event.isHost"
+        v-if="data?.event.isHost && !chatOnPhone"
         :actions="hostActions"
         panel
       />

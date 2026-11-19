@@ -139,7 +139,7 @@ Every screen exists in the design files at desktop 1280 and mobile 390, light an
 
 - **Layout:** As M3 plus side panel (Chat default) on desktop and the mobile tab bar (Spielbrett, Tabelle, Chat, Aktivität, Leute).
 - **Components:** as M3 + SidePanel, ChatPanel, PushAsk
-- **Deviation (0.18, #761):** the desktop side panel's tabs are Chat, Aktivität, Tabelle, with Chat the default; there is no „Leute“ tab. The phone's bar is #765's.
+- **Deviation (0.18, #761):** the desktop side panel's tabs are Chat, Aktivität, Tabelle, with Chat the default; there is no „Leute“ tab. **Deviation (0.18, #765):** the phone's bar has four items, Event, Tabelle, Chat, Aktivität, in that order, and no „Leute“. The badge is on Chat and on Aktivität alike, and its accessible name is „{label}, {n} neu“ where the artboard says „ungelesen“; the viewer's own Message is not counted. The Chat item opens a view of the Chat alone under its h1 „Chat“, as the feed has its own view, with the composer above the keyboard. The Host's crown is not shown on that view, since it would cover the send button.
 - **Data:** as M3.
 - **Host vs player:** as M3.
 - **States:** Abstimmen · Abgestimmt · Host-Ansicht · Host: festlegen · Termin steht + .ics · Host: verschieben

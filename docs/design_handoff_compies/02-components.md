@@ -1039,7 +1039,7 @@ Event chat for everyone incl. bench and stands.
 - **Props / variants:** `messages[]`, `me`, `role`
 - **States:** grouped (2 min) · own (right, yellow) · sending · failed + retry · deleted by host („Vom Host gelöscht“) · empty
 - **Slots:** —
-- **Desktop / mobile:** Desktop side panel; mobile tab / bottom sheet.
+- **Desktop / mobile:** Desktop side panel; mobile tab / bottom sheet. On a phone it is the Chat tab's view (0.18, #765): the same component under the h1 „Chat“, mounted only while the view is shown.
 - **Accessibility:** `role="log"` + `aria-live="polite"`; input labelled „Nachricht an alle“.
 - **Motion:** new message `y 8→0, fade` `dur-base`.
 - **Deviation (0.18, #761):** the artboard's „Bench“ is the Stands' „Tribüne“ (GLOSSARY: Stands), so a Member who sits there has „Tribüne“ in the name line; there is no „Leute“ tab. The side panel's tabs are Chat, Aktivität, Tabelle, in that order, and it opens on Chat. The empty state is a dashed box with a bold „Noch still hier.“ and the text, not `EmptyState`, whose 120 px Compibert is too wide for the panel. The curve of the rise is `--cp-ease-out`, the UI default, since 04-motion has no Chat entry (`chatRise`, `app/utils/motion.ts`); under reduced motion it fades only.

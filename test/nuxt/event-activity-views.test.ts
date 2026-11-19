@@ -129,9 +129,9 @@ describe('the Activity feed on the Event page', () => {
       resize(false)
       await settle()
 
-      expect(tabs(page)[2]!.attributes('aria-label')).toBeUndefined()
+      expect(tabs(page)[3]!.attributes('aria-label')).toBeUndefined()
       await joined('b')
-      expect(tabs(page)[2]!.attributes('aria-label')).toBe('Aktivität, 1 neu')
+      expect(tabs(page)[3]!.attributes('aria-label')).toBe('Aktivität, 1 neu')
     })
 
     it('says what the feed promises while nothing happened', async () => {
@@ -144,24 +144,24 @@ describe('the Activity feed on the Event page', () => {
   describe('on a phone', () => {
     beforeEach(() => stubScreen(false))
 
-    it('has three tabs, Event, Tabelle and Aktivität, and starts on the Event with no feed mounted', async () => {
+    it('has four tabs, Event, Tabelle, Chat and Aktivität, and starts on the Event with no feed mounted', async () => {
       const { page, served } = await mountEvent()
 
-      expect(tabs(page).map(tab => tab.text())).toEqual(['Event', 'Tabelle', 'Aktivität'])
-      expect(tabs(page).map(tab => tab.attributes('aria-current'))).toEqual(['page', undefined, undefined])
+      expect(tabs(page).map(tab => tab.text())).toEqual(['Event', 'Tabelle', 'Chat', 'Aktivität'])
+      expect(tabs(page).map(tab => tab.attributes('aria-current'))).toEqual(['page', undefined, undefined, undefined])
       expect(page.find('[role="log"]').exists()).toBe(false)
       expect(page.find('[role="tab"]').exists()).toBe(true)
       expect(served.feedReads).toBe(0)
-      // The Chat has no view on a phone until #765: nothing of it mounts or is read.
+      // The Chat's view is mounted only while shown (#765): nothing of it mounts or is read before.
       expect(served.chatReads).toBe(0)
     })
 
     it('switches to the feed with its own h1, and back to the stage', async () => {
       const { page, served } = await mountEvent()
 
-      await tabs(page)[2]!.trigger('click')
+      await tabs(page)[3]!.trigger('click')
 
-      expect(tabs(page).map(tab => tab.attributes('aria-current'))).toEqual([undefined, undefined, 'page'])
+      expect(tabs(page).map(tab => tab.attributes('aria-current'))).toEqual([undefined, undefined, undefined, 'page'])
       expect(page.findAll('h1').map(heading => heading.text())).toEqual(['Aktivität'])
       await vi.waitFor(() => expect(page.find('main [role="log"]').exists()).toBe(true))
       expect(page.findAll('[role="log"]')).toHaveLength(1)
@@ -177,14 +177,14 @@ describe('the Activity feed on the Event page', () => {
       const resize = stubScreen(false)
       const { page } = await mountEvent()
       await joined('a')
-      expect(tabs(page)[2]!.attributes('aria-label')).toBe('Aktivität, 1 neu')
+      expect(tabs(page)[3]!.attributes('aria-label')).toBe('Aktivität, 1 neu')
 
       resize(true)
       await settle()
       resize(false)
       await settle()
 
-      expect(tabs(page)[2]!.attributes('aria-label')).toBeUndefined()
+      expect(tabs(page)[3]!.attributes('aria-label')).toBeUndefined()
     })
 
     it('counts the entries that arrive while the Event tab is shown, says so in the name, and resets when the feed opens', async () => {
@@ -193,23 +193,23 @@ describe('the Activity feed on the Event page', () => {
       await joined('a')
       await joined('b')
 
-      const activity = tabs(page)[2]!
+      const activity = tabs(page)[3]!
       expect(activity.attributes('aria-label')).toBe('Aktivität, 2 neu')
       expect(activity.text()).toContain('2')
 
       await activity.trigger('click')
 
-      expect(tabs(page)[2]!.attributes('aria-label')).toBeUndefined()
-      expect(tabs(page)[2]!.text()).toBe('Aktivität')
+      expect(tabs(page)[3]!.attributes('aria-label')).toBeUndefined()
+      expect(tabs(page)[3]!.text()).toBe('Aktivität')
 
       // Entries that arrive while the feed is open are read at once and are not counted.
       await vi.waitFor(() => expect(page.find('main [role="log"]').exists()).toBe(true))
       await joined('c')
       await tabs(page)[0]!.trigger('click')
-      expect(tabs(page)[2]!.attributes('aria-label')).toBeUndefined()
+      expect(tabs(page)[3]!.attributes('aria-label')).toBeUndefined()
 
       await joined('d')
-      expect(tabs(page)[2]!.attributes('aria-label')).toBe('Aktivität, 1 neu')
+      expect(tabs(page)[3]!.attributes('aria-label')).toBe('Aktivität, 1 neu')
     })
   })
 })
