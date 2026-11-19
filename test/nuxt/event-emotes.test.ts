@@ -84,6 +84,10 @@ const sent = () => lastSocket().send.mock.calls.map(([text]) => String(text)).fi
 const bar = (page: Page) => page.find('[role="toolbar"][aria-label="Emotes"]')
 const buttons = (page: Page) => bar(page).findAll('button')
 const rises = () => [...document.querySelectorAll<HTMLElement>('[data-emote]')]
+// The phone's button (#768) sits outside the row; the sheet it opens is teleported to the body, so it is found in the document.
+const phoneButton = (page: Page) => page.find('button[aria-label="Emotes"][aria-haspopup="dialog"]')
+const sheet = () => document.querySelector<HTMLElement>('[role="dialog"]')
+const sheetButtons = () => [...document.querySelectorAll<HTMLElement>('[role="dialog"] [role="group"] button')]
 
 /** The avatar button of a Member, which jsdom gives no rectangle: the test places each at its own spot. */
 const AT = { [kitty.id]: { left: 40, top: 300 }, [LARSI]: { left: 200, top: 120 }, [SANNE]: { left: 340, top: 300 } } as Record<string, { left: number, top: number }>
@@ -357,7 +361,7 @@ describe.each([{ host: false }, { host: true }])('Emotes on the Game board, Host
   describe('on a phone', () => {
     beforeEach(() => stubScreen(false))
 
-    it('has no button of its own yet (the toolbar hides below md), and an arriving Emote still rises on the Event view', async () => {
+    it('keeps the row hidden below md, and an arriving Emote still rises on the Event view', async () => {
       const page = await mountLive({ host })
       open()
 
@@ -366,6 +370,137 @@ describe.each([{ host: false }, { host: true }])('Emotes on the Game board, Host
       await settle()
 
       expect(rises()).toHaveLength(1)
+    })
+
+    it('has one button named „Emotes“ below md, and the row still hides there', async () => {
+      const page = await mountLive({ host })
+      const button = phoneButton(page)
+
+      expect(button.exists()).toBe(true)
+      expect(button.classes()).toContain('md:hidden')
+      expect(button.attributes('aria-haspopup')).toBe('dialog')
+      expect(button.attributes('aria-expanded')).toBe('false')
+      expect(button.attributes('role')).toBeUndefined()
+      expect(bar(page).classes()).toContain('max-md:hidden')
+      expect(page.findAll('[role="toolbar"][aria-label="Emotes"]')).toHaveLength(1)
+    })
+
+    it('opens the four in a sheet titled „Emotes“, in order, and reports it expanded', async () => {
+      const page = await mountLive({ host })
+
+      await phoneButton(page).trigger('click')
+      await vi.waitFor(() => expect(sheet()).not.toBeNull())
+
+      expect(sheet()!.querySelector('h2')!.textContent!.trim()).toBe('Emotes')
+      expect(sheetButtons().map(button => button.getAttribute('aria-label'))).toEqual(EMOTE_IDS.map(id => `Emote senden: ${NAMES[id]}`))
+      expect(phoneButton(page).attributes('aria-expanded')).toBe('true')
+    })
+
+    it('sends one emote.send for a pick, closes the sheet, and the phone button shows the wait', async () => {
+      const page = await mountLive({ host })
+      open()
+      await phoneButton(page).trigger('click')
+      await vi.waitFor(() => expect(sheet()).not.toBeNull())
+
+      sheetButtons()[1]!.click()
+      await settle()
+
+      expect(sent()).toEqual([JSON.stringify({ type: 'emote.send', emote: 'tears' })])
+      await vi.waitFor(() => expect(sheet()).toBeNull())
+      const button = phoneButton(page)
+      expect(button.attributes('aria-disabled')).toBe('true')
+      expect(document.getElementById(button.attributes('aria-describedby') ?? '')?.textContent?.trim()).toBe('Kurz warten')
+      expect(button.element.querySelectorAll('circle[stroke-dasharray]')).toHaveLength(1)
+    })
+
+    it('animates the ring of the phone button as well as the row\'s', async () => {
+      const page = await mountLive({ host })
+      open()
+      await phoneButton(page).trigger('click')
+      await vi.waitFor(() => expect(sheet()).not.toBeNull())
+
+      sheetButtons()[0]!.click()
+      await settle()
+
+      const ringed = vi.mocked(Element.prototype.animate).mock.contexts.filter(context => context instanceof Element && context.tagName.toLowerCase() === 'circle')
+      expect(ringed).toHaveLength(2)
+      expect(ringed).toContain(phoneButton(page).element.querySelector('circle[stroke-dasharray]'))
+    })
+
+    it('during the wait a tap on the phone button opens nothing and sends nothing; after the cooldown it opens again', async () => {
+      const page = await mountLive({ host })
+      open()
+      vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+
+      await phoneButton(page).trigger('click')
+      sheetButtons()[1]!.click()
+      await settle2()
+      const exit = 300 // the sheet's exit: its fallback timer runs 270 ms (#348), and the wait started with the pick
+      vi.advanceTimersByTime(exit)
+      await settle2()
+      expect(sheet()).toBeNull()
+      expect(sent()).toHaveLength(1)
+
+      await phoneButton(page).trigger('click')
+      await settle2()
+      expect(sheet()).toBeNull()
+      expect(sent()).toHaveLength(1)
+
+      vi.advanceTimersByTime(EMOTE_COOLDOWN_MS - exit - 1)
+      await settle2()
+      expect(phoneButton(page).attributes('aria-disabled')).toBe('true')
+      vi.advanceTimersByTime(1)
+      await settle2()
+      expect(phoneButton(page).attributes('aria-disabled')).toBeUndefined()
+
+      await phoneButton(page).trigger('click')
+      await settle2()
+      expect(sheet()).not.toBeNull()
+    })
+
+    it('closes the sheet on Escape, and focus goes back to the phone button', async () => {
+      const page = await mountLive({ host })
+      const button = phoneButton(page).element as HTMLElement
+      button.focus()
+      await phoneButton(page).trigger('click')
+      await vi.waitFor(() => expect(sheet()).not.toBeNull())
+
+      sheet()!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+
+      await vi.waitFor(() => expect(sheet()).toBeNull())
+      expect(document.activeElement).toBe(button)
+    })
+
+    it('with the socket not open, a pick sends nothing, logs no error, closes the sheet and shows the wait', async () => {
+      const page = await mountLive({ host })
+      const error = vi.spyOn(console, 'error')
+      await phoneButton(page).trigger('click')
+      await vi.waitFor(() => expect(sheet()).not.toBeNull())
+
+      sheetButtons()[2]!.click()
+      await vi.waitFor(() => expect(sheet()).toBeNull())
+
+      expect(sent()).toEqual([])
+      expect(error).not.toHaveBeenCalled()
+      expect(phoneButton(page).attributes('aria-disabled')).toBe('true')
+    })
+
+    it('has no phone button and no sheet on a finished Event', async () => {
+      const page = await mountLive({ host, finished: true })
+
+      expect(phoneButton(page).exists()).toBe(false)
+      expect(sheet()).toBeNull()
+    })
+
+    it('closes the sheet when the window grows to md with it open', async () => {
+      const grow = stubScreen(false)
+      const page = await mountLive({ host })
+      await phoneButton(page).trigger('click')
+      await vi.waitFor(() => expect(sheet()).not.toBeNull())
+
+      grow(true)
+
+      await vi.waitFor(() => expect(sheet()).toBeNull())
     })
 
     it('draws nothing on another view, where the board is not mounted', async () => {
