@@ -2,11 +2,11 @@
 import { Smile } from '@lucide/vue'
 import { EMOTE_PICTURE } from '~/utils/emote-art'
 import { emoteRing } from '~/utils/motion'
-import { EMOTE_COOLDOWN_MS, EMOTE_IDS, type EmoteId } from '~~/shared/emote'
+import { EMOTE_IDS, EMOTE_PAGE_WAIT_MS, type EmoteId } from '~~/shared/emote'
 import { MD_QUERY, useMediaQuery } from '~/composables/useMediaQuery'
 
-// The four Emote buttons on the Game board (#668, spec #719 § C, 02-components § EmoteBar). A tap sends the Emote and starts the wait; for `EMOTE_COOLDOWN_MS`, the number
-// the room's rule uses, every button is `aria-disabled` (still focusable) and described by „Kurz warten“, the tapped one carries a draining ring and the other three are
+// The four Emote buttons on the Game board (#668, spec #719 § C, 02-components § EmoteBar). A tap sends the Emote and starts the wait; for `EMOTE_PAGE_WAIT_MS`
+// (the room's `EMOTE_COOLDOWN_MS` and a margin, so a tap at the end of the ring is never early for the room, #848), every button is `aria-disabled` (still focusable) and described by „Kurz warten“, the tapped one carries a draining ring and the other three are
 // dimmed. The wait is a timer; the ring's animation is decoration and the state does not depend on it. Where the room is not open the page's `send` does nothing and the
 // wait runs all the same: it is the tap's, the room's rule is the rule.
 // Below md the row gives way to one button (#768) at the same place, which opens a sheet with the four; a pick sends and closes it, and the wait shows on the button too.
@@ -24,7 +24,7 @@ async function tap(emote: EmoteId) {
   if (tapped.value !== null) return
   tapped.value = emote
   emit('send', emote)
-  timer = setTimeout(() => void (tapped.value = null), EMOTE_COOLDOWN_MS)
+  timer = setTimeout(() => void (tapped.value = null), EMOTE_PAGE_WAIT_MS)
   await nextTick()
   // Both the row's and the phone button's ring (#768); the Smile's own circle is not a ring.
   root.value?.querySelectorAll('circle[stroke-dasharray]').forEach(ring => emoteRing(ring))

@@ -9,8 +9,14 @@ export function isEmoteId(value: unknown): value is EmoteId {
   return (EMOTE_IDS as readonly unknown[]).includes(value)
 }
 
-/** One Emote per Member in this many milliseconds; the bar draws its ring from the same number (#668). */
+/** One Emote per Member in this many milliseconds: the room's rule. The bar's wait is `EMOTE_PAGE_WAIT_MS`, a little longer (#668, #848). */
 export const EMOTE_COOLDOWN_MS = 2000
+/**
+ * How long the page waits after a tap before it lets the next one through: the room's wait and a margin of 150 ms. The room measures the gap between two arrivals, and the
+ * first Emote may be delayed on its way, so a tap made the moment the ring ended could arrive less than `EMOTE_COOLDOWN_MS` after the first and be dropped without a trace.
+ * The bar's buttons and its ring both run this long, so they agree; the room's rule is `EMOTE_COOLDOWN_MS` and stays exact (#848).
+ */
+export const EMOTE_PAGE_WAIT_MS = EMOTE_COOLDOWN_MS + 150
 /** The window of the second rule, and how many Emotes inside it may carry a sound. */
 export const EMOTE_SOUND_WINDOW_MS = 1000
 export const EMOTE_SOUNDS_PER_WINDOW = 3

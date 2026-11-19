@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { EMOTE_REDUCED_MS, EMOTE_RISE_MS, emoteRing, emoteRise } from '~/utils/motion'
-import { EMOTE_COOLDOWN_MS } from '~~/shared/emote'
+import { EMOTE_PAGE_WAIT_MS } from '~~/shared/emote'
 import { motion } from './motion'
 
 // The Emote's rise and the bar's ring (#668, 04-motion § Emote rise: „0→.15 pop, .15→.8 climb, .8→1.4 fade; reduced: pop in place 0.2, hold 0.8, fade 0.3“).
@@ -99,7 +99,7 @@ describe('the ring of the Emote bar', () => {
     expect(calls).toHaveLength(1)
     const { keyframes, options } = calls[0]!
     expect(keyframes).toEqual([{ strokeDashoffset: 0 }, { strokeDashoffset: 1 }])
-    expect(options.duration).toBe(EMOTE_COOLDOWN_MS)
+    expect(options.duration).toBe(EMOTE_PAGE_WAIT_MS)
     expect(options.easing).toBe('linear')
   })
 })
