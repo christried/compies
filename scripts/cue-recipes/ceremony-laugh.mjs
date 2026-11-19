@@ -16,7 +16,7 @@ export default {
         const layers = [0, 1, 2, 3].map((k) => {
           const base = 560 * 0.94 ** k
           const blip = osc('saw', length, t => base * 1.5 ** Math.sin(Math.PI * t / length))
-          const fade = (t) => Math.min(1, (length - t) / 0.012)
+          const fade = t => Math.min(1, (length - t) / 0.012)
           return [shape(svf(blip, 'low', 2600, 0.9), t => pluckEnv(0.002, 0.045)(t) * fade(t)), k * 0.11, 0.85 ** k]
         })
         return mix(0.5, ...layers)
