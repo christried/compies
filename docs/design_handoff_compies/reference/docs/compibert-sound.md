@@ -4,15 +4,22 @@ Template for finding or making the sounds. Style: cartoony, dry and short, table
 
 Delivery: 48 kHz, mono (stereo only where noted), peaks ≤ −1 dBTP, `.ogg` + `.m4a`. File names = the cue id.
 
+**Deviation (0.17, #740):** the cue files of this Release ship as mono 16-bit PCM WAV at 44.1 kHz, peaks about −1 dBFS, not `.ogg` + `.m4a` at 48 kHz; `cer-fanfare` and `cer-crowd` are mono, not stereo. The format is in `05-assets.md` § Sound cues.
+
 **Relative volume** (Vol) is relative to the loudest cue, the fanfare = 100. Mix bus: `sfx` (UI + moments) and `cb` (Compibert voice), both behind one global mute.
+
+**Deviation (0.17, #671, #746, #747):** one bus, not `sfx` and `cb`: every cue, the Compibert voice's too, goes through the one bus, with no master volume (`app/utils/cue-player.ts`).
 
 ## Rules
 - **Global mute** in the header, stored per device. Muted = silence, animation unchanged.
 - **First interaction gate:** nothing plays before the first tap or keypress (browser autoplay).
 - **Room limit:** max 3 emote sounds per second for the whole room; extras play silent. Own emotes at full volume, other people's at 60 %.
 - **Ducking:** fanfare and reveal stingers duck everything else by −6 dB while they play.
+- **Deviation (0.17, #718):** not built. No cue ducks the others, and the Clip does not get quieter under a cue; that ducking is #670, an Idea.
 - **Variants:** where there are 3, pick at random, never the same one twice in a row. Pitch ±2 semitones on all UI cues.
+- **Deviation (0.17, #740):** one file per cue id, no variants: `cb-hi` one file, `cb-yay` one file for the wheel and the Tour's end, `cb-hype` and `cb-gulp` one file each. No random pitch: no UI cue is built, and the one playback rate is `cer-row`'s rise, a semitone a place.
 - **Reduced motion** keeps sound, but loops become single hits (drumroll → one hit, steps → one step).
+- **Deviation (0.17, #671, #669, #741, #742, #743, #744, #747):** reduced motion keeps less of the sound, per moment: at the wheel only the cheer (`cb-yay`); the Coin flip its landing and its result; the Standings the swap and the winner, no ticks; the Award ceremony only its fanfare, when the end frame shows; the drag its three; the Tour its two. Under full motion a Tie plays its sounds too (`12-siegerehrung-unentschieden.md`).
 - **Server-timed moments** (wheel, veto, reveal, coin): cues are scheduled against server time so everyone hears the stop at the same moment.
 
 ## Cues
@@ -86,3 +93,11 @@ Delivery: 48 kHz, mono (stereo only where noted), peaks ≤ −1 dBTP, `.ogg` + 
 | | `sys-reconnect` | connection back: up-blip | 0.3 s | 30 |
 
 Not sounded: idle, look, blink, breathing, eye-follow, header logo, smoke, scroll.
+
+**Deviation (0.17, #747, #671):** `cb-hi` is the Tour's greeting chirp, played when the greeting step shows, not the boot's (the boot splash's sounds, #674, are an Idea and not built). One file, no variants. `cb-hype`, `cb-gulp` and `cb-yay` are one file each: `cb-yay` is the wheel's cheer and the Tour's end step, not „yay ×3“.
+
+**Deviation (0.17, #743):** `boot-steps` + `cer-trophy-rattle` is `cer-run`, one 0.7 s file, the run's length (`CEREMONY_RUN_MS`, `shared/ceremony.ts`).
+
+**Deviation (0.17, #746):** `cb-laugh` is a new id with no row in this table: Vol 40, 0.5 s, played when Compibert gets up after the trophy lands. Its length and Vol are pinned in `test/unit/ceremony-laugh-cues.test.ts`.
+
+**Not built in 0.17:** the cues this Release leaves out are listed once, in `05-assets.md` § Sound cues. Their rows above are not built.
