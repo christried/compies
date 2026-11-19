@@ -22,9 +22,9 @@ import { MEMBER_TOUR } from '~~/shared/tour'
 export const CANDIDATE_BASE = '/_dev/cue-candidates'
 
 /**
- * What the brief says of each cue: the Cue column of `reference/docs/compibert-sound.md`, word for word where the document has a clean row (a
- * unit test reads the doc). The length is `CUE_LENGTHS`, shared with the file test and the generator (#740). A new cue's row goes under its
- * group's line.
+ * What the brief says of each cue's character (one `{ character }` object each): the Cue column of `reference/docs/compibert-sound.md`, word for
+ * word where the document has a clean row (a unit test reads the doc), except `cb-hi`, which ships one file where the row says „3 variants“. The
+ * length is `CUE_LENGTHS`, shared with the file test and the generator (#740). A new cue's row goes under its group's line.
  */
 export const CUE_BRIEF: Record<CueId, { character: string }> = {
   // wheel
@@ -67,11 +67,12 @@ export const CUE_BRIEF: Record<CueId, { character: string }> = {
   'cer-crowd': { character: 'stereo cheer under the fanfare' },
   'cb-laugh': { character: 'Compibert gets up and laughs after the trophy lands, wordless' },
   // tour
-  'cb-hi': { character: 'short happy chirp, 3 variants' },
+  'cb-hi': { character: 'short happy chirp, one file' },
 }
 
 /**
- * Where a cue sounds in a real Event: in a spin, in a Veto window, or at the arrival of a read (the own Party's cast, a stamp). A new moment is
+ * Where a cue sounds in a real Event: at a wheel spin, a Veto window or the arrival of a read (the own Party's cast, a stamp), in Compibert's
+ * voice, at the Coin flip, the Standings, the Game board's drag, the Award ceremony or the Tour. A new moment is
  * a member here (a union takes no group lines, so it is the one line two tickets may both touch), a `MOMENT_LABEL` row and a runner in the
  * page's `MOMENT_RUNNERS`, under its group's line.
  */

@@ -1,5 +1,5 @@
 import type { EventView } from '~~/shared/event'
-import { MEMBER_TOUR, TOUR_CALM_MS, tourMayStart, tourRun, type TourStartInput, type TourStep } from '~~/shared/tour'
+import { MEMBER_TOUR, TOUR_CALM_MS, tourMayStart, tourRun, tourStartInputOf, type TourStartInput, type TourStep } from '~~/shared/tour'
 
 // The Tour's running on a page (#647, spec #622, ADR 0017): when it starts, when it ends by itself, and what finishing or skipping saves. The rules
 // are `shared/tour.ts`'s pure functions; this reads their inputs from the page. Each device decides for itself and nothing goes to the room (ADR 0013):
@@ -37,17 +37,7 @@ export function useTour(options: {
   let timer: ReturnType<typeof setTimeout> | undefined
 
   const layerOpen = computed(() => busy.value || options.clipShown())
-  const input = computed<TourStartInput>(() => {
-    const view = options.view()
-    return {
-      storedVersion: stored.value,
-      role: view?.event.isHost ? 'host' : 'member',
-      phase: view?.event.phase ?? null,
-      sessionRunning: view ? view.runningSessionId !== null : false,
-      layerOpen: layerOpen.value,
-      calmFor: calmFor.value,
-    }
-  })
+  const input = computed<TourStartInput>(() => tourStartInputOf(options.view(), stored.value, layerOpen.value, calmFor.value))
 
   function clearTimer() {
     clearTimeout(timer)

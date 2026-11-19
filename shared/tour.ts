@@ -111,6 +111,28 @@ export function tourMayStart(input: TourStartInput): boolean {
     && input.calmFor >= TOUR_CALM_MS
 }
 
+/** What the start rule reads of the Event read: `EventView` has it (`shared/` imports nothing of `app/`, and `event.ts` is not needed for three fields). */
+export interface TourStartView {
+  event: { isHost: boolean, phase: Phase }
+  runningSessionId: string | null
+}
+
+/**
+ * The start rule's inputs from the Event read (#829, review S2): the one place that maps the read to `TourStartInput`, so the Tour (`useTour`) and
+ * the files the cue player requests for it (`useCuePlayer`) cannot drift when the rule gains an input. No read (not loaded, deleted, not readable)
+ * gives a Member on no Event; the two values the page itself holds come in as they are.
+ */
+export function tourStartInputOf(view: TourStartView | null | undefined, storedVersion: number | null, layerOpen: boolean, calmFor: number): TourStartInput {
+  return {
+    storedVersion,
+    role: view?.event.isHost ? 'host' : 'member',
+    phase: view?.event.phase ?? null,
+    sessionRunning: view != null && view.runningSessionId !== null,
+    layerOpen,
+    calmFor,
+  }
+}
+
 /** One move of a run of `count` steps standing at `at`: the next index, or how the Tour is over. */
 export function tourMove(count: number, at: number, action: 'next' | 'back' | 'skip'): { at: number } | { over: 'finished' | 'skipped' } {
   if (action === 'skip') return { over: 'skipped' }
