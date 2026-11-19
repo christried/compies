@@ -36,6 +36,7 @@ Where the build differs from this note. The spec is #622, the decisions are ADR 
 - **Deviation (0.15, #647):** the ConnectionBanner „lost“ start condition is not built. The start rule is the spec's: not while a sheet, dialog, menu or Clip is open, while a Session runs, for the Host or on a finished Event, and only after the page has been calm for a second (`shared/tour.ts`).
 - **Deviation (0.15, #622, story 28):** „Überspringen“ stays on the last step beside „Fertig“; the note removes it on step 8.
 - **Deviation (0.15, #622):** names. The controller is `TourLayer` (the note's `EventTour`); it emits `over('finished' | 'skipped')`, not `done({skipped, at})`; the step keys are `greeting`, `head`, `poll`, `board` (with `boardOpen` and `boardLocked`), `how`, `activity`, `tabs`, `sound` and `end` (the note's `hallo`, `ende`, `feed`, `ton`); the Profil's button reads „Wiederholen“ in the row „Rundgang“.
+- **Deviation (0.18, #766):** step 6 (`activity`, the note's `feed`) opens the side panel's „Aktivität“ tab while it shows, because the panel opens on „Chat“ from 0.18. The hook is `TourStep.panelTab` and `TourLayer`'s `show` event; the page switches its own tab, and the Member's tab comes back when the Tour leaves the step or ends. The Tour has no step for the Chat, and `TOUR_VERSION` stays 1.
 
 ---
 

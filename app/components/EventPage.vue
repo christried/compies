@@ -8,6 +8,7 @@ import { dateBlockedKey, eventPageState, headerPill, waitsForCeremony, wearsPart
 import { historyCorrections } from '~/utils/history-corrections'
 import { emoteCue, type Cue } from '~/utils/sound-cues'
 import type { EmoteId } from '~~/shared/emote'
+import type { TourStep } from '~~/shared/tour'
 import { datePollOpen, sessionsEditable } from '~~/shared/event'
 
 // The Event link (`/e/<slug>`, ADR 0006) in the event shell (screen M3): useEventView loads the Event (live, #156), the stage is the
@@ -164,6 +165,24 @@ const { news } = useStandingsNews(data, slug)
 // drawing one: `covered` is the one flag for both, since the Tour's layer, like the Clip, stays usable in the `layers` slot.
 const tour = useTour({ view: () => data.value, clipShown: () => clipShown.value, wide: () => wide.value === true })
 const covered = computed(() => clipShown.value || tour.shown.value)
+
+// The Tour's Aktivität step shows the Aktivität tab (#766): the Member's own tab is put back when the Tour leaves the step or ends. The page behind is inert
+// while the Tour shows, so the Member cannot change the tab meanwhile.
+let tabBeforeTour: string | null = null
+function tourShows(step: TourStep) {
+  if (step.panelTab === undefined) return restoreTab()
+  tabBeforeTour ??= panelTab.value
+  panelTab.value = step.panelTab
+}
+function restoreTab() {
+  if (tabBeforeTour === null) return
+  panelTab.value = tabBeforeTour
+  tabBeforeTour = null
+}
+// Every end of the Tour, the ones by itself too (a Session starts, the Event goes), which send no `over`.
+watch(() => tour.shown.value, (isShown) => {
+  if (!isShown) restoreTab()
+})
 </script>
 
 <template>
@@ -457,6 +476,7 @@ const covered = computed(() => clipShown.value || tour.shown.value)
         :open="tour.shown.value"
         :steps="tour.run.value"
         @over="tour.over"
+        @show="tourShows"
       />
 
       <!-- The Host has the dock in every Phase; in a finished Event it holds Siegerehrung starten and Einladen (#277, #309). -->

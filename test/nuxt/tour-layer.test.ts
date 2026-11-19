@@ -124,6 +124,47 @@ describe('the steps', () => {
   })
 })
 
+describe('which step shows (#766)', () => {
+  /** Greeting, the Aktivität step and the end: the page below it opens the panel's tab on the step it is told. */
+  const ACTIVITY: readonly TourStep[] = MEMBER_TOUR.filter(step => ['greeting', 'activity', 'end'].includes(step.id))
+  const ids = () => (page!.emitted('show') ?? []).map(([step]: unknown[]) => (step as TourStep).id)
+
+  it('says each step once as it shows, in order, to the end', async () => {
+    host({ left: 40, top: 20, width: 300, height: 80 }, '14px', 'panel')
+    await mount(true, ACTIVITY)
+    await click('Weiter')
+    await click('Weiter')
+
+    expect(ids()).toEqual(['greeting', 'activity', 'end'])
+  })
+
+  it('carries the step\'s own panel tab in what it says', async () => {
+    host({ left: 40, top: 20, width: 300, height: 80 }, '14px', 'panel')
+    await mount(true, ACTIVITY)
+    await click('Weiter')
+
+    expect((page!.emitted('show')!.at(-1)![0] as TourStep).panelTab).toBe('activity')
+  })
+
+  it('says nothing more when the window is resized and the same step is placed again', async () => {
+    host({ left: 40, top: 20, width: 300, height: 80 }, '14px', 'panel')
+    await mount(true, ACTIVITY)
+    await click('Weiter')
+    await vi.waitFor(() => expect(holeOf().left).toBe(32))
+
+    window.dispatchEvent(new Event('resize'))
+    await flushPromises()
+
+    expect(ids()).toEqual(['greeting', 'activity'])
+  })
+
+  it('says nothing while closed', async () => {
+    await mount(false, ACTIVITY)
+
+    expect(page!.emitted('show')).toBeUndefined()
+  })
+})
+
 describe('the keys', () => {
   it('skips on Escape', async () => {
     await mount()
