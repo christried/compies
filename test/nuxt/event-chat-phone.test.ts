@@ -200,7 +200,7 @@ describe('the Chat view of a finished Event', () => {
 })
 
 describe('the side panel from 980 px', () => {
-  it('is unchanged: its tabs are Chat, Aktivität, Tabelle with no count, and a Message counts nothing', async () => {
+  it('has its tabs Chat, Aktivität, Tabelle and no count on the Chat it shows', async () => {
     const { page } = await mountLive({ wide: true })
 
     await arrives(LARSI)

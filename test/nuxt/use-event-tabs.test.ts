@@ -9,7 +9,7 @@ import { restoreScreen, stubScreen } from './event-page'
 
 // The Event page's phone tabs and side panel tabs (#257, B2): one table says which tabs exist, and the state of the views
 // lives in useEventTabs. A phone counts what the Activity feed receives while the Event view is shown; the side panel from md
-// up shows the feed and counts nothing. The room is a fake that keeps its handlers, so a test fires `activity.added`.
+// up counts by the same rule (#778). The room is a fake that keeps its handlers, so a test fires `activity.added`.
 
 function fakeRoom() {
   const handlers = new Map<string, (payload?: unknown) => void>()
@@ -24,12 +24,12 @@ function fakeRoom() {
   }
 }
 
-async function setUp() {
+async function setUp(viewer: string | undefined = 'me') {
   const { fire, room } = fakeRoom()
   let tabs: ReturnType<typeof useEventTabs> | undefined
   await mountSuspended(defineComponent({
     setup() {
-      tabs = useEventTabs(room, () => 'me')
+      tabs = useEventTabs(room, () => viewer)
       return () => null
     },
   }))
@@ -122,21 +122,21 @@ describe('useEventTabs', () => {
     expect(tabs().activeView.value).toBe('event')
   })
 
-  it('counts nothing in the side panel layout, and starts a narrow screen at zero', async () => {
+  it('counts the feed in the side panel, which opens on the Chat, and keeps that count when the screen narrows (#778)', async () => {
     const setWide = stubScreen(true)
     const { room, tabs } = await setUp()
 
     room.fire('activity.added')
-    expect(tabs().unread.activity).toBe(0)
+    expect(tabs().unread.activity).toBe(1)
 
     setWide(false)
     await nextTick()
-    expect(tabs().unread.activity).toBe(0)
-    room.fire('activity.added')
     expect(tabs().unread.activity).toBe(1)
+    room.fire('activity.added')
+    expect(tabs().unread.activity).toBe(2)
   })
 
-  it('clears the count when the screen becomes wide', async () => {
+  it('clears the count of the tab the screen shows when it becomes wide, and keeps the other (#778)', async () => {
     const setWide = stubScreen(false)
     const { room, tabs } = await setUp()
 
@@ -145,7 +145,7 @@ describe('useEventTabs', () => {
     setWide(true)
     await nextTick()
 
-    expect(tabs().unread.activity).toBe(0)
+    expect(tabs().unread.activity).toBe(1)
     expect(tabs().unread.chat).toBe(0)
     expect(tabs().wide.value).toBe(true)
   })
@@ -195,7 +195,7 @@ describe('useEventTabs', () => {
       expect(tabs().unread.chat).toBe(1)
     })
 
-    it('counts nothing on a wide screen', async () => {
+    it('counts no Message while the panel shows the Chat', async () => {
       stubScreen(true)
       const { room, tabs } = await setUp()
 
@@ -213,6 +213,57 @@ describe('useEventTabs', () => {
 
       expect(tabs().unread.chat).toBe(1)
     })
+  })
+})
+
+// The side panel counts by the rule of the phone's bar (#778): one function decides which tab is shown, on either layout.
+describe('the side panel counts (#778)', () => {
+  it('gives the feed a badge and an accessible name, and Tabelle none', async () => {
+    stubScreen(true)
+    const { room, tabs } = await setUp()
+
+    room.fire('activity.added')
+
+    expect(tabs().panelTabs.value[1]).toMatchObject({ key: 'activity', badge: 1, ariaLabel: 'Aktivität, 1 neu' })
+    expect(tabs().panelTabs.value[0]).toMatchObject({ key: 'chat', badge: 0, ariaLabel: undefined })
+    expect(tabs().panelTabs.value[2]).toMatchObject({ key: 'standings' })
+    expect(tabs().panelTabs.value[2]).not.toHaveProperty('badge')
+  })
+
+  it('clears the count of a tab the panel switches to, at once, and counts the Chat meanwhile', async () => {
+    stubScreen(true)
+    const { room, tabs } = await setUp()
+    room.fire('activity.added')
+
+    tabs().panelTab.value = 'activity'
+
+    expect(tabs().unread.activity).toBe(0)
+    room.fire('activity.added')
+    expect(tabs().unread.activity).toBe(0)
+    room.fire('chat.added', { message: { writerId: 'other' } })
+    expect(tabs().unread.chat).toBe(1)
+  })
+
+  it('clears the Chat\'s count when the panel shows it again, as the Tour\'s restore does', async () => {
+    stubScreen(true)
+    const { room, tabs } = await setUp()
+    tabs().panelTab.value = 'activity'
+    room.fire('chat.added', { message: { writerId: 'other' } })
+    expect(tabs().unread.chat).toBe(1)
+
+    tabs().panelTab.value = 'chat'
+
+    expect(tabs().unread.chat).toBe(0)
+  })
+
+  it('does not count the viewer\'s own Message', async () => {
+    stubScreen(true)
+    const { room, tabs } = await setUp('me')
+    tabs().panelTab.value = 'activity'
+
+    room.fire('chat.added', { message: { writerId: 'me' } })
+
+    expect(tabs().unread.chat).toBe(0)
   })
 })
 
