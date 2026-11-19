@@ -661,6 +661,26 @@ describe('the log', () => {
   })
 })
 
+describe('the volume of a log line', () => {
+  it('is the gain of the cue\'s volume for a plan cue, scheduled, late or skipped (#770)', async () => {
+    const { player } = setup()
+
+    player.setPlan([cue('wheel-stop', 2000), cue('wheel-tick', 500)])
+    await settle()
+
+    expect(player.log.map(entry => [entry.id, entry.volume])).toEqual([['wheel-stop', 0.7], ['wheel-tick', 0.3]])
+  })
+
+  it('is what a skipped plan cue would have had (#770)', async () => {
+    const { player } = setup({ loadFile: () => Promise.reject(new Error('404')) })
+
+    player.setPlan([cue('wheel-stop', 2000)])
+    await settle()
+
+    expect(player.log.map(entry => [entry.outcome, entry.volume])).toEqual([['skipped', 0.7]])
+  })
+})
+
 describe('dispose', () => {
   it('stops everything, and a later plan does nothing', async () => {
     const { context, player } = setup()
@@ -828,5 +848,70 @@ describe('playNow', () => {
     player.playNow('veto-seal')
 
     expect(context.started()).toEqual([])
+  })
+
+  it('plays at the volume of its cue times a per-play factor, and logs that volume (#770)', async () => {
+    const { context, player } = setup()
+    player.preload(['emo-clap', 'emo-roar'])
+    await settle()
+
+    player.playNow('emo-clap', 0, 0.6)
+    player.playNow('emo-roar', 0, 0.6)
+    player.playNow('emo-clap')
+
+    const [clap, roar, own] = context.started()
+    expect(clap!.gain).toBeCloseTo(0.27, 6)
+    expect(roar!.gain).toBeCloseTo(0.33, 6)
+    expect(own!.gain).toBeCloseTo(0.45, 6)
+    expect(player.log.map(entry => [entry.id, entry.outcome])).toEqual([['emo-clap', 'scheduled'], ['emo-roar', 'scheduled'], ['emo-clap', 'scheduled']])
+    expect(player.log[0]!.volume).toBeCloseTo(0.27, 6)
+    expect(player.log[2]!.volume).toBeCloseTo(0.45, 6)
+  })
+
+  it('plays nothing and logs nothing with a factor while Ton is off (#770)', async () => {
+    const { context, player } = setup({ enabled: false })
+    player.preload(['emo-clap'])
+    await settle()
+
+    player.playNow('emo-clap', 0, 0.6)
+
+    expect(context.started()).toEqual([])
+    expect(player.log).toEqual([])
+  })
+
+  it('logs a suspended context\'s cue skipped with the volume it would have had (#770)', async () => {
+    const { context, player } = setup()
+    player.preload(['emo-clap'])
+    await settle()
+    context.state = 'suspended'
+
+    player.playNow('emo-clap', 0, 0.6)
+
+    expect(context.started()).toEqual([])
+    expect(player.log).toHaveLength(1)
+    expect(player.log[0]).toMatchObject({ id: 'emo-clap', outcome: 'skipped' })
+    expect(player.log[0]!.volume).toBeCloseTo(0.27, 6)
+  })
+
+  it('leaves a spin\'s plan as it was: the same sources and log lines, and the same plan again stops nothing of the Emote (#770)', async () => {
+    const { context, player } = setup()
+    player.preload(['emo-clap'])
+    const plan = [cue('wheel-tick', 500), cue('wheel-stop', 900)]
+    player.setPlan(plan)
+    await settle()
+    const sourcesBefore = context.started().map(source => [source.id, source.gain, source.stopCalls])
+    const linesBefore = player.log.map(entry => ({ ...entry }))
+
+    player.playNow('emo-clap', 0, 0.6)
+
+    expect(context.started().slice(0, 2).map(source => [source.id, source.gain, source.stopCalls])).toEqual(sourcesBefore)
+    expect(player.log.slice(0, 2)).toEqual(linesBefore)
+    expect(player.log.at(-1)).toMatchObject({ id: 'emo-clap', outcome: 'scheduled' })
+
+    player.setPlan(plan)
+
+    const emote = context.started().find(source => source.id === 'emo-clap')!
+    expect(emote.stopCalls).toBe(0)
+    expect(context.started()).toHaveLength(3)
   })
 })

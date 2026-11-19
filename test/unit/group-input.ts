@@ -12,6 +12,7 @@ export const groupInput = (over: Partial<GroupInput> = {}): GroupInput => ({
   toss: false,
   standings: false,
   board: false,
+  emote: false,
   finished: false,
   tour: false,
   ...over,

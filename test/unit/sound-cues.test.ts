@@ -1,12 +1,13 @@
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
+import { EMOTE_IDS } from '~~/shared/emote'
 import type { SpinView, VetoView } from '~~/shared/stage'
 import { CUE_LENGTHS } from '../../app/utils/cue-lengths'
 import { groupInput } from './group-input'
 import { pinCrossings } from '../../app/utils/wheel-pins'
 import {
-  ARRIVAL_LATE_MS, CUE_GROUPS, CUE_IDS, CUE_VOLUME, STAMP_GAP_MS, TICK_MIN_GAP_MS, cueFilesOf, reachableGroups, thinTicks, vetoArrivalCues, vetoCuePlan, wheelCuePlan,
+  ARRIVAL_LATE_MS, CUE_GROUPS, CUE_IDS, CUE_VOLUME, EMOTE_CUE, OTHERS_EMOTE_VOLUME, STAMP_GAP_MS, TICK_MIN_GAP_MS, cueFilesOf, emoteCue, reachableGroups, thinTicks, vetoArrivalCues, vetoCuePlan, wheelCuePlan,
   type ArrivalCue, type Cue, type CueGroup, type CueId, type GroupInput, type VetoArrivalState, type VetoCueInput, type WheelCueInput,
 } from '../../app/utils/sound-cues'
 
@@ -488,6 +489,39 @@ describe('vetoArrivalCues', () => {
   })
 })
 
+// The Emote's cue (#770, spec #719 § C): a pure rule of the message's own fields and the server's now; Ton is the player's gate, not this rule's.
+describe('emoteCue', () => {
+  const NOW = START
+  const heard = (over: Partial<Parameters<typeof emoteCue>[0]> = {}) => emoteCue({ emote: 'clap', sound: true, own: false, serverTime: NOW, now: NOW, ...over })
+
+  it.each([
+    ['clap', 'emo-clap'], ['tears', 'emo-haha'], ['angry', 'emo-grr'], ['roar', 'emo-roar'],
+  ] as const)('maps %s to %s', (emote, id) => {
+    expect(heard({ emote })).toEqual({ id, volume: OTHERS_EMOTE_VOLUME })
+  })
+
+  it('has a cue for every Emote, each its own', () => {
+    expect(Object.keys(EMOTE_CUE).sort()).toEqual([...EMOTE_IDS].sort())
+    expect(new Set(Object.values(EMOTE_CUE)).size).toBe(EMOTE_IDS.length)
+  })
+
+  it('plays the own Emote at full volume and another Member\'s at 60 %', () => {
+    expect(heard({ own: true })!.volume).toBe(1)
+    expect(heard({ own: false })!.volume).toBe(0.6)
+  })
+
+  it('is silent when the room marked the Emote without a sound, the own one too', () => {
+    expect(heard({ sound: false })).toBeNull()
+    expect(heard({ sound: false, own: true })).toBeNull()
+  })
+
+  it('plays an Emote exactly 2000 ms old, not one 2001 ms old, and one stamped ahead of now', () => {
+    expect(heard({ serverTime: NOW - ARRIVAL_LATE_MS })).not.toBeNull()
+    expect(heard({ serverTime: NOW - ARRIVAL_LATE_MS - 1 })).toBeNull()
+    expect(heard({ serverTime: NOW + 5000 })).not.toBeNull()
+  })
+})
+
 describe('the cue ids and their volumes', () => {
   it('are distinct ids', () => {
     expect(new Set(CUE_IDS).size).toBe(CUE_IDS.length)
@@ -530,7 +564,7 @@ describe('the cue ids and their volumes', () => {
 // plan and files (#829).
 describe('reachableGroups', () => {
   /** A group's place in the order of the `CueGroup` union, which `reachableGroups` returns ascending. A new group is a compile error until it has one. */
-  const PLACE: Record<CueGroup, number> = { wheel: 0, veto: 1, coin: 2, standings: 3, board: 4, ceremony: 5, tour: 6 }
+  const PLACE: Record<CueGroup, number> = { wheel: 0, veto: 1, coin: 2, standings: 3, board: 4, ceremony: 5, tour: 6, emote: 7 }
 
   /** Each case is a read with its flags and the groups it reaches: every group has one row where only its own flag is on. */
   const ROWS: [name: string, over: Partial<GroupInput>, reached: CueGroup[]][] = [
@@ -544,6 +578,7 @@ describe('reachableGroups', () => {
     ['the Game board\'s flag', { board: true }, ['board']],
     ['a finished Event', { finished: true }, ['ceremony']],
     ['the Tour\'s flag', { tour: true }, ['tour']],
+    ['the Emote\'s flag', { emote: true }, ['emote']],
   ]
 
   it.each(ROWS)('reaches exactly the right groups with %s', (_name, over, reached) => {
@@ -559,7 +594,7 @@ describe('reachableGroups', () => {
   })
 
   it('returns every group, in the order of the union, once, with every flag on', () => {
-    const all = reachableGroups(groupInput({ wheel: true, vetoAllowance: 2, vetoWindow: true, sessionRunning: true, toss: true, standings: true, board: true, finished: true, tour: true }))
+    const all = reachableGroups(groupInput({ wheel: true, vetoAllowance: 2, vetoWindow: true, sessionRunning: true, toss: true, standings: true, board: true, emote: true, finished: true, tour: true }))
 
     expect(all).toEqual(Object.keys(PLACE).sort((a, b) => PLACE[a as CueGroup] - PLACE[b as CueGroup]))
   })
@@ -579,7 +614,7 @@ describe('the input of the group rule (Secrecy)', () => {
    * which of the two it is, and a field that is neither (a game, a label, a side, an instant) has no row it could take.
    */
   const KIND = {
-    wheel: 'flag', vetoAllowance: 'count', vetoWindow: 'flag', sessionRunning: 'flag', toss: 'flag', standings: 'flag', board: 'flag', finished: 'flag', tour: 'flag',
+    wheel: 'flag', vetoAllowance: 'count', vetoWindow: 'flag', sessionRunning: 'flag', toss: 'flag', standings: 'flag', board: 'flag', emote: 'flag', finished: 'flag', tour: 'flag',
   } satisfies Record<keyof GroupInput, 'flag' | 'count'>
 
   it('holds only flags and one count, and every field of the type has a row', () => {
@@ -613,6 +648,11 @@ describe('cueFilesOf', () => {
     const both = CUE_IDS.filter(id => CUE_GROUPS[id].includes('wheel') || CUE_GROUPS[id].includes('veto'))
     expect(cueFilesOf(['wheel', 'veto'])).toEqual(both)
     expect(cueFilesOf(['veto', 'wheel'])).toEqual(both)
+  })
+
+  it('is the four Emote cues in the order of CUE_IDS for the Emote\'s group, each only there (#770)', () => {
+    expect(cueFilesOf(['emote'])).toEqual(['emo-clap', 'emo-haha', 'emo-grr', 'emo-roar'])
+    for (const id of cueFilesOf(['emote'])) expect(CUE_GROUPS[id]).toEqual(['emote'])
   })
 
   it('is empty for no group', () => {

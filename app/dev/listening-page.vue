@@ -176,6 +176,12 @@ async function tourVoice() {
   for (const cue of tourVoiceCues()) armed.playNow(cue.id, cue.delayMs)
 }
 
+/** The test Emote (#770): the cue through the real player, at the volume of the viewer's own Emote. */
+async function emoteRun(id: CueId) {
+  if (!await ensureContext() || !armed) return
+  armed.playNow(id)
+}
+
 /** A test ceremony (#743): the REAL plan of one Winner of four Parties on the player's ceremony source, sound only; the gag is the one of the cue's own button. */
 async function startCeremony(id: CueId) {
   if (!await ensureContext() || !armed) return
@@ -201,6 +207,8 @@ const MOMENT_RUNNERS: Record<Moment, (id: CueId) => void> = {
   ceremony: id => void startCeremony(id),
   // tour
   tour: () => void tourVoice(),
+  // emote
+  emote: id => void emoteRun(id),
 }
 
 /** The cue's default moment with the current controls (a spin, a window, for `veto-seal` the own cast), after the controls its row of `MOMENT_SETUP` sets. */

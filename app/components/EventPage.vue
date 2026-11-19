@@ -6,7 +6,7 @@ import { ceremonyAwaitsSound } from '~/utils/ceremony'
 import { stageInstants, stageUnsettled } from '~/utils/event-stage'
 import { dateBlockedKey, eventPageState, headerPill, waitsForCeremony, wearsPartyhat } from '~/utils/event-page'
 import { historyCorrections } from '~/utils/history-corrections'
-import type { Cue } from '~/utils/sound-cues'
+import { emoteCue, type Cue } from '~/utils/sound-cues'
 import type { EmoteId } from '~~/shared/emote'
 import { datePollOpen, sessionsEditable } from '~~/shared/event'
 
@@ -36,6 +36,13 @@ const cues = useCuePlayer({
 })
 // What this device shows is heard through the same player (#741): the Standings' sequence asks for its sounds with the function handed down here.
 provideImmediateCue(cues.playNow)
+// An Emote is heard through the same player (#770): its cue is the rule `emoteCue`'s, at the volume it gives, and the player's own Ton and context gates
+// apply. The handler calls it first, before anything that may keep the rise from being drawn (#769): the reaction is heard with the board covered, the
+// avatar scrolled away or the tab hidden.
+const playEmoteCue = (message: { userId: string, emote: EmoteId, sound: boolean, serverTime: number }) => {
+  const heard = emoteCue({ emote: message.emote, sound: message.sound, own: message.userId === data.value?.viewerId, serverTime: message.serverTime, now: serverClock.now() })
+  if (heard) cues.playNow(heard.id, 0, heard.volume)
+}
 const onlineState = (userId: string) => (presence.known.value ? presence.isOnline(userId) : undefined)
 
 useHead({ title: () => data.value?.event.name })
@@ -90,9 +97,9 @@ room.on('veto.cast', () => void refresh())
 // `serverTime`, no instant ahead (spec § C). An Emote never reaches Nuxt: it writes no Activity entry and no read changes. Compibert does not react (#673).
 const { rising, rise, done: riseDone } = useRisingEmotes()
 room.on('emote.sent', (message) => {
+  playEmoteCue(message)
   // #769: whether the board is covered, the avatar scrolled away or the tab hidden decides here, before the rise.
   rise(message.userId, message.emote)
-  // #770 plays the Emote's cue here, from `message.sound`, drawn or not. Nobody reads `sound` yet.
 })
 const sendEmote = (emote: EmoteId) => room.send({ type: 'emote.send', emote })
 // A Message that arrives: #761 adds it to the Chat by id. Listened for from #758 on, since room-listeners.test.ts wants a page listener per message type.

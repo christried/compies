@@ -1,6 +1,7 @@
 import type { ClipView, SpinView, StandingView, VetoDrawView } from '~~/shared/stage'
 import { ceremonyTimeline, type RunShape } from '~~/shared/ceremony'
 import { COIN_DURATION_MS, COIN_LAND_AT, COIN_SPIN_AT, type CoinToss } from '~~/shared/coin'
+import type { EmoteId } from '~~/shared/emote'
 import { msOf } from '~~/shared/instant'
 import { countTicks } from './count-up'
 import { pointsDelta, rankMoves } from './standings-news'
@@ -39,10 +40,12 @@ export const CUE_VOLUME: Record<CueId, number> = {
   'cb-laugh': 40,
   // tour
   'cb-hi': 50,
+  // emote
+  'emo-clap': 45, 'emo-haha': 45, 'emo-grr': 45, 'emo-roar': 55,
 }
 
 /** The moments whose cue files an Event page requests together (#740): each has its flag in `GroupInput` and its rule in `reachableGroups`. */
-export type CueGroup = 'wheel' | 'veto' | 'coin' | 'standings' | 'board' | 'ceremony' | 'tour'
+export type CueGroup = 'wheel' | 'veto' | 'coin' | 'standings' | 'board' | 'ceremony' | 'tour' | 'emote'
 
 /** The groups a cue's file is requested for, at least one: a cue that two moments play (a voice cue) names both, and its file comes once. */
 export const CUE_GROUPS: Record<CueId, readonly [CueGroup, ...CueGroup[]]> = {
@@ -63,6 +66,8 @@ export const CUE_GROUPS: Record<CueId, readonly [CueGroup, ...CueGroup[]]> = {
   'cb-laugh': ['ceremony'],
   // tour
   'cb-hi': ['tour'],
+  // emote
+  'emo-clap': ['emote'], 'emo-haha': ['emote'], 'emo-grr': ['emote'], 'emo-roar': ['emote'],
 }
 
 /**
@@ -84,6 +89,8 @@ export interface GroupInput {
   standings: boolean
   /** The same rule as `standings` today: the Event is set up and not finished. The Game board's own field, so the two groups can part later (#742). */
   board: boolean
+  /** The same rule again for the Emotes' sounds (#770): the Event is set up and not finished, in its own field as `board` is of `standings`. */
+  emote: boolean
   /** `view.event.phase === 'finished'` (#743): the Award ceremony's files, whether or not the Host has started it. */
   finished: boolean
   /** The Tour may start for this Member (`tourMayStart` without the layer and the calm second, #747): a rule of the Member's own state. */
@@ -105,6 +112,7 @@ export function reachableGroups(input: GroupInput): CueGroup[] {
   // The ceremony's files depend on „the Event is finished“ and nothing else: no request may tell a Member who won, that it is a Tie or which gag (#743).
   if (input.finished) groups.push('ceremony')
   if (input.tour) groups.push('tour')
+  if (input.emote) groups.push('emote')
   return groups
 }
 
@@ -333,6 +341,23 @@ export function vetoArrivalCues(previous: VetoArrivalState | null, next: VetoArr
     for (let index = 0; index < next.revealedCount; index++) cues.push({ id: 'veto-seal', delayMs: index * STAMP_GAP_MS })
   }
   return cues
+}
+
+/** The cue of each Emote (#770); a fifth Emote fails typecheck until it has one. */
+export const EMOTE_CUE: Record<EmoteId, CueId> = { clap: 'emo-clap', tears: 'emo-haha', angry: 'emo-grr', roar: 'emo-roar' }
+/** An Emote of another Member plays at this share of its cue's volume; the own one at the full volume (#770). */
+export const OTHERS_EMOTE_VOLUME = 0.6
+
+/**
+ * The cue an `emote.sent` causes on this device (#770, spec #719 § C), mirroring `vetoArrivalCues`: none when the room marked the Emote as
+ * carrying no sound (`sound` governs the own Emote too, the fourth in a second is silent for everyone) or when it is more than `ARRIVAL_LATE_MS`
+ * old (a page that slept through it); else its cue at the full volume for the viewer's own Emote and at `OTHERS_EMOTE_VOLUME` for another's.
+ * Whether the board is in view is no input: the reaction is heard with the draw covered or the tab hidden. Ton is the player's gate, not this rule's.
+ * `now` and `serverTime` are the server's, in ms.
+ */
+export function emoteCue(input: { emote: EmoteId, sound: boolean, own: boolean, serverTime: number, now: number }): { id: CueId, volume: number } | null {
+  if (!input.sound || input.now - input.serverTime > ARRIVAL_LATE_MS) return null
+  return { id: EMOTE_CUE[input.emote], volume: input.own ? 1 : OTHERS_EMOTE_VOLUME }
 }
 
 /**
