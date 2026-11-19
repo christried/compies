@@ -2,6 +2,7 @@ import { mountSuspended, registerEndpoint } from '@nuxt/test-utils/runtime'
 import { flushPromises, type VueWrapper } from '@vue/test-utils'
 import { createError, readBody } from 'h3'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import ClipPreview from '~/components/ClipPreview.vue'
 import GameForm from '~/components/GameForm.vue'
 import RichNotesEditor from '~/components/RichNotesEditor.vue'
 import { FINE_POINTER_QUERY } from '~/composables/useMediaQuery'
@@ -119,7 +120,9 @@ describe('the game form', () => {
 
     expect(page.text()).toContain('Der Link funktioniert so nicht.')
     expect(field(page, 'YouTube-Link').attributes('aria-invalid')).toBe('true')
-    expect(page.text()).toContain('Link ungültig.')
+    // The preview box repeats nothing (#812, review S4): the field's line is the one place that names the problem.
+    expect(page.text()).not.toContain('Link ungültig.')
+    expect(page.text()).not.toContain('Kein Clip.')
     expect(page.find('[aria-label="Ausschnitt im Video"]').exists()).toBe(false)
     expect(cta(page).attributes('aria-disabled')).toBe('true')
     // The reason beside the button waits for a try (#797): the disabled button says enough until then.
@@ -129,6 +132,18 @@ describe('the game form', () => {
 
     expect(posted).not.toHaveBeenCalled()
     expect(page.get(`[id="${cta(page).attributes('aria-describedby')}"]`).text()).toBe('Erst einen gültigen YouTube-Link eintragen.')
+  })
+
+  // A gone or private video is no problem of the User's typing, so its line does not wait for a touch or a try (#812).
+  it('names a stored video the player reports as gone at once, before the field was touched', async () => {
+    const page = await mountSuspended(GameForm, { props: { game: saved } })
+
+    page.findComponent(ClipPreview).vm.$emit('error')
+    await flushPromises()
+
+    expect(page.text()).toContain('Dieses Video gibt’s nicht oder es ist privat. Prüf den Link.')
+    expect(field(page, 'YouTube-Link').attributes('aria-invalid')).toBe('true')
+    expect(page.text()).not.toContain('Kein Clip.')
   })
 
   it('shows the excerpt for a valid link with the start 1:12', async () => {
@@ -154,12 +169,12 @@ describe('the game form', () => {
       expect(spanOf(page, 'Kein Clip.').classes()).not.toContain('font-mono')
     })
 
-    it('says „Link ungültig.“ for a link that is no YouTube link, not in mono', async () => {
+    it('leaves the box without words for a link that is no YouTube link: the field says it (#812)', async () => {
       const page = await mountSuspended(GameForm)
 
       await field(page, 'YouTube-Link').setValue('https://vimeo.com/123456789')
 
-      expect(spanOf(page, 'Link ungültig.').classes()).not.toContain('font-mono')
+      expect(page.findAll('span').filter(el => ['Link ungültig.', 'Kein Clip.'].includes(el.text()))).toEqual([])
     })
 
     it('sets the excerpt line in the normal font while 0:00 keeps the row’s mono, and no sentence follows the bar', async () => {
@@ -245,7 +260,7 @@ describe('the game form', () => {
 
     await field(page, 'Länge').setValue('121')
 
-    expect(page.text()).toContain('Nur zw. 10 und 120 Sekunden möglich.')
+    expect(page.text()).toContain('Nur zwischen 10 und 120 Sekunden möglich.')
     expect(page.text()).not.toContain('max. 120 s')
   })
 
@@ -322,7 +337,7 @@ describe('the game form', () => {
         await field(page, 'Ende').setValue('5:00')
 
         expect(valueOf(page, 'Länge')).toBe('300')
-        expect(errorOf(page, 'Länge')).toBe('Nur zw. 10 und 120 Sekunden möglich.')
+        expect(errorOf(page, 'Länge')).toBe('Nur zwischen 10 und 120 Sekunden möglich.')
         expect(invalid(page, 'Start')).toBeUndefined()
         expect(invalid(page, 'Ende')).toBeUndefined()
       })
@@ -433,7 +448,7 @@ describe('the game form', () => {
       expect(valueOf(page, 'Ende')).toBe('1:17')
       expect(cta(page).attributes('aria-disabled')).toBe('true')
       expect(invalid(page, 'Länge')).toBeUndefined()
-      expect(page.text()).not.toContain('Nur zw. 10 und 120 Sekunden möglich.')
+      expect(page.text()).not.toContain('Nur zwischen 10 und 120 Sekunden möglich.')
       expect(page.find('#game-blocker').exists()).toBe(false)
       // The hints stay: a hidden error hides no hint.
       expect(page.text()).toContain('Zwei Felder reichen')
@@ -442,8 +457,8 @@ describe('the game form', () => {
       await page.get('form').trigger('submit')
 
       expect(invalid(page, 'Länge')).toBe('true')
-      expect(errorOf(page, 'Länge')).toBe('Nur zw. 10 und 120 Sekunden möglich.')
-      expect(page.get('#game-blocker').text()).toBe('Nur zw. 10 und 120 Sekunden möglich.')
+      expect(errorOf(page, 'Länge')).toBe('Nur zwischen 10 und 120 Sekunden möglich.')
+      expect(page.get('#game-blocker').text()).toBe('Nur zwischen 10 und 120 Sekunden möglich.')
     })
   })
 
@@ -1933,7 +1948,7 @@ describe('the game form: messages (#797)', () => {
 
     await page.get('form').trigger('submit')
 
-    expect(linesOf(page, 'Nur zw. 10 und 120 Sekunden möglich.').length).toBeGreaterThanOrEqual(1)
+    expect(linesOf(page, 'Nur zwischen 10 und 120 Sekunden möglich.').length).toBeGreaterThanOrEqual(1)
     expect(page.text()).not.toContain('Zwei Felder reichen')
     expect(page.text()).not.toContain('max. 120 s')
   })

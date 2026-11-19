@@ -61,7 +61,7 @@ describe('the entry pages', () => {
     const page = await mountCreate()
 
     expect(page.findComponent(EventSetupWizard).exists()).toBe(true)
-    expect(stepLabels(page)).toEqual(['Name', 'Format', 'Spieleanzahl', 'Punkte', 'Auswahlmodus', 'Spielepool', 'Termin'])
+    expect(stepLabels(page)).toEqual(['Name', 'Format', 'Anzahl Spiele', 'Punkte', 'Auswahlmodus', 'Spielepool', 'Termin'])
     expect(page.get('nav[aria-label="Schritte"]').text()).toContain('Neues Event')
   })
 
@@ -69,7 +69,7 @@ describe('the entry pages', () => {
     const { page } = await mountEditor(defaultSettings())
 
     expect(page.findComponent(EventSetupWizard).exists()).toBe(true)
-    expect(stepLabels(page)).toEqual(['Format', 'Spieleanzahl', 'Punkte', 'Auswahlmodus', 'Spielepool'])
+    expect(stepLabels(page)).toEqual(['Format', 'Anzahl Spiele', 'Punkte', 'Auswahlmodus', 'Spielepool'])
     expect(page.get('nav[aria-label="Schritte"]').text()).toContain('Einstellungen')
     expect(stepItems(page).slice(1).every(item => item.find('button').exists())).toBe(true)
   })

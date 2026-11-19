@@ -62,7 +62,7 @@ describe('construction page route guard', () => {
   it('renders the Archiv state with its own title in the hub shell', async () => {
     const page = await visit('/archiv')
 
-    expect(page.get('h1').text()).toBe('Das Archiv kommt bald. Bestimmt.')
+    expect(page.get('h1').text()).toBe('Das Archiv kommt irgendwann. Bestimmt.')
     expect(page.find('nav[aria-label="Hauptnavigation"]').exists()).toBe(true)
   })
 

@@ -291,6 +291,7 @@ function onShortcut(event: KeyboardEvent) {
           :label="t('gameEdit.youtube')"
           :help="linkHelp"
           :error="linkError"
+          :error-at-once="playerFailed"
           type="url"
           inputmode="url"
           autocomplete="off"
@@ -410,8 +411,12 @@ function onShortcut(event: KeyboardEvent) {
           class="grid aspect-video place-items-center rounded-[14px] border-(length:--cp-bw) border-line p-3 shadow-card"
           style="background-image: repeating-linear-gradient(135deg, var(--cp-paper-2) 0 14px, var(--cp-surface) 14px 28px)"
         >
-          <span class="rounded-[8px] border-2 border-line bg-surface px-2.5 py-1.5 text-center text-[12px] font-bold">
-            {{ hasLink ? t('gameEdit.noPreview') : t('gameEdit.noClip') }}
+          <!-- With a link here the link has a problem, and the field says which (#812, review S4): the box repeats nothing. -->
+          <span
+            v-if="!hasLink"
+            class="rounded-[8px] border-2 border-line bg-surface px-2.5 py-1.5 text-center text-[12px] font-bold"
+          >
+            {{ t('gameEdit.noClip') }}
           </span>
         </div>
 

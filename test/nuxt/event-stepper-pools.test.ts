@@ -147,7 +147,7 @@ describe('the pool steps', () => {
     expect(page.get('h1').text()).toContain('Schritt 6 von 7')
     expect(page.get('h1').text()).toContain('Welche Spiele?')
     expect(stepItems(page).map(item => item.text())).toEqual([
-      '✓ Name', '✓ Format', '✓ Spieleanzahl', '✓ Punkte', '✓ Auswahlmodus', '6 Spielepool', '7 Termin',
+      '✓ Name', '✓ Format', '✓ Anzahl Spiele', '✓ Punkte', '✓ Auswahlmodus', '6 Spielepool', '7 Termin',
     ])
     await next(page)
 

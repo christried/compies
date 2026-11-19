@@ -226,11 +226,13 @@
 @utility scroll-gutter { scrollbar-gutter: stable; }
 @utility hit-44 { position: relative; &::after { content: ""; position: absolute; inset: 50% auto auto 50%; width: max(100%, 44px); height: max(100%, 44px); transform: translate(-50%,-50%); } }
 /* Hover tint (#33): items inside a group, and the reduced-motion stand-in for the lift. Used as hover:tint. Stronger on Dunkel (#406). */
+/* `--cp-tint-ink` replaces the ink for a control on a fill of its own: the brand buttons darken with black, since cream on
+   Discord's and Twitch's fills in Dunkel took the white text under 4.5:1 (#792, #812). */
 @utility tint {
-  background-image: linear-gradient(color-mix(in srgb, var(--cp-ink) 8%, transparent), color-mix(in srgb, var(--cp-ink) 8%, transparent));
+  background-image: linear-gradient(color-mix(in srgb, var(--cp-tint-ink, var(--cp-ink)) 8%, transparent), color-mix(in srgb, var(--cp-tint-ink, var(--cp-ink)) 8%, transparent));
   /* Dunkel (and System on a dark device, through the variant): 8 % of cream on the dark surface read as faint (#43, finding 12, #406); 14 % reaches 1.49:1 against the resting surface where Hell has 1.18:1. */
   @variant dark {
-    background-image: linear-gradient(color-mix(in srgb, var(--cp-ink) 14%, transparent), color-mix(in srgb, var(--cp-ink) 14%, transparent));
+    background-image: linear-gradient(color-mix(in srgb, var(--cp-tint-ink, var(--cp-ink)) 14%, transparent), color-mix(in srgb, var(--cp-tint-ink, var(--cp-ink)) 14%, transparent));
   }
 }
 @utility aura {

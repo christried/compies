@@ -16,6 +16,8 @@ const props = withDefaults(defineProps<{
   help?: string
   /** The problem of the field: shown under it and marking it invalid, once it was touched or a submit was tried (#797). */
   error?: string
+  /** Shows `error` at once, untouched: for a problem the User's typing did not cause, such as a video the player reports as gone (#812). */
+  errorAtOnce?: boolean
   type?: string
   /** The maximum in characters; enables the counter. */
   maxlength?: number
@@ -39,7 +41,7 @@ const generatedId = useId()
 const inputId = computed(() => props.id ?? generatedId)
 const helpId = computed(() => `${inputId.value}-help`)
 const errorId = computed(() => `${inputId.value}-error`)
-const { message, touch } = useTouched(() => props.error)
+const { message, touch } = useTouched(() => props.error, () => (props.errorAtOnce ? true : undefined))
 // A value that moves without an input of its own (a form that follows another field, as Länge follows Ende) is touched by
 // that edit: the message of the field the User's edit hit must not wait for a blur.
 watch(() => props.modelValue, touch)
