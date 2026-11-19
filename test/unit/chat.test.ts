@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { groupMessages, mergeMessages, splitMessageText } from '~/utils/chat'
+import { groupMessages, markDeleted, mergeMessages, splitMessageText } from '~/utils/chat'
 import type { DeletedMessage, LiveMessage, Message } from '~~/shared/chat'
 
 // The Chat's pure rules (#761, spec #719 § A): the Messages of one writer within two minutes of each other sit under one name line, and a page read again merges into
@@ -84,6 +84,35 @@ describe('mergeMessages', () => {
     expect(twice).toEqual(once)
     expect(ids(once)).toEqual(['a', 'b', 'c'])
     expect(page).toHaveLength(3)
+  })
+})
+
+// A Message deleted while shown (#763): `chat.deleted` and the delete's answer turn a live Message into its line, in place.
+describe('markDeleted', () => {
+  it('replaces a live Message with its line, keeping its writer and its time', () => {
+    const marked = markDeleted([live('a', 'u1', 0, 'hello')], 'a', 'writer')
+    expect(marked).toEqual([gone('a', 'u1', 0, 'writer')])
+  })
+
+  it('keeps every other Message and the order', () => {
+    const marked = markDeleted([live('a', 'u1', 0), live('b', 'u2', 10), live('c', 'u1', 20)], 'b', 'host')
+    expect(marked).toEqual([live('a', 'u1', 0), gone('b', 'u2', 10, 'host'), live('c', 'u1', 20)])
+  })
+
+  it('leaves the list as it is for an id it does not hold', () => {
+    const held = [live('a', 'u1', 0)]
+    expect(markDeleted(held, 'zzz', 'host')).toEqual(held)
+    expect(markDeleted([], 'a', 'host')).toEqual([])
+  })
+
+  it('keeps the first deleter of a Message that is already deleted', () => {
+    expect(markDeleted([gone('a', 'u1', 0, 'host')], 'a', 'writer')).toEqual([gone('a', 'u1', 0, 'host')])
+  })
+
+  it('does not change its argument', () => {
+    const held = [live('a', 'u1', 0, 'hello'), live('b', 'u1', 5)]
+    markDeleted(held, 'a', 'writer')
+    expect(held).toEqual([live('a', 'u1', 0, 'hello'), live('b', 'u1', 5)])
   })
 })
 

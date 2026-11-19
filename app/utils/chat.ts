@@ -1,4 +1,4 @@
-import type { Message } from '~~/shared/chat'
+import type { Message, MessageDeleter } from '~~/shared/chat'
 import { notesLinkHref } from '~~/shared/notes-doc'
 
 // The Chat's pure rules (#761, spec #719 § A), kept out of `ChatPanel` so they are tested without a page.
@@ -50,6 +50,14 @@ export function mergeMessages(held: readonly Message[], incoming: readonly Messa
     if (!known || (known.text !== null && message.text === null)) byId.set(message.id, message)
   }
   return [...byId.values()].sort(byTimeThenId)
+}
+
+/**
+ * A shown Message that is deleted (#763): a live Message with that id becomes its line, keeping its writer and `at`, so it keeps its place and its group. An unknown id, or a Message
+ * that is deleted already (the first `deletedBy` stays), comes back unchanged. The argument is not changed.
+ */
+export function markDeleted(held: readonly Message[], id: string, deletedBy: MessageDeleter): Message[] {
+  return held.map(message => message.id === id && message.text !== null ? { id, writerId: message.writerId, text: null, at: message.at, deletedBy } : message)
 }
 
 /** A piece of a Message's text: plain, or a link (#762) whose `href` is the parsed address. */
