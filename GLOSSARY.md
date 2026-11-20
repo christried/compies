@@ -24,8 +24,12 @@ _Avoid_: Host role, canHost (that is a column, not the concept)
 The name a User picks for themselves and can change at any time, shown everywhere in the app; not unique, and independent of their Discord or Twitch name. A change shows in everything that already happened too: no earlier name is kept.
 _Avoid_: Username, nickname
 
+**Profile picture**:
+The round picture shown next to a User's Display name: the one they uploaded, else their picture at Discord or Twitch, else their initial. An uploaded one stays until the User removes it, whatever changes at Discord or Twitch, and anyone who has its address can load it, signed in or not (UI: Profilbild).
+_Avoid_: Avatar, user image, photo
+
 **Deleted User**:
-A User who removed themselves for good; nobody can bring them back, and signing in again makes a new User with nothing of the old one. The Events they hosted and their Game library are gone for everyone, removed outright and not kept as Deleted Events. In the Events of other Hosts they remain without a name or a picture, so Parties, Results and Winners stay whole, and everything they typed is gone: their Messages' text, their Votes with their Notes, their Team word (UI: „Konto löschen“, „Gelöschtes Konto“).
+A User who removed themselves for good; nobody can bring them back, and signing in again makes a new User with nothing of the old one. The Events they hosted and their Game library are gone for everyone, removed outright and not kept as Deleted Events. In a finished Event of another Host they stay a Player of their Party, without a name or a Profile picture, so its Results and Winners stay whole; of an Event that has not finished they are no longer a Member, and what they did there stays in the Activity feed and the Chat under no name. Everything they typed is gone: their Messages' text, their Votes with their Notes, their Team word (UI: „Konto löschen“, „Gelöschtes Konto“).
 _Avoid_: Deleted account, deactivated User, banned User, anonymous User
 
 ## Events
@@ -63,7 +67,7 @@ An Event its Host removed for good: it leaves Home for every Member at once, its
 _Avoid_: Archived (an archive is readable), cancelled, closed
 
 **Member**:
-A User who has joined an Event through its Invite link. The Host is a Member of their own Event (UI: Teilnehmende, where a Host's text means the Members other than the Host).
+A User who has joined an Event through its Invite link. The Host is a Member of their own Event. A Member cannot leave an Event themselves; a Deleted User stops being a Member of every Event that has not finished (UI: Teilnehmende, where a Host's text means the Members other than the Host).
 _Avoid_: Participant, attendee, guest
 
 **Player**:
@@ -247,7 +251,7 @@ One text a Member writes in the Chat, at most 500 characters. The Member who wro
 _Avoid_: Comment, post, Note (a Note belongs to a Vote)
 
 **Emote**:
-One of four fixed pictures a Member sends with a tap. It rises above their avatar on the Game board for every Member who has the Event open at that moment, and it is never stored. A Member can send one every two seconds (UI: Emote).
+One of four fixed pictures a Member sends with a tap. It rises above their Profile picture on the Game board for every Member who has the Event open at that moment, and it is never stored. A Member can send one every two seconds (UI: Emote).
 _Avoid_: Emoji, reaction, sticker
 
 ## During a Session
