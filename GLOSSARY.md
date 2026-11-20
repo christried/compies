@@ -6,7 +6,7 @@ COMPIES organises game nights for groups of friends: finding a date, forming tea
 
 **User**:
 Anyone who has signed in with Discord or Twitch.
-_Avoid_: Account, profile (a profile is what a User edits, not the User)
+_Avoid_: Account (UI copy says „Konto“ only where a User deletes theirs), profile (a profile is what a User edits, not the User)
 
 **Platform admin**:
 The operator, who grants and revokes the Host permission. In the app they have no rights over another User's Game library.
@@ -23,6 +23,10 @@ _Avoid_: Host role, canHost (that is a column, not the concept)
 **Display name**:
 The name a User picks for themselves and can change at any time, shown everywhere in the app; not unique, and independent of their Discord or Twitch name. A change shows in everything that already happened too: no earlier name is kept.
 _Avoid_: Username, nickname
+
+**Deleted User**:
+A User who removed themselves for good; nobody can bring them back, and signing in again makes a new User with nothing of the old one. The Events they hosted and their Game library are gone for everyone, removed outright and not kept as Deleted Events. In the Events of other Hosts they remain without a name or a picture, so Parties, Results and Winners stay whole, and everything they typed is gone: their Messages' text, their Votes with their Notes, their Team word (UI: „Konto löschen“, „Gelöschtes Konto“).
+_Avoid_: Deleted account, deactivated User, banned User, anonymous User
 
 ## Events
 
@@ -221,7 +225,7 @@ The free text a Host adds to one game for one Event, such as „heute nur Bo1“
 _Avoid_: Note (a Note belongs to a Vote), pool notes, session notes
 
 **Archived game**:
-A game the User it belongs to has put away because it can no longer be played, such as when its servers are gone. It leaves the library's list, every place a game is picked from and the Lucky Wheel of every Event that has not finished; the Rounds it was played in keep showing it, and it can be restored at any time. No game is ever deleted (UI: „Archiviert“).
+A game the User it belongs to has put away because it can no longer be played, such as when its servers are gone. It leaves the library's list, every place a game is picked from and the Lucky Wheel of every Event that has not finished; the Rounds it was played in keep showing it, and it can be restored at any time. A User never deletes a game: games go only with a Deleted User (UI: „Archiviert“).
 _Avoid_: Deleted game, hidden game, retired game
 
 **Activity feed**:
@@ -307,7 +311,7 @@ A Party on the first rank of a finished Event's final Standings: one, or several
 _Avoid_: Champion, victor, leader (a Leading Party is first while the Event still runs)
 
 **Archive**:
-A User's list of the finished Events they are a Member of, whether they played or sat on the Stands. An Event enters it at its Finish and leaves it only as a Deleted Event (UI: Archiv).
+A User's list of the finished Events they are a Member of, whether they played or sat on the Stands. An Event enters it at its Finish and leaves it only as a Deleted Event or when its Host becomes a Deleted User (UI: Archiv).
 _Avoid_: History, past Events, „Meine Sessions“ (its rows are Events), archived Event
 
 **Share image**:
