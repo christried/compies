@@ -40,3 +40,13 @@ Settled in the grilling for 0.18 „Chat“ (Idea issues #667 and #668). It adds
 - A Message of the Chat is Event state and goes the usual way: an HTTP call to Nuxt, stored in Postgres, then relayed with its text, like an Activity entry.
 
 Considered: Emotes through Nuxt as well. Rejected, because the two-second rule would need either a database write for every Emote or a counter in the memory of one of several Vercel instances, which does not hold, and because the hop (about 100–300 ms) is felt on a reaction.
+
+## Amendment, 2026-11-20: the room closes the sockets of named Users
+
+Settled in the grilling for 0.22 „Host-Werkzeuge“ (Idea issue #697) and built in 0.21, whose Deleted User needs it first (ADR 0020). It adds one ability to the room; nothing else above changes.
+
+- The Worker checks a room token once, at connect, so an open socket stays open for as long as its tab does, whatever happens to the User's membership. A User who stops being a Member (a Deleted User, or a Member the Host removed) would keep receiving the Event's messages, Messages of the Chat with their text included, would count as Online and could send Emotes.
+- Nuxt therefore tells the room, with the change that ends the membership, to send a last message to the named Users and to close their sockets. Nuxt still decides who is a Member: the room keeps no list of Members and no Event state. A closed socket cannot come back, since the token endpoint refuses a User who is no Member.
+- The call has its own shape, as the named send has, so that it fails closed: a Worker older than the shape answers 400, sends nothing and closes nothing, where a shape it half understands could send the last message to every Member. The Worker deploys before Nuxt.
+
+Considered: a socket that ends with its token, so every client reconnects once a minute. Rejected, because every Member would pay for a rare moment with a reconnect a minute, and a User who is no Member would still read along for up to that minute. Considered: the room asks Nuxt before each message whether a socket's User is still a Member. Rejected, because that is a call per socket and message, and a second place that knows about membership.
