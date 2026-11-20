@@ -480,6 +480,18 @@ describe('ChatPanel', () => {
     const sendButton = (wrapper: Mounted['wrapper']) => wrapper.find('button[aria-label="Senden"]')
     const bubble = (wrapper: Mounted['wrapper'], id: string) => wrapper.find(`[data-message-id="${id}"]`)
 
+    it('draws the send button\'s icon 22 px wide and tall, with an empty composer and with a draft (#879)', async () => {
+      const { wrapper } = await mountChat([])
+      const icon = () => sendButton(wrapper).find('svg')
+
+      expect(icon().attributes('width')).toBe('22')
+      expect(icon().attributes('height')).toBe('22')
+
+      await type(wrapper, 'Hallo')
+      expect(sendButton(wrapper).attributes('aria-disabled')).toBe('false')
+      expect(icon().attributes('width')).toBe('22')
+    })
+
     it('shows a sent Message at once as „wird gesendet …“ with the field empty and focused, and settles it from the answer', async () => {
       pinIds(ID)
       const { wrapper, served } = await mountChat([live('a', SANNE, 0, 'Moin')])

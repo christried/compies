@@ -311,9 +311,9 @@ const groups = computed(() => groupMessages([
   <div class="flex min-h-0 flex-1 flex-col gap-3">
     <div
       v-if="status === 'failed'"
-      class="m-3 flex flex-col items-start gap-3 rounded-[12px] border-2 border-dashed border-line-soft p-3.5"
+      class="m-3 flex flex-col items-center gap-3 rounded-[12px] border-2 border-dashed border-line-soft p-3.5"
     >
-      <p class="m-0 text-ink-2">
+      <p class="m-0 text-center text-ink-2">
         {{ t('chat.loadFailed') }}
       </p>
       <AppButton
@@ -343,6 +343,7 @@ const groups = computed(() => groupMessages([
         :aria-busy="status === 'loading'"
         :aria-label="t('chat.logAria')"
         class="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto px-3 pt-3 pb-1.5"
+        :class="next && 'fade-top'"
       >
         <!-- The feed's dashed look, not `EmptyState`: its 120 px Compibert is too wide for the panel. -->
         <div
@@ -529,12 +530,12 @@ const groups = computed(() => groupMessages([
             :aria-label="t('chat.send')"
             :aria-disabled="!sendable"
             class="inline-flex size-11 flex-none items-center justify-center rounded-pill border-2 border-line"
-            :class="sendable ? 'bg-primary text-on-primary shadow-sm' : 'bg-surface-2 text-ink-2 shadow-none'"
+            :class="sendable ? 'bg-primary text-on-primary shadow-sm' : 'bg-surface-2 text-ink shadow-none'"
             @click="send"
           >
             <AppIcon
               :icon="Send"
-              :size="18"
+              :size="22"
             />
           </button>
         </div>
