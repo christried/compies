@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+## [0.18.0] - 2026-11-20 – Chat
+
+Dein Event hat jetzt einen Chat: Alle schreiben und lesen live mit, auch von der Tribüne. Und auf dem Spielbrett schickst du Emotes, die über deinem Avatar aufsteigen und mit eingeschaltetem Ton auch klingen.
+
 ### Neu
 
 - **Emotes:** Auf dem Spielbrett schickst du ein Emote: Klatschen, Freudentränen, Wütend oder Brüller. Alle, die gerade das Spielbrett sehen, sehen es über deinem Avatar aufsteigen, im Team und auf der Tribüne. Danach wartest du zwei Sekunden bis zum nächsten. Bei reduzierter Bewegung erscheint es an Ort und Stelle. Emotes werden nicht gespeichert. ([#668](https://github.com/christried/compies/issues/668))
