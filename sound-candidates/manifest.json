@@ -611,7 +611,7 @@
         "source": "scripts/cue-recipes/emote.mjs, Rezept drei-klatscher",
         "author": null,
         "licence": "generated",
-        "note": "drei trockene Klatscher, je ein kurzer Rauschstoß"
+        "note": "drei trockene Klatscher, wie echte Hände"
       },
       {
         "name": "holz-klapper",
@@ -628,6 +628,14 @@
         "author": null,
         "licence": "generated",
         "note": "drei körnige Arcade-Klatscher"
+      },
+      {
+        "name": "halle-klatscher",
+        "file": "emo-clap/halle-klatscher.wav",
+        "source": "scripts/cue-recipes/emote.mjs, Rezept halle-klatscher",
+        "author": null,
+        "licence": "generated",
+        "note": "zwei Klatscher mit Echo, wie in einer Turnhalle"
       }
     ],
     "emo-haha": [
@@ -637,7 +645,7 @@
         "source": "scripts/cue-recipes/emote.mjs, Rezept keuch-kichern",
         "author": null,
         "licence": "generated",
-        "note": "fünf fallende Pulse mit Atem dazwischen, ein Keuchen"
+        "note": "ein keuchendes Kichern, mit Atem dazwischen"
       },
       {
         "name": "chip-gickser",
@@ -645,7 +653,7 @@
         "source": "scripts/cue-recipes/emote.mjs, Rezept chip-gickser",
         "author": null,
         "licence": "generated",
-        "note": "sechs fallende Arcade-Blips, ein Gickern"
+        "note": "ein Arcade-Gickern aus sechs Blips"
       },
       {
         "name": "quietschtier",
@@ -654,6 +662,14 @@
         "author": null,
         "licence": "generated",
         "note": "vier Quietscher wie ein Gummitier, mit Luft"
+      },
+      {
+        "name": "pruste-kiekser",
+        "file": "emo-haha/pruste-kiekser.wav",
+        "source": "scripts/cue-recipes/emote.mjs, Rezept pruste-kiekser",
+        "author": null,
+        "licence": "generated",
+        "note": "ein Prusten, dann zwei hohe Kiekser"
       }
     ],
     "emo-grr": [
@@ -663,7 +679,7 @@
         "source": "scripts/cue-recipes/emote.mjs, Rezept saege-knurren",
         "author": null,
         "licence": "generated",
-        "note": "tiefe Säge mit 32-Hz-Wackeln, ein kurzes Knurren"
+        "note": "tiefes, raues Knurren"
       },
       {
         "name": "puls-rasseln",
@@ -671,7 +687,7 @@
         "source": "scripts/cue-recipes/emote.mjs, Rezept puls-rasseln",
         "author": null,
         "licence": "generated",
-        "note": "schmale Pulse mit Rauschen, ein rasselndes Grollen"
+        "note": "rasselndes Grollen mit Rauschen"
       },
       {
         "name": "schnurr-saettigung",
@@ -679,7 +695,15 @@
         "source": "scripts/cue-recipes/emote.mjs, Rezept schnurr-saettigung",
         "author": null,
         "licence": "generated",
-        "note": "übersteuertes Dreieck, ein Schnurren, das beißt"
+        "note": "ein Schnurren, das beißt"
+      },
+      {
+        "name": "katzen-fauchen",
+        "file": "emo-grr/katzen-fauchen.wav",
+        "source": "scripts/cue-recipes/emote.mjs, Rezept katzen-fauchen",
+        "author": null,
+        "licence": "generated",
+        "note": "ein Fauchen aus Luft, mit kleinem Grollen darunter"
       }
     ],
     "emo-roar": [
@@ -689,7 +713,7 @@
         "source": "scripts/cue-recipes/emote.mjs, Rezept mini-dino",
         "author": null,
         "licence": "generated",
-        "note": "Säge und Puls fallen von 320 auf 160 Hz, ein kleines Dino-Brüllen"
+        "note": "kleines Dino-Brüllen, fällt von hoch nach tief"
       },
       {
         "name": "dino-schnauben",
@@ -697,7 +721,7 @@
         "source": "scripts/cue-recipes/emote.mjs, Rezept dino-schnauben",
         "author": null,
         "licence": "generated",
-        "note": "viel Atem, ein Band nach unten, ein Schnauben mit Ton darunter"
+        "note": "ein Schnauben, mehr Luft als Ton"
       },
       {
         "name": "chip-gebruell",
@@ -705,7 +729,15 @@
         "source": "scripts/cue-recipes/emote.mjs, Rezept chip-gebruell",
         "author": null,
         "licence": "generated",
-        "note": "Arcade-Rechteck mit wanderndem Tastverhältnis, auf fünf Bit gestaucht"
+        "note": "körniges Arcade-Gebrüll wie ein Spielmonster"
+      },
+      {
+        "name": "jungtier-quaek",
+        "file": "emo-roar/jungtier-quaek.wav",
+        "source": "scripts/cue-recipes/emote.mjs, Rezept jungtier-quaek",
+        "author": null,
+        "licence": "generated",
+        "note": "ein junges Dino quäkt: hoch hinauf, dann wieder herunter"
       }
     ]
   }
