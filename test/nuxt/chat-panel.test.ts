@@ -754,7 +754,7 @@ describe('ChatPanel', () => {
 
       expect(done.wrapper.find('input').exists()).toBe(false)
       expect(sendButton(done.wrapper).exists()).toBe(false)
-      expect(done.wrapper.text()).toContain('Das Event ist beendet. Das liest doch eh keiner mehr also ist Schreiben aus.')
+      expect(done.wrapper.text()).toContain('Das Event ist beendet. Das liest doch eh keiner mehr, also ist Schreiben aus.')
       expect(texts(done.wrapper)).toEqual(['Servus'])
 
       const failed = await mountChat([], { failing: true })
@@ -1216,7 +1216,7 @@ describe('ChatPanel', () => {
 
       await vi.waitFor(() => expect(texts(wrapper)).toEqual(['Gelöscht']))
       expect(served.deletes).toEqual(['a'])
-      expect(wrapper.text()).toContain('Das Event ist beendet. Das liest doch eh keiner mehr also ist Schreiben aus.')
+      expect(wrapper.text()).toContain('Das Event ist beendet. Das liest doch eh keiner mehr, also ist Schreiben aus.')
     })
 
     describe('with 0, 1 and 2 Messages and the longest text', () => {
