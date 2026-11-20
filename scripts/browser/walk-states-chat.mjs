@@ -2,7 +2,7 @@
 // `extra: 'walk-states-'`); the dark check never does. `dark.mjs` documents the State shape, `dark-states-event.mjs` the pair of readers (`<name>-host`, the Dev Host at 1440, and
 // `<name>-spieler`, the Dev Member at 390) and the Events it makes; `walk-states-notes.mjs` is the model for a plan (`CLAIMS`, `UNREACHED`) and for a fake `fetch` from the load.
 // Every state builds its own Event in every `open` (`fresh: true`): the Chat's states write and delete Messages, so a memoised Event would carry one state's Messages into the next.
-// The Events are named `W<run> Chat …` (`ctx.data.prefix`), deleted by the state's `after` and, for any that stays, by the dark file's `cleanup`, which the runner calls last.
+// The Events are named `W<run> Chat …` (`ctx.data.prefix`) and deleted at the end of the run by the dark file's `cleanup`, which the runner calls last (the walk then checks that none is left).
 // The Messages are written through the API as the dev Users (`say`), paced under the server's limit of 5 per User in 10 s; the composer's own controls are used where a state is
 // about sending. The fakes are walk-only, like #810's: a script from the load (or a one-off call in the page) wraps `fetch` and `setTimeout`, and `after` switches it off.
 import { randomUUID } from 'node:crypto'
@@ -195,24 +195,14 @@ async function chatEvent(ctx, kind, { three = false } = {}) {
   return runningEvent([host(ctx), member(ctx), admin(ctx)], { name: `${ctx.data.prefix}Chat ${kind}`, pool: await pool(ctx, 3), settings: { gameCount: 3 } })
 }
 
-/** The Event is ended and deleted, best effort: the dark file's `cleanup` deletes any that stays. */
-async function dropEvent(ctx) {
-  if (!ctx.event?.slug) return
-  try {
-    await api(host(ctx), 'POST', `/api/e/${ctx.event.slug}/sessions/end`)
-    await api(host(ctx), 'DELETE', `/api/e/${ctx.event.slug}`)
-  }
-  catch {
-    // The page may be gone already.
-  }
-}
-
-/** What every state of the file does after its reading, on either side: the fakes of the load and of the page off, the Event deleted. */
+/**
+ * What every state of the file does after its reading, on either side: the fakes of the load and of the page off. The Event is not deleted here: the page that still shows it would
+ * read it again and meet a 404 (a page error in the run), so the dark file's `cleanup`, which the runner calls last, deletes every Event of the prefix.
+ */
 async function done(ctx) {
   if (ctx.fakeScript !== undefined) await releaseToasts(ctx.tab, ctx.fakeScript).catch(() => {})
   ctx.fakeScript = undefined
   await ctx.tab.evaluate('window.__chatFakes = null').catch(() => {})
-  await dropEvent(ctx)
 }
 
 /**
@@ -242,16 +232,28 @@ function chatPair({ name, group, only, build, fakes, phone = true, ready = READY
   }).map(state => ({ ...state, after: done }))
 }
 
+/** One press on the visible `selector` whose `aria-label`, key tags left off, is `label`: a label with a name put into it carries tags inside, which `press` (a plain `includes`) would not match. */
+async function pressLabelled(tab, selector, label) {
+  const pressed = await tab.evaluate(`(() => {
+    const el = [...document.querySelectorAll(${JSON.stringify(selector)})].find(b => b.getBoundingClientRect().width > 0 && (b.getAttribute('aria-label') ?? '').replace(${UNTAG}, '') === ${JSON.stringify(label)})
+    if (!el) return false
+    el.scrollIntoView({ block: 'center', behavior: 'instant' })
+    el.click()
+    return true
+  })()`)
+  if (!pressed) throw new Error(`no ${selector} „${label}“ on the page`)
+}
+
 /** The Emote is tapped: on the row at 1440, through the phone's button and its sheet at 390. */
 async function tapClap(tab, width) {
   const clap = COPY.emote.send.replace('{name}', COPY.emote.clap)
   if (width === 390) {
     await press(tab, 'button[aria-haspopup=dialog]', COPY.emote.label)
     await layerOpen(tab, 'the Emotes\' sheet')
-    await press(tab, '[role=dialog] button', clap)
+    await pressLabelled(tab, '[role=dialog] button', clap)
     await until(tab, `!document.querySelector('[role=dialog]')`, 'the sheet to close')
   }
-  else await press(tab, 'button', clap)
+  else await pressLabelled(tab, 'button', clap)
 }
 
 // ---------------------------------------------------------------------------------------------------------------------------------
