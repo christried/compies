@@ -46,7 +46,7 @@ Write one draft per bug; a report holding several faults gets several drafts. Sh
 
 ```
 Title: <where>: <what goes wrong>
-Labels: bug, needs-triage
+Labels: bug, needs-triage[, urgent]
 
 <what goes wrong, 1–2 sentences>
 
@@ -62,11 +62,10 @@ Labels: bug, needs-triage
 **Next:** /diagnosing-bugs | /grill-with-docs
 ```
 
+- **urgent**: when **Where** is production; a Player's report counts as production unless it names staging.
 - **Regression of**: only for a regression; leave the line out otherwise.
 - **Open questions**: up to three; leave the line out when there are none.
 - **Next**: `/diagnosing-bugs` when the expected behaviour is documented, `/grill-with-docs` when it is disputed or „not written down“.
-
-When a draft's impact is "blocks a game night" on production, add a line under the drafts: a fix reaches production only with the next Release, and whether it gets a Release of its own is the user's call (§ Bugs).
 
 End the message with: "**ja** creates it, **abbrechen** drops it, anything else and I'll change the draft."
 
@@ -76,4 +75,4 @@ End the message with: "**ja** creates it, **abbrechen** drops it, anything else 
 - **abbrechen**: drop the drafts.
 - Anything else is a correction: apply it and show the drafts again.
 
-Done when every approved draft is an issue (or a comment). Reply with the links only, plus, when the report had a screenshot, one line asking the user to add it to the issue on GitHub after checking it for personal data.
+Done when every approved draft is an issue (or a comment); the fix, urgent or not, is a later session's (§ Bugs). Reply with the links only, plus, when the report had a screenshot, one line asking the user to add it to the issue on GitHub after checking it for personal data.
