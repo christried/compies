@@ -63,7 +63,6 @@ export const CLAIMS = {
 /** The texts no state can show (key → why). */
 export const UNREACHED = {
   'error.messageInvalid': 'No surface shows it. The composer sends only a text `parseMessageText` accepts, and `ChatPanel.vue`\'s send failure shows `chat.failed` without mapping the code; the delete\'s toast maps any code of `DELETE`, which never answers `invalid_message`.',
-  'chat.message': 'No component of `app/` uses the key (`unused.mjs` lists it).',
 }
 
 // ---------------------------------------------------------------------------------------------------------------------------------
