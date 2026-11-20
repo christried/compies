@@ -67,8 +67,8 @@ An Event its Host removed for good: it leaves Home for every Member at once, its
 _Avoid_: Archived (an archive is readable), cancelled, closed
 
 **Member**:
-A User who has joined an Event through its Invite link. The Host is a Member of their own Event. A Member cannot leave an Event themselves; a Deleted User stops being a Member of every Event that has not finished (UI: Teilnehmende, where a Host's text means the Members other than the Host).
-_Avoid_: Participant, attendee, guest
+A User who has joined an Event through its Invite link. The Host is a Member of their own Event. A Member cannot leave an Event themselves. The Host can remove any other Member from an Event that has not finished: the removed User loses their Seat, their Team word and their Votes, while their Messages and what the Activity feed says of them stay under their name, and they can join again through the current Invite link, as a new Member. Nobody is kept out for good: rotating the Invite link is what keeps a removed User from coming back. A Deleted User stops being a Member of every Event that has not finished (UI: Teilnehmende, where a Host's text means the Members other than the Host; „Aus dem Event entfernen“).
+_Avoid_: Participant, attendee, guest, kick, ban (a ban is about a game, and no User is banned from an Event)
 
 **Player**:
 A Member who is in a Party (UI: Spielende).
