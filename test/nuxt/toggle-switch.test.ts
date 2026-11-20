@@ -2,7 +2,7 @@ import { mountSuspended } from '@nuxt/test-utils/runtime'
 import { describe, expect, it } from 'vitest'
 import ToggleSwitch from '~/components/ToggleSwitch.vue'
 
-// ToggleSwitch (02-components § ToggleSwitch): an on/off setting with a visible label and help (#145, „Rad verdecken“).
+// ToggleSwitch (02-components § ToggleSwitch): an on/off setting with a visible label and help (#145, „Pseudo-Games“).
 
 const props = { modelValue: false, label: 'Rad verdecken', help: 'Erfundene Namen, bis das Rad stoppt.' }
 

@@ -2,6 +2,66 @@
 
 ## [Unreleased]
 
+## [0.17.0] - 2026-11-19 – Klang
+
+Mit eingeschaltetem Ton hörst du jetzt auch die Münze, die Tabelle, das Spielbrett und die Siegerehrung. Und die App-Figur hat eine Stimme: Am Glücksrad fiebert sie mit, im Rundgang piept sie zur Begrüßung.
+
+### Neu
+
+- **Die App-Figur hat eine Stimme:** Am Glücksrad macht die App-Figur jetzt Laute, ganz ohne Worte: Sie ist aufgeregt, wenn das Rad anläuft, schluckt an der Bremse und jubelt beim Stopp. Beim verdeckten Rad jubelt sie erst mit der Auflösung, für alle gleichzeitig, auch für den Host. Bei reduzierter Bewegung hörst du nur den Jubel. Der Schalter „Ton“ schaltet auch das aus. ([#671](https://github.com/christried/compies/issues/671))
+- **Die App-Figur im Rundgang:** Im Rundgang piept die App-Figur zur Begrüßung und jubelt am Ende. Solange die Seite noch keinen Ton abspielen darf, also vor deinem ersten Tipp oder Klick, bleibt die Begrüßung still. Der Schalter „Ton“ schaltet auch das aus. ([#747](https://github.com/christried/compies/issues/747))
+- **Ton in der Tabelle:** Wenn ein neues Ergebnis die Tabelle verändert, hörst du es: ein Wischen, wenn Teams die Plätze tauschen, ein Ticken beim Hochzählen der Punkte und zum Stempel „Sieg in Spiel …“ einen kleinen Jubel. Beim Laden der Seite, in einem Tab im Hintergrund und in einem beendeten Event bleibt die Tabelle still, und bei reduzierter Bewegung tickt der Zähler nicht. ([#741](https://github.com/christried/compies/issues/741))
+- **Die Siegerehrung klingt:** Mit eingeschaltetem Ton hörst du, wie das Banner herunterfällt, wie jeder Platz hereingleitet (zum ersten Platz hin immer höher), wie die App-Figur mit dem Pokal hereinläuft und wie sie darüber stolpert oder vom Pokal getroffen wird. Zum Stempel hörst du eine Fanfare und den Jubel des Publikums, und die App-Figur lacht. Auch ein Gleichstand klingt. Alle Geräte hören es im selben Moment. Überspringst oder schließt du die Siegerehrung, hörst du nichts mehr davon, und „Nochmal ansehen“ klingt nur bei dir. Bei reduzierter Bewegung hörst du nur die Fanfare, sobald das Endbild erscheint. ([#743](https://github.com/christried/compies/issues/743), [#744](https://github.com/christried/compies/issues/744), [#745](https://github.com/christried/compies/issues/745), [#746](https://github.com/christried/compies/issues/746))
+- **Die Münze klingt:** Beim Münzwurf hörst du jetzt den Wurf, das Drehen in der Luft, das Landen und das Ergebnis, auf allen Geräten im selben Moment. Kopf und Schwanz klingen gleich, der Ton verrät also nichts vorab. Bei reduzierter Bewegung hörst du nur die Landung und das Ergebnis, und der Schalter „Ton“ schaltet auch diese Geräusche aus. ([#669](https://github.com/christried/compies/issues/669))
+- **Das Spielbrett klingt:** Wenn du dich auf dem Spielbrett aufnimmst, hörst du ein leises Heben, beim Einrasten ein Klicken und, wenn der Zug abgelehnt wird, ein Zurückprallen. Auch der Weg über das Verschieben-Menü klingt, und als Host hörst du es für die Züge, die du selbst machst; Züge anderer bleiben still. Es klingt auch bei reduzierter Bewegung, und der Schalter „Ton“ schaltet es aus. ([#742](https://github.com/christried/compies/issues/742))
+
+### Geändert
+
+- **„Ton aktivieren“ auch zur Siegerehrung:** Bei einem beendeten Event fragt dich die Seite schon vor der Siegerehrung mit „Ton aktivieren“ nach einem Tipp, damit du die Siegerehrung auch hörst. Der Hinweis ist derselbe wie in einer laufenden Session. ([#755](https://github.com/christried/compies/issues/755))
+
+## [0.16.1] - 2026-11-19 – Wortwahl
+
+Kürzere Texte und ein Name pro Sache. Meldungen in Formularen kommen erst, wenn du ein Feld benutzt oder speichern willst, die Anmelde-Knöpfe tragen die Farben von Discord und Twitch, und vieles ist aufgeräumt.
+
+### Geändert
+
+- **Nur noch der Kopf der App-Figur:** Wo nichts zu zeigen ist (noch keine Events, keine Treffer in der Bibliothek) und auf den ganzseitigen Hinweisen wie „Link ungültig“, „Event gelöscht“ und den Fehlerseiten zeigt die App-Figur jetzt nur noch den Kopf statt der gerahmten Büste. ([#794](https://github.com/christried/compies/issues/794))
+- **Kein Glitzer-Symbol mehr:** Neben „Bester Termin“ in der Terminumfrage und neben „Neu“ bei den Neuigkeiten steht kein Glitzer-Symbol mehr. Auf der Startseite zeigt der beste Termin eines Events jetzt einen Kalender. ([#795](https://github.com/christried/compies/issues/795))
+- **Discord und Twitch in ihren Farben:** Die Anmelde-Knöpfe tragen jetzt das Logo und die Farbe von Discord und von Twitch, damit du deinen Knopf auf einen Blick findest. Die Texte bleiben dieselben. ([#792](https://github.com/christried/compies/issues/792))
+- **„Zuletzt aktualisiert“ am Spiel:** Auf der Seite eines Spiels in der Bibliothek steht jetzt, wann es zuletzt geändert wurde, mit Monat und Jahr, zum Beispiel „Zuletzt aktualisiert: November 2026“. ([#805](https://github.com/christried/compies/issues/805))
+- **„Noch eins“ nach dem Anlegen:** Nach dem Speichern eines neuen Spiels bietet die Meldung „Noch eins“ an, damit du direkt das nächste Spiel anlegst. ([#806](https://github.com/christried/compies/issues/806))
+- **Offline-Seite im Look von „Link ungültig“:** Ohne Verbindung zeigt die App jetzt den Kopf der App-Figur, eine große Überschrift und den Knopf „Seite neu laden“ wie auf „Link ungültig“. Die Texte bleiben, wie sie waren, und die Seite braucht weiterhin kein Netz. ([#808](https://github.com/christried/compies/issues/808))
+- **Kürzere Texte, ein Name pro Sache:** Viele Texte sind kürzer, und was du ohnehin siehst, steht nicht noch einmal daneben. Eine Sache hat jetzt überall denselben Namen: Der Host fixiert einen Termin („Termin fixieren“), und ein Platz in einem Team heißt auf dem Spielbrett „Slot“. ([#809](https://github.com/christried/compies/issues/809))
+- **Meldungen in Formularen:** Eine Meldung unter einem Feld erscheint jetzt rot und erst, wenn du das Feld benutzt hast oder zu speichern oder weiterzugehen versucht hast. Gehören mehrere Felder zusammen, zum Beispiel „von“ und „bis“ bei der Spielerzahl, steht eine gemeinsame Meldung darunter. ([#797](https://github.com/christried/compies/issues/797))
+- **Abstimmstand in Farbe:** In der Terminumfrage zeigt die Zahl, wie viele schon abgestimmt haben, jetzt eine Farbe: grün, wenn alle abgestimmt haben, gelb, wenn ein Teil, und rot, solange noch niemand. ([#798](https://github.com/christried/compies/issues/798))
+- **Countdown ohne Pille:** Der Countdown zeigt seinen Zustand (bereit, läuft, pausiert, vorbei) nicht mehr als Pille und nicht mehr in einer Zeile darunter; das zeigt die Uhr selbst. ([#802](https://github.com/christried/compies/issues/802))
+
+## [0.16.0] - 2026-11-19 – Bibliothek
+
+Jeder Host hat jetzt eine eigene Bibliothek. Spiele, die du nicht mehr spielen kannst, legst du ins Archiv, Notizen lassen sich formatieren, und zu jedem Event schreibst du eigene Notizen. Die Seite eines Spiels zeigt, in welchen Events es im Spielepool liegt.
+
+### Neu
+
+- **Spiele archivieren:** Ein Spiel, das du nicht mehr spielen kannst, legst du auf seiner Seite in der Bibliothek ins Archiv. Dort verschwindet es aus der Liste und bleibt im Filter „Archiviert“, aus dem du es jederzeit zurückholst. Bearbeiten kannst du es weiter. In deinen Events, die noch nicht beendet sind, kommt es nicht mehr aufs Glücksrad, und die anderen sehen es im Spielepool nicht mehr; du siehst es dort mit dem Hinweis „Archiviert“. Runden, in denen es schon gespielt wurde, zeigen es weiter. ([#467](https://github.com/christried/compies/issues/467))
+- **Alle Tags im Spiele-Formular:** Unter dem Tag-Feld klappst du jetzt „Alle Tags“ auf und siehst alle Tags deiner Bibliothek. Ein Klick fügt einen Tag dem Spiel hinzu, ein zweiter Klick nimmt ihn wieder weg. ([#615](https://github.com/christried/compies/issues/615))
+- **Wo ein Spiel gerade drin ist:** Auf der Karte eines Spiels in der Bibliothek steht jetzt „in 2 Events“, wenn es im Spielepool von Events liegt, die noch nicht beendet sind. ([#733](https://github.com/christried/compies/issues/733))
+- **Die Events eines Spiels:** Auf der Seite eines Spiels in der Bibliothek stehen jetzt alle deine Events, in deren Spielepool es liegt, neueste zuerst, auch beendete. Jede Zeile führt zum Event, sagt, wie oft es dort schon gespielt wurde (etwa „1× gespielt“), und zeigt deine Notizen für dieses Event. ([#656](https://github.com/christried/compies/issues/656))
+- **Notizen formatieren:** Notizen zu einem Spiel lassen sich jetzt formatieren: fett, kursiv, eine Überschrift, Listen und Links. Sie dürfen jetzt 2000 Zeichen lang sein statt 1000. ([#454](https://github.com/christried/compies/issues/454))
+- **Notizen für dieses Event:** Im Dialog eines Spiels auf der Eventseite schreibst du jetzt Notizen nur für dieses Event, zum Beispiel „heute nur Bo1“, mit denselben Formaten wie bei den Notizen eines Spiels. Nur du siehst sie, und nach dem Ende des Events bleiben sie so stehen. ([#464](https://github.com/christried/compies/issues/464))
+
+### Geändert
+
+- **Deine eigene Bibliothek:** Jeder Host hat jetzt eine eigene Bibliothek. Du siehst und bearbeitest nur die Spiele, die du selbst angelegt hast, und niemand sonst sieht deine, auch die Plattform-Admin nicht. Spiele anderer Hosts, die in deinen Events vorkamen, hast du als eigene Kopie bekommen. Tags und Tag-Vorschläge kommen nur noch aus deinen eigenen Spielen. ([#455](https://github.com/christried/compies/issues/455))
+- **Datenschutzerklärung:** Sie beschreibt jetzt die eigene Bibliothek jedes Hosts: Wer ein Spielbild sieht (der Host, dem das Spiel gehört, und die Mitglieder der Events, die es nutzen), wer die Notizen eines Spiels und die Notizen für ein Event liest, und dass ein Spiel archiviert statt gelöscht wird. ([#735](https://github.com/christried/compies/issues/735))
+
+### Entfernt
+
+- **„Von mir“ ist weg:** Die Bibliothek hat keinen Filter „Von mir“ mehr, denn jedes Spiel darin ist dein eigenes. Auch „Angelegt von …“ und der Hinweis, wer ein Spiel bearbeiten darf, fallen weg. ([#724](https://github.com/christried/compies/issues/724))
+
+### Sicherheit
+
+- **Spielbilder bleiben bei ihrem Besitzer:** Das Bild eines Spiels sehen nur noch du als Besitzer des Spiels und die Mitglieder der Events, die das Spiel nutzen, nicht mehr jeder Host und nicht die Plattform-Admin. Wann Mitglieder ein Bild sehen (Pool vorher zeigen, verdecktes Rad), hat sich nicht geändert. ([#723](https://github.com/christried/compies/issues/723))
+
 ## [0.15.0] - 2026-11-17 – Tour
 
 Ein kurzer Rundgang zeigt dir, was auf der Eventseite wichtig ist, wenn du zum ersten Mal ein Event öffnest, das du nicht hostest.

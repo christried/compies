@@ -1,20 +1,28 @@
 <script setup lang="ts">
-import { Lock, Pencil } from '@lucide/vue'
+import { Pencil } from '@lucide/vue'
+import type { GameEvents } from '~~/shared/game-events'
 import { formatMonthYear } from '~/utils/berlin-time'
 
 // One game of the library (screen 23, `?s=detail`, #141, #142): the clip preview from the start second for the
-// set length, the facts (player count, Suitabilities, clip length, the Price (#337)), the Tags (#335, each in its colour, #427) and who created it. The cover, the facts with the Tags and the Notes
-// are components of their own (#443), which the Host's game dialog on the Event page uses too. The creator and the Platform
-// admin get „Bearbeiten“; everyone else gets the reason instead of a dead button. A game that does not exist
-// looks like any missing page; so does the page for Users who may not see the library.
+// set length, the facts (player count, Suitabilities, clip length, the Price (#337)) and the Tags (#335, each in its colour, #427). The cover, the facts with the Tags and the Notes
+// are components of their own (#443), which the Host's game dialog on the Event page uses too. „Bearbeiten“ is always there: the library
+// holds only the viewer's own games (#724). A game that does not exist
+// looks like any missing page; so does the page for Users who may not see the library. The switch „Archiviert“ (#467) is the owner's: the route answers
+// only own games, and an Archived game keeps its page and stays editable. Below the Game notes the page lists the game's Events (#656) from a read of
+// its own: a failing read shows a notice and never hides the game. A line under the switch says when the game last changed (#805).
 const { t } = useI18n()
 const route = useRoute()
 const id = computed(() => String(route.params.id))
 
 const { viewer, game, status, error, refresh, missing } = useLibraryGame(id)
+const { data: gameEvents, error: eventsError } = useFetch<GameEvents>(() => `/api/games/${id.value}/events`, {
+  key: `game-events-${id.value}`,
+  immediate: viewer.value,
+})
 useHead({ title: () => game.value?.name ?? t('nav.library') })
 
-const createdMonth = computed(() => (game.value ? formatMonthYear(new Date(game.value.createdAt)) : ''))
+const { setArchived } = useGameArchive()
+const updatedMonth = computed(() => (game.value ? formatMonthYear(new Date(game.value.updatedAt)) : ''))
 </script>
 
 <template>
@@ -80,12 +88,16 @@ const createdMonth = computed(() => (game.value ? formatMonthYear(new Date(game.
             :tags="game.tags"
             :clip-length="game.youtubeId ? game.clipLength : null"
           />
+          <ToggleSwitch
+            :model-value="game.archived"
+            :label="t('library.archiveSwitch')"
+            :help="t('library.archiveHelp')"
+            @update:model-value="setArchived(game.id, $event)"
+          />
           <p class="m-0 text-[13px] text-ink-2">
-            {{ t('library.createdBy', { name: game.createdBy.name, month: createdMonth }) }}
+            {{ t('library.updatedAt', { month: updatedMonth }) }}
           </p>
-
           <AppButton
-            v-if="game.canEdit"
             :to="`/bibliothek/${game.id}/bearbeiten`"
             variant="secondary"
             class="self-start"
@@ -98,16 +110,6 @@ const createdMonth = computed(() => (game.value ? formatMonthYear(new Date(game.
             </template>
             {{ t('library.edit') }}
           </AppButton>
-          <p
-            v-else
-            class="m-0 inline-flex items-center gap-1.5 text-[13px] text-ink-2"
-          >
-            <AppIcon
-              :icon="Lock"
-              :size="14"
-            />
-            {{ t('library.editOnlyOwner', { name: game.createdBy.name }) }}
-          </p>
         </div>
       </div>
 
@@ -120,11 +122,25 @@ const createdMonth = computed(() => (game.value ? formatMonthYear(new Date(game.
         <SkeletonCard />
       </div>
 
-      <!-- Game notes (#223): plain text with the line breaks the Host wrote. -->
+      <!-- Game notes (#223): the formatted document (#728), in the designed look (#729). -->
       <GameNotes
         v-if="game?.notes"
         :notes="game.notes"
       />
+
+      <!-- The Events of this game (#656): shown once the game is, nothing while they load, a notice when their read fails (the game stays). -->
+      <template v-if="game && !error">
+        <NoticeBanner
+          v-if="eventsError"
+          tone="warning"
+        >
+          {{ t('gameEvents.failed') }}
+        </NoticeBanner>
+        <GameEventList
+          v-else-if="gameEvents"
+          :events="gameEvents.events"
+        />
+      </template>
     </div>
   </AppShell>
 </template>

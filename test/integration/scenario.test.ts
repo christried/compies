@@ -4,6 +4,7 @@ import { draws, games } from '../../server/db/schema'
 import { testClock } from '../../server/utils/clock'
 import { memoryRoomNotifier } from '../../server/utils/room-notifier'
 import type { GameList } from '../../shared/game'
+import { notesFromLines } from '../../shared/notes-doc'
 import { createTestApp, errorOf, sendVia } from './app'
 import { createTestDb, resetDatabase } from './harness'
 import {
@@ -183,7 +184,7 @@ describe('the Event scenario', () => {
     it('puts a pool game in the Host\'s pool, and a library-only game in the library alone', async () => {
       const ev = await startRunningEvent(rig, {
         ...base,
-        games: [{ key: 'halo', values: { name: 'Halo', notes: 'Hausregel' }, pool: true }, { key: 'schach', values: { name: 'Schach' }, pool: false }],
+        games: [{ key: 'halo', values: { name: 'Halo', notes: notesFromLines(['Hausregel']) }, pool: true }, { key: 'schach', values: { name: 'Schach' }, pool: false }],
       })
 
       expect((await readEvent(rig, ev.host.cookie, ev.slug)).pool?.map(game => game.name)).toEqual(['Halo'])

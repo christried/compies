@@ -4,17 +4,18 @@
 import { decodeTags } from '../../shared/key-tag.ts'
 
 /** @typedef {{ x: number, y: number, width: number, height: number }} Box */
-/** @typedef {'text' | 'aria-label' | 'title' | 'alt' | 'placeholder'} Kind */
+/** @typedef {'text' | 'aria-label' | 'title' | 'alt' | 'placeholder'} Kind (`data-placeholder` is read as `placeholder`) */
 /** @typedef {{ i: number, kind: Kind, element: string, raw: string }} Candidate */
 /** @typedef {{ key: string, text: string, kind: Kind, element: string, box: Box | null, partial: boolean }} Row */
 
 // One pass over the document in document order: a text node or an attribute value that holds the open marker of a tag (U+2060 and a bit) is a candidate and is
 // kept in window.__wordingNodes[i] for the second call; a visible non-blank text node without one is counted as untagged. The devtools
-// container and the elements that hold no page text are skipped.
+// container and the elements that hold no page text are skipped. `data-placeholder` (#810) is the Tiptap Placeholder extension's attribute on the empty paragraph, which the CSS
+// paints: it is read like `placeholder` and its candidate says `placeholder`, so the recording's `via` stays inside its enum.
 const FIND = `(() => {
   const OPEN = /\\u2060[\\u2062\\u2063]/
   const SKIP = new Set(['script', 'style', 'noscript', 'template'])
-  const ATTRIBUTES = ['aria-label', 'title', 'alt', 'placeholder']
+  const ATTRIBUTES = ['aria-label', 'title', 'alt', 'placeholder', 'data-placeholder']
   const nodes = (window.__wordingNodes = [])
   const candidates = []
   let untagged = 0
@@ -33,7 +34,7 @@ const FIND = `(() => {
     }
     for (const name of ATTRIBUTES) {
       const raw = node.getAttribute(name)
-      if (raw && OPEN.test(raw)) candidates.push({ i: nodes.push(node) - 1, kind: name, element: describe(node), raw })
+      if (raw && OPEN.test(raw)) candidates.push({ i: nodes.push(node) - 1, kind: name === 'data-placeholder' ? 'placeholder' : name, element: describe(node), raw })
     }
   }
   return { candidates, untagged }

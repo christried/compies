@@ -308,6 +308,7 @@ Every screen exists in the design files at desktop 1280 and mobile 390, light an
 - **Host vs player:** Only Users with the Host permission and the Platform admin see the library (nav item and route). Hosts create; edit for creator + admin.
 - **States:** Liste + Filter · Detail · Keine Treffer · Lädt
 - **Realtime:** —
+- **Deviation (0.16, #455):** „Global games“ no longer holds. From Release 0.16 the library is per User (ADR 0018): a Host sees and edits only their own games, and the Platform admin sees no other User's library.
 
 
 ### 24 Spiel anlegen
@@ -319,6 +320,7 @@ Every screen exists in the design files at desktop 1280 and mobile 390, light an
 - **Host vs player:** Hosts.
 - **States:** Neu, mit Vorschau · Duplikat-Hinweis · YouTube-Link kaputt · Bearbeiten
 - **Realtime:** —
+- **Deviation (0.16, #455):** a game is created in the Host's own library, not a platform-wide one (Release 0.16, ADR 0018). Two Hosts having the same game each is intended, so the Duplikat-Hinweis is no longer a check across Hosts.
 
 
 ### 25 Profil & Einstellungen
@@ -385,6 +387,7 @@ Every screen exists in the design files at desktop 1280 and mobile 390, light an
 - **Data:** —
 - **Host vs player:** —
 - **States:** Autoplay blockiert · Ton an
+- **Deviation (0.17, #755):** the notice also shows with no clip: on a finished Event's page while its Award ceremony is not started yet or still runs (until the run's stored end), with Ton on, for the Host too, until that device's first gesture (`ceremonyAwaitsSound`, `app/utils/ceremony.ts`). Its text is unchanged.
 - **Realtime:** —
 
 

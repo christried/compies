@@ -2,17 +2,19 @@
 import LuckyWheel from '~/components/LuckyWheel.vue'
 import VetoWindow from '~/components/VetoWindow.vue'
 import {
-  CANDIDATE_BASE, CUE_BRIEF, MOMENT_OF, arrivalCues, buildRun, candidatesOf, choicesReport, configFor, emptyChoices, stampCues, testCandidateOf,
-  type ArrivalButton, type Candidate, type Choices, type Controls, type Run,
+  CANDIDATE_BASE, CUE_BRIEF, MOMENT_LABEL, MOMENT_OF, MOMENT_SETUP, arrivalCues, buildCoinRun, buildRun, candidatesOf, ceremonyRun, choicesReport, configFor, emptyChoices, stampCues, standingsChangeCues, dragRunCues, testCandidateOf, tourVoiceCues,
+  type ArrivalButton, type Candidate, type Choices, type Controls, type Moment, type Run,
 } from '~/dev/listening-model'
 import { createCuePlayer, type CuePlayer } from '~/utils/cue-player'
+import { CUE_LENGTHS } from '~/utils/cue-lengths'
+import { countDurationMs } from '~/utils/motion'
 import { CUE_CREDITS_URL } from '~/utils/sound-credits'
 import { CUE_IDS, CUE_VOLUME, TICK_MIN_GAP_MS, type CueId } from '~/utils/sound-cues'
 import type { WheelView } from '~~/shared/stage'
 
-// The listening page for the cue sounds (#534, the session of #535): a tool for the operator on `pnpm dev`, no design. It lists the eleven
+// The listening page for the cue sounds (#534, the session of #535): a tool for the operator on `pnpm dev`, no design. It lists the
 // cues with their candidate files, plays each alone, plays a test spin and a test Veto window through the REAL cue plans and the REAL cue
-// player beside the REAL wheel, and keeps the eleven choices where the agent can read them back. Only the `listening-page` module of
+// player beside the REAL wheel, and keeps the choices where the agent can read them back. Only the `listening-page` module of
 // nuxt.config.ts registers it (dev server only, stage.ts); it is no part of any build. UI text is plain German here, not in de.json: a dev
 // tool has no shipped copy. The logic is in listening-model.ts, which has a unit test; this page has none.
 
@@ -125,7 +127,7 @@ function setMotion(reduced: boolean) {
 }
 
 /** A test run: the wheel, the window or both, built through the real plans; the player gets the whole plan, the page the visuals. */
-async function startRun(kind: 'spin' | 'window' | 'both') {
+async function startRun(kind: 'spin' | 'window' | 'both' | 'voice') {
   if (!await ensureContext() || !armed) return
   clearTimeout(timer)
   const config = configFor(kind, controls)
@@ -150,12 +152,61 @@ async function arrive(button: ArrivalButton) {
   for (const cue of arrivalCues(button, Date.now())) armed.playNow(cue.id, cue.delayMs)
 }
 
-/** The cue's default moment with the current controls: a spin, a window, or for `veto-seal` the own cast. `wheel-morph` needs the Hidden wheel. */
+/** A test toss (#669): the real `coinCuePlan` through the armed player, as `arrive` does: no picture, no `CoinFlip`; the reduced checkbox decides the plan. */
+async function startToss() {
+  if (!await ensureContext() || !armed) return
+  armed.setPlan(buildCoinRun(controls.reduced, Date.now()).plan)
+}
+
+/** The test Standings change (#741): the real `standingsCues` on a fixed change, with the page's reduced switch, through the real player. */
+async function standingsChange() {
+  if (!await ensureContext() || !armed) return
+  for (const cue of standingsChangeCues(controls.reduced, countDurationMs())) armed.playNow(cue.id, cue.delayMs)
+}
+
+/** The test drag (#742): the lift, then the snap (or the bounce for `drag-reject`), through the real player like the board's hooks. */
+async function dragRun(id: CueId) {
+  if (!await ensureContext() || !armed) return
+  for (const cue of dragRunCues(id === 'drag-reject' ? 'refused' : 'taken')) armed.playNow(cue.id, cue.delayMs)
+}
+
+/** The test Tour voice (#747): the chirp, then the cheer, through the real step map and the real player. */
+async function tourVoice() {
+  if (!await ensureContext() || !armed) return
+  for (const cue of tourVoiceCues()) armed.playNow(cue.id, cue.delayMs)
+}
+
+/** A test ceremony (#743): the REAL plan of one Winner of four Parties on the player's ceremony source, sound only; the gag is the one of the cue's own button. */
+async function startCeremony(id: CueId) {
+  if (!await ensureContext() || !armed) return
+  clearTimeout(timer)
+  armed.setPlan(ceremonyRun(Date.now(), id === 'cer-bonk' ? 'bonk' : 'trip'), 'ceremony')
+}
+
+/** What a moment's button runs (#740): a new `Moment` has no runner until it has a row here, so typecheck says so. A new moment's row sits under its group's line. */
+const MOMENT_RUNNERS: Record<Moment, (id: CueId) => void> = {
+  // wheel
+  spin: () => void startRun('spin'),
+  voice: () => void startRun('voice'),
+  // veto
+  window: () => void startRun('window'),
+  arrival: () => void arrive('own'),
+  // coin
+  coin: () => void startToss(),
+  // standings
+  standings: () => void standingsChange(),
+  // board
+  drag: id => void dragRun(id),
+  // ceremony
+  ceremony: id => void startCeremony(id),
+  // tour
+  tour: () => void tourVoice(),
+}
+
+/** The cue's default moment with the current controls (a spin, a window, for `veto-seal` the own cast), after the controls its row of `MOMENT_SETUP` sets. */
 function playMoment(id: CueId) {
-  const moment = MOMENT_OF[id]
-  if (moment === 'arrival') return void arrive('own')
-  if (id === 'wheel-morph') controls.hidden = true
-  void startRun(moment === 'spin' ? 'spin' : 'window')
+  Object.assign(controls, MOMENT_SETUP[id])
+  MOMENT_RUNNERS[MOMENT_OF[id]](id)
 }
 
 function choose(id: CueId, name: string | null) {
@@ -373,6 +424,13 @@ const FIELD = 'rounded border border-line bg-surface px-1.5 py-0.5 text-ink'
         <button
           type="button"
           :class="BUTTON"
+          @click="startRun('voice')"
+        >
+          Test voice run
+        </button>
+        <button
+          type="button"
+          :class="BUTTON"
           @click="startRun('window')"
         >
           Test window
@@ -445,7 +503,7 @@ const FIELD = 'rounded border border-line bg-surface px-1.5 py-0.5 text-ink'
         <code>{{ id }}</code>
       </h2>
       <p class="m-0 text-ink-2">
-        {{ CUE_BRIEF[id].character }} · {{ CUE_BRIEF[id].lengthMs }} ms{{ CUE_BRIEF[id].loop ? ' (Schleife)' : '' }} · Vol {{ CUE_VOLUME[id] }}
+        {{ CUE_BRIEF[id].character }} · {{ CUE_LENGTHS[id].ms }} ms{{ CUE_LENGTHS[id].loop ? ' (Schleife)' : '' }} · Vol {{ CUE_VOLUME[id] }}
       </p>
       <div class="flex flex-wrap items-center gap-2">
         <button
@@ -456,7 +514,7 @@ const FIELD = 'rounded border border-line bg-surface px-1.5 py-0.5 text-ink'
           In ihrem Moment
         </button>
         <span class="text-ink-2">
-          {{ MOMENT_OF[id] === 'spin' ? 'Test spin' : MOMENT_OF[id] === 'window' ? 'Test window' : 'Ankunft der Antwort' }}
+          {{ MOMENT_LABEL[MOMENT_OF[id]] }}
         </span>
         <template v-if="id === 'veto-seal'">
           <button

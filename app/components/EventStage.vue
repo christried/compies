@@ -43,12 +43,12 @@ const props = defineProps<{
   canChangeSessions: boolean
   /** The Veto bar covers the bottom of the page: the stage then gets room under its last block (F4). */
   vetoBarShown: boolean
-  /** „Ton aktivieren“ (#533): the browser holds sound back, with Ton on and a Session running. A fact of this device, so not a block of the read. Its column is `STAGE_COLUMN_CLASS`, the block group's too (#594). */
+  /** „Ton aktivieren“ (#533): the browser holds sound back, with Ton on and a Session running or an Award ceremony pending or running (#755). A fact of this device, so not a block of the read. Its column is `STAGE_COLUMN_CLASS`, the block group's too (#594). */
   soundNotice?: boolean
 }>()
 
 const emit = defineEmits<{
-  /** A Slot card's „Termin festlegen“ (the confirm dialog), the Sessions card's actions and the Session-needed notice's button. */
+  /** A Slot card's „Termin fixieren“ (the confirm dialog), the Sessions card's actions and the Session-needed notice's button. */
   pick: [slotId: string]
   reschedule: [sessionId: string]
   add: []

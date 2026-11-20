@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { CircleAlert, X } from '@lucide/vue'
-import { TAG_MAX, TAGS_PER_GAME_MAX, normaliseTag, tagProblem, type GameTag } from '~~/shared/game'
+import { Check, CircleAlert, X } from '@lucide/vue'
+import { TAG_MAX, TAGS_PER_GAME_MAX, normaliseTag, sortTagsByLabel, tagProblem, type GameTag } from '~~/shared/game'
 import { fieldBox } from '~/utils/field-chrome'
 import { colorTags } from '~~/shared/tag-colors'
 
@@ -159,6 +159,24 @@ function remove(index: number) {
   inputEl.value?.focus()
 }
 
+// „Alle Tags“ (#615): every Tag in use as a chip; a click adds it to the game and a second click takes it away. It goes
+// through `tryAdd`, the one add rule, and neither clears the typed text (`add`) nor moves the focus (`remove`): the chip keeps it.
+const allTags = computed(() => sortTagsByLabel(props.suggestions))
+const onGame = computed(() => new Set(model.value.map(tag => tag.key)))
+const colorOf = (tag: GameTag) => colorTags([tag])[0]!.color
+/** A chip that is not on the game cannot be added at the limit; one that is on it can always be taken away. */
+const atLimit = computed(() => model.value.length >= TAGS_PER_GAME_MAX)
+
+function toggle(tag: GameTag) {
+  if (onGame.value.has(tag.key)) {
+    tooMany.value = false
+    model.value = model.value.filter(chip => chip.key !== tag.key)
+    return
+  }
+  const result = tryAdd(tag.label, model.value)
+  if (result.outcome === 'added') model.value = result.tags
+}
+
 /** For the form's submit: confirms the text that is still in the field. True when nothing is left in it. */
 function commit(): boolean {
   return text.value.trim() === '' ? true : add(text.value)
@@ -261,5 +279,37 @@ defineExpose({ commit })
         class="text-ink-2"
       >{{ help }}</span>
     </div>
+    <GameNotesDisclosure
+      v-if="suggestions.length > 0"
+      :label="t('gameEdit.allTags')"
+    >
+      <ul class="m-0 flex list-none flex-wrap gap-1.5 p-0">
+        <li
+          v-for="tag in allTags"
+          :key="tag.key"
+          class="max-w-full"
+        >
+          <button
+            type="button"
+            :aria-pressed="onGame.has(tag.key) ? 'true' : 'false'"
+            :disabled="!onGame.has(tag.key) && atLimit"
+            class="hit-44 max-w-full rounded-pill focus-visible:focus-ring disabled:opacity-50"
+            @click="toggle(tag)"
+          >
+            <TagChip
+              :color="colorOf(tag)"
+              class="inline-flex h-8 max-w-full items-center gap-1 px-3 text-small"
+            >
+              <AppIcon
+                v-if="onGame.has(tag.key)"
+                :icon="Check"
+                :size="14"
+              />
+              <span class="truncate">{{ tag.label }}</span>
+            </TagChip>
+          </button>
+        </li>
+      </ul>
+    </GameNotesDisclosure>
   </div>
 </template>

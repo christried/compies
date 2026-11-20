@@ -7,7 +7,8 @@ import { SPIN_MIN_MS, drawInstants } from '../shared/draw-timeline'
 // A spin's length varies from 6 to 10 s (#520); the integration tests that spin through HTTP pin the length to the shortest through
 // test/integration/setup.ts, so `SPIN` is the shortest spin and `spinLengthMs` names another.
 export const offsetsFor = (kind: 'spin' | 'set', clipLength: number | null, spinLengthMs = SPIN_MIN_MS) => {
-  const instants = drawInstants({ kind, commitAt: 0, windowOpens: true, clipLength, spinLengthMs: kind === 'spin' ? spinLengthMs : null })
+  const draw = kind === 'spin' ? { kind, spinLengthMs } : { kind }
+  const instants = drawInstants({ ...draw, commitAt: 0, windowOpens: true, clipLength })
   return { lead: instants.spinStartAt?.getTime() ?? 0, stop: instants.stopAt.getTime(), end: instants.vetoEndsAt!.getTime() }
 }
 

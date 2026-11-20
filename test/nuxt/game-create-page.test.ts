@@ -2,10 +2,12 @@ import { mockNuxtImport, mountSuspended, registerEndpoint } from '@nuxt/test-uti
 import { flushPromises, type VueWrapper } from '@vue/test-utils'
 import { createError, getHeader, readBody, readRawBody } from 'h3'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import RichNotesEditor from '~/components/RichNotesEditor.vue'
 import CreatePage from '~/pages/bibliothek/neu.vue'
 import type { GameView } from '~~/shared/game'
 import { kitty, signInAs } from './auth'
 import { shownToasts } from './event-page'
+import { editorOf } from './helpers/notes-editor'
 
 // The create page (#456): „Speichern und noch eins“ saves the game, toasts, and starts a fresh form with the cursor
 // in the name; „Spiel anlegen“ leads to the game's page as before. The form itself is tested in game-form.test.ts.
@@ -28,11 +30,10 @@ const created: GameView = {
   playersMin: null,
   playersMax: null,
   suitabilities: [],
-  createdBy: { id: kitty.id, name: 'Kitty' },
-  createdAt: '2026-10-28T10:00:00.000Z',
-  canEdit: true,
+  updatedAt: '2026-10-28T10:00:00.000Z',
   notes: null,
   tags: [],
+  archived: false,
   price: null,
 }
 const withImage: GameView = { ...created, imageUrl: '/api/images/c1-abc.webp' }
@@ -97,14 +98,15 @@ async function pick(page: VueWrapper, file = new File(['x'], 'cover.png', { type
 
 /** Fills every field the form has, as a Host would for a game with a Tag, a Price, a Suitability and an image. */
 async function fillEverything(page: VueWrapper) {
-  await field(page, 'Name').setValue('Mario Kart')
+  await field(page, 'Titel').setValue('Mario Kart')
   await field(page, 'YouTube-Link').setValue(LINK)
-  await field(page, 'Start ab').setValue('1:12')
+  await field(page, 'Start').setValue('1:12')
   await field(page, 'Tags').setValue('Co-op')
   await field(page, 'Tags').trigger('keydown', { key: 'Enter' })
-  await field(page, 'Notizen').setValue('Hausregeln')
+  await vi.waitFor(() => expect(page.find('[role="textbox"]').exists()).toBe(true))
+  editorOf(page.findComponent(RichNotesEditor)).commands.insertContent('Hausregeln')
   await field(page, 'Betrag in €').setValue('19,99')
-  await field(page, 'Wo gibt’s das Spiel?').setValue('steam')
+  await field(page, 'Woher?').setValue('steam')
   await button(page, 'Teams').trigger('click')
   await pick(page)
 }
@@ -134,12 +136,12 @@ describe('the create page', () => {
     await vi.waitFor(() => expect(shownToasts().map(toast => toast.text)).toContain('Mario Kart ist in der Bibliothek.'))
     expect(uploads).toHaveBeenCalledTimes(1)
     expect(uploads).toHaveBeenCalledWith({ type: 'image/webp', size: 1234 })
-    expect(field(page, 'Name').element).toBe(document.activeElement)
-    expect(valueOf(page, 'Name')).toBe('')
+    expect(field(page, 'Titel').element).toBe(document.activeElement)
+    expect(valueOf(page, 'Titel')).toBe('')
     expect(valueOf(page, 'YouTube-Link')).toBe('')
-    expect(valueOf(page, 'Notizen')).toBe('')
+    await vi.waitFor(() => expect(page.find('[role="textbox"]')?.text()).toBe(''))
     expect(valueOf(page, 'Betrag in €')).toBe('')
-    expect(valueOf(page, 'Start ab')).toBe('0:00')
+    expect(valueOf(page, 'Start')).toBe('0:00')
     expect(valueOf(page, 'Ende')).toBe('0:30')
     expect(valueOf(page, 'Länge')).toBe('30')
     expect(page.findAll('button[aria-label^="Tag „"]')).toHaveLength(0)
@@ -153,23 +155,23 @@ describe('the create page', () => {
     const page = await mount()
     await fillEverything(page)
     await button(page, 'Speichern und noch eins').trigger('click')
-    await vi.waitFor(() => expect(valueOf(page, 'Name')).toBe(''))
+    await vi.waitFor(() => expect(valueOf(page, 'Titel')).toBe(''))
     expect(uploads).toHaveBeenCalledWith({ type: 'image/webp', size: 1234 })
     uploads.mockClear()
     posted.mockClear()
 
-    await field(page, 'Name').setValue('Zelda')
+    await field(page, 'Titel').setValue('Zelda')
     await button(page, 'Speichern und noch eins').trigger('click')
 
     await vi.waitFor(() => expect(posted).toHaveBeenCalledTimes(1))
-    expect(posted).toHaveBeenCalledWith({ name: 'Zelda', youtubeUrl: '', clipStart: 0, clipLength: 30, playersMin: null, playersMax: null, suitabilities: [], tags: [], notes: '', price: null })
+    expect(posted).toHaveBeenCalledWith({ name: 'Zelda', youtubeUrl: '', clipStart: 0, clipLength: 30, playersMin: null, playersMax: null, suitabilities: [], tags: [], notes: null, price: null })
     expect(uploads).not.toHaveBeenCalled()
     page.unmount()
   })
 
   it('the primary button still leads to the game\'s page', async () => {
     const page = await mount()
-    await field(page, 'Name').setValue('Mario Kart')
+    await field(page, 'Titel').setValue('Mario Kart')
     await field(page, 'YouTube-Link').setValue(LINK)
 
     // „Spiel anlegen“ is the form's submit button; the test submits the form as the other form tests do.
@@ -182,10 +184,10 @@ describe('the create page', () => {
 
   it('Strg + Enter in the name does what „Spiel anlegen“ does: it saves and leads to the game\'s page (#465)', async () => {
     const page = await mount()
-    await field(page, 'Name').setValue('Mario Kart')
+    await field(page, 'Titel').setValue('Mario Kart')
     await field(page, 'YouTube-Link').setValue(LINK)
 
-    field(page, 'Name').element.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', ctrlKey: true, bubbles: true, cancelable: true }))
+    field(page, 'Titel').element.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', ctrlKey: true, bubbles: true, cancelable: true }))
 
     await vi.waitFor(() => expect(useRoute().path).toBe(`/bibliothek/${created.id}`))
     expect(shownToasts().map(toast => toast.text)).toContain('Mario Kart ist in der Bibliothek.')
@@ -195,17 +197,50 @@ describe('the create page', () => {
   it('a failed save keeps the form and the route', async () => {
     createFails = true
     const page = await mount()
-    await field(page, 'Name').setValue('Mario Kart')
+    await field(page, 'Titel').setValue('Mario Kart')
     await field(page, 'YouTube-Link').setValue(LINK)
     await pick(page)
 
     await button(page, 'Speichern und noch eins').trigger('click')
 
     await vi.waitFor(() => expect(page.get('[role="alert"]').text()).toBe('Der Clip passt nicht: Die Länge liegt zwischen 10 und 120 Sekunden.'))
-    expect(valueOf(page, 'Name')).toBe('Mario Kart')
+    expect(valueOf(page, 'Titel')).toBe('Mario Kart')
     expect(imagePreview(page).exists()).toBe(true)
     expect(useRoute().path).toBe('/bibliothek/neu')
     expect(shownToasts().map(toast => toast.text)).not.toContain('Mario Kart ist in der Bibliothek.')
+    page.unmount()
+  })
+
+  // #806: the toast after „Spiel anlegen“ offers „Noch eins“, which opens a fresh form for the next game.
+  it('the toast after „Spiel anlegen“ offers „Noch eins“, and the action opens a fresh form at /bibliothek/neu', async () => {
+    const page = await mount()
+    await field(page, 'Titel').setValue('Mario Kart')
+    await field(page, 'YouTube-Link').setValue(LINK)
+
+    await page.get('form').trigger('submit')
+
+    await vi.waitFor(() => expect(useRoute().path).toBe(`/bibliothek/${created.id}`))
+    const toast = useState<{ text: string, action?: { label: string, run: () => void } }[]>('toasts').value
+      .find(candidate => candidate.text === 'Mario Kart ist in der Bibliothek.')
+    expect(toast?.action?.label).toBe('Noch eins')
+
+    toast!.action!.run()
+
+    await vi.waitFor(() => expect(useRoute().path).toBe('/bibliothek/neu'))
+    page.unmount()
+  })
+
+  it('the toast after „Speichern und noch eins“ offers no action', async () => {
+    const page = await mount()
+    await fillEverything(page)
+
+    await button(page, 'Speichern und noch eins').trigger('click')
+
+    await vi.waitFor(() => expect(shownToasts().map(toast => toast.text)).toContain('Mario Kart ist in der Bibliothek.'))
+    const toast = useState<{ text: string, action?: unknown }[]>('toasts').value
+      .find(candidate => candidate.text === 'Mario Kart ist in der Bibliothek.')
+    expect(toast).toBeDefined()
+    expect(toast?.action).toBeUndefined()
     page.unmount()
   })
 
@@ -220,11 +255,11 @@ describe('the create page', () => {
     }
 
     function pressCtrlEnter(page: VueWrapper) {
-      field(page, 'Name').element.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', ctrlKey: true, bubbles: true, cancelable: true }))
+      field(page, 'Titel').element.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', ctrlKey: true, bubbles: true, cancelable: true }))
     }
 
     async function fillValid(page: VueWrapper) {
-      await field(page, 'Name').setValue('Mario Kart')
+      await field(page, 'Titel').setValue('Mario Kart')
       await field(page, 'YouTube-Link').setValue(LINK)
     }
 

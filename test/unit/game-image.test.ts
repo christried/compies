@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { canSeeImage } from '../../server/domain/image-access'
+import { canSeeImage, ownsImage } from '../../server/domain/image-access'
 import { imageKey, isWebp } from '../../server/domain/image'
 
 const bytes = (text: string) => Uint8Array.from(text.split('').map(char => char.charCodeAt(0)))
@@ -30,44 +30,70 @@ describe('imageKey', () => {
 })
 
 describe('canSeeImage (#143, #148)', () => {
-  const libraryViewer = { canHost: true, isAdmin: false }
-  const nobody = { canHost: false, isAdmin: false }
+  const libraryViewer = { id: 'host-1', canHost: true }
+  const nobody = { id: 'member-1', canHost: false }
+  const hidden = { isHost: false, poolPreview: false, set: false }
 
-  it('lets library viewers see it', () => {
-    expect(canSeeImage({ viewer: libraryViewer, gameEvents: [] })).toBe(true)
-    expect(canSeeImage({ viewer: { canHost: false, isAdmin: true }, gameEvents: [] })).toBe(true)
-    expect(canSeeImage({ viewer: libraryViewer, gameEvents: [{ isHost: false, poolPreview: false, set: false }] })).toBe(true)
+  it('lets the owner with the Host permission see it, with no Event at all (#723)', () => {
+    expect(canSeeImage({ viewer: libraryViewer, ownerIds: ['host-1'], gameEvents: [] })).toBe(true)
+    expect(canSeeImage({ viewer: libraryViewer, ownerIds: ['host-1'], gameEvents: [hidden] })).toBe(true)
+  })
+
+  it('lets each owner of a key that copies share see it (#723)', () => {
+    const ownerIds = ['host-1', 'host-3', 'host-4']
+
+    for (const id of ownerIds) expect(canSeeImage({ viewer: { id, canHost: true }, ownerIds, gameEvents: [] })).toBe(true)
+  })
+
+  it('refuses a viewer with the Host permission who owns no game with the key, unless an Event lets them see it (#723)', () => {
+    expect(canSeeImage({ viewer: libraryViewer, ownerIds: ['host-3'], gameEvents: [] })).toBe(false)
+    expect(canSeeImage({ viewer: libraryViewer, ownerIds: ['host-3'], gameEvents: [hidden] })).toBe(false)
+    expect(canSeeImage({ viewer: libraryViewer, ownerIds: ['host-3'], gameEvents: [{ isHost: false, poolPreview: true, set: false }] })).toBe(true)
+  })
+
+  it('refuses an owner who lost the Host permission, unless they host an Event that shows it (#723)', () => {
+    expect(canSeeImage({ viewer: { id: 'host-1', canHost: false }, ownerIds: ['host-1'], gameEvents: [] })).toBe(false)
+    expect(canSeeImage({ viewer: { id: 'host-1', canHost: false }, ownerIds: ['host-1'], gameEvents: [{ isHost: true, poolPreview: false, set: false }] })).toBe(true)
   })
 
   it('lets a Member of an Event whose pool holds the game see it while its Pool preview is on', () => {
-    expect(canSeeImage({ viewer: nobody, gameEvents: [{ isHost: false, poolPreview: true, set: false }] })).toBe(true)
+    expect(canSeeImage({ viewer: nobody, ownerIds: [], gameEvents: [{ isHost: false, poolPreview: true, set: false }] })).toBe(true)
   })
 
   it('lets a Member see it when only one of several Events has its Pool preview on', () => {
     const gameEvents = [{ isHost: false, poolPreview: false, set: false }, { isHost: false, poolPreview: true, set: false }]
 
-    expect(canSeeImage({ viewer: nobody, gameEvents })).toBe(true)
+    expect(canSeeImage({ viewer: nobody, ownerIds: [], gameEvents })).toBe(true)
   })
 
   it('refuses a Member who is in Events with the Pool preview off only', () => {
-    expect(canSeeImage({ viewer: nobody, gameEvents: [{ isHost: false, poolPreview: false, set: false }] })).toBe(false)
-    expect(canSeeImage({ viewer: nobody, gameEvents: [{ isHost: false, poolPreview: false, set: false }, { isHost: false, poolPreview: false, set: false }] })).toBe(false)
+    expect(canSeeImage({ viewer: nobody, ownerIds: [], gameEvents: [{ isHost: false, poolPreview: false, set: false }] })).toBe(false)
+    expect(canSeeImage({ viewer: nobody, ownerIds: [], gameEvents: [{ isHost: false, poolPreview: false, set: false }, { isHost: false, poolPreview: false, set: false }] })).toBe(false)
   })
 
   it('lets the Host of an Event with the Pool preview off see it even without the library permission', () => {
-    expect(canSeeImage({ viewer: nobody, gameEvents: [{ isHost: true, poolPreview: false, set: false }] })).toBe(true)
+    expect(canSeeImage({ viewer: nobody, ownerIds: [], gameEvents: [{ isHost: true, poolPreview: false, set: false }] })).toBe(true)
   })
 
   it('refuses everyone else: no pool Event, or signed out', () => {
-    expect(canSeeImage({ viewer: nobody, gameEvents: [] })).toBe(false)
-    expect(canSeeImage({ viewer: null, gameEvents: [] })).toBe(false)
+    expect(canSeeImage({ viewer: nobody, ownerIds: [], gameEvents: [] })).toBe(false)
+    expect(canSeeImage({ viewer: null, ownerIds: [], gameEvents: [] })).toBe(false)
   })
 
   it('lets a Member see a game that a Round has set, with the Pool preview off (#228)', () => {
-    expect(canSeeImage({ viewer: nobody, gameEvents: [{ isHost: false, poolPreview: false, set: true }] })).toBe(true)
+    expect(canSeeImage({ viewer: nobody, ownerIds: [], gameEvents: [{ isHost: false, poolPreview: false, set: true }] })).toBe(true)
   })
 
   it('refuses a signed-out viewer whatever the Events say', () => {
-    expect(canSeeImage({ viewer: null, gameEvents: [{ isHost: true, poolPreview: true, set: false }] })).toBe(false)
+    expect(canSeeImage({ viewer: null, ownerIds: [], gameEvents: [{ isHost: true, poolPreview: true, set: false }] })).toBe(false)
+  })
+})
+
+describe('ownsImage (#723)', () => {
+  it('is true for a viewer with the Host permission among the owners, false otherwise', () => {
+    expect(ownsImage({ id: 'a', canHost: true }, ['b', 'a'])).toBe(true)
+    expect(ownsImage({ id: 'a', canHost: true }, ['b'])).toBe(false)
+    expect(ownsImage({ id: 'a', canHost: false }, ['a'])).toBe(false)
+    expect(ownsImage(null, ['a'])).toBe(false)
   })
 })

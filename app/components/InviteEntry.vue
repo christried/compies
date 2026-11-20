@@ -18,7 +18,8 @@ const { toast } = useToast()
 const user = useAuthUser()
 const signedIn = user.value !== null
 
-useHead({ title: () => t(signedIn ? 'invite.kicker' : 'auth.titleInvite') })
+// A signed-in visitor joins at once and moves on, so the page sets no title of its own (#801): the tab shows the app name.
+useHead({ title: () => (signedIn ? undefined : t('auth.titleInvite')) })
 
 const { data: preview, error: previewError } = await useFetch<InvitePreview>(`/api/invite/${props.invite}`, { immediate: !signedIn })
 const previewFailed = computed(() => !signedIn && !!previewError.value)
@@ -68,9 +69,6 @@ onMounted(() => {
         v-else-if="preview"
         class="flex w-full max-w-[480px] flex-col items-center gap-4 text-center"
       >
-        <span class="inline-flex h-[26px] items-center rounded-pill border-2 border-line bg-primary px-2.5 text-small font-extrabold text-on-primary">
-          {{ t('invite.kicker') }}
-        </span>
         <UserAvatar
           :name="preview.host.name"
           :image="preview.host.image"

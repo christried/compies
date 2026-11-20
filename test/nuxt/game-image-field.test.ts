@@ -21,11 +21,10 @@ const created: GameView = {
   playersMin: null,
   playersMax: null,
   suitabilities: [],
-  createdBy: { id: kitty.id, name: 'Kitty' },
-  createdAt: '2026-10-28T10:00:00.000Z',
-  canEdit: true,
+  updatedAt: '2026-10-28T10:00:00.000Z',
   notes: null,
   tags: [],
+  archived: false,
   price: null,
 }
 const withImage: GameView = { ...created, imageUrl: '/api/images/b1-abc.webp' }
@@ -67,7 +66,7 @@ async function pick(page: VueWrapper, file = new File(['x'], 'cover.png', { type
 }
 
 async function save(page: VueWrapper) {
-  await field(page, 'Name').setValue('Mario Kart')
+  await field(page, 'Titel').setValue('Mario Kart')
   await page.get('form').trigger('submit')
 }
 
@@ -305,7 +304,7 @@ describe('saving while the crop is being made (#457)', () => {
     const page = await mountSuspended(GameForm, { props: { saveAndNext: true } })
     await pickAndSizeTile(page)
     await tile(page).trigger('keydown', { key: 'ArrowRight' })
-    await field(page, 'Name').setValue('Mario Kart')
+    await field(page, 'Titel').setValue('Mario Kart')
 
     await page.findAll('button').find(button => button.text() === 'Speichern und noch eins')!.trigger('click')
 

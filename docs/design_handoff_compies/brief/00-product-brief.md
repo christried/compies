@@ -368,6 +368,7 @@ For every game, this loop runs:
 - The app uses recommended player count and suitable formats **only for suggestions** when filling pools.
 - Hosts can create games. Editing is allowed for the creator and the platform admin.
 - When creating a game, the app checks whether it already exists (against duplicates like "CS2" vs "Counter-Strike 2").
+- **Deviation (0.16, #455):** the library is not one for the whole platform any more. From Release 0.16 every User with the Host permission has their own Game library, which nobody else sees, the Platform admin included; the migration of 0.16 gave each Host a copy of every game of another Host that their Events referred to, and the two games are independent from then on. Where this section says „Global“, or gives the Platform admin the right to edit a game, ADR 0018 (one Game library per User) applies.
 
 ---
 

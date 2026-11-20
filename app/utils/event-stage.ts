@@ -83,7 +83,7 @@ const PIECES: StagePiece[] = [
   // The finished stage waits for the Award ceremony (#445): the card stands in the place of the actions, the Standings and the history until the Host has started it, and for a viewer who
   // holds the first run until it is over. The Head, the notices and the cards stay. Nobody else asks why the page waits: the page asks `waitsForCeremony` (event-page.ts).
   { block: 'pending', at: { finished: 3 }, pinned: true, present: (_view, ctx) => ctx.waiting },
-  // A Tie (#278) is the news of the stage, right under the reopen notices, wherever the Host's dock offers „Unentschieden beenden“ (running, between, done) and not in a
+  // A Tie (#278) is the news of the stage, right under the reopen notices, wherever the Host's dock offers „Unentschieden“ (running, between, done) and not in a
   // finished Event, where nobody decides any more. For Members only: the Host decides and has the dock (#283). A Tie needs a started Session, so `teams` never has one.
   { block: 'tie', at: { running: 3, between: 3, done: 3 }, pinned: true, audience: 'members', present: view => view.end?.tie != null },
   // The dead end (#278): every Session ended and games are still to start, with a Session left to play them in (the Event takes up to SESSIONS_MAX). It sits where the Tie banner does and

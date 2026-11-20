@@ -30,7 +30,6 @@ const save = () => saveName(() => navigateTo(safeRedirect(route.query.redirect),
       >
         <div class="flex items-start gap-3">
           <div class="flex flex-1 flex-col gap-1">
-            <span class="text-small font-bold text-ink-2">{{ t('onboarding.kicker') }}</span>
             <h1 class="m-0 text-[34px] leading-none">
               {{ t('onboarding.title') }}
             </h1>
@@ -60,8 +59,8 @@ const save = () => saveName(() => navigateTo(safeRedirect(route.query.redirect),
           ref="field"
           v-model="displayName"
           :label="t('profile.displayName')"
-          :help="missing ? t('onboarding.nameMissing') : t('onboarding.nameHint')"
-          :invalid="missing"
+          :help="t('onboarding.nameHint')"
+          :error="missing ? t('onboarding.nameMissing') : undefined"
           :maxlength="DISPLAY_NAME_MAX"
           cut-at-max
           autocomplete="nickname"
@@ -79,7 +78,6 @@ const save = () => saveName(() => navigateTo(safeRedirect(route.query.redirect),
           size="lg"
           class="w-full"
           :aria-disabled="missing || saving"
-          :aria-describedby="missing ? 'display-name-help' : undefined"
         >
           {{ t('onboarding.go') }}
           <AppIcon :icon="ChevronRight" />

@@ -8,9 +8,11 @@ import type { BoardTeam, EventView } from '~~/shared/event'
 import type { EndView, RoundView, SetGameView } from '~~/shared/stage'
 import { formatShortDay } from '~/utils/berlin-time'
 import { GAME_NAME_MAX, type GameView, type PoolGame } from '~~/shared/game'
+import { notesFromLines, type NotesDoc } from '~~/shared/notes-doc'
 import { defaultSettings } from '~~/shared/settings'
 import { kitty, signInAs } from './auth'
-import { clickButton, clickHostAction, dialog, hostActionElement, regionHeadings, serve, shownToasts, viewWithSessions, type Mounted, type Wrapper } from './event-page'
+import { FORMATTED_HREF, FORMATTED_NOTES, readFormatted } from './helpers/formatted-notes'
+import { clickButton, clickHostAction, dialog, hostActionElement, regionHeadings, restoreScreen, serve, shownToasts, stubScreen, viewWithSessions, type Mounted, type Wrapper } from './event-page'
 
 // The open Rounds on the stage and „Nächstes Spiel setzen“ (#228, 11-event-seite § EventPage, screen 15): the Round card with
 // „wird gespielt“, its Game notes open for the Host only, „Zurücklegen“ as the Host's hold, the picker that lists the Game pool
@@ -20,12 +22,12 @@ const FIRST = '2026-10-30T19:00:00.000Z'
 const STARTED = '2026-10-30T19:30:00.000Z'
 const ENDED = '2026-10-30T22:00:00.000Z'
 
-const halo: PoolGame = { id: 'g-halo', name: 'Halo', imageUrl: null, youtubeId: null, clipStart: 0, clipLength: 30, playersMin: 2, playersMax: 4, suitabilities: [], notes: 'Hausregel: keine Raketen', price: null }
+const halo: PoolGame = { id: 'g-halo', name: 'Halo', imageUrl: null, youtubeId: null, clipStart: 0, clipLength: 30, playersMin: 2, playersMax: 4, suitabilities: [], notes: notesFromLines(['Hausregel: keine Raketen']), price: null, archived: false }
 const kart: PoolGame = { ...halo, id: 'g-kart', name: 'Kart', notes: null }
 const pong: PoolGame = { ...halo, id: 'g-pong', name: 'Pong', notes: null }
-const schach: GameView = { ...halo, id: 'g-schach', name: 'Schach', notes: null, createdBy: { id: kitty.id, name: 'Kitty' }, createdAt: '2026-01-15T10:00:00.000Z', canEdit: true, tags: [], price: null }
+const schach: GameView = { ...halo, id: 'g-schach', name: 'Schach', notes: null, updatedAt: '2026-01-15T10:00:00.000Z', tags: [], archived: false, price: null }
 
-const round = (id: string, game: PoolGame, notes?: string): RoundView => {
+const round = (id: string, game: PoolGame, notes?: NotesDoc): RoundView => {
   const { notes: _notes, ...shown } = game
   return { id, startedAt: STARTED, setAt: STARTED, game: shown, ...(notes ? { notes } : {}) }
 }
@@ -33,10 +35,10 @@ const round = (id: string, game: PoolGame, notes?: string): RoundView => {
 const pool: EventView['pool'] = [halo, kart, pong]
 const pill = (page: Mounted) => [...page.element.querySelectorAll('[role="toolbar"] button')].map(button => button.textContent?.replace(/\s+/g, ' ').trim())
 
-type Options = { host: boolean, rounds?: RoundView[], setGame?: SetGameView | null, sessions?: Parameters<typeof viewWithSessions>[1], phase?: string, teams?: BoardTeam[], end?: EndView | null, hostGames?: EventView['hostGames'] }
+type Options = { host: boolean, rounds?: RoundView[], setGame?: SetGameView | null, sessions?: Parameters<typeof viewWithSessions>[1], phase?: string, teams?: BoardTeam[], end?: EndView | null, hostGames?: EventView['hostGames'], eventNotes?: EventView['eventNotes'] }
 
 /** A running Event, set up for Host pick: the Host's or a Member's read of it, with these open Rounds. */
-function serveRunning({ host, rounds = [], setGame, sessions, phase = 'running', teams, end, hostGames }: Options) {
+function serveRunning({ host, rounds = [], setGame, sessions, phase = 'running', teams, end, hostGames, eventNotes }: Options) {
   return serve(slug => viewWithSessions(slug, sessions ?? [{ number: null, startsAt: FIRST, startedAt: STARTED }], 0, {
     event: { isHost: host, phase },
     settings: defaultSettings(),
@@ -47,6 +49,7 @@ function serveRunning({ host, rounds = [], setGame, sessions, phase = 'running',
     ...(end === undefined ? {} : { end }),
     pool: host ? pool : null,
     hostGames: hostGames ?? null,
+    eventNotes: eventNotes ?? null,
   }))
 }
 
@@ -74,10 +77,19 @@ describe('the open Rounds on the stage', () => {
 
     const stage = await mount(slug)
 
-    expect(regionHeadings(stage)).toEqual(['Gerade dran', 'Spielbrett', 'Sessions', 'So wird gespielt'])
+    expect(regionHeadings(stage)).toEqual(['Läuft aktuell', 'Spielbrett', 'Sessions', 'So wird gespielt'])
     const cards = stage.get('[aria-label="Offene Spiele"]').findAll('li')
     expect(cards.map((card: Wrapper) => card.text())).toEqual([expect.stringContaining('Halo'), expect.stringContaining('Kart')])
     for (const card of cards) expect(card.text()).not.toContain('wird gespielt')
+  })
+
+  it('names the block „Läuft aktuell“ for the Host as for a Member (#802)', async () => {
+    const { slug } = serveRunning({ host: true, rounds: [round('r1', halo), round('r2', kart)] })
+
+    const stage = await mount(slug)
+
+    expect(regionHeadings(stage)).toContain('Läuft aktuell')
+    expect(regionHeadings(stage)).not.toContain('Gerade dran')
   })
 
   it('shows the Round as a tile with no player count and no number on it (#435)', async () => {
@@ -107,7 +119,7 @@ describe('the open Rounds on the stage', () => {
 
     const stage = await mount(slug)
 
-    expect(regionHeadings(stage)).toContain('Gerade dran')
+    expect(regionHeadings(stage)).toContain('Läuft aktuell')
     expect(stage.get('[aria-label="Offene Spiele"]').text()).toContain('Halo')
   })
 
@@ -116,7 +128,7 @@ describe('the open Rounds on the stage', () => {
 
     const stage = await mount(slug)
 
-    expect(regionHeadings(stage)).toContain('Gerade dran')
+    expect(regionHeadings(stage)).toContain('Läuft aktuell')
   })
 
   it('opens the Game notes of the Round for the Host', async () => {
@@ -125,9 +137,80 @@ describe('the open Rounds on the stage', () => {
     const stage = await mount(slug)
 
     const disclosure = stage.get('[aria-label="Offene Spiele"]').get('button[aria-expanded]')
-    expect(disclosure.text()).toBe('Notizen')
+    // The Round card's variant (#729): 44 px, the lock line, open for the running Round.
+    expect(disclosure.text()).toBe('Notizen Nur du siehst das')
+    expect(disclosure.classes()).toContain('h-11')
     expect(disclosure.attributes('aria-expanded')).toBe('true')
     expect(stage.get('[aria-label="Offene Spiele"]').text()).toContain('Hausregel: keine Raketen')
+    expect(stage.get('[aria-label="Offene Spiele"]').get('.cp-note--sm').exists()).toBe(true)
+  })
+
+  it('shows the Host the formatted Game notes of the Round: heading, list, bold text and link (#728)', async () => {
+    const { slug } = serveRunning({ host: true, rounds: [round('r1', halo, FORMATTED_NOTES)] })
+
+    const stage = await mount(slug)
+
+    const rounds = stage.get('[aria-label="Offene Spiele"]')
+    expect(rounds.get('button[aria-expanded]').attributes('aria-expanded')).toBe('true')
+    // The game block's title „Notizen“ is an h3 (#729), a heading in the notes an h4.
+    expect(rounds.get('h3').text()).toBe('Notizen')
+    expect(readFormatted(rounds.element)).toEqual({
+      heading: 'h4',
+      headingText: 'Regeln',
+      items: ['Erstens', 'Zweitens'],
+      bold: 'Wichtig',
+      link: { text: 'nachlesen', href: FORMATTED_HREF, target: '_blank', rel: 'noopener noreferrer' },
+    })
+  })
+
+  it('opens the disclosure with the label and the Event notes for a game that has no Game notes (#732)', async () => {
+    const { slug } = serveRunning({ host: true, rounds: [round('r1', kart)], eventNotes: { 'g-kart': notesFromLines(['Heute nur Bo1'])! } })
+
+    const stage = await mount(slug)
+
+    const rounds = stage.get('[aria-label="Offene Spiele"]')
+    expect(rounds.get('button[aria-expanded]').attributes('aria-expanded')).toBe('true')
+    expect(rounds.findAll('h3').map((heading: Wrapper) => heading.text())).toEqual(['Notizen für dieses Event'])
+    expect(rounds.text()).toContain('Heute nur Bo1')
+  })
+
+  it('names the Event under its notes block when both blocks show, and shows no chip while it runs (#729; the finished look is pinned at the block, the dialog and the popover)', async () => {
+    const { slug } = serveRunning({ host: true, rounds: [round('r1', halo, halo.notes!)], eventNotes: { 'g-halo': notesFromLines(['Heute nur Bo1'])! } })
+
+    const stage = await mount(slug)
+
+    const text = stage.get('[aria-label="Offene Spiele"]').text()
+    expect(text).toContain('Freitags-Zocken')
+    expect(text).toContain('aus deiner Bibliothek')
+    expect(text).not.toContain('Event beendet')
+  })
+
+  it('shows the Event notes first, then the Game notes, and the label once (#732)', async () => {
+    const { slug } = serveRunning({ host: true, rounds: [round('r1', halo, halo.notes!)], eventNotes: { 'g-halo': notesFromLines(['Heute nur Bo1'])! } })
+
+    const stage = await mount(slug)
+
+    const text = stage.get('[aria-label="Offene Spiele"]').text()
+    expect(text.split('Notizen für dieses Event')).toHaveLength(2)
+    expect(text.indexOf('Notizen für dieses Event')).toBeLessThan(text.indexOf('Heute nur Bo1'))
+    expect(text.indexOf('Heute nur Bo1')).toBeLessThan(text.indexOf('Hausregel: keine Raketen'))
+  })
+
+  it('shows no disclosure for Event notes that are blank, and none for a Round whose game has no key (#732)', async () => {
+    const { slug } = serveRunning({ host: true, rounds: [round('r1', kart), round('r2', pong)], eventNotes: { 'g-kart': { type: 'doc', content: [{ type: 'paragraph' }] } } })
+
+    const stage = await mount(slug)
+
+    expect(stage.get('[aria-label="Offene Spiele"]').find('button[aria-expanded]').exists()).toBe(false)
+  })
+
+  it('shows a Member the Round without any Notizen, the Event notes map being null (#732)', async () => {
+    const { slug } = serveRunning({ host: false, rounds: [round('r1', kart)], eventNotes: null })
+
+    const stage = await mount(slug)
+
+    const rounds = stage.get('[aria-label="Offene Spiele"]')
+    expect(rounds.text()).not.toContain('Notizen')
   })
 
   it('shows a Member the Round without any Game notes, as the server leaves them out', async () => {
@@ -564,6 +647,28 @@ describe('„Nächstes Spiel setzen“', () => {
     expect(order).toEqual(['Aus dem Pool: noch 2', 'Oder aus der ganzen Bibliothek', 'Bibliothek'])
   })
 
+  it('shows the Event notes in the popover of a pool row, for a game without Game notes (#732)', async () => {
+    registerEndpoint('/api/games', { method: 'GET', handler: () => ({ games: [kart, schach], tagsInUse: [] }) })
+    signInAs({ ...kitty, canHost: true })
+    stubScreen(true)
+    const served = serveRunning({ host: true, setGame: { rejection: null, spinRejection: 'no_wheel', respin: false, left: [halo.id, pong.id], poolWarning: null }, eventNotes: { 'g-pong': notesFromLines(['Heute nur Bo1'])! } })
+    const stage = await mount(served.slug)
+
+    await clickHostAction(stage, 'Nächstes Spiel setzen')
+
+    await vi.waitFor(() => expect(dialog()).not.toBeNull())
+    const poolList = dialog()!.querySelector('ul[aria-label="Spiele, die im Pool noch übrig sind"]')!
+    // Halo has Game notes only, Pong Event notes only: both rows have the button.
+    const [haloRow, pongRow] = [...poolList.querySelectorAll('li')]
+    expect(haloRow!.querySelector('button[aria-label="Notizen ansehen"]')).not.toBeNull()
+    pongRow!.querySelector<HTMLButtonElement>('button[aria-label="Notizen ansehen"]')!.click()
+    await flushPromises()
+    const popover = document.querySelector<HTMLElement>('[role="dialog"]:not([data-sheet])')!
+    expect([...popover.querySelectorAll('h3')].map(heading => heading.textContent)).toEqual(['Notizen für dieses Event'])
+    expect(popover.textContent).toContain('Heute nur Bo1')
+    restoreScreen()
+  })
+
   it('sets the chosen game from the bar and closes once the server took it', async () => {
     registerEndpoint('/api/games', { method: 'GET', handler: () => ({ games: [kart, schach], tagsInUse: [] }) })
     signInAs({ ...kitty, canHost: true })
@@ -702,7 +807,7 @@ describe('the Lucky Wheel on the stage (#229)', () => {
 
     const stage = await mount(slug)
 
-    expect(regionHeadings(stage)).toEqual(['Gerade dran', 'Glücksrad', 'Spielbrett', 'Sessions', 'So wird gespielt'])
+    expect(regionHeadings(stage)).toEqual(['Läuft aktuell', 'Glücksrad', 'Spielbrett', 'Sessions', 'So wird gespielt'])
     expect(stage.get('[role="img"][aria-label="Glücksrad mit 2 Spielen"]').text()).toContain('Halo')
   })
 
@@ -840,12 +945,12 @@ describe('the Round tile carries no Price (#435, was #338)', () => {
   })
 })
 
-// The game dialog from „Gerade dran“ (#443, #444): the Host's has the Tags and Notes of a Round's game from `hostGames`, the Round's own Notes stay open under the tile;
+// The game dialog from „Läuft aktuell“ (#443, #444): the Host's has the Tags and Notes of a Round's game from `hostGames`, the Round's own Notes stay open under the tile;
 // a Member's has the facts and never those.
 describe('the game dialog from the Round tiles (#443, #444)', () => {
   const hostGames = {
     'g-halo': { tags: [{ key: 'koop', label: 'Koop' }], notes: halo.notes },
-    'g-schach': { tags: [{ key: 'denken', label: 'Denken' }], notes: 'Schach-Notizen' },
+    'g-schach': { tags: [{ key: 'denken', label: 'Denken' }], notes: notesFromLines(['Schach-Notizen']) },
   }
   const opened = () => document.querySelector('[role="dialog"]') as HTMLElement | null
 
@@ -868,7 +973,7 @@ describe('the game dialog from the Round tiles (#443, #444)', () => {
   })
 
   it('opens the same dialog for a Round whose game is in no pool: its Tags come from hostGames, its Notes stay open under the tile', async () => {
-    const { slug } = serveRunning({ host: true, rounds: [round('r1', schach, 'Schach-Notizen')], hostGames })
+    const { slug } = serveRunning({ host: true, rounds: [round('r1', schach, notesFromLines(['Schach-Notizen'])!)], hostGames })
     const stage = await mount(slug)
 
     const rounds = stage.get('[aria-label="Offene Spiele"]')

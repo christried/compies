@@ -10,6 +10,7 @@ import {
   gameNotesProblem, parseGameInput, parsePlayerCount, type GameTag,
   type GameView, type Suitability,
 } from '~~/shared/game'
+import type { NotesDoc } from '~~/shared/notes-doc'
 import { parseYouTubeId } from '~~/shared/youtube'
 
 // Create or edit a game (screen 24, `?s=edit`, #141, #142, #171): name, YouTube link, start and length, with a live
@@ -53,11 +54,15 @@ const suitabilities = ref<Suitability[]>([...(props.game?.suitabilities ?? [])])
 const tags = ref<GameTag[]>([...(props.game?.tags ?? [])])
 const tagInput = useTemplateRef('tagInput')
 const nameField = useTemplateRef('nameField')
-const notes = ref(props.game?.notes ?? '')
+// The notes are the document the editor holds (#454, ADR 0019): it starts from the game's stored document and never emits on mount, so a form opened and saved
+// untouched sends the document as it is stored. `notesOver` is the editor's own report of a note over the limit that it could not hand over (a paste too big for the parser).
+const notes = ref<NotesDoc | null>(props.game?.notes ?? null)
+const notesOver = ref(false)
 // The Price (#337, #361): the Price the field writes as the User types, and the one blocker the field reports.
 const price = ref<PriceDraft>(props.game?.price ? { cents: props.game.price.cents, source: props.game.price.source } : null)
 const priceError = ref<string | null>(null)
-const attempted = ref(false)
+// „A save was tried“ (#797): the fields show their messages red after it, through the shared flag; the reason beside the button too.
+const { attempted, attempt } = provideFormAttempt()
 const saving = ref(false)
 const failure = ref<string | null>(null)
 /** What the player reported about the current link. */
@@ -71,7 +76,7 @@ const shortcutHint = t(isApplePlatform(typeof navigator === 'undefined' ? '' : n
 // The name rule is the shared one (gameNameProblem); the form only words it.
 const nameProblem = computed(() => gameNameProblem(name.value))
 const nameError = computed(() => {
-  if (attempted.value && nameProblem.value === 'empty') return t('gameEdit.nameRequired')
+  if (nameProblem.value === 'empty') return t('gameEdit.nameRequired')
   if (nameProblem.value === 'too_long') return t('error.nameTooLong', { max: GAME_NAME_MAX })
   return undefined
 })
@@ -121,19 +126,25 @@ const rangeInverted = computed(() => {
 const fromError = computed(() => (fromInvalid.value ? t('error.playersInvalid') : undefined))
 const toError = computed(() => (toInvalid.value || rangeInverted.value ? t('error.playersInvalid') : undefined))
 
-// Game notes (#223): the shared rule says when they are too long; the message shows at once, like the name's.
-const notesError = computed(() => (gameNotesProblem(notes.value) === 'too_long' ? t('gameEdit.notesTooLong', { max: GAME_NOTES_MAX }) : undefined))
+// Game notes (#223): the shared rule says when they are too long. The editor shows its own error at once (it only arises from typing or a paste); the CTA says why it is blocked.
+const notesBlocked = computed(() => notesOver.value || gameNotesProblem(notes.value) === 'too_long')
 
-/** Why the CTA is blocked, in the words of the field that is wrong, or null when no field is. */
-const blocker = computed<string | null>(() => {
-  if (nameProblem.value === 'empty') return t('gameEdit.nameRequired')
-  if (nameProblem.value === 'too_long') return t('error.nameTooLong', { max: GAME_NAME_MAX })
-  if (linkError.value) return t('gameEdit.linkRequired')
-  if (fromError.value || toError.value) return t('error.playersInvalid')
-  if (notesError.value) return notesError.value
-  if (priceError.value) return priceError.value
-  return startError.value ?? endError.value ?? lengthError.value ?? null
+/**
+ * Why the CTA is blocked, in the words of the field that is wrong, or null when no field is. `immediate` says the reason shows
+ * beside the button at once; every other reason waits for a try (#797). The reason carries that itself (#825), never its text.
+ */
+const blockerReason = computed<{ text: string, immediate: boolean } | null>(() => {
+  const later = (text: string) => ({ text, immediate: false })
+  if (nameProblem.value === 'empty') return later(t('gameEdit.nameRequired'))
+  if (nameProblem.value === 'too_long') return later(t('error.nameTooLong', { max: GAME_NAME_MAX }))
+  if (linkError.value) return later(t('gameEdit.linkRequired'))
+  if (fromError.value || toError.value) return later(t('error.playersInvalid'))
+  if (notesBlocked.value) return { text: t('notesEditor.saveBlocked'), immediate: true }
+  if (priceError.value) return later(priceError.value)
+  const clip = startError.value ?? endError.value ?? lengthError.value
+  return clip ? later(clip) : null
 })
+const blocker = computed(() => blockerReason.value?.text ?? null)
 
 /** A player count field as the shared rules read it: its number, nothing, or the text itself when that is no count, so the rules refuse it too. */
 function countOf(text: string): number | string | null {
@@ -152,11 +163,17 @@ const draft = computed(() => ({
   suitabilities: SUITABILITIES.filter(suitability => suitabilities.value.includes(suitability)),
   // The labels: the server normalises them again and takes over the spelling in use (#335).
   tags: tags.value.map(tag => tag.label),
-  // The raw text: the shared rules trim it, and refuse it when it is too long.
+  // The editor's document (#454); the shared rules rebuild it and refuse it when it is too long.
   notes: notes.value,
   // null when neither the amount nor the source is set; the field keeps the shape the shared rules read (#337, #361).
   price: price.value,
 }))
+
+/**
+ * The reason beside the button shows after a try (#797): until then the disabled button says enough. The notes reason is the
+ * exception: a note over the limit only arises from the User's own typing or paste, so it is touched already and shows at once.
+ */
+const blockerShown = computed(() => blockerReason.value !== null && (attempted.value || blockerReason.value.immediate))
 
 /** The form is blocked exactly when a field says why, or the shared rules refuse the body, or the player reported the link broken (#171). */
 const blocked = computed(() => blocker.value !== null || !parseGameInput(draft.value).ok)
@@ -194,7 +211,7 @@ async function uploadImage(game: GameView): Promise<GameView> {
  * Strg + Enter (#465) goes through `save(false)` too.
  */
 async function save(next: boolean) {
-  attempted.value = true
+  attempt()
   // A Tag typed and not confirmed counts (#335); one that cannot be added blocks the save and shows why.
   if (tagInput.value && !tagInput.value.commit()) return
   if (blocked.value || saving.value) return
@@ -274,60 +291,66 @@ function onShortcut(event: KeyboardEvent) {
           :label="t('gameEdit.youtube')"
           :help="linkHelp"
           :error="linkError"
+          :error-at-once="playerFailed"
           type="url"
           inputmode="url"
           autocomplete="off"
         />
-        <div class="grid grid-cols-3 gap-2.5">
-          <TextField
-            class="min-w-0"
-            :model-value="clip.start.text"
-            :label="t('gameEdit.start')"
-            :error="startError"
-            autocomplete="off"
-            @update:model-value="editClip('start', $event)"
-          />
-          <TextField
-            class="min-w-0"
-            :model-value="clip.end.text"
-            :label="t('gameEdit.end')"
-            :help="endError ? undefined : t('gameEdit.endHelp')"
-            :error="endError"
-            autocomplete="off"
-            @update:model-value="editClip('end', $event)"
-          />
-          <TextField
-            class="min-w-0"
-            :model-value="clip.length.text"
-            :label="t('gameEdit.length')"
-            :help="lengthError ? undefined : t('gameEdit.lengthMax', { max: CLIP_LENGTH_MAX })"
-            :error="lengthError"
-            inputmode="numeric"
-            autocomplete="off"
-            @update:model-value="editClip('length', $event)"
-          />
-        </div>
+        <!-- One line for the three fields (#797); the hints under Ende and Länge give way to it while it shows. -->
+        <FieldGroup v-slot="{ error: clipError }">
+          <div class="grid grid-cols-3 gap-2.5">
+            <TextField
+              class="min-w-0"
+              :model-value="clip.start.text"
+              :label="t('gameEdit.start')"
+              :error="startError"
+              autocomplete="off"
+              @update:model-value="editClip('start', $event)"
+            />
+            <TextField
+              class="min-w-0"
+              :model-value="clip.end.text"
+              :label="t('gameEdit.end')"
+              :help="clipError ? undefined : t('gameEdit.endHelp')"
+              :error="endError"
+              autocomplete="off"
+              @update:model-value="editClip('end', $event)"
+            />
+            <TextField
+              class="min-w-0"
+              :model-value="clip.length.text"
+              :label="t('gameEdit.length')"
+              :help="clipError ? undefined : t('gameEdit.lengthMax', { max: CLIP_LENGTH_MAX })"
+              :error="lengthError"
+              inputmode="numeric"
+              autocomplete="off"
+              @update:model-value="editClip('length', $event)"
+            />
+          </div>
+        </FieldGroup>
 
         <fieldset class="m-0 flex min-w-0 flex-col gap-2.5 border-0 p-0">
           <legend class="mb-1.5 text-[14px] font-bold">
             {{ t('gameEdit.players') }}
           </legend>
-          <div class="grid grid-cols-2 gap-2.5">
-            <TextField
-              v-model="playersFromText"
-              :label="t('gameEdit.playersFrom')"
-              :error="fromError"
-              inputmode="numeric"
-              autocomplete="off"
-            />
-            <TextField
-              v-model="playersToText"
-              :label="t('gameEdit.playersTo')"
-              :error="toError"
-              inputmode="numeric"
-              autocomplete="off"
-            />
-          </div>
+          <FieldGroup>
+            <div class="grid grid-cols-2 gap-2.5">
+              <TextField
+                v-model="playersFromText"
+                :label="t('gameEdit.playersFrom')"
+                :error="fromError"
+                inputmode="numeric"
+                autocomplete="off"
+              />
+              <TextField
+                v-model="playersToText"
+                :label="t('gameEdit.playersTo')"
+                :error="toError"
+                inputmode="numeric"
+                autocomplete="off"
+              />
+            </div>
+          </FieldGroup>
         </fieldset>
 
         <div class="flex flex-col gap-2">
@@ -353,26 +376,21 @@ function onShortcut(event: KeyboardEvent) {
           :suggestions="tagsInUse"
           :label="t('gameEdit.tags')"
         />
-        <p class="text-small text-ink-2">
-          {{ t('gameEdit.tagsFreeToPlayHint') }}
-        </p>
 
         <PriceField
           v-model="price"
           :stored="game?.price ?? null"
           :game-id="game?.id"
-          :attempted="attempted"
           @error="priceError = $event"
           @failure="failure = $event"
         />
 
-        <TextField
+        <!-- The editor is a lazy chunk and client only (#454): no page's first load names it. Until it mounts the field's chrome holds its place, and a chunk that fails to load shows a retry (#822). -->
+        <RichNotesEditorLoader
           v-model="notes"
-          multiline
-          :label="t('gameEdit.notes')"
-          :help="t('gameEdit.notesHelp')"
-          :error="notesError"
-          :maxlength="GAME_NOTES_MAX"
+          :max="GAME_NOTES_MAX"
+          :disabled="saving"
+          @invalid="notesOver = $event"
         />
       </div>
 
@@ -393,8 +411,12 @@ function onShortcut(event: KeyboardEvent) {
           class="grid aspect-video place-items-center rounded-[14px] border-(length:--cp-bw) border-line p-3 shadow-card"
           style="background-image: repeating-linear-gradient(135deg, var(--cp-paper-2) 0 14px, var(--cp-surface) 14px 28px)"
         >
-          <span class="rounded-[8px] border-2 border-line bg-surface px-2.5 py-1.5 text-center font-mono text-[12px] font-bold">
-            {{ hasLink ? t('gameEdit.noPreview') : t('gameEdit.noClip') }}
+          <!-- With a link here the link has a problem, and the field says which (#812, review S4): the box repeats nothing. -->
+          <span
+            v-if="!hasLink"
+            class="rounded-[8px] border-2 border-line bg-surface px-2.5 py-1.5 text-center text-[12px] font-bold"
+          >
+            {{ t('gameEdit.noClip') }}
           </span>
         </div>
 
@@ -410,7 +432,7 @@ function onShortcut(event: KeyboardEvent) {
             type="submit"
             size="lg"
             :aria-disabled="blocked || saving"
-            :aria-describedby="blocker ? 'game-blocker' : undefined"
+            :aria-describedby="blockerShown ? 'game-blocker' : undefined"
           >
             {{ saving ? t('common.saving') : game ? t('gameEdit.saveChanges') : t('library.create') }}
             <AppIcon
@@ -423,13 +445,13 @@ function onShortcut(event: KeyboardEvent) {
             size="lg"
             variant="secondary"
             :aria-disabled="blocked || saving"
-            :aria-describedby="blocker ? 'game-blocker' : undefined"
+            :aria-describedby="blockerShown ? 'game-blocker' : undefined"
             @click="save(true)"
           >
             {{ t('gameEdit.saveAndNext') }}
           </AppButton>
           <span
-            v-if="blocker"
+            v-if="blockerShown"
             id="game-blocker"
             class="text-small font-bold text-error-fg"
           >{{ blocker }}</span>

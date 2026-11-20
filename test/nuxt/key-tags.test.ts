@@ -58,8 +58,8 @@ describe('key tags on the global composer', () => {
   it('a plural message gives the key and the form as rendered', async () => {
     const page = await mountSuspended(Probe)
 
-    expect(decodeTags(page.get('#one').element.textContent).tags[0]).toMatchObject({ key: 'board.slotsFree', text: '1 Platz frei' })
-    expect(decodeTags(page.get('#many').element.textContent).tags[0]).toMatchObject({ key: 'board.slotsFree', text: '2 Plätze frei' })
+    expect(decodeTags(page.get('#one').element.textContent).tags[0]).toMatchObject({ key: 'board.slotsFree', text: '1 Slot frei' })
+    expect(decodeTags(page.get('#many').element.textContent).tags[0]).toMatchObject({ key: 'board.slotsFree', text: '2 Slots frei' })
   })
 
   it('an aria-label and a placeholder give their keys and texts', async () => {

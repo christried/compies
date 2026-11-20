@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { ArrowDown, ArrowUp, Minus } from '@lucide/vue'
 import { teamNameAt } from '~/utils/board'
-import { deltaPop, highlightRow, unwatched, winnerStamp } from '~/utils/motion'
+import { countDurationMs, deltaPop, highlightRow, reducedMotion, STAMP_DELAY_MS, unwatched, winnerStamp } from '~/utils/motion'
+import { claimCues, standingsCues } from '~/utils/sound-cues'
 import { pointsDelta, rankMoves, type StandingsNews } from '~/utils/standings-news'
 import type { BoardTeam } from '~~/shared/event'
 import type { EndView, StandingView } from '~~/shared/stage'
@@ -32,6 +33,8 @@ const props = withDefaults(defineProps<{
 }>(), { framed: false, celebrate: false, news: null, hold: false })
 
 const { t } = useI18n()
+/** The Event page's player (#741): where nothing was provided it does nothing. */
+const playCue = useImmediateCue()
 const headingId = useId()
 const root = useTemplateRef('root')
 const confetti = useTemplateRef('confetti')
@@ -127,6 +130,10 @@ function burst(news: StandingsNews) {
 function play(news: StandingsNews) {
   const card = root.value
   if (!card) return
+  // The sounds of the sequence (#741), whichever Leaderboard starts first asks for the swap and the ticks, the stage's for the winner.
+  for (const cue of claimCues(news.cuesAsked, standingsCues({
+    before: news.before, after: props.standings, winners: news.winners, celebrate: props.celebrate, reducedMotion: reducedMotion(), countMs: countDurationMs(), stampDelayMs: STAMP_DELAY_MS,
+  }))) playCue(cue.id, cue.delayMs)
   clearTimeout(burstTimer)
   for (const pill of card.querySelectorAll('[data-delta]')) deltaPop(pill)
   for (const move of rankMoves(news.before, props.standings)) {

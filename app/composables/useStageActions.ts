@@ -1,7 +1,8 @@
 import { useEventMutation } from '~/composables/useEventMutation'
 import type { CountdownCommand } from '~~/shared/countdown'
-import type { LastGameAdded } from '~~/shared/event'
+import type { EventNotesSaved, LastGameAdded } from '~~/shared/event'
 import type { FinishRequest } from '~~/shared/finish'
+import type { NotesDoc } from '~~/shared/notes-doc'
 import type { ResultPlace } from '~~/shared/results'
 
 // The stage's changes (#257, Q6 of review 0.7): the Host's Session, round and Countdown actions and the Players' Veto and clip
@@ -23,6 +24,12 @@ export function useStageActions(slug: MaybeRefOrGetter<string>, refresh: () => u
 
   /** Enters an open Round's Result or corrects one, the Host's only (#273, #275); the sheet learns whether the server took it and closes. */
   const enterResult = (roundId: string, places: ResultPlace[]) => send('PUT', `rounds/${roundId}/result`, { body: { places } })
+
+  /**
+   * Saves the Host's Event notes of one game (#464, route of #731); `null` clears them. The game dialog learns whether the server took it: `send` resolves only after
+   * the Event is refetched, so the dialog that leaves edit mode finds the saved document in `eventNotes`. A refusal is toasted by `send` and the dialog stays in edit mode.
+   */
+  const saveEventNotes = (gameId: string, notes: NotesDoc | null) => send<EventNotesSaved>('PUT', `games/${gameId}/notes`, { body: { notes } })
 
   /** Spins the Lucky Wheel for the next game (#229). */
   const spin = () => send('POST', 'rounds/spin')
@@ -58,5 +65,5 @@ export function useStageActions(slug: MaybeRefOrGetter<string>, refresh: () => u
   /** Removes a Session, whose Slot goes back to the poll (#55). */
   const removeSession = (sessionId: string) => send('DELETE', `sessions/${sessionId}`)
 
-  return { castVeto, skipClip, putBackRound, enterResult, spin, toss, startCeremony, countdown, endSession, finish, lastGame, reopenSession, removeSession }
+  return { castVeto, skipClip, putBackRound, enterResult, saveEventNotes, spin, toss, startCeremony, countdown, endSession, finish, lastGame, reopenSession, removeSession }
 }

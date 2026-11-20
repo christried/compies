@@ -1,9 +1,8 @@
 <script setup lang="ts">
-import { Lock } from '@lucide/vue'
 import type { GameView } from '~~/shared/game'
 
-// Edit one game of the library (screen 24, `?s=editing`, #142). Only the creator and the Platform admin get the
-// form; any other Host reads the reason the detail page gives. A game that does not exist, or a page for Users
+// Edit one game of the library (screen 24, `?s=editing`, #142). The library holds only the viewer's own games (#724),
+// so every game the route answers gets the form. A game that does not exist, or a page for Users
 // who may not see the library, looks like any missing page. After saving, the game's detail opens.
 const { t } = useI18n()
 const route = useRoute()
@@ -11,7 +10,7 @@ const { toast } = useToast()
 const id = computed(() => String(route.params.id))
 
 const { viewer, game, status, error, refresh, missing } = useLibraryGame(id)
-useHead({ title: () => game.value?.name ?? t('gameEdit.editKicker') })
+useHead({ title: () => game.value?.name ?? t('library.edit') })
 
 async function onSaved(saved: GameView) {
   toast({ tone: 'success', text: t('library.saveDone') })
@@ -55,27 +54,15 @@ async function onSaved(saved: GameView) {
 
       <template v-else-if="game">
         <div class="flex flex-col gap-0.5">
-          <span class="text-small font-bold text-ink-2">{{ t('gameEdit.editKicker') }}</span>
           <h1 class="m-0 font-display text-[34px] leading-none md:text-[44px]">
             {{ game.name }}
           </h1>
         </div>
 
         <GameForm
-          v-if="game.canEdit"
           :game="game"
           @saved="onSaved"
         />
-        <p
-          v-else
-          class="m-0 inline-flex items-center gap-1.5 text-[15px] text-ink-2"
-        >
-          <AppIcon
-            :icon="Lock"
-            :size="16"
-          />
-          {{ t('library.editOnlyOwner', { name: game.createdBy.name }) }}
-        </p>
       </template>
 
       <div

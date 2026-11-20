@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { CalendarCheck, ChevronRight, CircleAlert, CircleCheck, Sparkles } from '@lucide/vue'
+import { CalendarCheck, ChevronRight, CircleAlert, CircleCheck } from '@lucide/vue'
 import { formatSlotWhen } from '~/utils/berlin-time'
 import { pagePill } from '~/utils/event-page'
 import { datePollOpen, type HomeEvent } from '~~/shared/event'
@@ -32,7 +32,11 @@ const hostLine = computed(() => props.event.isHost
 
 // While Dates are missing the card shows the Best slot, as it does for a poll.
 const showsBestSlot = computed(() => isPoll.value || datesMissing.value)
-const whenLabel = computed(() => showsBestSlot.value ? t('mvp.home.bestSoFar') : t('mvp.home.date'))
+// A running Event's card says „Session 1 von 2 · …“ already, so the „Termin“ label stays off it (#793).
+const whenLabel = computed(() => {
+  if (showsBestSlot.value) return t('mvp.home.bestSoFar')
+  return props.event.phase === 'running' ? null : t('mvp.home.date')
+})
 const whenValue = computed(() => {
   if (showsBestSlot.value) {
     return props.event.bestSlot ? formatSlotWhen(new Date(props.event.bestSlot.startsAt)) : t('mvp.home.noBest')
@@ -62,7 +66,6 @@ const ownStatus = computed(() => {
 const CTA_LABEL = { open: 'mvp.home.open', vote: 'mvp.home.vote', view: 'mvp.home.view' } as const
 const ctaLabel = computed(() => t(CTA_LABEL[props.event.action]))
 
-const WhenIcon = computed(() => showsBestSlot.value ? Sparkles : CalendarCheck)
 // Not voted yet: the own status warns (icon + words), otherwise it is plain good news.
 const warnsVote = computed(() => isPoll.value && !props.event.viewerVoted)
 const showsDates = computed(() => hasSeveralSessions.value && datesMissing.value)
@@ -91,11 +94,14 @@ const showsDates = computed(() => hasSeveralSessions.value && datesMissing.value
       class="flex items-center gap-3 rounded-[12px] bg-paper-2 px-3 py-2.5"
     >
       <AppIcon
-        :icon="WhenIcon"
+        :icon="CalendarCheck"
         :size="18"
       />
       <div class="flex min-w-0 flex-1 flex-col leading-[1.3]">
-        <span class="text-[12px] font-bold text-ink-2">{{ whenLabel }}</span>
+        <span
+          v-if="whenLabel"
+          class="text-[12px] font-bold text-ink-2"
+        >{{ whenLabel }}</span>
         <b>{{ whenValue }}</b>
       </div>
     </div>

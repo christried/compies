@@ -2,7 +2,7 @@
 import { Search } from '@lucide/vue'
 import type { ComponentPublicInstance } from 'vue'
 import type { RouteLocationRaw } from 'vue-router'
-import { NO_FILTERS, SUITABILITIES, filterGames, parsePlayerCount, type GameFilters, type GameView } from '~~/shared/game'
+import { NO_FILTERS, SUITABILITIES, filterGames, parsePlayerCount, sortTagsByLabel, type GameFilters, type GameView } from '~~/shared/game'
 import { CHIP_OFF, CHIP_ON, CHIP_SHAPE } from '~/utils/chip-look'
 
 // The one game browser (#173, review B4): the library page and both pool pickers show the Game library through it.
@@ -10,13 +10,15 @@ import { CHIP_OFF, CHIP_ON, CHIP_SHAPE } from '~/utils/chip-look'
 // states, loading, error, empty library, no match and results, as one state machine, and the paging of the results
 // (#369: 40 cards a page over the filtered list, more by a sentinel or „Mehr laden“). What differs is handed in: the
 // filter state (`v-model:filters`, the library binds it to the address, the picker keeps it local), `compact` (only the
-// search, „Alle“, the Tag and „Von mir“), `to` (the card links to the game), `#card-actions` (the picker's ＋ and ✕) and `#toolbar`
-// („Neues Spiel anlegen“, on the search row). The filtering is client side (`filterGames`), so it follows every
+// search, „Alle“ and the Tag; the library page also has „Archiviert“, #467), `to` (the card links to the game), `#card-actions` (the picker's ＋ and ✕) and `#toolbar`
+// („Neues Spiel anlegen“, on the search row), `marksEvents` (#733, the library page's „in 2 Events“ on each card). The filtering is client side (`filterGames`), so it follows every
 // keystroke. The grid from md up and the rows below are CSS (GameCard `responsive`), not `matchMedia`.
-defineProps<{
+const props = defineProps<{
   compact?: boolean
   /** Where a card leads; without it the cards are plain. */
   to?: (game: GameView) => RouteLocationRaw
+  /** Each card says in how many live Events its game sits (#733): the library page only, the pickers leave it off. */
+  marksEvents?: boolean
 }>()
 const filters = defineModel<GameFilters>('filters', { required: true })
 
@@ -28,13 +30,13 @@ defineSlots<{
 }>()
 
 const { t } = useI18n()
-const viewerId = useAuthUser().value?.id ?? ''
-const { games, tagsInUse, error, refresh } = useGameLibrary()
+const { games, tagsInUse, eventCounts, error, refresh } = useGameLibrary()
+const { setArchived } = useGameArchive()
 
 const PLAYER_CHOICES = Array.from({ length: 24 }, (_, index) => index + 1)
 
 // The Tags offered: the ones some game carries, by label (German collation); `tagsInUse` comes by key (#336).
-const tagOptions = computed(() => [...tagsInUse.value].sort((a, b) => a.label.localeCompare(b.label, 'de')))
+const tagOptions = computed(() => sortTagsByLabel(tagsInUse.value))
 // An active Tag that no game carries (an old address, or its last game lost it): shown as the chip's value so the filter says what it does, but not offered.
 const strayTag = computed(() => {
   const key = filters.value.tag
@@ -49,7 +51,7 @@ const tagChoices = computed(() => [
   ...(strayTag.value ? [{ value: strayTag.value, label: strayTag.value }] : []),
 ])
 
-const shown = computed(() => filterGames(games.value ?? [], filters.value, viewerId))
+const shown = computed(() => filterGames(games.value ?? [], filters.value))
 // Loading means no list yet: a revalidation of a list we already hold shows no skeleton.
 const state = computed(() => {
   if (!games.value) return error.value ? 'error' : 'loading'
@@ -57,12 +59,18 @@ const state = computed(() => {
   return shown.value.length === 0 ? 'noMatch' : 'results'
 })
 const anyFilter = computed(() => {
-  const { q, players, suitability, tag, mine } = filters.value
-  return Boolean(q.trim() || players !== null || suitability || tag !== null || mine)
+  const { q, players, suitability, tag, archived } = filters.value
+  return Boolean(q.trim() || players !== null || suitability || tag !== null || archived)
 })
 
 // The paging (#369): the search and the filters run over the whole library, only the cards drawn are cut. The dev
 // library's ~1500 cards cost 1.1-1.5 s at the open of the picker sheet.
+// The games the current list covers (#467): the normal list or the Archived ones; the search placeholder counts those.
+const covered = computed(() => (games.value ?? []).filter(item => item.archived === filters.value.archived).length)
+
+// The Archived filter turns every card into one with a restore button (#467); the pickers never offer it.
+const showRestore = computed(() => filters.value.archived && !props.compact)
+
 const PAGE_SIZE = 40
 const limit = ref(PAGE_SIZE)
 const visible = computed(() => shown.value.slice(0, limit.value))
@@ -135,7 +143,7 @@ const CHIP = `inline-flex ${CHIP_SHAPE} items-center gap-1.5 px-4 text-small`
           :value="filters.q"
           type="search"
           :aria-label="t('library.search')"
-          :placeholder="games ? t('library.searchPlaceholder', { n: games.length }) : t('library.search')"
+          :placeholder="games ? t('library.searchPlaceholder', { n: covered }) : t('library.search')"
           class="h-control-lg w-full rounded-[12px] border-(length:--cp-bw) border-line bg-surface py-0 pr-3.5 pl-[42px] text-[17px] text-ink"
           @input="set({ q: ($event.target as HTMLInputElement).value })"
         >
@@ -180,12 +188,13 @@ const CHIP = `inline-flex ${CHIP_SHAPE} items-center gap-1.5 px-4 text-small`
           @update:model-value="set({ tag: $event || null })"
         />
         <button
+          v-if="!compact"
           type="button"
-          :aria-pressed="filters.mine ? 'true' : 'false'"
-          :class="[CHIP, filters.mine ? CHIP_ON : CHIP_OFF]"
-          @click="set({ mine: !filters.mine })"
+          :aria-pressed="filters.archived ? 'true' : 'false'"
+          :class="[CHIP, filters.archived ? CHIP_ON : CHIP_OFF]"
+          @click="set({ archived: !filters.archived })"
         >
-          {{ t('library.filterMine') }}
+          {{ t('library.filterArchived') }}
         </button>
       </div>
     </div>
@@ -258,16 +267,26 @@ const CHIP = `inline-flex ${CHIP_SHAPE} items-center gap-1.5 px-4 text-small`
           :game="game"
           layout="responsive"
           :to="to?.(game)"
+          :in-events="marksEvents ? eventCounts[game.id] ?? 0 : 0"
           class="h-full"
         >
           <template
-            v-if="$slots['card-actions']"
+            v-if="$slots['card-actions'] || showRestore"
             #actions
           >
             <slot
               name="card-actions"
               :game="game"
-            />
+            >
+              <AppButton
+                variant="secondary"
+                size="card"
+                :aria-label="t('library.restoreLabel', { name: game.name })"
+                @click="setArchived(game.id, false)"
+              >
+                {{ t('library.restore') }}
+              </AppButton>
+            </slot>
           </template>
         </GameCard>
       </li>

@@ -1,42 +1,126 @@
+import { STAMP_DELAY_MS } from '~/utils/motion'
 import {
-  CUE_IDS, TICK_MIN_GAP_MS, cueFileUrl, thinTicks, vetoArrivalCues, vetoCuePlan, wheelCuePlan,
+  CUE_IDS, TICK_MIN_GAP_MS, ceremonyCuePlan, coinCuePlan, cueFileUrl, standingsCues, thinTicks, tourStepCue, vetoArrivalCues, vetoCuePlan, wheelCuePlan, wheelVoicePlan,
   type ArrivalCue, type Cue, type CueId, type VetoArrivalState,
 } from '~/utils/sound-cues'
 import { isText, parseCredits, type CueCredit, type Licence } from '~/utils/sound-credits'
 import { pinCrossings } from '~/utils/wheel-pins'
 import type { WheelTiming } from '~/utils/wheel'
+import type { CeremonyGag } from '~~/shared/ceremony'
+import { COIN_DURATION_MS } from '~~/shared/coin'
 import type { RoundGame } from '~~/shared/game'
 import { isRecord } from '~~/shared/record'
 import type { ClipView, SpinView, VetoCastView, VetoDrawView, WheelView } from '~~/shared/stage'
+import { MEMBER_TOUR } from '~~/shared/tour'
 
 // The logic of the listening page for the cue sounds (#534, the session of #535): what each cue is meant to sound like, the candidates, a
-// test run built through the REAL cue plan functions, and the eleven choices as the agent reads them back. Pure: no Vue, no DOM, no clock
+// test run built through the REAL cue plan functions, and the choices as the agent reads them back. Pure: no Vue, no DOM, no clock
 // (`now` is handed in), so test/unit/listening-model.test.ts covers it. Dev server only (app/dev/ is no folder Nuxt scans; nuxt.config.ts
 // registers the page, stage.ts decides).
 
 /** The candidates' URL base: server/dev/cue-candidates.ts serves it from `sound-candidates/`. Not under `public/`, so no deployment has a file. */
 export const CANDIDATE_BASE = '/_dev/cue-candidates'
 
-/** What the brief says of each cue: the Cue column and the Length column of `reference/docs/compibert-sound.md`, word for word (a unit test reads the doc). */
-export const CUE_BRIEF: Record<CueId, { character: string, lengthMs: number, loop: boolean }> = {
-  'wheel-windup': { character: 'ratchet pulled back', lengthMs: 500, loop: false },
-  'wheel-tick': { character: 'plastic flapper per peg, rate follows speed', lengthMs: 30, loop: false },
-  'wheel-stop': { character: 'thunk + three-note chord', lengthMs: 600, loop: false },
-  'wheel-morph': { character: 'hidden mode: scramble/zip as the fake name turns real', lengthMs: 500, loop: false },
-  'wheel-slice-out': { character: 'slice pops out, „schwupp“', lengthMs: 300, loop: false },
-  'veto-open': { character: 'shutter whoosh, window slides up', lengthMs: 400, loop: false },
-  'veto-clock': { character: 'dry clock tick, last 10 s only, speeds up at 5 s', lengthMs: 40, loop: false },
-  'veto-clip-close': { character: 'soft TV off', lengthMs: 300, loop: false },
-  'veto-seal': { character: 'own veto confirmed: wax-stamp thud', lengthMs: 300, loop: false },
-  'veto-drumroll': { character: 'snare roll before the reveal', lengthMs: 1200, loop: true },
-  'veto-reveal': { character: 'all at once: cymbal hit + stamp per veto (staggered 80 ms)', lengthMs: 800, loop: false },
+/**
+ * What the brief says of each cue's character (one `{ character }` object each): the Cue column of `reference/docs/compibert-sound.md`, word for
+ * word where the document has a clean row (a unit test reads the doc), except `cb-hi`, which ships one file where the row says „3 variants“. The
+ * length is `CUE_LENGTHS`, shared with the file test and the generator (#740). A new cue's row goes under its group's line.
+ */
+export const CUE_BRIEF: Record<CueId, { character: string }> = {
+  // wheel
+  'wheel-windup': { character: 'ratchet pulled back' },
+  'wheel-tick': { character: 'plastic flapper per peg, rate follows speed' },
+  'wheel-stop': { character: 'thunk + three-note chord' },
+  'wheel-morph': { character: 'hidden mode: scramble/zip as the fake name turns real' },
+  'wheel-slice-out': { character: 'slice pops out, „schwupp“' },
+  'cb-hype': { character: 'Compibert excited as the spin starts, wordless' },
+  'cb-gulp': { character: 'Compibert gulps at the brake, wordless' },
+  'cb-yay': { character: 'Compibert cheers at the stop (wheel) and at the Tour\'s end, wordless' },
+  // veto
+  'veto-open': { character: 'shutter whoosh, window slides up' },
+  'veto-clock': { character: 'dry clock tick, last 10 s only, speeds up at 5 s' },
+  'veto-clip-close': { character: 'soft TV off' },
+  'veto-seal': { character: 'own veto confirmed: wax-stamp thud' },
+  'veto-drumroll': { character: 'snare roll before the reveal' },
+  'veto-reveal': { character: 'all at once: cymbal hit + stamp per veto (staggered 80 ms)' },
+  // coin
+  'coin-toss': { character: 'thumb flick + whoosh' },
+  'coin-spin': { character: 'metallic shimmer while in the air' },
+  'coin-land': { character: 'clink + wobble rattle' },
+  'coin-result': { character: 'short sting, Kopf/Schwanz same sound' },
+  // standings
+  'lb-swap': { character: 'rows swap: quick double whoosh' },
+  'lb-count': { character: 'point counter ticks, 1 per point, max 15/s' },
+  'lb-winner': { character: 'mini celebration: party horn + 3 confetti pops' },
+  // board
+  'drag-pick': { character: 'lift: little „bloop“ up' },
+  'drag-snap': { character: 'magnetic click-in' },
+  'drag-reject': { character: 'rubber boing back, someone was faster' },
+  // ceremony
+  'cer-drop': { character: 'banner thud' },
+  'cer-row': { character: 'place slides in, pitch rises with rank' },
+  'cer-run': { character: 'the run: boots and the trophy\'s rattle' },
+  'cer-trip': { character: 'Stolpern: he trips over the trophy' },
+  'cer-bonk': { character: 'Volltreffer: the trophy lands on his head' },
+  'cer-stamp': { character: 'heavy rubber stamp „SIEGER“' },
+  'cer-fanfare': { character: 'stereo, brassy toy fanfare' },
+  'cer-crowd': { character: 'stereo cheer under the fanfare' },
+  'cb-laugh': { character: 'Compibert gets up and laughs after the trophy lands, wordless' },
+  // tour
+  'cb-hi': { character: 'short happy chirp, one file' },
 }
 
-/** Where a cue sounds in a real Event: in a spin, in a Veto window, or at the arrival of a read (the own Party's cast, a stamp). */
-export type Moment = 'spin' | 'window' | 'arrival'
+/**
+ * Where a cue sounds in a real Event: at a wheel spin, a Veto window or the arrival of a read (the own Party's cast, a stamp), in Compibert's
+ * voice, at the Coin flip, the Standings, the Game board's drag, the Award ceremony or the Tour. A new moment is
+ * a member here (a union takes no group lines, so it is the one line two tickets may both touch), a `MOMENT_LABEL` row and a runner in the
+ * page's `MOMENT_RUNNERS`, under its group's line.
+ */
+export type Moment = 'spin' | 'window' | 'arrival' | 'voice' | 'coin' | 'standings' | 'drag' | 'ceremony' | 'tour'
+
 export const MOMENT_OF: Record<CueId, Moment> = {
+  // wheel
   'wheel-windup': 'spin', 'wheel-tick': 'spin', 'wheel-stop': 'spin', 'wheel-morph': 'spin', 'wheel-slice-out': 'spin',
+  'cb-hype': 'voice', 'cb-gulp': 'voice', 'cb-yay': 'voice',
+  // veto
   'veto-open': 'window', 'veto-clock': 'window', 'veto-clip-close': 'window', 'veto-seal': 'arrival', 'veto-drumroll': 'window', 'veto-reveal': 'window',
+  // coin
+  'coin-toss': 'coin', 'coin-spin': 'coin', 'coin-land': 'coin', 'coin-result': 'coin',
+  // standings
+  'lb-swap': 'standings', 'lb-count': 'standings', 'lb-winner': 'standings',
+  // board
+  'drag-pick': 'drag', 'drag-snap': 'drag', 'drag-reject': 'drag',
+  // ceremony
+  'cer-drop': 'ceremony', 'cer-row': 'ceremony', 'cer-run': 'ceremony', 'cer-trip': 'ceremony', 'cer-bonk': 'ceremony',
+  'cer-stamp': 'ceremony', 'cer-fanfare': 'ceremony', 'cer-crowd': 'ceremony',
+  'cb-laugh': 'ceremony',
+  // tour
+  'cb-hi': 'tour',
+}
+
+/** What the page prints beside the moment button. */
+export const MOMENT_LABEL: Record<Moment, string> = {
+  // wheel
+  spin: 'Test spin',
+  voice: 'Test voice run',
+  // veto
+  window: 'Test window',
+  arrival: 'Ankunft der Antwort',
+  // coin
+  coin: 'Test toss',
+  // standings
+  standings: 'Test Standings change',
+  // board
+  drag: 'Test drag',
+  // ceremony
+  ceremony: 'Test ceremony',
+  // tour
+  tour: 'Test Tour voice',
+}
+
+/** The controls a cue's moment button sets before it runs, for a cue that needs more than its moment: `wheel-morph` needs the Hidden wheel. */
+export const MOMENT_SETUP: Partial<Record<CueId, Partial<Controls>>> = {
+  'wheel-morph': { hidden: true },
 }
 
 // Candidates -------------------------------------------------------------------------------------------------------------------------
@@ -140,7 +224,7 @@ export interface ChoiceReport {
   licence: Licence | null
 }
 
-/** The eleven choices as the agent reads them back (the `<pre>` and `window.__compiesListeningChoices`), with the tick cap the session settled on. */
+/** The choices as the agent reads them back (the `<pre>` and `window.__compiesListeningChoices`), with the tick cap the session settled on. */
 export function choicesReport(byCue: Record<CueId, Candidate[]>, choices: Choices, tickMinGapMs: number): { choices: Record<CueId, ChoiceReport>, tickMinGapMs: number } {
   const report = {} as Record<CueId, ChoiceReport>
   for (const id of CUE_IDS) {
@@ -172,6 +256,8 @@ export interface RunConfig {
   clip: boolean
   vetoes: 0 | 1 | 2
   tickGapMs: number
+  /** A voice run (#671): the plan is Compibert's voice alone, from the same spin; the real wheel and his rig run beside it. */
+  voice?: boolean
 }
 
 export interface Run {
@@ -210,7 +296,8 @@ export function withTickGap(plan: readonly Cue[], timing: WheelTiming, gapMs: nu
 /**
  * A test run: the spin and the Veto window as the Event read would give them at `now` (epoch ms), and the plan the REAL `wheelCuePlan` and
  * `vetoCuePlan` make of them, from the same five and four fields as `planOf` in useCuePlayer.ts (the game and the Vetoes stay out of them).
- * `counter` makes a new draw id for every run: the wheel reads reduced motion again for a new one.
+ * `counter` makes a new draw id for every run: the wheel reads reduced motion again for a new one. A voice run holds `wheelVoicePlan` only (#671),
+ * from the spin's two instants like `planOf`, so the voice is judged without the wheel's cues and the plain spin run stays free of him.
  */
 export function buildRun(config: RunConfig, now: number, counter: number): Run {
   const drawId = `listen-${counter}`
@@ -236,16 +323,21 @@ export function buildRun(config: RunConfig, now: number, counter: number): Run {
     count: games.length, slices: config.hidden ? null : games, spin, vetoes: { left: [2, 2], own: null, revealed: null, draw },
   }
 
-  let plan = [
-    ...wheelCuePlan({
-      spin: spin ? { spinStartAt: spin.spinStartAt, stopAt: spin.stopAt, slices: spin.slices, resultIndex: spin.resultIndex, resultOffset: spin.resultOffset } : null,
-      hiddenWheel: config.hidden,
-      isHost: false,
-      reducedMotion: config.reduced,
-    }),
-    ...vetoCuePlan({ draw: draw ? { drawId, kind: draw.kind, stopAt: draw.stopAt, vetoEndsAt: draw.vetoEndsAt } : null, clip, reducedMotion: config.reduced }),
-  ]
-  if (spin) plan = withTickGap(plan, { spinStartAt: start, stopAt: stop, slices: SLICES, resultIndex: RESULT_INDEX, resultOffset: 0.5 }, config.tickGapMs)
+  const planOf = (): Cue[] => {
+    // The voice alone (#671): no wheel cue, no tick and no window's, so what the operator judges is him.
+    if (config.voice) return wheelVoicePlan({ spin: spin ? { spinStartAt: spin.spinStartAt, stopAt: spin.stopAt } : null, hiddenWheel: config.hidden, reducedMotion: config.reduced })
+    const whole = [
+      ...wheelCuePlan({
+        spin: spin ? { spinStartAt: spin.spinStartAt, stopAt: spin.stopAt, slices: spin.slices, resultIndex: spin.resultIndex, resultOffset: spin.resultOffset } : null,
+        hiddenWheel: config.hidden,
+        isHost: false,
+        reducedMotion: config.reduced,
+      }),
+      ...vetoCuePlan({ draw: draw ? { drawId, kind: draw.kind, stopAt: draw.stopAt, vetoEndsAt: draw.vetoEndsAt } : null, clip, reducedMotion: config.reduced }),
+    ]
+    return spin ? withTickGap(whole, { spinStartAt: start, stopAt: stop, slices: SLICES, resultIndex: RESULT_INDEX, resultOffset: 0.5 }, config.tickGapMs) : whole
+  }
+  const plan = planOf()
 
   return {
     drawId, spin, wheel, draw, clip,
@@ -254,6 +346,16 @@ export function buildRun(config: RunConfig, now: number, counter: number): Run {
     plan,
     tickCount: plan.filter(cue => cue.id === 'wheel-tick').length,
   }
+}
+
+/**
+ * A test toss (#669): the Coin flip as the Event read would give it at `now`, and the plan the REAL `coinCuePlan` makes of its two instants,
+ * the fields `planOf` copies (no side exists here). No picture runs beside it; the page plays the plan through its own player.
+ */
+export function buildCoinRun(reduced: boolean, now: number): { startedAt: number, landsAt: number, plan: Cue[] } {
+  const startedAt = now + LEAD_MS
+  const landsAt = startedAt + COIN_DURATION_MS
+  return { startedAt, landsAt, plan: coinCuePlan({ toss: { startedAt: iso(startedAt), landsAt: iso(landsAt) }, reducedMotion: reduced }) }
 }
 
 /** The controls of the page, as they stand: what a run button reads. */
@@ -269,15 +371,15 @@ export interface Controls {
 }
 
 /**
- * The run a button makes: `spin` the wheel alone, `window` the window alone, `both` the full run. A part with nothing selected takes its first
+ * The run a button makes: `spin` the wheel alone, `window` the window alone, `both` the full run, `voice` a spin with Compibert's voice alone (#671). A part with nothing selected takes its first
  * value (6 s, 40 s); the late start only fits a window alone, since after a spin the window opens at the stop.
  */
-export function configFor(kind: 'spin' | 'window' | 'both', controls: Controls): RunConfig {
+export function configFor(kind: 'spin' | 'window' | 'both' | 'voice', controls: Controls): RunConfig {
   const spinMs = controls.spin === '10' ? 10_000 : 6000
   const windowMs = controls.window === '150' ? 150_000 : 40_000
   return {
     spinMs: kind === 'window' ? 0 : spinMs,
-    windowMs: kind === 'spin' ? 0 : windowMs,
+    windowMs: kind === 'spin' || kind === 'voice' ? 0 : windowMs,
     start: kind === 'window' ? controls.start : 'beginning',
     clip: controls.clip,
     vetoes: controls.vetoes,
@@ -285,7 +387,48 @@ export function configFor(kind: 'spin' | 'window' | 'both', controls: Controls):
     reduced: controls.reduced,
     // An emptied field is no cap: the shipped one.
     tickGapMs: controls.tickGapMs > 0 ? controls.tickGapMs : TICK_MIN_GAP_MS,
+    ...(kind === 'voice' ? { voice: true } : {}),
   }
+}
+
+// Standings change -------------------------------------------------------------------------------------------------------------------
+
+/**
+ * The test Standings change (#741): a fixed change, team 2 gaining 6 to take the lead from team 1, through the REAL `standingsCues`, with the
+ * page's reduced switch and the counter's duration handed in. Only ranks, points and team positions go in, as the Leaderboard passes them.
+ */
+export function standingsChangeCues(reducedMotion: boolean, countMs: number): ArrivalCue[] {
+  return standingsCues({
+    before: [{ team: 1, rank: 1, points: 12 }, { team: 2, rank: 2, points: 9 }, { team: 3, rank: 3, points: 0 }],
+    after: [{ team: 2, rank: 1, points: 15 }, { team: 1, rank: 2, points: 12 }, { team: 3, rank: 3, points: 0 }],
+    winners: [2],
+    celebrate: true,
+    reducedMotion,
+    countMs,
+    stampDelayMs: STAMP_DELAY_MS,
+  })
+}
+
+// Drag -----------------------------------------------------------------------------------------------------------------------------
+
+/** The gap between the lift and the answer of the test drag: an arbitrary gap for the ear, no picture holds it (#742). */
+export const DRAG_TEST_HOLD_MS = 600
+
+/**
+ * The test drag (#742): the pick-up, then the answer. The Game board's cues are hook calls, not a plan, so this mirrors the hooks' calls: the same
+ * three ids, played through the same `playNow` the board's hooks call.
+ */
+export function dragRunCues(outcome: 'taken' | 'refused'): ArrivalCue[] {
+  return [{ id: 'drag-pick', delayMs: 0 }, { id: outcome === 'taken' ? 'drag-snap' : 'drag-reject', delayMs: DRAG_TEST_HOLD_MS }]
+}
+
+/** Where the Tour's second cue sounds in a test run after the first: the real Tour's step change takes about as long (#747). */
+export const TOUR_RUN_GAP_MS = 1500
+
+/** The Tour's two cues in the order the real Tour shows them: `tourStepCue` over the steps of `MEMBER_TOUR`, the silent steps left out. */
+export function tourVoiceCues(): ArrivalCue[] {
+  const ids = MEMBER_TOUR.map(step => tourStepCue(step.id)).filter((id): id is CueId => id !== null)
+  return ids.map((id, index) => ({ id, delayMs: index === 0 ? 0 : TOUR_RUN_GAP_MS }))
 }
 
 // Arrival cues -----------------------------------------------------------------------------------------------------------------------
@@ -307,4 +450,14 @@ export function arrivalCues(button: ArrivalButton, now: number): ArrivalCue[] {
     return vetoArrivalCues({ draw, ownCast: false, revealedCount: null }, { draw: set, ownCast: false, revealedCount: null }, now)
   }
   return stampCues(draw, button === 'reveal-1' ? 1 : 2, now)
+}
+
+// Ceremony run (#743) ----------------------------------------------------------------------------------------------------------------
+
+/**
+ * A test ceremony: the plan the REAL `ceremonyCuePlan` makes for one Winner of four Parties (three places below, so the ladder is audible), as
+ * the Event page's layer would give it for a run that starts `LEAD_MS` from `now`. The plan only, sound and no picture.
+ */
+export function ceremonyRun(now: number, gag: CeremonyGag): Cue[] {
+  return ceremonyCuePlan({ startsAt: now + LEAD_MS, shape: { partyCount: 4, winners: 1, gag, grid: false }, reducedMotion: false })
 }

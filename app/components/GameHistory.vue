@@ -223,7 +223,6 @@ const rows = computed(() => props.results.map((result) => {
       :open="chosen !== null"
       :game="chosen?.game ?? null"
       :correction="chosen"
-      :kicker="chosen ? { number: chosen.number, total: corrections.total } : null"
       :teams="teams"
       :points-table="corrections.pointsTable"
       :save="places => corrections!.save(chosen!.roundId, places)"

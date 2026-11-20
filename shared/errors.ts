@@ -22,14 +22,12 @@ export const API_ERROR_STATUS = {
   invalid_players: 400,
   /** A game's Suitabilities are unknown or repeated (#171). */
   invalid_suitabilities: 400,
-  /** A game's notes are longer than GAME_NOTES_MAX characters (#223). */
+  /** A game's notes are refused: not a valid document, or longer than GAME_NOTES_MAX visible characters (#223, #727). */
   invalid_game_notes: 400,
   /** A game's Tags are not a list of at most 8 Tags of 1 to 20 characters, none twice (#335). */
   invalid_tags: 400,
   /** A game's Price is not a source with a whole amount (or none), or „Preis stimmt noch“ is no flag or has no Price to confirm (#337). */
   invalid_price: 400,
-  /** Only the creator of a game and the Platform admin may edit it (#142). */
-  not_game_editor: 403,
   /** A game image is larger than GAME_IMAGE_MAX_BYTES (#143). */
   image_too_large: 413,
   /** A game image is not a WebP file (#143). */
@@ -140,7 +138,7 @@ export const API_ERROR_STATUS = {
   veto_already_cast: 409,
   /** The Party has no Veto left: the allowance and its Bonus Vetoes are used up (#231). */
   no_vetoes_left: 409,
-  /** Rad verdecken and the Veto allowance cannot change while a Round is being drawn (#231, review 1.4 A3). */
+  /** Pseudo-Games and the Veto allowance cannot change while a Round is being drawn (#231, review 1.4 A3). */
   locked_while_drawn: 409,
   /** The game has a draw in a Round that was not put back: it was drawn, set or vetoed already, and cannot be set again (review 0.7, F14). */
   game_already_drawn: 409,

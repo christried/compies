@@ -29,7 +29,7 @@ export function formatSlotDay(instant: Date): string {
   return berlinDay(instant, false)
 }
 
-/** A month and year as `Oktober 2026` (Berlin), for „angelegt im …“. */
+/** A month and year as `Oktober 2026` (Berlin), for the game's „Zuletzt aktualisiert“ (#805). */
 export function formatMonthYear(instant: Date): string {
   return monthFormat.format(instant)
 }

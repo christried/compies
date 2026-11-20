@@ -38,10 +38,10 @@ async function mountCreate(): Promise<Page> {
 /** Weiter, or „Event erstellen“ on the last step. */
 const cta = (page: Page) => page.get('button[type="submit"]')
 
-/** Names the Session and goes on to the Sessions and Dates step (step 8 of 8), leaving the other steps as they are. */
+/** Names the Session and goes on to the Sessions and Dates step (the 7th and last), leaving the other steps as they are. Six presses: a seventh would be a try on the blocked last step (#797). */
 async function toSessionsStep(page: Page, name = 'Freitags-Zocken') {
   await page.get('input[type="text"]').setValue(name)
-  for (let step = 0; step < 7; step++) await cta(page).trigger('click')
+  for (let step = 0; step < 6; step++) await cta(page).trigger('click')
 }
 
 // Each Slot is a DateTimeField group: its date input comes first, then its time input.
@@ -93,7 +93,7 @@ describe('create an Event: the Sessions and Dates step', () => {
 
     await toSessionsStep(page)
 
-    expect(page.get('h1').text()).toContain('Wann zocken wir?')
+    expect(page.get('h1').text()).toContain('Wann ist es soweit?')
     expect(page.findAll('[role="group"]')).toHaveLength(1)
     expect(page.text()).toContain('Termin vorschlagen')
   })
@@ -118,7 +118,26 @@ describe('create an Event: the Sessions and Dates step', () => {
 
     expect(page.get('[role="group"]').text()).toContain('Der Termin liegt in der Vergangenheit.')
     expect(cta(page).attributes('aria-disabled')).toBe('true')
+    // The reason above Weiter waits for a press (#797).
+    expect(cta(page).attributes('aria-describedby')).toBeUndefined()
+    await cta(page).trigger('click')
     expect(page.get(`[id="${cta(page).attributes('aria-describedby')}"]`).text()).toBe('Erst den Termin in der Vergangenheit ändern.')
+  })
+
+  it('shows the blocker of the Sessions step only after a press of Weiter, in red (#797)', async () => {
+    signInAs(host)
+    const page = await mountCreate()
+    await toSessionsStep(page)
+
+    expect(cta(page).attributes('aria-disabled')).toBe('true')
+    expect(page.text()).not.toContain('Bitte alle Termine ausfüllen.')
+    expect(cta(page).attributes('aria-describedby')).toBeUndefined()
+
+    await cta(page).trigger('click')
+
+    const reason = page.get(`[id="${cta(page).attributes('aria-describedby')}"]`)
+    expect(reason.text()).toBe('Bitte alle Termine ausfüllen.')
+    expect(reason.classes()).toContain('text-error-fg')
   })
 
   it('rejects two Slots in the same minute', async () => {
@@ -146,7 +165,7 @@ describe('create an Event: the Sessions and Dates step', () => {
 
     await vi.waitFor(() => expect(page.text()).toContain('Freitags-Zocken steht!'))
     expect(saved).toHaveBeenCalledWith({ name: 'Freitags-Zocken', dateMode: 'poll', sessions: 1, slots: ['2090-10-30T20:30'], settings: DEFAULT_SETTINGS, pool: [] })
-    expect(page.text()).toContain('Schick den Link an deine Freunde, dann können sie sich anmelden und abstimmen.')
+    expect(page.text()).toContain('Schick den Link an deine Leute, dann können sie sich anmelden und abstimmen.')
     expect((page.get('input[readonly]').element as HTMLInputElement).value).toBe(created.inviteUrl)
     expect(page.get('a[href="/e/freitags-zocken-k7q2"]').text()).toContain('Zur Umfrage')
   })
@@ -185,6 +204,10 @@ describe('create an Event: the Sessions and Dates step', () => {
     await fillSlot(page, 0, '2090-10-30', '20:30')
 
     expect(cta(page).attributes('aria-disabled')).toBe('true')
+    expect(page.text()).not.toContain('Schlag mindestens 2 Termine vor.')
+
+    await cta(page).trigger('click')
+
     expect(page.text()).toContain('Schlag mindestens 2 Termine vor.')
   })
 
@@ -227,6 +250,8 @@ describe('create an Event: the Sessions and Dates step', () => {
     await page.get('button[aria-label="Eine Session mehr"]').trigger('click')
 
     await fillSlot(page, 0, '2090-11-07', '20:00')
+    expect(page.text()).not.toContain('Bitte Datum und Uhrzeit ausfüllen.')
+    await cta(page).trigger('click')
     expect(page.text()).toContain('Bitte Datum und Uhrzeit ausfüllen.')
 
     await fillSlot(page, 1, '2090-11-07', '20:00')

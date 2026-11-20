@@ -10,13 +10,14 @@ import { useStageActions } from '~/composables/useStageActions'
 
 let testNumber = 0
 
-/** The endpoints of the twelve changes for one slug, what they received, and whether they refuse. */
+/** The endpoints of the thirteen changes for one slug, what they received, and whether they refuse. */
 function serve() {
   testNumber += 1
   const slug = `stage-actions-${testNumber}`
   const server = { calls: [] as string[], bodies: [] as unknown[], refuse: false }
   const endpoints: [string, 'POST' | 'DELETE' | 'PUT'][] = [
     ['rounds/round-1/result', 'PUT'],
+    ['games/game-1/notes', 'PUT'],
     ['draws/draw-1/veto', 'POST'],
     ['clip/skip', 'POST'],
     ['rounds/round-1', 'DELETE'],
@@ -95,6 +96,28 @@ describe('useStageActions', () => {
     await expect(actions().enterResult('round-1', places)).resolves.toBe(true)
 
     expect(server.bodies).toEqual([{ places }])
+  })
+
+  it('puts the Host\'s Event notes of a game, or null to clear them, resolves true and refetches the Event (#464)', async () => {
+    const { server, refresh, actions } = await setUp()
+    const notes = { type: 'doc' as const, content: [{ type: 'paragraph' as const, content: [{ type: 'text' as const, text: 'heute nur Bo1' }] }] }
+
+    await expect(actions().saveEventNotes('game-1', notes)).resolves.toBe(true)
+    await expect(actions().saveEventNotes('game-1', null)).resolves.toBe(true)
+
+    expect(server.calls).toEqual(['PUT games/game-1/notes', 'PUT games/game-1/notes'])
+    expect(server.bodies).toEqual([{ notes }, { notes: null }])
+    expect(refresh).toHaveBeenCalledTimes(2)
+  })
+
+  it('resolves false for Event notes the server refuses, after the toast and the refetch (#464)', async () => {
+    const { server, refresh, actions } = await setUp()
+    server.refuse = true
+
+    await expect(actions().saveEventNotes('game-1', null)).resolves.toBe(false)
+
+    expect(shownToasts()).toHaveLength(1)
+    expect(refresh).toHaveBeenCalledTimes(1)
   })
 
   it('sends the outcome and the winners the Host saw as the body of the finish (#277)', async () => {

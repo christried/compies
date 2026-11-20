@@ -53,7 +53,9 @@ describe('who gets the bar and when', () => {
 
     expect(bar().exists()).toBe(true)
     expect(page!.get('[role="timer"]').text()).toBe('0:45')
-    expect(text()).toContain('Veto-Zeit')
+    // The caption „Veto-Zeit“ is gone (#802); the clock keeps its accessible name.
+    expect(text()).not.toContain('Veto-Zeit')
+    expect(page!.get('[role="timer"]').attributes('aria-label')).toBe('Noch 0:45')
     expect(text()).toContain('Euer Team: 2 Vetos übrig')
     expect(text()).toContain('Gedrückt halten, um zu bestätigen. Kann nicht zurückgenommen werden.')
     expect(page!.find('[data-testid="veto-hold"]').exists()).toBe(true)
@@ -103,6 +105,7 @@ describe('who gets the bar and when', () => {
 
     expect(bar().exists()).toBe(false)
     expect(page!.find('button').exists()).toBe(false)
+    expect(page!.find('[role="timer"]').exists()).toBe(false)
   })
 
   // #506: a skip of the Clip moves the end earlier. The clock decides, not the stale `own.rejection` of a read taken just before.

@@ -4,6 +4,7 @@ import { ceremonyLayout, ceremonyModel } from '~/utils/ceremony'
 import { buildRun, ceremonyRigState, measureRun, runGeometry, runPartsOf, type Burst, type RunParts } from '~/utils/ceremony-run'
 import type { RigState } from '~/utils/compibert-rig'
 import type { Gsap } from '~/utils/gsap'
+import { ceremonyCuePlan, type Cue } from '~/utils/sound-cues'
 import { ceremonyEndsAt, ceremonyPlays, type RunShape, ceremonyTimeline } from '~~/shared/ceremony'
 import type { EventView } from '~~/shared/event'
 import type { CeremonyView } from '~~/shared/stage'
@@ -27,6 +28,8 @@ const emit = defineEmits<{
   share: []
   /** This viewer's run of the synced start is over (#445): the finished page then shows what it held back. Never for a replay. */
   over: []
+  /** The sound of the run this layer plays (#743): its cue plan, `[]` when it has none (no start, a skip, a close, a failed chunk). The page hands it to the cue player as the ceremony's own source. */
+  cues: [plan: readonly Cue[]]
 }>()
 
 const { t } = useI18n()
@@ -59,8 +62,24 @@ const schedule = computed(() => (runShape.value ? ceremonyTimeline(runShape.valu
 const openedFor = ref<string | null>(null)
 const closedFor = ref<string | null>(null)
 const skippedFor = ref<string | null>(null)
+/** The start whose GSAP chunk failed or whose run could not be built (#743): its show is the static end frame, so its sound is cut. A later start is a new key and sounds. */
+const failedFor = ref<string | null>(null)
 
 const open = computed(() => ceremony.value !== null && model.value !== null && openedFor.value === ceremony.value.startsAt && closedFor.value !== ceremony.value.startsAt)
+
+// The run's sound (#743, spec #718): the plan of the run this layer plays, from the Event read's start (not from the open latch: the player needs
+// `cer-drop` a lead ahead of it) and kept past the natural end (the fanfare of #744 outlasts it). A skip, a close, a failed chunk and a new start
+// clear it, which stops what sounds. It reads the `ceremony` the layer plays, so a replay's plan is its own, from the click, on this device only.
+const cuePlan = computed<readonly Cue[]>(() => {
+  const run = ceremony.value
+  const shape = runShape.value
+  const startsAt = startsMs.value
+  if (!import.meta.client || !run || startsAt === null || !shape || !model.value) return []
+  if (closedFor.value === run.startsAt || skippedFor.value === run.startsAt || failedFor.value === run.startsAt) return []
+  return ceremonyCuePlan({ startsAt, shape, reducedMotion: reducedMotion() })
+})
+watch(cuePlan, plan => emit('cues', plan), { immediate: true })
+onBeforeUnmount(() => emit('cues', []))
 
 // Null until the page has mounted, so the server never renders the layer open. The ticker runs up to the start instant; the sample at or
 // past it stays, so the opening is decided once, from the clock the page is at. Once the layer is open it runs to the end instant.
@@ -221,6 +240,7 @@ function giveUp(gsap?: Gsap, root?: HTMLElement) {
   if (gsap && root) gsap.set(root.querySelectorAll('[data-part]'), { clearProps: 'opacity,visibility,transform' })
   standCompibert()
   failed.value = true
+  failedFor.value = ceremony.value?.startsAt ?? null
   ready.value = true
   rig.value = endPose()
 }

@@ -18,9 +18,14 @@ const name = computed({
 })
 
 const tooLong = computed(() => eventNameLength(name.value) > EVENT_NAME_MAX)
-const error = computed(() => (tooLong.value ? t('error.nameTooLong', { max: EVENT_NAME_MAX }) : undefined))
+const empty = computed(() => name.value.trim() === '')
+// The field says what is wrong once it was touched or Weiter was pressed (#797); Weiter's reason is the same text as before.
+const error = computed(() => {
+  if (tooLong.value) return t('error.nameTooLong', { max: EVENT_NAME_MAX })
+  return empty.value ? t('error.nameRequired') : undefined
+})
 
-useStepBlocker(blocker, () => (name.value.trim() === '' ? t('error.nameRequired') : error.value))
+useStepBlocker(blocker, () => error.value)
 </script>
 
 <template>
@@ -28,7 +33,6 @@ useStepBlocker(blocker, () => (name.value.trim() === '' ? t('error.nameRequired'
     <TextField
       v-model="name"
       :label="t('stepper.name.label')"
-      :help="t('stepper.name.help')"
       :error="error"
       :maxlength="EVENT_NAME_MAX"
     />

@@ -71,6 +71,7 @@ Started by `ceremony.started {startAt, gag, outcome: "unentschieden"}` and playe
 - Key times trip / bonk: hop1 t1 + 0.80 / t1 + 2.20; each further hop +0.54; plate = last landing + 0.62 → k = 2: t1 + 1.96 / t1 + 3.36; k = 3: t1 + 2.50 / t1 + 3.90. Grid: plate t1 + 0.80 / t1 + 2.20, ripple done by plate + 0.6.
 - Skip / reduced: end frame (everything set), Compibert holds `cheer`, no run, no confetti; live region speaks the tie sentence.
 - No sound.
+- **Deviation (0.17, #744, #745, #746):** a Tie plays sounds. Its own timeline (`ceremonyTimeline` for its Winner count and its grid) gives the instants: `cer-drop`; a `cer-row` for each place below the Winners (none without a Party below); the run; the gag's sound; `cer-stamp` once, at `stampAtMs` (the plate's „UNENTSCHIEDEN“), with `cer-fanfare` and `cer-crowd`; `cb-laugh` 300 ms after the plate's landing (the plate + 0.3 s above). The „SIEGER“ stamps and the hops' confetti have no cue. Under reduced motion a Tie plays `cer-fanfare` alone, at `startsAt`, as one Winner does. Source: `ceremonyCuePlan`, `app/utils/sound-cues.ts` (no branch on the Winner count).
 
 Compibert: existing states only (run, suspense, cheer, confused, laugh, dance). No new art; the trophy is the existing one.
 

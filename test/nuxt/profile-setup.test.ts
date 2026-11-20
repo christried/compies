@@ -12,7 +12,8 @@ describe('profile setup', () => {
   it('prefills the Display name from the provider', async () => {
     const page = await mountSuspended(SetupPage, { route: '/einrichten' })
 
-    expect(page.get('h1').text()).toBe('Wie sollen wir dich nennen?')
+    expect(page.get('h1').text()).toBe('Wie möchtest du genannt werden?')
+    expect(page.text()).not.toContain('Fast geschafft')
     expect((page.get('input').element as HTMLInputElement).value).toBe('kitty_tv')
     expect(page.text()).toContain('8/32')
   })
@@ -40,12 +41,32 @@ describe('profile setup', () => {
     await page.get('input').setValue('   ')
     await page.get('form').trigger('submit')
 
-    const help = page.get('#display-name-help')
-    expect(help.text()).toBe('Ohne Namen geht’s nicht.')
+    const error = page.get('#display-name-error')
+    expect(error.text()).toBe('Ohne Namen geht’s nicht.')
+    expect(error.classes()).toContain('text-error-fg')
+    expect(page.get('#display-name-help').text()).toBe('Muss nicht eindeutig sein. Max. 32 Zeichen.')
     expect(page.get('input').attributes('aria-invalid')).toBe('true')
     const cta = page.get('button[type="submit"]')
     expect(cta.attributes('aria-disabled')).toBe('true')
-    expect(cta.attributes('aria-describedby')).toBe('display-name-help')
+    // The disabled button says enough (#797): it points at nothing.
+    expect(cta.attributes('aria-describedby')).toBeUndefined()
+    expect(save).not.toHaveBeenCalled()
+  })
+
+  it('opens with no red line when the provider sent no name, and shows it after a try (#797)', async () => {
+    const save = vi.fn()
+    registerEndpoint('/api/profile/setup', { method: 'POST', handler: save })
+    signInAs({ ...newUser, name: '' })
+    const page = await mountSuspended(SetupPage, { route: '/einrichten' })
+
+    expect(page.find('#display-name-error').exists()).toBe(false)
+    expect(page.get('input').attributes('aria-invalid')).toBeUndefined()
+    expect(page.get('#display-name-help').text()).toBe('Muss nicht eindeutig sein. Max. 32 Zeichen.')
+
+    await page.get('form').trigger('submit')
+
+    expect(page.get('#display-name-error').text()).toBe('Ohne Namen geht’s nicht.')
+    expect(page.get('input').attributes('aria-invalid')).toBe('true')
     expect(save).not.toHaveBeenCalled()
   })
 

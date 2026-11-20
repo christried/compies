@@ -81,7 +81,7 @@ describe('ActivityFeed', () => {
     document.body.innerHTML = ''
   })
 
-  it('shows the entries oldest to newest, each with its time, under „Vor dem Start“, as a polite log', async () => {
+  it('shows the entries oldest to newest, each with its time, under „Beginn“, as a polite log', async () => {
     const old = new Date('2026-10-24T18:00:00Z').toISOString()
     const { wrapper } = await mountFeed([
       entry('a', 0, { at: old, actor: { id: 'u-larsi', name: 'Larsi' } }),
@@ -92,7 +92,7 @@ describe('ActivityFeed', () => {
     const log = wrapper.find('[role="log"]')
     expect(log.attributes('aria-live')).toBe('polite')
     expect(log.attributes('aria-label')).toBe('Aktivität')
-    expect(wrapper.text()).toContain('Vor dem Start')
+    expect(wrapper.text()).toContain('Beginn')
     const shown = lines(wrapper)
     expect(shown).toHaveLength(3)
     expect(shown[0]).toContain('Larsi ist dem Event beigetreten')
@@ -128,7 +128,7 @@ describe('ActivityFeed', () => {
     ], { sessions, nextNumber: 2 })
 
     const headers = wrapper.findAll('[role="log"] h3').map(heading => heading.text())
-    expect(headers).toEqual(['Vor dem Start', 'Session 1', 'Vor Session 2'])
+    expect(headers).toEqual(['Beginn', 'Session 1', 'Vor Session 2'])
     expect(lines(wrapper)[1]).toContain('Sanne hat Session 1 gestartet')
   })
 
@@ -144,7 +144,8 @@ describe('ActivityFeed', () => {
   it('says what it promises in an empty state, without a log entry', async () => {
     const { wrapper } = await mountFeed([])
 
-    expect(wrapper.text()).toContain('Noch nichts passiert. Ab jetzt steht hier, wer dazukommt und wechselt.')
+    expect(wrapper.text()).toContain('Noch nichts passiert. Bald aber bestimmt. Vielleicht.')
+    expect(wrapper.text()).not.toContain('Ab jetzt steht hier')
     expect(lines(wrapper)).toEqual([])
   })
 

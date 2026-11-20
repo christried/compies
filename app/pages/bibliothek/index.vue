@@ -28,7 +28,6 @@ const filters = useRouteFilters()
     <div class="mx-auto flex w-full max-w-[1040px] flex-col gap-4">
       <header class="flex flex-wrap items-end gap-3">
         <div class="flex min-w-[200px] flex-1 flex-col gap-0.5">
-          <span class="text-small font-bold text-ink-2">{{ t('library.kicker') }}</span>
           <h1 class="m-0 font-display text-[32px] leading-none md:text-[44px]">
             {{ t('library.title') }}
           </h1>
@@ -47,6 +46,7 @@ const filters = useRouteFilters()
 
       <GameBrowser
         v-model:filters="filters"
+        marks-events
         :to="game => `/bibliothek/${game.id}`"
       >
         <template #empty-action>

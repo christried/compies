@@ -36,6 +36,7 @@ Compibert (bust) peeking out from **behind** the wheel at its upper right during
 - **Desktop / mobile:** Same idea at both widths; only the bust size changes (232 / 150). No layout space is reserved; the card height does not change when he appears.
 - **Outline:** as the rig documents it for `bust`: light = hard shadow (filter `hrd`, 7/8 px ink), dark = sticker (cream rim + shadow, filter `stk`). The wheel keeps its colours in both appearances; the outline is what separates him from the dark card.
 - **Accessibility:** `aria-hidden="true"`, `pointer-events: none`, never focusable. Adds nothing to the wheel's live region. No sound of his own (the wheel's cues stay as they are), no speech bubble, no text.
+- **Deviation (0.17, #671):** he has a voice now, wordless: `cb-hype` when the spin starts (he is `excited`), `cb-gulp` at his brake (`suspense`), `cb-yay` at his cheer. Under a Hidden wheel the cheer waits for the reveal, 500 ms after the stop (`REVEAL_AFTER_MS`), for every viewer, the Host included. Under reduced motion only the cheer plays. The wheel's own cues stay as they are. Details: 04-motion § Lucky Wheel.
 - **Rest:** absent. The header head-logo is already the calm presence on the page; Compibert at the wheel is a moment, so the entrance means „it's happening“. Do not show him in `idle` while the wheel rests.
 - **Veto:** he is gone before the veto window opens (he leaves with the slice). No `angry` here.
 - **Motion:** see below.

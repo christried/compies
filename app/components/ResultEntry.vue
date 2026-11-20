@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ChevronDown, ChevronUp, Equal, GripVertical } from '@lucide/vue'
+import { ChevronDown, ChevronUp, GripVertical } from '@lucide/vue'
 import { teamNameAt } from '~/utils/board'
 import { draftFromResult, draftPlaces, draftPoints, moveRow, newResultDraft, setScore, toggleLevel } from '~/utils/result-draft'
 import type { BoardTeam } from '~~/shared/event'
@@ -15,7 +15,7 @@ import { cutToCharacters } from '~~/shared/text'
 // Each row shows the points it earns by the Points table. Nothing is sent before „Ergebnis speichern“; closing discards the draft, and
 // opening starts again from team order. The save is the page's (EventRounds); it says whether the server took the Result, and only then the sheet
 // closes, so a refusal keeps the order and the Scores. FFA is not built here. With `correction` (#275) the sheet corrects a saved Result: it opens
-// on that Result's order, Places and Scores, says so in its title, kicker and note, and the save is the same PUT (the page sends it, no confirm dialog).
+// on that Result's order, Places and Scores, says so in its title and note (no kicker line, #803), and the save is the same PUT (the page sends it, no confirm dialog).
 const props = withDefaults(defineProps<{
   open: boolean
   /** The game of the Round, shown above the rows; null while no Round is chosen. */
@@ -123,10 +123,10 @@ async function onSave() {
   >
     <div class="flex flex-col gap-1">
       <p
-        v-if="kicker"
+        v-if="kicker && !correction"
         class="m-0 text-[13px] font-bold text-ink-2"
       >
-        {{ t(correction ? 'result.kickerCorrection' : 'result.kicker', { n: kicker.number, total: kicker.total }) }}
+        {{ t('result.kicker', { n: kicker.number, total: kicker.total }) }}
       </p>
       <p
         v-if="game"
@@ -168,13 +168,9 @@ async function onSave() {
             :aria-checked="draft.level[index] ? 'true' : 'false'"
             :aria-label="t('result.tiedAria', { team: nameOf(team), other: nameOf(draft.order[index - 1]!) })"
             class="hit-44 inline-flex h-[26px] items-center gap-1 rounded-pill border-2 border-line px-2.5 text-[12px] font-bold"
-            :class="draft.level[index] ? 'bg-primary text-on-primary' : 'border-dashed bg-surface text-ink-2'"
+            :class="draft.level[index] ? 'bg-primary text-on-primary' : 'bg-surface text-ink-2'"
             @click="draft = toggleLevel(draft, index)"
           >
-            <AppIcon
-              :icon="Equal"
-              :size="12"
-            />
             {{ t('result.tied') }}
           </button>
         </div>

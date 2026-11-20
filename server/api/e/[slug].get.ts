@@ -4,6 +4,7 @@ import { useDb } from '../../utils/db'
 import { loadEvent } from '../../utils/event-access'
 import { boardSection, inviteSection, membersSection, poolGamesOf, poolsSection, pollSection, readPollRows, sessionSection, startSection } from '../../utils/event-read'
 import { readEventState, withParts } from '../../utils/event-state'
+import { readEventNotes } from '../../utils/event-notes'
 import { hostGameIds, readHostGameFacts } from '../../utils/library'
 import { READ_PARTS, stageParts, stageSections, type StageFields } from '../../utils/stage-read'
 import { settleBeforeRead } from '../../utils/rounds'
@@ -51,5 +52,7 @@ export default defineEventHandler(async (event): Promise<EventView> => {
   const stage: StageFields = Object.assign({}, ...await Promise.all(stageSections.map(section => section({ db, eventRow, state, viewer, now }))))
   // The Host's game dialog (#443): the Tags and Notes of the games the finished sections name as tiles, never from a second look at the database.
   const view = { ...fixed, ...stage }
-  return { ...view, hostGames: viewer.isHost ? await readHostGameFacts(db, hostGameIds(view)) : null }
+  // The Host's Event notes (#731) are one select of their own, in the same breath as the game facts; a Member's read has none.
+  const [hostGames, eventNotes] = viewer.isHost ? await Promise.all([readHostGameFacts(db, hostGameIds(view)), readEventNotes(db, eventRow.id)]) : [null, null]
+  return { ...view, hostGames, eventNotes }
 })

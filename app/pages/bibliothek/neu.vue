@@ -1,15 +1,21 @@
 <script setup lang="ts">
 import { canSeeLibrary, type GameView } from '~~/shared/game'
 
-// Create a game (screen 24, `?s=edit`, #141). Only Users with the Host permission and the Platform admin get the
+// Create a game (screen 24, `?s=edit`, #141). Only Users with the Host permission (#455) get the
 // form; everyone else sees the Construction page, like for any missing route.
 const { t } = useI18n()
 useHead({ title: () => t('gameEdit.title') })
 const user = useAuthUser()
 const { toast } = useToast()
 
+// „Noch eins“ (#806): the toast after „Spiel anlegen“ opens a fresh form for the next game, as „Speichern und noch eins“
+// does after a save. A new route, so the form starts empty.
 async function onSaved(game: GameView) {
-  toast({ tone: 'success', text: t('library.saved', { name: game.name }) })
+  toast({
+    tone: 'success',
+    text: t('library.saved', { name: game.name }),
+    action: { label: t('library.nextOne'), run: () => { void navigateTo('/bibliothek/neu') } },
+  })
   await refreshGameLibrary()
   await navigateTo(`/bibliothek/${game.id}`)
 }
@@ -44,7 +50,6 @@ async function onSavedAndNext(game: GameView) {
         :label="t('nav.library')"
       />
       <div class="flex flex-col gap-0.5">
-        <span class="text-small font-bold text-ink-2">{{ t('gameEdit.kicker') }}</span>
         <h1 class="m-0 font-display text-[34px] leading-none md:text-[44px]">
           {{ t('gameEdit.title') }}
         </h1>

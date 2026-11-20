@@ -1,4 +1,4 @@
-import { GRID_FROM_WINNERS } from '~~/shared/ceremony'
+import { ceremonyRunning, GRID_FROM_WINNERS } from '~~/shared/ceremony'
 import type { EventView } from '~~/shared/event'
 import { leadersOf } from '~~/shared/finish'
 import { teamNameAt } from './board'
@@ -33,8 +33,8 @@ export interface CeremonyModel {
   points: number
   /** Every Standing below rank 1 in the read's order, with its own rank (equal points share it: 2, 2, 4). */
   rows: { team: number, name: string, rank: number, points: number }[]
-  /** The line under the banner (#312): the Event and the games played; a Tie adds who stands level. */
-  sub: string
+  /** The line under the banner (#312): who stands level in a Tie with somebody below or both of 2 (#802); none for a sole Winner and for all level. */
+  sub: string | null
   /** What the polite live region says once the stamp has landed. */
   live: string
 }
@@ -49,7 +49,7 @@ function peopleOf(members: EventView['members'], team: number, name: string): Ce
 }
 
 /** The model of the end frame, or null without a ceremony, without Standings or without anybody on rank 1. */
-export function ceremonyModel({ standings, members, teams, ceremony, event, results }: Pick<EventView, 'standings' | 'members' | 'teams' | 'ceremony' | 'results'> & { event: Pick<EventView['event'], 'name'> }, t: Translate): CeremonyModel | null {
+export function ceremonyModel({ standings, members, teams, ceremony }: Pick<EventView, 'standings' | 'members' | 'teams' | 'ceremony'>, t: Translate): CeremonyModel | null {
   if (!ceremony || !standings) return null
   const first = leadersOf(standings)
   if (first.length === 0) return null
@@ -60,16 +60,15 @@ export function ceremonyModel({ standings, members, teams, ceremony, event, resu
   })
   const rows = standings.filter(row => row.rank >= 2).map(row => ({ team: row.team, name: teamNameAt(teams, row.team, t), rank: row.rank, points: row.points }))
   const names = joinNames(winners.map(winner => winner.name))
-  const base = t('ceremony.sub', { event: event.name, n: results.length }, results.length)
   if (winners.length === 1) {
     const live = t('ceremony.live', { list: names, points: t('table.points', { n: points }, points) })
-    return { winners, points, rows, sub: base, live }
+    return { winners, points, rows, sub: null, live }
   }
   // A Tie (#315): who stands level, in the three variants of the design (somebody finished below, both of 2, all of 3 or more).
   const k = winners.length
   const variant = rows.length > 0 ? '' : k === 2 ? 'Both' : 'All'
   const named = { k, n: points, names }
-  const sub = t(`ceremony.tie.sub${variant}`, { ...named, base }, points)
+  const sub = variant === 'All' ? null : t(`ceremony.tie.sub${variant}`, named, points)
   const live = t(`ceremony.tie.live${variant}`, named, points)
   return { winners, points, rows, sub, live }
 }
@@ -95,4 +94,15 @@ export function ceremonyLayout(winners: number, below: number, roomy: boolean): 
   if (!chain) return { stage: 'grid', rows: below > 0 ? 'chips' : 'none', cols: roomy ? 4 : 2 }
   const rows = below === 0 ? 'none' : winners === 2 ? (roomy ? 'side' : 'below') : 'chips'
   return { stage: 'chain', rows, cols: winners }
+}
+
+/**
+ * Whether the Award ceremony is pending or running on this page (#755, spec #718 § Engine changes): a finished Event (with settings, as pageFacts
+ * reads it) whose ceremony the Host has not started, or whose latest run has not reached its stored end (ceremonyRunning: the end every device reads).
+ * No role here: the Host's read and a Member's are the same. Not finished: false, so a Tour page (tourMayStart needs beforeFinish, shared/phase.ts)
+ * never reaches it.
+ */
+export function ceremonyAwaitsSound(view: Pick<EventView, 'ceremony' | 'settings'> & { event: Pick<EventView['event'], 'phase'> }, nowMs: number): boolean {
+  if (view.event.phase !== 'finished' || view.settings === null) return false
+  return view.ceremony === null || ceremonyRunning(view.ceremony, nowMs)
 }

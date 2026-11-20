@@ -56,6 +56,11 @@ describe('reasonKey', () => {
   it('says no_such_team in its own words, not the generic line', () => {
     expect(text(reasonKey('no_such_team'))).toBe('Dieses Team gibt es nicht mehr.')
   })
+
+  // The Host outside a team, or a Member on the Stands, who casts a Veto (#802): „Spielende“, not „Spieler“.
+  it('says not_a_player in the gender-neutral words (#802)', () => {
+    expect(text(reasonKey('not_a_player'))).toBe('Ein Veto können nur Spielende in einem Team einlegen.')
+  })
 })
 
 describe('apiErrorKey', () => {

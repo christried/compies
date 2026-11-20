@@ -112,7 +112,7 @@ describe('the Game library Tags (#365)', () => {
       expect(await (await tags(cookie)).json()).toEqual([{ key: 'retro', label: 'Retro' }])
     })
 
-    it('answers signed-out visitors and a Member as for a missing route, and the Host and the Platform admin with the list', async () => {
+    it('answers signed-out visitors and a Member as for a missing route, the Host with their list and the Platform admin with their own, empty one (#455)', async () => {
       await created(await cookieOf(host), { price: { cents: 1999, source: 'steam' }, name: 'Mario Kart', tags: ['Co-op'] })
 
       for (const cookie of [undefined, await cookieOf(member)]) {
@@ -120,10 +120,10 @@ describe('the Game library Tags (#365)', () => {
         expect(response.status).toBe(404)
         expect(response.statusText).toBe('Not Found')
       }
-      for (const profile of [host, admin]) {
+      for (const [profile, expected] of [[host, [{ key: 'co-op', label: 'Co-op' }]], [admin, []]] as const) {
         const response = await tags(await cookieOf(profile))
         expect(response.status).toBe(200)
-        expect(await response.json()).toEqual([{ key: 'co-op', label: 'Co-op' }])
+        expect(await response.json()).toEqual(expected)
       }
     })
   })

@@ -993,11 +993,15 @@ describe('preloading GSAP (#312)', () => {
   })
 })
 
-describe('the line under the banner (#312)', () => {
-  it('names the Event and its games', async () => {
+// #802: the Event and its games left the line. The layer has no `isHost` branch, so the Host and a Member see this one frame.
+describe('the line under the banner (#312, #802)', () => {
+  it('has none for a sole Winner: no Event and no games, and no empty paragraph under the banner', async () => {
     await mount(finished(), STARTS)
 
-    expect(text()).toContain('Freitags-Zocken · 3 Spiele')
+    expect(text()).not.toContain('Freitags-Zocken · 3 Spiele')
+    expect(text()).not.toContain('Spiele')
+    const banner = dialog()!.querySelector('h2')!
+    expect(banner.nextElementSibling?.tagName).not.toBe('P')
   })
 })
 
@@ -1769,11 +1773,20 @@ describe('a Tie (#315)', () => {
       expect(spoken()).toBe('Unentschieden! Alle 8 Parteien gewinnen mit je 9 Punkten: Wilde Gurken, Nacht Eulen, Gelbe Gefahr, Käse Turbo, Grüne Welle, Blaue Bohnen, Pinke Panik und Team Orange.')
     })
 
-    it('says the line under the banner for the Tie', async () => {
+    it('says the line under the banner for the Tie, without the Event and its games', async () => {
       stubScreen(true)
       await mount(tie(4, 2), STARTS)
 
-      expect(text()).toContain('Freitags-Zocken · 3 Spiele · 2 Sieger, je 9 Punkte')
+      expect(text()).toContain('2 Sieger, je 9 Punkte')
+      expect(text()).not.toContain('Freitags-Zocken · 3 Spiele')
+    })
+
+    it('has no line under the banner when all 8 won, and no empty paragraph there', async () => {
+      stubScreen(false)
+      await mount(tie(8, 8), STARTS)
+
+      expect(text()).not.toContain('gleichauf')
+      expect(dialog()!.querySelector('h2')!.nextElementSibling?.tagName).not.toBe('P')
     })
   })
 

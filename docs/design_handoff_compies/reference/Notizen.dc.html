@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+<template id="__bundler_thumbnail"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="#fff3df"/><rect x="18" y="20" width="64" height="60" rx="8" fill="#fffdf8" stroke="#151515" stroke-width="4"/><rect x="18" y="20" width="64" height="16" rx="6" fill="#151515"/><rect x="27" y="45" width="34" height="6" rx="3" fill="#151515"/><rect x="27" y="57" width="44" height="5" rx="2.5" fill="#1f5fd0"/><rect x="27" y="67" width="26" height="5" rx="2.5" fill="#151515"/><circle cx="72" cy="28" r="9" fill="#ffd23f" stroke="#151515" stroke-width="3"/></svg></template>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&amp;family=Lilita+One&amp;family=Bungee&amp;family=JetBrains+Mono:wght@500;700&amp;display=swap">
+<link rel="stylesheet" href="./tokens/compies-tokens.css">
+<script src="./tokens/lucide-subset.js"></script>
+<script src="./notizen.js"></script>
+<style>body{margin:0;background:#f3ead9}a{color:#1f5fe0;text-decoration-thickness:2px;text-underline-offset:3px}a:hover{color:#151515}</style>
+</helmet>
+<div lang="de" data-theme="light" style="padding:72px 80px 160px;display:flex;flex-direction:column;gap:120px;font-family:var(--cp-font-sans);font-weight:500;font-size:16px;line-height:1.45;color:#151515;background:#f3ead9;width:max-content;min-width:100%;box-sizing:border-box">
+
+  <header style="display:flex;flex-direction:column;gap:18px;max-width:1240px">
+    <span style="font-family:var(--cp-font-mono);font-size:14px;font-weight:700;color:#5d5650">Bibliothek · Event · Runde · Host only</span>
+    <h1 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:88px;line-height:.92">Notizen</h1>
+    <p style="margin:0;font-size:22px;line-height:1.4;max-width:1160px;text-wrap:pretty">The Host's free text per game becomes a small rich-text field: bold, italic, one heading, two lists, links. Same chrome as TextField with a 44 px toolbar on top, the counter and the error below. Read-only, the note keeps the look of the place it sits in: popover and Round card at 14 px, sheet, dialog and library at 15–16 px. The Event note („heute nur Bo1“) is the same field with a yellow calendar disc and a framed panel, always above the game's own note. No new tokens.</p>
+    <div style="display:flex;flex-wrap:wrap;gap:12px;margin-top:6px">
+      <span style="display:inline-flex;align-items:center;height:40px;padding:0 16px;border-radius:999px;border:3px solid #151515;background:#ffd23f;font-weight:800;box-shadow:3px 3px 0 #151515">New tokens: none</span>
+      <span style="display:inline-flex;align-items:center;height:40px;padding:0 16px;border-radius:999px;border:2px solid #151515;background:#fffdf8;font-weight:700">6 formats · 2000 visible characters · http/https only</span>
+      <span style="display:inline-flex;align-items:center;height:40px;padding:0 16px;border-radius:999px;border:2px solid #151515;background:#fffdf8;font-weight:700">Toolbar fits one row at 390</span>
+      <a href="#live" style="display:inline-flex;align-items:center;height:40px;padding:0 16px;border-radius:999px;border:2px solid #151515;background:#fffdf8;font-weight:700;color:#151515;text-decoration:none">Try it live ↓</a>
+      <a href="#handoff" style="display:inline-flex;align-items:center;height:40px;padding:0 16px;border-radius:999px;border:2px solid #151515;background:#fffdf8;font-weight:700;color:#151515;text-decoration:none">Hand-off note ↓</a>
+    </div>
+    <ol style="margin:8px 0 0;padding:0;list-style:none;display:flex;flex-wrap:wrap;gap:8px">
+      <sc-for list="{{ toc }}" as="s" hint-placeholder-count="8"><li><a href="{{ s.h }}" style="display:inline-flex;align-items:center;gap:8px;height:34px;padding:0 12px 0 4px;border:2px solid #151515;border-radius:999px;background:#fffdf8;font-size:14px;font-weight:700;color:#151515;text-decoration:none"><span style="display:grid;place-items:center;width:26px;height:26px;border-radius:50%;border:2px solid #151515;box-sizing:border-box;background:#ffd23f;font-family:var(--cp-font-num);font-size:11px">{{ s.n }}</span>{{ s.t }}</a></li></sc-for>
+    </ol>
+  </header>
+
+  <sc-if value="{{ show.s1 }}" hint-placeholder-val="{{ true }}"><section id="s1" data-screen-label="1 Editor in the game form" style="display:flex;flex-direction:column;gap:32px">
+    <div style="display:flex;flex-direction:column;gap:8px;max-width:1240px">
+      <span style="font-family:var(--cp-font-mono);font-size:15px;font-weight:700;color:#5d5650">1 · Bibliothek › Spiel bearbeiten · 1440 and 390 · light and dark</span>
+      <h2 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:56px;line-height:1">The editor in the game form</h2>
+      <p style="margin:0;font-size:20px;max-width:1180px;text-wrap:pretty">The field replaces today's multiline TextField in place. Label with a disc (sticky note = the game's note), toolbar inside the field's border, text 16 px (no iOS zoom), help left and counter right below. The field grows from 168 px to 400 px (390: 132 → 300, with the keyboard up: the visible height − 200), then scrolls inside; the toolbar never scrolls away. On phones the keyboard is up while typing, so the 390 frames show it.</p>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:20px">
+      <span style="font-family:var(--cp-font-mono);font-size:16px;font-weight:700">1440 · light</span>
+      <div style="display:flex;gap:56px;align-items:flex-start">
+        <sc-for list="{{ s1 }}" as="f" hint-placeholder-count="7"><div style="display:flex;flex-direction:column;gap:12px"><div style="display:flex;flex-direction:column;gap:2px"><b style="font-family:var(--cp-font-display);font-weight:400;font-size:40px;line-height:1">{{ f.t }}</b><span style="font-family:var(--cp-font-mono);font-size:16px;font-weight:700;color:#5d5650">{{ f.d }}</span></div><div style="border:2px solid #151515;overflow:hidden;width:max-content"><dc-import name="NotizScreen" ctx="form" w="{{ 1440 }}" theme="light" state="{{ f.k }}" hint-size="1440px,900px"></dc-import></div></div></sc-for>
+      </div>
+      <span style="font-family:var(--cp-font-mono);font-size:16px;font-weight:700;margin-top:24px">1440 · dark</span>
+      <div style="display:flex;gap:56px;align-items:flex-start">
+        <sc-for list="{{ s1 }}" as="f" hint-placeholder-count="7"><div style="border:2px solid #151515;overflow:hidden;width:max-content"><dc-import name="NotizScreen" ctx="form" w="{{ 1440 }}" theme="dark" state="{{ f.k }}" hint-size="1440px,900px"></dc-import></div></sc-for>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:20px;margin-top:40px">
+      <span style="font-family:var(--cp-font-mono);font-size:16px;font-weight:700">390 · light, then dark</span>
+      <div style="display:grid;grid-template-columns:repeat(7,390px);gap:14px 56px;align-items:end">
+        <sc-for list="{{ s1 }}" as="f" hint-placeholder-count="7"><div style="display:flex;flex-direction:column;gap:2px"><b style="font-family:var(--cp-font-display);font-weight:400;font-size:30px;line-height:1">{{ f.t }}</b><span style="font-family:var(--cp-font-mono);font-size:14px;font-weight:700;color:#5d5650">{{ f.d2 }}</span></div></sc-for>
+        <sc-for list="{{ s1 }}" as="f" hint-placeholder-count="7"><div style="border:2px solid #151515;border-radius:28px;overflow:hidden;width:max-content"><dc-import name="NotizScreen" ctx="form" w="{{ 390 }}" theme="light" state="{{ f.k }}" kb="{{ f.kb }}" hint-size="390px,844px"></dc-import></div></sc-for>
+        <sc-for list="{{ s1 }}" as="f" hint-placeholder-count="7"><div style="border:2px solid #151515;border-radius:28px;overflow:hidden;width:max-content"><dc-import name="NotizScreen" ctx="form" w="{{ 390 }}" theme="dark" state="{{ f.k }}" kb="{{ f.kb }}" hint-size="390px,844px"></dc-import></div></sc-for>
+      </div>
+    </div>
+
+    <div id="states" style="display:flex;flex-direction:column;gap:20px;margin-top:40px">
+      <div style="display:flex;flex-direction:column;gap:8px;max-width:1240px">
+        <b style="font-family:var(--cp-font-display);font-weight:400;font-size:40px;line-height:1">All states, actual size</b>
+        <p style="margin:0;font-size:18px;max-width:1180px;text-wrap:pretty">Left the field at the form's width (640), right at 390 (field 358). Focus = the DS focus outline (3 px <span style="font-family:var(--cp-font-mono);font-size:15px">--cp-focus</span>, 2 px offset). Error = <span style="font-family:var(--cp-font-mono);font-size:15px">error-fg</span> border + icon + text, never colour alone. Disabled = dashed <span style="font-family:var(--cp-font-mono);font-size:15px">ink-3</span> on <span style="font-family:var(--cp-font-mono);font-size:15px">paper-2</span> (only while saving). Read-only = dashed <span style="font-family:var(--cp-font-mono);font-size:15px">line</span>, no toolbar, text stays readable.</p>
+      </div>
+      <sc-for list="{{ boardThemes }}" as="th" hint-placeholder-count="2">
+        <div data-theme="{{ th.k }}" style="display:flex;flex-direction:column;gap:24px;padding:32px;border:3px solid #151515;border-radius:24px;background-color:var(--cp-paper);background-image:var(--cp-tex-image);background-size:var(--cp-tex-size);color:var(--cp-ink);width:max-content">
+          <span style="font-family:var(--cp-font-mono);font-size:14px;font-weight:700;color:var(--cp-ink-2)">{{ th.l }}</span>
+          <div style="display:grid;grid-template-columns:repeat(4,640px);gap:40px 40px;align-items:start">
+            <sc-for list="{{ board }}" as="b" hint-placeholder-count="8"><div style="display:flex;flex-direction:column;gap:10px;padding-bottom:{{ b.pb }}"><span style="font-family:var(--cp-font-mono);font-size:14px;font-weight:700;color:var(--cp-ink-2)">{{ b.t }}</span><dc-import name="NotizEditor" state="{{ b.k }}" variant="{{ b.v }}" min-h="{{ b.minH }}" max-h="{{ b.maxH }}" hint-size="640px,300px"></dc-import></div></sc-for>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(6,358px);gap:40px 40px;align-items:start">
+            <sc-for list="{{ boardN }}" as="b" hint-placeholder-count="6"><div style="display:flex;flex-direction:column;gap:10px"><span style="font-family:var(--cp-font-mono);font-size:14px;font-weight:700;color:var(--cp-ink-2)">{{ b.t }}</span><dc-import name="NotizEditor" state="{{ b.k }}" variant="{{ b.v }}" narrow="{{ true }}" min-h="{{ b.minH }}" max-h="{{ b.maxH }}" hint-size="358px,300px"></dc-import></div></sc-for>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+  </section></sc-if>
+
+  <sc-if value="{{ show.st }}" hint-placeholder-val="{{ true }}"><section id="toolbar" data-screen-label="Toolbar" style="display:flex;flex-direction:column;gap:28px">
+    <div style="display:flex;flex-direction:column;gap:8px;max-width:1240px">
+      <span style="font-family:var(--cp-font-mono);font-size:15px;font-weight:700;color:#5d5650">Toolbar · anatomy · 390 · 320 · keyboard</span>
+      <h2 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:56px;line-height:1">Six buttons, one row</h2>
+      <p style="margin:0;font-size:20px;max-width:1180px;text-wrap:pretty">Each button is a 44 × 44 hit area with a 36 px visual square (radius 8). Four groups: inline (Fett, Kursiv) · block (Überschrift) · lists (Liste, Nummerierte Liste) · Link; 2 px <span style="font-family:var(--cp-font-mono);font-size:17px">line-soft</span> separators with 3 px air. Pressed = ink fill + paper icon (the SegmentedControl / IconButton toggle look). That is 8 + 6 × 44 + 3 × 8 = 296 px: one row on every phone from 390 down to 320 (field inside 282: the separators drop below 296, 272 left). Only below 272 (Galaxy Z Fold cover screen, 280 wide) the Link group wraps to a second row.</p>
+    </div>
+    <div style="display:flex;gap:40px;align-items:flex-start;flex-wrap:wrap">
+      <sc-for list="{{ boardThemes }}" as="th" hint-placeholder-count="2">
+        <div data-theme="{{ th.k }}" style="display:flex;flex-direction:column;gap:18px;padding:28px;border:3px solid #151515;border-radius:24px;background:var(--cp-surface);color:var(--cp-ink)">
+          <span style="font-family:var(--cp-font-mono);font-size:14px;font-weight:700;color:var(--cp-ink-2)">{{ th.l }} · button states, 2×</span>
+          <div style="display:flex;gap:28px">
+            <sc-for list="{{ btnStates }}" as="b" hint-placeholder-count="6">
+              <div style="display:flex;flex-direction:column;align-items:center;gap:10px;width:110px">
+                <span style="position:relative;display:grid;place-items:center;width:88px;height:88px;border:2px dashed var(--cp-line-soft);border-radius:4px;box-sizing:border-box"><span style="display:grid;place-items:center;width:72px;height:72px;border-radius:16px;background:{{ b.bg }};color:{{ b.fg }};outline:{{ b.ol }}"><dc-import name="Icon" icon="{{ b.i }}" size="{{ 40 }}" sw="{{ 2.5 }}" hint-size="40px,40px"></dc-import></span></span>
+                <b style="font-size:15px">{{ b.t }}</b>
+                <span style="font-size:13px;line-height:1.35;color:var(--cp-ink-2);text-align:center;text-wrap:pretty">{{ b.d }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+    <div style="display:flex;gap:56px;align-items:flex-start">
+      <div style="display:flex;flex-direction:column;gap:10px;width:390px">
+        <b style="font-family:var(--cp-font-display);font-weight:400;font-size:28px;line-height:1">390: one row</b>
+        <span style="font-size:16px;color:#5d5650;text-wrap:pretty">Form field 358 (inside 352). The toolbar needs 296.</span>
+        <div data-theme="light" style="position:relative;padding:16px;background:var(--cp-paper);border:2px solid #151515;border-radius:20px;width:390px;box-sizing:border-box"><dc-import name="NotizEditor" state="focus" narrow="{{ true }}" min-h="96px" max-h="140px" hint-size="358px,260px"></dc-import><span style="position:absolute;left:19px;top:49px;width:296px;height:54px;border:2px dashed #1f5fe0;border-radius:6px;box-sizing:border-box;pointer-events:none"></span><span style="position:absolute;left:23px;top:106px;font-family:var(--cp-font-mono);font-size:12px;font-weight:700;color:#1f5fe0;background:var(--cp-surface);padding:0 4px">296</span></div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px;width:320px">
+        <b style="font-family:var(--cp-font-display);font-weight:400;font-size:28px;line-height:1">320: no separators</b>
+        <span style="font-size:16px;color:#5d5650;text-wrap:pretty">Container query &lt; 296 px: separators drop, 272 px, still one row.</span>
+        <div data-theme="dark" style="padding:16px;background:var(--cp-paper);border:2px solid #151515;border-radius:20px;width:320px;box-sizing:border-box"><dc-import name="NotizEditor" state="focus" narrow="{{ true }}" tight="{{ true }}" min-h="96px" max-h="140px" hint-size="288px,300px"></dc-import></div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px;width:280px">
+        <b style="font-family:var(--cp-font-display);font-weight:400;font-size:28px;line-height:1">280: Link wraps</b>
+        <span style="font-size:16px;color:#5d5650;text-wrap:pretty">Below 272 groups wrap whole. Never a scrolling toolbar.</span>
+        <div data-theme="light" style="padding:16px;background:var(--cp-paper);border:2px solid #151515;border-radius:20px;width:280px;box-sizing:border-box"><dc-import name="NotizEditor" state="focus" narrow="{{ true }}" tight="{{ true }}" min-h="96px" max-h="140px" hint-size="248px,300px"></dc-import></div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:12px;max-width:640px">
+        <b style="font-family:var(--cp-font-display);font-weight:400;font-size:28px;line-height:1">Keyboard and assistive tech</b>
+        <div style="display:grid;grid-template-columns:auto minmax(0,1fr);gap:0;border:3px solid #151515;border-radius:20px;background:#fffdf8;overflow:hidden;font-size:15px;line-height:1.4">
+          <sc-for list="{{ keys }}" as="k" hint-placeholder-count="8"><div style="display:contents"><span style="padding:9px 14px;border-bottom:1.5px solid rgba(21,21,21,.16);font-family:var(--cp-font-mono);font-size:13px;font-weight:700;white-space:nowrap">{{ k.k }}</span><span style="padding:9px 14px;border-bottom:1.5px solid rgba(21,21,21,.16);text-wrap:pretty">{{ k.v }}</span></div></sc-for>
+        </div>
+      </div>
+    </div>
+  </section></sc-if>
+
+  <sc-if value="{{ show.s2 }}" hint-placeholder-val="{{ true }}"><section id="s2" data-screen-label="2 Game dialog sheet" style="display:flex;flex-direction:column;gap:28px">
+    <div style="display:flex;flex-direction:column;gap:8px;max-width:1240px">
+      <span style="font-family:var(--cp-font-mono);font-size:15px;font-weight:700;color:#5d5650">2 · Event-Seite › Spiel › Bearbeiten · 390 sheet · light and dark</span>
+      <h2 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:56px;line-height:1">Event notes above the game's notes</h2>
+      <p style="margin:0;font-size:20px;max-width:1180px;text-wrap:pretty">Same editor twice. Told apart by the disc (Sonne + calendar = this Event; surface + sticky note = the game, from the library), the label and the help line. The Event field is shorter (96 → 200 px) because it holds a line or two; the game's field below it keeps its size. One „Speichern“ for both. In edit mode the sheet is 90 % high (the 76 % rule is for reading); with the keyboard up it follows the visible viewport and the focused field scrolls above the keyboard.</p>
+    </div>
+    <div style="display:flex;gap:56px;align-items:flex-start">
+      <sc-for list="{{ s2 }}" as="f" hint-placeholder-count="4"><div style="display:flex;flex-direction:column;gap:10px"><b style="font-family:var(--cp-font-display);font-weight:400;font-size:30px;line-height:1">{{ f.t }}</b><span style="font-family:var(--cp-font-mono);font-size:14px;font-weight:700;color:#5d5650">{{ f.d }}</span><div style="border:2px solid #151515;border-radius:{{ f.r }};overflow:hidden;width:max-content"><dc-import name="NotizScreen" ctx="edit" w="{{ f.w }}" theme="{{ f.th }}" ev-state="{{ f.ev }}" g-state="{{ f.g }}" hint-size="390px,844px"></dc-import></div></div></sc-for>
+    </div>
+  </section></sc-if>
+
+  <sc-if value="{{ show.s3 }}" hint-placeholder-val="{{ true }}"><section id="s3" data-screen-label="3 Read-only places" style="display:flex;flex-direction:column;gap:28px">
+    <div style="display:flex;flex-direction:column;gap:8px;max-width:1240px">
+      <span style="font-family:var(--cp-font-mono);font-size:15px;font-weight:700;color:#5d5650">3 · read-only · four places · 1440 and 390 · light and dark</span>
+      <h2 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:56px;line-height:1">A formatted note, wherever it shows up</h2>
+      <p style="margin:0;font-size:20px;max-width:1180px;text-wrap:pretty">Heading = Lilita (the display face, one level). Bold = 800. Italic = slanted (Bricolage has no italic; the browser slants it, allowed with <span style="font-family:var(--cp-font-mono);font-size:17px">font-synthesis: style</span>). Bullets = small squares, numbers tabular. Links = <span style="font-family:var(--cp-font-mono);font-size:17px">info-fg</span>, 650, 2 px underline and a ↗ that never wraps away from the last letter, so they read as „leaves the app“; a link whose text is its address drops „https://“ and „www.“ and breaks anywhere, which keeps the 320 px popover from overflowing.</p>
+    </div>
+    <sc-for list="{{ places }}" as="pl" hint-placeholder-count="4">
+      <div style="display:flex;flex-direction:column;gap:16px">
+        <div style="display:flex;align-items:baseline;gap:18px;flex-wrap:wrap"><b style="font-family:var(--cp-font-display);font-weight:400;font-size:40px;line-height:1">{{ pl.t }}</b><span style="font-size:18px;color:#5d5650">{{ pl.d }}</span></div>
+        <div style="display:flex;gap:56px;align-items:flex-start">
+          <div style="border:2px solid #151515;overflow:hidden;width:max-content"><dc-import name="NotizScreen" ctx="{{ pl.ctx }}" w="{{ 1440 }}" theme="light" hint-size="1440px,900px"></dc-import></div>
+          <div style="border:2px solid #151515;overflow:hidden;width:max-content"><dc-import name="NotizScreen" ctx="{{ pl.ctx }}" w="{{ 1440 }}" theme="dark" hint-size="1440px,900px"></dc-import></div>
+          <div style="border:2px solid #151515;border-radius:28px;overflow:hidden;width:max-content"><dc-import name="NotizScreen" ctx="{{ pl.ctx }}" w="{{ 390 }}" theme="light" hint-size="390px,844px"></dc-import></div>
+          <div style="border:2px solid #151515;border-radius:28px;overflow:hidden;width:max-content"><dc-import name="NotizScreen" ctx="{{ pl.ctx }}" w="{{ 390 }}" theme="dark" hint-size="390px,844px"></dc-import></div>
+        </div>
+      </div>
+    </sc-for>
+    <div style="display:flex;flex-direction:column;gap:16px;margin-top:24px">
+      <b style="font-family:var(--cp-font-display);font-weight:400;font-size:40px;line-height:1">Type and spacing</b>
+      <div style="display:flex;gap:40px;align-items:flex-start">
+        <sc-for list="{{ boardThemes }}" as="th" hint-placeholder-count="2">
+          <div data-theme="{{ th.k }}" style="display:flex;gap:28px;padding:28px;border:3px solid #151515;border-radius:24px;background:var(--cp-surface);color:var(--cp-ink)">
+            <sc-for list="{{ sizes }}" as="z" hint-placeholder-count="3"><div style="display:flex;flex-direction:column;gap:10px;width:{{ z.w }}"><span style="font-family:var(--cp-font-mono);font-size:13px;font-weight:700;color:var(--cp-ink-2)">{{ z.t }}</span><div style="padding:{{ z.pad }};border-radius:12px;background:var(--cp-paper-2)"><dc-import name="NotizText" doc="show" size="{{ z.k }}" hint-size="100%,240px"></dc-import></div><span style="font-size:13px;line-height:1.4;color:var(--cp-ink-2);text-wrap:pretty">{{ z.d }}</span></div></sc-for>
+          </div>
+        </sc-for>
+      </div>
+      <div style="display:grid;grid-template-columns:auto repeat(3,minmax(0,1fr));max-width:1240px;border:3px solid #151515;border-radius:20px;background:#fffdf8;overflow:hidden;font-size:15px;line-height:1.4">
+        <sc-for list="{{ typeRows }}" as="r" hint-placeholder-count="9"><div style="display:contents"><span style="padding:9px 14px;border-bottom:1.5px solid rgba(21,21,21,.16);font-weight:800;background:{{ r.bg }}">{{ r.a }}</span><span style="padding:9px 14px;border-bottom:1.5px solid rgba(21,21,21,.16);background:{{ r.bg }};font-family:var(--cp-font-mono);font-size:13px">{{ r.b }}</span><span style="padding:9px 14px;border-bottom:1.5px solid rgba(21,21,21,.16);background:{{ r.bg }};font-family:var(--cp-font-mono);font-size:13px">{{ r.c }}</span><span style="padding:9px 14px;border-bottom:1.5px solid rgba(21,21,21,.16);background:{{ r.bg }};font-family:var(--cp-font-mono);font-size:13px">{{ r.d }}</span></div></sc-for>
+      </div>
+    </div>
+  </section></sc-if>
+
+  <sc-if value="{{ show.s4 }}" hint-placeholder-val="{{ true }}"><section id="s4" data-screen-label="4 Long note" style="display:flex;flex-direction:column;gap:28px">
+    <div style="display:flex;flex-direction:column;gap:8px;max-width:1240px">
+      <span style="font-family:var(--cp-font-mono);font-size:15px;font-weight:700;color:#5d5650">4 · long note · popover 1440 · sheet 390</span>
+      <h2 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:56px;line-height:1">It scrolls inside, the frame stays</h2>
+      <p style="margin:0;font-size:20px;max-width:1180px;text-wrap:pretty">Popover: max 440 px (or the room below the trigger − 24), header and „Bearbeiten“ stay, only the text scrolls. Once scrolled, a 2 px <span style="font-family:var(--cp-font-mono);font-size:17px">line-soft</span> rule appears under the header (no soft shadow: the DS keeps blur for toasts and tooltips). Sheet: max 76 %, same rule. The scroll area is focusable (<span style="font-family:var(--cp-font-mono);font-size:17px">tabindex="0"</span>, named by the title) so it scrolls with the keyboard.</p>
+    </div>
+    <div style="display:flex;gap:56px;align-items:flex-start">
+      <sc-for list="{{ s4 }}" as="f" hint-placeholder-count="4"><div style="display:flex;flex-direction:column;gap:10px"><b style="font-family:var(--cp-font-display);font-weight:400;font-size:30px;line-height:1">{{ f.t }}</b><div style="border:2px solid #151515;border-radius:{{ f.r }};overflow:hidden;width:max-content"><dc-import name="NotizScreen" ctx="long" w="{{ f.w }}" theme="{{ f.th }}" scroll="{{ f.sc }}" h="{{ f.h }}" hint-size="1440px,760px"></dc-import></div></div></sc-for>
+    </div>
+  </section></sc-if>
+
+  <sc-if value="{{ show.s5 }}" hint-placeholder-val="{{ true }}"><section id="s5" data-screen-label="5 Finished Event" style="display:flex;flex-direction:column;gap:28px">
+    <div style="display:flex;flex-direction:column;gap:8px;max-width:1240px">
+      <span style="font-family:var(--cp-font-mono);font-size:15px;font-weight:700;color:#5d5650">5 · Event beendet · 390 sheet · 1440 dialog</span>
+      <h2 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:56px;line-height:1">Finished: the Event note is frozen</h2>
+      <p style="margin:0;font-size:20px;max-width:1180px;text-wrap:pretty">After „Event beenden“ the Event note is history: no toolbar, no pencil, dashed border (the DS read-only look), the disc turns <span style="font-family:var(--cp-font-mono);font-size:17px">paper-2</span>, and a lock chip „Event beendet“ says why. The text stays fully readable (ink, not ink-3). The game's own note lives in the library, so it stays editable here too.</p>
+    </div>
+    <div style="display:flex;gap:56px;align-items:flex-start">
+      <sc-for list="{{ s5 }}" as="f" hint-placeholder-count="4"><div style="display:flex;flex-direction:column;gap:10px"><b style="font-family:var(--cp-font-display);font-weight:400;font-size:30px;line-height:1">{{ f.t }}</b><div style="border:2px solid #151515;border-radius:{{ f.r }};overflow:hidden;width:max-content"><dc-import name="NotizScreen" ctx="finished" w="{{ f.w }}" theme="{{ f.th }}" hint-size="390px,844px"></dc-import></div></div></sc-for>
+    </div>
+  </section></sc-if>
+
+  <sc-if value="{{ show.s6 }}" hint-placeholder-val="{{ true }}"><section id="live" data-screen-label="6 Live + motion" style="display:flex;flex-direction:column;gap:28px">
+    <div style="display:flex;flex-direction:column;gap:8px;max-width:1240px">
+      <span style="font-family:var(--cp-font-mono);font-size:15px;font-weight:700;color:#5d5650">6 · live editor · motion · reduced motion</span>
+      <h2 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:56px;line-height:1">Try it</h2>
+      <p style="margin:0;font-size:20px;max-width:1180px;text-wrap:pretty">Working fields (a sketch; the app uses TipTap). Strg/⌘+B, Strg/⌘+I, Strg/⌘+K; select a word and press Link; type „ftp://…“ to see the error, a bare „bgg.cc/…“ gets https:// in front. Paste arrives as plain text. Arrow keys move inside the toolbar.</p>
+    </div>
+    <div style="display:flex;gap:40px;align-items:flex-start">
+      <div data-theme="light" style="width:640px;padding:28px;border:3px solid #151515;border-radius:24px;background-color:var(--cp-paper);background-image:var(--cp-tex-image);background-size:var(--cp-tex-size);color:var(--cp-ink)"><dc-import name="NotizEditor" state="live" doc="show" hint-size="640px,420px"></dc-import></div>
+      <div data-theme="dark" style="width:390px;box-sizing:border-box;padding:16px;border:3px solid #151515;border-radius:24px;background-color:var(--cp-paper);background-image:var(--cp-tex-image);background-size:var(--cp-tex-size);color:var(--cp-ink)"><dc-import name="NotizEditor" state="live" narrow="{{ true }}" variant="event" doc="event" hint-size="358px,300px"></dc-import></div>
+    </div>
+    <div style="display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.6fr) minmax(0,1fr);max-width:1400px;border:3px solid #151515;border-radius:20px;background:#fffdf8;overflow:hidden;font-size:15px;line-height:1.4">
+      <b style="padding:12px 16px;background:#fbe9cc;border-bottom:2px solid #151515">Moment</b><b style="padding:12px 16px;background:#fbe9cc;border-bottom:2px solid #151515">Full motion</b><b style="padding:12px 16px;background:#fbe9cc;border-bottom:2px solid #151515">Reduced</b>
+      <sc-for list="{{ motion }}" as="m" hint-placeholder-count="12"><div style="display:contents"><span style="padding:10px 16px;border-bottom:1.5px solid rgba(21,21,21,.16);font-weight:700">{{ m.k }}</span><span style="padding:10px 16px;border-bottom:1.5px solid rgba(21,21,21,.16);text-wrap:pretty">{{ m.f }}</span><span style="padding:10px 16px;border-bottom:1.5px solid rgba(21,21,21,.16);text-wrap:pretty">{{ m.r }}</span></div></sc-for>
+    </div>
+  </section></sc-if>
+
+  <section id="handoff" data-screen-label="Hand-off" style="display:flex;flex-direction:column;gap:20px;max-width:1200px">
+    <span style="font-family:var(--cp-font-mono);font-size:15px;font-weight:700;color:#5d5650">Hand-off · design_handoff_compies/18-notizen.md</span>
+    <dc-import name="MdNote" src="../18-notizen.md" hint-size="1200px,600px"></dc-import>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;section&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;alle&quot;,&quot;1&quot;,&quot;t&quot;,&quot;2&quot;,&quot;3&quot;,&quot;4&quot;,&quot;5&quot;,&quot;6&quot;],&quot;default&quot;:&quot;alle&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;View&quot;}}">
+class Component extends DCLogic {
+  renderVals(){
+    const p=this.props;
+    const s1=[
+      {k:'empty',t:'Leer',d:'placeholder · no counter',d2:'placeholder',kb:false},
+      {k:'filled',t:'Alle Formate',d:'heading, lists, bold, italic, link',d2:'not focused',kb:false},
+      {k:'focus',t:'Fokus',d:'caret in bold list item: Fett + Liste pressed',d2:'keyboard up',kb:true},
+      {k:'near',t:'Kurz vor dem Limit',d:'1880 / 2000 · „noch 120 Zeichen“',d2:'1880 · keyboard up',kb:true},
+      {k:'over',t:'Über dem Limit',d:'2037 · error · Speichern blocked',d2:'2037 · error',kb:false},
+      {k:'link',t:'Link einfügen',d:'popover under the selection',d2:'link bar inside the field',kb:true},
+      {k:'linkerr',t:'Link: kein http(s)',d:'ftp:// → error in the popover',d2:'error in the link bar',kb:true}];
+    const board=[
+      {k:'empty',t:'Empty · game'},{k:'empty',v:'event',t:'Empty · Event',minH:'96px'},{k:'focus',t:'Focus · Fett + Liste pressed'},{k:'kbd',t:'Keyboard focus on „Fett“ · tooltip'},
+      {k:'heading',t:'Caret in Überschrift · Fett disabled',maxH:'240px'},{k:'hover',t:'Hover on „Kursiv“',maxH:'240px'},{k:'linkedit',t:'Edit a link · „Link entfernen“',maxH:'240px',pb:'190px'},{k:'linkerr',t:'Link error',maxH:'240px',pb:'190px'},
+      {k:'near',t:'Near limit · warning-fg',maxH:'200px'},{k:'overFocus',t:'Over limit · focused',maxH:'200px'},{k:'disabled',t:'Disabled · while saving',maxH:'200px'},{k:'readonly',v:'event',t:'Read-only · finished Event',maxH:'200px'}];
+    const boardN=[{k:'empty',v:'event',t:'Empty · Event',minH:'96px'},{k:'focus',t:'Focus',maxH:'200px'},{k:'linkedit',t:'Edit a link (bar)',maxH:'160px'},{k:'linkerr',t:'Link error (bar)',maxH:'160px'},{k:'over',t:'Over limit',maxH:'200px'},{k:'readonly',v:'event',t:'Read-only',maxH:'200px'}];
+    const btnStates=[
+      {t:'Default',i:'bold',bg:'transparent',fg:'var(--cp-ink)',ol:'none',d:'ink icon, 20 px, stroke 2.5'},
+      {t:'Hover',i:'bold',bg:'var(--cp-paper-2)',fg:'var(--cp-ink)',ol:'none',d:'paper-2 square (pointer only)'},
+      {t:'Pressed',i:'bold',bg:'var(--cp-ink)',fg:'var(--cp-paper)',ol:'none',d:'aria-pressed="true": ink fill, paper icon'},
+      {t:'Focus',i:'bold',bg:'transparent',fg:'var(--cp-ink)',ol:'6px solid var(--cp-focus)',d:'3 px focus ring on the 36 px square (inside the 44)'},
+      {t:'Pressed + focus',i:'list',bg:'var(--cp-ink)',fg:'var(--cp-paper)',ol:'6px solid var(--cp-focus)',d:'both; ring stays outside the fill'},
+      {t:'Disabled',i:'bold',bg:'transparent',fg:'var(--cp-ink-3)',ol:'none',d:'ink-3 icon, aria-disabled, reason in the tooltip'}];
+    const keys=[
+      {k:'Strg/⌘ + B',v:'Fett an/aus (not in a heading: no-op, tooltip says why)'},
+      {k:'Strg/⌘ + I',v:'Kursiv an/aus'},
+      {k:'Strg/⌘ + K',v:'Link: opens the link control for the selection or the link under the caret'},
+      {k:'„## “ / „- “ / „1. “',v:'Markdown shortcuts at line start: Überschrift, Liste, Nummerierte Liste (TipTap input rules)'},
+      {k:'Tab / Shift+Tab',v:'Leaves the field (no indenting; lists are one level). Toolbar is one tab stop'},
+      {k:'← → Home End',v:'Inside the toolbar: roving tabindex, skips nothing (disabled buttons stay focusable)'},
+      {k:'Enter / Esc',v:'In the link control: Übernehmen / Abbrechen, focus back to the text, selection restored'},
+      {k:'toolbar',v:'role="toolbar" aria-label="Formatierung" aria-controls=field; buttons aria-label + aria-pressed (Link: aria-haspopup="dialog" + aria-expanded) + aria-keyshortcuts'},
+      {k:'field',v:'role="textbox" aria-multiline, aria-labelledby label, aria-describedby help + error, aria-invalid over the limit'}];
+    const s2=[{t:'Event note focused',d:'light · keyboard down',w:390,th:'light',ev:'focus',g:'filled',r:'28px'},{t:'Event note focused',d:'dark',w:390,th:'dark',ev:'focus',g:'filled',r:'28px'},{t:'No Event note yet',d:'light · placeholder „z. B. heute nur Bo1“',w:390,th:'light',ev:'empty',g:'filled',r:'28px'},{t:'Desktop: the same as a dialog',d:'1440 · dialog 600 px',w:1440,th:'light',ev:'focus',g:'filled',r:'0'}];
+    const places=[
+      {ctx:'pop',t:'1 · Game card: popover / sheet',d:'Popover 320 px under the card\u2019s notes button (sm, 14 px) · < 980 a bottom sheet (md, 15 px). The hard case: two blocks and a long link in 288 px.'},
+      {ctx:'round',t:'2 · Round card: „Notizen“ disclosure',d:'paper-2 panel, radius 12, sm 14 px. Event note framed on top, game note bare below a rule.'},
+      {ctx:'dialog',t:'3 · Game dialog on the Event page',d:'Dialog 600 px (md 15 px), pencil per block opens its editor · < 980 bottom sheet.'},
+      {ctx:'library',t:'4 · Library page of a game',d:'„Notizen“ as an h2 section with „Bearbeiten“, paper-2 panel, lg 16 px (md 15 at 390).'}];
+    const sizes=[
+      {k:'sm',w:'288px',pad:'10px 12px',t:'sm · 14 / 1.45 · heading 17',d:'Popover (320 wide), Round card. Lists 20 px indent.'},
+      {k:'md',w:'360px',pad:'12px 14px',t:'md · 15 / 1.5 · heading 18',d:'Sheets, game dialog, library at 390.'},
+      {k:'lg',w:'440px',pad:'16px 18px',t:'lg · 16 / 1.55 · heading 20',d:'Library page ≥ 980. The editor uses 16 / 1.5, heading 20.'}];
+    const H='#fbe9cc';
+    const typeRows=[
+      {a:'Element',b:'sm',c:'md',d:'lg / editor',bg:H},
+      {a:'Paragraph',b:'14/1.45 · 500 · mb 6',c:'15/1.5 · mb 8',d:'16/1.55 · mb 10 (editor 16/1.5, mb 8)'},
+      {a:'Überschrift (h3*)',b:'Lilita 17/1.15 · mt 12 mb 4',c:'Lilita 18 · mt 14',d:'Lilita 20 · mt 16 (editor mt 14)'},
+      {a:'Liste',b:'square · pl 20 · li 2',c:'pl 22 · li 3',d:'pl 24 · li 3'},
+      {a:'Nummerierte Liste',b:'decimal tabular · pl 22',c:'pl 24',d:'pl 26'},
+      {a:'Fett',b:'800',c:'800',d:'800 (not inside a heading)'},
+      {a:'Kursiv',b:'italic (synthesised slant)',c:'same',d:'same'},
+      {a:'Link',b:'info-fg · 650 · underline 2 / offset 3 · ↗ 12',c:'↗ 13',d:'↗ 14 · editor: no ↗'},
+      {a:'Blocks',b:'first: mt 0 · last: mb 0',c:'same',d:'same'}];
+    const s4=[{t:'Popover · top',w:1440,th:'light',sc:'top',h:760,r:'0'},{t:'Popover · scrolled',w:1440,th:'dark',sc:'mid',h:760,r:'0'},{t:'Sheet · scrolled',w:390,th:'light',sc:'mid',h:844,r:'28px'},{t:'Sheet · scrolled',w:390,th:'dark',sc:'mid',h:844,r:'28px'}];
+    const s5=[{t:'390 · edit sheet · light',w:390,th:'light',r:'28px'},{t:'390 · dark',w:390,th:'dark',r:'28px'},{t:'1440 · dialog · light',w:1440,th:'light',r:'0'},{t:'1440 · dark',w:1440,th:'dark',r:'0'}];
+    const motion=[
+      {k:'Field focus / blur',f:'outline + border colour, 140 (dur-fast) ease-snap, CSS',r:'same (colour only)'},
+      {k:'Toolbar hover, press, pressed',f:'square fill + icon colour, 80 (dur-instant) ease-snap, CSS',r:'same'},
+      {k:'Tooltip',f:'after 500 ms hover (0 on keyboard focus): opacity 0→1, y 4→0, 140 ease-out; out 80',r:'opacity only'},
+      {k:'Formatting (B, I, H, lists)',f:'applied at once, no transition (text must not move twice)',r:'same'},
+      {k:'Link popover (≥ 980)',f:'opacity 0→1, y −4→0, 140 (dur-fast) ease-out (MoveToMenu); close 140 ease-in',r:'opacity, 140'},
+      {k:'Link bar (< 980)',f:'height 0→auto 220 (dur-base) ease-out, content opacity +60 ms; close 140 ease-in',r:'height cut, opacity 140'},
+      {k:'Link error, max error',f:'message opacity 0→1, 140; border colour 140. Never a shake',r:'same'},
+      {k:'Counter appears (≥ 1600)',f:'opacity 0→1, 140; tone change colour 140',r:'same'},
+      {k:'Notes popover (card)',f:'opacity + scale .96→1 from the trigger corner, 220 (dur-base) ease-out; close 140 ease-in',r:'opacity, 140'},
+      {k:'Notes / dialog sheet',f:'Sheet: y 100%→0, 360 (dur-slow) ease-out; out 220 ease-in; scrim 140',r:'opacity, 140'},
+      {k:'Scrolled header rule',f:'opacity 0→1, 140',r:'same'},
+      {k:'Round card disclosure',f:'height 0→auto 220 ease-out; chevron 0→180° 220 ease-snap; close 140 ease-in',r:'cut; chevron flips'},
+      {k:'Dialog view ↔ edit',f:'GSAP Flip height 220 (dur-base) ease-io, content crossfade 140',r:'cut + 140 fade'}];
+    const sec=String(new URLSearchParams(location.search).get('section')||p.section||'alle'); const show={}; ['s1','st','s2','s3','s4','s5','s6'].forEach(k=>show[k]=sec==='alle'||sec===k.slice(1));
+    return {s1,board:board.map(b=>Object.assign({v:'game',minH:'',maxH:'',pb:'0'},b)),boardN:boardN.map(b=>Object.assign({v:'game',minH:'',maxH:''},b)),btnStates,keys,s2,places,sizes,typeRows:typeRows.map(r=>Object.assign({bg:'transparent'},r)),s4,s5,motion,show,
+      boardThemes:[{k:'light',l:'LIGHT'},{k:'dark',l:'DARK'}],
+      toc:[['1','Game form','#s1'],['1+','All states','#states'],['T','Toolbar','#toolbar'],['2','Dialog sheet','#s2'],['3','Read-only ×4','#s3'],['4','Long note','#s4'],['5','Finished Event','#s5'],['6','Live + motion','#live']].map(([n,t,h])=>({n,t,h}))};
+  }
+}
+</script>
+</body>
+</html>

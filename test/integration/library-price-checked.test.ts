@@ -3,6 +3,7 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } 
 import { gameTags, games } from '../../server/db/schema'
 import { testClock } from '../../server/utils/clock'
 import type { GameView } from '../../shared/game'
+import { notesFromLines } from '../../shared/notes-doc'
 import { createTestApp, type TestRequest } from './app'
 import { createTestDb, resetDatabase } from './harness'
 import { setAllowlist, signIn, stubAuthEnv } from './sign-in'
@@ -94,7 +95,7 @@ describe('„Preis stimmt noch“ sends only the flag (#360)', () => {
       playersMin: 2,
       playersMax: 8,
       suitabilities: ['teams'],
-      notes: 'Die Fernbedienung nicht vergessen',
+      notes: notesFromLines(['Die Fernbedienung nicht vergessen']),
       tags: ['Co-op'],
       price: steam,
     })
@@ -119,7 +120,7 @@ describe('„Preis stimmt noch“ sends only the flag (#360)', () => {
     const { id } = await created(cookie, {
       name: 'Mario Kart',
       clipLength: 45,
-      notes: 'alt',
+      notes: notesFromLines(['alt']),
       tags: ['Co-op'],
       price: steam,
     })
@@ -127,7 +128,7 @@ describe('„Preis stimmt noch“ sends only the flag (#360)', () => {
     const renamed = await edit(cookie, id, {
       name: 'Mario Kart 8',
       clipLength: 60,
-      notes: 'neu',
+      notes: notesFromLines(['neu']),
       tags: ['Retro'],
       price: steam,
     })
@@ -139,13 +140,13 @@ describe('„Preis stimmt noch“ sends only the flag (#360)', () => {
     expect(response.status).toBe(200)
     expect(await response.json()).toMatchObject({
       name: 'Mario Kart 8',
-      notes: 'neu',
+      notes: notesFromLines(['neu']),
       clipLength: 60,
       price: { cents: 1999, source: 'steam', checkedAt: T2 },
       tags: [{ key: 'retro', label: 'Retro' }],
     })
     const [row] = await testDb.db.select().from(games).where(eq(games.id, id))
-    expect(row).toMatchObject({ name: 'Mario Kart 8', notes: 'neu', clipLength: 60, priceCheckedAt: new Date(T2) })
+    expect(row).toMatchObject({ name: 'Mario Kart 8', notes: notesFromLines(['neu']), clipLength: 60, priceCheckedAt: new Date(T2) })
     expect(await tagRowsOf(id)).toEqual([{ key: 'retro', label: 'Retro', position: 0 }])
   })
 
@@ -188,11 +189,12 @@ describe('„Preis stimmt noch“ sends only the flag (#360)', () => {
     expect(await storedPrice(id)).toEqual({ cents: null, source: 'free_to_play', checkedAt: new Date(T2).toISOString() })
   })
 
-  it('applies the edit rules before the body: another Host, a Member, a stranger and an unknown id get no restamp', async () => {
+  it('applies the ownership rule before the body: another Host, the Platform admin, a Member, a stranger and an unknown id get no restamp (#455)', async () => {
     const { id } = await created(await cookieOf(host), { name: 'Mario Kart', price: steam })
 
     const refusals = [
-      { cookie: await cookieOf(otherHost), status: 403, statusText: 'not_game_editor' },
+      { cookie: await cookieOf(otherHost), status: 404, statusText: 'Not Found' },
+      { cookie: await cookieOf(admin), status: 404, statusText: 'Not Found' },
       { cookie: await cookieOf(member), status: 404, statusText: 'Not Found' },
       { cookie: undefined, status: 404, statusText: 'Not Found' },
     ]
@@ -211,11 +213,12 @@ describe('„Preis stimmt noch“ sends only the flag (#360)', () => {
     expect(await storedPrice(id)).toMatchObject({ checkedAt: T1 })
   })
 
-  it('lets the Platform admin restamp a game', async () => {
-    const { id } = await created(await cookieOf(host), { name: 'Mario Kart', price: steam })
+  it('lets the Platform admin restamp a game of their own library (#455)', async () => {
+    const adminCookie = await cookieOf(admin)
+    const { id } = await created(adminCookie, { name: 'Mario Kart', price: steam })
 
     clock.set(T2)
-    const response = await edit(await cookieOf(admin), id, { priceChecked: true })
+    const response = await edit(adminCookie, id, { priceChecked: true })
 
     expect(response.status).toBe(200)
     expect(await storedPrice(id)).toMatchObject({ checkedAt: new Date(T2).toISOString() })

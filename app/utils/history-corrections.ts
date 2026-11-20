@@ -8,7 +8,7 @@ import type { PointsTable } from '~~/shared/settings'
 /** What the history needs of the page to offer a Correction (#275); null/absent = no „Korrigieren“ (a Member, or the Event has finished). */
 export interface HistoryCorrections {
   pointsTable: PointsTable
-  /** The Game count, for the sheet's kicker „Korrektur: Spiel 2 von 6“. */
+  /** The Game count of the Event. The sheet of a Correction shows no kicker line „Spiel 2 von 6“ since #803 (its title says „Spiel 2 korrigieren“), so the history passes none. */
   total: number
   /** Sends the corrected Places of a Round; resolves to whether the server took them (the sheet closes then). The page passes `actions.enterResult`: it is the same PUT. */
   save: (roundId: string, places: ResultPlace[]) => Promise<boolean>

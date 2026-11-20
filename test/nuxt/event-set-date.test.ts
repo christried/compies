@@ -21,16 +21,26 @@ describe('setting the Date', () => {
     const { slug } = serve(s => view(s, sanneAndLarsi, { event: { isHost: true } }))
     const page = await mountSuspended(EventPage, { route: `/e/${slug}` })
 
-    await clickButton(page.get('[data-slot="fri"]').element, 'Termin festlegen')
+    await clickButton(page.get('[data-slot="fri"]').element, 'Termin fixieren')
 
-    expect(dialog()?.textContent).toContain('Termin festlegen?')
+    expect(dialog()?.textContent).toContain('Termin fixieren?')
     expect(selectedOption()).toBe('Fr 23.10., 20:00 Uhr')
+  })
+
+  it('says nothing about who sees the Date at once: the confirm dialog has no line on it (#799)', async () => {
+    const { slug } = serve(s => view(s, sanneAndLarsi, { event: { isHost: true } }))
+    const page = await mountSuspended(EventPage, { route: `/e/${slug}` })
+
+    await clickButton(page.get('[data-slot="fri"]').element, 'Termin fixieren')
+
+    expect(dialog()?.textContent).toContain('Termin fixieren?')
+    expect(dialog()?.textContent).not.toContain('Alle sehen den Termin sofort hier.')
   })
 
   it('gives every option the hover tint and the vote counts the Dunkel hover colour, selected or not (#406)', async () => {
     const { slug } = serve(s => view(s, sanneAndLarsi, { event: { isHost: true } }))
     const page = await mountSuspended(EventPage, { route: `/e/${slug}` })
-    await clickHostAction(page, 'Termin festlegen')
+    await clickHostAction(page, 'Termin fixieren')
 
     const options = [...dialog()!.querySelectorAll<HTMLElement>('[role="radio"]')]
     expect(options.length).toBeGreaterThan(1)
@@ -48,7 +58,7 @@ describe('setting the Date', () => {
     const { slug } = serve(s => view(s, sanneAndLarsi, { event: { isHost: true } }))
     const page = await mountSuspended(EventPage, { route: `/e/${slug}` })
 
-    await clickHostAction(page, 'Termin festlegen')
+    await clickHostAction(page, 'Termin fixieren')
 
     expect(selectedOption()).toBe('Sa 24.10., 20:00 Uhr')
   })
@@ -57,7 +67,7 @@ describe('setting the Date', () => {
     const { slug } = serve(s => view(s, [], { event: { isHost: true }, bestSlotId: null }))
     const page = await mountSuspended(EventPage, { route: `/e/${slug}` })
 
-    await clickHostAction(page, 'Termin festlegen')
+    await clickHostAction(page, 'Termin fixieren')
 
     expect(selectedOption()).toBe('Fr 23.10., 20:00 Uhr')
   })
@@ -77,9 +87,9 @@ describe('setting the Date', () => {
       },
     })
     const page = await mountSuspended(EventPage, { route: `/e/${store.slug}` })
-    await clickHostAction(page, 'Termin festlegen')
+    await clickHostAction(page, 'Termin fixieren')
 
-    await clickButton(dialog(), 'Festlegen')
+    await clickButton(dialog(), 'Fixieren')
 
     await vi.waitFor(() => expect(sent).toEqual({ slotId: 'sat' }))
     await vi.waitFor(() => expect(page.text()).toContain('Sa 24.10., 20:00'))
@@ -118,7 +128,7 @@ describe('setting the Date', () => {
     }))
     const page = await mountSuspended(EventPage, { route: `/e/${slug}` })
 
-    await clickHostAction(page, 'Termin festlegen')
+    await clickHostAction(page, 'Termin fixieren')
 
     expect(dialog()).toBeNull()
     expect(shownToasts().map(toast => toast.text)).toContain('Kein Termin liegt mehr in der Zukunft.')
@@ -133,9 +143,9 @@ describe('setting the Date', () => {
       },
     })
     const page = await mountSuspended(EventPage, { route: `/e/${slug}` })
-    await clickHostAction(page, 'Termin festlegen')
+    await clickHostAction(page, 'Termin fixieren')
 
-    await clickButton(dialog(), 'Festlegen')
+    await clickButton(dialog(), 'Fixieren')
 
     await vi.waitFor(() => expect(shownToasts().map(toast => toast.text)).toContain('Der Termin liegt in der Vergangenheit.'))
     expect(dialog()).not.toBeNull()
@@ -150,9 +160,9 @@ describe('setting the Date', () => {
       },
     })
     const page = await mountSuspended(EventPage, { route: `/e/${slug}` })
-    await clickHostAction(page, 'Termin festlegen')
+    await clickHostAction(page, 'Termin fixieren')
 
-    await clickButton(dialog(), 'Festlegen')
+    await clickButton(dialog(), 'Fixieren')
 
     await vi.waitFor(() => expect(shownToasts().map(toast => toast.text)).toContain('Konnte nicht speichern. Nochmal versuchen?'))
     expect(shownToasts().map(toast => toast.text)).not.toContain('Der Termin liegt in der Vergangenheit.')

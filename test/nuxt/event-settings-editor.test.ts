@@ -8,10 +8,11 @@ import EventPage from '~/pages/e/[slug]/index.vue'
 import type { BoardTeam, MemberView } from '~~/shared/event'
 import type { SetGameView, SpinView, WheelView } from '~~/shared/stage'
 import type { PoolGame } from '~~/shared/game'
-import { defaultSettings, type EventSettings, type SettingsFloors } from '~~/shared/settings'
+import { defaultSettings, poolHint, type EventSettings, type SettingsFloors } from '~~/shared/settings'
 import { INSTANT_MARGIN_MS } from '~/composables/useInstantRefresh'
 import { kitty, signInAs } from './auth'
 import { LARSI, memberView, SANNE, serve, shownToasts, view } from './event-page'
+import de from '~~/i18n/locales/de.json'
 
 // The settings editor (#147): the stepper's steps 2 to 7 on an Event that exists, prefilled, with the settings
 // that stay fixed once the Event runs shown locked with their reason.
@@ -27,7 +28,7 @@ const SIX = '00000000-0000-4000-8000-000000000006'
 const seated = (id: string, zone: 'stands' | 'team', team: number | null = null): MemberView => memberView({ id, name: id.slice(-4), zone, team })
 
 function poolGame(n: number, name: string): PoolGame {
-  return { id: `00000000-0000-4000-8000-${String(n).padStart(12, '0')}`, name, imageUrl: null, youtubeId: null, clipStart: 0, clipLength: 30, playersMin: null, playersMax: null, suitabilities: [], notes: null, price: null }
+  return { id: `00000000-0000-4000-8000-${String(n).padStart(12, '0')}`, name, imageUrl: null, youtubeId: null, clipStart: 0, clipLength: 30, playersMin: null, playersMax: null, suitabilities: [], notes: null, price: null, archived: false }
 }
 
 // The library the pool steps pick from.
@@ -36,7 +37,7 @@ registerEndpoint('/api/games', {
   method: 'GET',
   handler: () => {
     listed()
-    return { games: [kart, pong].map(game => ({ ...game, createdBy: { id: kitty.id, name: 'Kitty' }, createdAt: '2026-01-15T10:00:00.000Z', canEdit: true })), tagsInUse: [] }
+    return { games: [kart, pong].map(game => ({ ...game, updatedAt: '2026-01-15T10:00:00.000Z', archived: false })), tagsInUse: [] }
   },
 })
 
@@ -138,10 +139,20 @@ describe('the settings editor', () => {
 
     const page = await mountEditor(slug)
 
-    expect(stepItems(page).map(item => item.text().replace(/^\d\s*|^✓\s*/, ''))).toEqual(['Format', 'Spiele', 'Punkte', 'Auswahlmodus', 'Spielepool'])
+    expect(stepItems(page).map(item => item.text().replace(/^\d\s*|^✓\s*/, ''))).toEqual(['Format', 'Anzahl Spiele', 'Punkte', 'Auswahlmodus', 'Spielepool'])
     expect(stepItems(page).slice(1).every(item => item.find('button').exists())).toBe(true)
     expect(page.get('nav[aria-label="Schritte"]').text()).toContain('Einstellungen')
-    expect(page.get('h1').text()).toContain('Wer gegen wen?')
+    expect(page.get('h1').text()).toContain('Wer gegen wen und wie?')
+  })
+
+  it('shows no kicker above the step title, neither Einstellungen nor Schritt n von m (#807)', async () => {
+    const { slug } = setUp()
+
+    const page = await mountEditor(slug)
+
+    expect(page.get('h1').text()).not.toContain('Einstellungen')
+    expect(page.get('h1').text()).not.toContain('Schritt')
+    expect('kicker' in de.eventSettings).toBe(false)
   })
 
   it('keeps the hub nav in its header, with Events current and the Event’s name and Phase under it (#426)', async () => {
@@ -176,7 +187,7 @@ describe('the settings editor', () => {
     const page = await mountEditor(slug)
 
     expect(page.get('nav[aria-label="Schritte"]').text()).toContain('Event einrichten')
-    expect(spin(page, 'Spieler pro Team').text()).toBe('3')
+    expect(spin(page, 'Spielende pro Team').text()).toBe('3')
   })
 
   it('tells a Host without the Host permission that the library is closed, keeps the pool and asks for no games (#173)', async () => {
@@ -188,7 +199,7 @@ describe('the settings editor', () => {
 
     expect(page.text()).toContain('Ohne Host-Berechtigung kannst du keine Spiele aus der Bibliothek hinzufügen. Die Spiele im Pool bleiben.')
     expect(page.find('input[type="search"]').exists()).toBe(false)
-    expect(page.findAll('button').some(item => item.text().includes('Neues Spiel anlegen'))).toBe(false)
+    expect(page.findAll('button').some(item => item.text().includes('Neues Spiel'))).toBe(false)
     expect(page.find('ul[aria-label="Bibliothek"]').exists()).toBe(false)
     expect(page.find('ul[aria-label="Spiele im Pool"]').exists()).toBe(true)
 
@@ -203,9 +214,9 @@ describe('the settings editor', () => {
     const { slug } = setUp({ settings: wheel, pool: [kart, pong] })
 
     const page = await mountEditor(slug)
-    expect(spin(page, 'Spieler pro Team').text()).toBe('4')
+    expect(spin(page, 'Spielende pro Team').text()).toBe('4')
 
-    await goTo(page, 'Spiele')
+    await goTo(page, 'Anzahl Spiele')
     expect(page.get('output').text()).toBe('7')
 
     await goTo(page, 'Auswahlmodus')
@@ -222,7 +233,7 @@ describe('the settings editor', () => {
   it('saves what the Host changed, from the last step, and goes back to the Event with a toast', async () => {
     const { slug, patched } = setUp({ settings: wheel, pool: [kart] })
     const page = await mountEditor(slug)
-    await goTo(page, 'Spiele')
+    await goTo(page, 'Anzahl Spiele')
     await button(page, 'Anzahl Spiele: mehr').trigger('click')
     await goTo(page, 'Spielepool')
     await settle(page)
@@ -249,7 +260,7 @@ describe('the settings editor', () => {
     await vi.waitFor(() => expect(eventSettings().text()).toContain('7 Spiele'))
 
     set(view(slug, [], { event: { isHost: true, phase: 'poll' }, settings: { ...wheel, gameCount: 8 }, pool: [kart] }))
-    await goTo(page, 'Spiele')
+    await goTo(page, 'Anzahl Spiele')
     await button(page, 'Anzahl Spiele: mehr').trigger('click')
     await goTo(page, 'Spielepool')
     await settle(page)
@@ -269,7 +280,7 @@ describe('the settings editor', () => {
       await vi.waitFor(() => expect(page.find('[aria-busy="true"]').exists()).toBe(false))
     }
 
-    expect(page.get('h1').text()).toContain('Welche Spiele kommen in den Pool?')
+    expect(page.get('h1').text()).toContain('Welche Spiele?')
     expect(cta(page).text()).toContain('Speichern')
   })
 
@@ -308,11 +319,11 @@ describe('the settings editor', () => {
 
       const page = await mountEditor(slug)
 
-      const less = button(page, 'Spieler pro Team: weniger')
+      const less = button(page, 'Spielende pro Team: weniger')
       expect(less.attributes('aria-disabled')).toBe('true')
       expect(less.attributes('title')).toBe('Im vollsten Team sind schon 4.')
       await less.trigger('click')
-      expect(spin(page, 'Spieler pro Team').text()).toBe('4')
+      expect(spin(page, 'Spielende pro Team').text()).toBe('4')
     })
 
     it('keeps the Veto allowance from going below the most Vetoes a Party has spent, and says why', async () => {
@@ -337,7 +348,7 @@ describe('the settings editor', () => {
     it('keeps the Game count from going below the Rounds already started, and says why (#228)', async () => {
       const { slug } = setUp({ settings: { ...defaultSettings(), gameCount: 4 }, floors: { teamSize: 1, vetoAllowance: 0, gameCount: 3 } })
       const page = await mountEditor(slug)
-      await goTo(page, 'Spiele')
+      await goTo(page, 'Anzahl Spiele')
 
       const less = button(page, 'Anzahl Spiele: weniger')
       expect(less.attributes('aria-disabled')).toBeUndefined()
@@ -351,7 +362,7 @@ describe('the settings editor', () => {
     it('has the usual limits when nothing is spent yet', async () => {
       const { slug } = setUp({ settings: { ...wheel, teamSize: 1 }, floors: { teamSize: 1, vetoAllowance: 0, gameCount: 0 } })
       const page = await mountEditor(slug)
-      expect(button(page, 'Spieler pro Team: weniger').attributes('title')).toBe('Mindestens 1 pro Team.')
+      expect(button(page, 'Spielende pro Team: weniger').attributes('title')).toBe('Mindestens 1 pro Team.')
     })
   })
 
@@ -368,13 +379,13 @@ describe('the settings editor', () => {
       })
       const page = await mountEditor(slug)
 
-      const less = button(page, 'Spieler pro Team: weniger')
+      const less = button(page, 'Spielende pro Team: weniger')
       expect(less.attributes('aria-disabled')).toBeUndefined()
       await less.trigger('click')
 
-      expect(spin(page, 'Spieler pro Team').text()).toBe('2')
-      expect(button(page, 'Spieler pro Team: weniger').attributes('title')).toBe('Im vollsten Team sind schon 2.')
-      expect(button(page, 'Spieler pro Team: weniger').attributes('aria-disabled')).toBe('true')
+      expect(spin(page, 'Spielende pro Team').text()).toBe('2')
+      expect(button(page, 'Spielende pro Team: weniger').attributes('title')).toBe('Im vollsten Team sind schon 2.')
+      expect(button(page, 'Spielende pro Team: weniger').attributes('aria-disabled')).toBe('true')
     })
 
     it('lowers the Team size floor with the team count, and raises it again with the count (#197)', async () => {
@@ -384,21 +395,21 @@ describe('the settings editor', () => {
         members: [seated(kitty.id, 'team', 1), seated(LARSI, 'team', 2), seated(SANNE, 'team', 3), seated(FOUR, 'team', 4), seated(FIVE, 'team', 4), seated(SIX, 'team', 4)],
       })
       const page = await mountEditor(slug)
-      expect(button(page, 'Spieler pro Team: weniger').attributes('title')).toBe('Im vollsten Team sind schon 3.')
+      expect(button(page, 'Spielende pro Team: weniger').attributes('title')).toBe('Im vollsten Team sind schon 3.')
 
       await button(page, 'Anzahl Teams: weniger').trigger('click')
       expect(spin(page, 'Anzahl Teams').text()).toBe('3')
-      await button(page, 'Spieler pro Team: weniger').trigger('click')
-      await button(page, 'Spieler pro Team: weniger').trigger('click')
+      await button(page, 'Spielende pro Team: weniger').trigger('click')
+      await button(page, 'Spielende pro Team: weniger').trigger('click')
 
-      expect(spin(page, 'Spieler pro Team').text()).toBe('1')
-      expect(button(page, 'Spieler pro Team: weniger').attributes('title')).toBe('Mindestens 1 pro Team.')
-      expect(button(page, 'Spieler pro Team: weniger').attributes('aria-disabled')).toBe('true')
+      expect(spin(page, 'Spielende pro Team').text()).toBe('1')
+      expect(button(page, 'Spielende pro Team: weniger').attributes('title')).toBe('Mindestens 1 pro Team.')
+      expect(button(page, 'Spielende pro Team: weniger').attributes('aria-disabled')).toBe('true')
 
       await button(page, 'Anzahl Teams: mehr').trigger('click')
       expect(spin(page, 'Anzahl Teams').text()).toBe('4')
-      expect(spin(page, 'Spieler pro Team').text()).toBe('3')
-      expect(button(page, 'Spieler pro Team: weniger').attributes('title')).toBe('Im vollsten Team sind schon 3.')
+      expect(spin(page, 'Spielende pro Team').text()).toBe('3')
+      expect(button(page, 'Spielende pro Team: weniger').attributes('title')).toBe('Im vollsten Team sind schon 3.')
     })
 
     it('tells the Host how many Players go to the Stands when the team count drops, singular and plural', async () => {
@@ -446,9 +457,9 @@ describe('the settings editor', () => {
       expect(page.findAll('[role="radio"]').every(radio => radio.attributes('aria-disabled') === 'true')).toBe(true)
       expect(button(page, 'Anzahl Teams: mehr').attributes('aria-disabled')).toBe('true')
       expect(button(page, 'Anzahl Teams: weniger').attributes('aria-disabled')).toBe('true')
-      expect(button(page, 'Spieler pro Team: mehr').attributes('aria-disabled')).toBeUndefined()
-      await button(page, 'Spieler pro Team: mehr').trigger('click')
-      expect(spin(page, 'Spieler pro Team').text()).toBe('5')
+      expect(button(page, 'Spielende pro Team: mehr').attributes('aria-disabled')).toBeUndefined()
+      await button(page, 'Spielende pro Team: mehr').trigger('click')
+      expect(spin(page, 'Spielende pro Team').text()).toBe('5')
     })
 
     it('does not change the Format when a locked card is clicked', async () => {
@@ -475,7 +486,7 @@ describe('the settings editor', () => {
       expect(page.findAll('[data-testid="points-row"] output').map(output => output.text())).toEqual(['3', '1'])
     })
 
-    it('shows the Selection mode locked, but lets Rad verdecken and the Veto allowance change', async () => {
+    it('shows the Selection mode locked, but lets Pseudo-Games and the Veto allowance change', async () => {
       const { slug } = setUp({ settings: wheel, phase: 'running' })
       const page = await mountEditor(slug)
 
@@ -510,7 +521,7 @@ describe('the settings editor', () => {
     it('lets the Game count change and shows no lock on that step', async () => {
       const { slug, patched } = setUp({ settings: wheel, phase: 'running' })
       const page = await mountEditor(slug)
-      await goTo(page, 'Spiele')
+      await goTo(page, 'Anzahl Spiele')
 
       expect(page.text()).not.toContain(LOCKED)
       await button(page, 'Anzahl Spiele: weniger').trigger('click')
@@ -537,7 +548,7 @@ describe('the settings editor', () => {
     it('shows on the Spiele step at an even Game count, and follows a change of it', async () => {
       const { slug } = setUp({ settings: defaultSettings() })
       const page = await mountEditor(slug)
-      await goTo(page, 'Spiele')
+      await goTo(page, 'Anzahl Spiele')
       expect(tieHint(page)!.text()).toContain('Das Event kann unentschieden enden.')
 
       await button(page, 'Anzahl Spiele: weniger').trigger('click')
@@ -548,9 +559,93 @@ describe('the settings editor', () => {
     it('shows on a running Event too', async () => {
       const { slug } = setUp({ settings: { ...defaultSettings(), gameCount: 8 }, phase: 'running' })
       const page = await mountEditor(slug)
-      await goTo(page, 'Spiele')
+      await goTo(page, 'Anzahl Spiele')
 
       expect(tieHint(page)).toBeDefined()
+    })
+  })
+
+  // An Archived game (#726, spec #717 § B): the Host's pool lists it with the mark and keeps it in a save, but it is off the wheel, so the heading
+  // and the setup hint count the games that are on it. The library below offers none (the mocked library holds unarchived games only).
+  describe('an Archived game in the pool (#726)', () => {
+    const third = poolGame(3, 'Dame')
+    const olds = [{ ...poolGame(11, 'Alt Eins'), archived: true }, { ...poolGame(12, 'Alt Zwei'), archived: true }]
+    const list = (page: Page) => page.get('ul[aria-label="Spiele im Pool"]')
+    const rowOf = (page: Page, name: string) => list(page).findAll('li').find(item => item.text().includes(name))!
+    const marked = (page: Page) => list(page).findAll('li').filter(item => item.text().includes('Archiviert')).map(item => item.get('b').text())
+    const plural = (n: number) => `${n} ${n === 1 ? 'Spiel' : 'Spiele'}`
+
+    it.each([0, 1, 2])('marks %i of three games in the list and in no library card', async (count) => {
+      const { slug } = setUp({ settings: wheel, pool: [kart, ...olds.slice(0, count), ...(count < 2 ? [pong] : []), ...(count < 1 ? [third] : [])] })
+
+      const page = await mountEditor(slug)
+      await goTo(page, 'Spielepool')
+      await settle(page)
+
+      expect(marked(page)).toEqual(olds.slice(0, count).map(game => game.name))
+      expect(list(page).findAll('li')).toHaveLength(3)
+      expect(page.get('ul[aria-label="Bibliothek"]').text()).not.toContain('Archiviert')
+    })
+
+    it.each([0, 1, 2])('counts the games that are not Archived in the heading and the setup hint, with %i Archived of 3', async (count) => {
+      const { slug } = setUp({ settings: wheel, pool: [kart, ...olds.slice(0, count), ...(count < 2 ? [pong] : []), ...(count < 1 ? [third] : [])] })
+      const have = 3 - count
+      const numbers = poolHint(wheel, have)!
+
+      const page = await mountEditor(slug)
+      await goTo(page, 'Spielepool')
+      await settle(page)
+
+      expect(page.get('h2').text()).toBe(`Im Pool: ${plural(have)}`)
+      expect(page.text()).toContain(`brauchst du ${numbers.needed} Spiele, im Pool ${have === 1 ? 'ist' : 'sind'} ${have}.`)
+    })
+
+    it('lists a pool of only Archived games, counts none of them and no more shows the empty text', async () => {
+      const { slug } = setUp({ settings: wheel, pool: olds })
+      const numbers = poolHint(wheel, 0)!
+
+      const page = await mountEditor(slug)
+      await goTo(page, 'Spielepool')
+      await settle(page)
+
+      expect(marked(page)).toEqual(['Alt Eins', 'Alt Zwei'])
+      expect(page.get('h2').text()).toBe('Im Pool: 0 Spiele')
+      expect(page.text()).toContain(`brauchst du ${numbers.needed} Spiele, im Pool sind 0.`)
+      expect(page.text()).not.toContain('Noch leer.')
+    })
+
+    it('keeps the Archived game in the pool it saves when another game is taken out, and when nothing is touched', async () => {
+      const { slug, patched } = setUp({ settings: wheel, pool: [kart, olds[0]!] })
+      const page = await mountEditor(slug)
+      await goTo(page, 'Spielepool')
+      await settle(page)
+      await cta(page).trigger('click')
+      await vi.waitFor(() => expect(patched).toHaveBeenCalledTimes(1))
+      expect(patched.mock.calls[0]![0].pool).toEqual([kart.id, olds[0]!.id])
+
+      const { slug: again, patched: patchedAgain } = setUp({ settings: wheel, pool: [kart, olds[0]!] })
+      const next = await mountEditor(again)
+      await goTo(next, 'Spielepool')
+      await settle(next)
+      await button(next, 'Mario Kart aus dem Pool nehmen').trigger('click')
+      await cta(next).trigger('click')
+
+      await vi.waitFor(() => expect(patchedAgain).toHaveBeenCalledTimes(1))
+      expect(patchedAgain.mock.calls[0]![0].pool).toEqual([olds[0]!.id])
+    })
+
+    it('lets the Host take an Archived game out with its ✕', async () => {
+      const { slug, patched } = setUp({ settings: wheel, pool: [kart, olds[0]!] })
+      const page = await mountEditor(slug)
+      await goTo(page, 'Spielepool')
+      await settle(page)
+
+      await button(page, 'Alt Eins aus dem Pool nehmen').trigger('click')
+      expect(rowOf(page, 'Alt Eins')).toBeUndefined()
+      await cta(page).trigger('click')
+
+      await vi.waitFor(() => expect(patched).toHaveBeenCalledTimes(1))
+      expect(patched.mock.calls[0]![0].pool).toEqual([kart.id])
     })
   })
 
@@ -625,7 +720,7 @@ describe('the settings editor during a draw', () => {
     useState('toasts').value = []
   })
 
-  it('lifts the lock on „Rad verdecken“ and the Veto allowance at the stop, without waiting for the poll', async () => {
+  it('lifts the lock on „Pseudo-Games“ and the Veto allowance at the stop, without waiting for the poll', async () => {
     const { slug, set } = serveDraw({ stopAt: Date.now() + 1000 })
     const page = await mountEditor(slug)
     await goTo(page, 'Auswahlmodus')

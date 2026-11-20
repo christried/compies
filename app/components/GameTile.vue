@@ -9,6 +9,8 @@ defineProps<{
   audience: 'host' | 'member'
   /** The Tags and Notes of the game from the Host's read; null for a Member and where the read has none. */
   facts?: HostGameFacts | null
+  /** The Host's pool game is Archived (#726): the tile carries the „Archiviert“ pill. */
+  archived?: boolean
 }>()
 
 const dialogOpen = ref(false)
@@ -18,6 +20,7 @@ const dialogOpen = ref(false)
   <GameCard
     :game="game"
     layout="tile"
+    :archived="archived"
     opens
     @open="dialogOpen = true"
   />

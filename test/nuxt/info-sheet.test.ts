@@ -38,14 +38,14 @@ describe('InfoSheet', () => {
   it('adds the hidden wheel option for the Glücksrad', async () => {
     const page = await mountSuspended(InfoSheet, { props: { topic: 'wheel' } })
 
-    expect(page.findAll('h3').map(heading => heading.text())).toEqual(['So läuft’s', 'Option „Rad verdecken“', 'Gut für', 'Achtung'])
+    expect(page.findAll('h3').map(heading => heading.text())).toEqual(['So läuft’s', 'Pseudo-Games', 'Gut für', 'Achtung'])
   })
 
   it('tells the Host that they see the hidden wheel’s games too, under the hidden wheel option (#145)', async () => {
     const page = await mountSuspended(InfoSheet, { props: { topic: 'wheel' } })
 
-    const hidden = page.findAll('section').find(section => section.find('h3').text() === 'Option „Rad verdecken“')
-    expect(hidden!.text()).toContain('Du als Host siehst die Spiele auf dem verdeckten Rad trotzdem, auch wenn du mitspielst.')
+    const hidden = page.findAll('section').find(section => section.find('h3').text() === 'Pseudo-Games')
+    expect(hidden!.text()).toContain('Du als Host siehst bei Pseudo-Games die echten Spiele trotzdem, auch wenn du mitspielst.')
   })
 
   it('explains the Veto allowance in the words of the product brief (#145)', async () => {
@@ -56,7 +56,7 @@ describe('InfoSheet', () => {
   })
 
   it('tells the Host, under „So läuft’s“ of the Glücksrad, that the others see the Veto number only from the start on (#453)', async () => {
-    const sentence = 'Die anderen sehen die Zahl der Vetos erst, wenn die erste Session startet.'
+    const sentence = 'Die Teilnehmenden sehen die Zahl der Vetos erst, wenn die erste Session startet.'
     const page = await mountSuspended(InfoSheet, { props: { topic: 'wheel' } })
 
     const how = page.findAll('section').find(section => section.find('h3').text() === 'So läuft’s')

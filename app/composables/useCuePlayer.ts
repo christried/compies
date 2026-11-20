@@ -1,7 +1,8 @@
 import { createCuePlayer, exposesCueLog, type CueLogEntry, type CuePlayer } from '~/utils/cue-player'
 import { reducedMotion } from '~/utils/motion'
-import { CUE_IDS, cueFileUrl, vetoArrivalCues, vetoCuePlan, wheelCuePlan, type Cue, type CueId, type VetoArrivalState } from '~/utils/sound-cues'
+import { coinCuePlan, cueFileUrl, cueFilesOf, reachableGroups, vetoArrivalCues, vetoCuePlan, wheelCuePlan, wheelVoicePlan, type Cue, type GroupInput, type VetoArrivalState } from '~/utils/sound-cues'
 import type { EventView } from '~~/shared/event'
+import { TOUR_CALM_MS, tourMayStart, tourStartInputOf } from '~~/shared/tour'
 
 // The sound of the Event page (#531, spec #504 § The cue player): the page's one Web Audio context, the cue player on it, and the plan the
 // Event read gives it. The page's read is what carries a plan to a device, so a refetch (the room's `event.changed`, which reaches a hidden
@@ -11,32 +12,61 @@ import type { EventView } from '~~/shared/event'
 // from it, a timer or a frame.
 
 /**
- * The Event page's cue files: the wheel's are fetched and decoded when the read has a wheel (#531), the Veto window's too when the Event allows
- * Vetoes or has a window (#532). Everyone fetches all six, whether their Party casts or not: no request may depend on a cast.
+ * What the group rule reads of a read (#740): a few flags, so no file is requested from anything the viewer may not know. Which groups they
+ * reach and which files each group holds are `reachableGroups` and `CUE_GROUPS` in sound-cues.ts (#531, #532).
  */
-const WHEEL_IDS: readonly CueId[] = CUE_IDS.filter(id => id.startsWith('wheel-'))
-const VETO_IDS: readonly CueId[] = CUE_IDS.filter(id => id.startsWith('veto-'))
+function groupInputOf(view: EventView | null | undefined, storedTourVersion: number | null = null): GroupInput {
+  const phase = view?.event.phase
+  // The Event is set up and not finished, the page's own rule of `useStandingsNews`: the Host's read and a Member's hold both fields (#741).
+  const setUp = view?.standings != null && phase !== 'finished'
+  // „A Session is running“, spelled as `tourStartInputOf` spells it: `runningSessionId` is `string | null`.
+  const sessionRunning = view != null && view.runningSessionId !== null
+  return {
+    wheel: view?.wheel != null,
+    vetoAllowance: view?.settings?.vetoAllowance ?? 0,
+    vetoWindow: view?.wheel?.vetoes.draw != null,
+    // Both are the same for every viewer's read; `view.coin` is only tested for null, its side is never read (#669).
+    sessionRunning,
+    toss: view?.coin != null,
+    finished: phase === 'finished',
+    standings: setUp,
+    // The Game board's field is the same rule as `standings`, kept as its own field: the two groups may part later (#742).
+    board: setUp,
+    // The Tour may start for this Member (#747): the Tour's own rule, asked with the layer closed and the calm second over, so the files are there before
+    // the greeting. It reads the Member's stored version and the Event's host flag, phase and running Session, nothing of a draw, a Result or a ceremony.
+    tour: tourMayStart(tourStartInputOf(view, storedTourVersion, false, TOUR_CALM_MS)),
+  }
+}
 
 /**
  * The plan of a read: every cue the Event page has due, from the viewer's own read only (CODING_STANDARDS § Secrecy), so the five fields of the
- * spin, the window's four and the Clip's two are copied; the drawn game, `own`, `left` and `revealed` stay where they are. No spin and no
+ * spin go to the wheel's plan and its two instants to the voice's (#671), the window's four and the Clip's two are copied; the drawn game, `own`, `left` and `revealed` stay where they are. No spin and no
  * window give an empty plan. The two plans may overlap in time; the player diffs by key, so no sort across them is needed.
  */
 function planOf(view: EventView): Cue[] {
   const spin = view.wheel?.spin
   const draw = view.wheel?.vetoes.draw
+  const hiddenWheel = view.settings?.hiddenWheel ?? false
+  const reduced = reducedMotion()
   return [
     ...wheelCuePlan({
       spin: spin ? { spinStartAt: spin.spinStartAt, stopAt: spin.stopAt, slices: spin.slices, resultIndex: spin.resultIndex, resultOffset: spin.resultOffset } : null,
-      hiddenWheel: view.settings?.hiddenWheel ?? false,
+      hiddenWheel,
       isHost: view.event.isHost,
-      reducedMotion: reducedMotion(),
+      reducedMotion: reduced,
+    }),
+    ...wheelVoicePlan({
+      spin: spin ? { spinStartAt: spin.spinStartAt, stopAt: spin.stopAt } : null,
+      hiddenWheel,
+      reducedMotion: reduced,
     }),
     ...vetoCuePlan({
       draw: draw ? { drawId: draw.drawId, kind: draw.kind, stopAt: draw.stopAt, vetoEndsAt: draw.vetoEndsAt } : null,
       clip: view.clip ? { drawId: view.clip.drawId, endsAt: view.clip.endsAt } : null,
-      reducedMotion: reducedMotion(),
+      reducedMotion: reduced,
     }),
+    // The Coin flip: the toss's two instants only, never its side (ADR 0013 amendment).
+    ...coinCuePlan({ toss: view.coin ? { startedAt: view.coin.startedAt, landsAt: view.coin.landsAt } : null, reducedMotion: reduced }),
   ]
 }
 
@@ -58,9 +88,13 @@ export function useCuePlayer(input: {
   ready: () => boolean
   /** Grows when the server clock's offset changed (`useServerClock().moves`): the pending cues are looked at again (#594). */
   moved: () => number
-}): { suspended: Readonly<Ref<boolean>>, resume: () => Promise<void> } {
+  /** The Award ceremony's plan (#743), from the layer's own run: the synced start or a viewer's replay. Its own source in the player, so a read never replaces it. */
+  ceremony?: () => readonly Cue[]
+}): { suspended: Readonly<Ref<boolean>>, resume: () => Promise<void>, playNow: CuePlayer['playNow'] } {
   // Order matters: `useSound` registers its read of the stored switch first, so Ton has its stored value when `mounted` turns true.
   const { enabled } = useSound()
+  // The Member's stored Tour version: the one thing of the Tour's start rule that is not in the Event read (#747).
+  const { stored: tourSeen } = useTourSeen()
   const mounted = ref(false)
   onMounted(() => {
     mounted.value = true
@@ -104,7 +138,7 @@ export function useCuePlayer(input: {
     return made
   }
 
-  /** Gives the player the plan of the current read, and the files it needs once the read has a wheel. */
+  /** Gives the player the plan of the current read, and the files of the groups the read reaches. */
   function sync() {
     if (!mounted.value || !input.ready()) return
     if (!enabled.value) {
@@ -115,16 +149,13 @@ export function useCuePlayer(input: {
     if (!made) return
     made.setEnabled(true)
     const view = input.view()
-    if (view?.wheel) {
-      made.preload(WHEEL_IDS)
-      // The allowance is the early signal (a set game's window opens at its commit, the files must be decoded by then), the window the late one.
-      if ((view.settings?.vetoAllowance ?? 0) > 0 || view.wheel.vetoes.draw !== null) made.preload(VETO_IDS)
-    }
+    made.preload(cueFilesOf(reachableGroups(groupInputOf(view, tourSeen.value))))
     made.setPlan(view ? planOf(view) : [])
+    made.setPlan(input.ceremony?.() ?? [], 'ceremony')
   }
 
   // Not a sync watch: a refetch of the same read is a new object every time, and the player diffs the plan, so it schedules nothing twice.
-  watch([() => input.view(), () => input.ready(), () => enabled.value, mounted], sync)
+  watch([() => input.view(), () => input.ready(), () => enabled.value, mounted, () => input.ceremony?.(), () => tourSeen.value], sync)
 
   // The server clock's offset changed (the first answer, a re-sync): a cue scheduled on the old reading moves with it (#594).
   watch(input.moved, () => player?.refresh())
@@ -167,5 +198,8 @@ export function useCuePlayer(input: {
     await ensure()?.resume()
   }
 
-  return { suspended: readonly(suspended), resume }
+  /** The player's immediate play, for what the page hands down (`useImmediateCue`, #741): with Ton off there is no player, so nothing is scheduled or logged. */
+  const playNow: CuePlayer['playNow'] = (...args) => player?.playNow(...args)
+
+  return { suspended: readonly(suspended), resume, playNow }
 }

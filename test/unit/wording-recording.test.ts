@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest'
-import { assemble, budgetId, createBudget, dedupeItems, SIGHTINGS_PER_KEY, selectItems } from '../../scripts/wording/recording.mjs'
+import { answerText, emptyAnswers } from '../../scripts/wording/answers.mjs'
+import { assemble, budgetId, createBudget, dedupeItems, SIGHTINGS_PER_KEY, selectItems, wheelPlaceholderKeys } from '../../scripts/wording/recording.mjs'
 import { checkRecording } from '../../scripts/wording/review-model.mjs'
-import { isLocalBase } from '../../scripts/wording/walk-report.mjs'
+import { isLocalBase, reportOf, withoutPicture } from '../../scripts/wording/walk-report.mjs'
 
 // What the wording walk makes of its readings (scripts/wording/recording.mjs, #629): items with their pictures in, the recording of #628's
 // typedef out. Everything that needs Chrome (the page scripts, the pictures) is measured by running the walk, not here.
@@ -182,5 +183,109 @@ describe('isLocalBase', () => {
 
   it('refuses staging, production, another host that starts like a local one, and a base without a port', () => {
     for (const base of ['https://staging.compies.de', 'https://compies.de', 'http://localhost.evil.example:3100', 'http://localhost', 'https://localhost:3100', 'http://127.0.0.1:3100@evil.example', 'http://localhost:3100/x']) expect(isLocalBase(base)).toBe(false)
+  })
+})
+
+// The Hidden wheel's placeholders are server-drawn: a spin's labels reach the Member as plain strings, so the keys are read from them (#810).
+describe('wheelPlaceholderKeys', () => {
+  const placeholders = Array.from({ length: 30 }, (_, i) => `Platzhalter ${i}`)
+
+  it('gives the 30 keys for the 30 labels of a spin, in any order', () => {
+    const labels = [...placeholders].reverse()
+    expect(wheelPlaceholderKeys(labels, placeholders)).toEqual(labels.map(label => `wheel.placeholders.${placeholders.indexOf(label)}`))
+    expect(new Set(wheelPlaceholderKeys(placeholders, placeholders)).size).toBe(30)
+  })
+
+  it('gives 29 when a real name stands among the labels (a late read: the result slice shows the game)', () => {
+    const labels = [...placeholders.slice(0, 12), 'Ein echtes Spiel', ...placeholders.slice(13)]
+    const keys = wheelPlaceholderKeys(labels, placeholders)
+    expect(keys).toHaveLength(29)
+    expect(keys).not.toContain('wheel.placeholders.12')
+  })
+
+  it('gives nothing for the ??? of a wheel at rest, an empty label and a name that is no placeholder', () => {
+    expect(wheelPlaceholderKeys(['???', '', 'Ein echtes Spiel'], placeholders)).toEqual([])
+    expect(wheelPlaceholderKeys([], placeholders)).toEqual([])
+  })
+
+  it('gives a key once when a label stands twice', () => {
+    expect(wheelPlaceholderKeys(['Platzhalter 3', 'Platzhalter 3', 'Platzhalter 4'], placeholders)).toEqual(['wheel.placeholders.3', 'wheel.placeholders.4'])
+  })
+})
+
+// The report names every new text that still has no picture, and why (#810): the check that the walk's states reach the new texts.
+describe('withoutPicture', () => {
+  type Step = Parameters<typeof withoutPicture>[0]['steps'][number]
+  const step = (id: string, fields: Partial<Step> = {}) => ({ id, kind: 'message', section: 'unpictured', group: id.split('.')[0]!, text: `Text von ${id}`, what: null, keys: [], sightings: [], marks: [], where: null, ...fields }) as Step
+  // The baseline holds `old.same` as it is today and `old.changed` as it was.
+  const baseline = answerText(answerText(emptyAnswers('2026-11-16'), 'old.same', { text: 'Text von old.same', answer: 'passt' }), 'old.changed', { text: 'Früher', answer: 'passt' })
+  const none = new Map<string, 'notPainted' | 'covered'>()
+
+  it('names a new text that no state reached, with its first reference when the recording has one', () => {
+    const found = withoutPicture({ steps: [step('new.a', { where: { file: 'app/components/A.vue', line: 12 } }), step('new.b'), step('new.c', { where: { file: 'app/pages/c.vue', line: null } })], baseline, skipped: none })
+    expect(found).toEqual([
+      { id: 'new.a', reason: 'not reached by any state, referenced at app/components/A.vue:12' },
+      { id: 'new.b', reason: 'not reached by any state, no reference found' },
+      { id: 'new.c', reason: 'not reached by any state, referenced at app/pages/c.vue' },
+    ])
+  })
+
+  it('says why a text the walk read could not be pictured', () => {
+    const skipped = new Map<string, 'notPainted' | 'covered'>([['new.hidden', 'notPainted'], ['new.layer', 'covered']])
+    expect(withoutPicture({ steps: [step('new.hidden'), step('new.layer')], baseline, skipped })).toEqual([
+      { id: 'new.hidden', reason: 'screen-reader only, no painted box' },
+      { id: 'new.layer', reason: 'covered by a layer each time' },
+    ])
+  })
+
+  it('names a new key of an unused group, which has no step of its own', () => {
+    const unused = step('unused:wheel', { kind: 'unused', section: 'unused', group: 'wheel', text: null, keys: [{ key: 'wheel.gone', text: 'Weg' }, { key: 'old.same', text: 'Text von old.same' }, { key: 'legal.gone', text: 'Recht' }] })
+    expect(withoutPicture({ steps: [unused], baseline, skipped: none })).toEqual([{ id: 'wheel.gone', reason: 'unused: no code refers to it' }])
+  })
+
+  it('leaves out a legal text, a text with a picture, a text the baseline holds unchanged and a mono step', () => {
+    const steps = [
+      step('legal.title', { section: 'legal' }),
+      step('new.pictured', { section: 'walk' }),
+      step('old.same'),
+      step('mono:app/components/Clock.vue', { kind: 'mono', text: null }),
+    ]
+    expect(withoutPicture({ steps, baseline, skipped: none })).toEqual([])
+  })
+
+  it('counts a text the baseline holds in another wording as new, and every text as new without a baseline', () => {
+    expect(withoutPicture({ steps: [step('old.changed')], baseline, skipped: none }).map(entry => entry.id)).toEqual(['old.changed'])
+    expect(withoutPicture({ steps: [step('old.same')], baseline: null, skipped: none }).map(entry => entry.id)).toEqual(['old.same'])
+  })
+
+  it('names a fixed text that no state reached by its file', () => {
+    const fixed = step('fixed:offline.title', { kind: 'fixed', group: 'fest', text: 'Du bist offline', where: { file: 'public/offline.html', line: 5 } })
+    expect(withoutPicture({ steps: [fixed], baseline, skipped: none })).toEqual([{ id: 'fixed:offline.title', reason: 'not reached by any state, referenced at public/offline.html:5' }])
+  })
+})
+
+describe('reportOf: new texts without a picture', () => {
+  const input = (unpictured: { id: string, reason: string }[]) => ({
+    run: 'walk', commit: COMMIT, seconds: 1, partial: false, statesRead: 1, unreached: [], readings: 1, sightings: 1, dropped: 0, covered: 0, notPainted: 0,
+    pictures: { count: 1, bytes: 0, folder: '/tmp/x' }, steps: [], stepProblems: [], unusedNote: null, monoUses: [], unlabelled: [], fixed: { withPicture: 0, without: 0 },
+    unpictured, missing: [], untagged: 0, monoFamily: null, notes: [],
+  })
+
+  it('has one `key  reason` line per text under its heading', () => {
+    const lines = reportOf(input([{ id: 'notes.title', reason: 'not reached by any state, no reference found' }, { id: 'tour.live', reason: 'screen-reader only, no painted box' }]))
+    const at = lines.indexOf('New texts without a picture (2):')
+    expect(at).toBeGreaterThan(-1)
+    expect(lines.slice(at + 1, at + 3)).toEqual(['  notes.title  not reached by any state, no reference found', '  tour.live  screen-reader only, no painted box'])
+  })
+
+  it('says none when there is none', () => {
+    expect(reportOf(input([]))).toContain('New texts without a picture (0): none')
+  })
+
+  // The heading counts the list it prints, not a number written into the script (#825).
+  it('prints the count of its mono uses from the list', () => {
+    const use = (site: string) => ({ site, seenIn: 'a state', expectedMissing: undefined })
+    const lines = reportOf({ ...input([]), monoUses: [use('a'), use('b'), use('c')] } as never)
+    expect(lines.some(line => line.endsWith('The 3 mono uses:'))).toBe(true)
   })
 })

@@ -64,14 +64,16 @@ describe('the finished Event page', () => {
 
       expect(regionHeadings(page)).toEqual(['Tabelle', 'Spielverlauf', 'Sessions', 'So wird gespielt'])
       expect(page.findAll('h1').map(heading => heading.text())).toEqual(['Wilde Gurken gewinnt das Event'])
-      expect(page.get('main').text()).toContain('Event beendet')
+      // The head had the only „Event beendet“ of the page (the feed is not on a finished Event's main); it has no kicker now (#798).
+      expect(page.get('[data-tour="head"]').text()).toBe('Wilde Gurken gewinnt das Event')
+      expect(page.get('main').text()).not.toContain('Event beendet')
       const standings = page.findAll('main section').find(section => section.find('h2').text() === 'Tabelle')!
       expect(standings.text()).toContain('Nach Spiel 3 von 3')
       expect(standings.findAll('tbody tr').map(row => row.attributes('data-team'))).toEqual(['1', '2'])
       expect(page.findAll('main ol [data-number]').map(number => number.text())).toEqual(['1', '2', '3'])
       // No Game board, no open Rounds, no poll: a read-only board was never asked for.
-      expect(page.text()).not.toContain('Gerade dran')
-      expect(page.text()).not.toContain('Wann zocken wir?')
+      expect(page.text()).not.toContain('Läuft aktuell')
+      expect(page.text()).not.toContain('Wann Zockung?')
     })
 
     it(`says Beendet in the header pill, for ${who}`, async () => {
@@ -361,10 +363,10 @@ describe('the Standings on the Event page', () => {
   describe('as a block of the stage', () => {
     it('has none before the first Result, and none when the read has no end', async () => {
       const before = serveState({ sessions: [RUNNING_ONE], missing: 0, phase: 'running', running: 0, overrides: beforeResult })
-      expect(regionHeadings(await mount(before.slug))).toEqual(['Gerade dran', 'Spielbrett', 'Sessions', 'So wird gespielt'])
+      expect(regionHeadings(await mount(before.slug))).toEqual(['Läuft aktuell', 'Spielbrett', 'Sessions', 'So wird gespielt'])
 
       const none = serveState({ sessions: [RUNNING_ONE], missing: 0, phase: 'running', running: 0, overrides: { rounds: [openRound] } })
-      expect(regionHeadings(await mount(none.slug))).toEqual(['Gerade dran', 'Spielbrett', 'Sessions', 'So wird gespielt'])
+      expect(regionHeadings(await mount(none.slug))).toEqual(['Läuft aktuell', 'Spielbrett', 'Sessions', 'So wird gespielt'])
     })
 
     it('follows the open Rounds once the first Result exists, while a Session runs', async () => {
@@ -372,7 +374,7 @@ describe('the Standings on the Event page', () => {
 
       const page = await mount(slug)
 
-      expect(regionHeadings(page)).toEqual(['Gerade dran', 'Tabelle', 'Spielbrett', 'Sessions', 'So wird gespielt'])
+      expect(regionHeadings(page)).toEqual(['Läuft aktuell', 'Tabelle', 'Spielbrett', 'Sessions', 'So wird gespielt'])
       const block = page.findAll('main section').find(section => section.find('h2').text() === 'Tabelle')!
       expect(block.text()).toContain('Nach Spiel 1 von 6')
       expect(block.findAll('tbody tr').map(row => row.attributes('data-team'))).toEqual(['2', '1'])
@@ -381,10 +383,10 @@ describe('the Standings on the Event page', () => {
 
     it('follows the open Rounds between two Sessions and after the last one', async () => {
       const between = serveState({ sessions: [ENDED_ONE, SESSION(2, SECOND)], missing: 0, phase: 'running', overrides: afterResult })
-      expect(regionHeadings(await mount(between.slug))).toEqual(['Gerade dran', 'Tabelle', 'Sessions', 'So wird gespielt', 'Spielbrett'])
+      expect(regionHeadings(await mount(between.slug))).toEqual(['Läuft aktuell', 'Tabelle', 'Sessions', 'So wird gespielt', 'Spielbrett'])
 
       const done = serveState({ sessions: [ENDED_ONE], missing: 0, phase: 'running', overrides: afterResult })
-      expect(regionHeadings(await mount(done.slug))).toEqual(['Gerade dran', 'Tabelle', 'Sessions', 'So wird gespielt', 'Spielbrett'])
+      expect(regionHeadings(await mount(done.slug))).toEqual(['Läuft aktuell', 'Tabelle', 'Sessions', 'So wird gespielt', 'Spielbrett'])
     })
 
     it('is not on the stage in the poll and teams states', async () => {
@@ -632,7 +634,7 @@ describe('the Standings on the Event page', () => {
       await vi.waitFor(() => expect(dialog()).not.toBeNull())
 
       expect(dialog()!.querySelector('h2')?.textContent).toBe('Spiel 1 korrigieren')
-      expect(dialog()!.textContent).toContain('Korrektur: Spiel 1 von 6')
+      expect(dialog()!.textContent).not.toContain('Korrektur:')
       await clickButton(dialog(), 'Korrektur speichern')
       await flushPromises()
 

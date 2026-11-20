@@ -191,9 +191,15 @@ export function deltaPop(element: Element): void {
   animateOrFade(element, [{ transform: 'scale(.3)', opacity: 0, offset: 0 }, { transform: 'scale(1.15)', opacity: 1, offset: 0.6 }, { transform: 'scale(1)', opacity: 1, offset: 1 }], { duration: 420, delay: 300, easing: motionToken('--cp-ease-pop', 'cubic-bezier(.34,1.56,.64,1)') })
 }
 
+/** The stamp's delay in ms after the sequence starts: `lb-winner` plays with it (#741). Under reduced motion the stamp is a fade with no delay. */
+export const STAMP_DELAY_MS = 520
+
+/** How long a number's count-up lasts (`CpNum`); `lb-count` ticks along it (#741). */
+export const countDurationMs = () => motionMs('--cp-dur-slower', '600ms')
+
 /** The winner's stamp (`scale 2→.9→1`, rotation 8°, 0.48 s, 0.52 s after the news, on the curve `DS Scoring` draws it with; under reduced motion a 0.2 s fade, still rotated). */
 export function winnerStamp(element: Element): void {
-  animateOrFade(element, [{ transform: 'rotate(8deg) scale(2)', opacity: 0, offset: 0 }, { transform: 'rotate(8deg) scale(.9)', opacity: 1, offset: 0.7 }, { transform: 'rotate(8deg) scale(1)', opacity: 1, offset: 1 }], { duration: 480, delay: 520, easing: motionToken('--cp-ease-snap', 'cubic-bezier(.2,0,0,1)') })
+  animateOrFade(element, [{ transform: 'rotate(8deg) scale(2)', opacity: 0, offset: 0 }, { transform: 'rotate(8deg) scale(.9)', opacity: 1, offset: 0.7 }, { transform: 'rotate(8deg) scale(1)', opacity: 1, offset: 1 }], { duration: 480, delay: STAMP_DELAY_MS, easing: motionToken('--cp-ease-snap', 'cubic-bezier(.2,0,0,1)') })
 }
 
 /** What a row whose rank changed gets under reduced motion instead of the glide: its cells tint with the primary colour and fade back in 0.2 s (04-motion: „rows reorder instantly with a 0.2 highlight“). */
@@ -343,3 +349,25 @@ export function sheetLeave(parts: SheetParts): Promise<void> {
     })
   })
 }
+
+/**
+ * A disclosure panel's height run (04-motion § Notizen, #729): 0 → what it measures in `--cp-dur-base` on `--cp-ease-out`, and back in `--cp-dur-fast`
+ * on `--cp-ease-in`. The panel clips (`overflow-hidden`) so its content does not spill while it grows. Under reduced motion, in a hidden tab and
+ * where nothing can animate it cuts: `done` is called at once. `done` ends a Transition's hook; a backgrounded tab that never finishes is let go
+ * 50 ms after the duration.
+ */
+function heightRun(element: Element, opening: boolean, done: () => void): void {
+  if (reducedMotion() || typeof element.animate !== 'function' || unwatched()) return done()
+  const full = `${element.scrollHeight}px`
+  const duration = motionMs(opening ? '--cp-dur-base' : '--cp-dur-fast', opening ? '220ms' : '140ms')
+  const easing = opening ? motionToken('--cp-ease-out', 'cubic-bezier(.16,1,.3,1)') : motionToken('--cp-ease-in', 'cubic-bezier(.7,0,.84,0)')
+  const animation = element.animate(opening ? [{ height: '0px' }, { height: full }] : [{ height: full }, { height: '0px' }], { duration, easing, fill: opening ? 'none' : 'forwards' })
+  const timer = setTimeout(done, duration + 50)
+  void animation.finished?.catch(() => {}).then(() => {
+    clearTimeout(timer)
+    done()
+  })
+}
+
+export const disclosureEnter = (element: Element, done: () => void) => heightRun(element, true, done)
+export const disclosureLeave = (element: Element, done: () => void) => heightRun(element, false, done)

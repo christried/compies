@@ -143,7 +143,7 @@ describe('shownSessionNumbers', () => {
 })
 
 describe('dateBlockedKey', () => {
-  it('says why Termin festlegen cannot set a Date: no Slot at all, or none in the future', () => {
+  it('says why Termin fixieren cannot set a Date: no Slot at all, or none in the future', () => {
     expect(dateBlockedKey([])).toBe('mvp.set.noSlots')
     expect(dateBlockedKey([{ past: true }, { past: true }])).toBe('mvp.set.noFutureSlot')
   })

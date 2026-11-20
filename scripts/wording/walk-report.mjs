@@ -1,6 +1,8 @@
 // The wording walk's report (#629): counts, keys, state names and file paths only. Never a `rendered` text, a Display name or an Event name,
 // because the report is printed, written into results.log and may be posted. Pure: the walk hands in what it counted.
 
+import { isNewSince } from './review-model.mjs'
+
 /** @typedef {import('./recording.mjs').Reading} Reading */
 /**
  * One use of the mono font in the app code: `component` is its repo path; it is seen when an untagged mono item of the component was recorded
@@ -27,6 +29,41 @@ export function monoUseSightings(uses, readings) {
   })
 }
 
+/** Why the walk could not picture a text it read: what `pictureScript` skipped it for. */
+const SKIPPED = { notPainted: 'screen-reader only, no painted box', covered: 'covered by a layer each time' }
+
+/**
+ * Every text that is new since the baseline and has no picture, with the reason (#810): the check that a walk's states reach the new texts.
+ * A `message` or `fixed` step of the section `unpictured` that `isNewSince` calls new (a `legal` one is left out: it is no walk text), and
+ * each key of an unused group (it has no step of its own; its text is in the group's step) that is new. The reason is what the walk
+ * knows: it read the text and could not picture it (`skipped`), no code refers to it (an unused group), else no state reached it, with
+ * the `file:line` of its first reference when the recording has one. Keys and file paths only, never a rendered text.
+ * @param {{
+ *   steps: import('./review-model.mjs').Step[],
+ *   baseline: import('./answers.mjs').AnswersFile | null,
+ *   skipped: Map<string, 'notPainted' | 'covered'>,
+ * }} input
+ * @returns {{ id: string, reason: string }[]}
+ */
+export function withoutPicture({ steps, baseline, skipped }) {
+  /** @type {{ id: string, reason: string }[]} */
+  const found = []
+  for (const step of steps) {
+    if (step.kind === 'unused') {
+      for (const { key, text } of step.keys) {
+        if (!key.startsWith('legal.') && isNewSince({ id: key, kind: 'message', text }, baseline)) found.push({ id: key, reason: 'unused: no code refers to it' })
+      }
+      continue
+    }
+    if (step.section !== 'unpictured' || !isNewSince(step, baseline)) continue
+    const why = skipped.get(step.id)
+    if (why) found.push({ id: step.id, reason: SKIPPED[why] })
+    else if (step.where) found.push({ id: step.id, reason: `not reached by any state, referenced at ${step.where.file}${step.where.line === null ? '' : `:${step.where.line}`}` })
+    else found.push({ id: step.id, reason: 'not reached by any state, no reference found' })
+  }
+  return found
+}
+
 /** @param {number} bytes */
 const megabytes = bytes => `${(bytes / 1024 / 1024).toFixed(1)} MB`
 
@@ -40,6 +77,7 @@ const megabytes = bytes => `${(bytes / 1024 / 1024).toFixed(1)} MB`
  *   steps: { id: string, kind: string, section: string, group: string }[], stepProblems: string[], unusedNote: string | null,
  *   monoUses: ReturnType<typeof monoUseSightings>, unlabelled: string[],
  *   fixed: { withPicture: number, without: number },
+ *   unpictured: ReturnType<typeof withoutPicture>,
  *   missing: string[], untagged: number, monoFamily: string | null,
  *   notes: string[],
  * }} input
@@ -73,7 +111,9 @@ export function reportOf(input) {
   lines.push(`  total             with picture ${withPicture}  without ${without}  (and ${unusedSteps} steps of unused groups)`)
   if (input.unusedNote) lines.push(`  ${input.unusedNote}`)
   for (const problem of input.stepProblems) lines.push(`  problem: ${problem}`)
-  lines.push('', `The mono font is ${input.monoFamily ? `"${input.monoFamily}"` : 'not read'}. The eleven mono uses:`)
+  lines.push('', `New texts without a picture (${input.unpictured.length})${input.unpictured.length ? ':' : ': none'}`)
+  for (const entry of input.unpictured) lines.push(`  ${entry.id}  ${entry.reason}`)
+  lines.push('', `The mono font is ${input.monoFamily ? `"${input.monoFamily}"` : 'not read'}. The ${input.monoUses.length} mono uses:`)
   for (const use of input.monoUses) lines.push(`  ${use.site}: ${use.seenIn ? `seen in ${use.seenIn}` : `not seen${use.expectedMissing ? ` (expected: ${use.expectedMissing})` : ''}`}`)
   lines.push(`Mono components without a label in MONO_WHAT: ${input.unlabelled.length ? input.unlabelled.join(', ') : 'none'}`)
   lines.push(`Fixed texts: ${input.fixed.withPicture} with a picture, ${input.fixed.without} without`)

@@ -2,9 +2,11 @@
 import { Link as LinkIcon } from '@lucide/vue'
 import { formatSlotDay, formatSlotTime } from '~/utils/berlin-time'
 import { feedSessions } from '~/utils/activity'
+import { ceremonyAwaitsSound } from '~/utils/ceremony'
 import { stageInstants, stageUnsettled } from '~/utils/event-stage'
 import { dateBlockedKey, eventPageState, headerPill, waitsForCeremony, wearsPartyhat } from '~/utils/event-page'
 import { historyCorrections } from '~/utils/history-corrections'
+import type { Cue } from '~/utils/sound-cues'
 import { datePollOpen, sessionsEditable } from '~~/shared/event'
 
 // The Event link (`/e/<slug>`, ADR 0006) in the event shell (screen M3): useEventView loads the Event (live, #156), the stage is the
@@ -22,7 +24,17 @@ const connection = useConnectionBanner(room.state, room.enabled)
 const presence = usePresence(room)
 const serverClock = useServerClock(room)
 // The wheel is heard (#531): the cue player schedules the read's plan on the audio clock, on the Event page only.
-const cues = useCuePlayer({ view: () => data.value, serverNow: serverClock.now, ready: () => serverClock.ready.value, moved: () => serverClock.moves.value })
+// The Award ceremony's plan comes from its layer, which knows the run the viewer sees and when they skip or close it (#743).
+const ceremonyCues = shallowRef<readonly Cue[]>([])
+const cues = useCuePlayer({
+  view: () => data.value,
+  serverNow: serverClock.now,
+  ready: () => serverClock.ready.value,
+  moved: () => serverClock.moves.value,
+  ceremony: () => ceremonyCues.value,
+})
+// What this device shows is heard through the same player (#741): the Standings' sequence asks for its sounds with the function handed down here.
+provideImmediateCue(cues.playNow)
 const onlineState = (userId: string) => (presence.known.value ? presence.isOnline(userId) : undefined)
 
 useHead({ title: () => data.value?.event.name })
@@ -47,6 +59,11 @@ const slots = computed(() => (data.value?.slots ?? []).map((slot) => {
 
 // The stage's changes go through the one send (#74), held by useStageActions. The dialogs are EventHostDialogs'; the page opens them through `dialogs`.
 const actions = useStageActions(slug, refresh)
+// The Host's Event notes reach the tiles, the dialogs and the picker through one context (#821, review 0.16 S6); a Member's page provides none, so nothing of them shows there.
+// It is provided here, not by the stage: the picker is the dialogs', and the stage and the dialogs are siblings.
+provideEventNotes(() => (data.value?.event.isHost
+  ? { notes: data.value.eventNotes, eventName: data.value.event.name, finished: data.value.event.phase === 'finished', save: actions.saveEventNotes }
+  : null))
 const dialogs = useTemplateRef('dialogs')
 /** The Award ceremony's layer: „Siegerehrung ansehen“ of the finished stage asks it to play again (#314). */
 const ceremonyLayer = useTemplateRef('ceremonyLayer')
@@ -76,7 +93,7 @@ const vetoBarShown = ref(false)
 const clipOpen = ref(!!data.value?.clip)
 const clipShown = computed(() => clipOpen.value && !!data.value?.clip)
 
-/** Why "Termin festlegen" cannot set a Date right now, or null (#52): the dock's action says so. */
+/** Why "Termin fixieren" cannot set a Date right now, or null (#52): the dock's action says so. */
 const setBlocked = computed(() => {
   const key = dateBlockedKey(slots.value)
   return key === null ? null : t(key)
@@ -102,7 +119,7 @@ const { noticeShown: soundNotice, unlock: unlockSound } = useSoundUnlock({
   suspended: cues.suspended,
   resume: cues.resume,
   ready: () => serverClock.ready.value,
-  sessionRunning: () => pageState.value?.kind === 'running',
+  moment: () => pageState.value?.kind === 'running' || (!!data.value && ceremonyAwaitsSound(data.value, serverClock.now())),
 })
 const waits = computed(() => (pageState.value ? waitsForCeremony(pageState.value) : false))
 /** The Standings' sequence waits while their block has not arrived on top (#442): false for a null clock (server render, reload, hidden tab) and for a view without a Result moment, which have no arrival. */
@@ -316,6 +333,7 @@ const covered = computed(() => clipShown.value || tour.shown.value)
       :server-now="serverClock.now"
       @share="shareOpen = true"
       @over="release"
+      @cues="ceremonyCues = $event"
     />
 
     <EventHostDialogs

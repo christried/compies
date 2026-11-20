@@ -27,7 +27,7 @@ const player = (id: string, teamPosition: number, overrides: Partial<MemberView>
 const people = (count: number, teamPosition: number, prefix = 'p'): MemberView[] => Array.from({ length: count }, (_, index) => player(`${prefix}${teamPosition}-${index + 1}`, teamPosition))
 
 type Read = Parameters<typeof ceremonyModel>[0]
-const read = (standings: { team: number, rank: number, points: number }[], members: MemberView[] = [], teams: BoardTeam[] = [], results = 3): Read => ({ standings, members, teams, ceremony: CEREMONY, event: { name: 'Freitags-Zocken' }, results: Array.from({ length: results }, () => ({}) as Read['results'][number]) })
+const read = (standings: { team: number, rank: number, points: number }[], members: MemberView[] = [], teams: BoardTeam[] = []): Read => ({ standings, members, teams, ceremony: CEREMONY })
 
 describe('ceremonyModel', () => {
   it('has nothing without a ceremony, without Standings and without a first place', () => {
@@ -171,23 +171,31 @@ describe('ceremonyModel', () => {
       expect(model.winners.map(winner => winner.team)).toEqual([1, 3, 8])
     })
 
+    // #802: the Event and its games are not in the line any more, and „Alle {k} gleichauf“ went with its line.
     describe('the line under the banner', () => {
       it('counts the Winners and names the shared points when somebody finished below', () => {
-        expect(ceremonyModel(read(tie, [], teams, 6), t)!.sub).toBe('Freitags-Zocken · 6 Spiele · 2 Sieger, je 9 Punkte')
+        expect(ceremonyModel(read(tie, [], teams), t)!.sub).toBe('2 Sieger, je 9 Punkte')
       })
 
       it('says „Beide gleichauf“ when both of 2 Parties won', () => {
-        expect(ceremonyModel(read([{ team: 1, rank: 1, points: 9 }, { team: 2, rank: 1, points: 9 }], [], teams, 6), t)!.sub).toBe('Freitags-Zocken · 6 Spiele · Beide gleichauf, je 9 Punkte')
+        expect(ceremonyModel(read([{ team: 1, rank: 1, points: 9 }, { team: 2, rank: 1, points: 9 }], [], teams), t)!.sub).toBe('Beide gleichauf, je 9 Punkte')
       })
 
-      it('says „Alle 5 gleichauf“ when all of 5 Parties won', () => {
+      it('has no line when all of 5 Parties won', () => {
         const standings = Array.from({ length: 5 }, (_, index) => ({ team: index + 1, rank: 1, points: 4 }))
 
-        expect(ceremonyModel(read(standings, [], [], 6), t)!.sub).toBe('Freitags-Zocken · 6 Spiele · Alle 5 gleichauf, je 4 Punkte')
+        expect(ceremonyModel(read(standings, [], []), t)!.sub).toBeNull()
       })
 
-      it('says 1 Spiel and 1 Punkt in the singular', () => {
-        expect(ceremonyModel(read([{ team: 1, rank: 1, points: 1 }, { team: 2, rank: 1, points: 1 }, { team: 3, rank: 3, points: 0 }], [], teams, 1), t)!.sub).toBe('Freitags-Zocken · 1 Spiel · 2 Sieger, je 1 Punkt')
+      it('says 1 Punkt in the singular', () => {
+        expect(ceremonyModel(read([{ team: 1, rank: 1, points: 1 }, { team: 2, rank: 1, points: 1 }, { team: 3, rank: 3, points: 0 }], [], teams), t)!.sub).toBe('2 Sieger, je 1 Punkt')
+      })
+
+      it('names neither the Event nor its games', () => {
+        for (const model of [ceremonyModel(read(tie, [], teams), t)!, ceremonyModel(read([{ team: 1, rank: 1, points: 9 }, { team: 2, rank: 1, points: 9 }], [], teams), t)!]) {
+          expect(model.sub).not.toContain('Freitags-Zocken')
+          expect(model.sub).not.toContain('Spiel')
+        }
       })
     })
 
@@ -237,15 +245,10 @@ describe('ceremonyModel', () => {
     })
   })
 
-  describe('the line under the banner (#312)', () => {
-    const standings = [{ team: 1, rank: 1, points: 9 }, { team: 2, rank: 2, points: 3 }]
-
-    it('names the Event and counts the games with a Result', () => {
-      expect(ceremonyModel(read(standings, [], [], 6), t)!.sub).toBe('Freitags-Zocken · 6 Spiele')
-    })
-
-    it('says a single game as „1 Spiel“', () => {
-      expect(ceremonyModel(read(standings, [], [], 1), t)!.sub).toBe('Freitags-Zocken · 1 Spiel')
+  describe('the line under the banner (#312, #802)', () => {
+    it('has none for a sole Winner, with or without somebody below', () => {
+      expect(ceremonyModel(read([{ team: 1, rank: 1, points: 9 }, { team: 2, rank: 2, points: 3 }]), t)!.sub).toBeNull()
+      expect(ceremonyModel(read([{ team: 1, rank: 1, points: 9 }]), t)!.sub).toBeNull()
     })
   })
 

@@ -38,9 +38,6 @@ function confirm() {
     @cancel="emit('cancel')"
   >
     <div class="flex flex-col gap-4">
-      <p class="m-0">
-        {{ t('mvp.reschedule.text') }}
-      </p>
       <DateTimeField
         v-model="value"
         :label="t('mvp.reschedule.label')"

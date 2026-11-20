@@ -2,7 +2,7 @@
 import { EyeOff, Lock, Pencil } from '@lucide/vue'
 import { GAME_GRID } from '~/utils/game-grid'
 import { summaryRows } from '~/utils/settings-summary'
-import type { HostGameFacts, PoolGame, PoolGameFace } from '~~/shared/game'
+import { isFullPoolGame, type HostGameFacts, type PoolGame, type PoolGameFace } from '~~/shared/game'
 import { hasWheel, lockedWhenRunning, type EventSettings } from '~~/shared/settings'
 
 // „So wird gespielt“ on the Event page (#148, #166, 11-event-seite § HowWePlayCard): Format, Spiele, Auswahl (with the Vetos
@@ -138,6 +138,7 @@ const rows = computed(() => (props.settings === null
                 <GameTile
                   :game="game"
                   :audience="isHost ? 'host' : 'member'"
+                  :archived="isFullPoolGame(game) && game.archived"
                   :facts="hostGames?.[game.id] ?? null"
                 />
               </li>

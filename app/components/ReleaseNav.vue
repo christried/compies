@@ -63,7 +63,6 @@ const items = RELEASES.map((release, i) => {
     :aria-label="t('news.rail')"
     class="flex flex-col gap-1.5"
   >
-    <span class="label text-ink-2">{{ t('news.jump') }}</span>
     <!-- Bleeds to the screen edge over the page padding, without a scrollbar. -->
     <div class="-mx-4 flex gap-2 overflow-x-auto px-4 pt-0.5 pb-2 [scrollbar-width:none]">
       <a

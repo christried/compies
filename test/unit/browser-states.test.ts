@@ -86,7 +86,7 @@ describe('the combined list of the dark check and the walk files', () => {
     const placed = orderStates(combined) as State[]
     const last = (group: string) => placed.map(state => state.group).lastIndexOf(group)
     const first = (group: string) => placed.map(state => state.group).indexOf(group)
-    const groups = ['event-poll', 'event-board', 'event-live', 'event-finished']
+    const groups = ['event-tour', 'event-poll', 'event-board', 'event-live', 'event-finished']
     for (const [i, group] of groups.entries()) {
       if (i > 0) expect(last(groups[i - 1]!)).toBeLessThan(first(group))
     }
@@ -126,6 +126,21 @@ describe('orderStates', () => {
     // 0.12's states sit at the end of the file: `teamwahl-wort` belongs to the board, after `teamwahl`.
     expect(at('teamwahl-wort-host')).toBeGreaterThan(at('teamwahl-spieler'))
     expect(at('teamwahl-wort-host')).toBeLessThan(at('rad-vorher-host'))
+  })
+
+  it('places the Rundgang states first in the Event section, the Profil row after the saved one, and the Hidden wheel with the live states (#810)', () => {
+    const tour = combined.filter(state => state.group === 'event-tour').map(state => state.name)
+    expect(tour).toEqual(['rundgang-umfrage-spieler', 'rundgang-termin-spieler', 'rundgang-gesperrt-spieler'])
+    const placed = orderStates(combined) as State[]
+    const index = (name: string) => placed.findIndex(state => state.name === name)
+    const eventSection = placed.flatMap((state, i) => (sectionOf(state) === 'event' ? [i] : []))
+    expect(Math.min(...tour.map(index))).toBe(Math.min(...eventSection))
+    expect(Math.max(...tour.map(index))).toBeLessThan(index('poll-host'))
+    expect(index('profil-rundgang')).toBe(index('profil-gespeichert') + 1)
+    expect(sectionOf(placed[index('profil-rundgang')]!)).toBe('profil')
+    expect(sectionOf(placed[index('rad-platzhalter-spieler')]!)).toBe('event')
+    expect(placed[index('rad-platzhalter-spieler')]!.group).toBe('event-live')
+    expect(placed.at(-1)?.name).toBe('baustelle-event')
   })
 
   it('throws, naming the state, when one fits no section', () => {

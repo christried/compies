@@ -67,8 +67,16 @@ describe('the stepper', () => {
 
     expect(page.get('h1').text()).toContain('Schritt 1 von 7')
     expect(page.get('h1').text()).toContain('Wie soll das Event heißen?')
-    expect(stepItems(page).map(item => item.text())).toEqual(['1 Name', '2 Format', '3 Spiele', '4 Punkte', '5 Auswahlmodus', '6 Spielepool', '7 Termin'])
+    expect(stepItems(page).map(item => item.text())).toEqual(['1 Name', '2 Format', '3 Anzahl Spiele', '4 Punkte', '5 Auswahlmodus', '6 Spielepool', '7 Termin'])
     expect(saved).not.toHaveBeenCalled()
+  })
+
+  // The line „Sehen alle in der Einladung und im Archiv.“ is gone (#796): the field is its label and nothing more.
+  it('shows the Event name field without a help line', async () => {
+    const page = await mountCreate()
+
+    expect(page.text()).not.toContain('Sehen alle in der Einladung')
+    expect(page.get('input[type="text"]').attributes('aria-describedby')).toBeUndefined()
   })
 
   it('walks the steps one after the other, with the titles of the design, and sends nothing on the way', async () => {
@@ -83,23 +91,53 @@ describe('the stepper', () => {
     }
 
     expect(titles).toEqual([
-      expect.stringContaining('Wer gegen wen?'),
+      expect.stringContaining('Wer gegen wen und wie?'),
       expect.stringContaining('Wie viele Spiele?'),
       expect.stringContaining('Wer kriegt wie viele Punkte?'),
       expect.stringContaining('Wie wird das nächste Spiel bestimmt?'),
-      expect.stringContaining('Welche Spiele kommen in den Pool?'),
-      expect.stringContaining('Wann zocken wir?'),
+      expect.stringContaining('Welche Spiele?'),
+      expect.stringContaining('Wann ist es soweit?'),
     ])
     expect(cta(page).text()).toContain('Event erstellen')
     expect(saved).not.toHaveBeenCalled()
   })
 
-  it('blocks Weiter on an empty name with the reason, and goes on once there is one', async () => {
+  it('blocks Weiter on an empty name with no red anywhere until Weiter is pressed (#797)', async () => {
     const page = await mountCreate()
 
     expect(cta(page).attributes('aria-disabled')).toBe('true')
-    expect(page.get(`[id="${cta(page).attributes('aria-describedby')}"]`).text()).toBe('Gib dem Event einen Namen.')
+    expect(cta(page).attributes('aria-describedby')).toBeUndefined()
+    expect(page.text()).not.toContain('Gib dem Event einen Namen.')
+    expect(page.get('input[type="text"]').attributes('aria-invalid')).toBeUndefined()
+  })
+
+  it('shows the empty name red, in the field and above Weiter, after a press, and hides it on a step change (#797)', async () => {
+    const page = await mountCreate()
+
     await next(page)
+
+    expect(page.get('h1').text()).toContain('Schritt 1 von 7')
+    const reason = page.get(`[id="${cta(page).attributes('aria-describedby')}"]`)
+    expect(reason.text()).toBe('Gib dem Event einen Namen.')
+    expect(reason.classes()).toContain('text-error-fg')
+    expect(page.get('input[type="text"]').attributes('aria-invalid')).toBe('true')
+    expect(page.findAll('span').filter(el => el.text() === 'Gib dem Event einen Namen.').length).toBe(2)
+
+    await page.get('input[type="text"]').setValue('Freitags-Zocken')
+    await next(page)
+    await page.findAll('button').find(item => item.text().includes('Zurück') && item.attributes('type') === 'button')!.trigger('click')
+    await page.get('input[type="text"]').setValue('')
+
+    // A step change took the try away: the dock reason is gone, the field shows its own message after the edit.
+    expect(cta(page).attributes('aria-describedby')).toBeUndefined()
+  })
+
+  it('blocks Weiter on an empty name with the reason, and goes on once there is one', async () => {
+    const page = await mountCreate()
+
+    await next(page)
+    expect(cta(page).attributes('aria-disabled')).toBe('true')
+    expect(page.get(`[id="${cta(page).attributes('aria-describedby')}"]`).text()).toBe('Gib dem Event einen Namen.')
     expect(page.get('h1').text()).toContain('Schritt 1 von 7')
 
     await page.get('input[type="text"]').setValue('  ')
@@ -152,7 +190,7 @@ describe('the stepper', () => {
       const page = await mountCreate()
       await stepTo(page, 1)
 
-      expect(radios(page).map(radio => radio.get('b').text())).toEqual(['Jeder gegen jeden', 'Teams', 'Turnierbaum', 'Liga'])
+      expect(radios(page).map(radio => radio.get('b').text())).toEqual(['Alle gegen alle (FFA)', 'Teams', 'Turnierbaum', 'Liga'])
       expect(radios(page).map(radio => radio.attributes('aria-disabled'))).toEqual(['true', undefined, 'true', 'true'])
       expect(radios(page).map(radio => radio.attributes('aria-checked'))).toEqual(['false', 'true', 'false', 'false'])
       expect(radios(page)[0]!.text()).toContain('Bald verfügbar')
@@ -179,7 +217,7 @@ describe('the stepper', () => {
       expect(page.text()).toContain('2 Teams à 3 = 6 Leute in Teams (max. 24)')
 
       await click(page, 'Anzahl Teams: mehr', 2)
-      await click(page, 'Spieler pro Team: weniger', 1)
+      await click(page, 'Spielende pro Team: weniger', 1)
 
       expect(page.text()).toContain('4 Teams à 2 = 8 Leute in Teams (max. 24)')
     })
@@ -200,9 +238,9 @@ describe('the stepper', () => {
       const page = await mountCreate()
       await stepTo(page, 1)
 
-      await click(page, 'Spieler pro Team: mehr', 5)
+      await click(page, 'Spielende pro Team: mehr', 5)
 
-      const plus = button(page, 'Spieler pro Team: mehr')
+      const plus = button(page, 'Spielende pro Team: mehr')
       expect(page.findAll('[role="spinbutton"]')[1]!.attributes('aria-valuenow')).toBe('6')
       expect(plus.attributes('aria-disabled')).toBe('true')
       expect(plus.attributes('title')).toBe('Höchstens 6 pro Team.')
@@ -211,7 +249,7 @@ describe('the stepper', () => {
     it('stops the team plus button at 24 Players in teams and says why', async () => {
       const page = await mountCreate()
       await stepTo(page, 1)
-      await click(page, 'Spieler pro Team: mehr', 3)
+      await click(page, 'Spielende pro Team: mehr', 3)
 
       await click(page, 'Anzahl Teams: mehr', 6)
 
@@ -227,20 +265,20 @@ describe('the stepper', () => {
       await click(page, 'Anzahl Teams: mehr', 6)
 
       expect(page.findAll('[role="spinbutton"]')[0]!.attributes('aria-valuenow')).toBe('8')
-      expect(button(page, 'Spieler pro Team: mehr').attributes('aria-disabled')).toBe('true')
-      expect(button(page, 'Spieler pro Team: mehr').attributes('title')).toBe('Höchstens 24 Leute in Teams.')
-      await click(page, 'Spieler pro Team: mehr', 1)
+      expect(button(page, 'Spielende pro Team: mehr').attributes('aria-disabled')).toBe('true')
+      expect(button(page, 'Spielende pro Team: mehr').attributes('title')).toBe('Höchstens 24 Leute in Teams.')
+      await click(page, 'Spielende pro Team: mehr', 1)
       expect(page.findAll('[role="spinbutton"]')[1]!.attributes('aria-valuenow')).toBe('3')
     })
 
     it('stops the minus buttons at 2 teams and 1 per team', async () => {
       const page = await mountCreate()
       await stepTo(page, 1)
-      await click(page, 'Spieler pro Team: weniger', 2)
+      await click(page, 'Spielende pro Team: weniger', 2)
 
       expect(button(page, 'Anzahl Teams: weniger').attributes('title')).toBe('Mindestens 2 Teams.')
-      expect(button(page, 'Spieler pro Team: weniger').attributes('title')).toBe('Mindestens 1 pro Team.')
-      expect(button(page, 'Spieler pro Team: weniger').attributes('aria-disabled')).toBe('true')
+      expect(button(page, 'Spielende pro Team: weniger').attributes('title')).toBe('Mindestens 1 pro Team.')
+      expect(button(page, 'Spielende pro Team: weniger').attributes('aria-disabled')).toBe('true')
     })
   })
 
@@ -317,7 +355,7 @@ describe('the stepper', () => {
       const page = await mountCreate()
       await stepTo(page, 2)
 
-      expect(tieHint(page)!.text()).toBe('Gleichstand möglich. Das Event kann unentschieden enden. Dann entscheidest du: Unentschieden beenden oder ein letztes Spiel hinzufügen.')
+      expect(tieHint(page)!.text()).toBe('Gleichstand möglich. Das Event kann unentschieden enden. Dann entscheidest du: „Unentschieden“ oder „Letztes Spiel“.')
     })
 
     it('is hidden at an odd Game count with 2 teams', async () => {
@@ -393,8 +431,10 @@ describe('the stepper', () => {
 
       expect(page.get('[role="alert"]').text()).toBe('Platz 3 kann nicht mehr Punkte bekommen als Platz 2.')
       expect(cta(page).attributes('aria-disabled')).toBe('true')
-      expect(page.get(`[id="${cta(page).attributes('aria-describedby')}"]`).text()).toBe('Platz 3 kann nicht mehr Punkte bekommen als Platz 2.')
+      // The dock reason waits for a press of Weiter (#797); the table's own row message is the User's edit already.
+      expect(cta(page).attributes('aria-describedby')).toBeUndefined()
       await next(page)
+      expect(page.get(`[id="${cta(page).attributes('aria-describedby')}"]`).text()).toBe('Platz 3 kann nicht mehr Punkte bekommen als Platz 2.')
       expect(page.get('h1').text()).toContain('Schritt 4 von 7')
 
       await click(page, 'Punkte für Platz 3: weniger', 3)
@@ -411,8 +451,9 @@ describe('the stepper', () => {
 
       expect(page.get('[role="alert"]').text()).toBe('Mindestens ein Platz muss weniger Punkte bekommen als Platz 1, sonst zählt die Platzierung nicht.')
       expect(cta(page).attributes('aria-disabled')).toBe('true')
-      expect(page.get(`[id="${cta(page).attributes('aria-describedby')}"]`).text()).toBe('Mindestens ein Platz muss weniger Punkte bekommen als Platz 1, sonst zählt die Platzierung nicht.')
+      expect(cta(page).attributes('aria-describedby')).toBeUndefined()
       await next(page)
+      expect(page.get(`[id="${cta(page).attributes('aria-describedby')}"]`).text()).toBe('Mindestens ein Platz muss weniger Punkte bekommen als Platz 1, sonst zählt die Platzierung nicht.')
       expect(page.get('h1').text()).toContain('Schritt 4 von 7')
 
       await click(page, 'Punkte für Platz 2: weniger', 1)
@@ -440,7 +481,7 @@ describe('the stepper', () => {
       const page = await mountCreate()
       await stepTo(page, 1)
       await click(page, 'Anzahl Teams: mehr', 2)
-      await click(page, 'Spieler pro Team: weniger', 1)
+      await click(page, 'Spielende pro Team: weniger', 1)
       await next(page)
       await click(page, 'Anzahl Spiele: weniger', 4)
       await next(page)

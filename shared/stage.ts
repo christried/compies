@@ -1,6 +1,7 @@
 // The stage views (#256): what the Event read shows of the open Rounds, the Lucky Wheel, the clip, the Countdown,
 // the Coin flip and the Bonus Vetoes, and what the stage's actions answer. shared/event.ts reads them into EventView.
 import type { RoundGame } from './game'
+import type { NotesDoc } from './notes-doc'
 import type { BonusVetoRejection, PoolWarning, SetRejection, SpinRejection, VetoRejection } from './rounds'
 import type { EndFacts, FinishRejection, LastGameRejection } from './finish'
 import type { Standing } from './results'
@@ -15,7 +16,7 @@ export interface RoundView {
   startedAt: string
   setAt: string
   game: RoundGame
-  notes?: string
+  notes?: NotesDoc
 }
 
 /**

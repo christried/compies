@@ -300,7 +300,7 @@ onBeforeUnmount(() => {
         <span class="flex-1" />
         <span
           v-if="isHost"
-          class="inline-flex items-center gap-1.5 text-[13px] font-bold whitespace-nowrap text-ink-2"
+          class="inline-flex items-baseline gap-1.5 text-[13px] font-bold whitespace-nowrap text-ink-2"
         >
           <span
             class="size-2 flex-none rounded-full bg-hot animate-live"

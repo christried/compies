@@ -1,32 +1,31 @@
-import { mountSuspended, registerEndpoint } from '@nuxt/test-utils/runtime'
+import { mountSuspended } from '@nuxt/test-utils/runtime'
 import { flushPromises } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, ref } from 'vue'
 import { useCuePlayer } from '~/composables/useCuePlayer'
 import EventPage from '~/pages/e/[slug]/index.vue'
 import { reducedMotion } from '~/utils/motion'
-import { CUE_IDS, vetoCuePlan, wheelCuePlan, type CueId } from '~/utils/sound-cues'
+import { CUE_GROUPS, CUE_IDS, vetoCuePlan } from '~/utils/sound-cues'
 import type { EventView } from '~~/shared/event'
 import type { RoundGame } from '~~/shared/game'
 import type { ClipView, SpinView, VetoDrawView, VetoView, WheelView } from '~~/shared/stage'
 import { defaultSettings } from '~~/shared/settings'
 import { FakeAudioContext } from '../fake-audio'
-import { kitty, signInAs } from './auth'
 import { refreshEvent } from '~/composables/useEventView'
+import { context, cueLog, iso, requested, requestedOf, requests, serveCueFiles, setUpCuePage, tearDownCuePage, wheelPlanOf } from './cue-harness'
 import { serve, viewWithSessions } from './event-page'
+import { FIRST, STARTED } from './event-page-states'
 
 // The cue player on the Event page (#531, spec #504 § The cue player): a spin in the Event read is scheduled once on the audio clock, a
 // refetch of the same spin schedules nothing twice, a new Draw replaces the plan, and Ton off, an Event without a wheel and the hub pages
 // request no file. The player's own rules are in test/unit/cue-player.test.ts; the audio context is the fake of test/fake-audio.ts.
 
-const FIRST = '2026-10-30T19:00:00.000Z'
-const STARTED = '2026-10-30T19:30:00.000Z'
-const WHEEL_FILES = CUE_IDS.filter(id => id.startsWith('wheel-'))
+// The wheel's group: its five cues and Compibert's voice (#671), which is requested with them.
+const WHEEL_FILES = CUE_IDS.filter(id => CUE_GROUPS[id].includes('wheel'))
 const VETO_FILES = CUE_IDS.filter(id => id.startsWith('veto-'))
 
 const kart: RoundGame = { id: 'g-kart', name: 'Kart', imageUrl: null, youtubeId: null, clipStart: 0, clipLength: 30, playersMin: 2, playersMax: 4, suitabilities: [], price: null }
 
-const iso = (ms: number) => new Date(ms).toISOString()
 /** A spin of 6 s on a wheel of 5 slices that starts `lead` ms from now, by the page's own clock (a test has no live room, so the clock is the device's). */
 function spinIn(lead: number, drawId = 'd1'): SpinView {
   const start = Date.now() + lead
@@ -39,49 +38,28 @@ const wheelWith = (spin: SpinView | null, vetoes: Partial<VetoView> = {}): Wheel
   vetoes: { left: [2, 2], own: null, revealed: null, draw: null, ...vetoes },
 })
 
-/** What the plan of a spin is, from the same function the page uses. */
-const planOf = (spin: SpinView) => wheelCuePlan({ spin, hiddenWheel: false, isHost: false, reducedMotion: reducedMotion() })
-
 /** The Event page's read: a Session that runs, the Event's Veto allowance (none unless a test says) and the Clip of the latest draw. */
-function serveWheel(wheel: WheelView | null, first: { vetoAllowance?: number | null, clip?: ClipView | null } = {}) {
+function serveWheel(wheel: WheelView | null, first: { vetoAllowance?: number | null, clip?: ClipView | null, isHost?: boolean } = {}) {
   const read = (slug: string, wheelOfRead: WheelView | null, rest = first) => viewWithSessions(slug, [{ number: null, startsAt: FIRST, startedAt: STARTED }], 0, {
-    event: { isHost: false, phase: 'running' }, settings: { ...defaultSettings(), vetoAllowance: rest.vetoAllowance ?? null },
+    event: { isHost: rest.isHost ?? false, phase: 'running' }, settings: { ...defaultSettings(), vetoAllowance: rest.vetoAllowance ?? null },
     runningSessionId: `session-${slug}-0`, wheel: wheelOfRead, clip: rest.clip ?? null,
   })
   const served = serve(slug => read(slug, wheel))
   return { slug: served.slug, set: (next: WheelView | null, rest = first) => served.set(read(served.slug, next, rest)) }
 }
 
-/** The requests each cue file got. The handlers answer with the cue id as bytes, which the fake decodes back to `{ id }`. */
-const requests: Record<string, number> = {}
-for (const id of CUE_IDS) {
-  registerEndpoint(`/sounds/cues/${id}.wav`, () => {
-    requests[id] = (requests[id] ?? 0) + 1
-    return new TextEncoder().encode(id)
-  })
-}
-const requested = () => Object.keys(requests).filter(id => requests[id]).sort()
-
-const context = () => FakeAudioContext.instances.at(-1)
+serveCueFiles()
 
 let page: Awaited<ReturnType<typeof mountSuspended>> | undefined
 
 beforeEach(() => {
-  signInAs(kitty)
-  document.body.innerHTML = ''
-  FakeAudioContext.instances = []
-  FakeAudioContext.follows = true
-  for (const id of CUE_IDS) requests[id] = 0
-  vi.stubGlobal('AudioContext', FakeAudioContext)
+  setUpCuePage()
 })
 
 afterEach(() => {
   page?.unmount()
   page = undefined
-  vi.unstubAllGlobals()
-  FakeAudioContext.follows = false
-  localStorage.removeItem('compies-sound')
-  Reflect.deleteProperty(document, 'visibilityState')
+  tearDownCuePage()
 })
 
 /** Waits for the page's files to be fetched, decoded and the plan scheduled. */
@@ -96,12 +74,12 @@ describe('the spin\'s plan on the Event page', () => {
     const { slug } = serveWheel(wheelWith(spin))
 
     page = await mountSuspended(EventPage, { route: `/e/${slug}` })
-    await settled(planOf(spin).length)
+    await settled(wheelPlanOf(spin).length)
 
     const started = context()!.started()
-    expect(started).toHaveLength(planOf(spin).length)
+    expect(started).toHaveLength(wheelPlanOf(spin).length)
     expect(started[0]!.id).toBe('wheel-windup')
-    expect(requested()).toEqual([...WHEEL_FILES].sort())
+    expect(requestedOf('wheel', 'veto')).toEqual([...WHEEL_FILES].sort())
     for (const id of WHEEL_FILES) expect(requests[id], id).toBe(1)
     expect(FakeAudioContext.instances).toHaveLength(1)
   })
@@ -110,7 +88,7 @@ describe('the spin\'s plan on the Event page', () => {
     const spin = spinIn(4000)
     const served = serveWheel(wheelWith(spin))
     page = await mountSuspended(EventPage, { route: `/e/${served.slug}` })
-    await settled(planOf(spin).length)
+    await settled(wheelPlanOf(spin).length)
 
     served.set(wheelWith({ ...spin }))
     await refreshEvent(served.slug)
@@ -118,7 +96,7 @@ describe('the spin\'s plan on the Event page', () => {
     await refreshEvent(served.slug)
     await flushPromises()
 
-    expect(context()!.started()).toHaveLength(planOf(spin).length)
+    expect(context()!.started()).toHaveLength(wheelPlanOf(spin).length)
     expect(context()!.started().every(source => source.stopCalls === 0)).toBe(true)
     for (const id of WHEEL_FILES) expect(requests[id], id).toBe(1)
   })
@@ -127,17 +105,17 @@ describe('the spin\'s plan on the Event page', () => {
     const first = spinIn(4000)
     const served = serveWheel(wheelWith(first))
     page = await mountSuspended(EventPage, { route: `/e/${served.slug}` })
-    await settled(planOf(first).length)
+    await settled(wheelPlanOf(first).length)
 
     const second = spinIn(12_000, 'd2')
     served.set(wheelWith(second))
     await refreshEvent(served.slug)
-    await settled(planOf(first).length + planOf(second).length)
+    await settled(wheelPlanOf(first).length + wheelPlanOf(second).length)
 
     const sources = context()!.started()
-    expect(sources.slice(0, planOf(first).length).every(source => source.stopCalls === 1)).toBe(true)
-    expect(sources.slice(planOf(first).length).every(source => source.stopCalls === 0)).toBe(true)
-    expect(sources[planOf(first).length]!.id).toBe('wheel-windup')
+    expect(sources.slice(0, wheelPlanOf(first).length).every(source => source.stopCalls === 1)).toBe(true)
+    expect(sources.slice(wheelPlanOf(first).length).every(source => source.stopCalls === 0)).toBe(true)
+    expect(sources[wheelPlanOf(first).length]!.id).toBe('wheel-windup')
   })
 
   it('is scheduled by a hidden tab too: the room\'s read, not a frame, brings the plan', async () => {
@@ -150,10 +128,10 @@ describe('the spin\'s plan on the Event page', () => {
     const spin = spinIn(4000)
     served.set(wheelWith(spin))
     await refreshEvent(served.slug)
-    await settled(planOf(spin).length)
+    await settled(wheelPlanOf(spin).length)
 
     expect(document.visibilityState).toBe('hidden')
-    expect(context()!.started()).toHaveLength(planOf(spin).length)
+    expect(context()!.started()).toHaveLength(wheelPlanOf(spin).length)
   })
 })
 
@@ -178,7 +156,7 @@ describe('what the page does not play or request', () => {
     await new Promise(resolve => setTimeout(resolve, 50))
 
     expect(context()?.started() ?? []).toEqual([])
-    expect(requested()).toEqual([])
+    expect(requestedOf('wheel', 'veto')).toEqual([])
   })
 
   it('does nothing and throws nothing where the browser has no Web Audio', async () => {
@@ -196,7 +174,7 @@ describe('what the page does not play or request', () => {
     const spin = spinIn(4000)
     const { slug } = serveWheel(wheelWith(spin))
     page = await mountSuspended(EventPage, { route: `/e/${slug}` })
-    await settled(planOf(spin).length)
+    await settled(wheelPlanOf(spin).length)
     const made = context()!
 
     page.unmount()
@@ -360,9 +338,9 @@ describe('the Veto window on the Event page', () => {
       const served = serveWheel(wheelWith(spinIn(4000)), { vetoAllowance: 0 })
 
       page = await mountSuspended(EventPage, { route: `/e/${served.slug}` })
-      await settled(planOf(spinIn(4000)).length)
+      await settled(wheelPlanOf(spinIn(4000)).length)
 
-      expect(requested()).toEqual([...WHEEL_FILES].sort())
+      expect(requestedOf('wheel', 'veto')).toEqual([...WHEEL_FILES].sort())
     })
 
     it('are all six requested once by an Event with an allowance, before any window', async () => {
@@ -374,6 +352,17 @@ describe('the Veto window on the Event page', () => {
 
       expect(VETO_FILES).toHaveLength(6)
       for (const id of VETO_FILES) expect(requests[id], id).toBe(1)
+    })
+
+    // The group rule reads no `isHost` (#740): the Host's read and a Member's request the same files.
+    it.each([['a Member', false], ['the Host', true]])('are all of them for a wheel read with an allowance, for %s', async (_who, isHost) => {
+      const served = serveWheel(wheelWith(null), { vetoAllowance: 2, isHost })
+
+      page = await mountSuspended(EventPage, { route: `/e/${served.slug}` })
+      await vi.waitFor(() => expect(requestedOf('wheel', 'veto')).toHaveLength(WHEEL_FILES.length + VETO_FILES.length))
+      await flushPromises()
+
+      expect(requestedOf('wheel', 'veto')).toEqual([...WHEEL_FILES, ...VETO_FILES].sort())
     })
 
     it('are requested by a window even when the allowance is not known', async () => {
@@ -429,26 +418,26 @@ describe('a clock that moves (#594)', () => {
     const spin = spinIn(8000)
     const { slug } = serveWheel(wheelWith(spin))
     page = await mountSuspended(EventPage, { route: `/e/${slug}` })
-    await settled(planOf(spin).length)
+    await settled(wheelPlanOf(spin).length)
 
     skewBy(SHIFT_MS)
     showVisibility('visible')
     document.dispatchEvent(new Event('visibilitychange'))
 
-    expectMoved(planOf(spin).length)
+    expectMoved(wheelPlanOf(spin).length)
   })
 
   it('does nothing when the tab turns hidden', async () => {
     const spin = spinIn(8000)
     const { slug } = serveWheel(wheelWith(spin))
     page = await mountSuspended(EventPage, { route: `/e/${slug}` })
-    await settled(planOf(spin).length)
+    await settled(wheelPlanOf(spin).length)
 
     skewBy(SHIFT_MS)
     showVisibility('hidden')
     document.dispatchEvent(new Event('visibilitychange'))
 
-    expect(context()!.started()).toHaveLength(planOf(spin).length)
+    expect(context()!.started()).toHaveLength(wheelPlanOf(spin).length)
     expect(context()!.started().every(source => source.stopCalls === 0)).toBe(true)
   })
 
@@ -465,23 +454,19 @@ describe('a clock that moves (#594)', () => {
         return () => h('div')
       },
     }))
-    await settled(planOf(spin).length)
+    await settled(wheelPlanOf(spin).length)
 
     skew.value = SHIFT_MS
     moves.value += 1
     await flushPromises()
 
-    expectMoved(planOf(spin).length)
+    expectMoved(wheelPlanOf(spin).length)
   })
 })
 
 describe('the cue log for the browser check', () => {
-  const log = () => (globalThis as { __compiesCueLog?: () => { id: CueId, outcome: string }[] }).__compiesCueLog
-
-  afterEach(() => {
-    useRuntimeConfig().public.staging = false
-    Reflect.deleteProperty(globalThis, '__compiesCueLog')
-  })
+  /** The accessor itself: whether the page exposes the log at all is what this test is about. */
+  const exposed = () => (globalThis as { __compiesCueLog?: () => unknown }).__compiesCueLog
 
   it('is readable in a staging build while the page is up, and gone when it is not', async () => {
     useRuntimeConfig().public.staging = true
@@ -489,11 +474,12 @@ describe('the cue log for the browser check', () => {
     const { slug } = serveWheel(wheelWith(spin))
 
     page = await mountSuspended(EventPage, { route: `/e/${slug}` })
-    await settled(planOf(spin).length)
+    await settled(wheelPlanOf(spin).length)
 
-    expect(log()?.().map(entry => entry.outcome)).toEqual(planOf(spin).map(() => 'scheduled'))
+    expect(cueLog().map(entry => entry.outcome)).toEqual(wheelPlanOf(spin).map(() => 'scheduled'))
+    expect(exposed()).toBeTypeOf('function')
     page.unmount()
     page = undefined
-    expect(log()).toBeUndefined()
+    expect(exposed()).toBeUndefined()
   })
 })

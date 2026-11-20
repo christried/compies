@@ -49,16 +49,20 @@ export default defineNuxtConfig({
         addPlugin({ src: createResolver(import.meta.url).resolve('./app/dev/key-tags-plugin'), mode: 'all' })
       },
     }),
-    // GSAP loads through `loadGsap()` on the lead before a run only (ADR 0015). Vite's manifest marks the chunk of every dynamic import
-    // `prefetch`, and vue-bundle-renderer then writes `<link rel="prefetch">` for it on every page that reaches the `import()`: the Event page
-    // does (ceremony layer), so a finished Event fetched 70 kB of GSAP although no run plays. Only GSAP's chunk loses the flag; other
-    // prefetches stay. test/build/gsap-lazy.test.ts checks the hints the build renders.
+    // GSAP loads through `loadGsap()` on the lead before a run only (ADR 0015), and the notes editor through a lazy component where a note is edited
+    // (#454). Vite's manifest marks the chunk of every dynamic import `prefetch`, and vue-bundle-renderer then writes `<link rel="prefetch">` for it on
+    // every page that reaches the `import()`: the Event page does for both (ceremony layer; the stepper's create sheet holds the game form), so a
+    // finished Event fetched 70 kB of GSAP although no run plays, and every Event page would fetch Tiptap. Only these chunks lose the flag; other
+    // prefetches stay. test/build/gsap-lazy.test.ts and test/build/notes-editor-lazy.test.ts check the hints the build renders.
     defineNuxtModule({
-      meta: { name: 'gsap-no-prefetch' },
+      meta: { name: 'lazy-chunks-no-prefetch' },
       setup(_options, nuxt) {
+        // `src` is relative to the app folder for the app's own files (`components/RichNotesEditor.vue`) and to the project for a package.
+        const lazy = /(?:^|[\\/])(?:node_modules[\\/](?:gsap|@tiptap|prosemirror-[^\\/]+|linkifyjs|orderedmap|rope-sequence|w3c-keyname|crelt)[\\/]|components[\\/]RichNotes(?:Editor|Toolbar|LinkControl)\.vue$|utils[\\/]notes-extensions\.ts$|RichNotesEditor\.[^.\\/]+\.css$)/
         nuxt.hook('build:manifest', (manifest) => {
           for (const chunk of Object.values(manifest)) {
-            if (chunk.src && /[\\/]node_modules[\\/]gsap[\\/]/.test(chunk.src)) chunk.prefetch = chunk.preload = false
+            // The editor's stylesheet is an entry of its own, with no `src`: it is named by its file.
+            if (lazy.test(chunk.src ?? chunk.file ?? '')) chunk.prefetch = chunk.preload = false
           }
         })
       },
@@ -109,6 +113,8 @@ export default defineNuxtConfig({
       realtimeUrl: process.env.REALTIME_URL ?? '',
     },
   },
+  // The cue ids' leaf is imported explicitly and re-exported by sound-cues.ts, so the auto-import scan would see CUE_IDS twice (#828).
+  ignore: ['app/utils/cue-ids.ts'],
 
   compatibilityDate: '2026-10-22',
   vite: { plugins: [tailwindcss()] },

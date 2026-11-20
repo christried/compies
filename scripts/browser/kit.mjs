@@ -45,9 +45,10 @@ const HIDE_DEVTOOLS = `document.addEventListener('DOMContentLoaded', () => {
  * with the Nuxt devtools hidden. The dev sign-in marks the newest „Was ist neu“ seen, so its dialog never covers the
  * page; `news: true` leaves it unseen, to check the dialog itself. `appearance` (`'dark'`, `'system'`, `'light'`) sets the
  * User's Appearance with the sign-in, light when absent (#401); `setup: true` signs in a User who has not set up yet
- * (`name=unset`), for the setup page.
+ * (`name=unset`), for the setup page; `tour: true` leaves the Rundgang unseen (`tour=unseen`), so it starts on the Member's Event
+ * page: a plain sign-in marks it seen (`server/dev/sign-in.ts`), and only the walk's Tour states ask for it (#810).
  */
-export async function open(tab, path, width, height, waitFor = 'body', { news = false, appearance, setup = false } = {}) {
+export async function open(tab, path, width, height, waitFor = 'body', { news = false, appearance, setup = false, tour = false } = {}) {
   await resize(tab, width, height)
   if (!tab.spying) {
     await tab.send('Page.addScriptToEvaluateOnNewDocument', { source: ANIMATION_SPY })
@@ -61,8 +62,17 @@ export async function open(tab, path, width, height, waitFor = 'body', { news = 
     await loaded(tab)
     tab.bypassed = true
   }
-  await tab.send('Page.navigate', { url: `${BASE}/api/dev/sign-in?as=${tab.account}&to=${encodeURIComponent(path)}${news ? '&news=unseen' : ''}${appearance ? `&appearance=${appearance}` : ''}${setup ? '&name=unset' : ''}` })
+  await tab.send('Page.navigate', { url: `${BASE}${signInPath({ account: tab.account, path, news, appearance, setup, tour })}` })
   await hydrated(tab, waitFor)
+}
+
+/**
+ * The dev sign-in's path and query for `open`: the account, where to go to, and what the sign-in leaves unseen (`news`, `tour`), the
+ * Appearance it sets and the name it unsets (`setup`). Pure, so a test pins which options a state can ask for (#810).
+ * @param {{ account: string, path: string, news?: boolean, appearance?: string, setup?: boolean, tour?: boolean }} options
+ */
+export function signInPath({ account, path, news = false, appearance, setup = false, tour = false }) {
+  return `/api/dev/sign-in?as=${account}&to=${encodeURIComponent(path)}${news ? '&news=unseen' : ''}${appearance ? `&appearance=${appearance}` : ''}${setup ? '&name=unset' : ''}${tour ? '&tour=unseen' : ''}`
 }
 
 /**
@@ -230,9 +240,21 @@ export async function ok(answer, what) {
   return body
 }
 
-/** A game in the library (`POST /api/games`): `fields` are `name`, `playersMin`, `playersMax`, `notes`, … Returns the GameView. */
+/**
+ * A game in the library (`POST /api/games`): `fields` are `name`, `playersMin`, `playersMax`, `notes`, … Returns the GameView.
+ * `notes` as a string is sent as the document the migration 0038 builds from a text (#727; an .mjs cannot import shared/notes-doc.ts):
+ * one paragraph per line, an empty line an empty paragraph without `content`.
+ */
 export async function createGame(tab, fields) {
-  return ok(await api(tab, 'POST', '/api/games', fields), 'POST /api/games')
+  const notes = typeof fields.notes === 'string' ? notesDocument(fields.notes) : fields.notes
+  return ok(await api(tab, 'POST', '/api/games', { ...fields, notes }), 'POST /api/games')
+}
+
+/** The document of a text, as `notesFromLines` in shared/notes-doc.ts builds it; null when no line has a visible character. */
+function notesDocument(text) {
+  if (!/\S/.test(text)) return null
+  const content = text.split(/\r?\n/).map(line => (line === '' ? { type: 'paragraph' } : { type: 'paragraph', content: [{ type: 'text', text: line }] }))
+  return { type: 'doc', content }
 }
 
 /** The defaults of `defaultSettings()` in shared/settings.ts (an .mjs cannot import the TypeScript): Host pick, visible wheel, a 3v3. */

@@ -91,11 +91,20 @@ function personEl(userId: string): HTMLElement | null {
   return root.value?.querySelector<HTMLElement>(`[data-user-id="${userId}"]`) ?? null
 }
 
-/** Moves somebody, from a drop or from the menu: drawn at once, announced when the server took it. */
+// The board's three sounds (#742, spec #718) are asked for in three places and nowhere else, each entered only by this device's User acting (the Host
+// moving another Member is the same act): the pick-up of the drag, the answer `requestMove` awaits and the release over no place. An avatar that
+// moves because of somebody else's move or a refetch (the room's `member.moved`, the `members` prop, the layout watch below) asks for nothing.
+const playCue = useImmediateCue()
+
+/** Moves somebody, from a drop or from the menu: drawn at once, announced and heard when the server took it, heard bouncing when it did not. */
 async function requestMove(userId: string, to: Place) {
   if (rejectionFor(userId, to)) return
   const taken = places.move(userId, to)
-  if (await taken) announce(t(to.zone === 'team' ? 'board.movedTeam' : 'board.movedStands', { name: nameOf(userId), team: to.zone === 'team' ? nameOfTeam(to.team) : '' }))
+  if (await taken) {
+    announce(t(to.zone === 'team' ? 'board.movedTeam' : 'board.movedStands', { name: nameOf(userId), team: to.zone === 'team' ? nameOfTeam(to.team) : '' }))
+    playCue('drag-snap')
+  }
+  else playCue('drag-reject')
 }
 
 const drag = useBoardDrag({
@@ -107,6 +116,7 @@ const drag = useBoardDrag({
     }
     return null
   },
+  pickedUp: () => playCue('drag-pick'),
   accepts(userId, key) {
     const to = placeFromKey(key)
     return to !== null && rejectionFor(userId, to) === null
@@ -116,7 +126,8 @@ const drag = useBoardDrag({
     if (to) void requestMove(userId, to)
   },
   async release(userId) {
-    // Let go anywhere else: the person was lifted off their place and glides back to it.
+    // Let go anywhere else (Escape, a cancelled pointer and a drop on their own place too): the person was lifted off their place and glides back to it.
+    playCue('drag-reject')
     announce(t('board.cancelled'))
     const element = personEl(userId)
     if (!element) return
@@ -227,15 +238,14 @@ const uneven = computed(() => {
   return small.count === big ? null : { team: nameOfTeam(small.team), small: small.count, big }
 })
 
-/** What the board says about itself under its title (11-event-seite § GameBoard): who is there, or how full the teams are. */
+/** What the board says about itself under its title (11-event-seite § GameBoard): who is there, or how full the teams are. While Team choice is still closed it says nothing (#800); the running line adds the red „gesperrt“ in the template. */
 const meta = computed(() => {
   const size = props.settings?.teamSize ?? 0
-  const teamsText = t('stepper.summary.teams', { n: props.teams.length, s: size })
   switch (phase.value) {
     case 'setup': return t('board.meta.setup', { n: props.members.length })
-    case 'poll': return t('board.meta.poll', { teams: teamsText })
+    case 'poll': return null
     case 'open': return t('board.meta.open', { taken: Object.values(seats.value).reduce((sum, n) => sum + n, 0), places: props.teams.length * size })
-    default: return t('board.meta.running', { teams: teamsText })
+    default: return t('stepper.summary.teams', { n: props.teams.length, s: size })
   }
 })
 </script>
@@ -272,7 +282,10 @@ const meta = computed(() => {
       >
         {{ t('board.title') }}
       </h2>
-      <span class="text-[13px] font-bold text-ink-2">{{ meta }}</span>
+      <span
+        v-if="meta"
+        class="text-[13px] font-bold text-ink-2"
+      >{{ meta }}<template v-if="phase === 'running'"> · <span class="text-error-fg">{{ t('board.meta.running') }}</span></template></span>
       <span
         v-if="phase === 'open'"
         class="ml-auto inline-flex items-center gap-1 text-[12px] font-bold text-ink-2 md:hidden"

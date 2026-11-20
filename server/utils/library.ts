@@ -1,9 +1,10 @@
-import { eq, inArray } from 'drizzle-orm'
+import { and, asc, count, eq, inArray, isNotNull, isNull, sql, type SQLWrapper } from 'drizzle-orm'
 import type { H3Event } from 'h3'
 import type { EventView } from '../../shared/event'
-import { canEditGame, canSeeLibrary, type GamePrice, type GamePriceInput, type GameTag, type GameView, type HostGameFacts, type PoolGame, type PoolGameFace, type RoundGame } from '../../shared/game'
-import { shownName, type AuthUser } from '../../shared/auth'
-import { games, users } from '../db/schema'
+import { canSeeLibrary, type GamePrice, type GamePriceInput, type GameTag, type GameView, type HostGameFacts, type PoolGame, type PoolGameFace, type RoundGame } from '../../shared/game'
+import type { AuthUser } from '../../shared/auth'
+import { beforeFinish, PHASES } from '../../shared/phase'
+import { eventPoolGames, events, games } from '../db/schema'
 import { isUuid } from '../domain/uuid'
 import type { Db } from './db'
 import { apiError, apiNotFound } from './errors'
@@ -12,36 +13,64 @@ import { getUser } from './user'
 
 // Shared parts of the Game library routes (#141).
 
-/** The answer a missing route gets; the library gives it to everyone who may not see it (spec #138). */
+// The three terms every query about the library spells (#820, review 0.16 S3 = F1): whose a game is, whether it is Archived, and what a live Event is. Each has this one home, so a
+// reader added later cannot forget one; a second hand-written copy of `games.createdBy`, `games.archivedAt` or the live-Event rule is a finding.
+
+/** A game in the library of `hostId` (ADR 0018: the owner is the Host; another Host's copy is a different row). A column of an outer query works as `hostId` too, in a correlated subquery. */
+export function ownedBy(hostId: string | SQLWrapper) {
+  return eq(games.createdBy, hostId)
+}
+
+/** A game that is not Archived (#725): the games a wheel, a count, a draw and a Member's list are made of. */
+export const notArchived = isNull(games.archivedAt)
+
+/** A game that is Archived (#467). */
+export const archivedGame = isNotNull(games.archivedAt)
+
+/** The phases in which an Event is still live: it has not finished (`beforeFinish`). */
+const LIVE_PHASES = PHASES.filter(beforeFinish)
+
+/** An Event of `hostId` that is live: not deleted and not finished (#725, #733). The one sentence behind „who is told when a game is archived“ and „in how many Events a game sits“. */
+export function liveEventOf(hostId: string) {
+  return and(eq(events.hostId, hostId), isNull(events.deletedAt), inArray(events.phase, LIVE_PHASES))
+}
+
+/**
+ * The games of an Event's Game pool, the Host's own only (`games.created_by = events.host_id`, #722: a pool row of another Host's game, which the 0.15 code could still write
+ * while a migration ran, ADR 0007, is in no list), by name. `archived: 'any'` is the Host's list, which carries every pool game; 'no' leaves the Archived ones out, as every
+ * Member surface does (#725). The one join behind `readPool` (the ids) and `eventPool` (the views).
+ */
+export async function poolGames(db: Db, eventId: string, hostId: string, archived: 'any' | 'no'): Promise<(typeof games.$inferSelect)[]> {
+  const rows = await db
+    .select({ game: games })
+    .from(eventPoolGames)
+    .innerJoin(games, eq(eventPoolGames.gameId, games.id))
+    .where(and(eq(eventPoolGames.eventId, eventId), ownedBy(hostId), archived === 'no' ? notArchived : undefined))
+    .orderBy(asc(sql`lower(${games.name})`), asc(games.id))
+  return rows.map(row => row.game)
+}
+
+/** The answer a missing route gets; the library gives it to everyone who may not see it, and for a game that is not the viewer's own (#455). */
 export function libraryNotFound() {
   return apiNotFound()
 }
 
-/** The signed-in User who may see the library: a Host or the Platform admin. Everyone else gets libraryNotFound. */
+/** The signed-in User who may see the library: a User with the Host permission. Everyone else gets libraryNotFound. */
 export async function requireLibraryViewer(event: H3Event): Promise<AuthUser> {
   const user = await getUser(event)
   if (!user || !canSeeLibrary(user)) throw libraryNotFound()
   return user
 }
 
-/** A games row with its creator's names: the one select shape the library routes share. */
-export const gameWithCreator = { game: games, creatorName: users.name, creatorDisplayName: users.displayName }
-
-/** The creator's name as the library shows it: the display name when they set one. */
-export function creatorNameOf({ creatorName, creatorDisplayName }: { creatorName: string, creatorDisplayName: string | null | undefined }): string {
-  return shownName({ name: creatorName, displayName: creatorDisplayName })
-}
-
-/** One game with its creator's name; libraryNotFound for text that is no uuid (it never reaches the database) and for an unknown id. */
-export async function loadGame(db: Db, id: string): Promise<{ game: typeof games.$inferSelect, creatorName: string }> {
+/**
+ * One game of `ownerId`'s library (#455, ADR 0018). libraryNotFound for text that is no uuid (it never reaches the
+ * database), for an unknown id and for a game of another User: the three answer alike, the Platform admin's request included.
+ */
+export async function loadGame(db: Db, id: string, ownerId: string): Promise<typeof games.$inferSelect> {
   if (!isUuid(id)) throw libraryNotFound()
-  const [row] = await db
-    .select(gameWithCreator)
-    .from(games)
-    .innerJoin(users, eq(games.createdBy, users.id))
-    .where(eq(games.id, id))
+  const [row] = await db.select().from(games).where(and(eq(games.id, id), ownedBy(ownerId)))
   if (!row) throw libraryNotFound()
-  return { game: row.game, creatorName: creatorNameOf(row) }
+  return row
 }
 
 /** A games row as an Event's pool shows it to a Member (#224): picture, name, Price (#338), players and Suitabilities (#444). */
@@ -59,33 +88,32 @@ export function poolGameFace(row: typeof games.$inferSelect): PoolGameFace {
   }
 }
 
-/** A games row as the Host's pool shows it (#146): the face plus the clip and the notes (#224), no creator and no edit rights. */
+/** A games row as the Host's pool shows it (#146): the face plus the clip, the notes (#224) and the archive flag (#726), no creator and no edit rights. */
 export function poolGameView(row: typeof games.$inferSelect): PoolGame {
   return {
     ...poolGameFace(row),
     clipStart: row.clipStart,
     clipLength: row.clipLength,
     notes: row.notes,
+    archived: row.archivedAt !== null,
   }
 }
 
-/** A games row as an Event's Round shows its set game to every Member (#228): the Host's pool view without the notes. */
+/** A games row as an Event's Round shows its set game to every Member (#228): the Host's pool view without the notes and the archive flag (#726). */
 export function roundGameView(row: typeof games.$inferSelect): RoundGame {
-  const { notes: _notes, ...game } = poolGameView(row)
+  const { notes: _notes, archived: _archived, ...game } = poolGameView(row)
   return game
 }
 
 /**
- * A games row as the library shows it to `viewer`: the pool view plus creator, edit rights, the Tags (#335) and the Price (#337).
+ * A games row as the library shows it: the pool view plus the Tags (#335), the archive flag (#467) and the Price (#337).
  * Private (#365): a route gets its views from `readGameViews`, so none can answer a game without its Tags.
  */
-function gameView(row: typeof games.$inferSelect, creatorName: string, viewer: AuthUser, tags: GameTag[]): GameView {
+function gameView(row: typeof games.$inferSelect, tags: GameTag[]): GameView {
   return {
     ...poolGameView(row),
     tags,
-    createdBy: { id: row.createdBy, name: creatorName },
-    createdAt: row.createdAt.toISOString(),
-    canEdit: canEditGame(viewer, row),
+    updatedAt: row.updatedAt.toISOString(),
   }
 }
 
@@ -94,10 +122,10 @@ function gameView(row: typeof games.$inferSelect, creatorName: string, viewer: A
  * answers []. `db` may be a transaction, so a write answers the Tags it has just stored. No rows, no query.
  * The ids are bind parameters of one `inArray`, and Postgres takes at most about 65k of them per statement (#365).
  */
-export async function readGameViews(db: Db, rows: { game: typeof games.$inferSelect, creatorName: string }[], viewer: AuthUser): Promise<GameView[]> {
+export async function readGameViews(db: Db, rows: (typeof games.$inferSelect)[]): Promise<GameView[]> {
   if (rows.length === 0) return []
-  const tags = await loadTags(db, rows.map(row => row.game.id))
-  return rows.map(row => gameView(row.game, row.creatorName, viewer, tags.get(row.game.id) ?? []))
+  const tags = await loadTags(db, rows.map(row => row.id))
+  return rows.map(row => gameView(row, tags.get(row.id) ?? []))
 }
 
 /** The row's Price as the library shows it (#337); null when none. */
@@ -151,4 +179,20 @@ export async function readHostGameFacts(db: Db, ids: string[]): Promise<Record<s
     db.select({ id: games.id, notes: games.notes }).from(games).where(inArray(games.id, ids)),
   ])
   return Object.fromEntries(rows.map(row => [row.id, { tags: tags.get(row.id) ?? [], notes: row.notes }]))
+}
+
+/**
+ * How many of the Host's live Events hold each game in their Game pool (#733, „in 2 Events“ on the library card). Live is an Event that has not
+ * finished (`beforeFinish`) and is not deleted; the rule is the pool row alone, so a game a Round or a Draw set but the pool lost does not count, and an
+ * archived game keeps its count (#725 leaves its pool rows). Only the Host's own Events (ADR 0018: a pool row of another Host's Event is a leftover of the
+ * 0.15 code). One grouped statement, whatever the number of games. Only games with a count above 0 have a key.
+ */
+export async function liveEventCounts(db: Db, hostId: string): Promise<Record<string, number>> {
+  const rows = await db
+    .select({ gameId: eventPoolGames.gameId, n: count() })
+    .from(eventPoolGames)
+    .innerJoin(events, eq(events.id, eventPoolGames.eventId))
+    .where(liveEventOf(hostId))
+    .groupBy(eventPoolGames.gameId)
+  return Object.fromEntries(rows.map(row => [row.gameId, Number(row.n)]))
 }

@@ -1,4 +1,4 @@
-import { eq } from 'drizzle-orm'
+import { and, eq } from 'drizzle-orm'
 import { draws, events, games, rounds, vetoes } from '../db/schema'
 import { WHEEL_PLACEHOLDERS, drawSpin } from '../domain/wheel'
 import type { RoundSpun, VetoCast } from '../../shared/stage'
@@ -11,6 +11,7 @@ import { apiError } from './errors'
 import type { ChangeCore, EventChange, EventRow } from './event-access'
 import { dueDraws } from './draw-timeline'
 import { gamesLeftOf, partyOf, readEventState, roundRowsOf, setReason, spinReason, vetoReason, vetoesLeftOf, withParts } from './event-state'
+import { notArchived, ownedBy } from './library'
 import { settleDue } from './settle'
 
 // The Event's Rounds (GLOSSARY: Round, #228): the changes the Host makes, setting the next game, spinning the wheel and putting a Round
@@ -58,7 +59,7 @@ async function insertDraw(tx: Db, roundId: string, now: Date, fields: Omit<typeo
  * Host allowed a Veto (#232, „Veto erlauben“) and some Party has one left (opensWindow): then the draw carries a Veto window from
  * now, the Round gets no game until it settles (settleDue), and everyone sees the game from now on. A Veto allowed in a Selection
  * mode without a wheel is `no_wheel`. A Round that waits for a respin takes the game itself (#231). Refused with the reason of
- * setReason, `no_wheel`, or `unknown_game`.
+ * setReason, `no_wheel`, or `unknown_game`; an Archived game answers as an absent one (#725).
  */
 export async function setNextGame({ tx, eventRow, user, publish, now }: ChangeCore, gameId: string, vetoAllowed: boolean): Promise<{ roundId: string }> {
   const state = await readEventState(tx, eventRow, now, ['sessions', 'members', 'rounds', 'pool'])
@@ -66,7 +67,7 @@ export async function setNextGame({ tx, eventRow, user, publish, now }: ChangeCo
   if (rejection) throw apiError(rejection)
   // The rules above refused an Event without settings. Host pick has no Vetoes (spec #218 § Vetoes).
   if (vetoAllowed && !hasWheel(state.settings!.selectionMode)) throw apiError('no_wheel')
-  const [game] = await tx.select({ id: games.id, youtubeId: games.youtubeId, clipLength: games.clipLength }).from(games).where(eq(games.id, gameId))
+  const [game] = await tx.select({ id: games.id, youtubeId: games.youtubeId, clipLength: games.clipLength }).from(games).where(and(eq(games.id, gameId), ownedBy(eventRow.hostId), notArchived))
   if (!game) throw apiError('unknown_game')
   const roundRows = roundRowsOf(state)
   // A retried „Setzen“ would open a second Round of the same game, and a vetoed game stays vetoed, library or pool (review 0.7, F14).
@@ -77,7 +78,7 @@ export async function setNextGame({ tx, eventRow, user, publish, now }: ChangeCo
   const source = gamesLeftOf(state).includes(game.id) ? 'pool' : 'library'
   // With a window the Round takes its game when the draw settles, so it stays without one (and without `setAt`) until then.
   const roundId = await roundForDraw(tx, eventRow.id, roundRows, state.draws, now, windowOpens ? {} : { gameId: game.id, setAt: now })
-  const instants = drawInstants({ kind: 'set', commitAt: now, windowOpens, clipLength: clipLengthOf(game), spinLengthMs: null })
+  const instants = drawInstants({ kind: 'set', commitAt: now, windowOpens, clipLength: clipLengthOf(game) })
   const timing = windowOpens
     ? { stopAt: instants.stopAt, vetoEndsAt: instants.vetoEndsAt }
     : { stopAt: instants.stopAt, outcome: 'set' as const, settledAt: settleAt(instants) }
