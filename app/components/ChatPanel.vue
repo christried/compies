@@ -75,7 +75,8 @@ async function loadOlder() {
   loadingOlder.value = true
   try {
     const page = await $fetch<MessagePage>(`/api/e/${props.slug}/messages`, { query: { before: next.value } })
-    // The list grows above what is read: keep what the reader looks at where it is.
+    // The list grows above what is read: keep what the reader looks at where it is. The scroller opts out of the browser's scroll anchoring (`overflow-anchor: none`), so this
+    // correction is the only one: Chrome's anchoring had moved `scrollTop` by the same growth when the log was not at its top, and the log moved twice (#881).
     const before = scroller.value?.scrollHeight ?? 0
     messages.value = mergeMessages(messages.value, pageMessages(page), deleted)
     next.value = page.next
@@ -342,7 +343,7 @@ const groups = computed(() => groupMessages([
         aria-live="polite"
         :aria-busy="status === 'loading'"
         :aria-label="t('chat.logAria')"
-        class="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto px-3 pt-3 pb-1.5"
+        class="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto px-3 pt-3 pb-1.5 [overflow-anchor:none]"
         :class="next && 'fade-top'"
       >
         <!-- The feed's dashed look, not `EmptyState`: its 120 px Compibert is too wide for the panel. -->
