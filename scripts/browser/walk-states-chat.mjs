@@ -371,7 +371,7 @@ const chatStates = [
     prepare: ctx => compose(ctx.tab, 'Test '.repeat(84), { send: false }),
   }),
 
-  // A send that cannot reach the server: the line „Nicht gesendet. Erneut senden“.
+  // A send that cannot reach the server: the line „Nicht gesendet. Erneut senden?“.
   ...chatPair({
     name: 'chat-fehlgeschlagen',
     group: 'event-chat',
