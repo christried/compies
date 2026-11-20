@@ -51,10 +51,20 @@ const pageMessages = (page: MessagePage): Message[] => [...page.messages].revers
 const atEnd = () => !scroller.value || scroller.value.scrollHeight - scroller.value.scrollTop - scroller.value.clientHeight < 40
 const scrollToEnd = () => void nextTick(() => scroller.value?.scrollTo({ top: scroller.value.scrollHeight }))
 
+const bubbles = () => [...(scroller.value?.querySelectorAll<HTMLElement>('[data-message-id]') ?? [])]
+/** The first bubble that reaches below the log's top edge, with its place on the screen: the row the reader is looking at. */
+function topBubble() {
+  const edge = scroller.value?.getBoundingClientRect().top ?? 0
+  const bubble = bubbles().find(candidate => candidate.getBoundingClientRect().bottom > edge + 1)
+  return bubble?.dataset.messageId ? { id: bubble.dataset.messageId, top: bubble.getBoundingClientRect().top } : undefined
+}
+
 async function loadFirst() {
   try {
     const page = await $fetch<MessagePage>(`/api/e/${props.slug}/messages`)
     const first = status.value !== 'ready'
+    // Read before the list changes, as the `chat.added` handler does: a re-read (the room's connection opened again) follows to the end only for a reader who is there (#881).
+    const follow = atEnd()
     // A re-read that shares no id with what is held while older Messages remain: more was missed than a page holds, and the Messages between would be a hole „Ältere laden“ cannot reach
     // (its cursor lies below the held ones). Start over as on a fresh open (#848, spec story 17); the outgoing lines and the pending deletes are not `messages` and stay.
     const missedMore = !first && page.next !== null && !page.messages.some(message => isHeld(message.id))
@@ -62,7 +72,7 @@ async function loadFirst() {
     dropSettled()
     if (first || missedMore) next.value = page.next
     status.value = 'ready'
-    scrollToEnd()
+    if (first || missedMore || follow) scrollToEnd()
   }
   catch {
     // A Chat that has shown Messages keeps them; the next open of the connection tries again.
@@ -75,12 +85,15 @@ async function loadOlder() {
   loadingOlder.value = true
   try {
     const page = await $fetch<MessagePage>(`/api/e/${props.slug}/messages`, { query: { before: next.value } })
-    // The list grows above what is read: keep what the reader looks at where it is.
-    const before = scroller.value?.scrollHeight ?? 0
+    // The list grows above what is read: keep what the reader looks at where it is. The scroller opts out of the browser's scroll anchoring (`overflow-anchor: none`), so this
+    // correction is the only one: Chrome's anchoring had moved `scrollTop` by the same growth when the log was not at its top, and the log moved twice (#881).
+    // The row is kept where it is on the screen, not by the growth of `scrollHeight`: the last page also removes the button above the log, which grows the log upwards (#881).
+    const anchor = topBubble()
     messages.value = mergeMessages(messages.value, pageMessages(page), deleted)
     next.value = page.next
     await nextTick()
-    if (scroller.value) scroller.value.scrollTop += scroller.value.scrollHeight - before
+    const moved = anchor && bubbles().find(bubble => bubble.dataset.messageId === anchor.id)
+    if (moved && scroller.value) scroller.value.scrollTop += moved.getBoundingClientRect().top - anchor.top
   }
   catch {
     // The button stays; pressing it again tries again.
@@ -311,9 +324,9 @@ const groups = computed(() => groupMessages([
   <div class="flex min-h-0 flex-1 flex-col gap-3">
     <div
       v-if="status === 'failed'"
-      class="m-3 flex flex-col items-start gap-3 rounded-[12px] border-2 border-dashed border-line-soft p-3.5"
+      class="m-3 flex flex-col items-center gap-3 rounded-[12px] border-2 border-dashed border-line-soft p-3.5"
     >
-      <p class="m-0 text-ink-2">
+      <p class="m-0 text-center text-ink-2">
         {{ t('chat.loadFailed') }}
       </p>
       <AppButton
@@ -342,7 +355,8 @@ const groups = computed(() => groupMessages([
         aria-live="polite"
         :aria-busy="status === 'loading'"
         :aria-label="t('chat.logAria')"
-        class="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto px-3 pt-3 pb-1.5"
+        class="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto px-3 pt-3 pb-1.5 [overflow-anchor:none]"
+        :class="next && 'fade-top'"
       >
         <!-- The feed's dashed look, not `EmptyState`: its 120 px Compibert is too wide for the panel. -->
         <div
@@ -529,12 +543,12 @@ const groups = computed(() => groupMessages([
             :aria-label="t('chat.send')"
             :aria-disabled="!sendable"
             class="inline-flex size-11 flex-none items-center justify-center rounded-pill border-2 border-line"
-            :class="sendable ? 'bg-primary text-on-primary shadow-sm' : 'bg-surface-2 text-ink-2 shadow-none'"
+            :class="sendable ? 'bg-primary text-on-primary shadow-sm' : 'bg-surface-2 text-ink shadow-none'"
             @click="send"
           >
             <AppIcon
               :icon="Send"
-              :size="18"
+              :size="22"
             />
           </button>
         </div>

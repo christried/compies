@@ -220,6 +220,8 @@
 @utility fence-mesh { background-image: linear-gradient(color-mix(in srgb, var(--cp-line) 38%, transparent) 1.5px, transparent 1.5px), linear-gradient(90deg, color-mix(in srgb, var(--cp-line) 38%, transparent) 1.5px, transparent 1.5px); background-size: 12px 12px; }
 /* Keeps the scrollbar's place while the page is locked, so the page and every fixed element stay where they are (ClipBackdrop, #658). */
 @utility scroll-gutter { scrollbar-gutter: stable; }
+/* A scroller whose top edge has more behind it (the Chat's „Ältere laden“ above its log, #879): the rows fade out over the top 12 px, the scroller's own top padding, instead of ending in a hard cut. At scrollTop 0 no row reaches into the fade. */
+@utility fade-top { mask-image: linear-gradient(to bottom, transparent, #000 12px); }
 @utility hit-44 { position: relative; &::after { content: ""; position: absolute; inset: 50% auto auto 50%; width: max(100%, 44px); height: max(100%, 44px); transform: translate(-50%,-50%); } }
 /* Hover tint (#33): items inside a group, and the reduced-motion stand-in for the lift. Used as hover:tint. Stronger on Dunkel (#406). */
 /* `--cp-tint-ink` replaces the ink for a control on a fill of its own: the brand buttons darken with black, since cream on

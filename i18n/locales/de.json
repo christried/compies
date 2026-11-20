@@ -595,7 +595,7 @@
     "sending": "wird gesendet …",
     "failed": "Nicht gesendet. Erneut senden?",
     "remaining": "Noch {n} Zeichen",
-    "finished": "Das Event ist beendet. Das liest doch eh keiner mehr also ist Schreiben aus.",
+    "finished": "Das Event ist beendet. Das liest doch eh keiner mehr, also ist Schreiben aus.",
     "deleted": "Vom Host gelöscht",
     "deletedByWriter": "Gelöscht",
     "loadFailed": "Der Chat konnte nicht geladen werden.",

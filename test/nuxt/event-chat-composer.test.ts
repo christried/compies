@@ -182,7 +182,7 @@ describe('the composer on a finished page and on the phone', () => {
 
     expect(panel(page).find('input').exists()).toBe(false)
     expect(panel(page).find('button[aria-label="Senden"]').exists()).toBe(false)
-    expect(panel(page).text()).toContain('Das Event ist beendet. Das liest doch eh keiner mehr also ist Schreiben aus.')
+    expect(panel(page).text()).toContain('Das Event ist beendet. Das liest doch eh keiner mehr, also ist Schreiben aus.')
     expect(panel(page).find('[role="log"][aria-label="Chatverlauf"]').exists()).toBe(true)
   })
 
