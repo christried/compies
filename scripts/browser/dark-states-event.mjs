@@ -657,7 +657,7 @@ export const STATES = [
   ...pair({
     name: 'tabelle',
     group: 'event-live',
-    // The side panel opens on „Aktivität“, which the page state reads already.
+    // The side panel opens on „Chat“ (#761), which the page state reads already.
     hostStops: [stop('panel-tabelle', tab => press(tab, '[role=tab]', COPY.nav.tabs.table))],
     spielerStops: [
       stop('tab-tabelle', tab => press(tab, `nav[aria-label*=${JSON.stringify(COPY.event.tabs.label)}] button`, COPY.nav.tabs.table)),
