@@ -9,7 +9,7 @@ Anyone who has signed in with Discord or Twitch.
 _Avoid_: Account (UI copy says „Konto“ only where a User deletes theirs), profile (a profile is what a User edits, not the User)
 
 **Platform admin**:
-The operator, who grants and revokes the Host permission. In the app they have no rights over another User's Game library.
+The operator, who grants and revokes the Host permission, removes another User's uploaded Profile picture and deletes another User. Nobody gains or loses this role in the app, and a Platform admin always has the Host permission. They see a row for every Event, Deleted Events included, but open only the Events they are a Member of; in the app they have no rights over another User's Game library or over what happens inside an Event (UI: Admin).
 _Avoid_: Admin (ambiguous with the session admin role a Host has)
 
 **Host**:
@@ -17,7 +17,7 @@ The User who created an Event and has full rights inside it. Each Event has exac
 _Avoid_: Organiser, owner, session admin
 
 **Host permission**:
-The platform-wide right to create Events and to have a Game library. Losing it does not stop a User from being the Host of Events they already created; they no longer see their Game library, but its games stay stored and return with the permission.
+The platform-wide right to create Events and to have a Game library, granted and taken by the Platform admin (UI: „Darf hosten“). Losing it does not stop a User from being the Host of Events they already created; they no longer see their Game library, but its games stay stored and return with the permission.
 _Avoid_: Host role, canHost (that is a column, not the concept)
 
 **Display name**:
@@ -29,7 +29,7 @@ The round picture shown next to a User's Display name: the one they uploaded, el
 _Avoid_: Avatar, user image, photo
 
 **Deleted User**:
-A User who removed themselves for good; nobody can bring them back, and signing in again makes a new User with nothing of the old one. The Events they hosted and their Game library are gone for everyone, removed outright and not kept as Deleted Events. In a finished Event of another Host they stay a Player of their Party, without a name or a Profile picture, so its Results and Winners stay whole; of an Event that has not finished they are no longer a Member, and what they did there stays in the Activity feed and the Chat under no name. Everything they typed is gone: their Messages' text, their Votes with their Notes, their Team word (UI: „Konto löschen“, „Gelöschtes Konto“).
+A User removed for good, by themselves or by the Platform admin; nobody can bring them back, and signing in again makes a new User with nothing of the old one. The Events they hosted and their Game library are gone for everyone, removed outright and not kept as Deleted Events. In a finished Event of another Host they stay a Player of their Party, without a name or a Profile picture, so its Results and Winners stay whole; of an Event that has not finished they are no longer a Member, and what they did there stays in the Activity feed and the Chat under no name. Everything they typed is gone: their Messages' text, their Votes with their Notes, their Team word (UI: „Konto löschen“, „Gelöschtes Konto“).
 _Avoid_: Deleted account, deactivated User, banned User, anonymous User
 
 ## Events
