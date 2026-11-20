@@ -193,6 +193,12 @@ describe('glossary words in the copy', () => {
     expect(RETIRED['Termin festlegen']).toBe('Termin fixieren')
   })
 
+  // #668: the Emote bar's names are the four ids plus its toolbar's name, the send label and the wait text; the wait is a description of the buttons, not a toast.
+  it('keeps the emote namespace to the bar’s seven keys, with „Kurz warten“ as the wait', () => {
+    expect(Object.keys(de.emote).sort()).toEqual(['angry', 'clap', 'label', 'roar', 'send', 'tears', 'wait'])
+    expect(byKey.get('emote.wait')).toBe('Kurz warten')
+  })
+
   it('finds the Unreleased section it checks', () => {
     expect(unreleased).not.toBe('')
   })

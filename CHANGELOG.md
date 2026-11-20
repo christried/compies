@@ -2,6 +2,26 @@
 
 ## [Unreleased]
 
+## [0.18.0] - 2026-11-20 – Chat
+
+Dein Event hat jetzt einen Chat: Alle schreiben und lesen live mit, auch von der Tribüne. Und auf dem Spielbrett schickst du Emotes, die über deinem Avatar aufsteigen und mit eingeschaltetem Ton auch klingen.
+
+### Neu
+
+- **Emotes:** Auf dem Spielbrett schickst du ein Emote: Klatschen, Freudentränen, Wütend oder Brüller. Alle, die gerade das Spielbrett sehen, sehen es über deinem Avatar aufsteigen, im Team und auf der Tribüne. Danach wartest du zwei Sekunden bis zum nächsten. Bei reduzierter Bewegung erscheint es an Ort und Stelle. Emotes werden nicht gespeichert. ([#668](https://github.com/christried/compies/issues/668))
+- **Emotes klingen:** Mit eingeschaltetem Ton hörst du zu jedem Emote einen eigenen kurzen Ton, auch wenn du das Spielbrett gerade nicht siehst. Deine eigenen Emotes hörst du in voller Lautstärke, die der anderen leiser. Wenn sehr viele Emotes auf einmal kommen, bleiben die überzähligen still. Der Schalter „Ton“ schaltet auch diese Töne aus. ([#770](https://github.com/christried/compies/issues/770))
+- **Der Chat:** Im Seitenfeld deines Events gibt es jetzt den Chat, das eine Gespräch des ganzen Events. Alle schreiben mit, auch von der Tribüne, in jeder Phase bis zum Ende des Events, und alle lesen live mit. Eine Nachricht darf 500 Zeichen lang sein, Enter schickt sie ab, Zeilenumbrüche werden zu Leerzeichen. Eine Adresse mit http oder https wird zum Link, der in einem neuen Tab öffnet. Klappt das Senden nicht, bleibt dein Text stehen und du schickst ihn mit einem Klick noch einmal. Eine neue Nachricht macht keinen Ton und schickt keine Benachrichtigung. ([#667](https://github.com/christried/compies/issues/667))
+- **Der Chat auf dem Handy:** In der unteren Leiste auf dem Handy gibt es jetzt den Reiter „Chat“, zwischen „Tabelle“ und „Aktivität“. Er zeigt den ganzen Chat mit dem Eingabefeld über der Tastatur. Eine Zahl am Reiter sagt, wie viele neue Nachrichten kamen, während du etwas anderes angesehen hast; deine eigenen zählen nicht. ([#765](https://github.com/christried/compies/issues/765))
+- **Eigene Nachrichten löschen:** Im Chat löschst du deine eigenen Nachrichten, auch nach dem Ende des Events. Sie verschwinden bei dir sofort, und mit „Rückgängig“ holst du sie in den ersten 5 Sekunden zurück. Danach steht bei allen an ihrer Stelle „Gelöscht“. ([#763](https://github.com/christried/compies/issues/763))
+- **Der Host löscht jede Nachricht:** Als Host löschst du im Chat jede Nachricht, auch die der anderen und auch nach dem Ende des Events. Mit „Rückgängig“ holst du sie in den ersten 5 Sekunden zurück. An der Stelle einer Nachricht von jemand anderem steht danach bei allen „Vom Host gelöscht“. ([#764](https://github.com/christried/compies/issues/764))
+
+### Geändert
+
+- **Das Seitenfeld hat neue Tabs:** Auf dem Computer heißen die Tabs des Seitenfelds jetzt „Chat“, „Aktivität“ und „Tabelle“, und es öffnet sich auf dem Chat. ([#667](https://github.com/christried/compies/issues/667))
+- **Zähler im Seitenfeld:** Auf dem Computer zeigen die Tabs „Chat“ und „Aktivität“ im Seitenfeld jetzt eine Zahl, wenn dort etwas Neues steht, während du einen anderen Tab ansiehst. Deine eigenen Nachrichten zählen nicht. ([#778](https://github.com/christried/compies/issues/778))
+- **Datenschutzerklärung:** Sie beschreibt jetzt den Chat und die Emotes: Nachrichten werden mit dem Event gespeichert und von allen Mitgliedern gelesen, eine gelöschte Nachricht verliert sofort ihren Text, und Emotes werden nicht gespeichert. ([#775](https://github.com/christried/compies/issues/775))
+- **Meldungen warten auf die Tastatur:** Eine Meldung am unteren Rand bleibt stehen, solange du mit der Tab-Taste zu ihr unterwegs bist oder auf ihr stehst. So erreichst du „Rückgängig“ im Chat auch mit der Tastatur, bevor die Meldung verschwindet. ([#867](https://github.com/christried/compies/issues/867))
+
 ## [0.17.0] - 2026-11-19 – Klang
 
 Mit eingeschaltetem Ton hörst du jetzt auch die Münze, die Tabelle, das Spielbrett und die Siegerehrung. Und die App-Figur hat eine Stimme: Am Glücksrad fiebert sie mit, im Rundgang piept sie zur Begrüßung.

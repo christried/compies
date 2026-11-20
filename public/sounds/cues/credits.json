@@ -203,6 +203,30 @@
       "source": "scripts/cue-recipes/tour.mjs, Rezept gleiter-mit-wobble",
       "author": null,
       "licence": "generated"
+    },
+    "emo-clap": {
+      "candidate": "drei-klatscher",
+      "source": "scripts/cue-recipes/emote.mjs, Rezept drei-klatscher",
+      "author": null,
+      "licence": "generated"
+    },
+    "emo-haha": {
+      "candidate": "quietschtier",
+      "source": "scripts/cue-recipes/emote.mjs, Rezept quietschtier",
+      "author": null,
+      "licence": "generated"
+    },
+    "emo-grr": {
+      "candidate": "puls-rasseln",
+      "source": "scripts/cue-recipes/emote.mjs, Rezept puls-rasseln",
+      "author": null,
+      "licence": "generated"
+    },
+    "emo-roar": {
+      "candidate": "dino-schnauben",
+      "source": "scripts/cue-recipes/emote.mjs, Rezept dino-schnauben",
+      "author": null,
+      "licence": "generated"
     }
   }
 }

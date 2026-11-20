@@ -223,6 +223,21 @@ describe('ActivityFeed', () => {
     expect(wrapper.text()).not.toContain('konnte nicht geladen')
   })
 
+  it('scrolls to its newest entry when it turns active, since a feed that loaded in a hidden tab could not (#761)', async () => {
+    const feed = serveFeed([entry('a', 3), entry('b', 2)])
+    const wrapper = await mountSuspended(ActivityFeed, { props: { slug: feed.slug, room: fakeRoom().room, active: false } })
+    await vi.waitFor(() => expect(lines(wrapper)).toHaveLength(2))
+    const log = wrapper.get('[role="log"]').element as HTMLElement
+    Object.defineProperty(log, 'scrollHeight', { configurable: true, value: 640 })
+    const scrollTo = vi.fn()
+    log.scrollTo = scrollTo as unknown as typeof log.scrollTo
+
+    await wrapper.setProps({ active: true })
+    await settle()
+
+    expect(scrollTo).toHaveBeenCalledWith({ top: 640 })
+  })
+
   describe('the end of the Event (#277)', () => {
     const at = (minutesAgo: number) => new Date(Date.now() - minutesAgo * 60_000).toISOString()
     const sessions: FeedSession[] = [{ id: 's1', number: 2, startedAt: at(50), endedAt: at(20) }]

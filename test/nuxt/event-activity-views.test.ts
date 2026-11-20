@@ -28,7 +28,15 @@ let testNumber = 0
 function serveEvent() {
   testNumber += 1
   const slug = `activity-views-${testNumber}`
-  const served = { feedReads: 0 }
+  const served = { feedReads: 0, chatReads: 0 }
+  // The Chat's read (#761): the side panel opens on the Chat, and an unregistered read would just fail quietly.
+  registerEndpoint(`/api/e/${slug}/messages`, {
+    method: 'GET',
+    handler: () => {
+      served.chatReads += 1
+      return { messages: [], next: null }
+    },
+  })
   registerEndpoint(`/api/e/${slug}`, { method: 'GET', handler: () => ({ ...view(slug, []), event: { slug, name: 'Freitags-Zocken', phase: 'poll', isHost: false } }) })
   registerEndpoint(`/api/e/${slug}/activity`, {
     method: 'GET',
@@ -77,21 +85,34 @@ describe('the Activity feed on the Event page', () => {
   describe('from 980 px', () => {
     beforeEach(() => stubScreen(true))
 
-    it('is the tab „Aktivität“, after „Tabelle“, of a side panel built as tabs: tablist, tab, tabpanel with the log', async () => {
+    it('is the tab „Aktivität“, between „Chat“ and „Tabelle“, of a side panel built as tabs: tablist, tab, tabpanel with the log', async () => {
       const { page, served } = await mountEvent()
 
       const panel = page.get('aside[aria-label="Seitenleiste"]')
       const tab = panel.findAll('[role="tablist"] [role="tab"]')[1]!
-      expect(panel.findAll('[role="tab"]')).toHaveLength(2)
+      expect(panel.findAll('[role="tab"]')).toHaveLength(3)
       expect(tab.text()).toBe('Aktivität')
+      // The panel opens on the Chat (#761); the feed's tab is one click away.
+      expect(tab.attributes('aria-selected')).toBe('false')
+      await tab.trigger('click')
       expect(tab.attributes('aria-selected')).toBe('true')
       const tabpanel = panel.get(`[id="${tab.attributes('aria-controls')}"]`)
       expect(tabpanel.attributes('role')).toBe('tabpanel')
       expect(tabpanel.attributes('aria-labelledby')).toBe(tab.attributes('id'))
       expect(tabpanel.get('[role="log"]').attributes('aria-live')).toBe('polite')
-      // The feed is mounted once: one log, one read.
-      expect(page.findAll('[role="log"]')).toHaveLength(1)
+      // The feed is mounted once: one log of its own beside the Chat's, one read.
+      expect(page.findAll('[role="log"][aria-label="Aktivität"]')).toHaveLength(1)
       expect(served.feedReads).toBe(1)
+    })
+
+    it('opens the panel on „Chat“, in the order Chat, Aktivität, Tabelle, and reads the Chat once', async () => {
+      const { page, served } = await mountEvent()
+
+      const tabs = page.get('aside[aria-label="Seitenleiste"]').findAll('[role="tab"]')
+      expect(tabs.map(tab => tab.text())).toEqual(['Chat', 'Aktivität', 'Tabelle'])
+      expect(tabs.map(tab => tab.attributes('aria-selected'))).toEqual(['true', 'false', 'false'])
+      expect(page.find('[role="log"][aria-label="Chatverlauf"]').exists()).toBe(true)
+      expect(served.chatReads).toBe(1)
     })
 
     it('keeps the Event stage whole, with the Head\'s h1 and no Aktivität h1', async () => {
@@ -100,7 +121,7 @@ describe('the Activity feed on the Event page', () => {
       expect(page.findAll('h1').map(heading => heading.text())).toEqual(['Gleich geht’s los'])
     })
 
-    it('counts nothing while the panel shows the feed, so a narrowed window starts at zero', async () => {
+    it('keeps the count the panel took when the window narrows (#778)', async () => {
       const resize = stubScreen(true)
       const { page } = await mountEvent()
 
@@ -108,9 +129,9 @@ describe('the Activity feed on the Event page', () => {
       resize(false)
       await settle()
 
-      expect(tabs(page)[2]!.attributes('aria-label')).toBeUndefined()
+      expect(tabs(page)[3]!.attributes('aria-label')).toBe('Aktivität, 1 neu')
       await joined('b')
-      expect(tabs(page)[2]!.attributes('aria-label')).toBe('Aktivität, 1 neu')
+      expect(tabs(page)[3]!.attributes('aria-label')).toBe('Aktivität, 2 neu')
     })
 
     it('says what the feed promises while nothing happened', async () => {
@@ -123,22 +144,24 @@ describe('the Activity feed on the Event page', () => {
   describe('on a phone', () => {
     beforeEach(() => stubScreen(false))
 
-    it('has three tabs, Event, Tabelle and Aktivität, and starts on the Event with no feed mounted', async () => {
+    it('has four tabs, Event, Tabelle, Chat and Aktivität, and starts on the Event with no feed mounted', async () => {
       const { page, served } = await mountEvent()
 
-      expect(tabs(page).map(tab => tab.text())).toEqual(['Event', 'Tabelle', 'Aktivität'])
-      expect(tabs(page).map(tab => tab.attributes('aria-current'))).toEqual(['page', undefined, undefined])
+      expect(tabs(page).map(tab => tab.text())).toEqual(['Event', 'Tabelle', 'Chat', 'Aktivität'])
+      expect(tabs(page).map(tab => tab.attributes('aria-current'))).toEqual(['page', undefined, undefined, undefined])
       expect(page.find('[role="log"]').exists()).toBe(false)
       expect(page.find('[role="tab"]').exists()).toBe(true)
       expect(served.feedReads).toBe(0)
+      // The Chat's view is mounted only while shown (#765): nothing of it mounts or is read before.
+      expect(served.chatReads).toBe(0)
     })
 
     it('switches to the feed with its own h1, and back to the stage', async () => {
       const { page, served } = await mountEvent()
 
-      await tabs(page)[2]!.trigger('click')
+      await tabs(page)[3]!.trigger('click')
 
-      expect(tabs(page).map(tab => tab.attributes('aria-current'))).toEqual([undefined, undefined, 'page'])
+      expect(tabs(page).map(tab => tab.attributes('aria-current'))).toEqual([undefined, undefined, undefined, 'page'])
       expect(page.findAll('h1').map(heading => heading.text())).toEqual(['Aktivität'])
       await vi.waitFor(() => expect(page.find('main [role="log"]').exists()).toBe(true))
       expect(page.findAll('[role="log"]')).toHaveLength(1)
@@ -150,18 +173,18 @@ describe('the Activity feed on the Event page', () => {
       expect(page.find('[role="log"]').exists()).toBe(false)
     })
 
-    it('forgets the count when the layout turns wide', async () => {
+    it('keeps the count of the feed when the layout turns wide and narrow again, since the panel opens on the Chat (#778)', async () => {
       const resize = stubScreen(false)
       const { page } = await mountEvent()
       await joined('a')
-      expect(tabs(page)[2]!.attributes('aria-label')).toBe('Aktivität, 1 neu')
+      expect(tabs(page)[3]!.attributes('aria-label')).toBe('Aktivität, 1 neu')
 
       resize(true)
       await settle()
       resize(false)
       await settle()
 
-      expect(tabs(page)[2]!.attributes('aria-label')).toBeUndefined()
+      expect(tabs(page)[3]!.attributes('aria-label')).toBe('Aktivität, 1 neu')
     })
 
     it('counts the entries that arrive while the Event tab is shown, says so in the name, and resets when the feed opens', async () => {
@@ -170,23 +193,23 @@ describe('the Activity feed on the Event page', () => {
       await joined('a')
       await joined('b')
 
-      const activity = tabs(page)[2]!
+      const activity = tabs(page)[3]!
       expect(activity.attributes('aria-label')).toBe('Aktivität, 2 neu')
       expect(activity.text()).toContain('2')
 
       await activity.trigger('click')
 
-      expect(tabs(page)[2]!.attributes('aria-label')).toBeUndefined()
-      expect(tabs(page)[2]!.text()).toBe('Aktivität')
+      expect(tabs(page)[3]!.attributes('aria-label')).toBeUndefined()
+      expect(tabs(page)[3]!.text()).toBe('Aktivität')
 
       // Entries that arrive while the feed is open are read at once and are not counted.
       await vi.waitFor(() => expect(page.find('main [role="log"]').exists()).toBe(true))
       await joined('c')
       await tabs(page)[0]!.trigger('click')
-      expect(tabs(page)[2]!.attributes('aria-label')).toBeUndefined()
+      expect(tabs(page)[3]!.attributes('aria-label')).toBeUndefined()
 
       await joined('d')
-      expect(tabs(page)[2]!.attributes('aria-label')).toBe('Aktivität, 1 neu')
+      expect(tabs(page)[3]!.attributes('aria-label')).toBe('Aktivität, 1 neu')
     })
   })
 })

@@ -1,4 +1,5 @@
 import { MD_QUERY } from '../composables/useMediaQuery'
+import { EMOTE_PAGE_WAIT_MS } from '~~/shared/emote'
 
 /** Whether motion is reduced, by the device or the in-app setting: the tokens put it in `--cp-motion` for JS. */
 export function reducedMotion() {
@@ -57,6 +58,60 @@ export function hatPop(element: Element): void {
     [{ transform: 'scale(0) rotate(-12deg)' }, { transform: 'scale(1) rotate(0deg)' }],
     { duration: motionMs('--cp-dur-base', '220ms'), easing: motionToken('--cp-ease-pop', 'cubic-bezier(.34,1.56,.64,1)') },
   )
+}
+
+/**
+ * A Message that arrived in the Chat (#761, 02-components § ChatPanel: „new message `y 8→0, fade` `dur-base`“): it rises 8 px into place while it fades in. 04-motion has no Chat entry, so the curve
+ * is the UI default `--cp-ease-out`, the same pick `emoteRise` makes. Under reduced motion the opacity alone (04-motion § UI enters: „Reduced: opacity only“), in the same time.
+ * Returns the animation, or nothing where an element cannot animate.
+ */
+export function chatRise(element: Element): Animation | undefined {
+  if (typeof element.animate !== 'function') return undefined
+  const options = { duration: motionMs('--cp-dur-base', '220ms'), easing: motionToken('--cp-ease-out', 'cubic-bezier(.16,1,.3,1)'), fill: 'both' } as const
+  if (reducedMotion()) return element.animate([{ opacity: 0 }, { opacity: 1 }], options)
+  return element.animate([{ opacity: 0, transform: 'translateY(8px)' }, { opacity: 1, transform: 'translateY(0)' }], options)
+}
+
+// Emotes (04-motion § Emote rise, #668). Web Animations, not GSAP (ADR 0015): a picture that rises once and is gone.
+
+/** The rise of an Emote: 1.4 s (04-motion: „Total 1.4“). `FloatingEmote` lets go of its element this long after it starts (plus a frame's grace). */
+export const EMOTE_RISE_MS = 1400
+/** The rise under reduced motion: the pop in place 0.2 s, the hold 0.8 s, the fade 0.3 s. */
+export const EMOTE_REDUCED_MS = 1300 // 0.2 pop + 0.8 hold + 0.3 fade
+
+/**
+ * An Emote's picture rising above its sender's avatar: `y 10→−6, scale .4→1.15, opacity 0→1` (the pop, to 0.15 s), `y −6→−44` (to 0.8 s), `y −64, opacity 0` (to 1.4 s).
+ * The handoff's times are seconds, so the offsets are their fractions of the run. The pop is physical and takes `--cp-ease-pop` (01-tokens: „emotes“); the climb and the
+ * fade take `--cp-ease-out`, a pick of this build, since 04-motion names no curve for them. Under reduced motion the picture pops in place and fades, with no geometry.
+ * Returns the animation (its `finished` ends the rise), or nothing where an element cannot animate.
+ */
+export function emoteRise(element: Element): Animation | undefined {
+  if (typeof element.animate !== 'function') return undefined
+  const out = motionToken('--cp-ease-out', 'cubic-bezier(.16,1,.3,1)')
+  if (reducedMotion()) {
+    return element.animate([
+      { transform: 'scale(.8)', opacity: 0, offset: 0, easing: out },
+      { transform: 'scale(1)', opacity: 1, offset: 0.2 / 1.3 },
+      { transform: 'scale(1)', opacity: 1, offset: 1.0 / 1.3 },
+      { transform: 'scale(1)', opacity: 0, offset: 1 },
+    ], { duration: EMOTE_REDUCED_MS, fill: 'both' })
+  }
+  return element.animate([
+    { transform: 'translateY(10px) scale(.4)', opacity: 0, offset: 0, easing: motionToken('--cp-ease-pop', 'cubic-bezier(.34,1.56,.64,1)') },
+    { transform: 'translateY(-6px) scale(1.15)', opacity: 1, offset: 0.15 / 1.4, easing: out },
+    { transform: 'translateY(-44px) scale(1)', opacity: 1, offset: 0.8 / 1.4, easing: out },
+    { transform: 'translateY(-64px) scale(1)', opacity: 0, offset: 1 },
+  ], { duration: EMOTE_RISE_MS, fill: 'both' })
+}
+
+/**
+ * The ring of a tapped Emote button draining over the page's wait, `EMOTE_PAGE_WAIT_MS` (02-components § EmoteBar: „ring stroke-dashoffset linear 2 s“; the margin of #848 makes it 2.15 s, so the ring and the buttons agree): the circle's `pathLength` is 1, so the
+ * dash offset runs 0 → 1. It plays under reduced motion too: the ring is information (the hold-to-confirm precedent, 04-motion: „identical fill“). The wait itself is
+ * the bar's timer, not this animation.
+ */
+export function emoteRing(element: Element): void {
+  if (typeof element.animate !== 'function') return
+  element.animate([{ strokeDashoffset: 0 }, { strokeDashoffset: 1 }], { duration: EMOTE_PAGE_WAIT_MS, easing: 'linear' })
 }
 
 /** How an element travels: `glide` to a new place, `bounce` back after a refusal. */

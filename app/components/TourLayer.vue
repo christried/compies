@@ -7,7 +7,7 @@ import { tourFace, tourMove, tourThing, type TourStep } from '~~/shared/tour'
 // The Tour's layer (#647, #460, ADR 0017): the controller of the Rundgang. It measures the thing a step points at, asks `placeTour` where the hole and the
 // bubble stand, scrolls the page to it, follows it through resizing and scrolling, and plays the note's motion (17-rundgang.md); the pieces it moves are
 // `TourSpotlight` (the hole, its shadow is the dark), `TourBubble` (the box with its tail) and `TourFace` (Compibert on the bubble's corner). It decides nothing
-// about when it is open: `useTour` passes `open` and says what was seen, and `over` is emitted at once, so the page behind takes input again while the layer
+// about when it is open: `useTour` passes `open` and says what was seen, it also says which step shows (`show`, #766) and decides nothing about the page, and `over` is emitted at once, so the page behind takes input again while the layer
 // plays its exit. The behaviour that stays from #647: the focus goes in and back, Tab stays inside, Esc skips, the arrows walk, each step is announced.
 // The layer is fixed on the modal step of the scale (over the sticky tab bar, the header and the dock, under the toasts) and is its own shield: a click outside
 // the bubble does nothing. The page behind is inert through AppShell's `covered`, so the keys are taken from the document.
@@ -17,6 +17,7 @@ const props = defineProps<{
 }>()
 const emit = defineEmits<{
   over: [how: 'finished' | 'skipped']
+  show: [step: TourStep]
 }>()
 
 const { t } = useI18n()
@@ -136,9 +137,13 @@ function scrollNow(y: number) {
 
 /** Puts the placement of step `index` on screen without motion. */
 function commit(next: TourPlacement, index: number) {
+  // A step shows once: on the first placement of a start and when the index moves, not when `replace` places the same step again (#766).
+  const showing = placement.value === null || shownAt.value !== index
   placement.value = next
   hole.value = next.hole
   shownAt.value = index
+  const shownStep = props.steps[index]
+  if (showing && shownStep) emit('show', shownStep)
 }
 
 // --- Motion ------------------------------------------------------------------------------------------------------------------------------------------

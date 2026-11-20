@@ -46,6 +46,8 @@ export interface CueLogEntry {
   outcome: 'scheduled' | 'late' | 'skipped' | 'cancelled'
   /** The playback rate it was handled at: 1 = the file's own pitch (#743). */
   rate: number
+  /** The gain the cue was handled at, 0 to 1: `CUE_VOLUME[id] / 100`, times the factor of a `playNow` (#770). A skipped cue carries what it would have had. */
+  volume: number
   /** How many times the cue was moved after it was scheduled (the clock's offset changed, #594); absent when it never was. */
   moved?: number
 }
@@ -65,9 +67,10 @@ export interface CuePlayer {
    * Plays a cue `delayMs` from now, for one that the arrival of a read causes (`veto-seal`, a set game's `veto-open`, #532): it is no part of
    * any plan and never cancelled by one. Gated like every cue: Ton off plays nothing and logs nothing; a context that does not run, a file
    * that is not decoded yet or one that failed is logged `skipped`; otherwise it starts at the context's `currentTime` plus the delay and is
-   * logged `scheduled`. It plays at the file's own pitch: a rate comes only with a plan's `Cue.rate` (#743). Ton off, and `dispose`, stop a source it started, pending or sounding.
+   * logged `scheduled`. It plays at the file's own pitch: a rate comes only with a plan's `Cue.rate` (#743). `factor` scales the cue's volume for this one play
+   * (an Emote of another Member plays softer, #770), and the log line carries the result. Ton off, and `dispose`, stop a source it started, pending or sounding.
    */
-  playNow: (id: CueId, delayMs?: number) => void
+  playNow: (id: CueId, delayMs?: number, factor?: number) => void
   /** Looks at what is pending again against the clocks as they are now: moves what moved (#594). */
   refresh: () => void
   /** Asks the context to run (it needs a gesture) and reconciles. It never rejects. */
@@ -125,8 +128,9 @@ export function createCuePlayer(options: CuePlayerOptions): CuePlayer {
 
   const running = () => context.state === 'running'
 
-  function record(cue: Cue, outcome: CueLogEntry['outcome'], when: number): CueLogEntry {
-    const line: CueLogEntry = { id: cue.id, at: cue.at, when, currentTime: context.currentTime, perf: globalThis.performance?.now() ?? 0, outcome, rate: cue.rate ?? 1 }
+  function record(cue: Cue, outcome: CueLogEntry['outcome'], when: number, factor = 1): CueLogEntry {
+    const volume = CUE_VOLUME[cue.id] / 100 * factor
+    const line: CueLogEntry = { id: cue.id, at: cue.at, when, currentTime: context.currentTime, perf: globalThis.performance?.now() ?? 0, outcome, rate: cue.rate ?? 1, volume }
     log.push(line)
     if (log.length > LOG_LIMIT) log.splice(0, log.length - LOG_LIMIT)
     return line
@@ -188,13 +192,16 @@ export function createCuePlayer(options: CuePlayerOptions): CuePlayer {
     immediates.clear()
   }
 
-  /** source -> the cue's own gain -> bus, started at `when` on the audio clock at playback rate `rate` (1 = the file's own pitch). */
-  function start(id: CueId, buffer: AudioBuffer, when: number, rate: number): AudioBufferSourceNode {
+  /**
+   * source -> the cue's own gain -> bus, started at `when` on the audio clock at playback rate `rate` (1 = the file's own pitch). `factor` scales the
+   * cue's volume for this one play (an Emote of another Member is softer, #770); a plan never passes one.
+   */
+  function start(id: CueId, buffer: AudioBuffer, when: number, rate: number, factor = 1): AudioBufferSourceNode {
     const source = context.createBufferSource()
     source.buffer = buffer
     source.playbackRate.value = rate
     const gain = context.createGain()
-    gain.gain.value = CUE_VOLUME[id] / 100
+    gain.gain.value = CUE_VOLUME[id] / 100 * factor
     source.connect(gain)
     gain.connect(bus)
     source.start(when)
@@ -342,19 +349,19 @@ export function createCuePlayer(options: CuePlayerOptions): CuePlayer {
         if (asks(id, now)) load(id)
       }
     },
-    playNow(id, delayMs = 0) {
+    playNow(id, delayMs = 0, factor = 1) {
       if (disposed || !enabled) return
       const cue: Cue = { id, at: serverNow() + delayMs }
       const slot = buffers.get(id)
       if (!running() || slot?.state !== 'ready') {
         // A seal that waits for a download would sound late: a file that is not there yet is asked for, and this cue is skipped.
         if (asks(id, serverNow())) load(id)
-        record(cue, 'skipped', context.currentTime)
+        record(cue, 'skipped', context.currentTime, factor)
         return
       }
       const when = context.currentTime + delayMs / 1000
-      const source = start(id, slot.buffer, when, 1)
-      const held: Immediate = { source, when, line: record(cue, 'scheduled', when) }
+      const source = start(id, slot.buffer, when, 1, factor)
+      const held: Immediate = { source, when, line: record(cue, 'scheduled', when, factor) }
       immediates.add(held)
       source.onended = () => immediates.delete(held)
     },

@@ -16,11 +16,14 @@ import { requireUser } from './user'
 export type EventRow = typeof events.$inferSelect
 
 export interface ChangeEventOptions extends LoadEventOptions {
-  /** Runs once the User is known and before the body is read, e.g. a rate limit. It throws to refuse. */
-  beforeBody?: (user: AuthUser) => void
+  /**
+   * Runs once the User is known and before the body is read, e.g. a rate limit. It throws to refuse. `now` is the request's clock, for a limiter a test must
+   * move (the Messages', #758); it is not the change's `now`, which is read after the lock.
+   */
+  beforeBody?: (user: AuthUser, now: Date) => void
   /**
    * Whether the change may run in a finished Event (default false: a finished Event is read-only for good, #277). Only the Host rotating
-   * the Invite link and starting the Award ceremony do (#309); every other change answers `wrong_phase` there, so no write route can forget the rule.
+   * the Invite link, starting the Award ceremony and deleting the Event, and a Message's deleter (the Host any, a Member their own, #760) do (#309); every other change answers `wrong_phase` there, so no write route can forget the rule.
    */
   allowFinished?: boolean
   /**
@@ -68,7 +71,7 @@ export async function changeEvent<T>(
   change: (ctx: EventChange) => Promise<T>,
 ): Promise<T> {
   const user = await requireUser(event)
-  beforeBody?.(user)
+  beforeBody?.(user, useClock(event).now())
   const body: unknown = await readBody(event)
   const slug = getRouterParam(event, 'slug') ?? ''
   const messages: RoomMessage[] = []

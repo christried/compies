@@ -2,14 +2,14 @@
 import LuckyWheel from '~/components/LuckyWheel.vue'
 import VetoWindow from '~/components/VetoWindow.vue'
 import {
-  CANDIDATE_BASE, CUE_BRIEF, MOMENT_LABEL, MOMENT_OF, MOMENT_SETUP, arrivalCues, buildCoinRun, buildRun, candidatesOf, ceremonyRun, choicesReport, configFor, emptyChoices, stampCues, standingsChangeCues, dragRunCues, testCandidateOf, tourVoiceCues,
-  type ArrivalButton, type Candidate, type Choices, type Controls, type Moment, type Run,
+  CANDIDATE_BASE, CUE_BRIEF, MOMENT_LABEL, MOMENT_OF, MOMENT_SETUP, arrivalCues, buildCoinRun, buildRun, candidatesOf, ceremonyRun, choicesReport, configFor, emoteRunCues, emptyChoices, stampCues, standingsChangeCues, dragRunCues, testCandidateOf, tourVoiceCues,
+  type ArrivalButton, type Candidate, type Choices, type Controls, type EmoteListen, type Moment, type Run,
 } from '~/dev/listening-model'
 import { createCuePlayer, type CuePlayer } from '~/utils/cue-player'
 import { CUE_LENGTHS } from '~/utils/cue-lengths'
 import { countDurationMs } from '~/utils/motion'
 import { CUE_CREDITS_URL } from '~/utils/sound-credits'
-import { CUE_IDS, CUE_VOLUME, TICK_MIN_GAP_MS, type CueId } from '~/utils/sound-cues'
+import { CUE_IDS, CUE_VOLUME, OTHERS_EMOTE_VOLUME, TICK_MIN_GAP_MS, type CueId } from '~/utils/sound-cues'
 import type { WheelView } from '~~/shared/stage'
 
 // The listening page for the cue sounds (#534, the session of #535): a tool for the operator on `pnpm dev`, no design. It lists the
@@ -176,6 +176,12 @@ async function tourVoice() {
   for (const cue of tourVoiceCues()) armed.playNow(cue.id, cue.delayMs)
 }
 
+/** The test Emote (#770, #771): the own Emote, another Member's at 60 %, or three of them inside the room's window, through the real `emoteCue` and the real player. */
+async function emoteRun(id: CueId, listen: EmoteListen) {
+  if (!await ensureContext() || !armed) return
+  for (const cue of emoteRunCues(id, listen)) armed.playNow(cue.id, cue.delayMs, cue.factor)
+}
+
 /** A test ceremony (#743): the REAL plan of one Winner of four Parties on the player's ceremony source, sound only; the gag is the one of the cue's own button. */
 async function startCeremony(id: CueId) {
   if (!await ensureContext() || !armed) return
@@ -201,6 +207,8 @@ const MOMENT_RUNNERS: Record<Moment, (id: CueId) => void> = {
   ceremony: id => void startCeremony(id),
   // tour
   tour: () => void tourVoice(),
+  // emote
+  emote: id => void emoteRun(id, 'own'),
 }
 
 /** The cue's default moment with the current controls (a spin, a window, for `veto-seal` the own cast), after the controls its row of `MOMENT_SETUP` sets. */
@@ -266,7 +274,7 @@ async function copyReport() {
 }
 
 function refreshLog() {
-  logText.value = (armed?.log ?? []).slice(-24).map(line => `${new Date(line.at).toISOString().slice(11, 23)} ${line.id} ${line.outcome}`).join('\n')
+  logText.value = (armed?.log ?? []).slice(-24).map(line => `${new Date(line.at).toISOString().slice(11, 23)} ${line.id} ${line.outcome} ${Math.round(line.volume * 100)} %`).join('\n')
 }
 
 onMounted(() => {
@@ -309,6 +317,8 @@ onBeforeUnmount(() => {
 })
 
 const BUTTON = 'rounded border border-line bg-surface px-2 py-1 text-[14px] font-semibold text-ink'
+/** The 60 of the buttons for another Member's Emote (#771), read from the rule so the label cannot drift. */
+const OTHERS_PERCENT = Math.round(OTHERS_EMOTE_VOLUME * 100)
 const FIELD = 'rounded border border-line bg-surface px-1.5 py-0.5 text-ink'
 </script>
 
@@ -318,7 +328,7 @@ const FIELD = 'rounded border border-line bg-surface px-1.5 py-0.5 text-ink'
     data-testid="compies-listening-page"
   >
     <h1 class="m-0 text-[22px] font-extrabold">
-      Hörsitzung: die elf Töne
+      Hörsitzung: die Töne
     </h1>
     <p class="m-0 text-ink-2">
       Nur auf dem Entwicklungsserver. Kandidaten: <code>sound-candidates/</code> (manifest.json). Einen Kandidaten pro Ton markieren; der Kasten unten ist, was zurückgelesen wird.
@@ -537,6 +547,22 @@ const FIELD = 'rounded border border-line bg-surface px-1.5 py-0.5 text-ink'
             @click="arrive('reveal-2')"
           >
             Aufdecken: 2 Vetos
+          </button>
+        </template>
+        <template v-if="MOMENT_OF[id] === 'emote'">
+          <button
+            type="button"
+            :class="BUTTON"
+            @click="emoteRun(id, 'other')"
+          >
+            Emote eines anderen ({{ OTHERS_PERCENT }} %)
+          </button>
+          <button
+            type="button"
+            :class="BUTTON"
+            @click="emoteRun(id, 'burst')"
+          >
+            Drei in einer Sekunde (je {{ OTHERS_PERCENT }} %)
           </button>
         </template>
         <button

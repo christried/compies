@@ -4,7 +4,7 @@
 
 ### Issue tracker
 
-Issues and specs live in GitHub Issues on christried/compies (via `gh`). An idea that isn't grilled yet is an Idea issue (`enhancement`, `needs-triage`, no title prefix), captured with `/christried-capture-idea`. See `docs/agents/issue-tracker.md`.
+Issues and specs live in GitHub Issues on christried/compies (via `gh`). An idea that isn't grilled yet is an Idea issue (`enhancement`, `needs-triage`, no title prefix), captured with `/christried-capture-idea`; a bug report becomes a bug issue (`bug`, `needs-triage`, plus `urgent` when seen on production), captured with `/christried-capture-bug`. See `docs/agents/issue-tracker.md`.
 
 ### Triage labels
 

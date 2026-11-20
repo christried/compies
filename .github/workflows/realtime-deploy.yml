@@ -13,6 +13,8 @@ on:
       # The shared files the Worker imports (realtime/src, and what those import in turn, e.g. shared/realtime.ts
       # reaches shared/activity.ts). test/unit/realtime-deploy-paths.test.ts keeps this list complete.
       - 'shared/realtime.ts'
+      - 'shared/emote.ts'
+      - 'shared/chat.ts'
       - 'shared/activity.ts'
       - 'shared/board.ts'
       - 'shared/room-auth.ts'

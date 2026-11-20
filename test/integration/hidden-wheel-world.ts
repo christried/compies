@@ -108,6 +108,7 @@ export const EXPECTED_STATUS: Readonly<Record<string, Readonly<Record<string, nu
   // ADR 0006: a non-Member gets the missing-route answer.
   '/api/e/:slug': answers(200, 404, 200),
   '/api/e/:slug/activity': answers(200, 404, 200),
+  '/api/e/:slug/messages': answers(200, 404, 200),
   '/api/e/:slug/ics': answers(200, 404, 200),
   // A Member of a running Event gets `wrong_phase` (`beforeFinish`) before the format is read; a non-Member 404 from `loadEvent`.
   '/api/e/:slug/share-image': answers(409, 404, 409),

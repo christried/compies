@@ -119,6 +119,34 @@ describe('legal pages', () => {
     expect(retention!.text()).toContain('bleiben gespeichert, solange das Event besteht.')
   })
 
+  it('name the Chat and the Emotes: what is stored, who reads it, how a delete works, what the room keeps and that no Emote is stored (#775, spec #719)', async () => {
+    const page = await mountSuspended(DatenschutzPage, { route: '/datenschutz' })
+    const sections = page.findAll('section')
+    const sectionText = (heading: string) => sections.find(s => s.get('h2').text().startsWith(heading))!.text()
+
+    expect(sectionText('4.')).toContain('Stimmen und Anmerkungen, die Nachrichten im Chat eines Events, die Spiele in der Bibliothek jedes Hosts')
+    expect(sectionText('10.')).toContain('(z. B. Anmeldeversuche, Abstimmungen oder Nachrichten im Chat)')
+    expect(sectionText('10.')).toContain('Einen solchen Zähler führt auch die Live-Verbindung für Emotes (Abschnitt 21).')
+
+    const events = sectionText('11.')
+    expect(events).toContain('Jedes Event hat einen Chat. Jedes Mitglied, auch auf der Tribüne, kann dort Nachrichten mit bis zu 500 Zeichen schreiben, bis das Event abgeschlossen ist; danach bleibt der Chat lesbar. Zu jeder Nachricht speichern wir ihren Text, wer sie geschrieben hat und wann.')
+    expect(events).toContain('Im Aktivitäts-Feed stehen sie nicht.')
+    expect(events).toContain('können sie jederzeit löschen, auch nach dem Abschluss des Events. Ihr Text wird dann entfernt, und im Chat bleibt eine Zeile, die zeigt, dass die Nachricht gelöscht wurde und ob der Host oder die Person selbst sie gelöscht hat.')
+    expect(events).toContain('Compies ruft sie nicht selbst ab und zeigt keine Vorschau.')
+    expect(events).toContain('Emotes, die Mitglieder auf dem Spielbrett senden, speichert Compies nicht (Abschnitt 21).')
+
+    const retention = sectionText('16.')
+    expect(retention).toContain('Die Nachrichten des Chats bleiben ebenfalls gespeichert, solange das Event besteht. Löschst du eine Nachricht oder löscht der Host sie, wird ihr Text sofort in der Datenbank überschrieben und ist in Compies nirgends mehr gespeichert;')
+    expect(retention).toContain('Auf einem Gerät, das die Löschung nicht sofort erreicht, bleibt der Text bis zum nächsten Laden der Seite sichtbar.')
+    expect(retention.endsWith('Wir entfernen dann auch deine Nachrichten im Chat.')).toBe(true)
+
+    const live = sectionText('21.')
+    expect(live).toContain('Auch die Nachrichten des Chats gehen so an die Mitglieder: neue mit ihrem Text und der Person, die sie geschrieben hat, gelöschte nur als Hinweis, dass sie gelöscht wurden.')
+    expect(live).toContain('keine Nachrichten des Chats und keine Emotes; er reicht sie nur weiter.')
+    expect(live).toContain('Diese Zeitpunkte liegen nur im Arbeitsspeicher des Dienstes, nie in einer Datenbank oder Datei.')
+    expect(live).toContain('der Chat holt verpasste Nachrichten nach, sobald die Verbindung wieder steht.')
+  })
+
   it('name the Appearance stored with the User and the changeable Display name in section 6 (#405, spec #398)', async () => {
     const page = await mountSuspended(DatenschutzPage, { route: '/datenschutz' })
     const section = page.findAll('section').find(s => s.get('h2').text() === '6. Anmeldung über Discord oder Twitch und Anzeigename')
@@ -141,8 +169,8 @@ describe('legal pages', () => {
     expect(text.indexOf('Sitzungs-Cookies (Better Auth)')).toBeLessThan(text.indexOf(cookie))
     expect(text.indexOf(cookie)).toBeLessThan(text.indexOf('Lokaler Speicher (compies-sound)'))
     expect(section!.findAll('p')).toHaveLength(8)
-    // The one place the date is pinned: the day of the last change, 19 November 2026 (the cut of 0.16.0 to 0.17.0, §4, §5, §11 and §16 rewritten for each Host's library, #735).
-    expect(page.get('main').text()).toContain('Stand: 19. November 2026.')
+    // The one place the date is pinned: the day of the last change, 20 November 2026 (0.18, §4, §10, §11, §16 and §21 for the Chat and the Emotes, #775).
+    expect(page.get('main').text()).toContain('Stand: 20. November 2026.')
   })
 
   it('keep the Datenschutzerklärung\'s sections in order: the unnumbered intro, then 1 to 22 (#405)', async () => {

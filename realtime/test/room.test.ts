@@ -1,5 +1,5 @@
 import { exports } from 'cloudflare:workers'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { envelope, roomPath, type Envelope } from '../../shared/realtime'
 import { ROOM_CALL_SIGNATURE_HEADER, ROOM_CALL_TIMESTAMP_HEADER, signRoomCall, signRoomToken } from '../../shared/room-auth'
 import { INTERNAL_SECRET, TOKEN_SECRET, claims, connect, isRoomOwn, open, settle, track } from './room-helpers'
@@ -101,6 +101,20 @@ describe('publishing', () => {
     expect(first).toEqual([message])
     expect(second).toEqual([message])
     expect(other).toEqual([])
+  })
+
+  it('still publishes and answers the clock after an Emote went through the room (#767)', async () => {
+    const { socket, received } = await open('event-1', { sub: 'user-1' })
+    await settle()
+
+    socket.send(JSON.stringify({ type: 'emote.send', emote: 'clap' }))
+    await vi.waitFor(() => expect(received.filter(message => message.type === 'emote.sent')).toHaveLength(1))
+    const message = changed()
+    await publish('event-1', [message])
+    socket.send(JSON.stringify({ type: 'clock.ping', t0: 7 }))
+    await vi.waitFor(() => expect(received.filter(m => m.type === 'clock.pong')).toHaveLength(1))
+
+    expect(received.filter(m => m.type === 'event.changed')).toEqual([message])
   })
 
   it('sends several messages in order', async () => {

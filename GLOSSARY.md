@@ -27,7 +27,7 @@ _Avoid_: Username, nickname
 ## Events
 
 **Event**:
-One competition of a group, from its Date poll to its archive, played over one or more Sessions.
+One competition of a group, from its Date poll to its Finish, played over one or more Sessions.
 _Avoid_: Tournament, game night, lobby, match
 
 **Session**:
@@ -43,8 +43,8 @@ The number of Rounds an Event runs for, changeable by the Host until the Event f
 _Avoid_: Games per Session, number of games
 
 **Phase**:
-The lifecycle stage an Event is in: draft, date poll, date set, running, finished or archived. Before it runs, an Event is in date poll while any of its Sessions has no Date, and in date set once all have one.
-_Avoid_: Status, state
+The lifecycle stage an Event is in: draft, date poll, date set, running or finished. Before it runs, an Event is in date poll while any of its Sessions has no Date, and in date set once all have one. Finished is the last Phase: being listed in the Archive changes nothing about an Event.
+_Avoid_: Status, state, archived (no Event is ever archived; an Archived game is a game)
 
 **Invite link**:
 The only way for a User to become a Member of an Event; the Host can rotate it, which invalidates the old one.
@@ -306,6 +306,10 @@ _Avoid_: Close, end (a Session ends), archive
 A Party on the first rank of a finished Event's final Standings: one, or several when the Host finished a Tie as „Unentschieden“. Its Players are the ones in the Party at the Finish (UI: Sieger).
 _Avoid_: Champion, victor, leader (a Leading Party is first while the Event still runs)
 
+**Archive**:
+A User's list of the finished Events they are a Member of, whether they played or sat on the Stands. An Event enters it at its Finish and leaves it only as a Deleted Event (UI: Archiv).
+_Avoid_: History, past Events, „Meine Sessions“ (its rows are Events), archived Event
+
 **Share image**:
 The picture of a finished Event's Winners, Standings and played games, landscape or square, that a Member downloads or shares from their own device; only Members of the Event can get it (UI: Ergebnis-Bild). There is no public link to it: a public URL would show the Team words in the Team names to anyone who has it (decided 2026-11-05).
 _Avoid_: Poster, OG image, screenshot, share link
@@ -323,6 +327,10 @@ _Avoid_: Theme, colour mode, dark mode
 **Sound**:
 Whether a device plays the app's sound. It belongs to the device, not to the User (UI: Ton).
 _Avoid_: Mute, volume
+
+**Reduced motion**:
+Whether a device shows the calm variants of the app's large animations. It belongs to the device, not to the User. A device that asks for less motion itself always gets them, whatever the app's switch says (UI: Weniger Bewegung).
+_Avoid_: Animations off, motion setting
 
 **Tour**:
 A short guided look at an Event page for a User who opens an Event they do not host for the first time: Compibert points at one thing after another, and the User only looks and never has to act. Every User gets it once and can ask for it again; a reworked Tour is shown once more to everyone (UI: Rundgang).

@@ -603,6 +603,42 @@
         "licence": "generated",
         "note": "schneller Gleiter nach oben mit Wobble"
       }
-    ]
+    ],
+    "emo-clap": [
+      {
+        "name": "drei-klatscher",
+        "file": "emo-clap/drei-klatscher.wav",
+        "source": "scripts/cue-recipes/emote.mjs, Rezept drei-klatscher",
+        "author": null,
+        "licence": "generated",
+        "note": "drei trockene Klatscher, wie echte Hände"
+      }    ],
+    "emo-haha": [
+      {
+        "name": "quietschtier",
+        "file": "emo-haha/quietschtier.wav",
+        "source": "scripts/cue-recipes/emote.mjs, Rezept quietschtier",
+        "author": null,
+        "licence": "generated",
+        "note": "vier Quietscher wie ein Gummitier, mit Luft"
+      }    ],
+    "emo-grr": [
+      {
+        "name": "puls-rasseln",
+        "file": "emo-grr/puls-rasseln.wav",
+        "source": "scripts/cue-recipes/emote.mjs, Rezept puls-rasseln",
+        "author": null,
+        "licence": "generated",
+        "note": "rasselndes Grollen mit Rauschen"
+      }    ],
+    "emo-roar": [
+      {
+        "name": "dino-schnauben",
+        "file": "emo-roar/dino-schnauben.wav",
+        "source": "scripts/cue-recipes/emote.mjs, Rezept dino-schnauben",
+        "author": null,
+        "licence": "generated",
+        "note": "ein Schnauben, mehr Luft als Ton"
+      }    ]
   }
 }
