@@ -56,6 +56,21 @@ Every plan lives in GitHub Issues (the user, 2026-11-16): the user picks from th
 - **Find**: `gh issue list --state open --label enhancement --label needs-triage --json number,title,body` (`needs-triage` alone also finds incoming bug reports). The user picks from them what to grill next, and every grilling reads them.
 - **Picked up**: no topic stands twice in the open issues, and an open Idea issue is always one that is not grilled yet (the user, 2026-11-16). A grilling that takes an idea into a spec rewrites the Idea issue, in the same session that writes the spec: into the spec issue itself when the idea is the whole spec, else into one of the spec's tickets (new title, new body, `ready-for-agent` instead of `needs-triage`, a last line „Rewritten on <date> from the Idea issue of this number“), as #38 became 0.10-8. That is the preferred way. Only where no ticket matches the idea (it spreads over several tickets, or the grilling settled it without work) is the Idea issue closed, with a comment that links the spec and names the tickets that carry it. An idea too small for a spec is grilled with `/grill-with-docs` and built in the same session with `/implement`, or rewritten into a `ready-for-agent` ticket. An idea the user drops is closed as not planned (`gh issue close <n> --reason "not planned"`), with the reason in a comment.
 
+## Bugs
+
+A bug that isn't fixed yet is a **bug issue** (the user, 2026-11-20). `/christried-capture-bug` files one in about two minutes from a pasted report: redacted, a few quick questions, a draft, the user's OK.
+
+- **Title**: `<where>: <what goes wrong>`, in English, in the terms of `GLOSSARY.md`. A Release's own bug tickets keep their numbered titles (`0.13.2: …`).
+- **Labels**: `bug` + `needs-triage`, where `needs-triage` means "nobody has looked for the cause yet".
+- **Body**: what goes wrong; the expected behaviour with the source that documents it (a spec or ticket, the design hand-off, an ADR, `GLOSSARY.md`), or „not written down“; the steps; where (page, production version or staging, device and width, role); how often; the impact; the code it points at; where it came from; the next step. A report from a Player is that User's data: names, handles, Event titles and slugs, Notes, chat text and log lines with ids stay out, and people appear as roles (`CLAUDE.md` § Personal data). `gh` cannot attach an image, so a screenshot is described in words, and the user adds it on GitHub by hand once they have checked it.
+- **One bug per issue**: a report that holds several faults becomes several issues.
+- **Create**: `gh issue create --title "…" --label bug --label needs-triage --body-file body.md`. In a cloud session: the REST call of § In a cloud session with `-f "labels[]=bug" -f "labels[]=needs-triage"`.
+- **Find**: `gh issue list --state open --label bug --json number,title,body`.
+- **A missing feature** is an idea, not a bug: when nothing documents the expected behaviour and the code does what it was built to do, the report becomes an Idea issue (§ Ideas).
+- **A regression**, the fault of a closed issue back again, is a new bug issue whose body names the closed one: the closed issue stays with the Release that shipped its fix.
+- **Picked up**: a bug whose expected behaviour is documented goes to `/diagnosing-bugs`, and its fix is built with `/implement` or rewritten into a ticket of the next Release (`bug` + `ready-for-agent`, the last line as in § Ideas). A bug whose expected behaviour is disputed or not written down is grilled first (`/grill-with-docs`).
+- **Production**: a fix reaches `main` with the next Release (ADR 0007), however urgent the bug. When a bug blocks a game night on production, the capture says so, and whether it gets a Release of its own is the user's call.
+
 ## When a skill says "publish to the issue tracker"
 
 Create a GitHub issue.
