@@ -431,6 +431,26 @@ describe('ChatPanel', () => {
     expect(scrollTo).toHaveBeenCalledWith({ top: 640 })
   })
 
+  // The re-read when the connection opens again follows to the end for a reader who is there, and leaves a reader who scrolled up where they are (#881).
+  it.each([
+    ['a reader at the end', 600, true],
+    ['a reader scrolled up', 0, false],
+  ])('on a re-read, %s: whether the log scrolls to the end is %s', async (_who, scrollTop, followed) => {
+    const { wrapper, state, served } = await mountChat([live('a', SANNE, 0)])
+    const log = wrapper.find('[role="log"]').element as HTMLElement
+    for (const [key, value] of Object.entries({ scrollHeight: 640, scrollTop, clientHeight: 40 })) Object.defineProperty(log, key, { configurable: true, value })
+    const scrollTo = vi.fn()
+    log.scrollTo = scrollTo as unknown as typeof log.scrollTo
+
+    state.value = 'closed'
+    await settle()
+    state.value = 'open'
+    await vi.waitFor(() => expect(served.reads).toBe(2))
+    await settle()
+
+    expect(scrollTo.mock.calls.length > 0).toBe(followed)
+  })
+
   it('lets a Message that arrives rise once, 220 ms with an 8 px move, and none of the pages', async () => {
     const all = ['a', 'b', 'c'].map((id, index) => live(id, SANNE, index * 10))
     const { wrapper, send, state, served } = await mountChat(all, { pageSize: 2 })
