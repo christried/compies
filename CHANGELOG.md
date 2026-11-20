@@ -15,6 +15,7 @@
 
 - **Das Seitenfeld hat neue Tabs:** Auf dem Computer heißen die Tabs des Seitenfelds jetzt „Chat“, „Aktivität“ und „Tabelle“, und es öffnet sich auf dem Chat. ([#667](https://github.com/christried/compies/issues/667))
 - **Zähler im Seitenfeld:** Auf dem Computer zeigen die Tabs „Chat“ und „Aktivität“ im Seitenfeld jetzt eine Zahl, wenn dort etwas Neues steht, während du einen anderen Tab ansiehst. Deine eigenen Nachrichten zählen nicht. ([#778](https://github.com/christried/compies/issues/778))
+- **Datenschutzerklärung:** Sie beschreibt jetzt den Chat und die Emotes: Nachrichten werden mit dem Event gespeichert und von allen Mitgliedern gelesen, eine gelöschte Nachricht verliert sofort ihren Text, und Emotes werden nicht gespeichert. ([#775](https://github.com/christried/compies/issues/775))
 
 ## [0.17.0] - 2026-11-19 – Klang
 
