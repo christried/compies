@@ -211,20 +211,20 @@
       "licence": "generated"
     },
     "emo-haha": {
-      "candidate": "keuch-kichern",
-      "source": "scripts/cue-recipes/emote.mjs, Rezept keuch-kichern",
+      "candidate": "quietschtier",
+      "source": "scripts/cue-recipes/emote.mjs, Rezept quietschtier",
       "author": null,
       "licence": "generated"
     },
     "emo-grr": {
-      "candidate": "saege-knurren",
-      "source": "scripts/cue-recipes/emote.mjs, Rezept saege-knurren",
+      "candidate": "puls-rasseln",
+      "source": "scripts/cue-recipes/emote.mjs, Rezept puls-rasseln",
       "author": null,
       "licence": "generated"
     },
     "emo-roar": {
-      "candidate": "mini-dino",
-      "source": "scripts/cue-recipes/emote.mjs, Rezept mini-dino",
+      "candidate": "dino-schnauben",
+      "source": "scripts/cue-recipes/emote.mjs, Rezept dino-schnauben",
       "author": null,
       "licence": "generated"
     }
