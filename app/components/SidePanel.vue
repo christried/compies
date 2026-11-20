@@ -5,7 +5,7 @@ import type { Component } from 'vue'
 // (tablist, tab, tabpanel) with the tabs the page has, which are „Chat“, „Aktivität“ and „Tabelle“ (#274, #761); a tab added later is one more row
 // and nothing else changes. The panel of the current tab is the slot named after its key. The AppShell's `panel`
 // slot holds this; the arrow keys, Home and End move between the tabs.
-// A counting tab carries `badge` and `ariaLabel` (#778): the chip after its label, and the name „{label}, {n} neu“ while there is a count.
+// A counting tab carries `badge` and `ariaLabel` (#778): the chip on its icon, and the name „{label}, {n} neu“ while there is a count.
 export interface PanelTab { key: string, label: string, icon: Component, badge?: number, ariaLabel?: string }
 
 const props = defineProps<{
@@ -53,18 +53,21 @@ function move(event: KeyboardEvent) {
         @click="current = tab.key"
         @keydown="move"
       >
-        <AppIcon
-          :icon="tab.icon"
-          :size="18"
-          offset="var(--cp-hot)"
-        />
+        <!-- The chip sits on the icon's upper right corner and takes no width of the row (#853): the 340 px panel is full with the three tabs, so a chip in the row pushed „Tabelle“ out. A wider number grows to the left over the icon; its right edge stays 4 px before the label. -->
+        <span class="relative flex flex-none">
+          <AppIcon
+            :icon="tab.icon"
+            :size="18"
+            offset="var(--cp-hot)"
+          />
+          <span
+            v-if="tab.badge"
+            data-tab-count
+            class="absolute -top-2 -right-1 grid h-[18px] min-w-[18px] place-items-center rounded-pill border-[1.5px] border-surface bg-ink px-[5px] text-[10px] font-extrabold text-paper"
+            aria-hidden="true"
+          >{{ tab.badge }}</span>
+        </span>
         {{ tab.label }}
-        <span
-          v-if="tab.badge"
-          data-tab-count
-          class="ml-1.5 grid h-[18px] min-w-[18px] place-items-center rounded-pill border-[1.5px] border-surface bg-ink px-[5px] text-[10px] font-extrabold text-paper"
-          aria-hidden="true"
-        >{{ tab.badge }}</span>
       </button>
     </div>
     <div
