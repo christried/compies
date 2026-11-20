@@ -195,7 +195,7 @@ describe('the Chat view of a finished Event', () => {
 
     await vi.waitFor(() => expect(page.find('main [role="log"]').exists()).toBe(true))
     expect(page.find('main input').exists()).toBe(false)
-    expect(page.get('main').text()).toContain('Das Event ist beendet. Du kannst nur noch lesen.')
+    expect(page.get('main').text()).toContain('Das Event ist beendet. Das liest doch eh keiner mehr also ist Schreiben aus.')
   })
 })
 

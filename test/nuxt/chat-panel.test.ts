@@ -283,7 +283,7 @@ describe('ChatPanel', () => {
 
     const log = wrapper.find('[role="log"]')
     expect(log.attributes('aria-busy')).toBe('true')
-    expect(wrapper.text()).not.toContain('Noch still hier.')
+    expect(wrapper.text()).not.toContain('Nix los bis jetzt 🤷‍♂️')
     expect(wrapper.text()).not.toContain('konnte nicht geladen')
 
     release()
@@ -293,17 +293,17 @@ describe('ChatPanel', () => {
 
   it('shows the empty box for no Message, and a list for one and for two', async () => {
     const empty = await mountChat([])
-    expect(empty.wrapper.text()).toContain('Noch still hier.')
-    expect(empty.wrapper.text()).toContain('Sag Hallo. Alle im Event lesen mit.')
+    expect(empty.wrapper.text()).toContain('Nix los bis jetzt 🤷‍♂️')
+    expect(empty.wrapper.text()).toContain('Schreib den Gegnern doch mal, wie toll du sie findest.')
     expect(empty.wrapper.find('[data-message-id]').exists()).toBe(false)
 
     const one = await mountChat([live('a', SANNE, 0)])
     expect(texts(one.wrapper)).toEqual(['text a'])
-    expect(one.wrapper.text()).not.toContain('Noch still hier.')
+    expect(one.wrapper.text()).not.toContain('Nix los bis jetzt 🤷‍♂️')
 
     const two = await mountChat([live('a', SANNE, 0), live('b', LARSI, 5)])
     expect(texts(two.wrapper)).toEqual(['text a', 'text b'])
-    expect(two.wrapper.text()).not.toContain('Noch still hier.')
+    expect(two.wrapper.text()).not.toContain('Nix los bis jetzt 🤷‍♂️')
   })
 
   it('shows the longest text allowed whole, in one bubble', async () => {
@@ -541,13 +541,13 @@ describe('ChatPanel', () => {
       expect(served.reads).toBe(1)
     })
 
-    it('keeps the text of a failed send in its bubble under „Nicht gesendet. Erneut senden“, and the retry sends the same id and text, once', async () => {
+    it('keeps the text of a failed send in its bubble under „Nicht gesendet. Erneut senden?“, and the retry sends the same id and text, once', async () => {
       pinIds(ID, ID2)
       const { wrapper, served } = await mountChat([])
       served.answer = 'server-error'
 
       await write(wrapper, 'Hallo')
-      await vi.waitFor(() => expect(buttonNamed(wrapper, 'Nicht gesendet. Erneut senden')).toBeDefined())
+      await vi.waitFor(() => expect(buttonNamed(wrapper, 'Nicht gesendet. Erneut senden?')).toBeDefined())
       expect(bubble(wrapper, ID).text()).toBe('Hallo')
       expect(bubble(wrapper, ID).attributes('data-outgoing-state')).toBe('failed')
       expect(bubble(wrapper, ID).classes()).not.toContain('opacity-60')
@@ -555,7 +555,7 @@ describe('ChatPanel', () => {
       expect(wrapper.text()).not.toContain('Langsam, langsam')
 
       served.answer = 'ok'
-      await buttonNamed(wrapper, 'Nicht gesendet. Erneut senden')!.trigger('click')
+      await buttonNamed(wrapper, 'Nicht gesendet. Erneut senden?')!.trigger('click')
       await vi.waitFor(() => expect(bubble(wrapper, ID).attributes('data-outgoing-state')).toBeUndefined())
 
       expect(served.posts).toEqual([{ id: ID, text: 'Hallo' }, { id: ID, text: 'Hallo' }])
@@ -568,10 +568,10 @@ describe('ChatPanel', () => {
       const { wrapper, served } = await mountChat([])
       served.answer = 'server-error'
       await write(wrapper, 'geheim')
-      await vi.waitFor(() => expect(buttonNamed(wrapper, 'Nicht gesendet. Erneut senden')).toBeDefined())
+      await vi.waitFor(() => expect(buttonNamed(wrapper, 'Nicht gesendet. Erneut senden?')).toBeDefined())
 
       served.answer = 'deleted'
-      await buttonNamed(wrapper, 'Nicht gesendet. Erneut senden')!.trigger('click')
+      await buttonNamed(wrapper, 'Nicht gesendet. Erneut senden?')!.trigger('click')
 
       await vi.waitFor(() => expect(bubble(wrapper, ID).text()).toBe('Gelöscht'))
       expect(wrapper.text()).not.toContain('geheim')
@@ -585,7 +585,7 @@ describe('ChatPanel', () => {
       await write(wrapper, 'zu schnell')
       await vi.waitFor(() => expect(wrapper.text()).toContain('Langsam, langsam. Versuch es in ein paar Sekunden.'))
       expect(bubble(wrapper, ID).text()).toBe('zu schnell')
-      expect(buttonNamed(wrapper, 'Nicht gesendet. Erneut senden')).toBeDefined()
+      expect(buttonNamed(wrapper, 'Nicht gesendet. Erneut senden?')).toBeDefined()
       expect(wrapper.find('[role="status"]').text()).toBe('Langsam, langsam. Versuch es in ein paar Sekunden.')
 
       served.answer = 'server-error'
@@ -595,7 +595,7 @@ describe('ChatPanel', () => {
       expect(wrapper.findAll('[role="status"]')).toHaveLength(1)
 
       served.answer = 'ok'
-      await buttonNamed(wrapper, 'Nicht gesendet. Erneut senden')!.trigger('click')
+      await buttonNamed(wrapper, 'Nicht gesendet. Erneut senden?')!.trigger('click')
       await vi.waitFor(() => expect(wrapper.text()).not.toContain('Langsam, langsam'))
     })
 
@@ -734,7 +734,7 @@ describe('ChatPanel', () => {
 
       expect(done.wrapper.find('input').exists()).toBe(false)
       expect(sendButton(done.wrapper).exists()).toBe(false)
-      expect(done.wrapper.text()).toContain('Das Event ist beendet. Du kannst nur noch lesen.')
+      expect(done.wrapper.text()).toContain('Das Event ist beendet. Das liest doch eh keiner mehr also ist Schreiben aus.')
       expect(texts(done.wrapper)).toEqual(['Servus'])
 
       const failed = await mountChat([], { failing: true })
@@ -1196,7 +1196,7 @@ describe('ChatPanel', () => {
 
       await vi.waitFor(() => expect(texts(wrapper)).toEqual(['Gelöscht']))
       expect(served.deletes).toEqual(['a'])
-      expect(wrapper.text()).toContain('Das Event ist beendet. Du kannst nur noch lesen.')
+      expect(wrapper.text()).toContain('Das Event ist beendet. Das liest doch eh keiner mehr also ist Schreiben aus.')
     })
 
     describe('with 0, 1 and 2 Messages and the longest text', () => {
@@ -1204,7 +1204,7 @@ describe('ChatPanel', () => {
         const { wrapper } = await mountDeleting([])
 
         expect(controls(wrapper)).toHaveLength(0)
-        expect(wrapper.text()).toContain('Alle')
+        expect(wrapper.text()).toContain('Nix los bis jetzt')
       })
 
       it('shows no empty box while the only Message is pending, and its line when the call is answered', async () => {

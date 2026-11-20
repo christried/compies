@@ -593,9 +593,9 @@
     "placeholder": "Nachricht an alle",
     "send": "Senden",
     "sending": "wird gesendet …",
-    "failed": "Nicht gesendet. Erneut senden",
+    "failed": "Nicht gesendet. Erneut senden?",
     "remaining": "Noch {n} Zeichen",
-    "finished": "Das Event ist beendet. Du kannst nur noch lesen.",
+    "finished": "Das Event ist beendet. Das liest doch eh keiner mehr also ist Schreiben aus.",
     "deleted": "Vom Host gelöscht",
     "deletedByWriter": "Gelöscht",
     "loadFailed": "Der Chat konnte nicht geladen werden.",
@@ -1893,8 +1893,8 @@
       "text": "Anders schreiben oder das Spiel neu anlegen."
     },
     "chat": {
-      "title": "Noch still hier.",
-      "text": "Sag Hallo. Alle im Event lesen mit."
+      "title": "Nix los bis jetzt 🤷‍♂️",
+      "text": "Schreib den Gegnern doch mal, wie toll du sie findest."
     },
     "activity": {
       "title": "Noch nichts passiert.",

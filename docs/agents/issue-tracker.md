@@ -61,15 +61,15 @@ Every plan lives in GitHub Issues (the user, 2026-11-16): the user picks from th
 A bug that isn't fixed yet is a **bug issue** (the user, 2026-11-20). `/christried-capture-bug` files one in about two minutes from a pasted report: redacted, a few quick questions, a draft, the user's OK.
 
 - **Title**: `<where>: <what goes wrong>`, in English, in the terms of `GLOSSARY.md`. A Release's own bug tickets keep their numbered titles (`0.13.2: …`).
-- **Labels**: `bug` + `needs-triage`, where `needs-triage` means "nobody has looked for the cause yet".
+- **Labels**: `bug` + `needs-triage`, where `needs-triage` means "nobody has looked for the cause yet", plus `urgent` for a bug seen on production (the user, 2026-11-20). A Player's report counts as production unless it names staging.
 - **Body**: what goes wrong; the expected behaviour with the source that documents it (a spec or ticket, the design hand-off, an ADR, `GLOSSARY.md`), or „not written down“; the steps; where (page, production version or staging, device and width, role); how often; the impact; the code it points at; where it came from; the next step. A report from a Player is that User's data: names, handles, Event titles and slugs, Notes, chat text and log lines with ids stay out, and people appear as roles (`CLAUDE.md` § Personal data). `gh` cannot attach an image, so a screenshot is described in words, and the user adds it on GitHub by hand once they have checked it.
 - **One bug per issue**: a report that holds several faults becomes several issues.
-- **Create**: `gh issue create --title "…" --label bug --label needs-triage --body-file body.md`. In a cloud session: the REST call of § In a cloud session with `-f "labels[]=bug" -f "labels[]=needs-triage"`.
-- **Find**: `gh issue list --state open --label bug --json number,title,body`.
+- **Create**: `gh issue create --title "…" --label bug --label needs-triage --body-file body.md`, with `--label urgent` for production. In a cloud session: the REST call of § In a cloud session with `-f "labels[]=bug" -f "labels[]=needs-triage"`, and `-f "labels[]=urgent"` for production.
+- **Find**: `gh issue list --state open --label bug --json number,title,body`; the urgent ones with `--label urgent`.
 - **A missing feature** is an idea, not a bug: when nothing documents the expected behaviour and the code does what it was built to do, the report becomes an Idea issue (§ Ideas).
 - **A regression**, the fault of a closed issue back again, is a new bug issue whose body names the closed one: the closed issue stays with the Release that shipped its fix.
 - **Picked up**: a bug whose expected behaviour is documented goes to `/diagnosing-bugs`, and its fix is built with `/implement` or rewritten into a ticket of the next Release (`bug` + `ready-for-agent`, the last line as in § Ideas). A bug whose expected behaviour is disputed or not written down is grilled first (`/grill-with-docs`).
-- **Production**: a fix reaches `main` with the next Release (ADR 0007), however urgent the bug. When a bug blocks a game night on production, the capture says so, and whether it gets a Release of its own is the user's call.
+- **Production**: the session that captures a bug ends with the issue, `urgent` or not; its fix comes in a later session and reaches `main` with the next Release (ADR 0007) (the user, 2026-11-20).
 
 ## When a skill says "publish to the issue tracker"
 
