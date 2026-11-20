@@ -29,7 +29,7 @@ const walkStates = async () => (await loadStates({ extra: 'walk-states-' }) as {
 
 describe('the plan of the Chat and Emote states', () => {
   it('has a state or a reason for every text of the Chat and the Emotes', () => {
-    expect(planned.length).toBeGreaterThan(30)
+    expect(planned.length).toBeGreaterThanOrEqual(30)
     for (const key of planned) expect(key in claims || key in unreached, key).toBe(true)
   })
 
@@ -41,8 +41,8 @@ describe('the plan of the Chat and Emote states', () => {
     for (const key of Object.keys(unreached)) expect(copy, key).toContain(key)
   })
 
-  it('leaves unreached exactly the two texts no surface shows, each with a reason', () => {
-    expect(Object.keys(unreached).sort()).toEqual(['chat.message', 'error.messageInvalid'])
+  it('leaves unreached exactly the one text no surface shows, with its reason', () => {
+    expect(Object.keys(unreached).sort()).toEqual(['error.messageInvalid'])
     for (const [key, reason] of Object.entries(unreached)) expect(reason.trim().length, key).toBeGreaterThan(0)
   })
 

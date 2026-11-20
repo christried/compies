@@ -590,7 +590,6 @@
   },
   "chat": {
     "logAria": "Chatverlauf",
-    "message": "Nachricht",
     "placeholder": "Nachricht an alle",
     "send": "Senden",
     "sending": "wird gesendet …",
