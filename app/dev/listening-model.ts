@@ -1,6 +1,6 @@
 import { STAMP_DELAY_MS } from '~/utils/motion'
 import {
-  CUE_IDS, TICK_MIN_GAP_MS, ceremonyCuePlan, coinCuePlan, cueFileUrl, standingsCues, thinTicks, tourStepCue, vetoArrivalCues, vetoCuePlan, wheelCuePlan, wheelVoicePlan,
+  CUE_IDS, EMOTE_CUE, TICK_MIN_GAP_MS, ceremonyCuePlan, coinCuePlan, cueFileUrl, emoteCue, standingsCues, thinTicks, tourStepCue, vetoArrivalCues, vetoCuePlan, wheelCuePlan, wheelVoicePlan,
   type ArrivalCue, type Cue, type CueId, type VetoArrivalState,
 } from '~/utils/sound-cues'
 import { isText, parseCredits, type CueCredit, type Licence } from '~/utils/sound-credits'
@@ -8,6 +8,7 @@ import { pinCrossings } from '~/utils/wheel-pins'
 import type { WheelTiming } from '~/utils/wheel'
 import type { CeremonyGag } from '~~/shared/ceremony'
 import { COIN_DURATION_MS } from '~~/shared/coin'
+import { EMOTE_IDS, EMOTE_SOUND_WINDOW_MS, EMOTE_SOUNDS_PER_WINDOW } from '~~/shared/emote'
 import type { RoundGame } from '~~/shared/game'
 import { isRecord } from '~~/shared/record'
 import type { ClipView, SpinView, VetoCastView, VetoDrawView, WheelView } from '~~/shared/stage'
@@ -438,6 +439,28 @@ export const TOUR_RUN_GAP_MS = 1500
 export function tourVoiceCues(): ArrivalCue[] {
   const ids = MEMBER_TOUR.map(step => tourStepCue(step.id)).filter((id): id is CueId => id !== null)
   return ids.map((id, index) => ({ id, delayMs: index === 0 ? 0 : TOUR_RUN_GAP_MS }))
+}
+
+// Emote ----------------------------------------------------------------------------------------------------------------------------
+
+/** What the page's three Emote buttons play (#771): the own Emote, another Member's, and the densest burst the room lets carry a sound. */
+export type EmoteListen = 'own' | 'other' | 'burst'
+export interface EmoteTestCue extends ArrivalCue { factor: number }
+
+/** Three sounds inside the room's one-second window, as far apart as they fit: `EMOTE_SOUND_WINDOW_MS / EMOTE_SOUNDS_PER_WINDOW` = 333 ms. */
+export const EMOTE_BURST_GAP_MS = Math.floor(EMOTE_SOUND_WINDOW_MS / EMOTE_SOUNDS_PER_WINDOW)
+
+/**
+ * The test Emote (#771): the cue and its volume as the REAL `emoteCue` gives them for the own Emote or another Member's, and for the burst the
+ * same cue `EMOTE_SOUNDS_PER_WINDOW` times, as another Member's. The page hands `factor` to the player, which keeps the cue's own `CUE_VOLUME`.
+ */
+export function emoteRunCues(id: CueId, listen: EmoteListen): EmoteTestCue[] {
+  const emote = EMOTE_IDS.find(candidate => EMOTE_CUE[candidate] === id)
+  if (!emote) return []
+  const cue = emoteCue({ emote, sound: true, own: listen === 'own', serverTime: 0, now: 0 })
+  if (!cue) return []
+  const count = listen === 'burst' ? EMOTE_SOUNDS_PER_WINDOW : 1
+  return Array.from({ length: count }, (_, index) => ({ id: cue.id, delayMs: index * EMOTE_BURST_GAP_MS, factor: cue.volume }))
 }
 
 // Arrival cues -----------------------------------------------------------------------------------------------------------------------
