@@ -917,6 +917,26 @@ describe('ChatPanel', () => {
         await endAgain(page)
       })
 
+      it('holds the call while Tab presses go on for more than 5 s, and „Rückgängig“ then brings the Message back and sends nothing (#867)', async () => {
+        const page = await mountDeleting([live('a', SANNE, 0, 'weg'), live('b', LARSI, 10, 'bleibt')])
+        vi.useFakeTimers()
+        await controlOf(page.wrapper, 'a')!.trigger('click')
+
+        for (let at = 0; at < 8000; at += 250) {
+          await vi.advanceTimersByTimeAsync(250)
+          document.body.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true }))
+        }
+        expect(page.stack.find('[role="status"]').exists()).toBe(true)
+        expect(page.served.deletes).toEqual([])
+
+        await undoButton(page.stack)!.trigger('click')
+        await vi.advanceTimersByTimeAsync(10_000)
+        vi.useRealTimers()
+        await settle()
+        expect(texts(page.wrapper)).toEqual(['weg', 'bleibt'])
+        expect(page.served.deletes).toEqual([])
+      })
+
       it('sends the call at once when the toast is dismissed with ✕', async () => {
         const page = await deleteA()
 
