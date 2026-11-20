@@ -17,7 +17,7 @@ The Datenschutzerklärung already promised the first two (§ 16: Events, Votes a
 ## Consequences
 
 - A finished Event leaves the Archive of every Member when its Host deletes themselves. The confirmation names the number of Events and says so.
-- A Deleted User who signs in again is a new User. The Host permission comes back with them, because it hangs on the provider account id in the operator's list (ADR 0002), which the app cannot change; the id stays there until they ask the operator to remove it.
+- A Deleted User who signs in again is a new User. The Host permission comes back with them, because it hangs on the provider account id in the operator's list (ADR 0002), which the app cannot change; the id stays there until they ask the operator to remove it. From 0.24 this no longer holds: the Host permission is granted in the app and a returning Deleted User starts without it (ADR 0002, amendment of 2026-11-20).
 - Old Activity feed entries keep the Team name of their moment, the Deleted User's Team word included (ADR 0016).
 - Two Deleted Users in one Event look the same.
-- The operator runs the same deletion by script for a User who asks by message and cannot sign in.
+- The operator runs the same deletion by script for a User who asks by message and cannot sign in. From 0.24 the Platform admin also runs it from the Admin page (#682).
