@@ -10,7 +10,7 @@ import { LARSI, restoreScreen, stubScreen, viewWithSessions } from './event-page
 import { FIRST, members, SESSION, team } from './event-page-states'
 
 // The side panel's unread counts on a computer (#778, spec #719 § B): the tabs „Chat“ and „Aktivität“ count what arrives while another tab is shown, by the rule and the
-// accessible name of the phone's bar (#765), and „Tabelle“ counts nothing. The room is a fake socket the test sends messages on (event-chat-phone.test.ts).
+// accessible name of the phone's bar (#765), and „Tabelle“ counts the Results that arrive (#951). The room is a fake socket the test sends messages on (event-chat-phone.test.ts).
 
 const { sockets, createRoomSocket } = vi.hoisted(() => {
   const sockets: { options: RoomSocketOptions }[] = []
@@ -74,8 +74,11 @@ async function arrives(writerId: string, { settled = true } = {}) {
   if (settled) await settle()
 }
 
-async function feedEntry() {
-  const entry = { id: 'a', type: 'member_joined', at: new Date().toISOString(), actor: { id: 'u1', name: 'Larsi' }, params: {}, people: {}, games: {} }
+let entryNumber = 0
+async function feedEntry(type: 'member_joined' | 'result_entered' = 'member_joined') {
+  entryNumber += 1
+  const params = type === 'result_entered' ? { roundId: 'r1', number: 1, gameId: 'g1', first: [2] } : {}
+  const entry = { id: `e${entryNumber}`, type, at: new Date().toISOString(), actor: { id: 'u1', name: 'Larsi' }, params, people: {}, games: {} }
   lastSocket().options.onMessage(JSON.stringify(envelope({ type: 'activity.added', entry } as RoomMessage, Date.now())))
   await settle()
 }
@@ -159,7 +162,19 @@ describe('the side panel\'s counts on a computer (#778)', () => {
     expect(chip(page, CHAT).text()).toBe('120')
   })
 
-  it('gives Tabelle no count', async () => {
+  it('counts on Tabelle a Result another Member entered, as a chip and an accessible name (#951)', async () => {
+    const { page } = await mountLive()
+
+    await feedEntry('result_entered')
+
+    expect(panelTabs(page)[STANDINGS]!.attributes('aria-label')).toBe('Tabelle, 1 neu')
+    expect(chip(page, STANDINGS).text()).toBe('1')
+    await panelTabs(page)[STANDINGS]!.trigger('click')
+    await settle()
+    expect(chip(page, STANDINGS).exists()).toBe(false)
+  })
+
+  it('gives Tabelle no count for a Message or an entry that is no Result (#951)', async () => {
     const { page } = await mountLive()
 
     await feedEntry()
