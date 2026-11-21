@@ -8,7 +8,7 @@ import { bulbsLit, nextBulbChange } from '~/utils/wheel-bulbs'
 import { WHEEL_MAX_PX, mascotWidthFor } from '~/utils/wheel-mascot'
 import { flapperKick, pinCrossings } from '~/utils/wheel-pins'
 import { cardPop, labelPop, popOver } from '~/utils/wheel-stop'
-import { stopReached } from '~~/shared/draw-timeline'
+import { clipStartAt, clipStarted, stopReached } from '~~/shared/draw-timeline'
 import type { HostGameFacts } from '~~/shared/game'
 import type { WheelView } from '~~/shared/stage'
 import { characterCount, cutToCharacters } from '~~/shared/text'
@@ -20,8 +20,8 @@ import { refillAt, refillPlan, type RefillPlan, type RestSlice } from '~/utils/w
 // server ticker (useServerTicker) feeds it the server time: the spin's ticker (`clock`) every frame while a spin runs and shortly past its
 // removal, idle at rest; the bulbs' ticker (`lampClock`) sleeps between the pattern's changes, 0.6 s at rest, and wakes at the chase's and
 // the flash's steps during a spin (#584 Q1). Out of view nothing runs.
-// At the stop the drawn slice gets its outline, its label pops and the result card pops in (#523, utils/wheel-stop.ts: both are a function
-// of the server time since the stop, so a late joiner sees the end state). Under a Hidden wheel a Member sees placeholders; the
+// At the stop the drawn slice gets its outline and its label pops; the result card pops in with the Clip, 1.5 s after the stop (#523, #959,
+// utils/wheel-stop.ts: both are a function of the server time since their moment, so a late joiner sees the end state). Under a Hidden wheel a Member sees placeholders; the
 // drawn label turns into the real game half a second after the stop (a scramble, under reduced motion a crossfade), and the
 // drawn slice leaves at stop + 2.8 s instead of 2.2 s. The drawn slice shrinks and the others close the gap (0.6 s), or fade and
 // jump under reduced motion. Since 0.13.2 (#519, spec #503) the wheel is drawn as the Show-Rad: a red band with a rim of 24 bulbs, a pin
@@ -248,10 +248,17 @@ const drawnOpacity = computed(() => {
 // The pops at the stop (#523): the time since the stop from the server's clock, null before it. The pop functions clamp it to their run, so a
 // late joiner or a returning tab reads the end state at once, and nothing here compares with the stop itself (`stopped` is the one gate).
 const stopElapsed = computed(() => (stopped.value && clock.value !== null && timing.value ? clock.value - timing.value.stopAt : null))
+/**
+ * The result card comes with the Clip (#959): at the spin's Clip start, 1.5 s after the stop, once every device shows the drawn game's name;
+ * its pop runs from then on. The time since that start from the server's clock, null before it (`clipStarted` is the gate, not
+ * `clipRunning`: the card stays after the Clip's end).
+ */
+const clipStart = computed(() => (timing.value ? clipStartAt({ kind: 'spin', stopAt: timing.value.stopAt }) : null))
+const cardElapsed = computed(() => (clock.value !== null && clipStart.value !== null && clipStarted({ startAt: clipStart.value }, clock.value) ? clock.value - clipStart.value : null))
 const cardStyle = computed(() => {
   // Once the pop is over the card has no style at all: a late joiner gets none (#584 P4).
-  if (!card.value || stopElapsed.value === null || popOver(stopElapsed.value, reduced.value)) return undefined
-  const { scale, opacity } = cardPop(stopElapsed.value, reduced.value)
+  if (!card.value || cardElapsed.value === null || popOver(cardElapsed.value, reduced.value)) return undefined
+  const { scale, opacity } = cardPop(cardElapsed.value, reduced.value)
   return { transform: `scale(${scale})`, opacity: String(opacity) }
 })
 /** Only the drawn label pops. Its scaleY pivots on its own centre line in the rotated frame (its y is 200 before the rotation). */
@@ -266,7 +273,9 @@ const labelOpacity = (index: number) => labelOf(index).opacity * (isDrawn(index)
 
 // The result card names the game only while its spin is the latest draw (a later set, a veto or a put back takes it away, F6); a vetoed
 // game is then named in the Veto window's outcome line only.
-const card = computed(() => (stopped.value && spin.value?.current && spin.value.game ? spin.value.game : null))
+// The result is announced at the stop, with the flash, Compibert's cheer and the name's reveal; the card shows from the Clip's start on (#959).
+const result = computed(() => (stopped.value && spin.value?.current && spin.value.game ? spin.value.game : null))
+const card = computed(() => (cardElapsed.value !== null ? result.value : null))
 // An empty wheel says nothing here: its accessible name counts 0 games (#802).
 const status = computed(() => (timing.value && clock.value !== null && !stopReached(timing.value, clock.value) ? t('wheel.spinning') : null))
 const headingId = useId()
@@ -523,7 +532,7 @@ const headingId = useId()
       aria-live="polite"
       class="sr-only"
     >
-      {{ card ? t('activity.wheel', { game: card.name }) : '' }}
+      {{ result ? t('activity.wheel', { game: result.name }) : '' }}
     </p>
   </section>
 </template>

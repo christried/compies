@@ -10,11 +10,13 @@ import { stubInView } from './in-view'
 import { notesFromLines } from '~~/shared/notes-doc'
 
 // The Lucky Wheel (#229, 02-components § LuckyWheel, 04-motion § Lucky Wheel): its rotation toward a fixed stop instant at a given
-// server time, the result card that comes at the stop and not before, and the Hidden wheel's label that turns into the real game.
+// server time, the result card that comes with the Clip, 1.5 s after the stop (#959), and not before, and the Hidden wheel's label that turns into the real game.
 // The server's clock is a variable the tests move; the wheel follows it frame by frame.
 
 const START = Date.UTC(2090, 10, 7, 20, 0, 0)
 const STOP = START + 6000
+/** The spin's Clip starts here, and the result card with it (#959). */
+const CLIP = STOP + 1500
 const iso = (ms: number) => new Date(ms).toISOString()
 
 const halo: RoundGame = { id: 'g-halo', name: 'Halo', imageUrl: null, youtubeId: null, clipStart: 0, clipLength: 30, playersMin: 2, playersMax: 4, suitabilities: [], price: null }
@@ -278,7 +280,8 @@ describe('the clock it runs on (#257)', () => {
 })
 
 describe('the result', () => {
-  it('shows no result card before the stop, and the card with the game at the stop', async () => {
+  // #959: the card comes with the Clip, 1.5 s after the stop, once every device shows the drawn game's name (the reveal at stop + 0.5 s).
+  it('shows no result card before the Clip\'s start, 1.5 s after the stop, and the card with the game from it on; the result is announced at the stop', async () => {
     await mount(wheelOf(spinOf({ game: null })))
     await at(STOP - 100)
     expect(text()).not.toContain('Das Glücksrad sagt')
@@ -290,14 +293,20 @@ describe('the result', () => {
     expect(page!.find('[role="status"]').text()).toBe('')
 
     await at(STOP)
-    expect(text()).toContain('Das Glücksrad sagt')
-    expect(text()).toContain('Halo')
+    expect(text()).not.toContain('Das Glücksrad sagt')
+    expect(page!.find('[data-testid="wheel-card"]').exists()).toBe(false)
     expect(page!.get('[role="status"]').text()).toBe('Glücksrad: Halo')
+    await at(CLIP - 1)
+    expect(page!.find('[data-testid="wheel-card"]').exists()).toBe(false)
+
+    await at(CLIP)
+    expect(text()).toContain('Das Glücksrad sagt')
+    expect(page!.get('[data-testid="wheel-card"]').text()).toContain('Halo')
   })
 
   it('names no game once the spin is no longer the latest draw: a vetoed, replaced or put-back game (F6)', async () => {
     await mount(wheelOf(spinOf({ game: halo, current: false })))
-    await at(STOP + 100)
+    await at(CLIP + 100)
 
     expect(text()).not.toContain('Das Glücksrad sagt')
     expect(text()).not.toContain('Zuletzt gezogen')
@@ -309,7 +318,7 @@ describe('the result', () => {
     vi.setSystemTime(new Date('2026-11-09T12:00:00.000Z'))
     const priced: RoundGame = { ...halo, price: { cents: 1999, source: 'steam', checkedAt: '2026-11-03T10:00:00.000Z' } }
     await mount(wheelOf(spinOf({ game: priced })))
-    await at(STOP)
+    await at(CLIP)
     expect(text()).toContain('Das Glücksrad sagt')
     expect(page!.get('[data-cover]').attributes('data-cover')).toBe('placeholder')
     expect(text()).toContain('Halo')
@@ -318,7 +327,7 @@ describe('the result', () => {
     page!.unmount()
 
     await mount(wheelOf(spinOf({ game: halo })))
-    await at(STOP)
+    await at(CLIP)
     expect(text()).toContain('Das Glücksrad sagt')
     expect(text()).not.toContain('Stand')
     expect(text()).not.toContain('€')
@@ -326,7 +335,7 @@ describe('the result', () => {
 
   it('holds the kicker and then the one tile, and nothing else, in the card (#585)', async () => {
     await mount(wheelOf(spinOf({ game: halo })))
-    await at(STOP)
+    await at(CLIP)
     const card = page!.get('[data-testid="wheel-card"]').element as HTMLElement
     const kicker = card.querySelector('p')!
     const openers = card.querySelectorAll<HTMLButtonElement>('button[aria-haspopup="dialog"]')
@@ -353,7 +362,7 @@ describe('the result', () => {
 describe('a Hidden wheel', () => {
   const placeholders = ['Counter-Strudel', 'League of Leberkäse', 'Mario Kartoffel', 'Rocket Lieg']
 
-  it('shows a Member the placeholders of the spin, and the drawn label turns into the real game half a second after the stop', async () => {
+  it('shows a Member the placeholders of the spin, the drawn label turns into the real game half a second after the stop, and the card comes a second later (#959)', async () => {
     await mount(wheelOf(spinOf({ labels: placeholders, game: null }), { slices: null }), { hidden: true })
     await at(START + 3000)
     for (const label of placeholders) expect(text()).toContain(label)
@@ -364,12 +373,16 @@ describe('a Hidden wheel', () => {
     serverMs = STOP + 100
     await mount(wheelOf(spinOf({ labels: ['Counter-Strudel', 'League of Leberkäse', 'Halo', 'Rocket Lieg'], game: halo }), { slices: null }), { hidden: true })
     await at(STOP + 100)
-    expect(text()).toContain('Das Glücksrad sagt')
+    expect(text()).not.toContain('Das Glücksrad sagt')
     expect(text()).not.toContain('Mario Kartoffel')
     expect(page!.get('[data-testid="wheel-label-2"]').text()).not.toBe('Halo')
 
     await at(STOP + 500 + 400)
     expect(page!.get('[data-testid="wheel-label-2"]').text()).toBe('Halo')
+    expect(text()).not.toContain('Das Glücksrad sagt')
+
+    await at(CLIP)
+    expect(text()).toContain('Das Glücksrad sagt')
   })
 
   it('keeps the placeholder of the drawn slice when the real name arrives while the wheel is out of view and it comes back at once (#257)', async () => {
@@ -409,7 +422,7 @@ describe('the drawn game\'s tile and its dialog (#443, #444)', () => {
 
   it('opens the dialog of „Zuletzt gezogen“ for the Host with the game\'s Tags and Notes', async () => {
     await mount(wheelOf(spinOf({ game: halo })), { isHost: true, hostGames })
-    await at(STOP + 100)
+    await at(CLIP + 100)
 
     const tile = page!.get('button[aria-haspopup="dialog"]')
     expect(tile.text()).toBe('Halo')
@@ -425,7 +438,7 @@ describe('the drawn game\'s tile and its dialog (#443, #444)', () => {
 
   it('opens the dialog of a game whose facts are missing, without Tags and Notes', async () => {
     await mount(wheelOf(spinOf({ game: halo })), { isHost: true })
-    await at(STOP + 100)
+    await at(CLIP + 100)
 
     await page!.get('button[aria-haspopup="dialog"]').trigger('click')
     await flushPromises()
@@ -437,7 +450,7 @@ describe('the drawn game\'s tile and its dialog (#443, #444)', () => {
   it('opens a Member\'s „Zuletzt gezogen“ tile as a dialog with the facts and without Tags and Notes, though hostGames were handed in (#444)', async () => {
     const drawn: RoundGame = { ...halo, suitabilities: ['teams'], price: { cents: 1999, source: 'steam', checkedAt: '2026-11-03T10:00:00.000Z' } }
     await mount(wheelOf(spinOf({ game: drawn })), { hostGames })
-    await at(STOP + 100)
+    await at(CLIP + 100)
 
     const tile = page!.get('button[aria-haspopup="dialog"]')
     expect(tile.text()).toBe('Halo')
