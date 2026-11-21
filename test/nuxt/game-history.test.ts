@@ -113,10 +113,19 @@ describe('the history', () => {
     expect(numbered()[0]!.get('summary > span:nth-child(2)').classes()).toContain('min-w-24')
   })
 
-  it('joins the Scores in Place order, with „–“ for a Party without one', async () => {
+  it('joins the Scores in Place order, with 0 for a Party without one beside a Score (#954)', async () => {
     await mount({ results: [standard(1, 'Halo', ['16', '12', null]), standard(2, 'Kart', [null, '7', null])] })
 
-    expect(numbered().map(row => row.get('[data-scores]').text())).toEqual(['16 : 12 : –', '– : 7 : –'])
+    expect(numbered().map(row => row.get('[data-scores]').text())).toEqual(['16 : 12 : 0', '0 : 7 : 0'])
+  })
+
+  it('reads „3 : 0“ for two Parties of which only the winner has a Score, and keeps the blank one out of the opened list (#954)', async () => {
+    await mount({ results: [result(1, 'Halo', [line(1, 1, 1, '3'), line(2, 2, 0)])] })
+
+    expect(numbered()[0]!.get('[data-scores]').text()).toBe('3 : 0')
+    expect(numbered()[0]!.get('[data-scores]').attributes('title')).toBe('3 : 0')
+    // Display only: the opened row lists the Scores as stored, so the blank Party has none there.
+    expect(numbered()[0]!.findAll('[data-score]').map(score => score.text())).toEqual(['3'])
   })
 
   it('shows no Score text when no Party has a Score, and a long Score or an emoji family in one piece with its title', async () => {
@@ -125,7 +134,7 @@ describe('the history', () => {
 
     expect(numbered()[0]!.find('[data-scores]').exists()).toBe(false)
     const scores = numbered()[1]!.get('[data-scores]')
-    expect(scores.text()).toBe(`1234567 : ${family} : –`)
+    expect(scores.text()).toBe(`1234567 : ${family} : 0`)
     expect(scores.attributes('title')).toBe(scores.text())
     expect(scores.classes()).toContain('truncate')
   })
