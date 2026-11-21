@@ -64,9 +64,16 @@ function stubYouTube() {
 async function mount(clip: ClipView, { isHost = false, desktop = true, stubChildren = false, vetoBarShown = true }: { isHost?: boolean, desktop?: boolean, stubChildren?: boolean, vetoBarShown?: boolean } = {}) {
   stubScreen(desktop)
   const global = stubChildren ? { stubs: { AppButton: true, IconButton: true, GameCard: true } } : {}
-  page = await mountSuspended(ClipOverlay, { props: { clip, isHost, serverNow: () => serverMs, skip, vetoBarShown }, global })
+  // The page keeps the closed state, keyed by the draw (#956): here the wrapper stands in for it, closing on `close`.
+  page = await mountSuspended(ClipOverlay, { props: { clip, isHost, serverNow: () => serverMs, skip, vetoBarShown, closed: false, onClose: () => void page!.setProps({ closed: true }) }, global })
   await flushPromises()
   return page
+}
+
+/** „Zum Video“ (#956): the page opens the Clip again on this device. */
+async function reopen() {
+  await page!.setProps({ closed: false })
+  await flushPromises()
 }
 
 /** The player is ready: the overlay now loads the video. */
@@ -145,12 +152,36 @@ describe('the video', () => {
     expect(players[0]!.loadVideoById).toHaveBeenCalledWith({ videoId: 'aaaaaaaaaaa', startSeconds: 102.5, endSeconds: 120 })
   })
 
-  it('plays from the start second when this device\'s estimate of the server is a hair early', async () => {
-    serverMs = START - 40
+  // #959: the read carries a spin's Clip from the stop on, 1.5 s before its start; every device opens it at the start by the server clock.
+  it('shows nothing before its start, and opens at the start instant against the server clock, playing from the start second', async () => {
+    serverMs = START - 1500
     await mount(clipOf())
-    await ready()
 
+    expect(page!.find('section').exists()).toBe(false)
+    expect(players).toHaveLength(0)
+    expect(page!.emitted('shown')).toEqual([[false]])
+
+    await passTime(1499)
+    expect(page!.find('section').exists()).toBe(false)
+    expect(players).toHaveLength(0)
+
+    await passTime(1)
+    expect(page!.find('section').exists()).toBe(true)
+    expect(page!.emitted('shown')).toEqual([[false], [true]])
+    await ready()
+    expect(players).toHaveLength(1)
     expect(players[0]!.loadVideoById).toHaveBeenCalledWith({ videoId: 'aaaaaaaaaaa', startSeconds: 90, endSeconds: 120 })
+  })
+
+  it('opens a game without a video at its start too: its card, and nothing before it', async () => {
+    serverMs = START - 1500
+    await mount(clipOf(kart))
+    expect(text()).not.toContain('Kart')
+
+    await passTime(1500)
+
+    expect(page!.find('section').exists()).toBe(true)
+    expect(text()).toContain('Kart')
   })
 
   it('seeks once when the player is more than a second off after 3 s of playback', async () => {
@@ -825,6 +856,84 @@ describe('a paused player is resumed (#509)', () => {
     await passTime(10_000)
 
     expect(player.seekTo).toHaveBeenCalledTimes(1)
+  })
+})
+
+// #956: a device that closed the Clip brings it back with „Zum Video“ while it runs. The overlay tells the page when that is
+// (`reopenable`); the page opens it again, and it plays from the second everybody is at, with the sound this device chose.
+describe('opening it again (#956)', () => {
+  const reopenableValues = () => ((page!.emitted('reopenable') ?? []) as boolean[][]).map(args => args[0])
+
+  it('says it can be opened again only once this device closed it, and no more at its end', async () => {
+    await mount(clipOf())
+    expect(reopenableValues().at(-1)).toBe(false)
+
+    await press('Für mich schließen')
+    expect(reopenableValues().at(-1)).toBe(true)
+
+    await passTime(29_900)
+    expect(reopenableValues().at(-1)).toBe(true)
+    await passTime(100)
+    expect(reopenableValues().at(-1)).toBe(false)
+  })
+
+  it('does not say so before the Clip\'s start, though closed', async () => {
+    serverMs = START - 1500
+    await mount(clipOf())
+    await page!.setProps({ closed: true })
+    await flushPromises()
+    expect(reopenableValues().at(-1)).toBe(false)
+
+    await passTime(1500)
+    expect(reopenableValues().at(-1)).toBe(true)
+  })
+
+  it('opens again at the second everybody is at, with a new player, and says it shows', async () => {
+    await mount(clipOf())
+    await ready()
+    await press('Für mich schließen')
+    expect(players[0]!.destroy).toHaveBeenCalled()
+
+    await passTime(10_000)
+    await reopen()
+
+    expect(page!.find('section').exists()).toBe(true)
+    expect(players).toHaveLength(2)
+    await ready(players[1])
+    expect(players[1]!.loadVideoById).toHaveBeenCalledWith({ videoId: 'aaaaaaaaaaa', startSeconds: 100, endSeconds: 120 })
+    expect(((page!.emitted('shown') ?? []) as boolean[][]).map(args => args[0])).toEqual([true, false, true])
+    expect(reopenableValues().at(-1)).toBe(false)
+    expect(fetched).toEqual([])
+  })
+
+  it('keeps the sound this device chose across the close and the reopen', async () => {
+    await mount(clipOf())
+    await ready()
+    await press('Ton aus')
+    await press('Für mich schließen')
+
+    await reopen()
+    await ready(players[1])
+
+    expect(players[1]!.mute).toHaveBeenCalled()
+    expect(players[1]!.unMute).not.toHaveBeenCalled()
+    expect(labels()).toContain('Ton an')
+  })
+
+  it('checks the drift again after a reopen, as after a start', async () => {
+    await mount(clipOf())
+    await ready()
+    players[0]!.options.events.onStateChange?.({ data: 1 })
+    await press('Für mich schließen')
+    await reopen()
+    await ready(players[1])
+    const player = players[1]!
+    player.options.events.onStateChange?.({ data: 1 })
+    player.getCurrentTime.mockReturnValue(90)
+
+    await passTime(3000)
+
+    expect(player.seekTo).toHaveBeenCalledWith(93, true)
   })
 })
 

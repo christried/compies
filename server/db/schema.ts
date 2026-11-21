@@ -102,6 +102,9 @@ export const events = pgTable('events', {
   // Pool preview (#225): null only for Events not set up and rows the code before 0.6 wrote (storedPoolPreview reads it as on unless the wheel is hidden).
   poolPreview: boolean('pool_preview'),
   vetoAllowance: integer('veto_allowance'),
+  // 0041 (#957): the instant the Host uncovered the Hidden wheel (the request's clock, ADR 0013); null while it is not uncovered. From then on the wheel reads as a
+  // visible wheel for everyone (`wheelHidden` in shared/uncover.ts); `hiddenWheel` keeps the setting, so the Pool preview stays off.
+  wheelUncoveredAt: timestamp('wheel_uncovered_at', { withTimezone: true }),
   // 0023 (#277): the instant the Host finished the Event (the request's clock, ADR 0013). Home keeps a finished Event listed for 24 h from it (`eventStaysOnHome`, #282).
   finishedAt: timestamp('finished_at', { withTimezone: true }),
   // 0025 (#309): the Award ceremony's latest start (the request's clock plus the lead, ADR 0013) and its gag. The run's end is not stored: shared/ceremony.ts derives it. A restart overwrites both.

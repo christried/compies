@@ -6,7 +6,7 @@ import { testClock } from '../../server/utils/clock'
 import { memoryRoomNotifier } from '../../server/utils/room-notifier'
 import type { ActivityPage } from '../../shared/activity'
 import { notesFromLines } from '../../shared/notes-doc'
-import { SPIN, windowMsFor } from '../draw-offsets'
+import { SPIN, spinWindowMsFor } from '../draw-offsets'
 import { createTestApp, errorOf, sendVia, type TestRequest } from './app'
 import { createTestDb, resetDatabase } from './harness'
 import { readEvent, readFeed, readFeedText, signInAs, startRunningEvent, type Rig } from './scenario'
@@ -551,7 +551,7 @@ describe('Rounds', () => {
       const [row] = await drawRows()
       const drawn = [game.halo, game.kart].find(candidate => candidate.id === row!.gameId)!
       expect(row).toMatchObject({ spinStartAt: new Date(iso(LEAD)), stopAt: new Date(iso(LEAD + length)) })
-      expect(row!.vetoEndsAt).toEqual(new Date(iso(LEAD + length + windowMsFor(clipLengthOf(drawn)))))
+      expect(row!.vetoEndsAt).toEqual(new Date(iso(LEAD + length + spinWindowMsFor(clipLengthOf(drawn)))))
       expect((await read(game)).wheel!.spin).toMatchObject({ spinStartAt: iso(LEAD), stopAt: iso(LEAD + length) })
       // The feed entry waits for the stop of this spin, to the millisecond.
       clock.advance(LEAD + length - 1)

@@ -16,6 +16,7 @@ export type DrawSource = (typeof DRAW_SOURCES)[number]
 
 /** How a game was determined: the wheel spun it, or the Host set it. */
 export const DRAW_KINDS = ['spin', 'set'] as const
+export type DrawKind = (typeof DRAW_KINDS)[number]
 
 /** How a draw ended: its game was vetoed, or it was set. A draw has none until it settles. */
 export const DRAW_OUTCOMES = ['vetoed', 'set'] as const
@@ -76,6 +77,14 @@ export function waitsForRespin(round: Pick<RoundFacts, 'id' | 'setAt' | 'putBack
 /** Whether the Round is open (waits for its result): its game is set, it was not put back and no Result has been entered yet (#273). */
 export function isOpen(round: Pick<RoundFacts, 'setAt' | 'putBackAt' | 'resultAt'>): boolean {
   return stands(round) && roundState(round) === 'set' && round.resultAt === null
+}
+
+/**
+ * Whether the Round waits for its Result (#953): it stands and has none yet, whether its game is being drawn (a Veto window included), waits
+ * for a respin or is set. An early Finish waits for it (finishRejection's `round_waiting`).
+ */
+export function waitsForResult(round: Pick<RoundFacts, 'putBackAt' | 'resultAt'>): boolean {
+  return stands(round) && round.resultAt === null
 }
 
 /** How many Rounds have started: every Round the Host has not put back, being drawn or set. The Game count never drops below it. */

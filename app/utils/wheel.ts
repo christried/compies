@@ -117,9 +117,21 @@ export const SCRAMBLE_FRAME_MS = 50
  * Where the reveal of the drawn label stands (04-motion § Lucky Wheel, `reveal`): `placeholder` until half a second after the
  * stop, `morph` while the label scrambles (reduced: crossfades), `real` after. `progress` runs 0 to 1 through the morph.
  */
-export function revealStage(spin: Pick<WheelTiming, 'stopAt'>, nowMs: number, reduced: boolean): { stage: 'placeholder' | 'morph' | 'real', progress: number } {
-  const elapsed = nowMs - (spin.stopAt + REVEAL_AFTER_MS)
-  const length = reduced ? CROSSFADE_MS : SCRAMBLE_MS
+export function revealStage(spin: Pick<WheelTiming, 'stopAt'>, nowMs: number, reduced: boolean): MorphStage {
+  return morphStage(nowMs - (spin.stopAt + REVEAL_AFTER_MS), reduced)
+}
+
+interface MorphStage { stage: 'placeholder' | 'morph' | 'real', progress: number }
+
+/** How long a label morphs into its real name: the scramble's 0.3 s, or the crossfade's 0.2 s under reduced motion. */
+export const morphLength = (reduced: boolean) => (reduced ? CROSSFADE_MS : SCRAMBLE_MS)
+
+/**
+ * Where a label's morph into its real name stands `elapsed` ms after it began: the reveal at a stop, and the uncover of a Hidden wheel (#957),
+ * which plays the same morph on every slice from the moment the names arrive. `placeholder` before it, `real` after it.
+ */
+export function morphStage(elapsed: number, reduced: boolean): MorphStage {
+  const length = morphLength(reduced)
   if (elapsed < 0) return { stage: 'placeholder', progress: 0 }
   return elapsed >= length ? { stage: 'real', progress: 1 } : { stage: 'morph', progress: elapsed / length }
 }

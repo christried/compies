@@ -1,4 +1,4 @@
-import type { ClipView, SpinView, StandingView, VetoDrawView } from '~~/shared/stage'
+import type { ClipView, CountdownView, SpinView, StandingView, VetoDrawView } from '~~/shared/stage'
 import { ceremonyTimeline, type RunShape } from '~~/shared/ceremony'
 import { COIN_DURATION_MS, COIN_LAND_AT, COIN_SPIN_AT, type CoinToss } from '~~/shared/coin'
 import type { EmoteId } from '~~/shared/emote'
@@ -45,7 +45,7 @@ export const CUE_VOLUME: Record<CueId, number> = {
 }
 
 /** The moments whose cue files an Event page requests together (#740): each has its flag in `GroupInput` and its rule in `reachableGroups`. */
-export type CueGroup = 'wheel' | 'veto' | 'coin' | 'standings' | 'board' | 'ceremony' | 'tour' | 'emote'
+export type CueGroup = 'wheel' | 'veto' | 'coin' | 'standings' | 'board' | 'ceremony' | 'tour' | 'emote' | 'countdown'
 
 /** The groups a cue's file is requested for, at least one: a cue that two moments play (a voice cue) names both, and its file comes once. */
 export const CUE_GROUPS: Record<CueId, readonly [CueGroup, ...CueGroup[]]> = {
@@ -53,7 +53,8 @@ export const CUE_GROUPS: Record<CueId, readonly [CueGroup, ...CueGroup[]]> = {
   'wheel-windup': ['wheel'], 'wheel-tick': ['wheel'], 'wheel-stop': ['wheel'], 'wheel-morph': ['wheel'], 'wheel-slice-out': ['wheel'],
   'cb-hype': ['wheel'], 'cb-gulp': ['wheel'], 'cb-yay': ['wheel', 'tour'],
   // veto
-  'veto-open': ['veto'], 'veto-clock': ['veto'], 'veto-clip-close': ['veto'], 'veto-seal': ['veto'], 'veto-drumroll': ['veto'], 'veto-reveal': ['veto'],
+  // The Countdown's zero sounds like a Veto window's end (#958): the same three files, no new sample.
+  'veto-open': ['veto'], 'veto-clock': ['veto', 'countdown'], 'veto-clip-close': ['veto'], 'veto-seal': ['veto'], 'veto-drumroll': ['veto', 'countdown'], 'veto-reveal': ['veto', 'countdown'],
   // coin
   'coin-toss': ['coin'], 'coin-spin': ['coin'], 'coin-land': ['coin'], 'coin-result': ['coin'],
   // standings
@@ -95,6 +96,8 @@ export interface GroupInput {
   finished: boolean
   /** The Tour may start for this Member (`tourMayStart` without the layer and the calm second, #747): a rule of the Member's own state. */
   tour: boolean
+  /** `view.countdown != null` (#958): the running Session has a Countdown, the same for every Member; its files are there before it is started. */
+  countdown: boolean
 }
 
 /**
@@ -113,6 +116,7 @@ export function reachableGroups(input: GroupInput): CueGroup[] {
   if (input.finished) groups.push('ceremony')
   if (input.tour) groups.push('tour')
   if (input.emote) groups.push('emote')
+  if (input.countdown) groups.push('countdown')
   return groups
 }
 
@@ -143,7 +147,7 @@ export interface WheelCueInput {
    * sends every viewer from the spin's commit on; the draw's game (`game`, `labels`) stays out of the type, so it cannot be read by mistake.
    */
   spin: Pick<SpinView, 'spinStartAt' | 'stopAt' | 'slices' | 'resultIndex' | 'resultOffset'> | null
-  /** The Event's Hidden wheel setting, `view.settings?.hiddenWheel ?? false`. It delays the removal for every viewer. */
+  /** Whether the wheel hides its games now, `wheelHidden` of the Event's Hidden wheel setting and its uncover (#957). It delays the removal for every viewer. */
   hiddenWheel: boolean
   /** `view.event.isHost`: the Host sees the real names under a Hidden wheel and has no morph (LuckyWheel `concealed = hidden && !isHost`). */
   isHost: boolean
@@ -202,7 +206,7 @@ export function wheelCuePlan(input: WheelCueInput): Cue[] {
 export interface WheelVoiceInput {
   /** `view.wheel.spin`, only the two instants the read sends every viewer from the spin's commit on (ISO strings); null before the first spin. No slice, no result, no label, no game, and no `isHost`. */
   spin: Pick<SpinView, 'spinStartAt' | 'stopAt'> | null
-  /** `view.settings?.hiddenWheel ?? false`. It delays his cheer for EVERY viewer, the Host included: do not use the Host's `concealed`. */
+  /** `wheelHidden` of the setting and the uncover (#957). It delays his cheer for EVERY viewer, the Host included: do not use the Host's `concealed`. */
   hiddenWheel: boolean
   /** `reducedMotion()`, passed in; this module reads no DOM. */
   reducedMotion: boolean
@@ -256,6 +260,14 @@ const CLOCK_TICKS_BEFORE_END_MS = [10_000, 9000, 8000, 7000, 6000, 5000, 4500, 4
 /** `veto-drumroll` is one sample of 1.2 s that ends at the reveal. */
 const DRUMROLL_BEFORE_END_MS = 1200
 
+/** The sound of an end at `end` (a Veto window's, a Countdown's zero): the clock's fifteen ticks, the drumroll (not under reduced motion) and the reveal. */
+function endCues(end: number, reducedMotion: boolean): Cue[] {
+  const cues: Cue[] = CLOCK_TICKS_BEFORE_END_MS.map(before => ({ id: 'veto-clock', at: end - before }))
+  if (!reducedMotion) cues.push({ id: 'veto-drumroll', at: end - DRUMROLL_BEFORE_END_MS })
+  cues.push({ id: 'veto-reveal', at: end })
+  return cues
+}
+
 /**
  * The cues of a Veto window, ascending by `at`: the opening of a spin's window at the stop (a set game's is an arrival cue, its window opens
  * as the read arrives), then from the end, when it is known, the clock's fifteen ticks, the drumroll and the reveal, and the Clip's close at
@@ -272,13 +284,30 @@ export function vetoCuePlan(input: VetoCueInput): Cue[] {
   if (draw.kind === 'spin') cues.push({ id: 'veto-open', at: stop })
   if (draw.vetoEndsAt !== null) {
     const end = msOf(draw.vetoEndsAt)
-    for (const before of CLOCK_TICKS_BEFORE_END_MS) cues.push({ id: 'veto-clock', at: end - before })
-    if (!reducedMotion) cues.push({ id: 'veto-drumroll', at: end - DRUMROLL_BEFORE_END_MS })
-    cues.push({ id: 'veto-reveal', at: end })
+    cues.push(...endCues(end, reducedMotion))
   }
   if (clip !== null && clip.drawId === draw.drawId) cues.push({ id: 'veto-clip-close', at: msOf(clip.endsAt) })
   // The sort is stable: on one instant the order above stays.
   return cues.filter(cue => cue.at >= stop).sort((a, b) => a.at - b.at)
+}
+
+/** What the Countdown's plan reads (#958): the time left as stored and the start instant of the viewer's read, nothing else. */
+export interface CountdownCueInput {
+  /** `view.countdown`: null without one; `startedAt` is null while it is ready, paused or at zero. */
+  countdown: Pick<CountdownView, 'startedAt' | 'remainingMs'> | null
+  /** `reducedMotion()`: it leaves out the drumroll, as in the Veto window's plan. */
+  reducedMotion: boolean
+}
+
+/**
+ * The cues of a running Countdown, ascending by `at` (#958, spec #961 § Countdown sounds): its zero sounds like a Veto window's end, from the
+ * same offsets. The zero is the start plus the time it was started with (`countdownEndsAt`). A ready or paused Countdown plans nothing, so a pause
+ * cancels what is pending and a resume plans again; a cue before the start or the resume is left out, and one before now the player drops.
+ */
+export function countdownCuePlan({ countdown, reducedMotion }: CountdownCueInput): Cue[] {
+  if (countdown === null || countdown.startedAt === null) return []
+  const start = msOf(countdown.startedAt)
+  return endCues(start + countdown.remainingMs, reducedMotion).filter(cue => cue.at >= start).sort((a, b) => a.at - b.at)
 }
 
 /** What the Coin flip's plan reads: the toss's two instants and reduced motion. `side` and `id` are not in the type (§ Secrecy, ADR 0013 amendment). */

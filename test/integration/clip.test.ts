@@ -169,8 +169,10 @@ describe('the synced clip', () => {
     })
   })
 
+  // #959: a spin's Clip starts 1.5 s after the stop, once every device shows the drawn game's name; the read carries it from the stop
+  // on, so every device knows the start ahead and opens the Clip at it.
   describe('from a spin', () => {
-    it('starts at the wheel\'s stop and not before: a read during the spin has none', async () => {
+    it('is carried from the wheel\'s stop on and not before, and starts 1.5 s after the stop: a read during the spin has none', async () => {
       const game = await running({ wheel: true })
       const row = await spunHalo(game)
 
@@ -180,18 +182,29 @@ describe('the synced clip', () => {
 
       clock.advance(1)
       const view = await read(game, game.cookies.one)
-      expect(view.clip).toMatchObject({ drawId: row.id, startAt: iso(STOP), endsAt: iso(STOP + CLIP_MS), game: { id: game.halo.id } })
+      expect(view.clip).toMatchObject({ drawId: row.id, startAt: iso(STOP + 1500), endsAt: iso(STOP + 1500 + CLIP_MS), game: { id: game.halo.id } })
       expect((await read(game)).clip).toEqual(view.clip)
+      clock.advance(1499)
+      expect((await read(game, game.cookies.two)).clip).toEqual(view.clip)
+      clock.advance(1)
+      expect((await read(game, game.cookies.two)).clip).toEqual(view.clip)
     })
 
-    it('ends at the stop plus the clip length', async () => {
+    it('ends 1.5 s after the stop plus the clip length', async () => {
       const game = await running({ wheel: true })
       await spunHalo(game)
 
-      clock.advance(STOP + CLIP_MS - 1)
+      clock.advance(STOP + 1500 + CLIP_MS - 1)
       expect((await read(game)).clip).not.toBeNull()
       clock.advance(1)
       expect((await read(game)).clip).toBeNull()
+    })
+
+    it('ends its Veto window 30 s after the Clip\'s end', async () => {
+      const game = await running({ wheel: true, vetoAllowance: 2 })
+      const row = await spunHalo(game)
+
+      expect(row.vetoEndsAt).toEqual(new Date(iso(STOP + 1500 + CLIP_MS + 30_000)))
     })
 
     it('tells a Player under a Hidden wheel nothing about the drawn game before the stop', async () => {
@@ -213,7 +226,7 @@ describe('the synced clip', () => {
 
       clock.advance(STOP)
 
-      expect((await read(game, game.cookies.one)).clip?.game).toMatchObject({ id: game.halo.id, youtubeId: 'aaaaaaaaaaa' })
+      expect((await read(game, game.cookies.one)).clip).toMatchObject({ startAt: iso(STOP + 1500), game: { id: game.halo.id, youtubeId: 'aaaaaaaaaaa' } })
     })
   })
 
@@ -225,7 +238,7 @@ describe('the synced clip', () => {
     it('is accepted a second into the clip of a spin, is sealed from the other Party, and does not end the clip', async () => {
       const game = await running({ wheel: true, vetoAllowance: 2 })
       const row = await spunHalo(game)
-      clock.advance(STOP + 1000)
+      clock.advance(STOP + 2500)
       const clip = (await read(game, game.cookies.one)).clip
       expect(clip).toMatchObject({ drawId: row.id })
 
@@ -233,7 +246,7 @@ describe('the synced clip', () => {
 
       expect(response.status).toBe(200)
       expect(await response.json()).toMatchObject({ drawId: row.id, team: 1 })
-      expect(await testDb.db.select().from(vetoes)).toMatchObject([{ drawId: row.id, team: 1, castAt: new Date(iso(STOP + 1000)) }])
+      expect(await testDb.db.select().from(vetoes)).toMatchObject([{ drawId: row.id, team: 1, castAt: new Date(iso(STOP + 2500)) }])
       const own = await read(game, game.cookies.one)
       expect(own.clip).toEqual(clip)
       expect(own.wheel!.vetoes.own).toMatchObject({ team: 1, cast: true })

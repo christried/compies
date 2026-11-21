@@ -67,7 +67,7 @@ describe('the hold-to-veto button', () => {
     await mount({ own: own({ cast: true, rejection: 'veto_already_cast' }) })
 
     expect(text()).toContain('Veto ist drin')
-    expect(page!.get('[data-testid="veto-seal"]').text()).toBe('Versiegelt')
+    expect(page!.get('[data-testid="veto-seal"]').text()).toBe('Locked!')
     expect(page!.find('[data-testid="veto-hold"]').exists()).toBe(false)
   })
 

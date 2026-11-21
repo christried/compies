@@ -24,8 +24,11 @@ import {
   roundRowsOf,
   setReason,
   spinReason,
+  uncoverReason,
   vetoReason,
   vetoesLeftCounting,
+  wheelHiddenOf,
+  wheelUncoveredOf,
   type EventState,
   type StatePart,
 } from './event-state'
@@ -62,7 +65,7 @@ export type StageSection = (ctx: StageContext) => Promise<Partial<EventView>>
  * The stage's sections, run together by the Event read. A new piece is one entry here. A tuple, not a `StageSection[]`,
  * so `StageFields` below can be derived from what each section returns (review 0.8 Q7).
  */
-export const stageSections = [roundsSection, resultsSection, clipSection, countdownSection, coinSection, ceremonySection] as const satisfies readonly StageSection[]
+export const stageSections = [roundsSection, resultsSection, clipSection, countdownSection, coinSection, ceremonySection, uncoverSection] as const satisfies readonly StageSection[]
 
 type UnionToIntersection<U> = (U extends unknown ? (value: U) => void : never) extends (value: infer I) => void ? I : never
 
@@ -119,7 +122,7 @@ export async function roundsSection({ db, state, viewer, now }: StageContext): P
     setGame: viewer.isHost
       ? { rejection: setReason(state, true), spinRejection: spinReason(state, true), respin: roundRows.some(round => waitsForRespin(round, draws)), left, poolWarning: poolWarningOf(state, viewer, vetoesLeft, left) }
       : null,
-    wheel: settings !== null && withBonus && vetoesLeft && onWheel ? await wheelView(db, withBonus, viewer, now, settings.hiddenWheel, left, vetoesLeft) : null,
+    wheel: settings !== null && withBonus && vetoesLeft && onWheel ? await wheelView(db, withBonus, viewer, now, wheelHiddenOf(state), left, vetoesLeft) : null,
     bonusVetoes: withBonus && viewer.isHost ? bonusVetoView(withBonus) : null,
   }
 }
@@ -277,6 +280,15 @@ export async function countdownSection({ db, eventRow, state }: StageContext): P
  */
 export async function coinSection({ state }: StageContext): Promise<Pick<EventView, 'coin'>> {
   return { coin: state.toss ? coinView(state.toss) : null }
+}
+
+/**
+ * The uncover of the Hidden wheel (#957, spec #961 § Uncover): whether the Host has uncovered it, the same for every Member, and the Host's part,
+ * why it cannot be uncovered now (uncoverReason, the rule the route enforces); null for every other Member. What the uncover shows is the wheel's
+ * own read (roundsSection, through `wheelHiddenOf`).
+ */
+export async function uncoverSection({ eventRow, state, viewer }: StageContext): Promise<Pick<EventView, 'wheelUncovered' | 'uncover'>> {
+  return { wheelUncovered: wheelUncoveredOf(eventRow), uncover: viewer.isHost ? { rejection: uncoverReason(state, true) } : null }
 }
 
 /** The Award ceremony (#309, spec #308): the latest start of a finished Event, identical for every viewer (nothing in it is secret); null before the first start. */

@@ -227,7 +227,8 @@ describe('a Member under a Hidden wheel', () => {
     const noSecret = () => {
       // The names of this file's games are „Spiel s0“ and so on (the count's „Spielen“ in the accessible name is not one of them).
       expect(disc()).not.toMatch(/slot-|\bs\d+\b|Spiel s|Spiel n|Halo|Kart|Schach/)
-      expect(labelsOf(page!).every(label => label === '???')).toBe(true)
+      // The copy's placeholder names in their order, one per slice (#949).
+      expect(labelsOf(page!)).toEqual(['Schießen Springen Sch…', 'Liga der Lemminge', 'Disco Disco Party Par…', 'Raketenliga'].slice(0, labelsOf(page!).length))
     }
     const three = slicesOf(page)
 
@@ -327,7 +328,7 @@ describe('the edges', () => {
     expect(labelsOf(page)).toEqual(['Spiel s2', 'Spiel s1', 'Spiel s0'])
 
     await change(hiddenOf(3))
-    expect(labelsOf(page)).toEqual(['???', '???', '???'])
+    expect(labelsOf(page)).toEqual(['Schießen Springen Sch…', 'Liga der Lemminge', 'Disco Disco Party Par…'])
     expect(slicesOf(page)).toEqual(slicesOf(await fresh(hiddenOf(3))))
   })
 })

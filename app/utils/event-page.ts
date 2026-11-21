@@ -1,6 +1,7 @@
 import { hasStarted, nextSession, noSessionLeft, runningOf, sessionState, type SessionState } from '~~/shared/session-state'
 import type { EventView, Phase, SessionView } from '~~/shared/event'
 import { leadingTeams } from '~~/shared/finish'
+import { wheelHidden } from '~~/shared/uncover'
 import { stageBlocks, type Block, type PageKind, type StageCounted, type StageInput } from './event-stage'
 import type { Translate } from './settings-summary'
 
@@ -65,6 +66,14 @@ export function startedIn(kind: Kind): boolean {
 /** The notice about uneven teams has a place on the page: not in a running Session and not after the last one (#166). */
 export function unevenNoticeIn(kind: Kind): boolean {
   return kind !== 'running' && kind !== 'done' && kind !== 'finished'
+}
+
+/**
+ * Whether this read's wheel hides its games now (#957): `wheelHidden` of the Event's Hidden wheel setting and its uncover. The page's wheel
+ * and its cue plan ask this, so neither reads the setting alone (CODING_STANDARDS.md § One home per concern).
+ */
+export function viewWheelHidden(view: Pick<EventView, 'settings' | 'wheelUncovered'>): boolean {
+  return wheelHidden(view.settings?.hiddenWheel ?? false, view.wheelUncovered)
 }
 
 /**

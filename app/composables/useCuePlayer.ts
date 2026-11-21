@@ -1,6 +1,7 @@
 import { createCuePlayer, exposesCueLog, type CueLogEntry, type CuePlayer } from '~/utils/cue-player'
+import { viewWheelHidden } from '~/utils/event-page'
 import { reducedMotion } from '~/utils/motion'
-import { coinCuePlan, cueFileUrl, cueFilesOf, reachableGroups, vetoArrivalCues, vetoCuePlan, wheelCuePlan, wheelVoicePlan, type Cue, type GroupInput, type VetoArrivalState } from '~/utils/sound-cues'
+import { coinCuePlan, countdownCuePlan, cueFileUrl, cueFilesOf, reachableGroups, vetoArrivalCues, vetoCuePlan, wheelCuePlan, wheelVoicePlan, type Cue, type GroupInput, type VetoArrivalState } from '~/utils/sound-cues'
 import type { EventView } from '~~/shared/event'
 import { TOUR_CALM_MS, tourMayStart, tourStartInputOf } from '~~/shared/tour'
 
@@ -37,6 +38,8 @@ function groupInputOf(view: EventView | null | undefined, storedTourVersion: num
     // The Tour may start for this Member (#747): the Tour's own rule, asked with the layer closed and the calm second over, so the files are there before
     // the greeting. It reads the Member's stored version and the Event's host flag, phase and running Session, nothing of a draw, a Result or a ceremony.
     tour: tourMayStart(tourStartInputOf(view, storedTourVersion, false, TOUR_CALM_MS)),
+    // The Countdown (#958): every Member's read has it while a Session runs.
+    countdown: view?.countdown != null,
   }
 }
 
@@ -48,7 +51,8 @@ function groupInputOf(view: EventView | null | undefined, storedTourVersion: num
 function planOf(view: EventView): Cue[] {
   const spin = view.wheel?.spin
   const draw = view.wheel?.vetoes.draw
-  const hiddenWheel = view.settings?.hiddenWheel ?? false
+  // An uncovered Hidden wheel spins as a visible one (#957): no morph, the visible removal and cheer.
+  const hiddenWheel = viewWheelHidden(view)
   const reduced = reducedMotion()
   return [
     ...wheelCuePlan({
@@ -69,6 +73,8 @@ function planOf(view: EventView): Cue[] {
     }),
     // The Coin flip: the toss's two instants only, never its side (ADR 0013 amendment).
     ...coinCuePlan({ toss: view.coin ? { startedAt: view.coin.startedAt, landsAt: view.coin.landsAt } : null, reducedMotion: reduced }),
+    // The Countdown's zero (#958): its start and the time left only.
+    ...countdownCuePlan({ countdown: view.countdown ? { startedAt: view.countdown.startedAt, remainingMs: view.countdown.remainingMs } : null, reducedMotion: reduced }),
   ]
 }
 

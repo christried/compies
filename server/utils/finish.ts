@@ -9,7 +9,8 @@ import { finishReason, readEventState } from './event-state'
 import { closeSessions } from './sessions'
 import { requireSettings } from './settings'
 
-// The Host finishes the Event (#277, spec #272): once every Round up to the Game count has its Result, the Event is finished for good. The
+// The Host finishes the Event (#277, spec #272): once every Round up to the Game count has its Result, or earlier once the Event is decided and
+// no Round waits for its Result (#953: the early Finish, same request, the Game count stays), the Event is finished for good. The
 // finish ends the Running Session, withdraws the Sessions that have not started, sets the Phase and the end instant, and writes one feed
 // entry, and deletes the stored Team names (#438). It runs under the Event lock (changeEvent, `lock: 'update'`), so a Result that races it waits and then answers wrong_phase.
 

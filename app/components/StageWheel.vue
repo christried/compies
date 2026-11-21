@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { viewWheelHidden } from '~/utils/event-page'
 import type { EventView } from '~~/shared/event'
 
 // The wheel block of the Event page (#229, #231, #257): the Lucky Wheel and, while a draw has its Veto window, the window. The page
@@ -17,7 +18,7 @@ const wheel = computed(() => props.view.wheel!)
   <div class="flex flex-col gap-[18px] md:gap-[22px]">
     <LuckyWheel
       :wheel="wheel"
-      :hidden="view.settings?.hiddenWheel ?? false"
+      :hidden="viewWheelHidden(view)"
       :is-host="view.event.isHost"
       :server-now="serverNow"
       :host-games="view.hostGames"

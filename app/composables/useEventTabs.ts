@@ -1,6 +1,7 @@
 import { History, LayoutGrid, MessageSquare, Trophy } from '@lucide/vue'
 import type { Component } from 'vue'
 import type { useEventRoom } from '~/composables/useEventRoom'
+import type { ActivityType } from '~~/shared/activity'
 import { MD_QUERY } from '~/composables/useMediaQuery'
 import type { TabBarItem } from '~/components/TabBar.vue'
 import type { PanelTab } from '~/components/SidePanel.vue'
@@ -9,7 +10,8 @@ import type { PanelTab } from '~/components/SidePanel.vue'
 // which tabs exist and where they show: a phone's tab bar (`phone`), the side panel from md up (`panel`). A tab added to the
 // table gets its item in both lists and its view in the page's template (#274 added „Tabelle“ this way). The feed and the Chat are each mounted once:
 // in the side panel from md up (the panel's tab) and in a view of its own below md (#765 gave the Chat its phone view); the wide layout is known after mount only,
-// so nothing of either renders before. Both count what arrives while another view is shown, and the side panel's tabs count by the same rule (#778).
+// so nothing of either renders before. Both count what arrives while another view is shown, and the side panel's tabs count by the same rule (#778);
+// „Tabelle“ counts the Results that arrive by that rule too (#951).
 
 export type EventTabKey = 'event' | 'standings' | 'activity' | 'chat'
 
@@ -44,12 +46,15 @@ const PANEL_TABS = onSurface('panel')
 /** The tab the side panel opens on: the Chat (#761; the feed before 0.18, #274). Chosen at mount, not remembered. */
 const PANEL_DEFAULT: EventTabKey = 'chat'
 
-/** The tabs that count what they receive while another view is shown: the feed (#274) and the Chat (#765). „Tabelle“ counts nothing. */
-type CountedTab = 'activity' | 'chat'
+/** The tabs that count what they receive while another view is shown: the feed (#274), the Chat (#765) and „Tabelle“, which counts Results (#951). */
+type CountedTab = 'activity' | 'chat' | 'standings'
 
 function isCounted(key: string): key is CountedTab {
-  return key === 'activity' || key === 'chat'
+  return key === 'activity' || key === 'chat' || key === 'standings'
 }
+
+/** The entry types that change the Standings: a Result entered and a Correction (#951). */
+const RESULT_TYPES: readonly ActivityType[] = ['result_entered', 'result_corrected']
 
 function isTabKey(key: string): key is EventTabKey {
   return TABS.some(tab => tab.key === key)
@@ -60,18 +65,22 @@ export function useEventTabs(room: Pick<ReturnType<typeof useEventRoom>, 'on'>, 
   const wide = useMediaQuery(MD_QUERY)
   const panelTab = ref<string>(PANEL_DEFAULT)
   const activeView = ref<EventTabKey>('event')
-  const unread = reactive<Record<CountedTab, number>>({ activity: 0, chat: 0 })
+  const unread = reactive<Record<CountedTab, number>>({ activity: 0, chat: 0, standings: 0 })
 
   // The tab the screen shows: the phone's view below md, the panel's tab from md up (and before the answer, when nothing is on the phone yet) (#778).
   const shown = computed<string>(() => (wide.value === false ? activeView.value : panelTab.value))
 
-  // One rule for both counting tabs and both layouts (#765, #778). The shown tab counts nothing, and neither does the viewer's own Message.
-  // The room sends once and replays nothing, so no de-duplication.
+  // One rule for the counting tabs and both layouts (#765, #778, #951). The shown tab counts nothing, and neither does the viewer's own Message
+  // or a Result the viewer entered (the Host). The room sends once and replays nothing, so no de-duplication.
   function arrived(tab: CountedTab, own = false) {
     if (own || shown.value === tab) return
     unread[tab] += 1
   }
-  room.on('activity.added', () => arrived('activity'))
+  room.on('activity.added', ({ entry }) => {
+    arrived('activity')
+    // The room's messages are not checked on arrival (ActivityFeed's readEntry), so a malformed one counts on no Tabelle.
+    if (RESULT_TYPES.includes(entry?.type)) arrived('standings', entry.actor?.id === viewerId())
+  })
   room.on('chat.added', ({ message }) => arrived('chat', message.writerId === viewerId()))
   // Any change of the shown tab clears the count of the tab now shown: a phone's tap, a click or arrow key in the panel, the Tour's switch and its restore, a resize.
   // Synchronous, so a count is gone the moment the tab is selected, before the next render.

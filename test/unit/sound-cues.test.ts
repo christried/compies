@@ -7,8 +7,8 @@ import { CUE_LENGTHS } from '../../app/utils/cue-lengths'
 import { groupInput } from './group-input'
 import { pinCrossings } from '../../app/utils/wheel-pins'
 import {
-  ARRIVAL_LATE_MS, CUE_GROUPS, CUE_IDS, CUE_VOLUME, EMOTE_CUE, OTHERS_EMOTE_VOLUME, STAMP_GAP_MS, TICK_MIN_GAP_MS, cueFilesOf, emoteCue, reachableGroups, thinTicks, vetoArrivalCues, vetoCuePlan, wheelCuePlan,
-  type ArrivalCue, type Cue, type CueGroup, type CueId, type GroupInput, type VetoArrivalState, type VetoCueInput, type WheelCueInput,
+  ARRIVAL_LATE_MS, CUE_GROUPS, CUE_IDS, CUE_VOLUME, EMOTE_CUE, OTHERS_EMOTE_VOLUME, STAMP_GAP_MS, TICK_MIN_GAP_MS, countdownCuePlan, cueFilesOf, emoteCue, reachableGroups, thinTicks, vetoArrivalCues, vetoCuePlan, wheelCuePlan,
+  type ArrivalCue, type CountdownCueInput, type Cue, type CueGroup, type CueId, type GroupInput, type VetoArrivalState, type VetoCueInput, type WheelCueInput,
 } from '../../app/utils/sound-cues'
 
 // The wheel's cue plan (#530, spec #504 § The cue plan): which sound cue is due at which server time for a spin, as a pure function of the
@@ -383,6 +383,53 @@ describe('vetoCuePlan keeps the Vetoes secret', () => {
   })
 })
 
+// The Countdown's plan (#958, spec #961 § Countdown sounds): the end of a Veto window's sound at the Countdown's zero, from the same offsets. The
+// end is the running Countdown's start plus the time it was started with; a ready or paused one plans nothing.
+describe('countdownCuePlan', () => {
+  const running = (remainingMs: number, startMs = 0): CountdownCueInput => ({ countdown: { startedAt: iso(START + startMs), remainingMs }, reducedMotion: false })
+  const endCuesOfWindow = (endMs: number, reducedMotion = false) =>
+    vetoCuePlan({ draw: drawOf(endMs), clip: null, reducedMotion }).filter(cue => cue.id !== 'veto-open')
+
+  it('gives a running Countdown of 60 s the Veto window\'s fifteen ticks, its drumroll and its reveal, at the same offsets from its zero', () => {
+    const cues = countdownCuePlan(running(60_000))
+
+    expect(cues).toEqual(endCuesOfWindow(60_000))
+    expect(at(cues).at(-1)).toEqual(['veto-reveal', 60_000])
+    expect(offsets(cues, 'veto-drumroll')).toEqual([58_800])
+    expect(offsets(cues, 'veto-clock')).toEqual([50_000, 51_000, 52_000, 53_000, 54_000, 55_000, 55_500, 56_000, 56_500, 57_000, 57_500, 58_000, 58_500, 59_000, 59_500])
+  })
+
+  it('leaves out the drumroll under reduced motion, and changes nothing else', () => {
+    const cues = countdownCuePlan({ ...running(60_000), reducedMotion: true })
+
+    expect(cues).toEqual(countdownCuePlan(running(60_000)).filter(cue => cue.id !== 'veto-drumroll'))
+    expect(cues).toEqual(endCuesOfWindow(60_000, true))
+  })
+
+  it('plans nothing without a Countdown, for a ready one and for a paused one', () => {
+    expect(countdownCuePlan({ countdown: null, reducedMotion: false })).toEqual([])
+    expect(countdownCuePlan({ countdown: { startedAt: null, remainingMs: 60_000 }, reducedMotion: false })).toEqual([])
+    expect(countdownCuePlan({ countdown: { startedAt: null, remainingMs: 4000 }, reducedMotion: false })).toEqual([])
+  })
+
+  it('plans from a resume with 4 s left only what is at or after the resume: the end from the resume plus the time left', () => {
+    const cues = countdownCuePlan(running(4000, 30_000))
+
+    expect(at(cues)).toEqual([
+      ...[30_000, 30_500, 31_000, 31_500, 32_000, 32_500].map(offset => ['veto-clock', offset]),
+      ['veto-drumroll', 32_800],
+      ['veto-clock', 33_000],
+      ['veto-clock', 33_500],
+      ['veto-reveal', 34_000],
+    ])
+  })
+
+  it('keeps a tick on the start of a 5 s Countdown and drops the one a millisecond before it', () => {
+    expect(offsets(countdownCuePlan(running(5000)), 'veto-clock')).toEqual([0, 500, 1000, 1500, 2000, 2500, 3000, 3500, 4000, 4500])
+    expect(offsets(countdownCuePlan(running(4999)), 'veto-clock')).toEqual([-1 + 500, -1 + 1000, -1 + 1500, -1 + 2000, -1 + 2500, -1 + 3000, -1 + 3500, -1 + 4000, -1 + 4500])
+  })
+})
+
 // The arrival cues (#532): what the arrival of a read causes, not a time known ahead. A pure function of the page's previous and its new read.
 describe('vetoArrivalCues', () => {
   const NOW = START + 1000
@@ -564,7 +611,7 @@ describe('the cue ids and their volumes', () => {
 // plan and files (#829).
 describe('reachableGroups', () => {
   /** A group's place in the order of the `CueGroup` union, which `reachableGroups` returns ascending. A new group is a compile error until it has one. */
-  const PLACE: Record<CueGroup, number> = { wheel: 0, veto: 1, coin: 2, standings: 3, board: 4, ceremony: 5, tour: 6, emote: 7 }
+  const PLACE: Record<CueGroup, number> = { wheel: 0, veto: 1, coin: 2, standings: 3, board: 4, ceremony: 5, tour: 6, emote: 7, countdown: 8 }
 
   /** Each case is a read with its flags and the groups it reaches: every group has one row where only its own flag is on. */
   const ROWS: [name: string, over: Partial<GroupInput>, reached: CueGroup[]][] = [
@@ -579,6 +626,7 @@ describe('reachableGroups', () => {
     ['a finished Event', { finished: true }, ['ceremony']],
     ['the Tour\'s flag', { tour: true }, ['tour']],
     ['the Emote\'s flag', { emote: true }, ['emote']],
+    ['a Countdown in the read', { countdown: true }, ['countdown']],
   ]
 
   it.each(ROWS)('reaches exactly the right groups with %s', (_name, over, reached) => {
@@ -594,7 +642,7 @@ describe('reachableGroups', () => {
   })
 
   it('returns every group, in the order of the union, once, with every flag on', () => {
-    const all = reachableGroups(groupInput({ wheel: true, vetoAllowance: 2, vetoWindow: true, sessionRunning: true, toss: true, standings: true, board: true, emote: true, finished: true, tour: true }))
+    const all = reachableGroups(groupInput({ wheel: true, vetoAllowance: 2, vetoWindow: true, sessionRunning: true, toss: true, standings: true, board: true, emote: true, finished: true, tour: true, countdown: true }))
 
     expect(all).toEqual(Object.keys(PLACE).sort((a, b) => PLACE[a as CueGroup] - PLACE[b as CueGroup]))
   })
@@ -614,7 +662,7 @@ describe('the input of the group rule (Secrecy)', () => {
    * which of the two it is, and a field that is neither (a game, a label, a side, an instant) has no row it could take.
    */
   const KIND = {
-    wheel: 'flag', vetoAllowance: 'count', vetoWindow: 'flag', sessionRunning: 'flag', toss: 'flag', standings: 'flag', board: 'flag', emote: 'flag', finished: 'flag', tour: 'flag',
+    wheel: 'flag', vetoAllowance: 'count', vetoWindow: 'flag', sessionRunning: 'flag', toss: 'flag', standings: 'flag', board: 'flag', emote: 'flag', finished: 'flag', tour: 'flag', countdown: 'flag',
   } satisfies Record<keyof GroupInput, 'flag' | 'count'>
 
   it('holds only flags and one count, and every field of the type has a row', () => {
@@ -653,6 +701,11 @@ describe('cueFilesOf', () => {
   it('is the four Emote cues in the order of CUE_IDS for the Emote\'s group, each only there (#770)', () => {
     expect(cueFilesOf(['emote'])).toEqual(['emo-clap', 'emo-haha', 'emo-grr', 'emo-roar'])
     for (const id of cueFilesOf(['emote'])) expect(CUE_GROUPS[id]).toEqual(['emote'])
+  })
+
+  it('is the Veto window\'s end cues for the Countdown\'s group, with no new file (#958)', () => {
+    expect(cueFilesOf(['countdown'])).toEqual(['veto-clock', 'veto-drumroll', 'veto-reveal'])
+    for (const id of cueFilesOf(['countdown'])) expect(CUE_GROUPS[id]).toEqual(['veto', 'countdown'])
   })
 
   it('is empty for no group', () => {

@@ -10,7 +10,7 @@ import type { Db } from './db'
 import { apiError } from './errors'
 import type { ChangeCore, EventChange, EventRow } from './event-access'
 import { dueDraws } from './draw-timeline'
-import { gamesLeftOf, partyOf, readEventState, roundRowsOf, setReason, spinReason, vetoReason, vetoesLeftOf, withParts } from './event-state'
+import { gamesLeftOf, partyOf, readEventState, roundRowsOf, setReason, spinReason, vetoReason, vetoesLeftOf, wheelHiddenOf, withParts } from './event-state'
 import { notArchived, ownedBy } from './library'
 import { settleDue } from './settle'
 
@@ -101,8 +101,9 @@ export async function spinWheel({ tx, eventRow, user, publish, now }: ChangeCore
   const state = await readEventState(tx, eventRow, now, ['sessions', 'members', 'rounds', 'pool'])
   const rejection = spinReason(state, eventRow.hostId === user.id)
   if (rejection) throw apiError(rejection)
-  // The rules above refused an Event without settings. The Vetoes are read after them: a refused spin reads no more.
-  const hidden = state.settings!.hiddenWheel
+  // The rules above refused an Event without settings. The Vetoes are read after them: a refused spin reads no more. An uncovered wheel spins
+  // without placeholders, as a visible one (#957).
+  const hidden = wheelHiddenOf(state)
   const vetoesLeft = vetoesLeftOf(await withParts(tx, state, ['vetoes', 'bonus']))
 
   const left = gamesLeftOf(state)

@@ -37,7 +37,7 @@ const WHEEL: Fields = { wheel: { count: 2, slices: null, spin: null, vetoes: { l
 const COUNTDOWN: Fields = { countdown: { durationMs: 60_000, remainingMs: 60_000, startedAt: null, lastStartedAt: null } }
 const TOSS: Fields = { coin: { id: 'toss-1', side: 'heads', startedAt: SAT, landsAt: SUN } }
 const POOL_WARNING: Fields = { setGame: { rejection: null, spinRejection: null, respin: false, left: [], poolWarning: { needed: 10, have: 2 } } }
-const endOf = (played: number, gameCount: number, tie: number[] | null = null): Fields => ({ end: { played, gameCount, complete: played >= gameCount, tie, finish: null, lastGame: null } })
+const endOf = (played: number, gameCount: number, tie: number[] | null = null): Fields => ({ end: { played, gameCount, complete: played >= gameCount, tie, decided: false, finish: null, lastGame: null } })
 const STANDINGS = endOf(1, 6)
 const TIE = endOf(3, 3, [1, 2])
 const LEFT_ONE = endOf(2, 3)

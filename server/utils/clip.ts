@@ -1,7 +1,7 @@
 import { desc, eq } from 'drizzle-orm'
 import { draws, games, rounds } from '../db/schema'
 import { isoInstant } from '../../shared/activity'
-import { clipRunning, clipWindow } from '../../shared/draw-timeline'
+import { clipEnded, clipWindow } from '../../shared/draw-timeline'
 import type { ClipSkipped, ClipView } from '../../shared/stage'
 import { runningOf } from '../../shared/session-state'
 import type { Db } from './db'
@@ -17,7 +17,11 @@ import type { SessionRow } from './sessions'
 // Members who join later. The rule is
 // shared/clip.ts (the position) and shared/draw-timeline.ts (the window); every instant comes from the request's clock (ADR 0013, amended 2026-10-31).
 
-/** The clip that runs at `now` in a Running Session, the same for every Member, or null. */
+/**
+ * The latest stopped draw's clip in a Running Session, the same for every Member, from the draw's stop on until the clip's end, or null.
+ * It is carried before its start too (#959: a spin's Clip starts 1.5 s after the stop), so the read at the stop already holds the start
+ * and every device opens the Clip at it; the client shows nothing before it.
+ */
 export async function readClip(db: Db, eventId: string, sessions: readonly SessionRow[], now: Date): Promise<ClipView | null> {
   if (!runningOf(sessions)) return null
   // The latest draw that has stopped, and only that one: a draw skipped or put back does not hand its clip back to an earlier one.
@@ -32,7 +36,7 @@ export async function readClip(db: Db, eventId: string, sessions: readonly Sessi
     .limit(1)
   if (!latest || latest.draw.clipSkippedAt !== null || latest.putBackAt !== null) return null
   const window = clipWindow(latest.draw, latest.game)
-  if (!clipRunning(window, now)) return null
+  if (clipEnded(window, now)) return null
   return { drawId: latest.draw.id, startAt: isoInstant(new Date(window.startAt)), endsAt: isoInstant(new Date(window.endsAt)), game: roundGameView(latest.game) }
 }
 
@@ -41,7 +45,7 @@ type Change = Pick<EventChange, 'tx' | 'eventRow' | 'now'>
 /**
  * The Host skips the clip that runs (#230, spec #218 § Clip): for everyone, also for those who join later, because the instant is
  * stored on the draw. The same statement moves the draw's Veto window to end 30 s after the skip when that is sooner (#506): never
- * later, and a draw without a window stays without one (`movedVetoEnd`). A draw that stopped is settled first (`changeEvent`, #229), then the clip is the one the read would show at `now`; none
+ * later, and a draw without a window stays without one (`movedVetoEnd`). A draw that stopped is settled first (`changeEvent`, #229), then the clip is the one the read would show at `now` (from the stop on, #959); none
  * is `no_clip`. `changeEvent` publishes `event.changed` after the commit, so every client refetches and closes its player.
  */
 export async function skipClip({ tx, eventRow, now }: Change): Promise<ClipSkipped> {

@@ -6,12 +6,15 @@ import type { RoundGame } from '~~/shared/game'
 import type { SpinView, WheelView } from '~~/shared/stage'
 import { stubInView } from './in-view'
 
-// The pops at the stop (#523, 04-motion § Lucky Wheel `stop`): the drawn label and the result card pop from the server's time alone, so a
+// The pops at the stop (#523, 04-motion § Lucky Wheel `stop`): the drawn label at the stop and the result card at the Clip's start, 1.5 s
+// later (#959), pop from the server's time alone, so a
 // Member who arrives later sees the end state with no replay. What the User sees is the card's scale and opacity and the drawn label's
 // scaleY, read here from the DOM at server times the test sets. The curve itself is tested in test/unit/wheel-stop.test.ts.
 
 const START = Date.UTC(2090, 10, 7, 20, 0, 0)
 const STOP = START + 6000
+/** The spin's Clip starts here, and the result card pops in with it (#959). */
+const CLIP = STOP + 1500
 const iso = (ms: number) => new Date(ms).toISOString()
 
 const halo: RoundGame = { id: 'g-halo', name: 'Halo', imageUrl: null, youtubeId: null, clipStart: 0, clipLength: 30, playersMin: 2, playersMax: 4, suitabilities: [], price: null }
@@ -77,25 +80,37 @@ describe('the pops at the stop', () => {
     expect(label().attributes('transform')).toContain('scale(1 1)')
   })
 
-  it('starts both small at the stop: the card at 0.6 and invisible, the label flat', async () => {
+  it('starts the label small at the stop, flat, and shows no card yet: it comes with the Clip (#959)', async () => {
     await mount(wheelOf(spinOf()))
     await at(STOP - 100)
     await at(STOP)
 
-    expect(cardScale()).toBe(0.6)
-    expect(cardOpacity()).toBe(0)
     expect(labelScale()).toBe(0)
+    expect(card().exists()).toBe(false)
   })
 
-  it('pops past its size near the peak, 1.08 for the card and 1.25 for the label at most', async () => {
+  it('starts the card small at the Clip\'s start, 1.5 s after the stop: at 0.6 and invisible (#959)', async () => {
+    await mount(wheelOf(spinOf()))
+    await at(STOP - 100)
+    await at(CLIP - 1)
+    expect(card().exists()).toBe(false)
+    await at(CLIP)
+
+    expect(cardScale()).toBe(0.6)
+    expect(cardOpacity()).toBe(0)
+  })
+
+  it('pops past its size near the peak, 1.25 for the label at most after the stop and 1.08 for the card after the Clip\'s start', async () => {
     await mount(wheelOf(spinOf()))
     await at(STOP - 100)
     await at(STOP + 54)
 
-    expect(cardScale()).toBeGreaterThan(1.05)
-    expect(cardScale()).toBeLessThanOrEqual(1.08)
     expect(labelScale()).toBeGreaterThan(1.15)
     expect(labelScale()).toBeLessThanOrEqual(1.25)
+
+    await at(CLIP + 54)
+    expect(cardScale()).toBeGreaterThan(1.05)
+    expect(cardScale()).toBeLessThanOrEqual(1.08)
   })
 
   it('dips a little under its size in the overshoot', async () => {
@@ -103,16 +118,18 @@ describe('the pops at the stop', () => {
     await at(STOP - 100)
     await at(STOP + 250)
 
-    expect(cardScale()).toBeGreaterThan(0.97)
-    expect(cardScale()).toBeLessThan(1)
     expect(labelScale()).toBeGreaterThan(0.93)
     expect(labelScale()).toBeLessThan(1)
+
+    await at(CLIP + 250)
+    expect(cardScale()).toBeGreaterThan(0.97)
+    expect(cardScale()).toBeLessThan(1)
   })
 
   it('rests after the run, and the card has no style left: nothing of the pop stays on it (#584 P4)', async () => {
     await mount(wheelOf(spinOf()))
     await at(STOP - 100)
-    await at(STOP + 3000)
+    await at(CLIP + 3000)
 
     expect(card().attributes('style')).toBeUndefined()
     expect(cardScale()).toBe(1)
@@ -121,18 +138,18 @@ describe('the pops at the stop', () => {
     expect(unrotated(2)).toBe(unrotated(0))
   })
 
-  it('ends the card\'s style with the run: still there at 419 ms after the stop, gone at 420 ms', async () => {
+  it('ends the card\'s style with the run: still there at 419 ms after the Clip\'s start, gone at 420 ms', async () => {
     await mount(wheelOf(spinOf()))
     await at(STOP - 100)
 
-    await at(STOP + 419)
+    await at(CLIP + 419)
     expect(card().attributes('style')).toBeDefined()
-    await at(STOP + 420)
+    await at(CLIP + 420)
     expect(card().attributes('style')).toBeUndefined()
   })
 
   it('shows a late joiner the end state at once, with no frame below its size', async () => {
-    serverMs = STOP + 1500
+    serverMs = CLIP + 1500
     await mount(wheelOf(spinOf()))
 
     expect(card().exists()).toBe(true)
@@ -141,7 +158,7 @@ describe('the pops at the stop', () => {
     expect(cardOpacity()).toBe(1)
     expect(labelScale()).toBe(1)
     expect(unrotated(2)).toBe(unrotated(0))
-    await at(STOP + 1550)
+    await at(CLIP + 1550)
     expect(card().attributes('style')).toBeUndefined()
     expect(cardScale()).toBe(1)
   })
@@ -153,6 +170,7 @@ describe('the pops at the stop', () => {
     await at(STOP + 54)
 
     expect(labelScale(0)).toBeGreaterThan(1.15)
+    await at(CLIP)
     expect(card().exists()).toBe(true)
   })
 
@@ -168,16 +186,19 @@ describe('the pops at the stop', () => {
 })
 
 describe('the pops under reduced motion', () => {
-  it('crossfades the card and the drawn label in place, with no scale', async () => {
+  it('crossfades the drawn label at the stop and the card at the Clip\'s start in place, with no scale', async () => {
     document.documentElement.style.setProperty('--cp-motion', 'reduced')
     await mount(wheelOf(spinOf()))
     await at(STOP - 100)
     await at(STOP + 100)
 
-    expect(cardScale()).toBe(1)
-    expect(cardOpacity()).toBeCloseTo(0.5, 1)
     expect(labelScale()).toBe(1)
     expect(Number(label().attributes('opacity'))).toBeCloseTo(0.5, 1)
+    expect(card().exists()).toBe(false)
+
+    await at(CLIP + 100)
+    expect(cardScale()).toBe(1)
+    expect(cardOpacity()).toBeCloseTo(0.5, 1)
     expect(card().attributes('style')).toBeDefined()
   })
 
@@ -186,9 +207,9 @@ describe('the pops under reduced motion', () => {
     await mount(wheelOf(spinOf()))
     await at(STOP - 100)
 
-    await at(STOP + 199)
+    await at(CLIP + 199)
     expect(card().attributes('style')).toBeDefined()
-    await at(STOP + 200)
+    await at(CLIP + 200)
     expect(card().attributes('style')).toBeUndefined()
   })
 })

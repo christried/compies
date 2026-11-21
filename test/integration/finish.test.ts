@@ -506,6 +506,77 @@ describe('Finishing the Event', () => {
     })
   })
 
+  // The early Finish (#953, GLOSSARY: Finish): two Parties with the Points table 1, 0, so one Round closes at most 1 point. After two
+  // Results for Party 1 the gap is 2: decided with one Round left (Game count 3), not with two (Game count 4, an equal gap).
+  describe('the early Finish (#953)', () => {
+    /** A running Event of Game count `gameCount` in which Party 1 won the first two Rounds. */
+    async function twoUp(gameCount: number) {
+      const game = await running({ gameCount })
+      const first = await setRound(game, game.halo.id)
+      const second = await setRound(game, game.kart.id)
+      expect((await enter(game, first, { places: teamOneWins })).status).toBe(200)
+      expect((await enter(game, second, { places: teamOneWins })).status).toBe(200)
+      return game
+    }
+
+    it('reads a decided Event to everyone, and offers the Host the finish before the Game count', async () => {
+      const game = await twoUp(3)
+
+      expect((await read(game)).end).toMatchObject({ played: 2, gameCount: 3, complete: false, tie: null, decided: true, finish: { rejection: null } })
+      expect((await read(game, game.cookies.three)).end).toMatchObject({ complete: false, decided: true, finish: null })
+    })
+
+    it('finishes a decided Event with its sole leader: the Session ends, one feed entry, and the Game count stays as planned', async () => {
+      const game = await twoUp(3)
+
+      const response = await finish(game, { outcome: 'winner', winners: [1] })
+
+      expect(response.status).toBe(200)
+      expect(await response.json()).toEqual({ phase: 'finished', winners: [1] })
+      expect(await eventRowOf(game.eventId)).toMatchObject({ phase: 'finished', finishedAt: new Date(T0) })
+      expect((await sessionRows(game.eventId)).find(row => row.startedAt !== null)).toMatchObject({ endedAt: new Date(T0) })
+      const view = await read(game)
+      expect(view.settings?.gameCount).toBe(3)
+      expect(view.end).toMatchObject({ played: 2, gameCount: 3, complete: false })
+      expect(view.standings).toEqual([{ team: 1, rank: 1, points: 2 }, { team: 2, rank: 2, points: 0 }])
+      expect((await feedOf(game))[0]).toMatchObject({ type: 'event_finished', params: { winners: [1] } })
+      expect((await feedOf(game)).filter(entry => entry.type === 'event_finished')).toHaveLength(1)
+    })
+
+    it('refuses an equal gap with results_missing: a Tie can still arise, and nothing is written', async () => {
+      const game = await twoUp(4)
+      expect((await read(game)).end).toMatchObject({ complete: false, decided: false, finish: { rejection: 'results_missing' } })
+      const before = await eventRowOf(game.eventId)
+      const activityBefore = await activityTypes(game.eventId)
+
+      expect(await errorOf(await finish(game))).toEqual({ status: 409, code: 'results_missing' })
+
+      expect(await eventRowOf(game.eventId)).toEqual(before)
+      expect(await activityTypes(game.eventId)).toEqual(activityBefore)
+    })
+
+    it('refuses a decided Event while a Round waits for its Result with round_waiting, and finishes once it has one', async () => {
+      const game = await twoUp(3)
+      const third = await setRound(game, game.schach.id)
+      expect((await read(game)).end).toMatchObject({ decided: true, finish: { rejection: 'round_waiting' } })
+      const before = await eventRowOf(game.eventId)
+
+      expect(await errorOf(await finish(game))).toEqual({ status: 409, code: 'round_waiting' })
+      expect(await eventRowOf(game.eventId)).toEqual(before)
+
+      expect((await enter(game, third, { places: teamTwoWins })).status).toBe(200)
+      expect((await finish(game)).status).toBe(200)
+    })
+
+    it('refuses a winner the Standings do not have now with standings_changed', async () => {
+      const game = await twoUp(3)
+
+      expect(await errorOf(await finish(game, { outcome: 'winner', winners: [2] }))).toEqual({ status: 409, code: 'standings_changed' })
+      expect(await errorOf(await finish(game, { outcome: 'tie', winners: [1, 2] }))).toEqual({ status: 409, code: 'standings_changed' })
+      expect((await eventRowOf(game.eventId)).phase).toBe('running')
+    })
+  })
+
   describe('stopping early', () => {
     it('lowers the Game count to the Rounds with a Result and finishes; an open third Round keeps it from being lowered', async () => {
       const game = await running({ gameCount: 5 })
