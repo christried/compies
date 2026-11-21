@@ -2,7 +2,9 @@ import { mountSuspended } from '@nuxt/test-utils/runtime'
 import { flushPromises } from '@vue/test-utils'
 import type { DOMWrapper } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { defineComponent, h, ref } from 'vue'
 import LuckyWheel from '~/components/LuckyWheel.vue'
+import { provideClipReopen } from '~/composables/useClipReopen'
 import { GAME_NAME_MAX, type HostGameFacts, type RoundGame } from '~~/shared/game'
 import type { SpinView, WheelView } from '~~/shared/stage'
 import { kitty, signInAs } from './auth'
@@ -319,6 +321,38 @@ describe('the result', () => {
     await at(CLIP)
     expect(text()).toContain('Das Glücksrad sagt')
     expect(page!.get('[data-testid="wheel-card"]').text()).toContain('Halo')
+  })
+
+  // #956: every viewer who closed the Clip brings it back from the card, the Host outside a team and the Stands too, who have no Veto bar.
+  it('offers „Zum Video“ on the card while the page hands the action in, and opens the Clip again with it', async () => {
+    const reopen = vi.fn()
+    const action = ref<(() => void) | null>(reopen)
+    // The Event page provides the action (provideClipReopen); this host stands in for it.
+    const Host = defineComponent({
+      setup() {
+        provideClipReopen(() => action.value)
+        return () => h(LuckyWheel, { wheel: wheelOf(spinOf({ game: halo })), hidden: false, isHost: false, serverNow })
+      },
+    })
+    page = await mountSuspended(Host)
+    await flushPromises()
+    await at(CLIP)
+    const button = () => page!.get('[data-testid="wheel-card"]').findAll('button').find((candidate: DOMWrapper<Element>) => candidate.text().trim() === 'Zum Video')
+
+    expect(button()).toBeDefined()
+    await button()!.trigger('click')
+    expect(reopen).toHaveBeenCalledTimes(1)
+
+    action.value = null
+    await at(CLIP + 100)
+    expect(button()).toBeUndefined()
+  })
+
+  it('offers no „Zum Video“ where the page provides none', async () => {
+    await mount(wheelOf(spinOf({ game: halo })))
+    await at(CLIP)
+
+    expect(page!.get('[data-testid="wheel-card"]').text()).not.toContain('Zum Video')
   })
 
   it('names no game once the spin is no longer the latest draw: a vetoed, replaced or put-back game (F6)', async () => {
