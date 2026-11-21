@@ -8,6 +8,7 @@ import type { SpinView, WheelView } from '~~/shared/stage'
 import { kitty, signInAs } from './auth'
 import { stubInView } from './in-view'
 import { notesFromLines } from '~~/shared/notes-doc'
+import de from '~~/i18n/locales/de.json'
 
 // The Lucky Wheel (#229, 02-components § LuckyWheel, 04-motion § Lucky Wheel): its rotation toward a fixed stop instant at a given
 // server time, the result card that comes at the stop and not before, and the Hidden wheel's label that turns into the real game.
@@ -51,6 +52,7 @@ async function at(ms: number) {
 
 const rotation = () => Number(/rotate\((-?[\d.]+)deg\)/.exec(page!.get('[data-testid="wheel-rotor"]').attributes('style') ?? '')?.[1])
 const text = () => page!.text().replace(/\s+/g, ' ')
+const labelsShown = () => page!.findAll('text[data-testid^="wheel-label-"]').map((label: DOMWrapper<Element>) => label.text())
 
 beforeEach(() => {
   vi.useFakeTimers()
@@ -169,13 +171,28 @@ describe('the wheel at rest', () => {
     expect(page!.get('[role="img"]').attributes('aria-label')).toBe('Glücksrad mit 1 Spiel')
   })
 
-  it('shows a Member under a Hidden wheel the placeholders instead of the games, and the count in the accessible name only', async () => {
+  it('shows a Member under a Hidden wheel the placeholder names in their order instead of the games, and the count in the accessible name only (#949)', async () => {
     await mount(wheelOf(null, { slices: null }), { hidden: true })
 
     expect(page!.get('[role="img"]').attributes('aria-label')).toBe('Glücksrad mit 3 Spielen')
     expect(text()).not.toContain('auf dem Rad')
     expect(text()).not.toContain('Halo')
-    expect(text().match(/\?\?\?/g)).toHaveLength(3)
+    expect(text()).not.toContain('???')
+    expect([0, 1, 2].map(index => page!.get(`[data-testid="wheel-label-${index}"]`).text())).toEqual(['Schießen Springen Sch…', 'Liga der Lemminge', 'Disco Disco Party Par…'])
+  })
+
+  it('shows a Member under a Hidden wheel one placeholder slice and „???“ only past the end of the list (#949)', async () => {
+    await mount(wheelOf(null, { count: 1, slices: null }), { hidden: true })
+    expect(page!.get('[data-testid="wheel-label-0"]').text()).toBe('Schießen Springen Sch…')
+    page!.unmount()
+
+    // The copy's list (`wheel.placeholders`, read here only for its length: the test build compiles its messages) ends in „Wettbacken“.
+    const listed = de.wheel.placeholders.length
+    await mount(wheelOf(null, { count: listed + 2, slices: null }), { hidden: true })
+    expect(page!.get(`[data-testid="wheel-label-${listed - 1}"]`).text()).toBe('Wettbacken')
+    expect(page!.get(`[data-testid="wheel-label-${listed}"]`).text()).toBe('???')
+    expect(page!.get(`[data-testid="wheel-label-${listed + 1}"]`).text()).toBe('???')
+    expect(text().match(/\?\?\?/g)).toHaveLength(2)
   })
 })
 
@@ -386,6 +403,15 @@ describe('a Hidden wheel', () => {
 
     await at(STOP + 500 + 400)
     expect(page!.get('[data-testid="wheel-label-2"]').text()).toBe('Halo')
+  })
+
+  it('shows a Member the spin\'s own labels while it runs and the placeholder names in their order again once the drawn slice has left (#949)', async () => {
+    await mount(wheelOf(spinOf({ labels: placeholders, game: null }), { slices: null }), { hidden: true })
+    await at(START + 3000)
+    expect(labelsShown()).toEqual(placeholders)
+
+    await at(STOP + 2800 + 600 + 50)
+    expect(labelsShown()).toEqual(['Schießen Springen Sch…', 'Liga der Lemminge', 'Disco Disco Party Par…'])
   })
 
   it('shows the Host the real names on the slices from the start', async () => {

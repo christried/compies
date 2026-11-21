@@ -42,7 +42,7 @@ const props = withDefaults(defineProps<{
   hostGames?: Record<string, HostGameFacts> | null
 }>(), { hostGames: null })
 
-const { t } = useI18n()
+const { t, tm, rt } = useI18n()
 
 /** How long past the stop the loop keeps running: the removal ends at 2.8 s + 0.6 s on a Hidden wheel. */
 const TAIL_MS = 100
@@ -97,12 +97,17 @@ const lampClock = useServerTicker(() => props.serverNow(), {
   target: rootEl,
 })
 
+// A Member under a Hidden wheel gets only the count at rest (server/utils/stage-read.ts), so the names on its slices are the copy's placeholder
+// list in its order, one per slice, and „???“ past its end (#949, 06-copy.md). A spin brings its own shuffled labels.
+const placeholders = computed(() => (tm('wheel.placeholders') as unknown as Parameters<typeof rt>[0][]).map(message => rt(message)))
+const placeholderAt = (index: number) => placeholders.value[index] ?? t('wheel.placeholderQ')
+
 // A change of the games at rest (#524): the slices of the resting wheel, each with the key that tells it from the others across the change. A
 // viewer who has the slices keys them by the game's id; a Member under a Hidden wheel has only the count, so the key is the slot's number and
 // nothing of the pool reaches the plan that the server did not send. The keys are never rendered.
 const restSlices = computed((): RestSlice[] => props.wheel.slices
   ? props.wheel.slices.map(slice => ({ key: slice.id, name: slice.name }))
-  : Array.from({ length: props.wheel.count }, (_, index) => ({ key: `slot-${index}`, name: t('wheel.placeholderQ') })))
+  : Array.from({ length: props.wheel.count }, (_, index) => ({ key: `slot-${index}`, name: placeholderAt(index) })))
 /** The slices the last change was measured against; set at setup, so a page opened after a change plays nothing. */
 let baseline = restSlices.value
 const refill = shallowRef<{ plan: RefillPlan, startedAt: number } | null>(null)
@@ -136,7 +141,7 @@ const refilling = computed(() => {
 /** Only under reduced motion does the refill fade: the rotor then rises from 0 to 1 (the layout itself jumps). */
 const refillOpacity = computed(() => (refilling.value && refilling.value.opacity < 1 ? refilling.value.opacity : undefined))
 
-// The wheel as drawn: the spin's slices while it runs, else the games left on the wheel (a Member under a Hidden wheel sees ???).
+// The wheel as drawn: the spin's slices while it runs, else the games left on the wheel (a Member under a Hidden wheel sees placeholders, #949).
 const count = computed(() => (running.value ? spin.value!.slices : props.wheel.count))
 const spans = computed(() => {
   const current = timing.value
@@ -146,7 +151,7 @@ const spans = computed(() => {
 const names = computed(() => {
   if (running.value) return spin.value!.labels ?? Array.from({ length: count.value }, () => t('wheel.placeholderQ'))
   if (refilling.value) return refilling.value.slices.map(slice => slice.name)
-  return props.wheel.slices ? props.wheel.slices.map(slice => slice.name) : Array.from({ length: count.value }, () => t('wheel.placeholderQ'))
+  return props.wheel.slices ? props.wheel.slices.map(slice => slice.name) : Array.from({ length: count.value }, (_, index) => placeholderAt(index))
 })
 
 /** The wheel rests where the last spin stopped (a multiple of a full turn off the final angle); 0 before the first one. */

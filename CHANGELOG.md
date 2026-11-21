@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Behoben
+
+- Beim verdeckten Glücksrad stehen auch vor dem Drehen Platzhalternamen auf dem Rad statt „???“. ([#949](https://github.com/christried/compies/issues/949))
+
 ### Entfernt
 
 - Der Spielverlauf in der Tabelle zeigt keinen Preis mehr. ([#952](https://github.com/christried/compies/issues/952))
