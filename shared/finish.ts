@@ -3,7 +3,7 @@
 // dock, the routes and the Event read agree. The views (EndView) stay in stage.ts, which imports the types from here. The Worker does not import this file.
 
 import type { Phase } from './phase'
-import { standingsOf, totalPoints, type ResultPlace, type Standing } from './results'
+import { pointsForPlace, standingsOf, totalPoints, type ResultPlace, type Standing } from './results'
 import { GAME_COUNT_MAX, type EventSettings } from './settings'
 
 /** The team positions on rank 1, ascending: the winner, or every Party of a Tie (#277, GLOSSARY: Tie). */
@@ -23,18 +23,24 @@ export function leadingTeams(standings: readonly Standing[], phase: Phase, hasRe
 /**
  * How far the Event is (#274, #277): the Rounds with a Result out of the Game count. `complete`: they reach the Game count, so the Host may
  * finish (nothing finishes by itself). `tie`: the team positions on rank 1 when `complete` and more than one holds it (GLOSSARY: Tie), else null.
+ * `decided` (#953): one Party leads alone and no other Party can catch it or draw level in the Rounds left, so the Host may finish early.
  * Same for every Member; stage.ts's EndView adds the Host's part (`finish`, `lastGame`) to these.
  */
-export interface EndFacts { played: number, gameCount: number, complete: boolean, tie: number[] | null }
+export interface EndFacts { played: number, gameCount: number, complete: boolean, tie: number[] | null, decided: boolean }
 
 /**
  * How far the Event is (#277, GLOSSARY: Finish, Tie): `complete` when the Rounds with a Result reach the Game count (>=), `tie` the leaders
- * when complete and more than one holds rank 1, else null. `standings` are `standingsOf`'s.
+ * when complete and more than one holds rank 1, else null. `standings` are `standingsOf`'s. `swing` is the most one Round can close between two
+ * Parties: the points of Place 1 minus those of the last Place. `decided` (#953): a sole leader, and every other Party's gap to it is larger than
+ * the Rounds left × `swing`; an equal gap still allows a Tie, so it is not decided. A complete Event with a sole leader is decided (no Round is left).
  */
-export function endOf(standings: readonly Standing[], played: number, gameCount: number): EndFacts {
+export function endOf(standings: readonly Standing[], played: number, gameCount: number, swing: number): EndFacts {
   const complete = played >= gameCount
   const leaders = leadersOf(standings)
-  return { played, gameCount, complete, tie: complete && leaders.length > 1 ? leaders : null }
+  const limit = Math.max(0, gameCount - played) * swing
+  const top = standings.find(row => row.rank === 1)?.points ?? 0
+  const decided = leaders.length === 1 && standings.every(row => row.rank === 1 || top - row.points > limit)
+  return { played, gameCount, complete, tie: complete && leaders.length > 1 ? leaders : null, decided }
 }
 
 /**
@@ -44,7 +50,9 @@ export function endOf(standings: readonly Standing[], played: number, gameCount:
  */
 export function standingsAndEnd(groups: readonly (readonly Pick<ResultPlace, 'team' | 'place'>[])[], settings: Pick<EventSettings, 'pointsTable' | 'teamCount' | 'gameCount'>): { standings: Standing[], end: EndFacts } {
   const standings = standingsOf(totalPoints(groups, settings.pointsTable, settings.teamCount))
-  return { standings, end: endOf(standings, groups.length, settings.gameCount) }
+  // The most one Round can close (#953): Place 1's points against the last Place of the Event's Party count, from the Points table.
+  const swing = pointsForPlace(1, settings.pointsTable) - pointsForPlace(settings.teamCount, settings.pointsTable)
+  return { standings, end: endOf(standings, groups.length, settings.gameCount, swing) }
 }
 
 /** The outcome the Host asks the finish for (#277): a sole winner, or a Tie with all its Parties (#278 sends the second). */

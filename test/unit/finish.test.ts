@@ -65,33 +65,33 @@ describe('leadingTeams', () => {
 
 describe('endOf', () => {
   it('is not complete while fewer Rounds have a Result than the Game count, and a Tie needs completeness', () => {
-    expect(endOf(standingsOf([1, 1, 0]), 2, 3)).toEqual({ played: 2, gameCount: 3, complete: false, tie: null })
+    expect(endOf(standingsOf([1, 1, 0]), 2, 3, 1)).toEqual({ played: 2, gameCount: 3, complete: false, tie: null, decided: false })
   })
 
   it('is complete at the Game count with one leader, and has no Tie', () => {
-    expect(endOf(standingsOf([2, 1, 0]), 2, 2)).toEqual({ played: 2, gameCount: 2, complete: true, tie: null })
+    expect(endOf(standingsOf([2, 1, 0]), 2, 2, 1)).toEqual({ played: 2, gameCount: 2, complete: true, tie: null, decided: true })
   })
 
   it('names the two leaders as the Tie when complete and level on rank 1', () => {
-    expect(endOf(standingsOf([1, 1, 0]), 2, 2)).toEqual({ played: 2, gameCount: 2, complete: true, tie: [1, 2] })
+    expect(endOf(standingsOf([1, 1, 0]), 2, 2, 1)).toEqual({ played: 2, gameCount: 2, complete: true, tie: [1, 2], decided: false })
   })
 
   it('names three of four level Parties on rank 1, in team order', () => {
-    expect(endOf(standingsOf([3, 3, 0, 3]), 3, 3).tie).toEqual([1, 2, 4])
+    expect(endOf(standingsOf([3, 3, 0, 3]), 3, 3, 1).tie).toEqual([1, 2, 4])
   })
 
   it('names every Party of an all-level Event with eight Parties', () => {
-    expect(endOf(standingsOf([2, 2, 2, 2, 2, 2, 2, 2]), 1, 1).tie).toEqual([1, 2, 3, 4, 5, 6, 7, 8])
+    expect(endOf(standingsOf([2, 2, 2, 2, 2, 2, 2, 2]), 1, 1, 1).tie).toEqual([1, 2, 3, 4, 5, 6, 7, 8])
   })
 
   it('counts a played number above the Game count as complete (defensive)', () => {
-    expect(endOf(standingsOf([2, 0]), 3, 2)).toMatchObject({ complete: true, tie: null })
+    expect(endOf(standingsOf([2, 0]), 3, 2, 1)).toMatchObject({ complete: true, tie: null })
   })
 
   it('works for a Game count of 1 and of 30', () => {
-    expect(endOf(standingsOf([1, 0]), 1, 1)).toMatchObject({ complete: true, tie: null })
-    expect(endOf(standingsOf([0, 0]), 29, 30)).toMatchObject({ complete: false, tie: null })
-    expect(endOf(standingsOf([0, 0]), 30, 30)).toMatchObject({ complete: true, tie: [1, 2] })
+    expect(endOf(standingsOf([1, 0]), 1, 1, 1)).toMatchObject({ complete: true, tie: null })
+    expect(endOf(standingsOf([0, 0]), 29, 30, 1)).toMatchObject({ complete: false, tie: null })
+    expect(endOf(standingsOf([0, 0]), 30, 30, 1)).toMatchObject({ complete: true, tie: [1, 2] })
   })
 })
 
@@ -103,12 +103,72 @@ describe('standingsAndEnd', () => {
 
     expect(standingsAndEnd(rounds, settings)).toEqual({
       standings: standingsOf([3, 3, 0]),
-      end: { played: 2, gameCount: 2, complete: true, tie: [1, 2] },
+      end: { played: 2, gameCount: 2, complete: true, tie: [1, 2], decided: false },
     })
   })
 
   it('has every Party at 0 points and nothing played before the first Result', () => {
-    expect(standingsAndEnd([], settings)).toEqual({ standings: standingsOf([0, 0, 0]), end: { played: 0, gameCount: 2, complete: false, tie: null } })
+    expect(standingsAndEnd([], settings)).toEqual({ standings: standingsOf([0, 0, 0]), end: { played: 0, gameCount: 2, complete: false, tie: null, decided: false } })
+  })
+})
+
+// The early Finish (#953, GLOSSARY: Finish): decided once one Party leads alone and every other Party's gap to it is larger than the Rounds
+// left × (points of Place 1 − points of the last Place). An equal gap still allows a Tie, so it is not decided.
+describe('decided (#953)', () => {
+  const linear3 = { pointsTable: { preset: 'linear' as const, values: [2, 1, 0] }, teamCount: 3 }
+  /** `rounds` Results in which Party 1 wins and Party 2 is second, then the end of a Game count of `gameCount`. */
+  const oneLeads = (rounds: number, gameCount: number, settings: { pointsTable: { preset: 'linear' | 'winner_takes_all' | 'custom', values: number[] }, teamCount: number } = linear3) =>
+    standingsAndEnd(Array.from({ length: rounds }, () => [{ team: 1, place: 1 }, { team: 2, place: 2 }, { team: 3, place: 3 }]), { ...settings, gameCount }).end
+
+  it('is decided when the gap to the second is larger than the Rounds left × (Place 1 − last Place)', () => {
+    // 4 Results: 8, 4, 0 points. Game count 5: 1 Round left × 2 = 2 < 4.
+    expect(oneLeads(4, 5)).toMatchObject({ played: 4, gameCount: 5, complete: false, decided: true })
+  })
+
+  it('is not decided when the gap equals the limit: a Tie can still arise', () => {
+    // 4 Results: gap 4. Game count 6: 2 Rounds left × 2 = 4.
+    expect(oneLeads(4, 6)).toMatchObject({ complete: false, decided: false })
+  })
+
+  it('is not decided when the gap is below the limit', () => {
+    expect(oneLeads(4, 7)).toMatchObject({ complete: false, decided: false })
+  })
+
+  it('reads the Points table set by hand: its first and its last Place, on both sides of the edge', () => {
+    // A custom table 5, 3, 1: 2 Results give 10, 6, 2, a gap of 4; each Round left can close 5 − 1 = 4.
+    const custom = { pointsTable: { preset: 'custom' as const, values: [5, 3, 1] }, teamCount: 3 }
+    expect(oneLeads(2, 3, custom)).toMatchObject({ decided: false })
+    expect(oneLeads(3, 4, custom)).toMatchObject({ decided: true })
+  })
+
+  it('reads the last Place of the Event\'s Party count, not of a longer table', () => {
+    // Two Parties with a table 3, 1, 0: the last Place is 2 (1 point), so a Round closes 2. 2 Results: gap 4, 2 Rounds left × 2 = 4.
+    const twoOfLonger = { pointsTable: { preset: 'custom' as const, values: [3, 1, 0] }, teamCount: 2 }
+    const results = (n: number) => Array.from({ length: n }, () => [{ team: 1, place: 1 }, { team: 2, place: 2 }])
+    expect(standingsAndEnd(results(2), { ...twoOfLonger, gameCount: 4 }).end.decided).toBe(false)
+    expect(standingsAndEnd(results(2), { ...twoOfLonger, gameCount: 3 }).end.decided).toBe(true)
+  })
+
+  it('looks at every other Party, not only the second', () => {
+    // 6, 0, 3 after three Results: Party 2 is far behind, Party 3 only 3 points. Game count 4: 1 Round × 2 = 2 < 3; Game count 5: 4 > 3.
+    const thirdClose = Array.from({ length: 3 }, () => [{ team: 1, place: 1 }, { team: 3, place: 2 }, { team: 2, place: 3 }])
+    expect(standingsAndEnd(thirdClose, { ...linear3, gameCount: 4 }).end.decided).toBe(true)
+    expect(standingsAndEnd(thirdClose, { ...linear3, gameCount: 5 }).end.decided).toBe(false)
+  })
+
+  it('is never decided while the first rank is shared, nor before the first Result', () => {
+    const level = [[{ team: 1, place: 1 }, { team: 2, place: 1 }, { team: 3, place: 3 }]]
+    expect(standingsAndEnd(level, { ...linear3, gameCount: 1 }).end).toMatchObject({ complete: true, decided: false })
+    expect(standingsAndEnd([], { ...linear3, gameCount: 3 }).end.decided).toBe(false)
+  })
+
+  it('is decided at the Game count with one leader: no Round is left', () => {
+    expect(oneLeads(2, 2)).toMatchObject({ complete: true, decided: true })
+  })
+
+  it('is never decided early under a table where every Place earns the same', () => {
+    const flat = { pointsTable: { preset: 'custom' as const, values: [1, 1, 1] }, teamCount: 3 }
+    expect(oneLeads(2, 5, flat).decided).toBe(false)
   })
 })
 
