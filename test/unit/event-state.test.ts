@@ -57,6 +57,7 @@ function eventRow(fields: Partial<EventRow> = {}): EventRow {
     name: 'Abend',
     phase: 'running',
     ...wheelColumns,
+    wheelUncoveredAt: null,
     finishedAt: null,
     ceremonyStartsAt: null,
     ceremonyGag: null,

@@ -6,6 +6,7 @@ import { beforeFinish, PHASES, type Phase } from './phase'
 import type { EventSettings, SettingsFloors } from './settings'
 import type { HostGameFacts, PoolGame, PoolGameFace } from './game'
 import type { NotesDoc } from './notes-doc'
+import type { UncoverRejection } from './uncover'
 import type { BonusVetoView, CeremonyView, ClipView, CoinView, CountdownView, EndView, ResultView, RoundView, SetGameView, StandingView, WheelView } from './stage'
 
 // Event limits shared by the create form and the server (#1 § Domain rules).
@@ -120,6 +121,8 @@ export interface SessionEnded { sessionId: string, phase: Phase }
 export interface EventFinished { phase: Phase, winners: number[] }
 /** What `POST /api/e/:slug/last-game` answers (#278): the Game count after the raise. The request has no body. */
 export interface LastGameAdded { gameCount: number }
+/** What `POST /api/e/:slug/uncover` answers (#957): the instant the Host uncovered the Hidden wheel (ISO). The request has no body. */
+export interface WheelUncovered { uncoveredAt: string }
 /** What `DELETE /api/e/:slug` answers (#333): the slug of the Event that is deleted now. The request has no body. */
 export interface EventDeleted { slug: string }
 
@@ -219,6 +222,13 @@ export interface EventView {
   setGame: SetGameView | null
   /** The Lucky Wheel (#229): in a running Session of a Lucky Wheel Event, else null. */
   wheel: WheelView | null
+  /**
+   * Whether the Host has uncovered the Hidden wheel (#957): from then on it is a visible wheel for everyone (`wheelHidden` in shared/uncover.ts), while
+   * `settings.hiddenWheel` keeps the setting. The same for every Member; false for an Event whose wheel was never uncovered.
+   */
+  wheelUncovered: boolean
+  /** Uncovering the Hidden wheel (#957): why it cannot be done now, null when it can. Only the Host gets it; null for every other Member. */
+  uncover: { rejection: UncoverRejection | null } | null
   /** Whether a game is being drawn now (#231): the wheel spins or its Veto window runs. „Pseudo-Games“ is locked meanwhile (LOCKED_WHILE_DRAWN). Only the Host's page needs it; false for every other Member. */
   roundBeingDrawn: boolean
   /** The clip that runs now (#230): while a Session runs, from a draw's stop to the end of its clip, unless the Host skipped it. Else null. */

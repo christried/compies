@@ -469,6 +469,70 @@ describe('a Hidden wheel', () => {
   })
 })
 
+// The uncover (#957, spec #961 § Uncover): the read with the names arrives on a device whose wheel showed placeholders, and every slice plays the
+// stop's scramble into its real name (under reduced motion, the crossfade), on the page's own clock from the moment the read arrives. A device
+// that loads after the uncover shows the names at rest at once.
+describe('the uncover of a Hidden wheel (#957)', () => {
+  const names = ['Halo', 'Kart', 'Schach']
+  const covered = () => wheelOf(null, { count: 3, slices: null })
+  const uncovered = () => wheelOf(null, { count: 3, slices: names.map((name, index) => ({ id: `g${index}`, name })) })
+  const opacities = () => page!.findAll('text[data-testid^="wheel-label-"]').map((label: DOMWrapper<Element>) => Number(label.attributes('opacity')))
+
+  /** The page's own clock runs on by `ms`. */
+  async function local(ms: number) {
+    vi.advanceTimersByTime(ms)
+    await flushPromises()
+  }
+
+  it('scrambles every placeholder into its real name when the read with the names arrives, and shows the names once the scramble is over', async () => {
+    await mount(covered(), { hidden: true })
+    const before = labelsShown()
+    expect(before).toEqual(['Schießen Springen Sch…', 'Liga der Lemminge', 'Disco Disco Party Par…'])
+
+    await page!.setProps({ wheel: uncovered(), hidden: false })
+    await local(100)
+    const scrambled = labelsShown()
+    for (const [index, label] of scrambled.entries()) {
+      expect(label).not.toBe(names[index])
+      expect(label).not.toBe(before[index])
+      // The scramble keeps the length of the real name it turns into, as the reveal at a stop does.
+      expect([...label]).toHaveLength([...names[index]!].length)
+    }
+
+    await local(300)
+    expect(labelsShown()).toEqual(names)
+    expect(opacities()).toEqual([1, 1, 1])
+  })
+
+  it('crossfades the names in under reduced motion', async () => {
+    document.documentElement.style.setProperty('--cp-motion', 'reduced')
+    await mount(covered(), { hidden: true })
+
+    await page!.setProps({ wheel: uncovered(), hidden: false })
+    await local(100)
+    expect(labelsShown()).toEqual(names)
+    for (const opacity of opacities()) expect(opacity).toBeLessThan(1)
+
+    await local(200)
+    expect(opacities()).toEqual([1, 1, 1])
+  })
+
+  it('shows the names at rest at once on a device that loads after the uncover', async () => {
+    await mount(uncovered())
+
+    expect(labelsShown()).toEqual(names)
+    expect(opacities()).toEqual([1, 1, 1])
+  })
+
+  it('plays no scramble for the Host, who saw the names all along', async () => {
+    await mount(uncovered(), { hidden: true, isHost: true })
+
+    await page!.setProps({ wheel: uncovered(), hidden: false })
+    await local(100)
+    expect(labelsShown()).toEqual(names)
+  })
+})
+
 // The game dialog from the drawn game's tile (#443, #444): the Host's has the Tags and Notes from `hostGames`; a Member's has the facts and never those.
 describe('the drawn game\'s tile and its dialog (#443, #444)', () => {
   const hostGames = { 'g-halo': { tags: [{ key: 'koop', label: 'Koop' }, { key: 'retro', label: 'Retro' }], notes: notesFromLines(['Hausregel: keine Raketen']) } }

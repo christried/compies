@@ -227,6 +227,13 @@ describe('statements under the Event row lock (#416)', () => {
       const ev = await twoResults(true)
       return () => send('POST', `/api/e/${ev.slug}/last-game`, ev.host.cookie)
     }],
+    // The uncover of a Hidden wheel (#957): the rule's parts and one update under the lock.
+    ['POST uncover', async () => {
+      const ev = await running({ ...wheel, gameCount: 1, hiddenWheel: true })
+      const round = await hostSets(rig, ev, ev.games.G2.id)
+      await hostEntersResult(rig, ev, round, [{ team: 1, place: 1 }, { team: 2, place: 2 }])
+      return () => send('POST', `/api/e/${ev.slug}/uncover`, ev.host.cookie)
+    }],
     // Event notes (#731): the game check and one upsert under the lock.
     ['PUT games/:gameId/notes', async () => {
       const { ev } = await rich()

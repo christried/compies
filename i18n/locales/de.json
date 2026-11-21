@@ -88,6 +88,7 @@
     "finish": "Event abschließen",
     "finishTie": "Unentschieden",
     "finishEarly": "Vorzeitig abschließen",
+    "uncover": "Rad aufdecken",
     "ceremony": "Siegerehrung starten",
     "lastGame": "Letztes Spiel",
     "lastGameBlocked": {
@@ -1833,6 +1834,8 @@
     "roundWaiting": "Ein Spiel wartet noch auf sein Ergebnis.",
     "standingsChanged": "Die Tabelle hat sich geändert. Schau sie dir nochmal an.",
     "noTie": "Gerade steht kein Gleichstand an. Die Seite zeigt den neuen Stand.",
+    "wheelNotHidden": "Das Rad ist nicht verdeckt.",
+    "wheelUncovered": "Das Rad ist schon aufgedeckt.",
     "unauthorized": "Bitte melde dich an, um mitzumachen.",
     "forbidden": "Das darf nur der Host.",
     "noHostRight": "Events erstellen dürfen nur Hosts. Frag den Admin nach dem Hostrecht.",

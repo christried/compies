@@ -83,6 +83,8 @@ const SHARED: Record<ApiErrorCode, string | null> = {
   round_waiting: 'error.roundWaiting',
   standings_changed: 'error.standingsChanged',
   no_tie: 'error.noTie',
+  wheel_not_hidden: 'error.wheelNotHidden',
+  wheel_uncovered: 'error.wheelUncovered',
   game_count_reached: 'dock.setBlocked.game_count_reached',
   round_being_drawn: 'dock.setBlocked.round_being_drawn',
   not_a_player: 'error.notAPlayer',

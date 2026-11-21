@@ -23,6 +23,7 @@ function input(fields: Partial<DockInput>): DockInput {
     setGame: null,
     start: { sessionId: 'a', number: null, rejection: null },
     end: null,
+    uncover: null,
     ...fields,
   }
 }
@@ -209,6 +210,46 @@ describe('the early Finish in the dock state (#953)', () => {
 
   it('is closed in a finished Event', () => {
     expect(hostDockState(input({ sessions: [dated('a', 1, ENDED)], event: { phase: 'finished' }, end: { ...DECIDED, finish: { rejection: 'wrong_phase' } } })).earlyFinish).toBe(false)
+  })
+})
+
+// The uncover of a Hidden wheel (#957, spec #961 § Host dock): a plain „Rad aufdecken“, only while the Host's rule passes. It sits in the pill right
+// after the „Event abschließen“ hold when the Game count is complete without a Tie, and first in Mehr in the Tie layout, where the pill keeps its holds.
+describe('the uncover in the dock (#957)', () => {
+  const COMPLETE: DockInput['end'] = { played: 3, gameCount: 3, complete: true, tie: null, decided: true, finish: { rejection: null }, lastGame: { rejection: 'no_tie' } }
+  const TIE: DockInput['end'] = { ...COMPLETE!, tie: [1, 2], decided: false, lastGame: { rejection: null } }
+  const OPEN = { uncover: { rejection: null } }
+  const layout = (fields: Partial<DockInput>, open = { pollOpen: false, bonusVetoOpen: false }) => dockLayout(hostDockState(input(fields)), open)
+
+  it('is open exactly while the Host\'s rule passes', () => {
+    expect(hostDockState(input({ settings, sessions: RUNNING, end: COMPLETE, ...OPEN })).uncover).toBe(true)
+    for (const rejection of ['results_missing', 'wheel_uncovered', 'wheel_not_hidden', 'no_running_session'] as const) {
+      expect(hostDockState(input({ settings, sessions: RUNNING, end: COMPLETE, uncover: { rejection } })).uncover).toBe(false)
+    }
+    expect(hostDockState(input({ settings, sessions: RUNNING, end: COMPLETE, uncover: null })).uncover).toBe(false)
+  })
+
+  it('sits in the pill right after Event abschließen when the Game count is complete without a Tie', () => {
+    const { primary, secondary, more } = layout({ settings, sessions: RUNNING, end: COMPLETE, ...OPEN })
+
+    expect(primary).toEqual(['finish'])
+    expect(secondary).toEqual(['uncover', 'end', 'invite'])
+    expect(more).not.toContain('uncover')
+  })
+
+  it('waits first in Mehr in the Tie layout, where the pill keeps both holds and the last game', () => {
+    const { primary, secondary, more } = layout({ settings, sessions: RUNNING, end: TIE, ...OPEN })
+
+    expect(primary).toEqual(['finishTie'])
+    expect(secondary).toEqual(['lastGame', 'end', 'invite'])
+    expect(more[0]).toBe('uncover')
+  })
+
+  it('is nowhere while the rule refuses', () => {
+    for (const end of [COMPLETE, TIE]) {
+      const { primary, secondary, more } = layout({ settings, sessions: RUNNING, end, uncover: { rejection: 'wheel_uncovered' } })
+      expect([...primary, ...secondary, ...more]).not.toContain('uncover')
+    }
   })
 })
 
