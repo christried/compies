@@ -6,6 +6,7 @@
 // test/unit/draw-timeline.test.ts: a `<` where `<=` belongs leaks the drawn game under a Hidden wheel (CODING_STANDARDS.md § Secrecy).
 
 import { msOf, type Instant } from './instant'
+import type { DrawKind } from './rounds'
 
 /** The spin starts this long after the commit, so every client has the message and starts together (#229, spec #218 § Drawing). */
 const SPIN_LEAD_MS = 1500
@@ -151,7 +152,7 @@ export function clipLengthOf(game: { youtubeId: string | null, clipLength: numbe
  * CLIP. The instant the draw's Clip starts, in epoch ms (#959): a spin's CLIP_AFTER_SPIN_STOP_MS after its stop, a set draw's at its stop.
  * Known ahead from the read that carries the spin, so the wheel's result card and the Clip overlay open at it on every device at once.
  */
-export function clipStartAt(draw: { kind: 'spin' | 'set', stopAt: Instant }): number {
+export function clipStartAt(draw: { kind: DrawKind, stopAt: Instant }): number {
   return msOf(draw.stopAt) + (draw.kind === 'spin' ? CLIP_AFTER_SPIN_STOP_MS : 0)
 }
 
@@ -159,7 +160,7 @@ export function clipStartAt(draw: { kind: 'spin' | 'set', stopAt: Instant }): nu
  * CLIP (GLOSSARY: Clip; spec #218 § Clip, #230). The clip's two instants, in epoch ms: it starts at `clipStartAt` and ends the game's clip length (seconds) later.
  * A game without a video has its card there instead: a card has no player, so it shows for its stored length but at most 30 s (#546).
  */
-export function clipWindow(draw: { kind: 'spin' | 'set', stopAt: Instant }, game: { youtubeId: string | null, clipLength: number }): { startAt: number, endsAt: number } {
+export function clipWindow(draw: { kind: DrawKind, stopAt: Instant }, game: { youtubeId: string | null, clipLength: number }): { startAt: number, endsAt: number } {
   const startAt = clipStartAt(draw)
   const seconds = clipLengthOf(game) ?? Math.min(game.clipLength, VETO_AFTER_CLIP_MS / 1000)
   return { startAt, endsAt: startAt + seconds * 1000 }
