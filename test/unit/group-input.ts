@@ -15,5 +15,6 @@ export const groupInput = (over: Partial<GroupInput> = {}): GroupInput => ({
   emote: false,
   finished: false,
   tour: false,
+  countdown: false,
   ...over,
 })

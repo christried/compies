@@ -391,6 +391,64 @@ describe('the Veto window on the Event page', () => {
 
 // A clock that moves after the plan was scheduled (#594): the server clock's offset changes (the first answer of a round, a re-sync) while the
 // audio clock stands, and the pending cues follow. The page has no room, so its clock is `Date.now()`, which the tests move.
+// The Countdown's zero (#958, spec #961 § Countdown sounds): the Veto window's end sound, planned from the read of a running Countdown. The
+// plan's instants are in test/unit/sound-cues.test.ts; here: what the page schedules and requests from a read, and what a pause cancels.
+describe('the Countdown on the Event page', () => {
+  /** The read of a Session without a wheel whose Countdown of 60 s runs and ends `endsIn` ms from now, or is paused with `endsIn` ms left. */
+  function serveCountdown(endsIn: number) {
+    const read = (slug: string, running: boolean) => viewWithSessions(slug, [{ number: null, startsAt: FIRST, startedAt: STARTED }], 0, {
+      event: { isHost: false, phase: 'running' }, settings: defaultSettings(), runningSessionId: `session-${slug}-0`,
+      countdown: running
+        ? { durationMs: 60_000, remainingMs: 60_000, startedAt: iso(Date.now() + endsIn - 60_000), lastStartedAt: iso(Date.now() + endsIn - 60_000) }
+        : { durationMs: 60_000, remainingMs: endsIn, startedAt: null, lastStartedAt: iso(Date.now() - 60_000) },
+    })
+    const served = serve(slug => read(slug, true))
+    return { slug: served.slug, set: (running: boolean) => served.set(read(served.slug, running)) }
+  }
+  const ids = () => context()!.started().map(source => source.id).sort()
+  /** What is ahead of a viewer who arrives 3.7 s before zero: the last seven ticks, the drumroll (not under reduced motion) and the reveal. */
+  const ahead = () => [...Array.from({ length: 7 }, () => 'veto-clock'), ...(reducedMotion() ? [] : ['veto-drumroll']), 'veto-reveal'].sort()
+
+  it('schedules for a viewer who arrives 3.7 s before zero only what is ahead, and requests only the three files of a Veto window\'s end', async () => {
+    const { slug } = serveCountdown(3700)
+
+    page = await mountSuspended(EventPage, { route: `/e/${slug}` })
+    await settled(ahead().length)
+
+    expect(ids()).toEqual(ahead())
+    expect(requestedOf('veto').sort()).toEqual(['veto-clock', 'veto-drumroll', 'veto-reveal'])
+    expect(requestedOf('wheel')).toEqual([])
+  })
+
+  it('cancels what is pending when the Countdown is paused, and plans again when it is resumed', async () => {
+    const served = serveCountdown(3700)
+    page = await mountSuspended(EventPage, { route: `/e/${served.slug}` })
+    await settled(ahead().length)
+
+    served.set(false)
+    await refreshEvent(served.slug)
+    await flushPromises()
+    expect(context()!.started().every(source => source.stopCalls === 1)).toBe(true)
+
+    served.set(true)
+    await refreshEvent(served.slug)
+    await settled(2 * ahead().length)
+    expect(context()!.started().slice(ahead().length).every(source => source.stopCalls === 0)).toBe(true)
+  })
+
+  it('plays nothing and requests no file with Ton off', async () => {
+    localStorage.setItem('compies-sound', 'off')
+    const { slug } = serveCountdown(3700)
+
+    page = await mountSuspended(EventPage, { route: `/e/${slug}` })
+    await flushPromises()
+    await new Promise(resolve => setTimeout(resolve, 50))
+
+    expect(context()?.started() ?? []).toEqual([])
+    expect(requested()).toEqual([])
+  })
+})
+
 describe('a clock that moves (#594)', () => {
   const SHIFT_MS = 1000
 

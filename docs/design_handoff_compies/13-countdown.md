@@ -99,8 +99,9 @@ Times from the room: `endsAt` (running) or `remainingMs` (paused). Render rule f
     | stamp „Zeit ist um“ | 200 | `dur-slow` 360 | `ease-pop` | scale 2.4 → 1, rotate −14° → −6°, opacity 0 → 1 |
     | card shadow | 200 | `dur-base` 220 | `ease-snap` | `shadow-card` → `6px 6px 0 var(--cp-error)` |
   - End = 760 ms = the steady state, identical to opening the page later.
-  - No sound, no Compibert, no confetti.
-- **Reduced** (`--cp-motion: reduced`): same states, same keyed colour / size / pip steps per second, set without transition (instant); no tick, no burst (steady „Zeit ist um“ at `endsAt`), colour transitions instant. Same live-region text.
+  - No Compibert, no confetti.
+- **Sound** (#958, the „Ton“ switch turns it off): the end of a Veto window, from the same offsets against `endsAt` and with no new sample. `veto-clock` once a second from 10 s to 6 s before zero and twice a second from 5 s to 0.5 s, `veto-drumroll` ending at zero, and the cymbal hit of `veto-reveal` at zero (`countdownCuePlan` in `app/utils/sound-cues.ts`). Only a running Countdown has the plan: a pause cancels what is pending, a resume plans again, a cue before the start or the resume is left out, and a viewer who arrives late hears only what is ahead.
+- **Reduced** (`--cp-motion: reduced`): same states, same keyed colour / size / pip steps per second, set without transition (instant); no tick, no burst (steady „Zeit ist um“ at `endsAt`), colour transitions instant. Same live-region text. The sound leaves out `veto-drumroll`; the clock's ticks and the hit at zero stay.
 - Off-screen (IntersectionObserver, rootMargin 120 px): stop the rAF; on re-entry compute from `left` again (no catch-up animations).
 
 ---
