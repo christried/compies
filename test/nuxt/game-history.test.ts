@@ -410,8 +410,9 @@ describe('the Host\'s Corrections (#275)', () => {
   })
 })
 
-describe('the Price in the history (#338)', () => {
-  // The Price line counts the year from today (Berlin), so the clock is pinned: „Stand 3. Nov.“ in 2026.
+describe('no Price in the history (#952)', () => {
+  // #338 put the game's Price line under its name; the game-day test of 2026-11-21 took it out of the Spielverlauf again (#952). Game cards
+  // keep their Price. The clock is pinned so a Price line, if one came back, would read „Stand 3. Nov.“.
   beforeEach(() => {
     vi.useFakeTimers({ toFake: ['Date'] })
     vi.setSystemTime(new Date('2026-11-09T12:00:00.000Z'))
@@ -423,72 +424,32 @@ describe('the Price in the history (#338)', () => {
   const steam = { cents: 1999, source: 'steam' as const, checkedAt: '2026-11-03T10:00:00.000Z' }
   /** A numbered row whose game carries `price` (the Team names and the winners are `standard`'s). */
   const priced = (number: number, name: string, price: GamePrice | null, corrected = false): ResultView => ({ ...standard(number, name, [null, null, null], corrected), game: game(name, price) })
-  const priceOf = (index = 0) => numbered()[index]!.get('[data-price]')
 
-  it('shows the Price line of a numbered row between the game name and the winners, with the same text as its title', async () => {
+  it('shows no Price in a numbered row whose game has one: only the name and the winners', async () => {
     await mount({ results: [priced(1, 'Halo', steam)] })
 
     const row = numbered()[0]!
-    expect(priceOf().text()).toBe('19,99 € bei Steam · Stand 3. Nov.')
-    expect(priceOf().attributes('title')).toBe('19,99 € bei Steam · Stand 3. Nov.')
-    const html = row.html()
-    expect(html.indexOf('data-game')).toBeLessThan(html.indexOf('data-price'))
-    expect(html.indexOf('data-price')).toBeLessThan(html.indexOf('data-winners'))
-  })
-
-  it('shows no Price line for a game without a Price, and the row still lists its name and winners', async () => {
-    await mount({ results: [standard(1, 'Halo')] })
-
-    const row = numbered()[0]!
-    expect(row.find('[data-price]').exists()).toBe(false)
+    expect(row.text()).not.toContain('19,99')
+    expect(row.text()).not.toContain('Steam')
+    expect(row.text()).not.toContain('Stand')
     expect(row.get('[data-game]').text()).toBe('Halo')
     expect(winners(0).get('[title]').text()).toBe('Wilde Gurken')
   })
 
-  it('reads Free-to-play and a Price checked in 2025 as the line says them', async () => {
+  it('shows no Price for Free-to-play, a corrected row or an open row, and keeps „korrigiert“', async () => {
     await mount({
       results: [
         priced(1, 'Tetris', { cents: null, source: 'free_to_play', checkedAt: steam.checkedAt }),
-        priced(2, 'Kart', { ...steam, checkedAt: '2025-11-03T10:00:00.000Z' }),
+        priced(2, 'Kart', steam, true),
       ],
+      open: [{ ...openRound('r3', 'Halo'), game: game('Halo', steam) }],
     })
 
-    expect(priceOf(0).text()).toBe('Free-to-play · Stand 3. Nov.')
-    expect(priceOf(1).text()).toBe('19,99 € bei Steam · Stand 3. Nov. 2025')
-  })
-
-  it('keeps a corrected row with a Price: „korrigiert“, the winners and the Price line, one each', async () => {
-    await mount({ results: [priced(1, 'Halo', steam, true)] })
-
-    const row = numbered()[0]!
-    expect(row.text().split('korrigiert')).toHaveLength(2)
-    expect(row.findAll('[data-price]')).toHaveLength(1)
-    expect(row.findAll('[data-winners]')).toHaveLength(1)
-    expect(priceOf().text()).toBe('19,99 € bei Steam · Stand 3. Nov.')
-  })
-
-  it('shows no Price line on an open (dashed) row, even when its game has a Price', async () => {
-    await mount({ results: [priced(1, 'Kart', steam)], open: [{ ...openRound('r2', 'Halo'), game: game('Halo', steam) }] })
-
-    expect(page!.findAll('[data-price]')).toHaveLength(1)
-    expect(items()[1]!.find('[data-price]').exists()).toBe(false)
-    expect(items()[1]!.get('[data-game]').text()).toBe('Halo')
-  })
-
-  it('still renders one row per Result when every row carries a Price', async () => {
-    await mount({ results: Array.from({ length: 30 }, (_, index) => priced(index + 1, `Spiel ${index + 1}`, steam)) })
-
-    expect(items()).toHaveLength(30)
-    expect(page!.findAll('[data-price]')).toHaveLength(30)
-  })
-
-  it('keeps the longest name and the longest Price line on one row, both with the truncate class', async () => {
-    const longName = 'M'.repeat(GAME_NAME_MAX)
-    await mount({ results: [priced(1, longName, { cents: 99999, source: 'epic', checkedAt: '2025-11-03T10:00:00.000Z' })] })
-
-    const row = numbered()[0]!
-    expect(row.get('[data-game]').classes()).toContain('truncate')
-    expect(priceOf().classes()).toContain('truncate')
-    expect(priceOf().text()).toBe('999,99 € bei Epic Games Store · Stand 3. Nov. 2025')
+    const text = page!.text()
+    expect(text).not.toContain('Free-to-play')
+    expect(text).not.toContain('19,99')
+    expect(text).not.toContain('Stand')
+    expect(numbered()[1]!.text().split('korrigiert')).toHaveLength(2)
+    expect(items()).toHaveLength(3)
   })
 })
