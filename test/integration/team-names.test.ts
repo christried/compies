@@ -109,6 +109,20 @@ describe('Team names', () => {
       expect(view.members.find(member => member.id === game.ids.two)?.teamWord).toBeNull()
     })
 
+    it('lets the Host seated in a team set a word like any Player, joined in the order of joining, and refuses the Host on the Stands (#948)', async () => {
+      const game = await setup()
+      const onStands = await word(game, game.hostCookie, 'Flinke')
+      expect(onStands.status).toBe(409)
+      expect(await codeOf(onStands)).toBe('not_in_team')
+
+      await seat(game, 'one', 1)
+      expect((await send('POST', `/api/e/${game.slug}/move`, game.hostCookie, { userId: game.ids.host, to: { zone: 'team', team: 1 } })).status).toBe(200)
+      expect((await word(game, game.hostCookie, 'Flinke')).status).toBe(200)
+      expect((await word(game, game.cookies.one, 'Wilde')).status).toBe(200)
+
+      expect((await names(game))[0]).toBe('Wilde Flinke')
+    })
+
     it('refuses a Player on the Stands with 409 not_in_team', async () => {
       const game = await setup()
 

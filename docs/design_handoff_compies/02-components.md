@@ -589,6 +589,7 @@ Each member adds one word (≤ 12 chars) to the team name.
 - **Accessibility:** TextField rules; live region for the composed name.
 - **Motion:** new word pops in `dur-slow ease-pop`.
 - **Deviation (0.12, #425):** there is no `frozen` state. A Player changes their word at any time until the Finish, a Player the Host moved in after the start included. Once the team has its first word, the builder collapses to the name with a pencil button that opens the field again. The Host's reset to the colour name stays at any time and clears the team's words; the Host never types a word. The TeamZone shows no lock for the name.
+- **Deviation (0.18.1, #948):** writing follows being in the team, whatever the role. A Host seated in a team has the field and the pencil in that team's band and writes a word like any other Player; a Host on the Stands has no field in any band. The reset stays the Host's alone, on every team with a name from words, the Host's own team included.
 
 ## GameBoard
 **Scope:** [1.0] · **Ref:** DS People, App Lobby 09
