@@ -86,12 +86,13 @@ describe('StageWheel', () => {
     expect(text()).not.toContain('???')
   })
 
-  it('shows a Member the placeholders and ??? under a Hidden wheel, where the server sends no games, and the count in the accessible name (#354)', async () => {
+  it('shows a Member the placeholder names under a Hidden wheel, where the server sends no games, and the count in the accessible name (#354, #949)', async () => {
     await mount(viewOf({ ...wheelOf(false), slices: null }, { hiddenWheel: true }))
 
     expect(page!.get('[role="img"]').attributes('aria-label')).toBe('Glücksrad mit 3 Spielen')
     expect(text()).not.toContain('auf dem Rad')
     expect(text()).not.toContain('Halo')
-    expect(text().match(/\?\?\?/g)).toHaveLength(3)
+    expect(text()).not.toContain('???')
+    expect(text()).toContain('Liga der Lemminge')
   })
 })
