@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.18.1] - 2026-11-21 – Hotfixes
+
 ### Neu
 
 - Steht der Sieger schon fest, schließt du als Host das Event unter „Mehr“ vorzeitig ab. ([#953](https://github.com/christried/compies/issues/953))
