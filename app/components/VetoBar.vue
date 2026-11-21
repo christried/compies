@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { Play } from '@lucide/vue'
+import type { ClipReopen } from '~/composables/useClipReopen'
 import { clockTick } from '~/utils/motion'
 import { clockText, vetoActionShown, vetoBarState } from '~/utils/veto-bar'
 import { teamNameAt } from '~/utils/board'
@@ -21,6 +23,8 @@ const props = defineProps<{
   serverNow: () => number
   /** Casts the viewer's Party's Veto on a draw; resolves to whether the server took it. */
   cast: (drawId: string) => Promise<boolean>
+  /** „Zum Video“ (#956): opens this device's closed Clip again; the page hands it in only while the Clip runs and this device closed it. */
+  reopenClip?: ClipReopen
 }>()
 
 const { t } = useI18n()
@@ -78,6 +82,20 @@ watch(secondsLeft, () => {
           class="text-[12px] text-ink-2 sideways:sr-only"
         >{{ sub }}</span>
       </div>
+      <!-- „Zum Video“ (#956): the Clip this device closed, back at the second everybody is at, while it runs. -->
+      <AppButton
+        v-if="reopenClip"
+        variant="secondary"
+        size="md"
+        class="flex-none"
+        @click="reopenClip()"
+      >
+        <AppIcon
+          :icon="Play"
+          :size="16"
+        />
+        {{ t('clip.reopen') }}
+      </AppButton>
       <!-- The column takes the locked pill's width at md (#218): a fixed 260 px cut its label to „Vet…“ beside the stamp. The ready hold keeps its 260 px minimum. -->
       <div class="w-full flex-none md:w-auto md:min-w-[260px]">
         <VetoButton

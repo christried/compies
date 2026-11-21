@@ -16,7 +16,8 @@ import type { ClipView } from '~~/shared/stage'
 // only thing sent (the page POSTs it, the server stores it, and every client's refetch ends the clip).
 // Sound: a desktop starts with sound unless the User's own setting is off; a phone starts muted. When the browser blocks the
 // unmuted start (the player says so, or is not PLAYING after a second) the clip plays muted and „Ton aktivieren“ asks for the
-// tap that unlocks sound. The mounted overlay is keyed by the draw, so the next draw's clip shows again after a close.
+// tap that unlocks sound. The mounted overlay is keyed by the draw, and so is the page's closed state:
+// the next draw's clip shows again after a close, and „Zum Video“ opens this one again while it runs (#956), with the sound this device chose.
 const props = defineProps<{
   clip: ClipView
   /** The server's time in epoch ms (useServerClock). */
@@ -26,6 +27,8 @@ const props = defineProps<{
   vetoBarShown: boolean
   /** The Host's skip for everyone; resolves to whether the server took it. */
   skip: () => Promise<boolean>
+  /** This device closed this draw's Clip (#956): the page keeps it, keyed by the draw, so „Zum Video“ can open it again. */
+  closed: boolean
 }>()
 
 /** How long the player may take to start with sound before the clip plays muted instead. */
@@ -61,10 +64,9 @@ const endSecond = props.clip.game.clipStart + props.clip.game.clipLength
 // transition. Before the start it sleeps until the start instant, so every device opens the Clip at that moment (#959). The clip is
 // not a countdown, and it ends at `endsAt` from the ticker without waiting for a refetch.
 const now = useServerTicker(() => props.serverNow(), { until: () => endsAt, every: at => (at < startAt ? startAt - at : TICK_MS) })
-const closedByMe = ref(false)
 const hydrating = import.meta.server || useNuxtApp().isHydrating
 const running = computed(() => (now.value === null ? hydrating || clipRunning({ startAt, endsAt }, props.serverNow()) : clipRunning({ startAt, endsAt }, now.value)))
-const open = computed(() => running.value && !closedByMe.value)
+const open = computed(() => running.value && !props.closed)
 /** The player could not be made or cannot play the video: the game's card stands in for it. */
 const playerFailed = ref(false)
 const showsPlayer = computed(() => videoId.value !== null && !playerFailed.value)
@@ -179,6 +181,8 @@ function destroyPlayer() {
   clearTimeout(resumeTimer)
   player?.destroy()
   player = null
+  // A Clip opened again (#956) starts like a new one: its own first PLAYING, its own drift check. `muted` stays: the sound this device chose.
+  started = false
 }
 
 function toggleMute() {
@@ -201,9 +205,9 @@ watch(gestured, (now) => {
   if (now && wide.value === false && offersSound.value) enableSound()
 }, { flush: 'sync' })
 
-/** Closes this device's clip. Nothing is sent: the other devices play on. */
+/** Closes this device's clip: the page keeps that it did, keyed by the draw (#956). Nothing is sent: the other devices play on. */
 function closeForMe() {
-  closedByMe.value = true
+  emit('close')
 }
 
 // A Clip that opens after mount (#959: a spin's starts 1.5 s after the stop, and the read carries it from the stop) makes its player
@@ -215,8 +219,12 @@ watch(open, (isOpen) => {
 
 // The page's backdrop (#587) shows exactly while `open` is true: the Clip is neither closed on this device nor ended. A game without a
 // video and a failed player count as open. The page adds that the read still carries the Clip, which ends the backdrop at the Host's skip.
-const emit = defineEmits<{ shown: [shown: boolean] }>()
+const emit = defineEmits<{ shown: [shown: boolean], close: [], reopenable: [reopenable: boolean] }>()
 watch(open, value => emit('shown', value), { immediate: true })
+// „Zum Video“ (#956) is offered while the Clip runs (from its start to its end) and this device closed it; the page adds that the read
+// still carries the Clip, which ends the offer at the Host's skip. Before mount (null) nothing is offered.
+const reopenable = computed(() => props.closed && now.value !== null && clipRunning({ startAt, endsAt }, now.value))
+watch(reopenable, value => emit('reopenable', value), { immediate: true })
 
 onMounted(() => {
   // A desktop plays with sound unless the User turned sound off; a phone starts muted and offers the tap (the phone's browser

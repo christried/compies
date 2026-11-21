@@ -1751,7 +1751,8 @@
   "clip": {
     "label": "Clip: {name}",
     "live": "läuft für alle",
-    "closeForMe": "Für mich schließen"
+    "closeForMe": "Für mich schließen",
+    "reopen": "Zum Video"
   },
   "poolWarning": {
     "title": "Wird knapp.",

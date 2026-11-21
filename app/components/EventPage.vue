@@ -110,6 +110,16 @@ const vetoBarShown = ref(false)
 /** The Clip shows on this device (#587): the overlay says so, and it is open in its first render whenever the read carries a Clip, so the page starts from the read (the server's HTML has the backdrop, #699) and the overlay corrects it (closed on this device, ended). The backdrop is `clipShown`, which also needs the read to still carry the Clip: a skip drops it, and an overlay that left says nothing. */
 const clipOpen = ref(!!data.value?.clip)
 const clipShown = computed(() => clipOpen.value && !!data.value?.clip)
+/**
+ * „Für mich schließen“ is this device's alone (#956): the page keeps the draw whose Clip this device closed, so a later draw's Clip shows again
+ * and „Zum Video“ (the Veto bar, the wheel's result card) can open this one again. The overlay says when that may be (`reopenable`: it runs and is
+ * closed); the read must still carry the Clip, which the Host's skip ends.
+ */
+const closedClipDraw = ref<string | null>(null)
+const clipClosed = computed(() => !!data.value?.clip && closedClipDraw.value === data.value.clip.drawId)
+const clipReopenable = ref(false)
+const reopenClip = computed(() => (clipClosed.value && clipReopenable.value ? () => void (closedClipDraw.value = null) : null))
+provideClipReopen(() => reopenClip.value)
 
 /** Why "Termin fixieren" cannot set a Date right now, or null (#52): the dock's action says so. */
 const setBlocked = computed(() => {
@@ -451,7 +461,7 @@ watch(() => tour.shown.value, (isShown) => {
 
       <ClipBackdrop :shown="clipShown" />
 
-      <!-- The synced clip (#230) over the stage; keyed by the draw, so a clip closed on this device shows again with the next draw. The Transition
+      <!-- The synced clip (#230) over the stage; keyed by the draw, as the page's closed state is (#956), so a clip closed on this device shows again with the next draw. The Transition
            is the fade of a skip (#261): the Host's skip removes the whole overlay, and its own leave would not run then. The overlay's inner
            Transition keeps the fade of a clip that ends or is closed on this device. -->
       <Transition
@@ -466,7 +476,10 @@ watch(() => tour.shown.value, (isShown) => {
           :is-host="data.event.isHost"
           :veto-bar-shown="vetoBarShown"
           :skip="actions.skipClip"
+          :closed="clipClosed"
           @shown="clipOpen = $event"
+          @close="closedClipDraw = data?.clip?.drawId ?? null"
+          @reopenable="clipReopenable = $event"
         />
       </Transition>
 
@@ -478,6 +491,7 @@ watch(() => tour.shown.value, (isShown) => {
         :solo="data.settings?.teamSize === 1"
         :server-now="serverClock.now"
         :cast="actions.castVeto"
+        :reopen-clip="reopenClip"
         @shown="vetoBarShown = $event"
       />
 

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { Play } from '@lucide/vue'
 import { MD_QUERY } from '~/composables/useMediaQuery'
 import { GAME_GRID } from '~/utils/game-grid'
 import { reducedMotion } from '~/utils/motion'
@@ -276,6 +277,8 @@ const labelOpacity = (index: number) => labelOf(index).opacity * (isDrawn(index)
 // The result is announced at the stop, with the flash, Compibert's cheer and the name's reveal; the card shows from the Clip's start on (#959).
 const result = computed(() => (stopped.value && spin.value?.current && spin.value.game ? spin.value.game : null))
 const card = computed(() => (cardElapsed.value !== null ? result.value : null))
+/** „Zum Video“ on the card (#956), for every viewer who closed the Clip, while it runs: the Event page provides it. */
+const reopenClip = useClipReopen()
 // An empty wheel says nothing here: its accessible name counts 0 games (#802).
 const status = computed(() => (timing.value && clock.value !== null && !stopReached(timing.value, clock.value) ? t('wheel.spinning') : null))
 const headingId = useId()
@@ -524,6 +527,19 @@ const headingId = useId()
           :facts="hostGames?.[card.id] ?? null"
         />
       </div>
+      <!-- „Zum Video“ (#956): the Clip this device closed, back at the second everybody is at, while it runs. -->
+      <AppButton
+        v-if="reopenClip"
+        variant="secondary"
+        size="md"
+        @click="reopenClip()"
+      >
+        <AppIcon
+          :icon="Play"
+          :size="16"
+        />
+        {{ t('clip.reopen') }}
+      </AppButton>
     </div>
 
     <!-- The result for screen readers, announced when the wheel stops. -->
