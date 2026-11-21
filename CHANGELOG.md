@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Entfernt
+
+- Der Spielverlauf in der Tabelle zeigt keinen Preis mehr. ([#952](https://github.com/christried/compies/issues/952))
+
 ## [0.18.0] - 2026-11-20 – Chat
 
 Dein Event hat jetzt einen Chat: Alle schreiben und lesen live mit, auch von der Tribüne. Und auf dem Spielbrett schickst du Emotes, die über deinem Avatar aufsteigen und mit eingeschaltetem Ton auch klingen.
