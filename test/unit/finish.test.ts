@@ -183,12 +183,14 @@ describe('outcomeOf', () => {
 })
 
 describe('finishRejection', () => {
-  const complete = { complete: true, tie: null }
-  const incomplete = { complete: false, tie: null }
-  const tied = { complete: true, tie: [1, 2] }
+  const complete = { complete: true, tie: null, decided: true }
+  const incomplete = { complete: false, tie: null, decided: false }
+  const tied = { complete: true, tie: [1, 2], decided: false }
+  /** Not complete, but one Party can no longer be caught (#953). */
+  const decided = { complete: false, tie: null, decided: true }
   const alone = standingsOf([3, 1, 0])
   const level = standingsOf([3, 3, 0])
-  const ask = (input: Partial<Parameters<typeof finishRejection>[0]>) => finishRejection({ isHost: true, phase: 'running', end: complete, standings: alone, outcome: 'winner', winners: [1], ...input })
+  const ask = (input: Partial<Parameters<typeof finishRejection>[0]>) => finishRejection({ isHost: true, phase: 'running', end: complete, waiting: false, standings: alone, outcome: 'winner', winners: [1], ...input })
 
   it('refuses a Player first, before every other rule', () => {
     expect(ask({ isHost: false, phase: 'poll', end: incomplete })).toBe('not_host')
@@ -234,6 +236,33 @@ describe('finishRejection', () => {
   it('compares the winners as a set: any order, a repeated Party counts once', () => {
     expect(ask({ end: tied, standings: level, outcome: 'tie', winners: [2, 1] })).toBeNull()
     expect(ask({ end: tied, standings: level, outcome: 'tie', winners: [2, 1, 2] })).toBeNull()
+  })
+
+  // The early Finish (#953): a decided Event finishes before the Game count, with its sole leader as the winner.
+  it('allows a decided, incomplete Event for the sole leader the Host saw', () => {
+    expect(ask({ end: decided })).toBeNull()
+  })
+
+  it('refuses a decided, incomplete Event while a Round waits for its Result with round_waiting', () => {
+    expect(ask({ end: decided, waiting: true })).toBe('round_waiting')
+  })
+
+  it('checks results_missing before round_waiting: an undecided, incomplete Event with a waiting Round is results_missing', () => {
+    expect(ask({ end: incomplete, waiting: true })).toBe('results_missing')
+  })
+
+  it('checks round_waiting after the Phase and the Host', () => {
+    expect(ask({ end: decided, waiting: true, isHost: false })).toBe('not_host')
+    expect(ask({ end: decided, waiting: true, phase: 'finished' })).toBe('wrong_phase')
+  })
+
+  it('refuses a decided Event for a winner other than the sole leader now, or for a Tie, with standings_changed', () => {
+    expect(ask({ end: decided, standings: standingsOf([1, 3, 0]), winners: [1] })).toBe('standings_changed')
+    expect(ask({ end: decided, outcome: 'tie', winners: [1] })).toBe('standings_changed')
+  })
+
+  it('leaves the complete case as it was: a waiting Round does not refuse it', () => {
+    expect(ask({ waiting: true })).toBeNull()
   })
 })
 

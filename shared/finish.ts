@@ -63,8 +63,8 @@ export function outcomeOf(end: Pick<EndFacts, 'tie'>): FinishOutcome {
   return end.tie === null ? 'winner' : 'tie'
 }
 
-/** Why the Event cannot be finished now (#277), in the order they are checked. */
-export type FinishRejection = 'not_host' | 'wrong_phase' | 'results_missing' | 'standings_changed'
+/** Why the Event cannot be finished now (#277, #953), in the order they are checked. */
+export type FinishRejection = 'not_host' | 'wrong_phase' | 'results_missing' | 'round_waiting' | 'standings_changed'
 
 /**
  * What the finish request carries (#277, review 0.8 S2): the outcome the Host held, and the Parties (team positions) he saw on Place 1,
@@ -78,20 +78,24 @@ export interface FinishRequest {
 export interface FinishInput extends FinishRequest {
   isHost: boolean
   phase: Phase
-  end: Pick<EndFacts, 'complete' | 'tie'>
+  end: Pick<EndFacts, 'complete' | 'tie' | 'decided'>
+  /** A Round waits for its Result (#953): one stands, drawn or set, without a Result. It holds back only the early Finish. */
+  waiting: boolean
   /** The Standings now (standingsAndEnd's), whose leaders `winners` are compared with. */
   standings: readonly Standing[]
 }
 
 /**
  * The reason the Event cannot be finished now, or null (#277), in the order they are checked: the Host asks, the Phase is `running`, every
- * Round up to the Game count has its Result, and what the Host saw is what the Standings say now: the same outcome (outcomeOf) and the
+ * Round up to the Game count has its Result or the Event is decided (#953: `results_missing` means neither), an early Finish waits for no
+ * Round's Result (`round_waiting`, #953), and what the Host saw is what the Standings say now: the same outcome (outcomeOf) and the
  * same Parties on Place 1, compared as sets. A Correction in another tab that made or ended a Tie, or changed who leads, refuses.
  */
-export function finishRejection({ isHost, phase, end, standings, outcome, winners }: FinishInput): FinishRejection | null {
+export function finishRejection({ isHost, phase, end, waiting, standings, outcome, winners }: FinishInput): FinishRejection | null {
   if (!isHost) return 'not_host'
   if (phase !== 'running') return 'wrong_phase'
-  if (!end.complete) return 'results_missing'
+  if (!end.complete && !end.decided) return 'results_missing'
+  if (!end.complete && waiting) return 'round_waiting'
   if (outcomeOf(end) !== outcome) return 'standings_changed'
   const leaders = leadersOf(standings)
   const seen = new Set(winners)
