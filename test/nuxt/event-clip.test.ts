@@ -265,6 +265,24 @@ describe('the backdrop behind the clip (#587)', () => {
     expect(clipSection()).toBeNull()
   })
 
+  // #959: the read carries a spin's Clip from the stop on, and the Clip starts 1.5 s later; the page stays as it is until then.
+  it('waits for the clip\'s start: no overlay, no backdrop and nothing inert before it, then both at the start by the clock', async () => {
+    const now = Date.now()
+    const clip: ClipView = { drawId: 'd1', startAt: new Date(now + 700).toISOString(), endsAt: new Date(now + 30_700).toISOString(), game: kart }
+    const { slug } = serveRunning({ host: false, clip })
+    page = await mountSuspended(EventPage, { route: `/e/${slug}` })
+    await flushPromises()
+
+    expect(clipSection()).toBeNull()
+    expect(backdrop()).toBeNull()
+    expect(covered(header())).toBe(false)
+    expect(html().contains('overflow-hidden')).toBe(false)
+
+    await vi.waitFor(() => expect(backdrop()).not.toBeNull(), { timeout: 3000 })
+    expect(clipSection()).not.toBeNull()
+    expect(covered(header())).toBe(true)
+  })
+
   it('goes with the clip\'s end by its own ticker', async () => {
     const now = Date.now()
     const clip: ClipView = { drawId: 'd1', startAt: new Date(now - 29_300).toISOString(), endsAt: new Date(now + 700).toISOString(), game: kart }
