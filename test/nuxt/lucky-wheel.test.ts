@@ -2,7 +2,9 @@ import { mountSuspended } from '@nuxt/test-utils/runtime'
 import { flushPromises } from '@vue/test-utils'
 import type { DOMWrapper } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { defineComponent, h, ref } from 'vue'
 import LuckyWheel from '~/components/LuckyWheel.vue'
+import { provideClipReopen } from '~/composables/useClipReopen'
 import { GAME_NAME_MAX, type HostGameFacts, type RoundGame } from '~~/shared/game'
 import type { SpinView, WheelView } from '~~/shared/stage'
 import { kitty, signInAs } from './auth'
@@ -336,6 +338,38 @@ describe('the result', () => {
     expect(page!.get('[data-testid="wheel-card"]').text()).toContain('Halo')
   })
 
+  // #956: every viewer who closed the Clip brings it back from the card, the Host outside a team and the Stands too, who have no Veto bar.
+  it('offers „Zum Video“ on the card while the page hands the action in, and opens the Clip again with it', async () => {
+    const reopen = vi.fn()
+    const action = ref<(() => void) | null>(reopen)
+    // The Event page provides the action (provideClipReopen); this host stands in for it.
+    const Host = defineComponent({
+      setup() {
+        provideClipReopen(() => action.value)
+        return () => h(LuckyWheel, { wheel: wheelOf(spinOf({ game: halo })), hidden: false, isHost: false, serverNow })
+      },
+    })
+    page = await mountSuspended(Host)
+    await flushPromises()
+    await at(CLIP)
+    const button = () => page!.get('[data-testid="wheel-card"]').findAll('button').find((candidate: DOMWrapper<Element>) => candidate.text().trim() === 'Zum Video')
+
+    expect(button()).toBeDefined()
+    await button()!.trigger('click')
+    expect(reopen).toHaveBeenCalledTimes(1)
+
+    action.value = null
+    await at(CLIP + 100)
+    expect(button()).toBeUndefined()
+  })
+
+  it('offers no „Zum Video“ where the page provides none', async () => {
+    await mount(wheelOf(spinOf({ game: halo })))
+    await at(CLIP)
+
+    expect(page!.get('[data-testid="wheel-card"]').text()).not.toContain('Zum Video')
+  })
+
   it('names no game once the spin is no longer the latest draw: a vetoed, replaced or put-back game (F6)', async () => {
     await mount(wheelOf(spinOf({ game: halo, current: false })))
     await at(CLIP + 100)
@@ -447,6 +481,70 @@ describe('a Hidden wheel', () => {
     await at(START + 3000)
 
     for (const name of ['Halo', 'Kart', 'Pong', 'Schach']) expect(text()).toContain(name)
+  })
+})
+
+// The uncover (#957, spec #961 § Uncover): the read with the names arrives on a device whose wheel showed placeholders, and every slice plays the
+// stop's scramble into its real name (under reduced motion, the crossfade), on the page's own clock from the moment the read arrives. A device
+// that loads after the uncover shows the names at rest at once.
+describe('the uncover of a Hidden wheel (#957)', () => {
+  const names = ['Halo', 'Kart', 'Schach']
+  const covered = () => wheelOf(null, { count: 3, slices: null })
+  const uncovered = () => wheelOf(null, { count: 3, slices: names.map((name, index) => ({ id: `g${index}`, name })) })
+  const opacities = () => page!.findAll('text[data-testid^="wheel-label-"]').map((label: DOMWrapper<Element>) => Number(label.attributes('opacity')))
+
+  /** The page's own clock runs on by `ms`. */
+  async function local(ms: number) {
+    vi.advanceTimersByTime(ms)
+    await flushPromises()
+  }
+
+  it('scrambles every placeholder into its real name when the read with the names arrives, and shows the names once the scramble is over', async () => {
+    await mount(covered(), { hidden: true })
+    const before = labelsShown()
+    expect(before).toEqual(['Schießen Springen Sch…', 'Liga der Lemminge', 'Disco Disco Party Par…'])
+
+    await page!.setProps({ wheel: uncovered(), hidden: false })
+    await local(100)
+    const scrambled = labelsShown()
+    for (const [index, label] of scrambled.entries()) {
+      expect(label).not.toBe(names[index])
+      expect(label).not.toBe(before[index])
+      // The scramble keeps the length of the real name it turns into, as the reveal at a stop does.
+      expect([...label]).toHaveLength([...names[index]!].length)
+    }
+
+    await local(300)
+    expect(labelsShown()).toEqual(names)
+    expect(opacities()).toEqual([1, 1, 1])
+  })
+
+  it('crossfades the names in under reduced motion', async () => {
+    document.documentElement.style.setProperty('--cp-motion', 'reduced')
+    await mount(covered(), { hidden: true })
+
+    await page!.setProps({ wheel: uncovered(), hidden: false })
+    await local(100)
+    expect(labelsShown()).toEqual(names)
+    for (const opacity of opacities()) expect(opacity).toBeLessThan(1)
+
+    await local(200)
+    expect(opacities()).toEqual([1, 1, 1])
+  })
+
+  it('shows the names at rest at once on a device that loads after the uncover', async () => {
+    await mount(uncovered())
+
+    expect(labelsShown()).toEqual(names)
+    expect(opacities()).toEqual([1, 1, 1])
+  })
+
+  it('plays no scramble for the Host, who saw the names all along', async () => {
+    await mount(uncovered(), { hidden: true, isHost: true })
+
+    await page!.setProps({ wheel: uncovered(), hidden: false })
+    await local(100)
+    expect(labelsShown()).toEqual(names)
   })
 })
 

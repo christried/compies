@@ -1,8 +1,9 @@
 <script setup lang="ts">
+import { Play } from '@lucide/vue'
 import { MD_QUERY } from '~/composables/useMediaQuery'
 import { GAME_GRID } from '~/utils/game-grid'
 import { reducedMotion } from '~/utils/motion'
-import { SCRAMBLE_FRAME_MS, finalAngle, removalEase, removalEnd, revealStage, scramble, sliceSpans, wheelAngle, type WheelTiming } from '~/utils/wheel'
+import { SCRAMBLE_FRAME_MS, finalAngle, morphLength, morphStage, removalEase, removalEnd, revealStage, scramble, sliceSpans, wheelAngle, type WheelTiming } from '~/utils/wheel'
 import { BULB_RADIUS, FLAPPER_HINGE, FLAPPER_PLACEMENT, PIN_RADIUS, PIN_RING_RADIUS, WHEEL_COLOURS, WHEEL_FILLS, bulbPoints, pinAngles, wheelPoint } from '~/utils/wheel-look'
 import { bulbsLit, nextBulbChange } from '~/utils/wheel-bulbs'
 import { WHEEL_MAX_PX, mascotWidthFor } from '~/utils/wheel-mascot'
@@ -29,11 +30,15 @@ import { refillAt, refillPlan, type RefillPlan, type RestSlice } from '~/utils/w
 // bulbs light by server time (#521) and the flapper kicks at every pin that passes the top (#522, utils/wheel-pins.ts); Compibert stands
 // beside the wheel since #526 (LuckyWheelMascot) and the sounds come with 0.13.3. When the games change at rest (a put back, the Game pool),
 // the slices move together over 0.6 s and a new slice pops in (#524, utils/wheel-refill.ts): on the page's own clock from the moment the data
-// arrives, never during a spin.
+// arrives, never during a spin. When the Host uncovers a Hidden wheel (#957), the read with the names arrives and every placeholder scrambles into
+// its real name, on the page's own clock as well.
 // The wheel is 340 px at most on a phone and 420 px from md up, and never changes size during a spin.
 const props = withDefaults(defineProps<{
   wheel: WheelView
-  /** The Event's Hidden wheel setting: it delays the drawn slice's removal for every viewer alike, so the devices stay in step. */
+  /**
+   * Whether the wheel hides its games now (`wheelHidden`: the Event's Hidden wheel setting until the Host uncovers it, #957): it delays the drawn
+   * slice's removal for every viewer alike, so the devices stay in step.
+   */
   hidden: boolean
   isHost: boolean
   /** The server's time in epoch ms (useServerClock). */
@@ -110,15 +115,31 @@ const restSlices = computed((): RestSlice[] => props.wheel.slices
   : Array.from({ length: props.wheel.count }, (_, index) => ({ key: `slot-${index}`, name: placeholderAt(index) })))
 /** The slices the last change was measured against; set at setup, so a page opened after a change plays nothing. */
 let baseline = restSlices.value
+/** Whether the baseline was the placeholders of a Member under a Hidden wheel (the count only). */
+let baselineCovered = props.wheel.slices === null
 const refill = shallowRef<{ plan: RefillPlan, startedAt: number } | null>(null)
+/**
+ * The uncover (#957): the page's own time at which the read with the names arrived on a wheel that showed placeholders. Every slice then plays
+ * the stop's scramble into its real name (utils/wheel.ts morphStage); there is no shared instant, the moment is the read's arrival.
+ */
+const uncoveredAt = shallowRef<number | null>(null)
 // A change while a spin runs (its commit takes the drawn game off the wheel: the count falls by one) or its removal plays nothing: the
 // baseline moves to the new data silently and the wheel shows it as soon as the removal is over. At rest, a change starts a plan; a second
 // change inside the first starts from the layout the first one ends in.
 watch([restSlices, running], ([next, isRunning]) => {
   const previous = baseline
+  const wasCovered = baselineCovered
   baseline = next
+  baselineCovered = props.wheel.slices === null
   if (isRunning) {
     refill.value = null
+    return
+  }
+  // The uncover (#957): the names take the placeholders' places slot for slot, so no slice moves and no refill plays; every label morphs instead.
+  if (wasCovered && !baselineCovered) {
+    refill.value = null
+    reduced.value = reducedMotion()
+    uncoveredAt.value = performance.now()
     return
   }
   const plan = refillPlan(previous, next, reducedMotion())
@@ -132,6 +153,13 @@ const refillClock = useServerTicker(() => performance.now(), {
   until: () => (refill.value ? refill.value.startedAt + refill.value.plan.ms : null),
   target: rootEl,
 })
+// The uncover's clock (#957): the page's own time, like the refill's, until the morph is over; out of view it reads again on return, and the names show.
+const uncoverClock = useServerTicker(() => performance.now(), {
+  ready: () => true,
+  until: () => (uncoveredAt.value === null ? null : uncoveredAt.value + morphLength(reduced.value)),
+  target: rootEl,
+})
+const uncoverStage = computed(() => (uncoveredAt.value !== null && uncoverClock.value !== null && !running.value ? morphStage(uncoverClock.value - uncoveredAt.value, reduced.value) : null))
 const refilling = computed(() => {
   const current = refill.value
   if (!current || running.value || refillClock.value === null) return null
@@ -173,14 +201,22 @@ watchEffect(() => {
   if (current?.labels && concealed.value && timing.value && clock.value !== null && !stopReached(timing.value, props.serverNow())) held.value = { drawId: current.drawId, labels: current.labels }
 })
 
+/** A label in the middle of its morph into `text`: scrambled letters, or under reduced motion the real name fading in. `seed` sets the letters apart per slice. */
+function morphed(text: string, progress: number, seed = 0): { text: string, opacity: number } {
+  return reduced.value ? { text, opacity: progress } : { text: scramble(text, Math.floor(progress * (300 / SCRAMBLE_FRAME_MS)) + seed), opacity: 1 }
+}
+
 function labelOf(index: number): { text: string, opacity: number } {
   const text = names.value[index] ?? ''
+  // The uncover (#957): every slice morphs at rest, each with letters of its own.
+  const uncovering = uncoverStage.value
+  if (uncovering?.stage === 'morph') return morphed(text, uncovering.progress, (index + 1) * 1000)
   const current = timing.value
   if (!running.value || !concealed.value || !current || index !== current.resultIndex) return { text, opacity: 1 }
   const stage = revealStage(current, clock.value!, reduced.value)
   if (stage.stage === 'real') return { text, opacity: 1 }
   if (stage.stage === 'placeholder') return { text: held.value?.drawId === spin.value!.drawId ? held.value.labels[index] ?? t('wheel.placeholderQ') : t('wheel.placeholderQ'), opacity: 1 }
-  return reduced.value ? { text, opacity: stage.progress } : { text: scramble(text, Math.floor(stage.progress * (300 / SCRAMBLE_FRAME_MS))), opacity: 1 }
+  return morphed(text, stage.progress)
 }
 
 const shortened = (text: string) => (characterCount(text) > LABEL_MAX ? `${cutToCharacters(text, LABEL_MAX - 1)}…` : text)
@@ -281,6 +317,8 @@ const labelOpacity = (index: number) => labelOf(index).opacity * (isDrawn(index)
 // The result is announced at the stop, with the flash, Compibert's cheer and the name's reveal; the card shows from the Clip's start on (#959).
 const result = computed(() => (stopped.value && spin.value?.current && spin.value.game ? spin.value.game : null))
 const card = computed(() => (cardElapsed.value !== null ? result.value : null))
+/** „Zum Video“ on the card (#956), for every viewer who closed the Clip, while it runs: the Event page provides it. */
+const reopenClip = useClipReopen()
 // An empty wheel says nothing here: its accessible name counts 0 games (#802). The spin's line shows only under reduced motion, where the
 // wheel turns only in its last 1.2 s; a viewer who sees it turn needs no line (#955, 16-compibert-gluecksrad.md § Reduced).
 const status = computed(() => (reduced.value && timing.value && clock.value !== null && !stopReached(timing.value, clock.value) ? t('wheel.spinning') : null))
@@ -530,6 +568,19 @@ const headingId = useId()
           :facts="hostGames?.[card.id] ?? null"
         />
       </div>
+      <!-- „Zum Video“ (#956): the Clip this device closed, back at the second everybody is at, while it runs. -->
+      <AppButton
+        v-if="reopenClip"
+        variant="secondary"
+        size="md"
+        @click="reopenClip()"
+      >
+        <AppIcon
+          :icon="Play"
+          :size="16"
+        />
+        {{ t('clip.reopen') }}
+      </AppButton>
     </div>
 
     <!-- The result for screen readers, announced when the wheel stops. -->

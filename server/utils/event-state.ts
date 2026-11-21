@@ -24,6 +24,7 @@ import {
 import { beforeFinish } from '../../shared/phase'
 import { hasStarted, nextSession, runningOf, startRejection, type StartRejection } from '../../shared/session-state'
 import { playersPerTeam, settingsFromRow, type EventSettings, type FloorFacts } from '../../shared/settings'
+import { uncoverRejection, wheelHidden, type UncoverRejection } from '../../shared/uncover'
 import type { CoinRow } from './coin'
 import type { Db } from './db'
 import type { EventRow } from './event-access'
@@ -398,6 +399,29 @@ export function lastGameReason(state: EventState<'rounds'>, isHost: boolean): La
   const { standing, settings } = state
   if (standing === null || settings === null) return isHost ? 'wrong_phase' : 'not_host'
   return lastGameRejection({ isHost, phase: state.eventRow.phase, end: standing.end, gameCount: settings.gameCount })
+}
+
+/**
+ * Why the Host cannot uncover the Hidden wheel now, or null (shared/uncover.ts uncoverRejection, #957): a Running Session, a Hidden wheel not yet
+ * uncovered, and every Round up to the Game count with its Result. An Event that is not set up has no wheel to uncover. Parts: sessions, rounds.
+ */
+export function uncoverReason(state: EventState<'sessions' | 'rounds'>, isHost: boolean): UncoverRejection | null {
+  const { eventRow, settings, standing } = state
+  return uncoverRejection({
+    isHost,
+    phase: eventRow.phase,
+    running: runningOf(state.sessions) !== undefined,
+    hiddenWheel: settings?.hiddenWheel ?? false,
+    uncovered: eventRow.wheelUncoveredAt !== null,
+    complete: standing?.end.complete ?? false,
+  })
+}
+
+/**
+ * Whether the Event's wheel hides its games now (#957): the Hidden wheel setting until the Host uncovers it. The wheel read and the spin ask this.
+ */
+export function wheelHiddenOf(state: Pick<EventState, 'eventRow' | 'settings'>): boolean {
+  return wheelHidden(state.settings?.hiddenWheel ?? false, state.eventRow.wheelUncoveredAt !== null)
 }
 
 /** Why the Host cannot toss the coin now, or null (shared/coin.ts coinRejection). Parts: sessions, toss. */

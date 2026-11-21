@@ -64,9 +64,16 @@ function stubYouTube() {
 async function mount(clip: ClipView, { isHost = false, desktop = true, stubChildren = false, vetoBarShown = true }: { isHost?: boolean, desktop?: boolean, stubChildren?: boolean, vetoBarShown?: boolean } = {}) {
   stubScreen(desktop)
   const global = stubChildren ? { stubs: { AppButton: true, IconButton: true, GameCard: true } } : {}
-  page = await mountSuspended(ClipOverlay, { props: { clip, isHost, serverNow: () => serverMs, skip, vetoBarShown }, global })
+  // The page keeps the closed state, keyed by the draw (#956): here the wrapper stands in for it, closing on `close`.
+  page = await mountSuspended(ClipOverlay, { props: { clip, isHost, serverNow: () => serverMs, skip, vetoBarShown, closed: false, onClose: () => void page!.setProps({ closed: true }) }, global })
   await flushPromises()
   return page
+}
+
+/** „Zum Video“ (#956): the page opens the Clip again on this device. */
+async function reopen() {
+  await page!.setProps({ closed: false })
+  await flushPromises()
 }
 
 /** The player is ready: the overlay now loads the video. */
@@ -849,6 +856,84 @@ describe('a paused player is resumed (#509)', () => {
     await passTime(10_000)
 
     expect(player.seekTo).toHaveBeenCalledTimes(1)
+  })
+})
+
+// #956: a device that closed the Clip brings it back with „Zum Video“ while it runs. The overlay tells the page when that is
+// (`reopenable`); the page opens it again, and it plays from the second everybody is at, with the sound this device chose.
+describe('opening it again (#956)', () => {
+  const reopenableValues = () => ((page!.emitted('reopenable') ?? []) as boolean[][]).map(args => args[0])
+
+  it('says it can be opened again only once this device closed it, and no more at its end', async () => {
+    await mount(clipOf())
+    expect(reopenableValues().at(-1)).toBe(false)
+
+    await press('Für mich schließen')
+    expect(reopenableValues().at(-1)).toBe(true)
+
+    await passTime(29_900)
+    expect(reopenableValues().at(-1)).toBe(true)
+    await passTime(100)
+    expect(reopenableValues().at(-1)).toBe(false)
+  })
+
+  it('does not say so before the Clip\'s start, though closed', async () => {
+    serverMs = START - 1500
+    await mount(clipOf())
+    await page!.setProps({ closed: true })
+    await flushPromises()
+    expect(reopenableValues().at(-1)).toBe(false)
+
+    await passTime(1500)
+    expect(reopenableValues().at(-1)).toBe(true)
+  })
+
+  it('opens again at the second everybody is at, with a new player, and says it shows', async () => {
+    await mount(clipOf())
+    await ready()
+    await press('Für mich schließen')
+    expect(players[0]!.destroy).toHaveBeenCalled()
+
+    await passTime(10_000)
+    await reopen()
+
+    expect(page!.find('section').exists()).toBe(true)
+    expect(players).toHaveLength(2)
+    await ready(players[1])
+    expect(players[1]!.loadVideoById).toHaveBeenCalledWith({ videoId: 'aaaaaaaaaaa', startSeconds: 100, endSeconds: 120 })
+    expect(((page!.emitted('shown') ?? []) as boolean[][]).map(args => args[0])).toEqual([true, false, true])
+    expect(reopenableValues().at(-1)).toBe(false)
+    expect(fetched).toEqual([])
+  })
+
+  it('keeps the sound this device chose across the close and the reopen', async () => {
+    await mount(clipOf())
+    await ready()
+    await press('Ton aus')
+    await press('Für mich schließen')
+
+    await reopen()
+    await ready(players[1])
+
+    expect(players[1]!.mute).toHaveBeenCalled()
+    expect(players[1]!.unMute).not.toHaveBeenCalled()
+    expect(labels()).toContain('Ton an')
+  })
+
+  it('checks the drift again after a reopen, as after a start', async () => {
+    await mount(clipOf())
+    await ready()
+    players[0]!.options.events.onStateChange?.({ data: 1 })
+    await press('Für mich schließen')
+    await reopen()
+    await ready(players[1])
+    const player = players[1]!
+    player.options.events.onStateChange?.({ data: 1 })
+    player.getCurrentTime.mockReturnValue(90)
+
+    await passTime(3000)
+
+    expect(player.seekTo).toHaveBeenCalledWith(93, true)
   })
 })
 

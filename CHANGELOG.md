@@ -5,10 +5,15 @@
 ### Neu
 
 - Steht der Sieger schon fest, schließt du als Host das Event unter „Mehr“ vorzeitig ab. ([#953](https://github.com/christried/compies/issues/953))
+- Der Countdown tickt jetzt in den letzten zehn Sekunden, mit Trommelwirbel und Schlag bei null, wie das Veto-Fenster. ([#958](https://github.com/christried/compies/issues/958))
+- Hast du das Video geschlossen, holst du es mit „Zum Video“ zurück, solange es noch läuft. ([#956](https://github.com/christried/compies/issues/956))
+- Sind alle Spiele gespielt, deckst du als Host das verdeckte Glücksrad auf, und alle sehen, welche Spiele darauf waren. ([#957](https://github.com/christried/compies/issues/957))
 
 ### Geändert
 
 - Nach dem Stopp des Glücksrads siehst du erst den Namen des Spiels; Video und Karte kommen eine Sekunde später. ([#959](https://github.com/christried/compies/issues/959))
+- Der Stempel nach deinem Veto sagt jetzt „Locked!“. ([#950](https://github.com/christried/compies/issues/950))
+- Als Host schreibst du jetzt auch ein Teamwort, wenn du selbst in einem Team spielst. ([#948](https://github.com/christried/compies/issues/948))
 
 ### Behoben
 

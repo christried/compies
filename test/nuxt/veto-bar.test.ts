@@ -1,5 +1,5 @@
 import { mountSuspended } from '@nuxt/test-utils/runtime'
-import { flushPromises } from '@vue/test-utils'
+import { flushPromises, type DOMWrapper } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import VetoBar from '~/components/VetoBar.vue'
 import { clockTick, revealTile, sealStamp, vetoStamp } from '~/utils/motion'
@@ -25,7 +25,7 @@ const wheelOf = (vetoes: Partial<VetoView> = {}): WheelView => ({ count: 3, slic
 let serverMs = STOP
 let page: Awaited<ReturnType<typeof mountSuspended>> | undefined
 
-async function mount(wheel: WheelView, props: { cast?: (drawId: string) => Promise<boolean>, solo?: boolean, teams?: BoardTeam[] } = {}) {
+async function mount(wheel: WheelView, props: { cast?: (drawId: string) => Promise<boolean>, solo?: boolean, teams?: BoardTeam[], reopenClip?: (() => void) | null } = {}) {
   page = await mountSuspended(VetoBar, { props: { wheel, teams, serverNow: () => serverMs, cast: () => Promise.resolve(true), ...props } })
   await vi.advanceTimersByTimeAsync(300)
   await flushPromises()
@@ -145,7 +145,7 @@ describe('who gets the bar and when', () => {
 
     expect(text()).toContain('Team Rot hat schon ein Veto eingelegt')
     expect(text()).toContain('Ein Veto pro Team und Spiel. Die anderen sehen es erst beim Aufdecken.')
-    expect(page!.get('[data-testid="veto-seal"]').text()).toBe('Versiegelt')
+    expect(page!.get('[data-testid="veto-seal"]').text()).toBe('Locked!')
     expect(page!.find('[data-testid="veto-hold"]').exists()).toBe(false)
   })
 
@@ -157,7 +157,7 @@ describe('who gets the bar and when', () => {
     const column = bar().element.lastElementChild as HTMLElement
     expect(column.className).not.toMatch(/(^|\s)md:w-\[260px\]/)
     expect(column.querySelector('[data-testid="veto-locked"]')?.textContent).toContain('Veto ist drin')
-    expect(column.querySelector('[data-testid="veto-seal"]')?.textContent).toBe('Versiegelt')
+    expect(column.querySelector('[data-testid="veto-seal"]')?.textContent).toBe('Locked!')
   })
 
   it('keeps the hold button at its 260 px minimum at the desktop width in the ready state (#218)', async () => {
@@ -228,6 +228,38 @@ describe('who gets the bar and when', () => {
     await vi.advanceTimersByTimeAsync(1000)
 
     expect(cast).toHaveBeenCalledWith('set-draw')
+  })
+})
+
+// #956: a Player who closed the Clip brings it back from the bar. The page hands the action in only while the Clip runs and this device closed it.
+describe('„Zum Video“ (#956)', () => {
+  const reopenButton = () => page!.findAll('button').find((button: DOMWrapper<Element>) => button.text().trim() === 'Zum Video')
+
+  it('offers it while the page hands the action in, and opens the Clip again with it, sending nothing', async () => {
+    const reopen = vi.fn()
+    const cast = vi.fn(() => Promise.resolve(true))
+    await mount(wheelOf(), { reopenClip: reopen, cast })
+
+    expect(reopenButton()).toBeDefined()
+    await reopenButton()!.trigger('click')
+
+    expect(reopen).toHaveBeenCalledTimes(1)
+    expect(cast).not.toHaveBeenCalled()
+  })
+
+  it('offers it beside the locked pill too, once the Party has cast', async () => {
+    await mount(wheelOf({ own: own({ cast: true }) }), { reopenClip: () => {} })
+
+    expect(reopenButton()).toBeDefined()
+  })
+
+  it('does not offer it without the action: the Clip is open, not closed here, ended or skipped', async () => {
+    await mount(wheelOf(), { reopenClip: null })
+    expect(reopenButton()).toBeUndefined()
+    page!.unmount()
+
+    await mount(wheelOf())
+    expect(reopenButton()).toBeUndefined()
   })
 })
 
