@@ -11,8 +11,9 @@ import { hasSpace, stripSpaces, TEAM_WORD_MAX } from '~~/shared/team-word'
 // field saves, an empty save removes the word, Escape drops the draft. Once the team has a word the band folds to the composed name with a
 // pencil that opens the field again for the Player's own word; Enter and Escape fold it again and give the focus back to the pencil (#439).
 // The Host sees the name and a reset once the team has a name from words; it asks first (screen 10 „Teamnamen zurücksetzen?“) and deletes
-// the words. The Host never writes a word, seated in a team or not. A new name pops in, and a polite live region announces the composed name
-// when it changes. Everyone else sees only the name, in the header. The refetch after a save brings the truth.
+// the words. Writing follows being in the team, whatever the role: a Host seated in a team writes a word like any Player, a Host on the
+// Stands none (#948). A new name pops in, and a polite live region announces the composed name when it changes. Everyone else sees only
+// the name, in the header. The refetch after a save brings the truth.
 const props = defineProps<{
   slug: string
   /** The team's position, which is its Team colour index. */
@@ -48,7 +49,7 @@ const editing = ref(false)
 const returnFocus = ref(false)
 const count = computed(() => characterCount(draft.value))
 
-const canWrite = computed(() => props.mine && !props.isHost)
+const canWrite = computed(() => props.mine)
 const canReset = computed(() => props.isHost && props.named)
 /**
  * The composed name shows folded once the team has a word, unless the Player's field is in use: opened with the pencil, or the Player is
