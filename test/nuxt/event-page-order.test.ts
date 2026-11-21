@@ -131,7 +131,7 @@ describe('the order of the stage on the Event page', () => {
     const { read, headings } = await open()
 
     vi.setSystemTime(new Date(T + 2000))
-    await read({ results: [afterResult.results![0]!, resultAt(T)], standings: afterResult.standings, end: { played: 2, gameCount: 6, complete: false, tie: null, finish: null, lastGame: null } })
+    await read({ results: [afterResult.results![0]!, resultAt(T)], standings: afterResult.standings, end: { played: 2, gameCount: 6, complete: false, tie: null, decided: false, finish: null, lastGame: null } })
     expect(headings()).toEqual(['Tabelle', 'Läuft aktuell', 'Spielbrett', 'Sessions', 'So wird gespielt'])
 
     vi.setSystemTime(new Date(T + 5000))
@@ -182,7 +182,7 @@ describe('the order of the stage on the Event page', () => {
       const { read, headings } = await open()
 
       vi.setSystemTime(new Date(T + 2000))
-      await read({ results: [afterResult.results![0]!, resultAt(T)], standings: afterResult.standings, end: { played: 2, gameCount: 6, complete: false, tie: null, finish: null, lastGame: null } })
+      await read({ results: [afterResult.results![0]!, resultAt(T)], standings: afterResult.standings, end: { played: 2, gameCount: 6, complete: false, tie: null, decided: false, finish: null, lastGame: null } })
 
       expect(headings()[0]).toBe('Tabelle')
       expect(scrollTo).toHaveBeenCalledTimes(1)
@@ -190,7 +190,7 @@ describe('the order of the stage on the Event page', () => {
 
     it('scrolls for a second Result when the Standings are first already', async () => {
       const { read } = await open()
-      const end = { played: 2, gameCount: 6, complete: false, tie: null, finish: null, lastGame: null }
+      const end = { played: 2, gameCount: 6, complete: false, tie: null, decided: false, finish: null, lastGame: null }
       vi.setSystemTime(new Date(T + 2000))
       await read({ results: [afterResult.results![0]!, resultAt(T)], standings: afterResult.standings, end })
       scrollTo.mockClear()
@@ -382,12 +382,12 @@ describe('the order of the stage on the Event page', () => {
   it('does not lower the Standings for a second Result: they stay above the open Rounds from the read to the end of the half second (#442)', async () => {
     const { read, headings } = await open()
     vi.setSystemTime(new Date(T + 2000))
-    await read({ results: [afterResult.results![0]!, resultAt(T)], standings: afterResult.standings, end: { played: 2, gameCount: 6, complete: false, tie: null, finish: null, lastGame: null } })
+    await read({ results: [afterResult.results![0]!, resultAt(T)], standings: afterResult.standings, end: { played: 2, gameCount: 6, complete: false, tie: null, decided: false, finish: null, lastGame: null } })
     expect(headings()).toEqual(['Tabelle', 'Läuft aktuell', 'Spielbrett', 'Sessions', 'So wird gespielt'])
 
     // The second Result's moment is T + 2000, its read 200 ms later: its half second is not over, and the block used to fall below „Läuft aktuell“ and rise again.
     vi.setSystemTime(new Date(T + 2200))
-    await read({ results: [afterResult.results![0]!, resultAt(T + 2000)], standings: afterResult.standings, end: { played: 2, gameCount: 6, complete: false, tie: null, finish: null, lastGame: null } })
+    await read({ results: [afterResult.results![0]!, resultAt(T + 2000)], standings: afterResult.standings, end: { played: 2, gameCount: 6, complete: false, tie: null, decided: false, finish: null, lastGame: null } })
     expect(headings()).toEqual(['Tabelle', 'Läuft aktuell', 'Spielbrett', 'Sessions', 'So wird gespielt'])
 
     for (const step of [299, 1, 600]) {
@@ -415,7 +415,7 @@ describe('the order of the stage on the Event page', () => {
     const AFTER_TWO = [{ team: 1, rank: 1, points: 6 }, { team: 2, rank: 2, points: 1 }]
     const BEFORE_ROWS = { teams: ['2', '1'], points: ['1', '0'] }
     const numbered = (number: number, at: number): ResultView => ({ ...resultAt(at), roundId: `r${number + 7}`, number })
-    const endOf = (played: number) => ({ played, gameCount: 6, complete: false, tie: null, finish: null, lastGame: null })
+    const endOf = (played: number) => ({ played, gameCount: 6, complete: false, tie: null, decided: false, finish: null, lastGame: null })
     /** The read of Spiel 2 (and 3): the Results, the Standings and the count. */
     const withResults = (standings: typeof AFTER_ONE, ...results: ResultView[]): EventOverrides => ({ results: [afterResult.results![0]!, ...results], standings, end: endOf(1 + results.length) })
 

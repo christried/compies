@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { Lock, Play } from '@lucide/vue'
+import { teamNameAt } from '~/utils/board'
 import { HOME_EVENTS_KEY } from '~/utils/event-data'
 import { dateBlockedKey } from '~/utils/event-page'
+import { leadersOf } from '~~/shared/finish'
 import { isFullPoolGame } from '~~/shared/game'
 import { hasStarted } from '~~/shared/session-state'
 import { eventHasWheel } from '~~/shared/settings'
@@ -160,8 +162,27 @@ function deleteEvent() {
   })
 }
 
+// The early Finish (#953): the sheet names the sole Leading Party and the games not played, and its hold sends the regular finish with the
+// Parties on Place 1 the page shows (review 0.8 S2), so a Correction meanwhile is refused. It closes once the server took it; the page then reads finished.
+const finishEarlyOpen = ref(false)
+const finishEarlyFacts = computed(() => {
+  const [leader] = leadersOf(props.view.standings ?? [])
+  const { end } = props.view
+  if (leader === undefined || !end) return null
+  return { winners: [leader], team: teamNameAt(props.view.teams, leader, t), from: end.played + 1, to: end.gameCount }
+})
+
+async function finishEarly() {
+  const winners = finishEarlyFacts.value?.winners ?? []
+  // A retry after a lost answer finds the Event finished (wrong_phase): the first press worked, as the dock's finish hold takes it (#288).
+  const taken = await send('POST', 'finish', { body: { outcome: 'winner', winners }, quiet: ['wrong_phase'] })
+  if (taken) finishEarlyOpen.value = false
+  return taken
+}
+
 defineExpose({
   openDelete: () => (deleteOpen.value = true),
+  openFinishEarly: () => (finishEarlyOpen.value = true),
   openConfirm,
   openSetGame: () => (pickerOpen.value = true),
   openCountdown: () => (countdownOpen.value = true),
@@ -260,6 +281,16 @@ defineExpose({
     :busy="adding"
     @close="addOpen = false"
     @submit="addSession"
+  />
+
+  <EventFinishEarlySheet
+    v-if="finishEarlyFacts"
+    :open="finishEarlyOpen"
+    :team="finishEarlyFacts.team"
+    :from="finishEarlyFacts.from"
+    :to="finishEarlyFacts.to"
+    :finish="finishEarly"
+    @close="finishEarlyOpen = false"
   />
 
   <EventDeleteSheet

@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Neu
+
+- Steht der Sieger schon fest, schließt du als Host das Event unter „Mehr“ vorzeitig ab. ([#953](https://github.com/christried/compies/issues/953))
+
 ### Geändert
 
 - Nach dem Stopp des Glücksrads siehst du erst den Namen des Spiels; Video und Karte kommen eine Sekunde später. ([#959](https://github.com/christried/compies/issues/959))

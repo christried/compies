@@ -18,7 +18,7 @@ import { motion } from './motion'
 const NOW = Date.parse('2026-11-02T20:00:00.000Z')
 const COUNT_MS = 600
 const teams: BoardTeam[] = [{ position: 1, name: 'Wilde Gurken' }, { position: 2, name: 'Die Füchse' }, { position: 3, name: null }]
-const end: EndView = { played: 3, gameCount: 6, complete: false, tie: null, finish: null, lastGame: null }
+const end: EndView = { played: 3, gameCount: 6, complete: false, tie: null, decided: false, finish: null, lastGame: null }
 const standing = (team: number, rank: number, points: number): StandingView => ({ team, rank, points })
 /** The Standings the page saw: Team 2 leads. */
 const BEFORE = [standing(2, 1, 5), standing(1, 2, 3), standing(3, 3, 0)]

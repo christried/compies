@@ -80,6 +80,7 @@ const SHARED: Record<ApiErrorCode, string | null> = {
   no_running_session: 'error.noRunningSession',
   wrong_phase: 'error.wrongPhase',
   results_missing: 'error.resultsMissing',
+  round_waiting: 'error.roundWaiting',
   standings_changed: 'error.standingsChanged',
   no_tie: 'error.noTie',
   game_count_reached: 'dock.setBlocked.game_count_reached',

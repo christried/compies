@@ -53,7 +53,7 @@ async function mountLive({ host = false, finished = false }: Setup = {}) {
       teams: [team(1), team(2)],
       members: members({ larsi: { zone: 'team', team: 1 } }),
       standings: [{ team: 1, rank: 1, points: 0 }, { team: 2, rank: 1, points: 0 }],
-      end: { played: 0, gameCount: 6, complete: false, tie: null, finish: null, lastGame: null },
+      end: { played: 0, gameCount: 6, complete: false, tie: null, decided: false, finish: null, lastGame: null },
     }),
   })
   registerEndpoint(`/api/e/${slug}/activity`, { method: 'GET', handler: () => ({ entries: [], next: null }) })

@@ -9,7 +9,7 @@ describe('historyCorrections', () => {
   const read = (event: Partial<Read['event']> = {}, rest: Partial<Read> = {}): Read => ({
     event: { phase: 'running', isHost: true, ...event },
     settings: { pointsTable: table } as Read['settings'],
-    end: { played: 1, gameCount: 6, complete: false, tie: null, finish: null, lastGame: null },
+    end: { played: 1, gameCount: 6, complete: false, tie: null, decided: false, finish: null, lastGame: null },
     ...rest,
   })
 

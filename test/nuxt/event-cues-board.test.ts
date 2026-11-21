@@ -33,7 +33,7 @@ const dragLog = () => cueLog().filter(entry => entry.id.startsWith('drag-'))
 const logged = () => dragLog().map(entry => entry.id)
 
 const standings = [{ team: 1, rank: 1, points: 0 }, { team: 2, rank: 1, points: 0 }]
-const end = { played: 0, gameCount: 6, complete: false, tie: null, finish: null, lastGame: null }
+const end = { played: 0, gameCount: 6, complete: false, tie: null, decided: false, finish: null, lastGame: null }
 
 /** What the Event read holds while Team choice is open: Kitty (the viewer), Larsi and Sanne (the Host), seated as the test says. */
 const readOf = (slug: string, { host = false, seats = [STANDS, STANDS, STANDS], settings = SETTINGS as EventSettings | null, phase = 'poll', overrides = {} }: { host?: boolean, seats?: Place[], settings?: EventSettings | null, phase?: string, overrides?: EventOverrides } = {}) => {

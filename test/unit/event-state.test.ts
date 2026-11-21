@@ -329,9 +329,23 @@ describe('finishReason and lastGameReason', () => {
 
   it('wants every Round up to the Game count to have its Result, with 0, 1 and 2 of 3 in', () => {
     for (const count of [0, 1, 2]) {
-      expect(finishReason(state({ rounds: finished(count) }), true, { outcome: 'winner', winners: [1] })).toBe('results_missing')
       expect(lastGameReason(state({ rounds: finished(count) }), true)).toBe('results_missing')
     }
+    // Two of three won by Party 1 (Points table 1, 0) are a gap of 2 with one Round left: decided, so the early Finish passes (#953).
+    for (const count of [0, 1]) expect(finishReason(state({ rounds: finished(count) }), true, { outcome: 'winner', winners: [1] })).toBe('results_missing')
+    expect(finishReason(state({ rounds: finished(2) }), true, { outcome: 'winner', winners: [1] })).toBeNull()
+  })
+
+  // The early Finish (#953) waits for every Round that stands without a Result; a put-back Round does not count.
+  it('refuses the early Finish while a Round stands without a Result, and not for a put-back one', () => {
+    const waiting = joined(round('r9', { number: 3 }), { draw: draw('d9', 'r9') })
+    const putBack = joined(round('r8', { putBackAt: at(-3) }), { draw: draw('d8', 'r8') })
+
+    const beingDrawn = joined(drawn('r7'), { draw: draw('d7', 'r7') })
+
+    expect(finishReason(state({ rounds: [...finished(2), waiting] }), true, { outcome: 'winner', winners: [1] })).toBe('round_waiting')
+    expect(finishReason(state({ rounds: [...finished(2), beingDrawn] }), true, { outcome: 'winner', winners: [1] })).toBe('round_waiting')
+    expect(finishReason(state({ rounds: [...finished(2), putBack] }), true, { outcome: 'winner', winners: [1] })).toBeNull()
   })
 
   it('finishes a sole winner on the outcome and the winners the Host saw', () => {

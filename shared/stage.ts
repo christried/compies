@@ -173,7 +173,8 @@ export type StandingView = Standing
 /**
  * How far the Event is (#274, #277): the Rounds with a Result out of the Game count. `complete`: they reach the Game count, so the Host may
  * finish (nothing finishes by itself). `tie`: the team positions on rank 1 when `complete` and more than one holds it (GLOSSARY: Tie), else null.
- * Same for every Member. `finish`: the Host's part, why the Event cannot be finished now (null when it can); null for every other Member.
+ * `decided` (#953): no other Party can catch the sole Leading Party. Same for every Member. `finish`: the Host's part, why the Event cannot be
+ * finished now (null when it can; before the Game count that is the early Finish, #953); null for every other Member.
  * `lastGame` (#278): the Host's part too, why the last game cannot be added now (null when it can); null for every other Member.
  */
 export interface EndView extends EndFacts {

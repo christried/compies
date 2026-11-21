@@ -15,6 +15,7 @@ import {
   spinRejection,
   vetoRejection,
   vetoesLeftByParty,
+  waitsForResult,
   type BonusVetoRejection,
   type SetRejection,
   type SpinRejection,
@@ -382,12 +383,14 @@ export function bonusVetoReason(state: EventState<'bonus'>, isHost: boolean, tea
 
 /**
  * Why the Host cannot finish the Event with this outcome and these winners now, or null (shared/finish.ts finishRejection). An Event that is not
- * set up has no Standings and cannot be running, so it is `wrong_phase` after the Host's own check (#288). Parts: rounds.
+ * set up has no Standings and cannot be running, so it is `wrong_phase` after the Host's own check (#288). An early Finish waits for every
+ * Round that stands without a Result (#953). Parts: rounds.
  */
 export function finishReason(state: EventState<'rounds'>, isHost: boolean, request: FinishRequest): FinishRejection | null {
   const { standing } = state
   if (standing === null) return isHost ? 'wrong_phase' : 'not_host'
-  return finishRejection({ isHost, phase: state.eventRow.phase, end: standing.end, standings: standing.standings, ...request })
+  const waiting = state.rounds.some(entry => waitsForResult(entry.round))
+  return finishRejection({ isHost, phase: state.eventRow.phase, end: standing.end, waiting, standings: standing.standings, ...request })
 }
 
 /** Why the Host cannot add the last game now, or null (shared/finish.ts lastGameRejection); `wrong_phase` for an Event that is not set up, as `finishReason`. Parts: rounds. */
