@@ -28,6 +28,7 @@ import {
   vetoReason,
   vetoesLeftCounting,
   wheelHiddenOf,
+  wheelUncoveredOf,
   type EventState,
   type StatePart,
 } from './event-state'
@@ -287,7 +288,7 @@ export async function coinSection({ state }: StageContext): Promise<Pick<EventVi
  * own read (roundsSection, through `wheelHiddenOf`).
  */
 export async function uncoverSection({ eventRow, state, viewer }: StageContext): Promise<Pick<EventView, 'wheelUncovered' | 'uncover'>> {
-  return { wheelUncovered: eventRow.wheelUncoveredAt !== null, uncover: viewer.isHost ? { rejection: uncoverReason(state, true) } : null }
+  return { wheelUncovered: wheelUncoveredOf(eventRow), uncover: viewer.isHost ? { rejection: uncoverReason(state, true) } : null }
 }
 
 /** The Award ceremony (#309, spec #308): the latest start of a finished Event, identical for every viewer (nothing in it is secret); null before the first start. */

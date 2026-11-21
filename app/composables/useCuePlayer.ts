@@ -1,9 +1,9 @@
 import { createCuePlayer, exposesCueLog, type CueLogEntry, type CuePlayer } from '~/utils/cue-player'
+import { viewWheelHidden } from '~/utils/event-page'
 import { reducedMotion } from '~/utils/motion'
 import { coinCuePlan, countdownCuePlan, cueFileUrl, cueFilesOf, reachableGroups, vetoArrivalCues, vetoCuePlan, wheelCuePlan, wheelVoicePlan, type Cue, type GroupInput, type VetoArrivalState } from '~/utils/sound-cues'
 import type { EventView } from '~~/shared/event'
 import { TOUR_CALM_MS, tourMayStart, tourStartInputOf } from '~~/shared/tour'
-import { wheelHidden } from '~~/shared/uncover'
 
 // The sound of the Event page (#531, spec #504 § The cue player): the page's one Web Audio context, the cue player on it, and the plan the
 // Event read gives it. The page's read is what carries a plan to a device, so a refetch (the room's `event.changed`, which reaches a hidden
@@ -52,7 +52,7 @@ function planOf(view: EventView): Cue[] {
   const spin = view.wheel?.spin
   const draw = view.wheel?.vetoes.draw
   // An uncovered Hidden wheel spins as a visible one (#957): no morph, the visible removal and cheer.
-  const hiddenWheel = wheelHidden(view.settings?.hiddenWheel ?? false, view.wheelUncovered)
+  const hiddenWheel = viewWheelHidden(view)
   const reduced = reducedMotion()
   return [
     ...wheelCuePlan({

@@ -52,17 +52,17 @@ export interface HostDockState {
 export function hostDockState(input: DockInput): HostDockState {
   const page = pageFacts(input)
   // The Host's rule passes (null rejection). Before the Game count it passes only for a decided Event: the early Finish (#953), which closes nothing.
-  const passes = input.end?.finish?.rejection === null
+  const finishRulePasses = input.end?.finish?.rejection === null
   const complete = input.end?.complete === true
   // The Event can be finished: the Game count is reached and the first place is not shared (#277).
-  const finishable = passes && complete && input.end?.tie === null
+  const finishable = finishRulePasses && complete && input.end?.tie === null
   // The Host's rule passes for the outcome the Standings call for, which is „Unentschieden“ while a Tie stands (#278). Only a Session that
   // started holds Results, so `teams` never gets here.
-  const tied = passes && complete && input.end?.tie !== null
+  const tied = finishRulePasses && complete && input.end?.tie !== null
   // The one place that decides finish or tie (#285). The kinds that do not play (setup, poll, finished) carry no closing.
   const closing: HostDockState['closing'] = finishable ? 'finish' : tied ? 'finishTie' : null
   const plays = page.kind !== 'setup' && page.kind !== 'poll' && page.kind !== 'finished'
-  const state = { ...unclosed(input, page), earlyFinish: passes && !complete && plays, uncover: input.uncover?.rejection === null }
+  const state = { ...unclosed(input, page), earlyFinish: finishRulePasses && !complete && plays, uncover: input.uncover?.rejection === null }
   if (closing === null || !plays) return state
   // The kinds that play offer the closing primary instead of their own. A running Session keeps its number; the others have none to start.
   return { ...state, closing, primary: closing, number: page.kind === 'running' ? page.running.number : null, startRejection: null, setRejection: null, spinRejection: null }

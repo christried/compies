@@ -3,7 +3,7 @@ import { SkipForward, Volume2, VolumeX, X } from '@lucide/vue'
 import { MD_QUERY } from '~/composables/useMediaQuery'
 import { YOUTUBE_HOST, YOUTUBE_PAUSED, YOUTUBE_PLAYING, loadYouTubeApi, type YouTubeApi, type YouTubePlayer } from '~/utils/youtube'
 import { clipPosition } from '~~/shared/clip'
-import { clipRunning } from '~~/shared/draw-timeline'
+import { clipRunning, clipStarted } from '~~/shared/draw-timeline'
 import type { ClipView } from '~~/shared/stage'
 
 // The synced clip (#230, 04-motion § Clip overlay and § Synchronised moments, 02-components § ClipPlayer): the game's YouTube excerpt
@@ -63,7 +63,7 @@ const endSecond = props.clip.game.clipStart + props.clip.game.clipLength
 // The ticker (#257) runs every TICK_MS and not every frame: the bar eases over 250 ms in CSS, so a write per frame would fight the
 // transition. Before the start it sleeps until the start instant, so every device opens the Clip at that moment (#959). The clip is
 // not a countdown, and it ends at `endsAt` from the ticker without waiting for a refetch.
-const now = useServerTicker(() => props.serverNow(), { until: () => endsAt, every: at => (at < startAt ? startAt - at : TICK_MS) })
+const now = useServerTicker(() => props.serverNow(), { until: () => endsAt, every: at => (clipStarted({ startAt }, at) ? TICK_MS : startAt - at) })
 const hydrating = import.meta.server || useNuxtApp().isHydrating
 const running = computed(() => (now.value === null ? hydrating || clipRunning({ startAt, endsAt }, props.serverNow()) : clipRunning({ startAt, endsAt }, now.value)))
 const open = computed(() => running.value && !props.closed)

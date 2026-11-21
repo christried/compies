@@ -37,9 +37,9 @@ export interface EndFacts { played: number, gameCount: number, complete: boolean
 export function endOf(standings: readonly Standing[], played: number, gameCount: number, swing: number): EndFacts {
   const complete = played >= gameCount
   const leaders = leadersOf(standings)
-  const limit = Math.max(0, gameCount - played) * swing
+  const catchableGap = Math.max(0, gameCount - played) * swing
   const top = standings.find(row => row.rank === 1)?.points ?? 0
-  const decided = leaders.length === 1 && standings.every(row => row.rank === 1 || top - row.points > limit)
+  const decided = leaders.length === 1 && standings.every(row => row.rank === 1 || top - row.points > catchableGap)
   return { played, gameCount, complete, tie: complete && leaders.length > 1 ? leaders : null, decided }
 }
 

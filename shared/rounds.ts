@@ -16,6 +16,7 @@ export type DrawSource = (typeof DRAW_SOURCES)[number]
 
 /** How a game was determined: the wheel spun it, or the Host set it. */
 export const DRAW_KINDS = ['spin', 'set'] as const
+export type DrawKind = (typeof DRAW_KINDS)[number]
 
 /** How a draw ended: its game was vetoed, or it was set. A draw has none until it settles. */
 export const DRAW_OUTCOMES = ['vetoed', 'set'] as const
