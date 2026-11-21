@@ -13,6 +13,7 @@
 ### Behoben
 
 - Beim verdeckten Glücksrad stehen auch vor dem Drehen Platzhalternamen auf dem Rad statt „???“. ([#949](https://github.com/christried/compies/issues/949))
+- Im Spielverlauf steht 0 statt „–“, wenn nur ein Team einen Score hat. ([#954](https://github.com/christried/compies/issues/954))
 
 ### Entfernt
 
