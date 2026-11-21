@@ -5,6 +5,7 @@
 ### Neu
 
 - Steht der Sieger schon fest, schließt du als Host das Event unter „Mehr“ vorzeitig ab. ([#953](https://github.com/christried/compies/issues/953))
+- Der Countdown tickt jetzt in den letzten zehn Sekunden, mit Trommelwirbel und Schlag bei null, wie das Veto-Fenster. ([#958](https://github.com/christried/compies/issues/958))
 
 ### Geändert
 
