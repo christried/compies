@@ -143,7 +143,7 @@ export interface WheelCueInput {
    * sends every viewer from the spin's commit on; the draw's game (`game`, `labels`) stays out of the type, so it cannot be read by mistake.
    */
   spin: Pick<SpinView, 'spinStartAt' | 'stopAt' | 'slices' | 'resultIndex' | 'resultOffset'> | null
-  /** The Event's Hidden wheel setting, `view.settings?.hiddenWheel ?? false`. It delays the removal for every viewer. */
+  /** Whether the wheel hides its games now, `wheelHidden` of the Event's Hidden wheel setting and its uncover (#957). It delays the removal for every viewer. */
   hiddenWheel: boolean
   /** `view.event.isHost`: the Host sees the real names under a Hidden wheel and has no morph (LuckyWheel `concealed = hidden && !isHost`). */
   isHost: boolean
@@ -202,7 +202,7 @@ export function wheelCuePlan(input: WheelCueInput): Cue[] {
 export interface WheelVoiceInput {
   /** `view.wheel.spin`, only the two instants the read sends every viewer from the spin's commit on (ISO strings); null before the first spin. No slice, no result, no label, no game, and no `isHost`. */
   spin: Pick<SpinView, 'spinStartAt' | 'stopAt'> | null
-  /** `view.settings?.hiddenWheel ?? false`. It delays his cheer for EVERY viewer, the Host included: do not use the Host's `concealed`. */
+  /** `wheelHidden` of the setting and the uncover (#957). It delays his cheer for EVERY viewer, the Host included: do not use the Host's `concealed`. */
   hiddenWheel: boolean
   /** `reducedMotion()`, passed in; this module reads no DOM. */
   reducedMotion: boolean

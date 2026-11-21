@@ -37,10 +37,10 @@ const voiceOf = (spin: SpinView, hiddenWheel = false, reducedMotion = false) =>
   wheelVoicePlan({ spin: { spinStartAt: spin.spinStartAt, stopAt: spin.stopAt }, hiddenWheel, reducedMotion })
 
 /** The Event page's read: a Session that runs, the Host flag and the Hidden wheel setting of the viewer's read. */
-function serveWheel(wheel: WheelView | null, { isHost = false, hiddenWheel = false }: { isHost?: boolean, hiddenWheel?: boolean } = {}) {
+function serveWheel(wheel: WheelView | null, { isHost = false, hiddenWheel = false, wheelUncovered = false }: { isHost?: boolean, hiddenWheel?: boolean, wheelUncovered?: boolean } = {}) {
   const read = (slug: string, wheelOfRead: WheelView | null) => viewWithSessions(slug, [{ number: null, startsAt: FIRST, startedAt: STARTED }], 0, {
     event: { isHost, phase: 'running' }, settings: { ...defaultSettings(), vetoAllowance: null, hiddenWheel },
-    runningSessionId: `session-${slug}-0`, wheel: wheelOfRead, clip: null,
+    runningSessionId: `session-${slug}-0`, wheel: wheelOfRead, clip: null, wheelUncovered,
   })
   const served = serve(slug => read(slug, wheel))
   return { slug: served.slug, set: (next: WheelView | null) => served.set(read(served.slug, next)) }
@@ -121,6 +121,18 @@ describe('the voice on the Event page, for the Host', () => {
     expect(yay.at).toBe(Date.parse(spin.stopAt) + REVEAL_AFTER_MS)
     expect(voiceLog()).toEqual(voiceOf(spin, true).map(cue => ({ ...cue, outcome: 'scheduled' })))
     expect(startedOf('wheel-morph')).toHaveLength(isHost ? 0 : 1)
+  })
+
+  // A Round added after a Tie spins the uncovered wheel openly (#957): its cues are a visible wheel's, the setting stays on.
+  it('cheers at the stop with no morph on an uncovered Hidden wheel, for a Member (#957)', async () => {
+    const spin = spinAt(Date.now() + 4000)
+    const served = serveWheel(wheelWith(spin), { hiddenWheel: true, wheelUncovered: true })
+    page = await mountSuspended(EventPage, { route: `/e/${served.slug}` })
+    await vi.waitFor(() => expect(startedOf('cb-yay')).toHaveLength(1))
+    await flushPromises()
+
+    expect(voiceLog()).toEqual(voiceOf(spin, false).map(cue => ({ ...cue, outcome: 'scheduled' })))
+    expect(startedOf('wheel-morph')).toHaveLength(0)
   })
 })
 
