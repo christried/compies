@@ -145,7 +145,7 @@ describe('who gets the bar and when', () => {
 
     expect(text()).toContain('Team Rot hat schon ein Veto eingelegt')
     expect(text()).toContain('Ein Veto pro Team und Spiel. Die anderen sehen es erst beim Aufdecken.')
-    expect(page!.get('[data-testid="veto-seal"]').text()).toBe('Versiegelt')
+    expect(page!.get('[data-testid="veto-seal"]').text()).toBe('Locked!')
     expect(page!.find('[data-testid="veto-hold"]').exists()).toBe(false)
   })
 
@@ -157,7 +157,7 @@ describe('who gets the bar and when', () => {
     const column = bar().element.lastElementChild as HTMLElement
     expect(column.className).not.toMatch(/(^|\s)md:w-\[260px\]/)
     expect(column.querySelector('[data-testid="veto-locked"]')?.textContent).toContain('Veto ist drin')
-    expect(column.querySelector('[data-testid="veto-seal"]')?.textContent).toBe('Versiegelt')
+    expect(column.querySelector('[data-testid="veto-seal"]')?.textContent).toBe('Locked!')
   })
 
   it('keeps the hold button at its 260 px minimum at the desktop width in the ready state (#218)', async () => {
