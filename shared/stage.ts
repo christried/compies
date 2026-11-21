@@ -110,7 +110,8 @@ export interface WheelView {
 }
 
 /**
- * The clip that runs now (#230, GLOSSARY: Clip, spec #218 § Clip): the latest draw's, from its stop to the end of the game's clip length,
+ * The clip of the latest draw (#230, GLOSSARY: Clip, spec #218 § Clip), carried from the draw's stop until its end (#959: a spin's starts at
+ * `startAt`, 1.5 s after the stop, and the client shows nothing before it), its end the game's clip length after its start,
  * for every Member alike. The instants are ISO; the client plays `clipPosition` of them against the server clock. `game.youtubeId`
  * may be null: then the client shows the game's card for the clip's length. It is keyed by the draw, not by the Round: a Veto
  * window (0.7-06) plays the clip of a draw that is not set yet.

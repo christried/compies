@@ -145,12 +145,36 @@ describe('the video', () => {
     expect(players[0]!.loadVideoById).toHaveBeenCalledWith({ videoId: 'aaaaaaaaaaa', startSeconds: 102.5, endSeconds: 120 })
   })
 
-  it('plays from the start second when this device\'s estimate of the server is a hair early', async () => {
-    serverMs = START - 40
+  // #959: the read carries a spin's Clip from the stop on, 1.5 s before its start; every device opens it at the start by the server clock.
+  it('shows nothing before its start, and opens at the start instant against the server clock, playing from the start second', async () => {
+    serverMs = START - 1500
     await mount(clipOf())
-    await ready()
 
+    expect(page!.find('section').exists()).toBe(false)
+    expect(players).toHaveLength(0)
+    expect(page!.emitted('shown')).toEqual([[false]])
+
+    await passTime(1499)
+    expect(page!.find('section').exists()).toBe(false)
+    expect(players).toHaveLength(0)
+
+    await passTime(1)
+    expect(page!.find('section').exists()).toBe(true)
+    expect(page!.emitted('shown')).toEqual([[false], [true]])
+    await ready()
+    expect(players).toHaveLength(1)
     expect(players[0]!.loadVideoById).toHaveBeenCalledWith({ videoId: 'aaaaaaaaaaa', startSeconds: 90, endSeconds: 120 })
+  })
+
+  it('opens a game without a video at its start too: its card, and nothing before it', async () => {
+    serverMs = START - 1500
+    await mount(clipOf(kart))
+    expect(text()).not.toContain('Kart')
+
+    await passTime(1500)
+
+    expect(page!.find('section').exists()).toBe(true)
+    expect(text()).toContain('Kart')
   })
 
   it('seeks once when the player is more than a second off after 3 s of playback', async () => {

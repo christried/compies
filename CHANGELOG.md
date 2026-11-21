@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Geändert
+
+- Nach dem Stopp des Glücksrads siehst du erst den Namen des Spiels; Video und Karte kommen eine Sekunde später. ([#959](https://github.com/christried/compies/issues/959))
+
 ### Behoben
 
 - Beim verdeckten Glücksrad stehen auch vor dem Drehen Platzhalternamen auf dem Rad statt „???“. ([#949](https://github.com/christried/compies/issues/949))
