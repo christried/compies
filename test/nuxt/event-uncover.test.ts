@@ -70,6 +70,23 @@ describe('Rad aufdecken in the Host dock (#957)', () => {
     expect(pill(page)[1]).toBe('Rad aufdecken')
     expect(pill(page)[2]).toMatch(/^Session 1 beenden/)
     expect((await hostActionElement(page, 'Rad aufdecken')).textContent?.trim()).toBe('Rad aufdecken')
+    // Once only: Mehr does not repeat it while the pill holds it (#957, browser check c1).
+    expect(menuLabels(await openHostMenu(page))).not.toContain('Rad aufdecken')
+  })
+
+  it('is in the phone\'s sheet wherever the pill holds it on a computer, and in the Tie layout too', async () => {
+    stubScreen(false)
+    for (const end of [complete(), TIE]) {
+      const { slug } = serveEvent(end)
+      const page = await mount(slug)
+
+      page.element.querySelector<HTMLButtonElement>('button[aria-label="Host-Steuerung"][aria-haspopup="dialog"]')!.click()
+      const sheet = () => [...document.querySelectorAll('[role="dialog"]')].find(node => node.querySelector('h2')?.textContent?.includes('Host-Steuerung'))
+      await vi.waitFor(() => expect(sheet()).toBeDefined())
+
+      expect([...sheet()!.querySelectorAll('button')].map(button => button.textContent?.trim())).toContain('Rad aufdecken')
+      unmountPage()
+    }
   })
 
   it('waits in Mehr in the Tie layout, where the pill keeps its holds and the last game', async () => {
