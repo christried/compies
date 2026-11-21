@@ -15,6 +15,7 @@ import {
   spinRejection,
   vetoRejection,
   vetoesLeftByParty,
+  waitsForResult,
   type BonusVetoRejection,
   type SetRejection,
   type SpinRejection,
@@ -23,6 +24,7 @@ import {
 import { beforeFinish } from '../../shared/phase'
 import { hasStarted, nextSession, runningOf, startRejection, type StartRejection } from '../../shared/session-state'
 import { playersPerTeam, settingsFromRow, type EventSettings, type FloorFacts } from '../../shared/settings'
+import { uncoverRejection, wheelHidden, type UncoverRejection } from '../../shared/uncover'
 import type { CoinRow } from './coin'
 import type { Db } from './db'
 import type { EventRow } from './event-access'
@@ -382,12 +384,14 @@ export function bonusVetoReason(state: EventState<'bonus'>, isHost: boolean, tea
 
 /**
  * Why the Host cannot finish the Event with this outcome and these winners now, or null (shared/finish.ts finishRejection). An Event that is not
- * set up has no Standings and cannot be running, so it is `wrong_phase` after the Host's own check (#288). Parts: rounds.
+ * set up has no Standings and cannot be running, so it is `wrong_phase` after the Host's own check (#288). An early Finish waits for every
+ * Round that stands without a Result (#953). Parts: rounds.
  */
 export function finishReason(state: EventState<'rounds'>, isHost: boolean, request: FinishRequest): FinishRejection | null {
   const { standing } = state
   if (standing === null) return isHost ? 'wrong_phase' : 'not_host'
-  return finishRejection({ isHost, phase: state.eventRow.phase, end: standing.end, standings: standing.standings, ...request })
+  const waiting = state.rounds.some(entry => waitsForResult(entry.round))
+  return finishRejection({ isHost, phase: state.eventRow.phase, end: standing.end, waiting, standings: standing.standings, ...request })
 }
 
 /** Why the Host cannot add the last game now, or null (shared/finish.ts lastGameRejection); `wrong_phase` for an Event that is not set up, as `finishReason`. Parts: rounds. */
@@ -395,6 +399,29 @@ export function lastGameReason(state: EventState<'rounds'>, isHost: boolean): La
   const { standing, settings } = state
   if (standing === null || settings === null) return isHost ? 'wrong_phase' : 'not_host'
   return lastGameRejection({ isHost, phase: state.eventRow.phase, end: standing.end, gameCount: settings.gameCount })
+}
+
+/**
+ * Why the Host cannot uncover the Hidden wheel now, or null (shared/uncover.ts uncoverRejection, #957): a Running Session, a Hidden wheel not yet
+ * uncovered, and every Round up to the Game count with its Result. An Event that is not set up has no wheel to uncover. Parts: sessions, rounds.
+ */
+export function uncoverReason(state: EventState<'sessions' | 'rounds'>, isHost: boolean): UncoverRejection | null {
+  const { eventRow, settings, standing } = state
+  return uncoverRejection({
+    isHost,
+    phase: eventRow.phase,
+    running: runningOf(state.sessions) !== undefined,
+    hiddenWheel: settings?.hiddenWheel ?? false,
+    uncovered: eventRow.wheelUncoveredAt !== null,
+    complete: standing?.end.complete ?? false,
+  })
+}
+
+/**
+ * Whether the Event's wheel hides its games now (#957): the Hidden wheel setting until the Host uncovers it. The wheel read and the spin ask this.
+ */
+export function wheelHiddenOf(state: Pick<EventState, 'eventRow' | 'settings'>): boolean {
+  return wheelHidden(state.settings?.hiddenWheel ?? false, state.eventRow.wheelUncoveredAt !== null)
 }
 
 /** Why the Host cannot toss the coin now, or null (shared/coin.ts coinRejection). Parts: sessions, toss. */

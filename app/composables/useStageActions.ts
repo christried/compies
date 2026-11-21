@@ -1,6 +1,6 @@
 import { useEventMutation } from '~/composables/useEventMutation'
 import type { CountdownCommand } from '~~/shared/countdown'
-import type { EventNotesSaved, LastGameAdded } from '~~/shared/event'
+import type { EventNotesSaved, LastGameAdded, WheelUncovered } from '~~/shared/event'
 import type { FinishRequest } from '~~/shared/finish'
 import type { NotesDoc } from '~~/shared/notes-doc'
 import type { ResultPlace } from '~~/shared/results'
@@ -59,11 +59,14 @@ export function useStageActions(slug: MaybeRefOrGetter<string>, refresh: () => u
    */
   const lastGame = () => send<LastGameAdded>('POST', 'last-game', { quiet: ['results_missing'], screen: 'lastGame' })
 
+  /** Uncovers the Hidden wheel (#957). A second press finds it uncovered (`wheel_uncovered`): quiet, since the wheel already shows its games. */
+  const uncover = () => send<WheelUncovered>('POST', 'uncover', { quiet: ['wheel_uncovered'] })
+
   /** Withdraws one Session's Date and frees its Slot (#55). */
   const reopenSession = (sessionId: string) => send('POST', `sessions/${sessionId}/reopen`)
 
   /** Removes a Session, whose Slot goes back to the poll (#55). */
   const removeSession = (sessionId: string) => send('DELETE', `sessions/${sessionId}`)
 
-  return { castVeto, skipClip, putBackRound, enterResult, saveEventNotes, spin, toss, startCeremony, countdown, endSession, finish, lastGame, reopenSession, removeSession }
+  return { castVeto, skipClip, putBackRound, enterResult, saveEventNotes, spin, toss, startCeremony, countdown, endSession, finish, lastGame, uncover, reopenSession, removeSession }
 }

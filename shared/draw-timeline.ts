@@ -1,6 +1,6 @@
 // The Draw's timeline (#414; ADR 0013, amendment 2026-10-31): a Draw's instants and what each decides at `now`, in one place.
 // A Draw goes commit -> spin start -> stop (the drawn game becomes known) -> end of the Veto window (the Vetoes are revealed, the
-// Draw settles); the Clip runs from the stop. The seam is "what does this Draw's instant decide at `now`"; it has two adapters:
+// Draw settles); the Clip runs from `clipStartAt` (a spin's 1.5 s after the stop, #959). The seam is "what does this Draw's instant decide at `now`"; it has two adapters:
 // this file (pure, used by the server and the client) and the SQL twins in server/utils/draw-timeline.ts, which
 // test/integration/draw-timeline.test.ts checks against it. Every comparison here keeps its edge, pinned by
 // test/unit/draw-timeline.test.ts: a `<` where `<=` belongs leaks the drawn game under a Hidden wheel (CODING_STANDARDS.md § Secrecy).
@@ -12,8 +12,13 @@ const SPIN_LEAD_MS = 1500
 /** A spin lasts between SPIN_MIN_MS and SPIN_MAX_MS, both included (#520, spec #503 § The spin's length); there is no setting for it. `drawSpin` draws the length, the stop is the start plus it. */
 export const SPIN_MIN_MS = 6000
 export const SPIN_MAX_MS = 10_000
-/** The Veto window lasts the drawn game's clip length plus this long: every Party with a Veto left may reject the game until then (#231, #505, spec #501). */
+/** The Veto window ends this long after the Clip's end: every Party with a Veto left may reject the game until then (#231, #505, spec #501). */
 const VETO_AFTER_CLIP_MS = 30_000
+/**
+ * A spin's Clip starts this long after the stop (#959, spec #961 § Draw timeline): every device shows the drawn game's name at stop + 0.5 s
+ * (the Hidden reveal), and the Clip and the wheel's result card come a second after that. A set draw's Clip starts at its stop.
+ */
+const CLIP_AFTER_SPIN_STOP_MS = 1500
 
 /** The instants of a new Draw, as the columns store them (Dates). */
 export interface DrawInstants { spinStartAt: Date | null, stopAt: Date, vetoEndsAt: Date | null }
@@ -36,15 +41,16 @@ type NewDraw = ({ kind: 'spin', spinLengthMs: number } | { kind: 'set' }) & {
 
 /**
  * WRITER. A spin starts SPIN_LEAD_MS after the commit and stops its length later; a set draw stops at the commit
- * (`spinStartAt` null). With `windowOpens` the Veto window ends the clip length plus VETO_AFTER_CLIP_MS after the stop (a game
- * without a video: VETO_AFTER_CLIP_MS), else `vetoEndsAt` is null.
+ * (`spinStartAt` null). With `windowOpens` the Veto window opens at the stop and ends the clip length plus VETO_AFTER_CLIP_MS after
+ * the Clip's start (`clipStartAt`: a spin's 1.5 s after the stop, #959; a game without a video: VETO_AFTER_CLIP_MS after it), else
+ * `vetoEndsAt` is null. A draw stored before #959 keeps the end it was written with: the readers work from the stored end.
  */
 export function drawInstants(draw: NewDraw): DrawInstants {
   const commit = msOf(draw.commitAt)
   const spinStart = draw.kind === 'spin' ? commit + SPIN_LEAD_MS : null
   const stop = draw.kind === 'spin' ? commit + SPIN_LEAD_MS + draw.spinLengthMs : commit
   // The Veto window's length is decided here and only here (#505): the readers, `windowFraction` included, work from the stored end.
-  const end = draw.windowOpens ? stop + (draw.clipLength ?? 0) * 1000 + VETO_AFTER_CLIP_MS : null
+  const end = draw.windowOpens ? clipStartAt({ kind: draw.kind, stopAt: stop }) + (draw.clipLength ?? 0) * 1000 + VETO_AFTER_CLIP_MS : null
   return { spinStartAt: spinStart === null ? null : new Date(spinStart), stopAt: new Date(stop), vetoEndsAt: end === null ? null : new Date(end) }
 }
 
@@ -104,7 +110,7 @@ export function vetoEndCap(skippedAt: Instant): Date {
  * @public WRITER, no production caller (the route uses the SQL twin `movedVetoEnd`; the parity test checks them against each other;
  * knip: same wording as `isDue`). The window's end after a skip at `skippedAt` (#506): `vetoEndCap` when that is earlier than the
  * stored end, else null for "no change" (a draw without a window, a skip in the last 30 s, a skip after the end). It never moves the
- * end later. Precondition: a skip is at or after the Draw's stop (the Clip runs from it), so the result is >= the stop, which
+ * end later. Precondition: a skip is at or after the Draw's stop (the Clip read carries the Clip from it, #959), so the result is >= the stop, which
  * `draws_instants_check` needs; the function does not clamp. The twin returns the whole new value (the old one when nothing moves).
  */
 export function vetoEndAfterSkip(draw: { vetoEndsAt: Instant | null }, skippedAt: Instant): Date | null {
@@ -142,13 +148,26 @@ export function clipLengthOf(game: { youtubeId: string | null, clipLength: numbe
 }
 
 /**
- * CLIP (GLOSSARY: Clip; spec #218 § Clip, #230). The clip's two instants, in epoch ms: it starts at the draw's stop and ends the game's clip length (seconds) later.
- * A game without a video has its card there instead: a card has no player, so it shows for its stored length but at most as long as its window (#546).
+ * CLIP. The instant the draw's Clip starts, in epoch ms (#959): a spin's CLIP_AFTER_SPIN_STOP_MS after its stop, a set draw's at its stop.
+ * Known ahead from the read that carries the spin, so the wheel's result card and the Clip overlay open at it on every device at once.
  */
-export function clipWindow(draw: { stopAt: Instant }, game: { youtubeId: string | null, clipLength: number }): { startAt: number, endsAt: number } {
-  const startAt = msOf(draw.stopAt)
+export function clipStartAt(draw: { kind: 'spin' | 'set', stopAt: Instant }): number {
+  return msOf(draw.stopAt) + (draw.kind === 'spin' ? CLIP_AFTER_SPIN_STOP_MS : 0)
+}
+
+/**
+ * CLIP (GLOSSARY: Clip; spec #218 § Clip, #230). The clip's two instants, in epoch ms: it starts at `clipStartAt` and ends the game's clip length (seconds) later.
+ * A game without a video has its card there instead: a card has no player, so it shows for its stored length but at most 30 s (#546).
+ */
+export function clipWindow(draw: { kind: 'spin' | 'set', stopAt: Instant }, game: { youtubeId: string | null, clipLength: number }): { startAt: number, endsAt: number } {
+  const startAt = clipStartAt(draw)
   const seconds = clipLengthOf(game) ?? Math.min(game.clipLength, VETO_AFTER_CLIP_MS / 1000)
   return { startAt, endsAt: startAt + seconds * 1000 }
+}
+
+/** CLIP. The clip has started: from its start on, inclusive. The wheel's result card shows from it (#959), and stays after the clip's end. */
+export function clipStarted(clip: { startAt: Instant }, now: Instant): boolean {
+  return msOf(clip.startAt) <= msOf(now)
 }
 
 /** CLIP. The clip runs from its start (inclusive) to its end (exclusive). */

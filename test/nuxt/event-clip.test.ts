@@ -265,6 +265,24 @@ describe('the backdrop behind the clip (#587)', () => {
     expect(clipSection()).toBeNull()
   })
 
+  // #959: the read carries a spin's Clip from the stop on, and the Clip starts 1.5 s later; the page stays as it is until then.
+  it('waits for the clip\'s start: no overlay, no backdrop and nothing inert before it, then both at the start by the clock', async () => {
+    const now = Date.now()
+    const clip: ClipView = { drawId: 'd1', startAt: new Date(now + 700).toISOString(), endsAt: new Date(now + 30_700).toISOString(), game: kart }
+    const { slug } = serveRunning({ host: false, clip })
+    page = await mountSuspended(EventPage, { route: `/e/${slug}` })
+    await flushPromises()
+
+    expect(clipSection()).toBeNull()
+    expect(backdrop()).toBeNull()
+    expect(covered(header())).toBe(false)
+    expect(html().contains('overflow-hidden')).toBe(false)
+
+    await vi.waitFor(() => expect(backdrop()).not.toBeNull(), { timeout: 3000 })
+    expect(clipSection()).not.toBeNull()
+    expect(covered(header())).toBe(true)
+  })
+
   it('goes with the clip\'s end by its own ticker', async () => {
     const now = Date.now()
     const clip: ClipView = { drawId: 'd1', startAt: new Date(now - 29_300).toISOString(), endsAt: new Date(now + 700).toISOString(), game: kart }
@@ -306,6 +324,89 @@ describe('the backdrop behind the clip (#587)', () => {
 
     await vi.waitFor(() => expect(backdrop()).not.toBeNull())
     expect(covered(header())).toBe(true)
+  })
+
+  // #956: „Für mich schließen“ stays this device's, and „Zum Video“ brings the Clip back while it runs: in the Veto bar for a Player who has it,
+  // on the wheel's result card for every viewer.
+  describe('„Zum Video“ (#956)', () => {
+    const reopenIn = (root: Element | null) => buttonNamed(root, 'Zum Video')
+    const wheelCard = () => page!.element.querySelector('[data-testid="wheel-card"]')
+    /** A spin that stopped 3 s ago, still the Event's latest draw: its result card shows. */
+    const stoppedWheel = (): WheelView => {
+      const now = Date.now()
+      const halo = { ...kart, id: 'g1', name: 'Halo' }
+      return { ...idleWheel, spin: { roundId: 'r1', drawId: 'd1', spinStartAt: new Date(now - 9000).toISOString(), stopAt: new Date(now - 3000).toISOString(), slices: 3, resultIndex: 0, resultOffset: 0.5, labels: null, game: halo, current: true } }
+    }
+
+    it('brings the Clip back from the Veto bar of a Player who closed it, and is gone again once it shows', async () => {
+      const { slug } = serveRunning({ host: false, clip: runningClip(), wheel: openWindow() })
+      page = await mountSuspended(EventPage, { route: `/e/${slug}` })
+      await flushPromises()
+      expect(reopenIn(veto())).toBeUndefined()
+
+      buttonNamed(clipSection(), 'Für mich schließen')!.click()
+      await flushPromises()
+      expect(clipSection()).toBeNull()
+      expect(backdrop()).toBeNull()
+      await vi.waitFor(() => expect(reopenIn(veto())).toBeDefined())
+
+      reopenIn(veto())!.click()
+      await flushPromises()
+
+      await vi.waitFor(() => expect(clipSection()).not.toBeNull())
+      expect(backdrop()).not.toBeNull()
+      expect(reopenIn(veto())).toBeUndefined()
+    })
+
+    it('brings it back from the wheel\'s result card for a Member on the Stands, who has no Veto bar', async () => {
+      const { slug } = serveRunning({ host: false, clip: runningClip(), wheel: stoppedWheel() })
+      page = await mountSuspended(EventPage, { route: `/e/${slug}` })
+      await flushPromises()
+      expect(veto()).toBeNull()
+      await vi.waitFor(() => expect(wheelCard()).not.toBeNull())
+      expect(reopenIn(wheelCard())).toBeUndefined()
+
+      buttonNamed(clipSection(), 'Für mich schließen')!.click()
+      await flushPromises()
+      await vi.waitFor(() => expect(reopenIn(wheelCard())).toBeDefined())
+
+      reopenIn(wheelCard())!.click()
+      await flushPromises()
+
+      await vi.waitFor(() => expect(clipSection()).not.toBeNull())
+      expect(reopenIn(wheelCard())).toBeUndefined()
+    })
+
+    it('is gone with the Host\'s skip: the read after it carries no Clip', async () => {
+      const served = serveRunning({ host: false, clip: runningClip(), wheel: stoppedWheel() })
+      page = await mountSuspended(EventPage, { route: `/e/${served.slug}` })
+      await flushPromises()
+      buttonNamed(clipSection(), 'Für mich schließen')!.click()
+      await flushPromises()
+      await vi.waitFor(() => expect(reopenIn(wheelCard())).toBeDefined())
+
+      served.set(viewWithSessions(served.slug, [{ number: null, startsAt: FIRST, startedAt: STARTED }], 0, {
+        event: { isHost: false, phase: 'running' }, settings: defaultSettings(), runningSessionId: `session-${served.slug}-0`, clip: null, wheel: stoppedWheel(),
+      }))
+      await refreshNuxtData()
+      await flushPromises()
+
+      await vi.waitFor(() => expect(reopenIn(wheelCard())).toBeUndefined())
+      expect(wheelCard()).not.toBeNull()
+    })
+
+    it('is gone at the Clip\'s end, by the overlay\'s own clock', async () => {
+      const now = Date.now()
+      const clip: ClipView = { drawId: 'd1', startAt: new Date(now - 29_000).toISOString(), endsAt: new Date(now + 800).toISOString(), game: kart }
+      const { slug } = serveRunning({ host: false, clip, wheel: stoppedWheel() })
+      page = await mountSuspended(EventPage, { route: `/e/${slug}` })
+      await flushPromises()
+      buttonNamed(clipSection(), 'Für mich schließen')!.click()
+      await flushPromises()
+      await vi.waitFor(() => expect(reopenIn(wheelCard())).toBeDefined())
+
+      await vi.waitFor(() => expect(reopenIn(wheelCard())).toBeUndefined(), { timeout: 3000 })
+    })
   })
 
   // #699: a hard load paints the server's HTML. The tests above look at the page after the overlay has said it shows (its `shown` emit lands

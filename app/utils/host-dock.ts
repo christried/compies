@@ -15,7 +15,7 @@ import { pageFacts, type PageFacts } from './event-page'
 // primary of Host pick; in the Lucky Wheel „Rad drehen“ is (#229), disabled with its reason, and „Nächstes Spiel setzen“ waits in „Mehr“.
 // The end is decided once, as `closing` (#285): the kinds that play take its primary over their own, and dockLayout lays it out on top of their layout.
 
-export type DockInput = Pick<EventView, 'settings' | 'sessions' | 'missingDates' | 'start' | 'setGame' | 'end'> & { event: Pick<EventView['event'], 'phase'> }
+export type DockInput = Pick<EventView, 'settings' | 'sessions' | 'missingDates' | 'start' | 'setGame' | 'end' | 'uncover'> & { event: Pick<EventView['event'], 'phase'> }
 
 export interface HostDockState {
   /** The page's `kind`: `setup`, `poll`, `teams`, `running`, `between`, `done` or `finished`. */
@@ -36,26 +36,40 @@ export interface HostDockState {
   spinRejection: SpinRejection | null
   /** Why the last game cannot be added now (#278), or null when it can (or when no Tie stands: then nothing offers it). */
   lastGameRejection: LastGameRejection | null
+  /**
+   * The early Finish is open (#953, GLOSSARY: Finish): the Host's finish rule passes while the Game count is not reached (the Event is decided and no
+   * Round waits for its Result), in a kind that plays. It is no closing: the primary stays the next game, and „Vorzeitig abschließen“ waits in Mehr.
+   */
+  earlyFinish: boolean
+  /**
+   * The Hidden wheel can be uncovered now (#957): the Host's uncover rule passes (a Running Session, every Round up to the Game count with its
+   * Result, a Hidden wheel not yet uncovered). „Rad aufdecken“ shows only then.
+   */
+  uncover: boolean
 }
 
 /** The dock's state for the Host. */
 export function hostDockState(input: DockInput): HostDockState {
   const page = pageFacts(input)
-  // The Event can be finished: the Host's rule says so (null rejection) and the first place is not shared (#277).
-  const finishable = input.end?.finish?.rejection === null && input.end.tie === null
+  // The Host's rule passes (null rejection). Before the Game count it passes only for a decided Event: the early Finish (#953), which closes nothing.
+  const passes = input.end?.finish?.rejection === null
+  const complete = input.end?.complete === true
+  // The Event can be finished: the Game count is reached and the first place is not shared (#277).
+  const finishable = passes && complete && input.end?.tie === null
   // The Host's rule passes for the outcome the Standings call for, which is „Unentschieden“ while a Tie stands (#278). Only a Session that
   // started holds Results, so `teams` never gets here.
-  const tied = input.end?.finish?.rejection === null && input.end.tie !== null
+  const tied = passes && complete && input.end?.tie !== null
   // The one place that decides finish or tie (#285). The kinds that do not play (setup, poll, finished) carry no closing.
   const closing: HostDockState['closing'] = finishable ? 'finish' : tied ? 'finishTie' : null
-  const state = unclosed(input, page)
-  if (closing === null || page.kind === 'setup' || page.kind === 'poll' || page.kind === 'finished') return state
+  const plays = page.kind !== 'setup' && page.kind !== 'poll' && page.kind !== 'finished'
+  const state = { ...unclosed(input, page), earlyFinish: passes && !complete && plays, uncover: input.uncover?.rejection === null }
+  if (closing === null || !plays) return state
   // The kinds that play offer the closing primary instead of their own. A running Session keeps its number; the others have none to start.
   return { ...state, closing, primary: closing, number: page.kind === 'running' ? page.running.number : null, startRejection: null, setRejection: null, spinRejection: null }
 }
 
 /** The state of the page's kind as if nothing closed the Event: the Sessions and the Host's start rule decide it. */
-function unclosed(input: DockInput, page: PageFacts): HostDockState {
+function unclosed(input: DockInput, page: PageFacts): Omit<HostDockState, 'earlyFinish' | 'uncover'> {
   const base = { kind: page.kind, number: null, pollNumber: page.pollNumber, startRejection: null, setRejection: null, spinRejection: null, lastGameRejection: input.end?.lastGame?.rejection ?? null, closing: null }
   switch (page.kind) {
     case 'setup': return { ...base, primary: 'setup' }
@@ -82,7 +96,7 @@ function unclosed(input: DockInput, page: PageFacts): HostDockState {
 }
 
 /** The actions the dock can hold, by key. */
-export type DockKey = 'settings' | 'invite' | 'slots' | 'setDate' | 'start' | 'end' | 'setGame' | 'spin' | 'coin' | 'countdown' | 'bonusVeto' | 'finish' | 'finishTie' | 'lastGame' | 'ceremony' | 'delete'
+export type DockKey = 'settings' | 'invite' | 'slots' | 'setDate' | 'start' | 'end' | 'setGame' | 'spin' | 'coin' | 'countdown' | 'bonusVeto' | 'finish' | 'finishTie' | 'finishEarly' | 'lastGame' | 'uncover' | 'ceremony' | 'delete'
 
 /**
  * Which actions the dock holds per state, in named parts (review 1.4 A4, #228): the `primary` action(s), the `secondary` ones
@@ -102,9 +116,20 @@ export const GAME_ACTIONS: DockKey[] = ['bonusVeto', 'coin', 'countdown']
  * may grant a Bonus Veto (#233: the Event has a Lucky Wheel and no reason refuses it), so the action sits in Mehr in every layout but setup.
  */
 export function dockLayout(state: HostDockState, open: { pollOpen: boolean, bonusVetoOpen: boolean }): DockLayout {
-  const layout = stateLayout(state, open)
+  const layout = withUncover(stateLayout(state, open), state)
+  // „Vorzeitig abschließen“ (#953) waits in Mehr while the early Finish is open, in every layout of a running Event, right before „Event löschen“.
+  const early: DockKey[] = state.earlyFinish ? ['finishEarly'] : []
   // „Event löschen“ (#333) is the last of Mehr in every state, setup and finished included, and never in the pill: one place for it.
-  return { ...layout, more: [...layout.more, 'delete'] }
+  return { ...layout, more: [...layout.more, ...early, 'delete'] }
+}
+
+/**
+ * „Rad aufdecken“ (#957) while the uncover is open: a plain button in the pill right after the „Event abschließen“ hold when the Game count is
+ * complete without a Tie (the pill shows three, so Einladen moves to Mehr), and first in Mehr otherwise: in the Tie layout the pill keeps its holds.
+ */
+function withUncover(layout: DockLayout, state: HostDockState): DockLayout {
+  if (!state.uncover) return layout
+  return state.closing === 'finish' ? { ...layout, secondary: ['uncover', ...layout.secondary] } : { ...layout, more: ['uncover', ...layout.more] }
 }
 
 /** The layout of the state's own actions, before „Event löschen“ (#333) joins Mehr in dockLayout. */

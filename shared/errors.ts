@@ -175,10 +175,16 @@ export const API_ERROR_STATUS = {
   wrong_phase: 409,
   /** The Host finishes before every Round up to the Game count has its Result (#277); the last game (#278) uses it too. */
   results_missing: 409,
+  /** The Host finishes a decided Event early while a Round still waits for its Result (#953). */
+  round_waiting: 409,
   /** The outcome the Host saw is no longer the Standings' outcome: a Tie arose or ended since (#277). */
   standings_changed: 409,
   /** The Host asks for the last game while no Tie stands (#278): the Standings have one sole leader. */
   no_tie: 409,
+  /** The Host uncovers a wheel that is not hidden (#957): a visible wheel, or no Lucky Wheel. */
+  wheel_not_hidden: 409,
+  /** The Host uncovers a Hidden wheel that is uncovered already (#957): a second press. */
+  wheel_uncovered: 409,
   rate_limited: 429,
   /** This deployment has no realtime Worker (no REALTIME_URL): the client takes it as "no live connection" and polls (#156). */
   no_live_connection: 503,

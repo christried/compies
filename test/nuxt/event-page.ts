@@ -14,7 +14,7 @@ export const LARSI = '00000000-0000-4000-8000-000000000002'
 export type Vote = { slotId: string, userId: string, value: 'yes' | 'maybe' | 'no', note?: string | null }
 /** The Date fields of the Event's one Session (#48); the view puts them on a Session, not on the Event. */
 type SessionDates = { startsAt?: string | null, previousStartsAt?: string | null }
-export type EventOverrides = { event?: Partial<ReturnType<typeof eventOf>> & SessionDates, slots?: unknown[], bestSlotId?: string | null, progress?: { voted: number, total: number }, inviteUrl?: string | null, settings?: EventSettings | null, vetoAllowanceHidden?: boolean, settingsFloors?: SettingsFloors | null, pool?: EventView['pool'], hostGames?: EventView['hostGames'], eventNotes?: EventView['eventNotes'], removedSessions?: { id: string, previousStartsAt: string }[], members?: MemberView[], teams?: BoardTeam[], teamChoiceOpen?: boolean, runningSessionId?: string | null, start?: StartView | null, rounds?: RoundView[], setGame?: SetGameView | null, wheel?: WheelView | null, countdown?: CountdownView | null, coin?: CoinView | null, ceremony?: CeremonyView | null, ceremonyShown?: boolean, clip?: ClipView | null, bonusVetoes?: BonusVetoView | null, results?: ResultView[], standings?: StandingView[] | null, end?: EndView | null }
+export type EventOverrides = { event?: Partial<ReturnType<typeof eventOf>> & SessionDates, slots?: unknown[], bestSlotId?: string | null, progress?: { voted: number, total: number }, inviteUrl?: string | null, settings?: EventSettings | null, vetoAllowanceHidden?: boolean, settingsFloors?: SettingsFloors | null, pool?: EventView['pool'], hostGames?: EventView['hostGames'], eventNotes?: EventView['eventNotes'], removedSessions?: { id: string, previousStartsAt: string }[], members?: MemberView[], teams?: BoardTeam[], teamChoiceOpen?: boolean, runningSessionId?: string | null, start?: StartView | null, rounds?: RoundView[], setGame?: SetGameView | null, wheel?: WheelView | null, countdown?: CountdownView | null, coin?: CoinView | null, ceremony?: CeremonyView | null, ceremonyShown?: boolean, wheelUncovered?: boolean, uncover?: EventView['uncover'], clip?: ClipView | null, bonusVetoes?: BonusVetoView | null, results?: ResultView[], standings?: StandingView[] | null, end?: EndView | null }
 
 function eventOf(slug: string, phase = 'poll', isHost = false): { slug: string, name: string, phase: string, isHost: boolean } {
   return { slug, name: 'Freitags-Zocken', phase, isHost }
@@ -88,6 +88,9 @@ export function view(slug: string, votes: Vote[], overrides: EventOverrides = {}
     ceremonyShown: overrides.ceremonyShown ?? event.phase === 'finished',
     // No Bonus Veto (#233) unless a test gives the Host one: the read has it for the Host of a Lucky Wheel Event only.
     bonusVetoes: overrides.bonusVetoes ?? null as BonusVetoView | null,
+    // The Hidden wheel is not uncovered (#957) unless a test uncovers it; the Host's part of the uncover only when a test gives it.
+    wheelUncovered: overrides.wheelUncovered ?? false,
+    uncover: overrides.uncover ?? null as EventView['uncover'],
     // No Result (#274) unless a test says so: the Event read has the Standings and the end only for an Event that is set up, and the fixture is not.
     results: overrides.results ?? [] as ResultView[],
     standings: overrides.standings ?? null as StandingView[] | null,

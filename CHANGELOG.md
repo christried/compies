@@ -2,6 +2,30 @@
 
 ## [Unreleased]
 
+### Neu
+
+- Steht der Sieger schon fest, schließt du als Host das Event unter „Mehr“ vorzeitig ab. ([#953](https://github.com/christried/compies/issues/953))
+- Der Countdown tickt jetzt in den letzten zehn Sekunden, mit Trommelwirbel und Schlag bei null, wie das Veto-Fenster. ([#958](https://github.com/christried/compies/issues/958))
+- Hast du das Video geschlossen, holst du es mit „Zum Video“ zurück, solange es noch läuft. ([#956](https://github.com/christried/compies/issues/956))
+- Sind alle Spiele gespielt, deckst du als Host das verdeckte Glücksrad auf, und alle sehen, welche Spiele darauf waren. ([#957](https://github.com/christried/compies/issues/957))
+- Eine Zahl am Reiter „Tabelle“ zeigt, wie viele neue Ergebnisse kamen, während du etwas anderes angesehen hast. ([#951](https://github.com/christried/compies/issues/951))
+
+### Geändert
+
+- Nach dem Stopp des Glücksrads siehst du erst den Namen des Spiels; Video und Karte kommen eine Sekunde später. ([#959](https://github.com/christried/compies/issues/959))
+- Der Stempel nach deinem Veto sagt jetzt „Locked!“. ([#950](https://github.com/christried/compies/issues/950))
+- Als Host schreibst du jetzt auch ein Teamwort, wenn du selbst in einem Team spielst. ([#948](https://github.com/christried/compies/issues/948))
+
+### Behoben
+
+- Beim verdeckten Glücksrad stehen auch vor dem Drehen Platzhalternamen auf dem Rad statt „???“. ([#949](https://github.com/christried/compies/issues/949))
+- Im Spielverlauf steht 0 statt „–“, wenn nur ein Team einen Score hat. ([#954](https://github.com/christried/compies/issues/954))
+- „Das Rad dreht …“ erscheint nur noch bei reduzierter Bewegung. ([#955](https://github.com/christried/compies/issues/955))
+
+### Entfernt
+
+- Der Spielverlauf in der Tabelle zeigt keinen Preis mehr. ([#952](https://github.com/christried/compies/issues/952))
+
 ## [0.18.0] - 2026-11-20 – Chat
 
 Dein Event hat jetzt einen Chat: Alle schreiben und lesen live mit, auch von der Tribüne. Und auf dem Spielbrett schickst du Emotes, die über deinem Avatar aufsteigen und mit eingeschaltetem Ton auch klingen.

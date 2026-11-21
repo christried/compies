@@ -1,14 +1,15 @@
 <script setup lang="ts">
+import { Play } from '@lucide/vue'
 import { MD_QUERY } from '~/composables/useMediaQuery'
 import { GAME_GRID } from '~/utils/game-grid'
 import { reducedMotion } from '~/utils/motion'
-import { SCRAMBLE_FRAME_MS, finalAngle, removalEase, removalEnd, revealStage, scramble, sliceSpans, wheelAngle, type WheelTiming } from '~/utils/wheel'
+import { SCRAMBLE_FRAME_MS, finalAngle, morphLength, morphStage, removalEase, removalEnd, revealStage, scramble, sliceSpans, wheelAngle, type WheelTiming } from '~/utils/wheel'
 import { BULB_RADIUS, FLAPPER_HINGE, FLAPPER_PLACEMENT, PIN_RADIUS, PIN_RING_RADIUS, WHEEL_COLOURS, WHEEL_FILLS, bulbPoints, pinAngles, wheelPoint } from '~/utils/wheel-look'
 import { bulbsLit, nextBulbChange } from '~/utils/wheel-bulbs'
 import { WHEEL_MAX_PX, mascotWidthFor } from '~/utils/wheel-mascot'
 import { flapperKick, pinCrossings } from '~/utils/wheel-pins'
 import { cardPop, labelPop, popOver } from '~/utils/wheel-stop'
-import { stopReached } from '~~/shared/draw-timeline'
+import { clipStartAt, clipStarted, stopReached } from '~~/shared/draw-timeline'
 import type { HostGameFacts } from '~~/shared/game'
 import type { WheelView } from '~~/shared/stage'
 import { characterCount, cutToCharacters } from '~~/shared/text'
@@ -20,8 +21,8 @@ import { refillAt, refillPlan, type RefillPlan, type RestSlice } from '~/utils/w
 // server ticker (useServerTicker) feeds it the server time: the spin's ticker (`clock`) every frame while a spin runs and shortly past its
 // removal, idle at rest; the bulbs' ticker (`lampClock`) sleeps between the pattern's changes, 0.6 s at rest, and wakes at the chase's and
 // the flash's steps during a spin (#584 Q1). Out of view nothing runs.
-// At the stop the drawn slice gets its outline, its label pops and the result card pops in (#523, utils/wheel-stop.ts: both are a function
-// of the server time since the stop, so a late joiner sees the end state). Under a Hidden wheel a Member sees placeholders; the
+// At the stop the drawn slice gets its outline and its label pops; the result card pops in with the Clip, 1.5 s after the stop (#523, #959,
+// utils/wheel-stop.ts: both are a function of the server time since their moment, so a late joiner sees the end state). Under a Hidden wheel a Member sees placeholders; the
 // drawn label turns into the real game half a second after the stop (a scramble, under reduced motion a crossfade), and the
 // drawn slice leaves at stop + 2.8 s instead of 2.2 s. The drawn slice shrinks and the others close the gap (0.6 s), or fade and
 // jump under reduced motion. Since 0.13.2 (#519, spec #503) the wheel is drawn as the Show-Rad: a red band with a rim of 24 bulbs, a pin
@@ -29,11 +30,15 @@ import { refillAt, refillPlan, type RefillPlan, type RestSlice } from '~/utils/w
 // bulbs light by server time (#521) and the flapper kicks at every pin that passes the top (#522, utils/wheel-pins.ts); Compibert stands
 // beside the wheel since #526 (LuckyWheelMascot) and the sounds come with 0.13.3. When the games change at rest (a put back, the Game pool),
 // the slices move together over 0.6 s and a new slice pops in (#524, utils/wheel-refill.ts): on the page's own clock from the moment the data
-// arrives, never during a spin.
+// arrives, never during a spin. When the Host uncovers a Hidden wheel (#957), the read with the names arrives and every placeholder scrambles into
+// its real name, on the page's own clock as well.
 // The wheel is 340 px at most on a phone and 420 px from md up, and never changes size during a spin.
 const props = withDefaults(defineProps<{
   wheel: WheelView
-  /** The Event's Hidden wheel setting: it delays the drawn slice's removal for every viewer alike, so the devices stay in step. */
+  /**
+   * Whether the wheel hides its games now (`wheelHidden`: the Event's Hidden wheel setting until the Host uncovers it, #957): it delays the drawn
+   * slice's removal for every viewer alike, so the devices stay in step.
+   */
   hidden: boolean
   isHost: boolean
   /** The server's time in epoch ms (useServerClock). */
@@ -42,7 +47,7 @@ const props = withDefaults(defineProps<{
   hostGames?: Record<string, HostGameFacts> | null
 }>(), { hostGames: null })
 
-const { t } = useI18n()
+const { t, tm, rt } = useI18n()
 
 /** How long past the stop the loop keeps running: the removal ends at 2.8 s + 0.6 s on a Hidden wheel. */
 const TAIL_MS = 100
@@ -97,23 +102,44 @@ const lampClock = useServerTicker(() => props.serverNow(), {
   target: rootEl,
 })
 
+// A Member under a Hidden wheel gets only the count at rest (server/utils/stage-read.ts), so the names on its slices are the copy's placeholder
+// list in its order, one per slice, and „???“ past its end (#949, 06-copy.md). A spin brings its own shuffled labels.
+const placeholders = computed(() => (tm('wheel.placeholders') as unknown as Parameters<typeof rt>[0][]).map(message => rt(message)))
+const placeholderAt = (index: number) => placeholders.value[index] ?? t('wheel.placeholderQ')
+
 // A change of the games at rest (#524): the slices of the resting wheel, each with the key that tells it from the others across the change. A
 // viewer who has the slices keys them by the game's id; a Member under a Hidden wheel has only the count, so the key is the slot's number and
 // nothing of the pool reaches the plan that the server did not send. The keys are never rendered.
 const restSlices = computed((): RestSlice[] => props.wheel.slices
   ? props.wheel.slices.map(slice => ({ key: slice.id, name: slice.name }))
-  : Array.from({ length: props.wheel.count }, (_, index) => ({ key: `slot-${index}`, name: t('wheel.placeholderQ') })))
+  : Array.from({ length: props.wheel.count }, (_, index) => ({ key: `slot-${index}`, name: placeholderAt(index) })))
 /** The slices the last change was measured against; set at setup, so a page opened after a change plays nothing. */
 let baseline = restSlices.value
+/** Whether the baseline was the placeholders of a Member under a Hidden wheel (the count only). */
+let baselineCovered = props.wheel.slices === null
 const refill = shallowRef<{ plan: RefillPlan, startedAt: number } | null>(null)
+/**
+ * The uncover (#957): the page's own time at which the read with the names arrived on a wheel that showed placeholders. Every slice then plays
+ * the stop's scramble into its real name (utils/wheel.ts morphStage); there is no shared instant, the moment is the read's arrival.
+ */
+const uncoveredAt = shallowRef<number | null>(null)
 // A change while a spin runs (its commit takes the drawn game off the wheel: the count falls by one) or its removal plays nothing: the
 // baseline moves to the new data silently and the wheel shows it as soon as the removal is over. At rest, a change starts a plan; a second
 // change inside the first starts from the layout the first one ends in.
 watch([restSlices, running], ([next, isRunning]) => {
   const previous = baseline
+  const wasCovered = baselineCovered
   baseline = next
+  baselineCovered = props.wheel.slices === null
   if (isRunning) {
     refill.value = null
+    return
+  }
+  // The uncover (#957): the names take the placeholders' places slot for slot, so no slice moves and no refill plays; every label morphs instead.
+  if (wasCovered && !baselineCovered) {
+    refill.value = null
+    reduced.value = reducedMotion()
+    uncoveredAt.value = performance.now()
     return
   }
   const plan = refillPlan(previous, next, reducedMotion())
@@ -127,6 +153,13 @@ const refillClock = useServerTicker(() => performance.now(), {
   until: () => (refill.value ? refill.value.startedAt + refill.value.plan.ms : null),
   target: rootEl,
 })
+// The uncover's clock (#957): the page's own time, like the refill's, until the morph is over; out of view it reads again on return, and the names show.
+const uncoverClock = useServerTicker(() => performance.now(), {
+  ready: () => true,
+  until: () => (uncoveredAt.value === null ? null : uncoveredAt.value + morphLength(reduced.value)),
+  target: rootEl,
+})
+const uncoverStage = computed(() => (uncoveredAt.value !== null && uncoverClock.value !== null && !running.value ? morphStage(uncoverClock.value - uncoveredAt.value, reduced.value) : null))
 const refilling = computed(() => {
   const current = refill.value
   if (!current || running.value || refillClock.value === null) return null
@@ -136,7 +169,7 @@ const refilling = computed(() => {
 /** Only under reduced motion does the refill fade: the rotor then rises from 0 to 1 (the layout itself jumps). */
 const refillOpacity = computed(() => (refilling.value && refilling.value.opacity < 1 ? refilling.value.opacity : undefined))
 
-// The wheel as drawn: the spin's slices while it runs, else the games left on the wheel (a Member under a Hidden wheel sees ???).
+// The wheel as drawn: the spin's slices while it runs, else the games left on the wheel (a Member under a Hidden wheel sees placeholders, #949).
 const count = computed(() => (running.value ? spin.value!.slices : props.wheel.count))
 const spans = computed(() => {
   const current = timing.value
@@ -146,7 +179,7 @@ const spans = computed(() => {
 const names = computed(() => {
   if (running.value) return spin.value!.labels ?? Array.from({ length: count.value }, () => t('wheel.placeholderQ'))
   if (refilling.value) return refilling.value.slices.map(slice => slice.name)
-  return props.wheel.slices ? props.wheel.slices.map(slice => slice.name) : Array.from({ length: count.value }, () => t('wheel.placeholderQ'))
+  return props.wheel.slices ? props.wheel.slices.map(slice => slice.name) : Array.from({ length: count.value }, (_, index) => placeholderAt(index))
 })
 
 /** The wheel rests where the last spin stopped (a multiple of a full turn off the final angle); 0 before the first one. */
@@ -168,14 +201,22 @@ watchEffect(() => {
   if (current?.labels && concealed.value && timing.value && clock.value !== null && !stopReached(timing.value, props.serverNow())) held.value = { drawId: current.drawId, labels: current.labels }
 })
 
+/** A label in the middle of its morph into `text`: scrambled letters, or under reduced motion the real name fading in. `seed` sets the letters apart per slice. */
+function morphed(text: string, progress: number, seed = 0): { text: string, opacity: number } {
+  return reduced.value ? { text, opacity: progress } : { text: scramble(text, Math.floor(progress * (300 / SCRAMBLE_FRAME_MS)) + seed), opacity: 1 }
+}
+
 function labelOf(index: number): { text: string, opacity: number } {
   const text = names.value[index] ?? ''
+  // The uncover (#957): every slice morphs at rest, each with letters of its own.
+  const uncovering = uncoverStage.value
+  if (uncovering?.stage === 'morph') return morphed(text, uncovering.progress, (index + 1) * 1000)
   const current = timing.value
   if (!running.value || !concealed.value || !current || index !== current.resultIndex) return { text, opacity: 1 }
   const stage = revealStage(current, clock.value!, reduced.value)
   if (stage.stage === 'real') return { text, opacity: 1 }
   if (stage.stage === 'placeholder') return { text: held.value?.drawId === spin.value!.drawId ? held.value.labels[index] ?? t('wheel.placeholderQ') : t('wheel.placeholderQ'), opacity: 1 }
-  return reduced.value ? { text, opacity: stage.progress } : { text: scramble(text, Math.floor(stage.progress * (300 / SCRAMBLE_FRAME_MS))), opacity: 1 }
+  return morphed(text, stage.progress)
 }
 
 const shortened = (text: string) => (characterCount(text) > LABEL_MAX ? `${cutToCharacters(text, LABEL_MAX - 1)}…` : text)
@@ -248,10 +289,17 @@ const drawnOpacity = computed(() => {
 // The pops at the stop (#523): the time since the stop from the server's clock, null before it. The pop functions clamp it to their run, so a
 // late joiner or a returning tab reads the end state at once, and nothing here compares with the stop itself (`stopped` is the one gate).
 const stopElapsed = computed(() => (stopped.value && clock.value !== null && timing.value ? clock.value - timing.value.stopAt : null))
+/**
+ * The result card comes with the Clip (#959): at the spin's Clip start, 1.5 s after the stop, once every device shows the drawn game's name;
+ * its pop runs from then on. The time since that start from the server's clock, null before it (`clipStarted` is the gate, not
+ * `clipRunning`: the card stays after the Clip's end).
+ */
+const clipStart = computed(() => (timing.value ? clipStartAt({ kind: 'spin', stopAt: timing.value.stopAt }) : null))
+const cardElapsed = computed(() => (clock.value !== null && clipStart.value !== null && clipStarted({ startAt: clipStart.value }, clock.value) ? clock.value - clipStart.value : null))
 const cardStyle = computed(() => {
   // Once the pop is over the card has no style at all: a late joiner gets none (#584 P4).
-  if (!card.value || stopElapsed.value === null || popOver(stopElapsed.value, reduced.value)) return undefined
-  const { scale, opacity } = cardPop(stopElapsed.value, reduced.value)
+  if (!card.value || cardElapsed.value === null || popOver(cardElapsed.value, reduced.value)) return undefined
+  const { scale, opacity } = cardPop(cardElapsed.value, reduced.value)
   return { transform: `scale(${scale})`, opacity: String(opacity) }
 })
 /** Only the drawn label pops. Its scaleY pivots on its own centre line in the rotated frame (its y is 200 before the rotation). */
@@ -266,9 +314,14 @@ const labelOpacity = (index: number) => labelOf(index).opacity * (isDrawn(index)
 
 // The result card names the game only while its spin is the latest draw (a later set, a veto or a put back takes it away, F6); a vetoed
 // game is then named in the Veto window's outcome line only.
-const card = computed(() => (stopped.value && spin.value?.current && spin.value.game ? spin.value.game : null))
-// An empty wheel says nothing here: its accessible name counts 0 games (#802).
-const status = computed(() => (timing.value && clock.value !== null && !stopReached(timing.value, clock.value) ? t('wheel.spinning') : null))
+// The result is announced at the stop, with the flash, Compibert's cheer and the name's reveal; the card shows from the Clip's start on (#959).
+const result = computed(() => (stopped.value && spin.value?.current && spin.value.game ? spin.value.game : null))
+const card = computed(() => (cardElapsed.value !== null ? result.value : null))
+/** „Zum Video“ on the card (#956), for every viewer who closed the Clip, while it runs: the Event page provides it. */
+const reopenClip = useClipReopen()
+// An empty wheel says nothing here: its accessible name counts 0 games (#802). The spin's line shows only under reduced motion, where the
+// wheel turns only in its last 1.2 s; a viewer who sees it turn needs no line (#955, 16-compibert-gluecksrad.md § Reduced).
+const status = computed(() => (reduced.value && timing.value && clock.value !== null && !stopReached(timing.value, clock.value) ? t('wheel.spinning') : null))
 const headingId = useId()
 </script>
 
@@ -515,6 +568,19 @@ const headingId = useId()
           :facts="hostGames?.[card.id] ?? null"
         />
       </div>
+      <!-- „Zum Video“ (#956): the Clip this device closed, back at the second everybody is at, while it runs. -->
+      <AppButton
+        v-if="reopenClip"
+        variant="secondary"
+        size="md"
+        @click="reopenClip()"
+      >
+        <AppIcon
+          :icon="Play"
+          :size="16"
+        />
+        {{ t('clip.reopen') }}
+      </AppButton>
     </div>
 
     <!-- The result for screen readers, announced when the wheel stops. -->
@@ -523,7 +589,7 @@ const headingId = useId()
       aria-live="polite"
       class="sr-only"
     >
-      {{ card ? t('activity.wheel', { game: card.name }) : '' }}
+      {{ result ? t('activity.wheel', { game: result.name }) : '' }}
     </p>
   </section>
 </template>

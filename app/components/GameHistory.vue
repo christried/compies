@@ -4,14 +4,13 @@ import { teamNameAt } from '~/utils/board'
 import { joinNames } from '~/utils/list'
 import type { HistoryCorrections } from '~/utils/history-corrections'
 import type { BoardTeam } from '~~/shared/event'
-import { priceLine } from '~/utils/price'
 import { winnersOf } from '~~/shared/results'
 import type { ResultView, RoundView } from '~~/shared/stage'
 
 // The history (#274, 02-components § GameHistory, the artboard's „Spielverlauf“): a numbered row for every Round with a Result, in the order given
 // (by number), and the open Rounds after them as dashed rows without a number. A numbered row is a native `<details>`: its summary shows the
-// game, the game's Price line under its name (#338), the winners (the Parties on Place 1, so a Shared place names both) and the Scores; opened, it lists every Party's Place, points and
-// Score. „korrigiert“ comes from `corrected`. With `corrections` (#275, the Host's, while the Event has not finished) every numbered row gets a
+// game, the winners (the Parties on Place 1, so a Shared place names both) and the Scores; opened, it lists every Party's Place, points and
+// Score. A row has no Price line: #338 put one under the name, #952 took it out again (game cards keep theirs). „korrigiert“ comes from `corrected`. With `corrections` (#275, the Host's, while the Event has not finished) every numbered row gets a
 // pencil at its end that opens the result sheet on that Result. The pencil sits in the `<li>`, outside `<details>`: interactive content inside a
 // `<summary>` is announced badly and its click fights the toggle. Without `corrections` nothing of it is in the DOM.
 const props = withDefaults(defineProps<{
@@ -46,20 +45,19 @@ function winnerText(winners: number[]): string {
   return t('history.moreWinners', { name: nameOf(winners[0]!), n: winners.length - 1 })
 }
 
-/** The Scores in Place order („16 : 12“), „–“ for a Party without one; null when no Party has a Score. */
+/**
+ * The Scores in Place order („16 : 12“); null when no Party has a Score. Beside a Score a Party without one reads 0 („3 : 0“, not „3 : –“,
+ * #954). Display only: the Score stays optional, and the stored one stays null.
+ */
 function scoresOf(result: ResultView): string | null {
   if (result.places.every(line => line.score === null)) return null
-  return result.places.map(line => line.score ?? '–').join(' : ')
+  return result.places.map(line => line.score ?? '0').join(' : ')
 }
-
-// The Price line counts the year from today; the clock is read once, as GameCard does (#338).
-const now = new Date()
 
 // Each numbered row with what the template shows of it, computed once per change instead of per use (#288).
 const rows = computed(() => props.results.map((result) => {
   const winners = winnersOf(result.places)
-  const price = result.game.price ? priceLine(result.game.price, now, t) : null
-  return { result, winners, names: joinNames(winners.map(nameOf)), text: winnerText(winners), scores: scoresOf(result), price }
+  return { result, winners, names: joinNames(winners.map(nameOf)), text: winnerText(winners), scores: scoresOf(result) }
 }))
 </script>
 
@@ -88,7 +86,7 @@ const rows = computed(() => props.results.map((result) => {
       class="m-0 flex list-none flex-col gap-2 p-0"
     >
       <li
-        v-for="{ result, winners, names, text, scores, price } in rows"
+        v-for="{ result, winners, names, text, scores } in rows"
         :key="result.roundId"
         class="@container relative min-w-0"
       >
@@ -108,12 +106,6 @@ const rows = computed(() => props.results.map((result) => {
                 :class="result.corrected && '@max-[440px]:pr-16'"
                 :title="result.game.name"
               >{{ result.game.name }}</b>
-              <span
-                v-if="price"
-                data-price
-                class="truncate text-[12px] font-bold text-ink-2"
-                :title="price"
-              >{{ price }}</span>
               <span
                 data-winners
                 class="flex items-start gap-1.5 text-[12px] font-bold"

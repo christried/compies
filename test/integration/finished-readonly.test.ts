@@ -127,6 +127,7 @@ describe('a finished Event is read-only', () => {
       { file: 'countdown/reset.post.ts', name: 'reset the Countdown', as: 'host', method: 'POST', path: `/api/e/${slug}/countdown/reset` },
       { file: 'finish.post.ts', name: 'finish the Event again', as: 'host', method: 'POST', path: `/api/e/${slug}/finish`, body: { outcome: 'winner', winners: [1] } },
       { file: 'last-game.post.ts', name: 'add a last game', as: 'host', method: 'POST', path: `/api/e/${slug}/last-game` },
+      { file: 'uncover.post.ts', name: 'uncover the wheel', as: 'host', method: 'POST', path: `/api/e/${slug}/uncover` },
       { file: 'messages/index.post.ts', name: 'write a Message', as: 'player', method: 'POST', path: `/api/e/${slug}/messages`, body: { id: '00000000-0000-4000-8000-00000000f001', text: 'Hallo' } },
       { file: 'games/[gameId]/notes.put.ts', name: 'save Event notes', as: 'host', method: 'PUT', path: `/api/e/${slug}/games/${kart}/notes`, body: { notes: notesFromLines(['Eine Notiz']) } },
     ]

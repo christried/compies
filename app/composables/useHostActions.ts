@@ -1,4 +1,4 @@
-import { CalendarCheck, CalendarClock, CirclePlus, Coins, Dices, Flag, Gamepad2, Handshake, Link as LinkIcon, Medal, Play, Settings2, ShieldPlus, Timer, Trash2, Trophy } from '@lucide/vue'
+import { CalendarCheck, CalendarClock, CircleCheckBig, CirclePlus, Coins, Dices, Eye, Flag, Gamepad2, Handshake, Link as LinkIcon, Medal, Play, Settings2, ShieldPlus, Timer, Trash2, Trophy } from '@lucide/vue'
 import type { DockAction } from '~/components/HostDock.vue'
 import { reasonKey, type ReasonScreen } from '~/utils/api-error'
 import { ceremonyRejectionAt, coinRejectionAt, dockLayout, hostDockState, type DockKey } from '~/utils/host-dock'
@@ -28,6 +28,8 @@ export interface HostDialogs {
   openBonusVeto: () => void
   /** Opens the delete sheet (#333); its hold deletes the Event. */
   openDelete: () => void
+  /** Opens the early Finish sheet (#953); its hold finishes the Event with the sole leader. */
+  openFinishEarly: () => void
 }
 
 export function useHostActions(
@@ -62,6 +64,10 @@ export function useHostActions(
     ceremony: () => void actions.startCeremony(),
     /** Opens the delete sheet (#333): no send here, the sheet's hold sends it. */
     delete: () => toValue(dialogs)?.openDelete(),
+    /** Opens the early Finish sheet (#953): no send here, the sheet's hold sends the finish. */
+    finishEarly: () => toValue(dialogs)?.openFinishEarly(),
+    /** Uncovers the Hidden wheel (#957): a tap, no confirm; the send refetches the Event read, and the room's event.changed tells every device. */
+    uncover: () => void actions.uncover(),
   }
 
   return computed((): DockAction[] => {
@@ -141,6 +147,10 @@ export function useHostActions(
         hold: true,
         run: () => handlers.finishTie(winners),
       },
+      // The early Finish (#953): a plain Mehr item (a hold there would run at once), which opens the sheet whose hold finishes. Only while the rule passes.
+      finishEarly: { key: 'finishEarly', label: t('dock.finishEarly'), icon: CircleCheckBig, group: t('dock.group.event'), run: handlers.finishEarly },
+      // „Rad aufdecken“ (#957): a plain button without a confirm, since every Round is played; it shows only while the uncover is open (dockLayout).
+      uncover: { key: 'uncover', label: t('dock.uncover'), icon: Eye, group: t('dock.group.game'), run: handlers.uncover },
       // A plain button: only the primary is held, and the server makes a double press harmless. At the maximum it stays, dashed, with its reason.
       // `dockOnly` (#278): in the pill it is not repeated in „Mehr“ (the Tie's pill holds it beside the two holds).
       lastGame: {

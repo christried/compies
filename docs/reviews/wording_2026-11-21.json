@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "sweptAt": "2026-11-21",
+  "texts": {
+    "veto.stamp": {
+      "text": "Locked!",
+      "answer": "passt",
+      "replacement": null,
+      "comment": "Bewusst Englisch, Entscheidung des Users im Grilling vom 2026-11-21 (#950): bleibt „Locked!“, auch im deutschen Text.",
+      "alternatives": []
+    }
+  },
+  "fixed": {},
+  "unused": {},
+  "mono": {}
+}

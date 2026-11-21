@@ -61,7 +61,7 @@ function serveFinished(host: boolean, first: CeremonyView | null) {
     standings: [
       { team: 1, rank: 1, points: 9 }, { team: 2, rank: 2, points: 6 }, { team: 3, rank: 3, points: 3 }, { team: 4, rank: 4, points: 0 },
     ],
-    end: { played: 3, gameCount: 3, complete: true, tie: null, finish: null, lastGame: null },
+    end: { played: 3, gameCount: 3, complete: true, tie: null, decided: true, finish: null, lastGame: null },
     ceremonyShown: ceremony !== null,
     ceremony,
     wheel: null,
