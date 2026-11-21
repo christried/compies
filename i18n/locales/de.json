@@ -469,7 +469,7 @@
     "holding": "Halten …",
     "cast": "Veto eingelegt",
     "locked": "Veto ist drin",
-    "stamp": "Versiegelt",
+    "stamp": "Locked!",
     "byParty": "{team} hat schon ein Veto eingelegt",
     "hint": "Gedrückt halten, um zu bestätigen. Kann nicht zurückgenommen werden.",
     "hintSealed": "Ein Veto pro Team und Spiel. Die anderen sehen es erst beim Aufdecken.",

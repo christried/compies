@@ -9,6 +9,7 @@
 ### Geändert
 
 - Nach dem Stopp des Glücksrads siehst du erst den Namen des Spiels; Video und Karte kommen eine Sekunde später. ([#959](https://github.com/christried/compies/issues/959))
+- Der Stempel nach deinem Veto sagt jetzt „Locked!“. ([#950](https://github.com/christried/compies/issues/950))
 
 ### Behoben
 
