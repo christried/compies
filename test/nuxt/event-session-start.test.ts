@@ -301,7 +301,7 @@ describe('ending a Session', () => {
 // Finishing the Event (#277): once the Rounds with a Result reach the Game count and first place is not shared, „Event abschließen“ is the
 // dock's primary, a hold like „Session beenden“; a Tie has its own dock (#278, below).
 describe('finishing the Event', () => {
-  const complete = { played: 3, gameCount: 3, complete: true, tie: null, finish: { rejection: null }, lastGame: null }
+  const complete = { played: 3, gameCount: 3, complete: true, tie: null, decided: true, finish: { rejection: null }, lastGame: null }
   const sole = [{ team: 1, rank: 1, points: 3 }, { team: 2, rank: 2, points: 1 }]
   const level = [{ team: 1, rank: 1, points: 2 }, { team: 2, rank: 1, points: 2 }]
   const RUNNING_ONE = [{ number: null, startsAt: FIRST, startedAt: STARTED }]
@@ -344,7 +344,7 @@ describe('finishing the Event', () => {
   })
 
   it('keeps the old primary while Results are missing, and offers no Event abschließen in a Tie', async () => {
-    const missing = serve(s => hostView(s, ENDED_ONE, { event: { isHost: true, phase: 'running' }, start: NO_DATED, end: { ...complete, played: 2, complete: false, finish: { rejection: 'results_missing' } } }))
+    const missing = serve(s => hostView(s, ENDED_ONE, { event: { isHost: true, phase: 'running' }, start: NO_DATED, end: { ...complete, played: 2, complete: false, decided: false, finish: { rejection: 'results_missing' } } }))
     expect(pill(await mountSuspended(EventPage, { route: `/e/${missing.slug}` }))).not.toContain('Event abschließen')
 
     const tie = serve(s => hostView(s, ENDED_ONE, { event: { isHost: true, phase: 'running' }, start: NO_DATED, end: { ...complete, tie: [1, 2] } }))
@@ -430,7 +430,7 @@ describe('finishing the Event', () => {
 
 // A Tie (#278): with the Rounds that have a Result at the Game count and more than one Party on rank 1, the Host holds „Unentschieden“ or adds a last game.
 describe('a Tie at the end', () => {
-  const tied = { played: 2, gameCount: 2, complete: true, tie: [1, 2], finish: { rejection: null }, lastGame: { rejection: null } }
+  const tied = { played: 2, gameCount: 2, complete: true, tie: [1, 2], decided: false, finish: { rejection: null }, lastGame: { rejection: null } }
   const RUNNING_ONE = [{ number: null, startsAt: FIRST, startedAt: STARTED }]
   const ENDED_ONE = [{ number: null, startsAt: FIRST, startedAt: STARTED, endedAt: ENDED }]
   const NO_DATED = { sessionId: null, number: null, rejection: 'no_dated_session' as const }
@@ -523,7 +523,7 @@ describe('a Tie at the end', () => {
     const store = serve(s => running(s))
     registerEndpoint(`/api/e/${store.slug}/last-game`, { method: 'POST', handler: async (event) => {
       posts.push(await readBody(event))
-      store.set(running(store.slug, { played: 2, gameCount: 3, complete: false, tie: null, finish: { rejection: 'results_missing' }, lastGame: { rejection: 'results_missing' } }))
+      store.set(running(store.slug, { played: 2, gameCount: 3, complete: false, tie: null, decided: false, finish: { rejection: 'results_missing' }, lastGame: { rejection: 'results_missing' } }))
       return { gameCount: 3 }
     } })
     const page = await mountSuspended(EventPage, { route: `/e/${store.slug}` })
@@ -541,7 +541,7 @@ describe('a Tie at the end', () => {
     registerEndpoint(`/api/e/${store.slug}/last-game`, { method: 'POST', handler: () => {
       calls += 1
       if (calls > 1) throw createError({ statusCode: 409, statusMessage: 'results_missing' })
-      store.set(running(store.slug, { played: 2, gameCount: 3, complete: false, tie: null, finish: { rejection: 'results_missing' }, lastGame: { rejection: 'results_missing' } }))
+      store.set(running(store.slug, { played: 2, gameCount: 3, complete: false, tie: null, decided: false, finish: { rejection: 'results_missing' }, lastGame: { rejection: 'results_missing' } }))
       return { gameCount: 3 }
     } })
     const page = await mountSuspended(EventPage, { route: `/e/${store.slug}` })

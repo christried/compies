@@ -51,7 +51,7 @@ async function mountLive({ host = false, finished = false, stands = false, wide 
         teams: [team(1), team(2)],
         members: members({ kitty: stands ? { zone: 'stands' } : { zone: 'team', team: 1 }, larsi: { zone: 'team', team: 2 } }).map(member => ({ ...member, isHost: member.id === kitty.id ? host : false })),
         standings: [{ team: 1, rank: 1, points: 0 }, { team: 2, rank: 1, points: 0 }],
-        end: { played: 0, gameCount: 6, complete: false, tie: null, finish: null, lastGame: null },
+        end: { played: 0, gameCount: 6, complete: false, tie: null, decided: false, finish: null, lastGame: null },
       })
     },
   })

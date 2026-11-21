@@ -67,7 +67,7 @@ describe('the party hat in the Event header, per viewer', () => {
     const beforeResult: EventOverrides = {
       results: [],
       standings: [{ team: 1, rank: 1, points: 0 }, { team: 2, rank: 1, points: 0 }],
-      end: { played: 0, gameCount: 6, complete: false, tie: null, finish: null, lastGame: null },
+      end: { played: 0, gameCount: 6, complete: false, tie: null, decided: false, finish: null, lastGame: null },
     }
 
     expect(hat(await mount(runningWith(beforeResult, { kitty: { zone: 'team', team: 2 } }).slug))).toBe(false)
@@ -77,7 +77,7 @@ describe('the party hat in the Event header, per viewer', () => {
     const shared: EventOverrides = {
       results: [played],
       standings: [{ team: 1, rank: 1, points: 1 }, { team: 2, rank: 1, points: 1 }],
-      end: { played: 1, gameCount: 6, complete: false, tie: null, finish: null, lastGame: null },
+      end: { played: 1, gameCount: 6, complete: false, tie: null, decided: false, finish: null, lastGame: null },
     }
 
     expect(hat(await mount(runningWith(shared, { kitty: { zone: 'team', team: 1 } }).slug))).toBe(true)
@@ -106,7 +106,7 @@ describe('the party hat in the Event header, per viewer', () => {
     const finished: EventOverrides = {
       ...afterResult,
       rounds: [],
-      end: { played: 1, gameCount: 1, complete: true, tie: null, finish: null, lastGame: null },
+      end: { played: 1, gameCount: 1, complete: true, tie: null, decided: true, finish: null, lastGame: null },
     }
     const won = serveState({ sessions: [{ ...RUNNING, endedAt: ENDED }], missing: 0, phase: 'finished', overrides: { ...finished, members: members({ kitty: { zone: 'team', team: 2 } }) } })
     const lost = serveState({ sessions: [{ ...RUNNING, endedAt: ENDED }], missing: 0, phase: 'finished', overrides: { ...finished, members: members({ kitty: { zone: 'team', team: 1 } }) } })
@@ -125,7 +125,7 @@ describe('the party hat in the Event header, per viewer', () => {
     const correction: EventOverrides = {
       results: [corrected],
       standings: [{ team: 1, rank: 1, points: 1 }, { team: 2, rank: 2, points: 0 }] as StandingView[],
-      end: { played: 1, gameCount: 6, complete: false, tie: null, finish: null, lastGame: null },
+      end: { played: 1, gameCount: 6, complete: false, tie: null, decided: false, finish: null, lastGame: null },
     }
     served.set(viewWithSessions(served.slug, [RUNNING], 0, {
       event: { phase: 'running', isHost: false },

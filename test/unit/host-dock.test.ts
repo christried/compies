@@ -111,7 +111,7 @@ describe('hostDockState', () => {
 // The end (#277): once the Rounds with a Result reach the Game count and first place is not shared, the Host finishes the Event.
 describe('the primary when the Event can be finished (#277)', () => {
   const ENDED = { startedAt: '2090-10-30T19:30:00.000Z', endedAt: '2090-10-30T22:00:00.000Z' }
-  const end = (fields: Partial<NonNullable<DockInput['end']>> = {}): DockInput['end'] => ({ played: 3, gameCount: 3, complete: true, tie: null, finish: { rejection: null }, lastGame: null, ...fields })
+  const end = (fields: Partial<NonNullable<DockInput['end']>> = {}): DockInput['end'] => ({ played: 3, gameCount: 3, complete: true, tie: null, decided: true, finish: { rejection: null }, lastGame: null, ...fields })
   const NO_DATED = { sessionId: null, number: null, rejection: 'no_dated_session' as const }
 
   it('is Event abschließen in a running Session, with that Session\'s number for „Session n beenden“', () => {
@@ -128,7 +128,7 @@ describe('the primary when the Event can be finished (#277)', () => {
   it('is not offered while Results are missing, or the Standings call for something else', () => {
     const sessions = [dated('a', 1, { startedAt: '2090-10-30T19:30:00.000Z' })]
 
-    expect(hostDockState(input({ sessions, end: end({ complete: false, finish: { rejection: 'results_missing' } }) }))).toMatchObject({ primary: 'spin' })
+    expect(hostDockState(input({ sessions, end: end({ complete: false, decided: false, finish: { rejection: 'results_missing' } }) }))).toMatchObject({ primary: 'spin' })
     expect(hostDockState(input({ sessions, end: end({ finish: { rejection: 'standings_changed' } }) }))).toMatchObject({ primary: 'spin' })
   })
 
@@ -139,7 +139,7 @@ describe('the primary when the Event can be finished (#277)', () => {
   // A Tie has its own primary (#278): the Host holds „Unentschieden“ or adds a last game. A Session that has not started cannot hold Results,
   // so `teams` has no Tie state (a started Session is never removed): the dock and the page's banner agree on running, between and done.
   it('is Unentschieden in a Tie: in a running Session (with its number), between Sessions and after the last one', () => {
-    const tie = end({ tie: [1, 2] })
+    const tie = end({ tie: [1, 2], decided: false })
 
     expect(hostDockState(input({ sessions: [dated('a', 1, { startedAt: '2090-10-30T19:30:00.000Z' }), dated('b', 2)], end: tie }))).toMatchObject({ kind: 'running', primary: 'finishTie', number: 1 })
     expect(hostDockState(input({ sessions: [dated('a', 1, ENDED), dated('b', 2)], end: tie }))).toMatchObject({ kind: 'between', primary: 'finishTie' })
@@ -189,6 +189,29 @@ describe('the primary when the Event can be finished (#277)', () => {
   })
 })
 
+// The early Finish (#953): the finish rule passes before the Game count. The dock's primary stays the next game, so playing on stays the default.
+describe('the early Finish in the dock state (#953)', () => {
+  const DECIDED = { played: 3, gameCount: 5, complete: false, tie: null, decided: true, finish: { rejection: null }, lastGame: { rejection: 'results_missing' as const } }
+  const ENDED = { startedAt: '2090-10-30T19:30:00.000Z', endedAt: '2090-10-30T22:00:00.000Z' }
+
+  it('keeps the next game as the primary and says the early Finish is open, with no closing', () => {
+    expect(hostDockState(input({ settings, sessions: RUNNING, end: DECIDED }))).toMatchObject({ kind: 'running', primary: 'spin', closing: null, earlyFinish: true })
+    expect(hostDockState(input({ settings: hostPick, sessions: RUNNING, end: DECIDED }))).toMatchObject({ kind: 'running', primary: 'setGame', closing: null, earlyFinish: true })
+    expect(hostDockState(input({ sessions: [dated('a', 1, ENDED), dated('b', 2)], start: { sessionId: 'b', number: 2, rejection: null }, end: DECIDED }))).toMatchObject({ kind: 'between', primary: 'start', earlyFinish: true })
+  })
+
+  it('is closed while the rule refuses (a waiting Round, results missing), for a Member, and once the Event is complete', () => {
+    expect(hostDockState(input({ settings, sessions: RUNNING, end: { ...DECIDED, finish: { rejection: 'round_waiting' } } })).earlyFinish).toBe(false)
+    expect(hostDockState(input({ settings, sessions: RUNNING, end: { ...DECIDED, decided: false, finish: { rejection: 'results_missing' } } })).earlyFinish).toBe(false)
+    expect(hostDockState(input({ settings, sessions: RUNNING, end: { ...DECIDED, finish: null } })).earlyFinish).toBe(false)
+    expect(hostDockState(input({ settings, sessions: RUNNING, end: { ...DECIDED, played: 5, complete: true } }))).toMatchObject({ primary: 'finish', earlyFinish: false })
+  })
+
+  it('is closed in a finished Event', () => {
+    expect(hostDockState(input({ sessions: [dated('a', 1, ENDED)], event: { phase: 'finished' }, end: { ...DECIDED, finish: { rejection: 'wrong_phase' } } })).earlyFinish).toBe(false)
+  })
+})
+
 describe('dockLayout reads the closing decision (#285)', () => {
   it('lays a running Session out as closed when it is closed, whatever its primary is', () => {
     const spin = hostDockState(input({ settings, sessions: RUNNING }))
@@ -226,9 +249,11 @@ describe('dockLayout', () => {
   ]
   // The dock's states as the Event read gives them: the fields that make the state, its primary (with the Date poll open), whether a
   // Session runs, and whether the Date poll can still offer Dates and Slots.
-  const COMPLETE: DockInput['end'] = { played: 3, gameCount: 3, complete: true, tie: null, finish: { rejection: null }, lastGame: null }
-  const TIE: DockInput['end'] = { ...COMPLETE!, tie: [1, 2] }
-  const STATES: { name: string, fields: Partial<DockInput>, primary: DockKey[], running: boolean, polls: boolean, finished?: boolean }[] = [
+  const COMPLETE: DockInput['end'] = { played: 3, gameCount: 3, complete: true, tie: null, decided: true, finish: { rejection: null }, lastGame: null }
+  const TIE: DockInput['end'] = { ...COMPLETE!, tie: [1, 2], decided: false }
+  // Decided before the Game count (#953): the finish rule passes on an incomplete Event, so the early Finish is open.
+  const DECIDED: DockInput['end'] = { played: 3, gameCount: 5, complete: false, tie: null, decided: true, finish: { rejection: null }, lastGame: { rejection: 'results_missing' } }
+  const STATES: { name: string, fields: Partial<DockInput>, primary: DockKey[], running: boolean, polls: boolean, finished?: boolean, early?: boolean }[] = [
     { name: 'setup', fields: { settings: null }, primary: ['settings'], running: false, polls: true },
     { name: 'poll', fields: { sessions: [undated('a')], start: NO_DATED }, primary: ['setDate'], running: false, polls: true },
     { name: 'teams', fields: { sessions: [dated('a', 1)] }, primary: ['start'], running: false, polls: true },
@@ -244,6 +269,10 @@ describe('dockLayout', () => {
     { name: 'a Tie, a Session runs', fields: { settings, sessions: RUNNING, end: TIE }, primary: ['finishTie'], running: true, polls: true },
     { name: 'a Tie between Sessions', fields: { sessions: [dated('a', 1, ENDED), dated('b', 2)], start: { sessionId: 'b', number: 2, rejection: null }, end: TIE }, primary: ['finishTie'], running: false, polls: true },
     { name: 'a Tie after the last Session', fields: { sessions: [dated('a', 1, ENDED)], start: NO_DATED, end: TIE }, primary: ['finishTie'], running: false, polls: false },
+    { name: 'decided early, a Session runs under Host pick', fields: { settings: hostPick, sessions: RUNNING, end: DECIDED }, primary: ['setGame'], running: true, polls: true, early: true },
+    { name: 'decided early in the Lucky Wheel, a Session runs', fields: { settings, sessions: RUNNING, end: DECIDED }, primary: ['spin'], running: true, polls: true, early: true },
+    { name: 'decided early, between Sessions', fields: { sessions: [dated('a', 1, ENDED), dated('b', 2)], start: { sessionId: 'b', number: 2, rejection: null }, end: DECIDED }, primary: ['start'], running: false, polls: true, early: true },
+    { name: 'decided early after the last Session', fields: { sessions: [dated('a', 1, ENDED)], start: NO_DATED, end: DECIDED }, primary: [], running: false, polls: false, early: true },
     // A finished Event offers the ceremony and Einladen only (#277, #309), so the checks that expect Mehr to end with the settings skip it.
     { name: 'finished', fields: { sessions: [dated('a', 1, ENDED)], start: NO_DATED, event: { phase: 'finished' }, end: COMPLETE }, primary: ['ceremony'], running: false, polls: false, finished: true },
   ]
@@ -256,8 +285,9 @@ describe('dockLayout', () => {
     for (const open of OPENS) {
       const { more } = layout(fields, open)
       expect(more.at(-1)).toBe('delete')
+      const beforeDelete = more.filter(key => key !== 'finishEarly')
       if (primary.includes('settings')) expect(more).not.toContain('settings')
-      else expect(more.at(-2)).toBe('settings')
+      else expect(beforeDelete.at(-2)).toBe('settings')
     }
   })
 
@@ -360,7 +390,7 @@ describe('dockLayout', () => {
       const { more } = layout(fields, open)
       const game = GAME_ACTIONS.filter(key => key !== 'bonusVeto' || open.bonusVetoOpen)
       expect(more.filter(key => GAME_ACTIONS.includes(key))).toEqual(game)
-      const withoutDelete = more.slice(0, -1)
+      const withoutDelete = more.filter(key => key !== 'finishEarly').slice(0, -1)
       expect(withoutDelete.slice(withoutDelete.length - game.length - 1)).toEqual([...game, 'settings'])
     }
   })
@@ -412,8 +442,22 @@ describe('dockLayout', () => {
     'a Tie, a Session runs': open => ({ primary: ['finishTie'], secondary: ['lastGame', 'end', 'invite'], more: [...dates(open), ...slots(open), ...game(open), 'settings', 'delete'] }),
     'a Tie between Sessions': open => ({ primary: ['finishTie'], secondary: ['lastGame', 'invite'], more: [...dates(open), ...slots(open), ...bonus(open), 'settings', 'delete'] }),
     'a Tie after the last Session': open => ({ primary: ['finishTie'], secondary: ['lastGame', 'invite'], more: [...bonus(open), 'settings', 'delete'] }),
+    'decided early, a Session runs under Host pick': open => ({ primary: ['setGame'], secondary: ['end', 'invite'], more: [...dates(open), ...slots(open), ...game(open), 'settings', 'finishEarly', 'delete'] }),
+    'decided early in the Lucky Wheel, a Session runs': open => ({ primary: ['spin'], secondary: ['end', 'invite'], more: ['setGame', ...dates(open), ...slots(open), ...game(open), 'settings', 'finishEarly', 'delete'] }),
+    'decided early, between Sessions': open => ({ primary: ['start'], secondary: [...dates(open), 'invite'], more: [...slots(open), ...bonus(open), 'settings', 'finishEarly', 'delete'] }),
+    'decided early after the last Session': open => ({ primary: [], secondary: ['invite'], more: [...bonus(open), 'settings', 'finishEarly', 'delete'] }),
     'finished': () => ({ primary: ['ceremony'], secondary: ['invite'], more: ['delete'] }),
   }
+
+  // The early Finish (#953): „Vorzeitig abschließen“ waits in Mehr, right before „Event löschen“, in every layout of a running Event while the
+  // finish rule passes before the Game count, and never once the Event is complete (the regular Finish is the primary then). Not a hold: it opens a sheet.
+  it.each(STATES)('has the early Finish in Mehr exactly while it is open, and never in the pill: $name', ({ fields, early }) => {
+    for (const open of OPENS) {
+      const { primary, secondary, more } = layout(fields, open)
+      expect(more.includes('finishEarly')).toBe(early === true)
+      expect([...primary, ...secondary]).not.toContain('finishEarly')
+    }
+  })
 
   it.each(STATES)('pins the layout of $name for every open part, as today (#285)', ({ name, fields }) => {
     const pinned = PINNED[name]
