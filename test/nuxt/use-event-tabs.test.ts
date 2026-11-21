@@ -24,6 +24,11 @@ function fakeRoom() {
   }
 }
 
+/** The payload of a room `activity.added`: only the type and the actor matter to the counts (#951). */
+function added(type: string, actorId: string | null = 'other') {
+  return { entry: { type, actor: actorId === null ? null : { id: actorId, name: actorId } } }
+}
+
 async function setUp(viewer: string | undefined = 'me') {
   const { fire, room } = fakeRoom()
   let tabs: ReturnType<typeof useEventTabs> | undefined
@@ -68,19 +73,18 @@ describe('useEventTabs', () => {
     expect(tabs().panelTab.value).toBe('chat')
   })
 
-  it('selects the Tabelle view without clearing the unread count of the feed, and gives it no badge (#274)', async () => {
+  it('selects the Tabelle view without clearing the unread count of the feed, and shows the Tabelle no count of its own (#274, #951)', async () => {
     stubScreen(false)
     const { room, tabs } = await setUp()
 
-    room.fire('activity.added')
-    room.fire('activity.added')
+    room.fire('activity.added', added('member_joined'))
+    room.fire('activity.added', added('member_joined'))
     tabs().selectView('standings')
-    room.fire('activity.added')
+    room.fire('activity.added', added('member_joined'))
 
     expect(tabs().activeView.value).toBe('standings')
     expect(tabs().unread.activity).toBe(3)
-    expect(tabs().tabs.value[1]).toMatchObject({ key: 'standings', current: true })
-    expect(tabs().tabs.value[1]).not.toHaveProperty('badge')
+    expect(tabs().tabs.value[1]).toMatchObject({ key: 'standings', current: true, badge: 0, ariaLabel: undefined })
     expect(tabs().tabs.value[3]).toMatchObject({ key: 'activity', badge: 3, current: false })
   })
 
@@ -88,8 +92,8 @@ describe('useEventTabs', () => {
     stubScreen(false)
     const { room, tabs } = await setUp()
 
-    room.fire('activity.added')
-    room.fire('activity.added')
+    room.fire('activity.added', added('member_joined'))
+    room.fire('activity.added', added('member_joined'))
 
     expect(tabs().unread.activity).toBe(2)
     expect(tabs().tabs.value[3]).toMatchObject({ key: 'activity', badge: 2, current: false })
@@ -100,15 +104,15 @@ describe('useEventTabs', () => {
     stubScreen(false)
     const { room, tabs } = await setUp()
 
-    room.fire('activity.added')
+    room.fire('activity.added', added('member_joined'))
     tabs().selectView('activity')
-    room.fire('activity.added')
+    room.fire('activity.added', added('member_joined'))
 
     expect(tabs().activeView.value).toBe('activity')
     expect(tabs().tabs.value[3]).toMatchObject({ badge: 0, current: true, ariaLabel: undefined })
 
     tabs().selectView('event')
-    room.fire('activity.added')
+    room.fire('activity.added', added('member_joined'))
     expect(tabs().unread.activity).toBe(1)
   })
 
@@ -126,13 +130,13 @@ describe('useEventTabs', () => {
     const setWide = stubScreen(true)
     const { room, tabs } = await setUp()
 
-    room.fire('activity.added')
+    room.fire('activity.added', added('member_joined'))
     expect(tabs().unread.activity).toBe(1)
 
     setWide(false)
     await nextTick()
     expect(tabs().unread.activity).toBe(1)
-    room.fire('activity.added')
+    room.fire('activity.added', added('member_joined'))
     expect(tabs().unread.activity).toBe(2)
   })
 
@@ -140,7 +144,7 @@ describe('useEventTabs', () => {
     const setWide = stubScreen(false)
     const { room, tabs } = await setUp()
 
-    room.fire('activity.added')
+    room.fire('activity.added', added('member_joined'))
     room.fire('chat.added', { message: { writerId: 'other' } })
     setWide(true)
     await nextTick()
@@ -179,7 +183,7 @@ describe('useEventTabs', () => {
       stubScreen(false)
       const { room, tabs } = await setUp()
 
-      room.fire('activity.added')
+      room.fire('activity.added', added('member_joined'))
       room.fire('chat.added', { message: { writerId: 'other' } })
       room.fire('chat.added', { message: { writerId: 'other' } })
       expect(tabs().unread).toMatchObject({ activity: 1, chat: 2 })
@@ -218,27 +222,26 @@ describe('useEventTabs', () => {
 
 // The side panel counts by the rule of the phone's bar (#778): one function decides which tab is shown, on either layout.
 describe('the side panel counts (#778)', () => {
-  it('gives the feed a badge and an accessible name, and Tabelle none', async () => {
+  it('gives the feed a badge and an accessible name, and Tabelle none for an entry that is no Result (#951)', async () => {
     stubScreen(true)
     const { room, tabs } = await setUp()
 
-    room.fire('activity.added')
+    room.fire('activity.added', added('member_joined'))
 
     expect(tabs().panelTabs.value[1]).toMatchObject({ key: 'activity', badge: 1, ariaLabel: 'Aktivität, 1 neu' })
     expect(tabs().panelTabs.value[0]).toMatchObject({ key: 'chat', badge: 0, ariaLabel: undefined })
-    expect(tabs().panelTabs.value[2]).toMatchObject({ key: 'standings' })
-    expect(tabs().panelTabs.value[2]).not.toHaveProperty('badge')
+    expect(tabs().panelTabs.value[2]).toMatchObject({ key: 'standings', badge: 0, ariaLabel: undefined })
   })
 
   it('clears the count of a tab the panel switches to, at once, and counts the Chat meanwhile', async () => {
     stubScreen(true)
     const { room, tabs } = await setUp()
-    room.fire('activity.added')
+    room.fire('activity.added', added('member_joined'))
 
     tabs().panelTab.value = 'activity'
 
     expect(tabs().unread.activity).toBe(0)
-    room.fire('activity.added')
+    room.fire('activity.added', added('member_joined'))
     expect(tabs().unread.activity).toBe(0)
     room.fire('chat.added', { message: { writerId: 'other' } })
     expect(tabs().unread.chat).toBe(1)
@@ -264,6 +267,83 @@ describe('the side panel counts (#778)', () => {
     room.fire('chat.added', { message: { writerId: 'me' } })
 
     expect(tabs().unread.chat).toBe(0)
+  })
+})
+
+// The Tabelle counts by the rule of the feed and the Chat (#951): a Result entered or corrected that arrives while another tab is
+// shown counts one, unless the viewer entered it (the Host). A Result's entry has its actor; the other entries change no Standings.
+describe('the Tabelle counts Results (#951)', () => {
+  it('counts a Result entered and a Correction on a phone, as a badge and an accessible name', async () => {
+    stubScreen(false)
+    const { room, tabs } = await setUp()
+
+    room.fire('activity.added', added('result_entered', 'host'))
+    room.fire('activity.added', added('result_corrected', 'host'))
+
+    expect(tabs().unread.standings).toBe(2)
+    expect(tabs().tabs.value[1]).toMatchObject({ key: 'standings', badge: 2, ariaLabel: 'Tabelle, 2 neu' })
+  })
+
+  it('does not count an entry that is no Result, nor a Result the viewer entered', async () => {
+    stubScreen(false)
+    const { room, tabs } = await setUp('host')
+
+    room.fire('activity.added', added('member_joined', 'other'))
+    room.fire('activity.added', added('game_set', null))
+    room.fire('activity.added', added('result_entered', 'host'))
+    room.fire('activity.added', added('result_corrected', 'host'))
+
+    expect(tabs().unread.standings).toBe(0)
+    expect(tabs().tabs.value[1]).toMatchObject({ key: 'standings', badge: 0, ariaLabel: undefined })
+  })
+
+  it('counts nothing while the phone shows the Tabelle, and clears its count when it is selected', async () => {
+    stubScreen(false)
+    const { room, tabs } = await setUp()
+
+    room.fire('activity.added', added('result_entered', 'host'))
+    tabs().selectView('standings')
+    expect(tabs().unread.standings).toBe(0)
+    room.fire('activity.added', added('result_entered', 'host'))
+    expect(tabs().tabs.value[1]).toMatchObject({ badge: 0, current: true, ariaLabel: undefined })
+
+    tabs().selectView('event')
+    room.fire('activity.added', added('result_corrected', 'host'))
+    expect(tabs().unread.standings).toBe(1)
+  })
+
+  it('counts in the side panel while another tab is shown, and clears when the panel switches to the Tabelle', async () => {
+    stubScreen(true)
+    const { room, tabs } = await setUp()
+
+    room.fire('activity.added', added('result_entered', 'host'))
+    expect(tabs().panelTabs.value[2]).toMatchObject({ key: 'standings', badge: 1, ariaLabel: 'Tabelle, 1 neu' })
+
+    tabs().panelTab.value = 'standings'
+    expect(tabs().unread.standings).toBe(0)
+    room.fire('activity.added', added('result_entered', 'host'))
+    expect(tabs().unread.standings).toBe(0)
+  })
+
+  it('clears the Tabelle\'s count when a resize makes the shown tab the Tabelle', async () => {
+    const setWide = stubScreen(true)
+    const { room, tabs } = await setUp()
+    tabs().selectView('standings')
+    room.fire('activity.added', added('result_entered', 'host'))
+    expect(tabs().unread.standings).toBe(1)
+
+    setWide(false)
+    await nextTick()
+
+    expect(tabs().unread.standings).toBe(0)
+  })
+
+  it('counts nothing at page load', async () => {
+    stubScreen(false)
+    const { tabs } = await setUp()
+
+    expect(tabs().unread.standings).toBe(0)
+    expect(tabs().tabs.value[1]).toMatchObject({ key: 'standings', badge: 0, ariaLabel: undefined })
   })
 })
 
