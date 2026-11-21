@@ -412,7 +412,7 @@ export function uncoverReason(state: EventState<'sessions' | 'rounds'>, isHost: 
     phase: eventRow.phase,
     running: runningOf(state.sessions) !== undefined,
     hiddenWheel: settings?.hiddenWheel ?? false,
-    uncovered: eventRow.wheelUncoveredAt !== null,
+    uncovered: wheelUncoveredOf(eventRow),
     complete: standing?.end.complete ?? false,
   })
 }
@@ -421,7 +421,12 @@ export function uncoverReason(state: EventState<'sessions' | 'rounds'>, isHost: 
  * Whether the Event's wheel hides its games now (#957): the Hidden wheel setting until the Host uncovers it. The wheel read and the spin ask this.
  */
 export function wheelHiddenOf(state: Pick<EventState, 'eventRow' | 'settings'>): boolean {
-  return wheelHidden(state.settings?.hiddenWheel ?? false, state.eventRow.wheelUncoveredAt !== null)
+  return wheelHidden(state.settings?.hiddenWheel ?? false, wheelUncoveredOf(state.eventRow))
+}
+
+/** Whether the Host has uncovered the Event's Hidden wheel (#957): its stored instant. The uncover rule, the wheel read and the Event read ask this. */
+export function wheelUncoveredOf(eventRow: Pick<EventRow, 'wheelUncoveredAt'>): boolean {
+  return eventRow.wheelUncoveredAt !== null
 }
 
 /** Why the Host cannot toss the coin now, or null (shared/coin.ts coinRejection). Parts: sessions, toss. */
