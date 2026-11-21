@@ -24,6 +24,22 @@ Every Release runs these steps in this order. A step finds work → tickets, fix
 4. **Cut.** Only then the version cut and the Release PR below.
 5. **Retro.** After the merge into `main`, ask the user to run `/retro` on the Release's sessions: what the review and the walk-through caught that a check, a standard or a brief should have caught earlier. Its rules land in `CLAUDE.md`, `docs/agents/` or a new automated check.
 
+## Hotfix Release
+
+A Hotfix Release ships `urgent` issues (bugs seen on production, `docs/agents/issue-tracker.md` § Bugs) that cannot wait for the next planned Release (the user, 2026-11-21, 0.18.1). It is a patch Release named „Hotfixes“ (`## [0.18.1] - 2026-11-21 – Hotfixes`), and it takes a shorter path than § Review, walk-through, retro:
+
+1. **Grilling.** `/grill-with-docs` on the urgent issues. A bug whose expected behaviour is documented is decided without a question; a disputed or unwritten one goes to the user.
+2. **Spec, no tickets.** `/to-spec` writes the spec issue „x.y.z – Hotfixes“. The urgent issues, rewritten with their decisions and labelled `ready-for-agent` instead of `needs-triage`, are its tickets (sub-issues), with blocking edges where two change the same component, so `/to-tickets` does not run.
+3. **Build and review.** `/implement-spec` on one integration branch. Its `code-review` (Standards and Spec) on the integration branch replaces the three-reviewer Release review of step 1.
+4. **Browser check** of the UI tickets on the production build, as in step 1.
+5. **Verify on staging**, as in step 2.
+6. **Walk-through** of only the moments the hotfix's issues name (step 3).
+7. **Wording.** The sweep covers only the texts the hotfix adds or changes.
+8. **Cut and Release PR** as below.
+9. **No retro of its own.** What the hotfix teaches goes into the next Release's retro.
+
+**On a game day.** A Hotfix Release may go to production on a day with a Session Date, while no Session runs, when the user says so (§ Release PR to `main`, No game days, holds otherwise). The app's Vercel deploy drops no socket. The Worker deploy runs only when the Release changes a file of the Worker, and its guard refuses it on a game day: run it by hand with `override` before the Session starts. Pages already open keep the old app until they reload, so the user asks the Members to reload once production's deployment is ready.
+
 ## Version cut (own PR into `staging`)
 
 When a Release is ready, a PR into `staging` does three things:
