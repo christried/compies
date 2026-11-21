@@ -78,6 +78,14 @@ export function isOpen(round: Pick<RoundFacts, 'setAt' | 'putBackAt' | 'resultAt
   return stands(round) && roundState(round) === 'set' && round.resultAt === null
 }
 
+/**
+ * Whether the Round waits for its Result (#953): it stands and has none yet, whether its game is being drawn (a Veto window included), waits
+ * for a respin or is set. An early Finish waits for it (finishRejection's `round_waiting`).
+ */
+export function waitsForResult(round: Pick<RoundFacts, 'putBackAt' | 'resultAt'>): boolean {
+  return stands(round) && round.resultAt === null
+}
+
 /** How many Rounds have started: every Round the Host has not put back, being drawn or set. The Game count never drops below it. */
 export function roundsStarted(rounds: readonly Pick<RoundFacts, 'putBackAt'>[]): number {
   return rounds.filter(stands).length

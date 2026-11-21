@@ -35,7 +35,7 @@ const finishedRead = (tie: boolean, overrides: EventOverrides = {}): EventOverri
   teams: [team(1, 'Wilde Gurken'), team(2, 'Nacht Eulen')],
   results: [resultOf(1, 1), resultOf(2, tie ? 2 : 1), resultOf(3, 1)],
   standings: tie ? [{ team: 1, rank: 1, points: 6 }, { team: 2, rank: 1, points: 6 }] : [{ team: 1, rank: 1, points: 9 }, { team: 2, rank: 2, points: 0 }],
-  end: { played: 3, gameCount: 3, complete: true, tie: null, finish: null, lastGame: null },
+  end: { played: 3, gameCount: 3, complete: true, tie: null, decided: true, finish: null, lastGame: null },
   ...overrides,
 })
 

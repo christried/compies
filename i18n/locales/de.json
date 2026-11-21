@@ -87,6 +87,7 @@
     "endN": "Session {n} beenden",
     "finish": "Event abschließen",
     "finishTie": "Unentschieden",
+    "finishEarly": "Vorzeitig abschließen",
     "ceremony": "Siegerehrung starten",
     "lastGame": "Letztes Spiel",
     "lastGameBlocked": {
@@ -824,6 +825,12 @@
     "renewMembers": "Alle im Event bleiben drin.",
     "renewed": "Erneuert.",
     "renewedText": "Neuer Link aktiv. Der alte führt jetzt ins Leere."
+  },
+  "finishEarly": {
+    "title": "Vorzeitig abschließen?",
+    "lead": "{team} kann nicht mehr eingeholt werden.",
+    "one": "Spiel {n} wird nicht mehr gespielt.",
+    "many": "Die Spiele {from} bis {to} werden nicht mehr gespielt."
   },
   "eventDelete": {
     "title": "Event löschen?",
@@ -1822,6 +1829,7 @@
     "roundNotOpen": "Zu diesem Spiel kann gerade kein Ergebnis eingetragen werden. Vielleicht hat es schon eins.",
     "wrongPhase": "Das geht nicht mehr. Die Seite zeigt den neuen Stand.",
     "resultsMissing": "Es fehlen noch Ergebnisse.",
+    "roundWaiting": "Ein Spiel wartet noch auf sein Ergebnis.",
     "standingsChanged": "Die Tabelle hat sich geändert. Schau sie dir nochmal an.",
     "noTie": "Gerade steht kein Gleichstand an. Die Seite zeigt den neuen Stand.",
     "unauthorized": "Bitte melde dich an, um mitzumachen.",
