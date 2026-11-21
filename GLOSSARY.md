@@ -47,7 +47,7 @@ The Session the Host has started and not yet ended; an Event has at most one. Th
 _Avoid_: Active session, live session, game night
 
 **Game count**:
-The number of Rounds an Event runs for, changeable by the Host until the Event finishes but never below the Rounds already started. Once that many Rounds have their Result, the Host can finish the Event; it never finishes after a set time. If the last Session ends short of the count, the Event stays open until the Host adds a Session or lowers the count.
+The number of Rounds an Event runs for, changeable by the Host until the Event finishes but never below the Rounds already started. Once that many Rounds have their Result, or earlier once the Leading Party can no longer be caught (see Finish), the Host can finish the Event; it never finishes after a set time, and an early Finish leaves the Game count as it was. If the last Session ends short of the count, the Event stays open until the Host adds a Session or lowers the count.
 _Avoid_: Games per Session, number of games
 
 **Phase**:
@@ -143,7 +143,7 @@ The one word (at most 12 characters, no spaces) a Player adds to their team's na
 _Avoid_: Nickname, tag
 
 **Team name**:
-A team's Team words in the order their Players joined the team, or its Team colour's name while it has none. It never freezes: it changes with its words until the Finish, and the Host can reset it to the colour name at any time but never writes a word. Unlike a Display name, the Activity feed keeps the Team name a Party had at the moment of each entry; everything else shows the current one.
+A team's Team words in the order their Players joined the team, or its Team colour's name while it has none. It never freezes: it changes with its words until the Finish, and the Host can reset any team's name to the colour name at any time, but writes a word only for a team they play in, like any other Player. Unlike a Display name, the Activity feed keeps the Team name a Party had at the moment of each entry; everything else shows the current one.
 _Avoid_: Team title, label
 
 **Online**:
@@ -177,7 +177,7 @@ The Selection mode in which the Host sets every next game (UI: Host-Wahl).
 _Avoid_: Admin pick, Admin-Wahl (Admin means the Platform admin)
 
 **Hidden wheel**:
-A Lucky Wheel option under which only the Host knows which games are on the wheel; everyone else learns how many there are only once the wheel is on screen, sees placeholder names until a game is drawn, and never learns the games that were not drawn (UI: „Pseudo-Games“ for the option; the wheel itself is „verdeckt“).
+A Lucky Wheel option under which only the Host knows which games are on the wheel; everyone else learns how many there are only once the wheel is on screen, sees placeholder names until a game is drawn, and learns the games that were not drawn only if the Host uncovers the wheel: possible once every Round up to the Game count has its Result, while the Session still runs, and from then on it is a visible wheel (UI: „Pseudo-Games“ for the option; the wheel itself is „verdeckt“; „Rad aufdecken“).
 _Avoid_: Blind wheel, secret wheel
 
 **Pool preview**:
@@ -193,11 +193,11 @@ One try at a Round's game: a spin of the Lucky Wheel or a game the Host sets. It
 _Avoid_: Spin (a spin is only one kind of Draw), pick, roll
 
 **Veto window**:
-The time after a Draw's stop (or after the Host sets a game) in which every Party with a Veto left may reject the game: the game's clip length plus 30 seconds, or 30 seconds for a game without a Clip. When the Host skips the Clip, it ends 30 seconds after the skip if that is sooner; it never gets longer. It opens only when some Party has a Veto left, ends for everyone at the same moment, and a Veto does not outlive its Running Session; until it ends, only a Party’s own Players see its casts, and a Host who moves into a Party during its window sees them too, a privilege of the Host, who may move anyone at any time (UI: Veto-Fenster). A Veto belongs to its Party: a Party's Players see that their Party has cast, never which of them did, and only the database keeps who cast it.
+The time after a Draw's stop (or after the Host sets a game) in which every Party with a Veto left may reject the game: until 30 seconds after its Clip ends, or 30 seconds for a game without a Clip. When the Host skips the Clip, it ends 30 seconds after the skip if that is sooner; it never gets longer. It opens only when some Party has a Veto left, ends for everyone at the same moment, and a Veto does not outlive its Running Session; until it ends, only a Party’s own Players see its casts, and a Host who moves into a Party during its window sees them too, a privilege of the Host, who may move anyone at any time (UI: Veto-Fenster). A Veto belongs to its Party: a Party's Players see that their Party has cast, never which of them did, and only the database keeps who cast it.
 _Avoid_: Veto round, voting time, grace period
 
 **Clip**:
-The game's YouTube excerpt that every device plays from the same second at a Draw's stop, for the game's clip length or until the Host skips it; a game without a video shows its card instead, for its clip length but at most 30 seconds. Nobody can pause the video or operate it; a Member can mute it or close it on their own device, and a Party can cast its Veto while it plays. While an Emote or a Veto's seal sounds over it, it gets quieter on that device for that moment. A video YouTube will not play embedded, such as an age-restricted one (it needs a viewer signed in on youtube.com), shows the card the same way; COMPIES cannot fix that.
+The game's YouTube excerpt that every device plays from the same second, for the game's clip length or until the Host skips it: after a spin it starts a moment after the stop, once every device shows the drawn game's name, and for a game the Host sets it starts at once. A game without a video shows its card instead, for its clip length but at most 30 seconds. Nobody can pause the video or operate it; a Member can mute it or close it on their own device and open it again, at the same second as everyone else, while it still runs, and a Party can cast its Veto while it plays. While an Emote or a Veto's seal sounds over it, it gets quieter on that device for that moment. A video YouTube will not play embedded, such as an age-restricted one (it needs a viewer signed in on youtube.com), shows the card the same way; COMPIES cannot fix that.
 _Avoid_: Trailer, preview, video
 
 **Veto allowance**:
@@ -307,7 +307,7 @@ Two or more Parties sharing the first rank in the Standings once every Round up 
 _Avoid_: Draw (a Draw is a try at a Round's game), Shared place (that is inside one Result), Tiebreaker
 
 **Finish**:
-The Host closing an Event once every Round up to its Game count has its Result: it ends the Running Session, removes the Sessions that have not started, and leaves the Event read-only for good, with its final Standings (UI: „Event abschließen“).
+The Host closing an Event once every Round up to its Game count has its Result, or earlier once a single Leading Party can no longer be caught: it would stay ahead of every other Party even if it took the last Place and that Party the first in every Round still to play, and no Round waits for its Result. An early Finish plays none of the Rounds left, keeps the Game count as planned and freezes every rank where it stands. Either Finish ends the Running Session, removes the Sessions that have not started, and leaves the Event read-only for good, with its final Standings (UI: „Event abschließen“).
 _Avoid_: Close, end (a Session ends), archive
 
 **Winner**:
