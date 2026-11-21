@@ -267,8 +267,9 @@ const labelOpacity = (index: number) => labelOf(index).opacity * (isDrawn(index)
 // The result card names the game only while its spin is the latest draw (a later set, a veto or a put back takes it away, F6); a vetoed
 // game is then named in the Veto window's outcome line only.
 const card = computed(() => (stopped.value && spin.value?.current && spin.value.game ? spin.value.game : null))
-// An empty wheel says nothing here: its accessible name counts 0 games (#802).
-const status = computed(() => (timing.value && clock.value !== null && !stopReached(timing.value, clock.value) ? t('wheel.spinning') : null))
+// An empty wheel says nothing here: its accessible name counts 0 games (#802). The spin's line shows only under reduced motion, where the
+// wheel turns only in its last 1.2 s; a viewer who sees it turn needs no line (#955, 16-compibert-gluecksrad.md § Reduced).
+const status = computed(() => (reduced.value && timing.value && clock.value !== null && !stopReached(timing.value, clock.value) ? t('wheel.spinning') : null))
 const headingId = useId()
 </script>
 
