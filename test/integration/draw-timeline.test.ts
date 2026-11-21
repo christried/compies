@@ -3,7 +3,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { activity, draws, events, games, rounds, users } from '../../server/db/schema'
 import { readActivityPage } from '../../server/utils/activity'
 import { dueDraws, movedVetoEnd, stoppedDraws } from '../../server/utils/draw-timeline'
-import { SPIN_MAX_MS, SPIN_MIN_MS, drawGameKnown, drawInstants, isDue, settleAt, vetoEndAfterSkip } from '../../shared/draw-timeline'
+import { SPIN_MAX_MS, SPIN_MIN_MS, clipStartAt, drawGameKnown, drawInstants, isDue, settleAt, vetoEndAfterSkip } from '../../shared/draw-timeline'
 import { createTestDb } from './harness'
 
 // The parity guard of the Draw's timeline (#414, ADR 0013 amendment 2026-10-31): the SQL twins (`stoppedDraws`, `dueDraws`) select
@@ -67,11 +67,11 @@ afterAll(async () => {
   await testDb.client.close()
 })
 
-/** Every boundary millisecond of every stored Draw: stop - 1, stop, stop + 1 and, with a window, end - 1, end, end + 1. */
+/** Every boundary millisecond of every stored Draw: stop - 1, stop, stop + 1, the same about the Clip's start (#959) and, with a window, end - 1, end, end + 1. */
 function probes(): Date[] {
   const at = new Set<number>()
   for (const row of stored) {
-    for (const edge of [row.stopAt, row.vetoEndsAt]) {
+    for (const edge of [row.stopAt, new Date(clipStartAt(row)), row.vetoEndsAt]) {
       if (edge) for (const offset of [-1, 0, 1]) at.add(edge.getTime() + offset)
     }
   }
@@ -84,6 +84,16 @@ describe('the SQL twins agree with the JS predicates (#414)', () => {
   it('stores the instants the timeline gives, for every shape of Draw', () => {
     expect(stored).toHaveLength(36)
     expect(new Set(probes().map(now => now.getTime())).size).toBeGreaterThan(8)
+  })
+
+  // #959: a spin's window ends 30 s after its Clip, which starts 1.5 s after the stop; a set draw's Clip starts at its stop. The stored
+  // end is the writer's, so every twin below reads the shifted end without a change of its own.
+  it('stores a spin\'s window end 30 s after its Clip\'s end, the Clip starting 1.5 s after the stop, and a set draw\'s from its stop', () => {
+    for (const row of stored.filter(candidate => candidate.vetoEndsAt !== null)) {
+      const clipStart = clipStartAt(row)
+      expect(clipStart - row.stopAt.getTime()).toBe(row.kind === 'spin' ? 1500 : 0)
+      expect([30_000, 40_000, 60_000, 150_000]).toContain(row.vetoEndsAt!.getTime() - clipStart)
+    }
   })
 
   it('dueDraws selects exactly the Draws isDue accepts', async () => {
@@ -120,7 +130,7 @@ describe('the SQL twin of the moved end agrees with vetoEndAfterSkip (#506)', ()
   // Skips are at or after a Draw's stop, as in production; the window's edges (end - 30 001 ... end + 1) are where the comparison flips.
   function skips(row: Stored): number[] {
     const stop = row.stopAt.getTime()
-    const at = [stop, stop + 1, stop + 30_000]
+    const at = [stop, stop + 1, clipStartAt(row), stop + 30_000]
     if (row.vetoEndsAt) {
       const end = row.vetoEndsAt.getTime()
       at.push(end - 30_001, end - 30_000, end - 29_999, end - 1, end, end + 1)

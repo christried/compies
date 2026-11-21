@@ -18,8 +18,15 @@ export const SPIN = offsetsFor('spin', null)
 export const SET = offsetsFor('set', null)
 /** The Veto window's length for a game without a video. */
 export const WINDOW_MS = SET.end - SET.stop
-/** The Veto window's length for a game with a clip of `clipLength` seconds (null: no video). */
+/** The Veto window's length after a set draw's stop for a game with a clip of `clipLength` seconds (null: no video). */
 export const windowMsFor = (clipLength: number | null) => {
   const { stop, end } = offsetsFor('set', clipLength)
   return end - stop
 }
+/** The same after a spin's stop: 1.5 s longer, since a spin's Clip starts 1.5 s after the stop (#959). */
+export const spinWindowMsFor = (clipLength: number | null) => {
+  const { stop, end } = offsetsFor('spin', clipLength)
+  return end - stop
+}
+/** The Veto window's length after the shortest spin's stop for a game without a video (39 000). */
+export const SPIN_WINDOW_MS = SPIN.end - SPIN.stop
