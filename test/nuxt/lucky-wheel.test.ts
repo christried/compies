@@ -162,6 +162,8 @@ describe('the wheel at rest', () => {
   })
 
   it('says nothing in the heading row when the wheel is empty or holds one game, only its accessible name counts (#802)', async () => {
+    // Under reduced motion too, where a spin's status line would show (#955).
+    document.documentElement.style.setProperty('--cp-motion', 'reduced')
     await mount(wheelOf(null, { count: 0, slices: [] }))
 
     expect(text()).not.toContain('Das Rad ist leer')
@@ -206,12 +208,25 @@ describe('the spin toward its stop', () => {
 
     await at(START - 500)
     expect(rotation()).toBe(0)
-    expect(text()).toContain('Das Rad dreht')
   })
 
-  it('says the wheel is turning while it runs, and shows no count line after the stop (#354)', async () => {
+  it('shows no status line while it spins for a viewer who sees the wheel move (#955)', async () => {
     await mount(wheelOf(spinOf()))
 
+    await at(START - 500)
+    expect(text()).not.toContain('Das Rad dreht')
+    await at(START + 3000)
+    expect(text()).not.toContain('Das Rad dreht')
+    await at(STOP + 100)
+    expect(text()).not.toContain('Das Rad dreht')
+  })
+
+  it('says the wheel is turning from the spin\'s commit until the stop under reduced motion, and shows no count line after the stop (#354, #955)', async () => {
+    document.documentElement.style.setProperty('--cp-motion', 'reduced')
+    await mount(wheelOf(spinOf()))
+
+    await at(START - 500)
+    expect(text()).toContain('Das Rad dreht')
     await at(START + 3000)
     expect(text()).toContain('Das Rad dreht')
     expect(text()).not.toContain('auf dem Rad')

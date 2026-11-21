@@ -319,8 +319,9 @@ const result = computed(() => (stopped.value && spin.value?.current && spin.valu
 const card = computed(() => (cardElapsed.value !== null ? result.value : null))
 /** „Zum Video“ on the card (#956), for every viewer who closed the Clip, while it runs: the Event page provides it. */
 const reopenClip = useClipReopen()
-// An empty wheel says nothing here: its accessible name counts 0 games (#802).
-const status = computed(() => (timing.value && clock.value !== null && !stopReached(timing.value, clock.value) ? t('wheel.spinning') : null))
+// An empty wheel says nothing here: its accessible name counts 0 games (#802). The spin's line shows only under reduced motion, where the
+// wheel turns only in its last 1.2 s; a viewer who sees it turn needs no line (#955, 16-compibert-gluecksrad.md § Reduced).
+const status = computed(() => (reduced.value && timing.value && clock.value !== null && !stopReached(timing.value, clock.value) ? t('wheel.spinning') : null))
 const headingId = useId()
 </script>
 

@@ -58,7 +58,7 @@ Tone: friendly, clear, a little cheeky. Short sentences. Du-form. No „·“ se
 | Required | Key(s) |
 |---|---|
 | Explanation copy for the info side sheet (brief §17) | `setup.info.*` (ffa, teams, admin, wheel incl. `hideWheel`, pickBan, loserPick, loserAdv, tiebreaker; section titles in `setup.info.sections`) |
-| Placeholder names for the hidden wheel (brief §18) | `wheel.placeholders` (array of 20) + `wheel.placeholderQ` („???“) |
+| Placeholder names for the hidden wheel (brief §18) | `wheel.placeholders` (array of 30) + `wheel.placeholderQ` („???“) |
 | Error messages | `error.*` (validation, permissions, network, realtime) + `errorPage.*` (full pages) + `connection.*` |
 | Empty states | `empty.*` |
 | Push notification texts | `push.*` (dateSet, dateMoved, reminder, started, drawn, result, winner + soft ask) |
