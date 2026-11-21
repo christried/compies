@@ -150,7 +150,8 @@ export function useHostActions(
       // The early Finish (#953): a plain Mehr item (a hold there would run at once), which opens the sheet whose hold finishes. Only while the rule passes.
       finishEarly: { key: 'finishEarly', label: t('dock.finishEarly'), icon: CircleCheckBig, group: t('dock.group.event'), run: handlers.finishEarly },
       // „Rad aufdecken“ (#957): a plain button without a confirm, since every Round is played; it shows only while the uncover is open (dockLayout).
-      uncover: { key: 'uncover', label: t('dock.uncover'), icon: Eye, group: t('dock.group.game'), run: handlers.uncover },
+      // `dockOnly`, as „Letztes Spiel“: in the pill it is not repeated in „Mehr“; in the Tie layout it sits in Mehr alone, and the phone sheet lists it always.
+      uncover: { key: 'uncover', label: t('dock.uncover'), icon: Eye, group: t('dock.group.game'), dockOnly: true, run: handlers.uncover },
       // A plain button: only the primary is held, and the server makes a double press harmless. At the maximum it stays, dashed, with its reason.
       // `dockOnly` (#278): in the pill it is not repeated in „Mehr“ (the Tie's pill holds it beside the two holds).
       lastGame: {
