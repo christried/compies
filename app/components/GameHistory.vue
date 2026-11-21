@@ -45,10 +45,13 @@ function winnerText(winners: number[]): string {
   return t('history.moreWinners', { name: nameOf(winners[0]!), n: winners.length - 1 })
 }
 
-/** The Scores in Place order („16 : 12“), „–“ for a Party without one; null when no Party has a Score. */
+/**
+ * The Scores in Place order („16 : 12“); null when no Party has a Score. Beside a Score a Party without one reads 0 („3 : 0“, not „3 : –“,
+ * #954). Display only: the Score stays optional, and the stored one stays null.
+ */
 function scoresOf(result: ResultView): string | null {
   if (result.places.every(line => line.score === null)) return null
-  return result.places.map(line => line.score ?? '–').join(' : ')
+  return result.places.map(line => line.score ?? '0').join(' : ')
 }
 
 // Each numbered row with what the template shows of it, computed once per change instead of per use (#288).

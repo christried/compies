@@ -3,7 +3,7 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } 
 import { bonusVetoes, rounds, vetoes } from '../../server/db/schema'
 import { testClock } from '../../server/utils/clock'
 import { memoryRoomNotifier } from '../../server/utils/room-notifier'
-import { SPIN, WINDOW_MS } from '../draw-offsets'
+import { SPIN, SPIN_WINDOW_MS } from '../draw-offsets'
 import { createTestApp, sendVia, type TestRequest } from './app'
 import { createTestDb, resetDatabase } from './harness'
 import { readEvent, setUpEvent, startRunningEvent, type Rig } from './scenario'
@@ -137,7 +137,7 @@ describe('the Host\'s pool warning (#234)', () => {
     // Team 1 cast its Veto, sealed: the Host, outside the teams, still counts both Parties' Vetoes.
     expect(await warningOf(party)).toEqual({ needed: 3, have: 2 })
 
-    clock.advance(WINDOW_MS)
+    clock.advance(SPIN_WINDOW_MS)
     const view = await read(party)
 
     // The draw is vetoed: its Round waits for a respin, so it needs its game again; the vetoed game stays out of the pool.

@@ -114,7 +114,7 @@ function serveFinished(first: Read) {
     results: [resultOf(1), resultOf(2), resultOf(3)],
     // The Parties below the Winners keep their position as rank (with 3 Winners Party 4 has rank 4).
     standings: [1, 2, 3, 4].map(position => (position <= winners ? { team: position, rank: 1, points: 9 } : { team: position, rank: position, points: (4 - position) * 3 })),
-    end: { played: 3, gameCount: 3, complete: true, tie: null, finish: null, lastGame: null },
+    end: { played: 3, gameCount: 3, complete: true, tie: null, decided: true, finish: null, lastGame: null },
     // The read of a started ceremony says so (#445): the finished stage then shows its row of buttons, „Siegerehrung ansehen“ among them.
     ceremonyShown: ceremony !== null,
     ceremony,

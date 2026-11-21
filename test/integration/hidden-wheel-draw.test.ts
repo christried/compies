@@ -479,7 +479,8 @@ describe('Hidden wheel secrecy (#148)', () => {
         clock.set(new Date(stopAt - 1))
         const hostBefore = (JSON.parse(await rawRead(hostCookie, running.slug)) as EventView).wheel?.vetoes.draw?.vetoEndsAt
         const playerBefore = (JSON.parse(await rawRead(playerCookie, running.slug)) as EventView).wheel?.vetoes.draw?.vetoEndsAt
-        expect(hostBefore).toBe(new Date(stopAt + (clipLength + 30) * 1000).toISOString())
+        // #959: a spin's window ends 30 s after the Clip, which starts 1.5 s after the stop.
+        expect(hostBefore).toBe(new Date(stopAt + 1500 + (clipLength + 30) * 1000).toISOString())
         clock.set(new Date(stopAt))
         const atStop = (JSON.parse(await rawRead(playerCookie, running.slug)) as EventView).wheel?.vetoes.draw?.vetoEndsAt ?? null
         return { before, vetoEndsAtBeforeStop: playerBefore, vetoEndsAtAtStop: atStop, stopAt }
@@ -489,7 +490,7 @@ describe('Hidden wheel secrecy (#148)', () => {
         const got = await spunWith(clipLength)
 
         expect(got.vetoEndsAtBeforeStop).toBeNull()
-        expect(got.vetoEndsAtAtStop).toBe(new Date(got.stopAt + (clipLength + 30) * 1000).toISOString())
+        expect(got.vetoEndsAtAtStop).toBe(new Date(got.stopAt + 1500 + (clipLength + 30) * 1000).toISOString())
         // The clip length itself is no Player's before the stop either, in any surface (the Host's pool faces carry it, a Player's never).
         for (const read of got.before) expect(read).not.toContain('clipLength')
       })

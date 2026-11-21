@@ -83,5 +83,5 @@ export const afterResult: EventOverrides = {
   rounds: [openRound],
   results: [played],
   standings: [{ team: 2, rank: 1, points: 1 }, { team: 1, rank: 2, points: 0 }],
-  end: { played: 1, gameCount: 6, complete: false, tie: null, finish: null, lastGame: null },
+  end: { played: 1, gameCount: 6, complete: false, tie: null, decided: false, finish: null, lastGame: null },
 }

@@ -7,7 +7,7 @@ import type { EventView } from '../../shared/event'
 import { createTestApp, errorOf, sendVia, type TestRequest } from './app'
 import { createTestDb, resetDatabase } from './harness'
 import { readEvent, readEventText, readFeed, startRunningEvent, type Signed, type Rig } from './scenario'
-import { SPIN, WINDOW_MS, windowMsFor } from '../draw-offsets'
+import { SPIN, SPIN_WINDOW_MS, WINDOW_MS, spinWindowMsFor, windowMsFor } from '../draw-offsets'
 import { stubAuthEnv } from './sign-in'
 
 // Vetoes (#231, spec #218 § Vetoes, Deadlines, Realtime room, Settings lock): the window that opens at the wheel's stop, the
@@ -150,14 +150,14 @@ describe('Vetoes', () => {
     })
   })
 
-  // The window lasts the drawn game's clip length plus 30 s, 30 s for a game without a video (#505, spec #501). Games are seeded straight into
+  // The window lasts the drawn game's clip length plus 30 s, 30 s for a game without a video (#505, spec #501), counted from the Clip's start: a spin's 1.5 s after the stop (#959). Games are seeded straight into
   // the library, so a clip of 120 s holds whatever the game form allows.
   describe('the length of the Veto window follows the clip (#505)', () => {
     const video = (clipLength: number) => ({ youtubeId: 'aaaaaaaaaaa', clipStart: 0, clipLength })
 
     it.each([
-      { what: 'a spin of a game with a 120 s clip', clip: video(120), windowMs: 150_000 },
-      { what: 'a spin of a game without a video', clip: {}, windowMs: 30_000 },
+      { what: 'a spin of a game with a 120 s clip', clip: video(120), windowMs: 151_500 },
+      { what: 'a spin of a game without a video', clip: {}, windowMs: 31_500 },
     ])('ends $what $windowMs ms after the stop: a cast is accepted until then and refused from it on, and the draw settles at that instant', async ({ clip, windowMs }) => {
       const party = await running({ clip })
       const { roundId, drawId } = await spun(party)
@@ -182,7 +182,7 @@ describe('Vetoes', () => {
       const party = await running({ clip: video(120) })
       const { roundId } = await spun(party)
       const [row] = await drawRows()
-      const end = SPIN.stop + 150_000
+      const end = SPIN.stop + 151_500
 
       clock.set(iso(end - 1))
       expect((await read(party)).rounds).toEqual([])
@@ -218,7 +218,7 @@ describe('Vetoes', () => {
     it('keeps the Vetoes sealed to the other Party until the new end, and shows them at it', async () => {
       const party = await running({ clip: video(120) })
       const { drawId } = await spun(party)
-      const end = SPIN.stop + 150_000
+      const end = SPIN.stop + 151_500
       clock.set(iso(SPIN.stop))
       await cast(party, drawId, party.cookies.one)
 
@@ -231,19 +231,19 @@ describe('Vetoes', () => {
       expect((await read(party, party.cookies.three)).wheel!.vetoes.revealed).toEqual([{ team: 1 }])
     })
 
-    it('opens the window of a game with a video and the default 30 s clip for one minute, as before', async () => {
+    it('opens the window of a game with a video and the default 30 s clip for one minute after the Clip starts, 1.5 s after the stop (#959)', async () => {
       const party = await running({ clip: video(30) })
 
       await spun(party)
 
-      expect((await drawRows())[0]!.vetoEndsAt).toEqual(new Date(iso(SPIN.stop + windowMsFor(30))))
-      expect(windowMsFor(30)).toBe(60_000)
+      expect((await drawRows())[0]!.vetoEndsAt).toEqual(new Date(iso(SPIN.stop + spinWindowMsFor(30))))
+      expect(spinWindowMsFor(30)).toBe(61_500)
     })
 
     it('sends the Host the window\'s end before the stop and a Player only from the stop on', async () => {
       const party = await running({ clip: video(120) })
       await spun(party)
-      const end = iso(SPIN.stop + 150_000)
+      const end = iso(SPIN.stop + 151_500)
 
       clock.set(iso(SPIN.stop - 1))
       expect((await read(party, party.hostCookie)).wheel!.vetoes.draw?.vetoEndsAt).toBe(end)
@@ -275,7 +275,7 @@ describe('Vetoes', () => {
       const { party, stop } = await drawn(kind)
       const parties = [party.hostCookie, party.cookies.one, party.cookies.three]
       clock.set(iso(stop + 10_000))
-      for (const cookie of parties) expect((await vetoView(party, cookie)).draw?.vetoEndsAt).toBe(iso(stop + windowMsFor(120)))
+      for (const cookie of parties) expect((await vetoView(party, cookie)).draw?.vetoEndsAt).toBe(iso(stop + (kind === 'spin' ? spinWindowMsFor(120) : windowMsFor(120))))
 
       notifier.clear()
       expect((await skip(party)).status).toBe(200)
@@ -370,7 +370,7 @@ describe('Vetoes', () => {
       const { party, stop } = await drawn('spin')
       clock.set(iso(stop - 1))
       expect(await errorOf(await skip(party))).toEqual({ status: 409, code: 'no_clip' })
-      expect(await drawRows()).toMatchObject([{ vetoEndsAt: new Date(iso(stop + 150_000)), clipSkippedAt: null }])
+      expect(await drawRows()).toMatchObject([{ vetoEndsAt: new Date(iso(stop + 151_500)), clipSkippedAt: null }])
 
       clock.set(iso(stop + 10_000))
       expect((await skip(party)).status).toBe(200)
@@ -625,7 +625,7 @@ describe('Vetoes', () => {
       clock.advance(STOP)
       expect((await cast(party, drawId, party.cookies.one)).status).toBe(200)
 
-      clock.advance(WINDOW_MS)
+      clock.advance(SPIN_WINDOW_MS)
       const view = await read(party)
 
       expect(await roundRows(party)).toMatchObject([{ id: roundId, gameId: null, setAt: null, putBackAt: null }])
@@ -644,7 +644,7 @@ describe('Vetoes', () => {
       // Sealed and open: the spin is still the latest draw, and nothing has settled.
       expect((await read(party, party.cookies.three)).wheel?.spin?.current).toBe(true)
 
-      clock.advance(WINDOW_MS)
+      clock.advance(SPIN_WINDOW_MS)
 
       expect((await read(party, party.cookies.three)).wheel?.spin?.current).toBe(false)
       expect((await read(party)).wheel?.spin?.current).toBe(false)
@@ -655,7 +655,7 @@ describe('Vetoes', () => {
       const { roundId, drawId } = await spun(party)
       clock.advance(STOP)
       await cast(party, drawId, party.cookies.one)
-      clock.advance(WINDOW_MS)
+      clock.advance(SPIN_WINDOW_MS)
 
       const response = await spin(party)
 
@@ -665,7 +665,7 @@ describe('Vetoes', () => {
       const rows = await drawRows()
       expect(rows.map(row => row.roundId)).toEqual([roundId, roundId])
       expect(rows[0]!.gameId).not.toBe(rows[1]!.gameId)
-      expect(rows[1]).toMatchObject({ outcome: null, vetoEndsAt: new Date(iso(END + STOP + WINDOW_MS)) })
+      expect(rows[1]).toMatchObject({ outcome: null, vetoEndsAt: new Date(iso(END + STOP + SPIN_WINDOW_MS)) })
     })
 
     it('sets a game the Host picks into the waiting Round, settled set at once', async () => {
@@ -673,7 +673,7 @@ describe('Vetoes', () => {
       const { roundId, drawId } = await spun(party)
       clock.advance(STOP)
       await cast(party, drawId, party.cookies.three)
-      clock.advance(WINDOW_MS)
+      clock.advance(SPIN_WINDOW_MS)
       const [vetoedDraw] = await drawRows()
       const other = party.games.find(game => game.id !== vetoedDraw!.gameId)!
 
@@ -698,10 +698,10 @@ describe('Vetoes', () => {
       const first = await spun(party)
       clock.advance(STOP)
       await cast(party, first.drawId, party.cookies.one)
-      clock.advance(WINDOW_MS)
+      clock.advance(SPIN_WINDOW_MS)
       // The respin sets (team 2 keeps its Veto but does not use it), then the Host puts the Round back.
       const second = await spun(party)
-      clock.advance(STOP + WINDOW_MS)
+      clock.advance(STOP + SPIN_WINDOW_MS)
       expect((await putBackRound(party, second.roundId)).status).toBe(200)
 
       const view = await read(party)
@@ -808,7 +808,7 @@ describe('Vetoes', () => {
         const party = await running({ allowance: 1 })
         const first = await windowOpen(party)
         await cast(party, first.drawId, party.cookies.one)
-        clock.advance(WINDOW_MS)
+        clock.advance(SPIN_WINDOW_MS)
         const second = await windowOpen(party)
 
         expect(await errorOf(await cast(party, second.drawId, party.cookies.two))).toEqual({ status: 409, code: 'no_vetoes_left' })
@@ -820,7 +820,7 @@ describe('Vetoes', () => {
         await testDb.db.insert(bonusVetoes).values({ eventId: party.eventId, team: 1, grantedBy: party.ids.host, grantedAt: new Date(T0) })
         const first = await windowOpen(party)
         await cast(party, first.drawId, party.cookies.one)
-        clock.advance(WINDOW_MS)
+        clock.advance(SPIN_WINDOW_MS)
         const second = await windowOpen(party)
 
         expect((await cast(party, second.drawId, party.cookies.two)).status).toBe(200)
@@ -913,7 +913,7 @@ describe('Vetoes', () => {
         await cast(party, drawId, party.cookies.two)
         await cast(party, drawId, party.cookies.three)
 
-        clock.advance(WINDOW_MS)
+        clock.advance(SPIN_WINDOW_MS)
 
         for (const cookie of [party.hostCookie, party.cookies.one, party.cookies.three, party.cookies.unseated, party.cookies.stands]) {
           const veto = (await read(party, cookie)).wheel!.vetoes
@@ -928,7 +928,7 @@ describe('Vetoes', () => {
         const [row] = await drawRows()
         await cast(party, drawId, party.cookies.one)
 
-        clock.advance(WINDOW_MS)
+        clock.advance(SPIN_WINDOW_MS)
         const view = await read(party)
 
         expect(view.setGame?.left).not.toContain(row!.gameId)
@@ -942,7 +942,7 @@ describe('Vetoes', () => {
         const [row] = await drawRows()
         await cast(party, drawId, party.cookies.two)
         await cast(party, drawId, party.cookies.three)
-        clock.advance(WINDOW_MS - 1)
+        clock.advance(SPIN_WINDOW_MS - 1)
         await read(party)
         expect((await feedOf(party, party.cookies.one)).map(entry => entry.type)).toEqual(['game_drawn'])
 
@@ -962,7 +962,7 @@ describe('Vetoes', () => {
         const party = await running()
         const { drawId } = await windowOpen(party)
         await cast(party, drawId, party.cookies.one)
-        clock.advance(WINDOW_MS)
+        clock.advance(SPIN_WINDOW_MS)
         await read(party)
         const draws = await drawRows()
         const rounds = await roundRows(party)
@@ -980,7 +980,7 @@ describe('Vetoes', () => {
         const party = await running()
         await windowOpen(party)
 
-        clock.advance(WINDOW_MS)
+        clock.advance(SPIN_WINDOW_MS)
 
         expect((await read(party, party.cookies.three)).wheel!.vetoes).toEqual(vetoRead({ left: [2, 2], own: { team: 2, cast: false, rejection: 'veto_window_closed' }, revealed: [] }))
       })
@@ -1013,7 +1013,7 @@ describe('Vetoes', () => {
         await cast(party, drawId, party.cookies.two)
         await cast(party, drawId, party.cookies.three)
 
-        clock.advance(WINDOW_MS)
+        clock.advance(SPIN_WINDOW_MS)
 
         for (const who of viewers) {
           const { wheel } = await read(party, cookieOf(party, who))
@@ -1028,7 +1028,7 @@ describe('Vetoes', () => {
         await cast(party, drawId, party.cookies.two)
         await cast(party, drawId, party.cookies.three)
 
-        clock.advance(WINDOW_MS)
+        clock.advance(SPIN_WINDOW_MS)
 
         for (const who of viewers) {
           const entry = (await feedOf(party, cookieOf(party, who))).find(item => item.type === 'vetoes_revealed')
@@ -1095,18 +1095,18 @@ describe('Vetoes', () => {
   // The clip is the latest draw's from its stop on (server/utils/clip.ts), settled or not: a Veto window needs nothing of it. The clip
   // ends at the stop plus its length and the Veto window 30 s after that (#505), so a vetoed game's clip never outlives its reveal.
   describe('the clip of a draw (#230)', () => {
-    it('plays from the stop for its whole length, the same for every Member, and is gone at its end while the Veto window still runs', async () => {
+    it('plays from 1.5 s after the stop for its whole length, the same for every Member, and is gone at its end while the Veto window still runs', async () => {
       const party = await running()
-      // Every game has a video with a 60 s clip, so the window lasts 60 s plus 30 s.
+      // Every game has a video with a 60 s clip, so the window lasts 60 s plus 30 s after the Clip's start, 1.5 s after the stop (#959).
       await testDb.db.update(games).set({ youtubeId: 'aaaaaaaaaaa', clipLength: 60 })
       const { drawId } = await spun(party)
       const clipMs = 60_000
-      const windowEnd = SPIN.stop + windowMsFor(60)
+      const windowEnd = SPIN.stop + 1500 + clipMs + 30_000
 
       clock.advance(STOP)
-      for (const cookie of [party.hostCookie, party.cookies.one, party.cookies.three]) expect((await read(party, cookie)).clip).toMatchObject({ drawId, startAt: iso(STOP), endsAt: iso(STOP + clipMs) })
+      for (const cookie of [party.hostCookie, party.cookies.one, party.cookies.three]) expect((await read(party, cookie)).clip).toMatchObject({ drawId, startAt: iso(STOP + 1500), endsAt: iso(STOP + 1500 + clipMs) })
       await cast(party, drawId, party.cookies.one)
-      clock.advance(clipMs - 1)
+      clock.advance(1500 + clipMs - 1)
       expect((await read(party)).clip).not.toBeNull()
 
       clock.advance(1)
@@ -1120,7 +1120,7 @@ describe('Vetoes', () => {
       const first = await spun(party)
       clock.advance(STOP)
       await cast(party, first.drawId, party.cookies.one)
-      clock.advance(WINDOW_MS)
+      clock.advance(SPIN_WINDOW_MS)
       const second = await spun(party)
 
       clock.advance(STOP)
@@ -1141,7 +1141,7 @@ describe('Vetoes', () => {
       expect(await errorOf(await hide(party, true))).toEqual({ status: 409, code: 'locked_while_drawn' })
       expect((await read(party)).roundBeingDrawn).toBe(true)
 
-      clock.advance(WINDOW_MS)
+      clock.advance(SPIN_WINDOW_MS)
       expect((await read(party)).roundBeingDrawn).toBe(false)
       expect((await hide(party, true)).status).toBe(200)
       expect((await read(party)).settings?.hiddenWheel).toBe(true)
@@ -1169,7 +1169,7 @@ describe('Vetoes', () => {
       const { drawId } = await spun(party)
       clock.advance(STOP)
       await cast(party, drawId, party.cookies.one)
-      clock.advance(WINDOW_MS)
+      clock.advance(SPIN_WINDOW_MS)
 
       expect((await hide(party, true)).status).toBe(200)
     })
@@ -1184,7 +1184,7 @@ describe('Vetoes', () => {
         const { drawId } = await spun(party)
         clock.advance(STOP)
         await cast(party, drawId, cookie)
-        clock.advance(WINDOW_MS)
+        clock.advance(SPIN_WINDOW_MS)
         await read(party)
       }
 
@@ -1205,7 +1205,7 @@ describe('Vetoes', () => {
       expect(await errorOf(await setAllowance(party, 4))).toEqual({ status: 409, code: 'locked_while_drawn' })
       expect((await read(party)).settings?.vetoAllowance).toBe(3)
 
-      clock.advance(WINDOW_MS - 1)
+      clock.advance(SPIN_WINDOW_MS - 1)
       expect((await read(party)).settingsFloors?.vetoAllowance).toBe(0)
 
       clock.advance(1)

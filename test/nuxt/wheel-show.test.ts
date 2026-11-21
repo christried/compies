@@ -126,7 +126,7 @@ describe('the rim at rest', () => {
     await mount(wheelOf(null, { slices: null }), { hidden: true })
 
     expect(all('[data-testid="wheel-pin"]')).toHaveLength(3)
-    expect(page!.text().match(/\?\?\?/g)).toHaveLength(3)
+    expect(page!.text()).not.toContain('???')
   })
 })
 

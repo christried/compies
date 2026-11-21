@@ -2,6 +2,19 @@
 
 ## [Unreleased]
 
+### Neu
+
+- Steht der Sieger schon fest, schließt du als Host das Event unter „Mehr“ vorzeitig ab. ([#953](https://github.com/christried/compies/issues/953))
+
+### Geändert
+
+- Nach dem Stopp des Glücksrads siehst du erst den Namen des Spiels; Video und Karte kommen eine Sekunde später. ([#959](https://github.com/christried/compies/issues/959))
+
+### Behoben
+
+- Beim verdeckten Glücksrad stehen auch vor dem Drehen Platzhalternamen auf dem Rad statt „???“. ([#949](https://github.com/christried/compies/issues/949))
+- Im Spielverlauf steht 0 statt „–“, wenn nur ein Team einen Score hat. ([#954](https://github.com/christried/compies/issues/954))
+
 ### Entfernt
 
 - Der Spielverlauf in der Tabelle zeigt keinen Preis mehr. ([#952](https://github.com/christried/compies/issues/952))

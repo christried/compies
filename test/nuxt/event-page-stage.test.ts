@@ -98,7 +98,7 @@ describe('the Tie banner on the Event page', () => {
     teams: [team(1), team(2)],
     results: [],
     standings: [{ team: 1, rank: 1, points: 1 }, { team: 2, rank: 1, points: 1 }],
-    end: { played: 2, gameCount: 2, complete: true, tie: [1, 2], finish: null, lastGame: null },
+    end: { played: 2, gameCount: 2, complete: true, tie: [1, 2], decided: false, finish: null, lastGame: null },
   }
   const RUNNING_ONE = SESSION(1, FIRST, { startedAt: STARTED })
   const ENDED_ONE = SESSION(1, FIRST, { startedAt: STARTED, endedAt: ENDED })
@@ -154,7 +154,7 @@ describe('the session-needed notice on the Event page', () => {
   const RUNNING_ONE = SESSION(1, FIRST, { startedAt: STARTED })
   // The Event read of a Game count that is not reached: the Standings are there once a Result is (played > 0).
   const short = (played: number, gameCount: number): EventOverrides => ({
-    end: { played, gameCount, complete: false, tie: null, finish: null, lastGame: null },
+    end: { played, gameCount, complete: false, tie: null, decided: false, finish: null, lastGame: null },
     results: [],
     standings: played > 0 ? [{ team: 1, rank: 1, points: 1 }, { team: 2, rank: 2, points: 0 }] : null,
   })
@@ -229,7 +229,7 @@ describe('the session-needed notice on the Event page', () => {
   })
 
   it('shows no notice with a Tie: the Host decides that banner', async () => {
-    const tie: EventOverrides = { ...short(2, 2), end: { played: 2, gameCount: 2, complete: true, tie: [1, 2], finish: null, lastGame: null }, standings: [{ team: 1, rank: 1, points: 1 }, { team: 2, rank: 1, points: 1 }] }
+    const tie: EventOverrides = { ...short(2, 2), end: { played: 2, gameCount: 2, complete: true, tie: [1, 2], decided: false, finish: null, lastGame: null }, standings: [{ team: 1, rank: 1, points: 1 }, { team: 2, rank: 1, points: 1 }] }
     const { slug } = serveState({ sessions: [ENDED_ONE], missing: 0, host: true, phase: 'running', overrides: tie })
 
     expect(notice(await mount(slug))).toHaveLength(0)

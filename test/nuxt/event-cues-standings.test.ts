@@ -34,14 +34,14 @@ const beforeResult: EventOverrides = {
   rounds: [openRound],
   results: [],
   standings: [{ team: 1, rank: 1, points: 0 }, { team: 2, rank: 1, points: 0 }],
-  end: { played: 0, gameCount: 6, complete: false, tie: null, finish: null, lastGame: null },
+  end: { played: 0, gameCount: 6, complete: false, tie: null, decided: false, finish: null, lastGame: null },
 }
 /** The first Result gives Team 2 three points and the lead. */
 const afterThree: EventOverrides = {
   ...afterResult,
   results: [{ ...played, places: [{ team: 2, place: 1, points: 3, score: null }, { team: 1, place: 2, points: 0, score: null }] }],
   standings: [{ team: 2, rank: 1, points: 3 }, { team: 1, rank: 2, points: 0 }],
-  end: { played: 1, gameCount: 6, complete: false, tie: null, finish: null, lastGame: null },
+  end: { played: 1, gameCount: 6, complete: false, tie: null, decided: false, finish: null, lastGame: null },
 }
 /** The Host corrects it: Team 1 won, so the order turns again. */
 const corrected: EventOverrides = {
