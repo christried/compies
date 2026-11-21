@@ -80,7 +80,8 @@ describe('Rad aufdecken in the Host dock (#957)', () => {
       const { slug } = serveEvent(end)
       const page = await mount(slug)
 
-      page.element.querySelector<HTMLButtonElement>('button[aria-label="Host-Steuerung"][aria-haspopup="dialog"]')!.click()
+      const crown = page.element.querySelector('button[aria-label="Host-Steuerung"][aria-haspopup="dialog"]') as HTMLButtonElement
+      crown.click()
       const sheet = () => [...document.querySelectorAll('[role="dialog"]')].find(node => node.querySelector('h2')?.textContent?.includes('Host-Steuerung'))
       await vi.waitFor(() => expect(sheet()).toBeDefined())
 
