@@ -295,6 +295,9 @@
 
 @layer base {
   html { font-family: var(--cp-font-sans); font-weight: 500; font-optical-sizing: auto; color: var(--cp-ink); background: var(--cp-paper); }
+  /* The app's scrollbars (#706): the thumb in the ink token, the track transparent. On the root, so every scrolling box inherits it; the width stays
+     the browser's. No vendor-prefixed scrollbar pseudo-element rule: it would not reach Firefox and would replace the overlay scrollbars of a Mac with permanent ones. */
+  :root { scrollbar-color: var(--cp-ink) transparent; }
   :lang(de) { hyphenate-character: "-"; }
   h1, h2, h3, h4 { font-family: var(--cp-font-display); font-weight: 400; font-synthesis: none; text-wrap: balance; }
   p, li { text-wrap: pretty; }
