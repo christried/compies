@@ -15,7 +15,7 @@ export const SECTIONS = [
   // 0.12's states were appended at the end of dark-states-event.mjs: the groups, not the file order, put them where the Event shows them.
   // 0.18's Emotes and Chat (#773) sit after the live states, the order a Member meets them, and before the finished page; the finished Chat state is in `event-finished`.
   { id: 'event', groups: ['event-tour', 'event-poll', 'event-board', 'event-live', 'event-emote', 'event-chat', 'event-finished'] },
-  { id: 'profil', names: ['profil', 'profil-fehler', 'profil-gespeichert', 'profil-rundgang', 'baustelle-archiv', 'baustelle-admin', 'baustelle-allgemein', 'baustelle-event'] },
+  { id: 'profil', names: ['profil', 'profil-fehler', 'profil-gespeichert', 'profil-rundgang', 'profil-weniger-bewegung-fehler', 'baustelle-archiv', 'baustelle-admin', 'baustelle-allgemein', 'baustelle-event'] },
 ]
 
 /**
