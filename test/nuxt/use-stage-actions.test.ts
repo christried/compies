@@ -98,23 +98,26 @@ describe('useStageActions', () => {
     expect(server.bodies).toEqual([{ places }])
   })
 
-  it('puts the Host\'s Event notes of a game, or null to clear them, resolves true and refetches the Event (#464)', async () => {
+  it('puts what changed of the Host\'s notes of a game as the body, the Event notes, the Game notes or both, null to clear, resolves true and refetches the Event (#464, #835)', async () => {
     const { server, refresh, actions } = await setUp()
     const notes = { type: 'doc' as const, content: [{ type: 'paragraph' as const, content: [{ type: 'text' as const, text: 'heute nur Bo1' }] }] }
+    const gameNotes = { type: 'doc' as const, content: [{ type: 'paragraph' as const, content: [{ type: 'text' as const, text: 'immer Mirror aus' }] }] }
 
-    await expect(actions().saveEventNotes('game-1', notes)).resolves.toBe(true)
-    await expect(actions().saveEventNotes('game-1', null)).resolves.toBe(true)
+    await expect(actions().saveEventNotes('game-1', { notes })).resolves.toBe(true)
+    await expect(actions().saveEventNotes('game-1', { gameNotes })).resolves.toBe(true)
+    await expect(actions().saveEventNotes('game-1', { notes: null })).resolves.toBe(true)
+    await expect(actions().saveEventNotes('game-1', { notes, gameNotes: null })).resolves.toBe(true)
 
-    expect(server.calls).toEqual(['PUT games/game-1/notes', 'PUT games/game-1/notes'])
-    expect(server.bodies).toEqual([{ notes }, { notes: null }])
-    expect(refresh).toHaveBeenCalledTimes(2)
+    expect(server.calls).toEqual(Array.from({ length: 4 }, () => 'PUT games/game-1/notes'))
+    expect(server.bodies).toEqual([{ notes }, { gameNotes }, { notes: null }, { notes, gameNotes: null }])
+    expect(refresh).toHaveBeenCalledTimes(4)
   })
 
-  it('resolves false for Event notes the server refuses, after the toast and the refetch (#464)', async () => {
+  it('resolves false for notes the server refuses, after the toast and the refetch (#464)', async () => {
     const { server, refresh, actions } = await setUp()
     server.refuse = true
 
-    await expect(actions().saveEventNotes('game-1', null)).resolves.toBe(false)
+    await expect(actions().saveEventNotes('game-1', { notes: null })).resolves.toBe(false)
 
     expect(shownToasts()).toHaveLength(1)
     expect(refresh).toHaveBeenCalledTimes(1)

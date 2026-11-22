@@ -4,6 +4,7 @@ import { createError, readBody } from 'h3'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import RichNotesEditor from '~/components/RichNotesEditor.vue'
 import EventPage from '~/pages/e/[slug]/index.vue'
+import type { EventNotesChange } from '~~/shared/event'
 import type { PoolGame, RoundGame } from '~~/shared/game'
 import type { RoundView, SpinView, WheelView } from '~~/shared/stage'
 import { notesFromLines, type NotesDoc } from '~~/shared/notes-doc'
@@ -55,7 +56,7 @@ const spin: SpinView = {
 const wheel: WheelView = { count: 2, slices: null, spin, vetoes: { left: [], own: null, revealed: null, draw: null } }
 
 // What the Host's PUT of Event notes (#731) did, for the tests of the editing in the dialogs (#464): the bodies it got, and whether it refuses.
-const saves = { bodies: [] as { gameId: string, body: { notes: NotesDoc | null } }[], refuse: false }
+const saves = { bodies: [] as { gameId: string, body: EventNotesChange }[], refuse: false }
 
 // `leaked`: a Member's read that carries the Host's Event notes anyway (the server never sends them): the Member's page provides no context, so nothing of them shows (#821).
 function serveHost(host: boolean, phase: 'running' | 'finished' = 'running', leaked = false) {
@@ -63,16 +64,19 @@ function serveHost(host: boolean, phase: 'running' | 'finished' = 'running', lea
   saves.refuse = false
   // The Event's notes as the server holds them: a save changes them, and the next read of the Event shows the change.
   const stored: Record<string, NotesDoc> = { ...eventNotes }
+  // The games' own notes as the server holds them (#835): a save of `gameNotes` changes them in every place the read shows them.
+  const storedGame: Record<string, NotesDoc | null> = {}
+  const gameNotesOf = (game: PoolGame): NotesDoc | null => (game.id in storedGame ? storedGame[game.id]! : game.notes)
   const viewOf = (slug: string) => viewWithSessions(slug, [{ number: null, startsAt: '2026-10-30T19:00:00.000Z', startedAt: STARTED }], 0, {
     event: { isHost: host, phase },
     settings: { ...defaultSettings(), selectionMode: 'lucky_wheel', hiddenWheel: false, vetoAllowance: 0 },
     runningSessionId: `session-${slug}-0`,
     // A Member sees the pool tiles only with the preview on: the faces here.
-    pool: host ? pool : pool.map(({ id, name, imageUrl, youtubeId, price, playersMin, playersMax, suitabilities }) => ({ id, name, imageUrl, youtubeId, price, playersMin, playersMax, suitabilities })),
+    pool: host ? pool.map(game => ({ ...game, notes: gameNotesOf(game) })) : pool.map(({ id, name, imageUrl, youtubeId, price, playersMin, playersMax, suitabilities }) => ({ id, name, imageUrl, youtubeId, price, playersMin, playersMax, suitabilities })),
     // The Round's own Notes are the Host's: the server leaves them out of a Member's read.
-    rounds: host ? [round('r1', base, base.notes!), round('r2', schach, schach.notes!)] : [round('r1', base), round('r2', schach)],
+    rounds: host ? [round('r1', base, gameNotesOf(base) ?? undefined), round('r2', schach, gameNotesOf(schach) ?? undefined)] : [round('r1', base), round('r2', schach)],
     wheel,
-    hostGames: host ? hostGames : null,
+    hostGames: host ? Object.fromEntries(Object.entries(hostGames).map(([id, facts]) => [id, { ...facts, notes: id in storedGame ? storedGame[id]! : facts.notes }])) : null,
     eventNotes: host || leaked ? stored : null,
   })
   const served = serve(viewOf)
@@ -80,13 +84,14 @@ function serveHost(host: boolean, phase: 'running' | 'finished' = 'running', lea
     registerEndpoint(`/api/e/${served.slug}/games/${game.id}/notes`, {
       method: 'PUT',
       handler: async (event) => {
-        const body = await readBody(event) as { notes: NotesDoc | null }
+        const body = await readBody(event) as EventNotesChange
         saves.bodies.push({ gameId: game.id, body })
         if (saves.refuse) throw createError({ statusCode: 409, statusMessage: 'wrong_phase' })
         if (body.notes) stored[game.id] = body.notes
-        else Reflect.deleteProperty(stored, game.id)
+        else if (Object.hasOwn(body, 'notes')) Reflect.deleteProperty(stored, game.id)
+        if (Object.hasOwn(body, 'gameNotes')) storedGame[game.id] = body.gameNotes ?? null
         served.set(viewOf(served.slug))
-        return { gameId: game.id, notes: body.notes }
+        return { gameId: game.id, ...body }
       },
     })
   }
@@ -336,7 +341,7 @@ describe('a Member\'s tiles on the Event page open the dialog (#444)', () => {
 
 describe('the Host writes Event notes in the game dialogs of the Event page (#464)', () => {
   const EDIT = 'button[aria-label="Notizen für dieses Event bearbeiten"]'
-  const entry = () => dialog()!.querySelector<HTMLButtonElement>(EDIT) ?? [...dialog()!.querySelectorAll('button')].find(button => button.textContent?.trim() === 'Notizen für dieses Event hinzufügen') ?? null
+  const entry = () => dialog()!.querySelector<HTMLButtonElement>(EDIT) ?? [...dialog()!.querySelectorAll('button')].find(button => ['Notizen für dieses Event hinzufügen', 'Notizen hinzufügen'].includes(button.textContent?.trim() ?? '')) ?? null
   const textbox = () => dialog()!.querySelector<HTMLElement>('[role="textbox"]')
   const footerButton = (label: string) => [...dialog()!.querySelectorAll<HTMLButtonElement>('footer button')].find(button => button.textContent?.trim() === label)!
   const zuletzt = () => [...sectionOf('Zuletzt gezogen')!.querySelectorAll<HTMLButtonElement>('button[aria-haspopup="dialog"]')][0]!
@@ -360,7 +365,8 @@ describe('the Host writes Event notes in the game dialogs of the Event page (#46
     open().click()
     await flushPromises()
     expect(entry()).not.toBeNull()
-    expect(stored === null ? entry()!.textContent?.trim() : entry()!.getAttribute('aria-label')).toBe(stored === null ? 'Notizen für dieses Event hinzufügen' : 'Notizen für dieses Event bearbeiten')
+    // A game with Game notes and no Event notes has the Event add button (#835); one with neither has „Notizen hinzufügen“.
+    expect(stored === null ? entry()!.textContent?.trim() : entry()!.getAttribute('aria-label')).toBe(stored === null ? (gameText ? 'Notizen für dieses Event hinzufügen' : 'Notizen hinzufügen') : 'Notizen für dieses Event bearbeiten')
     entry()!.click()
     await vi.waitFor(() => expect(textbox()).not.toBeNull())
     type(mounted.findComponent(RichNotesEditor), typed)
@@ -372,6 +378,28 @@ describe('the Host writes Event notes in the game dialogs of the Event page (#46
     expect(dialog()!.textContent).toContain(saved[0])
     if (gameText) expectEventNotesAboveGameNotes(saved[0]!, gameText)
     expect(document.activeElement).toBe(dialog()!.querySelector(EDIT))
+    expect(shownToasts()).toEqual([])
+  })
+
+  // The Game notes in the same dialog (#835): one request with only the Game field, and the refetch brings the new text to the dialog and the Round card alike.
+  it('saves the Game notes from the dialog of „Läuft aktuell“ through the route, alone, shows them in the dialog and puts the focus on the Game pencil', async () => {
+    const { slug } = serveHost(true)
+    const mounted = await mount(slug)
+    tileButton('Läuft aktuell', 'Halo')!.click()
+    await flushPromises()
+    dialog()!.querySelector<HTMLButtonElement>('button[aria-label="Notizen bearbeiten"]')!.click()
+    await vi.waitFor(() => expect(dialog()!.querySelectorAll('[role="textbox"]')).toHaveLength(2))
+    const [, gameEditor] = mounted.findAllComponents(RichNotesEditor)
+    editorOf(gameEditor!).commands.setContent(notesFromLines(['Hausregel: Raketen erlaubt'])! as never, { emitUpdate: true })
+
+    footerButton('Speichern').click()
+
+    await vi.waitFor(() => expect(textbox()).toBeNull())
+    expect(saves.bodies).toEqual([{ gameId: 'g-halo', body: { gameNotes: notesFromLines(['Hausregel: Raketen erlaubt']) } }])
+    expect(dialog()!.textContent).toContain('Hausregel: Raketen erlaubt')
+    expect(dialog()!.textContent).toContain('Event-Halo: nur Bo1')
+    expect(document.body.textContent).not.toContain('Hausregel: keine Raketen')
+    expect(document.activeElement).toBe(dialog()!.querySelector('button[aria-label="Notizen bearbeiten"]'))
     expect(shownToasts()).toEqual([])
   })
 
