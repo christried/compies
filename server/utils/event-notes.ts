@@ -1,7 +1,7 @@
 import { and, eq } from 'drizzle-orm'
 import { eventGameNotes, games } from '../db/schema'
 import { isUuid } from '../domain/uuid'
-import { EVENT_NOTES_MAX, type EventNotesSaved } from '../../shared/event'
+import { beforeFinish, EVENT_NOTES_MAX, type EventNotesSaved } from '../../shared/event'
 import { GAME_NOTES_MAX } from '../../shared/game'
 import { parseNotes, type NotesDoc } from '../../shared/notes-doc'
 import { asRecord } from '../../shared/record'
@@ -20,6 +20,7 @@ import { assertGamesExist } from './pools'
  * left for the Event notes), a refused document is `invalid_game_notes`. Both are parsed before either is written, so a refused one refuses both, and both writes run in
  * `changeEvent`'s transaction. The game must be in the Event's Host's library, archived or not (#722); another Host's game and an unknown id answer alike. The Host permission is not
  * asked for: only the Host of this Event gets here (`hostOnly`), and the Host reads these notes in this Event without it. The answer names each field the request carried.
+ * In a finished Event a request that carries `notes` is `wrong_phase` and writes nothing, also with `gameNotes` beside it; one with `gameNotes` alone is saved (#857, the Finish holds: the write changes the library, not the Event).
  */
 export async function saveEventNotes({ tx, eventRow, user, now, body, publishTo }: Pick<EventChange, 'tx' | 'eventRow' | 'user' | 'now' | 'body' | 'publishTo'>, rawGameId: string): Promise<EventNotesSaved> {
   if (!isUuid(rawGameId)) throw apiError('invalid_value')
@@ -29,6 +30,8 @@ export async function saveEventNotes({ tx, eventRow, user, now, body, publishTo 
   const hasEvent = Object.hasOwn(fields, 'notes')
   const hasGame = Object.hasOwn(fields, 'gameNotes')
   if (!hasEvent && !hasGame) throw apiError('invalid_value')
+  // The route lets a finished Event through (`allowFinished`, #857) for the Game notes, which are the game's in the library; the Event notes stay locked with it, whatever else the request carries.
+  if (hasEvent && !beforeFinish(eventRow.phase)) throw apiError('wrong_phase')
   const notes = hasEvent ? parseNotes(fields.notes, EVENT_NOTES_MAX) : null
   const gameNotes = hasGame ? parseNotes(fields.gameNotes, GAME_NOTES_MAX) : null
   if (notes === undefined || gameNotes === undefined) throw apiError('invalid_game_notes')

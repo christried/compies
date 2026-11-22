@@ -538,16 +538,52 @@ describe('Event notes, the Host\'s server side (#731)', () => {
       expect(notifier.sends(party.eventId).map(sent => sent.to)).toEqual([[party.host.id]])
     })
 
-    it('leaves a finished Event as it is in this ticket: a Game-only save is wrong_phase and changes nothing (0.19-2, #857, changes this)', async () => {
+    // A finished Event (#857): the Game notes are the game's own, in the Host's library, so they stay editable; the Event notes are the Event's and stay locked.
+    async function finishedWithNotes() {
       const party = await running()
       const round = await hostSets(rig, party, party.games.halo.id)
       await hostEntersResult(rig, party, round, [{ team: 1, place: 1 }, { team: 2, place: 2 }])
-      await saved(await sendNotes(party, party.games.halo.id, party.hostCookie, { gameNotes: doc('Vorher') }))
+      await saved(await sendNotes(party, party.games.halo.id, party.hostCookie, { notes: doc('Event vorher'), gameNotes: doc('Spiel vorher') }))
       await hostFinishes(rig, party, { outcome: 'winner', winners: [1] })
+      return party
+    }
 
-      expect(await errorOf(await sendNotes(party, party.games.halo.id, party.hostCookie, { gameNotes: doc('Nachher') }))).toEqual({ status: 409, code: 'wrong_phase' })
+    it('saves a Game-only request in a finished Event, answers it like any other, and leaves the Event notes, the Event and its phase as they are (#857)', async () => {
+      const party = await finishedWithNotes()
 
-      expect(await gameNotesOf(party.games.halo.id)).toEqual(doc('Vorher'))
+      const body = await saved(await sendNotes(party, party.games.halo.id, party.hostCookie, { gameNotes: doc('Spiel nachher') }))
+
+      expect(body).toEqual({ gameId: party.games.halo.id, gameNotes: doc('Spiel nachher') })
+      expect(await gameNotesOf(party.games.halo.id)).toEqual(doc('Spiel nachher'))
+      expect(await rows(party)).toMatchObject([{ notes: doc('Event vorher') }])
+      const view = await readEvent(rig, party.hostCookie, party.slug)
+      expect(view.event.phase).toBe('finished')
+      expect(view.hostGames![party.games.halo.id]!.notes).toEqual(doc('Spiel nachher'))
+      await saved(await sendNotes(party, party.games.halo.id, party.hostCookie, { gameNotes: null }))
+      expect(await gameNotesOf(party.games.halo.id)).toBeNull()
+    })
+
+    it('refuses a request that carries Event notes with wrong_phase and changes nothing, also when it carries Game notes, and a null that would clear them', async () => {
+      const party = await finishedWithNotes()
+
+      for (const body of [{ notes: doc('Event nachher') }, { notes: null }, { notes: doc('Event nachher'), gameNotes: doc('Spiel nachher') }, { notes: null, gameNotes: doc('Spiel nachher') }]) {
+        expect(await errorOf(await sendNotes(party, party.games.halo.id, party.hostCookie, body))).toEqual({ status: 409, code: 'wrong_phase' })
+        expect(await rows(party)).toMatchObject([{ notes: doc('Event vorher') }])
+        expect(await gameNotesOf(party.games.halo.id)).toEqual(doc('Spiel vorher'))
+      }
+    })
+
+    it('still refuses a Member with not_host, another Host as an unknown slug and a signed-out request with 401, and a body with neither key with invalid_value', async () => {
+      const party = await finishedWithNotes()
+      setAllowlist({ hosts: 'discord:1,discord:6,discord:7' })
+      const stranger = await signInAs(rig, otherHost)
+
+      expect(await errorOf(await sendNotes(party, party.games.halo.id, party.one, { gameNotes: doc('Nein') }))).toEqual({ status: 403, code: 'not_host' })
+      expect((await sendNotes(party, party.games.halo.id, stranger.cookie, { gameNotes: doc('Nein') })).status).toBe(404)
+      expect((await sendNotes(party, party.games.halo.id, undefined, { gameNotes: doc('Nein') })).status).toBe(401)
+      expect(await errorOf(await sendNotes(party, party.games.halo.id, party.hostCookie, {}))).toEqual({ status: 400, code: 'invalid_value' })
+
+      expect(await gameNotesOf(party.games.halo.id)).toEqual(doc('Spiel vorher'))
     })
   })
 
