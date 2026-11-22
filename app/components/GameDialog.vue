@@ -14,8 +14,9 @@ import type { NotesDoc } from '~~/shared/notes-doc'
 // no Event notes, or „Notizen hinzufügen“ where it has neither, opens the designed editors in place of the cover, the facts and the blocks: the Event notes first, the Game
 // notes under them, with one „Speichern“ that sends only what changed in one request. The game's Event notes, the Event's name and whether it is finished and the page's `PUT`
 // (`save`, which resolves to whether the server took it, after the Event was refetched) are the Event page's context's (useEventNotes, #821), not props. The guard is again
-// this component's, per field (`canEditEvent`, `canEditGame`): a Member's audience, a page that provides no save and a finished Event have no entry and no edit, whatever
-// they are handed, and `edit` (the tiles' and the Round card's way into the edit mode) opens no editor the dialog would not allow.
+// this component's, per field (`canEditEvent`, `canEditGame`): a Member's audience and a page that provides no save have no entry and no edit, a finished Event has them for the Game
+// notes alone (#857: the Event notes show as their frozen block, in the edit mode too, and are never sent), whatever they are handed, and `edit` (the tiles' and the Round
+// card's way into the edit mode) opens no editor the dialog would not allow.
 const props = withDefaults(defineProps<{
   open: boolean
   game: PoolGameFace
@@ -38,10 +39,12 @@ const hostEventNotes = computed(() => (isHost.value ? notesOf(props.game.id) : n
 // The Game notes and the Event notes as a pair (the blank rule and the subs of two blocks are useNotePair's); the dialog lays them out itself: the pencil, the add button and the edit swap are its own.
 const { doc: gameBlock, eventDoc: eventBlock, eventSub, gameSub } = useNotePair(() => notes.value, () => hostEventNotes.value)
 const library = computed(() => isHost.value && canSeeLibrary(user.value))
-// Who may edit what, per field: the finished Event will free the Game notes (0.19-2, #857), which then relaxes `canEditGame` alone.
-const canEditEvent = computed(() => isHost.value && saveEventNotes.value != null && !finished.value)
-const canEditGame = computed(() => canEditEvent.value)
-const canEdit = computed(() => canEditEvent.value || canEditGame.value)
+// Who may edit what, per field: a finished Event freezes the Event notes alone (#857), the Game notes are the game's own in the library and stay editable.
+const canEditGame = computed(() => isHost.value && saveEventNotes.value != null)
+const canEditEvent = computed(() => canEditGame.value && !finished.value)
+const canEdit = computed(() => canEditGame.value)
+// Where no pencil is on screen the Host gets „Notizen hinzufügen“: neither block is there to edit (no notes at all, or a finished Event with no Game notes).
+const noPencil = computed(() => canEdit.value && !(eventBlock.value && canEditEvent.value) && !gameBlock.value)
 
 // The edit: `initial*` is the document at its start, `draft*` what the editor holds, one pair per field. Both are shallow so that an editor that emitted nothing leaves
 // `draft === initial`: that is „nothing typed“, and a field nobody typed in is not sent. The documents are the blocks' (a blank one counts as none).
@@ -196,7 +199,7 @@ function onShortcut(event: KeyboardEvent) {
               @edit="startEdit('game')"
             />
             <button
-              v-if="!eventBlock && !gameBlock && canEdit"
+              v-if="noPencil"
               type="button"
               data-notes-edit="both"
               class="hit-44 inline-flex h-8 items-center gap-1 self-start rounded-md px-1 text-[13px] font-bold text-ink underline-offset-4 hover:underline"
@@ -228,6 +231,12 @@ function onShortcut(event: KeyboardEvent) {
             :disabled="saving"
             :autofocus="focusField === 'event'"
             @invalid="overEvent = $event"
+          />
+          <!-- A finished Event's Event notes stay what they are in the view, the frozen block with its chip (#857): they are shown, where the game has some, and never edited. -->
+          <EventNotes
+            v-else-if="eventBlock"
+            :notes="eventBlock"
+            :finished="finished"
           />
           <RichNotesEditorLoader
             v-if="canEditGame"

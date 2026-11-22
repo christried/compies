@@ -454,15 +454,35 @@ describe('the Host writes Event notes in the game dialogs of the Event page (#46
     expect(textbox()).toBeNull()
   })
 
-  it('offers no entry for a game without Event notes once the Event is finished', async () => {
+  it('offers no Event entry for a game without Event notes once the Event is finished, but „Notizen hinzufügen“ where it has no Game notes either (#857)', async () => {
     const { slug } = serveHost(true, 'finished')
     await mount(slug, 'So wird gespielt')
 
     tileButton('So wird gespielt', 'Pong')!.click()
     await flushPromises()
 
-    expect(entry()).toBeNull()
+    expect(entry()?.textContent?.trim()).toBe('Notizen hinzufügen')
+    expect(dialog()!.querySelector(EDIT)).toBeNull()
     expect(textbox()).toBeNull()
+  })
+
+  it('saves a finished Event\'s Game notes from the Spielepool\'s dialog: one request with the Game notes alone, the Event notes stay frozen (#857)', async () => {
+    const { slug } = serveHost(true, 'finished')
+    const mounted = await mount(slug, 'So wird gespielt')
+    tileButton('So wird gespielt', 'Kart')!.click()
+    await flushPromises()
+
+    dialog()!.querySelector<HTMLButtonElement>('button[aria-label="Notizen bearbeiten"]')!.click()
+    await vi.waitFor(() => expect(textbox()).not.toBeNull())
+    type(mounted.findComponent(RichNotesEditor), ' und Uhr')
+    footerButton('Speichern').click()
+
+    await vi.waitFor(() => expect(saves.bodies).toHaveLength(1))
+    expect(saves.bodies[0]).toEqual({ gameId: 'g-kart', body: { gameNotes: notesFromLines(['Kart-Notizen und Uhr']) } })
+    await vi.waitFor(() => expect(textbox()).toBeNull())
+    expect(dialog()!.textContent).toContain('Kart-Notizen und Uhr')
+    expect(dialog()!.textContent).toContain('Event-Kart: Mirror aus')
+    expect(dialog()!.textContent).toContain('Event beendet')
   })
 
   it('names the Event as the sub of the Event block in the dialog of a Spielepool tile and of the wheel\'s card, where both blocks show', async () => {
