@@ -303,7 +303,7 @@ describe('the Notes button of a game in the picker (#436)', () => {
   const poolWithout: PoolGame = { ...halo, id: 'g-pong', name: 'Pong', notes: null }
   const poolList = () => dialog()!.querySelector<HTMLElement>('ul[aria-label="Spiele, die im Pool noch übrig sind"]')!
   const libraryList = () => dialog()!.querySelector<HTMLElement>('ul[aria-label="Bibliothek"]')!
-  const notesButtons = (root: ParentNode) => root.querySelectorAll<HTMLButtonElement>('button[aria-label="Notizen ansehen"]')
+  const notesButtons = (root: ParentNode) => root.querySelectorAll<HTMLButtonElement>('button[aria-label^="Notizen zu "]')
   const rowOf = (list: HTMLElement, name: string) => [...list.querySelectorAll<HTMLElement>('li')].find(row => row.querySelector('b')?.textContent?.trim() === name)!
   const popover = () => document.querySelector<HTMLElement>('[role="dialog"]:not([data-sheet])')
   const sheet = () => document.querySelector('[data-sheet="panel"]')
@@ -425,5 +425,48 @@ describe('the Notes button of a game in the picker (#436)', () => {
     expect(popover()).toBeNull()
     expect(sheet()).not.toBeNull()
     expect(document.activeElement).toBe(trigger)
+  })
+
+  // The button is the card's own, in the card's place (#859): not beside the ✓ or the ＋, and no footer „Bearbeiten“ (the Host is mid-choice here).
+  describe('in the card’s place, with no footer (#859)', () => {
+    it('is not beside the ✓ of a pool game', async () => {
+      await mount({ pool: [poolWithNotes] })
+
+      const trigger = notesButtons(poolList())[0]!
+      expect(trigger.parentElement!.querySelector('button[aria-label="Halo auswählen"]')).toBeNull()
+      expect(rowOf(poolList(), 'Halo').querySelector('button[aria-label="Halo auswählen"]')).not.toBeNull()
+    })
+
+    it('is not beside the ＋ of a library game', async () => {
+      await mount({ pool: [poolWithout] })
+      await vi.waitFor(() => expect(libraryList().querySelectorAll('li')).toHaveLength(2))
+
+      const trigger = notesButtons(rowOf(libraryList(), 'Retro Kart'))[0]!
+      expect(trigger.parentElement!.querySelector('button[aria-label="Retro Kart auswählen"]')).toBeNull()
+    })
+
+    it('has no „Bearbeiten“ footer in the popover of a pool game', async () => {
+      await mount({ pool: [poolWithNotes] })
+
+      notesButtons(poolList())[0]!.click()
+      await flushPromises()
+
+      expect(popover()!.textContent).not.toContain('Bearbeiten')
+      expect(popover()!.querySelector('a[href*="/bearbeiten"]')).toBeNull()
+    })
+
+    it('has no „Bearbeiten“ footer in the sheet below 980 px either', async () => {
+      restoreScreen()
+      stubScreen(false)
+      await mount({ pool: [poolWithNotes] })
+
+      notesButtons(poolList())[0]!.click()
+      await flushPromises()
+
+      // The picker's own sheet is the first one in the document; the notes' sheet is drawn after it.
+      const notesSheet = [...document.querySelectorAll<HTMLElement>('[data-sheet="panel"]')].at(-1)!
+      expect(notesSheet.textContent).toContain('Settings: 3 Runden')
+      expect(notesSheet.textContent).not.toContain('Bearbeiten')
+    })
   })
 })

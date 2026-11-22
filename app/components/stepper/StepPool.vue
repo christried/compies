@@ -60,6 +60,12 @@ async function onSaved(game: GameView) {
   toast({ tone: 'success', text: t('library.saved', { name: game.name }) })
   await refreshGameLibrary()
 }
+
+// „Das nehmen“ in the sheet's duplicate hint (#860): the game the Host already has goes into the pool, or stays there, and the sheet closes.
+function onUseExisting(game: GameView) {
+  draft.value = addPoolGame(draft.value, game)
+  creating.value = false
+}
 </script>
 
 <template>
@@ -88,7 +94,7 @@ async function onSaved(game: GameView) {
       <ul
         v-else
         :aria-label="t('stepper.pool.listMain')"
-        class="m-0 grid list-none grid-cols-1 gap-2 p-0 md:grid-cols-2"
+        class="m-0 grid list-none grid-cols-1 gap-2 p-0 sm:grid-cols-2"
       >
         <li
           v-for="game in games"
@@ -98,14 +104,10 @@ async function onSaved(game: GameView) {
           <GameCard
             :game="game"
             :archived="game.archived"
+            :notes="game.notes"
             layout="row"
           >
             <template #actions>
-              <GameNotesButton
-                :name="game.name"
-                :notes="game.notes"
-                :size="36"
-              />
               <IconButton
                 :icon="X"
                 :label="t('stepper.pool.remove', { name: game.name })"
@@ -130,6 +132,7 @@ async function onSaved(game: GameView) {
       v-if="library"
       v-model:filters="filters"
       compact
+      card-notes="view"
     >
       <template #toolbar>
         <AppButton
@@ -144,10 +147,6 @@ async function onSaved(game: GameView) {
         </AppButton>
       </template>
       <template #card-actions="{ game }">
-        <GameNotesButton
-          :name="game.name"
-          :notes="game.notes"
-        />
         <IconButton
           v-if="pooled.has(game.id)"
           :icon="X"
@@ -176,7 +175,11 @@ async function onSaved(game: GameView) {
       :title="t('stepper.pool.create')"
       @close="creating = false"
     >
-      <GameForm @saved="onSaved" />
+      <GameForm
+        offer-existing
+        @saved="onSaved"
+        @use-existing="onUseExisting"
+      />
     </AppSheet>
   </div>
 </template>

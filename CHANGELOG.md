@@ -2,6 +2,27 @@
 
 ## [Unreleased]
 
+### Neu
+
+- Die Notizen am Spiel, das gerade gespielt wird, bleiben auf diesem Gerät auf oder zu, wie du sie zuletzt gelassen hast. ([#838](https://github.com/christried/compies/issues/838))
+- In deiner Bibliothek zeigt eine Karte einen Notizen-Knopf, wenn das Spiel Notizen hat; er öffnet sie, ohne das Spiel zu öffnen. ([#837](https://github.com/christried/compies/issues/837))
+- Das Spielformular sagt dir, wenn deine Bibliothek schon ein Spiel mit diesem Namen hat, und bringt dich mit „Das nehmen“ dorthin. ([#689](https://github.com/christried/compies/issues/689))
+- Als Host bearbeitest du die Notizen eines Spiels im Spiel-Dialog deines Events, zusammen mit den Notizen für dieses Event. ([#835](https://github.com/christried/compies/issues/835))
+- Im Profil schaltest du „Weniger Bewegung“ ein: Compies zeigt dann auf diesem Gerät die ruhigen Varianten der großen Animationen. ([#680](https://github.com/christried/compies/issues/680))
+- Legst du im Schritt „Spiele“ ein Spiel an, das deine Bibliothek schon hat, nimmt „Das nehmen“ das vorhandene in den Pool. ([#860](https://github.com/christried/compies/issues/860))
+- Auf der Seite deines Events zeigen die Spiele im Pool und das gezogene Spiel ebenfalls den Notizen-Knopf; „Bearbeiten“ darin öffnet den Spiel-Dialog zum Bearbeiten. ([#858](https://github.com/christried/compies/issues/858))
+- Als Host findest du unter den Notizen am Spiel, das gerade gespielt wird, „Bearbeiten“; es öffnet den Spiel-Dialog zum Bearbeiten, auch in einem beendeten Event. ([#836](https://github.com/christried/compies/issues/836))
+
+### Geändert
+
+- Auf Bildschirmen ab 600 px stehen die Spiele nebeneinander als Karten, wie auf großen Bildschirmen; auf dem Handy bleiben sie Zeilen. ([#707](https://github.com/christried/compies/issues/707))
+- Die Scrollbalken haben jetzt die Farben der App, in Hell und Dunkel; ihre Breite bleibt die deines Browsers. ([#706](https://github.com/christried/compies/issues/706))
+- Der Notizen-Knopf sieht überall gleich aus und sitzt an derselben Stelle, auch wenn du ein Spiel auswählst. ([#859](https://github.com/christried/compies/issues/859))
+- Auch nach dem Ende eines Events bearbeitest du im Spiel-Dialog die Notizen eines Spiels; die Notizen für das Event bleiben gesperrt. ([#857](https://github.com/christried/compies/issues/857))
+- Eine Spielkarte zeigt so viele Tags, wie in zwei Zeilen passen, keiner wird abgeschnitten, und alle Karten sind gleich hoch. ([#711](https://github.com/christried/compies/issues/711))
+- Die Datenschutzerklärung nennt den neuen Eintrag im Speicher des Browsers (compies-round-notes). ([#838](https://github.com/christried/compies/issues/838))
+- Die Datenschutzerklärung nennt in Abschnitt 9 jetzt auch das Cookie „compies-motion“, das sich auf deinem Gerät merkt, ob „Weniger Bewegung“ eingeschaltet ist. ([#680](https://github.com/christried/compies/issues/680))
+
 ## [0.18.1] - 2026-11-21 – Hotfixes
 
 ### Neu

@@ -12,7 +12,7 @@ import { characterCount } from '~~/shared/text'
 // TextField. It is loaded by a dynamic import where a note is edited (`RichNotesEditorLoader`, #822), so no page's first load grows. It never emits on
 // mount, so a form opened and saved untouched sends the document as it is stored; every emitted value went through `parseNotes`, so it is a document the
 // server accepts unless it is over `max`: the over-limit document is emitted too (a paste must not lose text) and `invalid` says why. The count is `notesLength`,
-// the function the server counts with. A finished Event never opens the editor (`GameDialog`'s `canEdit`); its notes are read in `NoteBlock` (#822).
+// the function the server counts with. A finished Event never opens the editor (`GameDialog`'s `canEditGame`); its notes are read in `NoteBlock` (#822).
 const props = withDefaults(defineProps<{
   modelValue: NotesDoc | null
   variant?: 'game' | 'event'
@@ -249,7 +249,7 @@ const helpLine = computed(() => {
           :icon="helpLine.icon"
           :size="16"
           class="-mt-px"
-          :class="{ 'animate-spin motion-reduce:animate-none': disabled }"
+          :class="{ 'animate-spin motion-reduce:animate-none reduced:animate-none': disabled }"
         />
         {{ helpLine.text }}
       </span>

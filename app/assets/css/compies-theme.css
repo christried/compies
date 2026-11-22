@@ -20,6 +20,8 @@
   }
 }
 @custom-variant reduced (&:where([data-motion=reduced], [data-motion=reduced] *));
+/* The Round card's notes stored as closed, before the page has taken the choice over (useRoundNotesMemory, #838): a script in the head sets the attribute before the first paint. */
+@custom-variant round-notes-closed (&:where([data-round-notes=closed], [data-round-notes=closed] *));
 /* A phone held sideways (#550): below md, wide enough for the Clip and the Veto bar side by side, too low to stack them. The 41rem is
    2 × 10 px gutters + 10 px gap + --cp-veto-side-w (16.5rem) + the 356 px video floor (200 × 16/9) + the section's 2 × 3 px border. */
 @custom-variant sideways {
@@ -295,6 +297,9 @@
 
 @layer base {
   html { font-family: var(--cp-font-sans); font-weight: 500; font-optical-sizing: auto; color: var(--cp-ink); background: var(--cp-paper); }
+  /* The app's scrollbars (#706): the thumb in the ink token, the track transparent. On the root, so every scrolling box inherits it; the width stays
+     the browser's. No vendor-prefixed scrollbar pseudo-element rule: it would not reach Firefox and would replace the overlay scrollbars of a Mac with permanent ones. */
+  :root { scrollbar-color: var(--cp-ink) transparent; }
   :lang(de) { hyphenate-character: "-"; }
   h1, h2, h3, h4 { font-family: var(--cp-font-display); font-weight: 400; font-synthesis: none; text-wrap: balance; }
   p, li { text-wrap: pretty; }

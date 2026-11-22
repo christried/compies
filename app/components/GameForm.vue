@@ -7,7 +7,7 @@ import type { PriceDraft } from '~/utils/price'
 import { isApplePlatform } from '~/utils/platform'
 import {
   CLIP_LENGTH_DEFAULT, CLIP_LENGTH_MAX, GAME_NAME_MAX, GAME_NOTES_MAX, SUITABILITIES, clipTime, gameNameProblem,
-  gameNotesProblem, parseGameInput, parsePlayerCount, type GameTag,
+  gameNotesProblem, parseGameInput, parsePlayerCount, sameNameGame, type GameTag,
   type GameView, type Suitability,
 } from '~~/shared/game'
 import type { NotesDoc } from '~~/shared/notes-doc'
@@ -27,14 +27,21 @@ const props = defineProps<{
   saveAndNext?: boolean
   /** The name takes the focus on mount (#456): the page passes it for the fresh form after „noch eins“. */
   focusName?: boolean
+  /**
+   * The host handles `useExisting` (#689): the duplicate hint then offers „Das nehmen“. Without it the button would be dead,
+   * so a host that has not wired the emit leaves it off.
+   */
+  offerExisting?: boolean
 }>()
 
-const emit = defineEmits<{ saved: [game: GameView], savedAndNext: [game: GameView] }>()
+const emit = defineEmits<{ saved: [game: GameView], savedAndNext: [game: GameView], useExisting: [game: GameView] }>()
 
 const { t } = useI18n()
 const { toast } = useToast()
-// The Tags in use are the Tag field's suggestions (#335), from `/api/games/tags` (#365): the form does not load the library.
+// The Tags in use are the Tag field's suggestions (#335), from `/api/games/tags` (#365), not from the library.
 const { tagsInUse } = useTagsInUse()
+// The Host's own games, Archived ones too, for the duplicate hint (#689). Null before the library has answered, and after a failed read: no hint then.
+const { games: library } = useGameLibrary()
 
 /** The cropped WebP waiting to be uploaded after the game is saved (#143). */
 const image = ref<Blob | null>(null)
@@ -80,6 +87,9 @@ const nameError = computed(() => {
   if (nameProblem.value === 'too_long') return t('error.nameTooLong', { max: GAME_NAME_MAX })
   return undefined
 })
+
+// The game the typed name collides with (#689): a hint, never an error. It never blocks a save, and the game being renamed is left out.
+const duplicate = computed(() => sameNameGame(name.value, library.value ?? [], props.game?.id))
 
 const hasLink = computed(() => link.value.trim() !== '')
 const youtubeId = computed(() => (hasLink.value ? parseYouTubeId(link.value) : null))
@@ -279,6 +289,32 @@ function onShortcut(event: KeyboardEvent) {
           :error="nameError"
           :maxlength="GAME_NAME_MAX"
         />
+        <!-- Polite, a warning tone and no red on the field (#689). An Archived match links to its page, where it can be restored; the link opens in a new tab so a draft in the Event setup is kept. -->
+        <NoticeBanner
+          v-if="duplicate"
+          tone="warning"
+        >
+          {{ duplicate.archived ? t('gameEdit.duplicateArchived', { name: duplicate.name }) : t('gameEdit.duplicate', { name: duplicate.name }) }}
+          <template
+            v-if="duplicate.archived || offerExisting"
+            #action
+          >
+            <AppButton
+              v-if="duplicate.archived"
+              :to="`/bibliothek/${duplicate.id}`"
+              target="_blank"
+              rel="noopener"
+            >
+              {{ t('gameEdit.openArchived') }}
+            </AppButton>
+            <AppButton
+              v-else
+              @click="emit('useExisting', duplicate)"
+            >
+              {{ t('gameEdit.useExisting') }}
+            </AppButton>
+          </template>
+        </NoticeBanner>
         <GameImageField
           ref="imageField"
           v-model="image"

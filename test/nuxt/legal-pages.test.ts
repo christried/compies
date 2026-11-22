@@ -168,9 +168,31 @@ describe('legal pages', () => {
     expect(text.indexOf('Sitzungs-Cookies (Better Auth)')).toBeGreaterThanOrEqual(0)
     expect(text.indexOf('Sitzungs-Cookies (Better Auth)')).toBeLessThan(text.indexOf(cookie))
     expect(text.indexOf(cookie)).toBeLessThan(text.indexOf('Lokaler Speicher (compies-sound)'))
-    expect(section!.findAll('p')).toHaveLength(8)
-    // The one place the date is pinned: the day of the last change, 20 November 2026 (0.18, §4, §10, §11, §16 and §21 for the Chat and the Emotes, #775).
-    expect(page.get('main').text()).toContain('Stand: 20. November 2026.')
+    expect(section!.findAll('p')).toHaveLength(10)
+    // The one place the date is pinned: the day of the last change, 22 November 2026 (0.19, § 9 for the cookie of Reduced motion, #680, and for the Round card's memory, #838; before that 0.18, §4, §10, §11, §16 and §21 for the Chat and the Emotes, #775).
+    expect(page.get('main').text()).toContain('Stand: 22. November 2026.')
+  })
+
+  it('name the compies-round-notes entry in section 9, right after compies.news.seen, word for word (#838, spec #856)', async () => {
+    const page = await mountSuspended(DatenschutzPage, { route: '/datenschutz' })
+    const section = page.findAll('section').find(s => s.get('h2').text() === '9. Cookies und Speicher im Browser')
+
+    const paragraphs = section!.findAll('p').map(p => p.text())
+    const entry = 'Lokaler Speicher (compies-round-notes): merkt sich auf diesem Gerät, ob du als Host die Notizen an einem Spiel auf- oder zugeklappt hast, damit sie beim nächsten Spiel wieder so erscheinen. Der Eintrag enthält nur diese Wahl, keine Kennung und keine Angaben zu dir, und bleibt, bis du die Browserdaten löschst.'
+    const news = paragraphs.findIndex(p => p.startsWith('Lokaler Speicher (compies.news.seen)'))
+    expect(news).toBeGreaterThan(0)
+    expect(paragraphs[news + 1]).toBe(entry)
+  })
+
+  it('name the compies-motion cookie in section 9, right after compies-appearance, word for word (#680, spec #856)', async () => {
+    const page = await mountSuspended(DatenschutzPage, { route: '/datenschutz' })
+    const section = page.findAll('section').find(s => s.get('h2').text() === '9. Cookies und Speicher im Browser')
+
+    const paragraphs = section!.findAll('p').map(p => p.text())
+    const entry = 'Cookie (compies-motion): merkt sich auf diesem Gerät, dass du „Weniger Bewegung“ eingeschaltet hast, damit Compies die ruhigen Animationen schon beim Laden zeigt, auch auf Seiten ohne Anmeldung. Es enthält nur den Wert „reduced“, keine Kennung und keine Angaben zu dir. Compies setzt es, sobald du den Schalter in deinem Profil einschaltest, und entfernt es, wenn du ihn ausschaltest. Es läuft nach einem Jahr ab. Für diese Einstellung, die du selbst gewählt hast, ist es technisch notwendig; eine Einwilligung ist dafür nicht nötig.'
+    const appearance = paragraphs.findIndex(p => p.startsWith('Cookie (compies-appearance)'))
+    expect(appearance).toBeGreaterThan(0)
+    expect(paragraphs[appearance + 1]).toBe(entry)
   })
 
   it('keep the Datenschutzerklärung\'s sections in order: the unnumbered intro, then 1 to 22 (#405)', async () => {

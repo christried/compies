@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
-  CLIP_END_MAX, CLIP_LENGTH_MAX, CLIP_LENGTH_MIN, CLIP_START_MAX, GAME_NAME_MAX, NO_FILTERS, SUITABILITIES, canSeeLibrary, clipTime, filterGames, gameNameProblem,
+  CLIP_END_MAX, CLIP_LENGTH_MAX, CLIP_LENGTH_MIN, CLIP_START_MAX, GAME_NAME_MAX, NO_FILTERS, SUITABILITIES, canSeeLibrary, clipTime, filterGames, gameNameKey, gameNameProblem, sameNameGame,
   isClipLength, normaliseTag, parseClipLength, parseClipTime, parseGameInput, parsePlayerCount, parseTags, sortTagsByLabel, tagProblem,
   formatPriceAmount, isPriceCheckOnly, parsePrice, parsePriceAmount, priceTakesAmount,
   FREE_TO_PLAY_TAG, tagsWithFreeToPlay, GAME_NOTES_MAX, gameNotesProblem,
@@ -762,5 +762,81 @@ describe('Free-to-play-Tag (#423)', () => {
   it('removes the Tag from a game with another Price, which leaves seven', () => {
     const tags = [...otherTags(7), FREE_TO_PLAY_TAG]
     expect(tagsWithFreeToPlay(tags, steam)).toEqual(otherTags(7))
+  })
+})
+
+describe('gameNameKey and sameNameGame (#689)', () => {
+  function game(id: string, name: string, archived = false): GameView {
+    return {
+      id, name, imageUrl: null, youtubeId: null, clipStart: 0, clipLength: 30, playersMin: null, playersMax: null,
+      suitabilities: [], updatedAt: '2026-01-15T10:00:00.000Z', notes: null, tags: [], archived, price: null,
+    }
+  }
+
+  it.each([
+    ['Counter-Strike 2', 'counter strike 2'],
+    ['Counter-Strike 2', 'COUNTER-STRIKE 2'],
+    ['Counter-Strike 2', 'Counter Strike  2'],
+    ['Counter-Strike 2', 'Counter‑Strike 2'],
+    ['Pokémon', 'pokemon'],
+    ['Übung', 'ubung'],
+    ['café', 'café'],
+  ])('treats „%s“ and „%s“ as the same name', (first, second) => {
+    expect(sameNameGame(second, [game('a', first)])?.id).toBe('a')
+    expect(sameNameGame(first, [game('b', second)])?.id).toBe('b')
+  })
+
+  it.each([
+    ['CS 2', 'Counter-Strike 2'],
+    ['Civ II', 'Civ 2'],
+    ['Mario Kart', 'Mario Kart 8'],
+    ['Mario Kart 8', 'Mario Kart'],
+  ])('does not match „%s“ against „%s“', (first, second) => {
+    expect(sameNameGame(first, [game('a', second)])).toBeNull()
+  })
+
+  it('keys a name by its letters and numbers only', () => {
+    expect(gameNameKey(' Counter-Strike 2 ')).toBe('counterstrike2')
+    expect(gameNameKey('Pokémon!')).toBe('pokemon')
+    expect(gameNameKey('🎮 !!')).toBe('')
+  })
+
+  it('matches nothing in an empty library', () => {
+    expect(sameNameGame('Halo', [])).toBeNull()
+  })
+
+  it('finds the one game, and the right one of two', () => {
+    const halo = game('h', 'Halo')
+    const mario = game('m', 'Mario Kart')
+    expect(sameNameGame('halo', [halo])).toBe(halo)
+    expect(sameNameGame('mario kart', [halo, mario])).toBe(mario)
+  })
+
+  it('matches a name of GAME_NAME_MAX characters against the same name', () => {
+    const long = 'a'.repeat(GAME_NAME_MAX)
+    expect(sameNameGame(long, [game('l', long)])?.id).toBe('l')
+  })
+
+  it.each(['', '   ', '!!!', '🎮'])('matches nothing for the name „%s“, even a game with the same name', (typed) => {
+    expect(sameNameGame(typed, [game('x', typed), game('y', '')])).toBeNull()
+  })
+
+  it('leaves the game of exceptId out and still finds another with the same key', () => {
+    const own = game('own', 'Halo')
+    const other = game('other', 'HALO')
+    expect(sameNameGame('Halo', [own], 'own')).toBeNull()
+    expect(sameNameGame('Halo', [own, other], 'own')).toBe(other)
+  })
+
+  it('takes the first of several matches in list order', () => {
+    expect(sameNameGame('halo', [game('1', 'Halo'), game('2', 'HALO')])?.id).toBe('1')
+  })
+
+  it('prefers a game that is not archived, even behind an Archived one', () => {
+    expect(sameNameGame('halo', [game('old', 'Halo', true), game('new', 'halo')])?.id).toBe('new')
+  })
+
+  it('takes the first Archived game when all matches are archived', () => {
+    expect(sameNameGame('halo', [game('1', 'Halo', true), game('2', 'HALO', true)])?.id).toBe('1')
   })
 })

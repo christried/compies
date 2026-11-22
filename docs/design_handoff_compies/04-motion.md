@@ -13,6 +13,8 @@ export const EASE = {
 export const reduced = () => getComputedStyle(document.documentElement).getPropertyValue('--cp-motion').trim() === 'reduced'
 ```
 
+Reduced motion is the device's (#680, GLOSSARY: Reduced motion): the cookie `compies-motion` holds `reduced` only while the switch of „Weniger Bewegung“ on the Profil page is on (the server alone writes it); `app/plugins/motion.ts` puts `<html data-motion="reduced">` from it, signed in or out, and the tokens read it as `--cp-motion`; script reads it through `useReducedMotion` (`app/composables/useReducedMotion.ts`), which shows a choice at once, before the save.
+
 Use `gsap.matchMedia()` with a custom condition fed by `reduced()` (re-evaluate when the in-app toggle changes) so every timeline below has its reduced twin in the same place.
 
 Rules: physical moments may overshoot (`pop`, `spring`, `back.out`); UI (toasts, sheets, badges, banners) never does. Max one full-body Compibert animating at a time. Pause timelines of off-screen elements (IntersectionObserver, rootMargin 120 px).

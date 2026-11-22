@@ -15,8 +15,13 @@ import type { BonusVetoView, CeremonyView, ClipView, CoinView, CountdownView, En
 export const EVENT_NAME_MAX = 60
 /** The longest Event notes for one game, in visible characters (#731): the notes module counts them as it does the Game notes' limit. */
 export const EVENT_NOTES_MAX = 2000
-/** The answer of a save of Event notes (#731): the game and the stored document, `null` after a clear. */
-export interface EventNotesSaved { gameId: string, notes: NotesDoc | null }
+/**
+ * The body of the save of a game's notes in the Event (#731, #835): `notes` are the Event notes, `gameNotes` the game's own (Game notes). A key that is absent stays as it is;
+ * `null`, `''` and a document with no visible text clear. A `type`, not an interface: `send`'s body is a `Record<string, unknown>`.
+ */
+export type EventNotesChange = { notes?: NotesDoc | null, gameNotes?: NotesDoc | null }
+/** The answer of that save: the game and the stored document of each field the request carried (`null` after a clear), a key only when it was in the request. */
+export interface EventNotesSaved { gameId: string, notes?: NotesDoc | null, gameNotes?: NotesDoc | null }
 /** Slots in a Date poll. */
 export const SLOTS_MAX = 16
 /** Sessions of one Event (ADR 0011, #49). */
