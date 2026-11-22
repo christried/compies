@@ -58,6 +58,8 @@ async function onSavedAndNext(game: GameView) {
         :key="formRound"
         :focus-name="formRound > 0"
         save-and-next
+        offer-existing
+        @use-existing="existing => navigateTo(`/bibliothek/${existing.id}/bearbeiten`)"
         @saved="onSaved"
         @saved-and-next="onSavedAndNext"
       />

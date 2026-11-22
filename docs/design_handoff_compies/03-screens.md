@@ -324,6 +324,7 @@ Every screen exists in the design files at desktop 1280 and mobile 390, light an
 - **States:** Neu, mit Vorschau · Duplikat-Hinweis · YouTube-Link kaputt · Bearbeiten
 - **Realtime:** —
 - **Deviation (0.16, #455):** a game is created in the Host's own library, not a platform-wide one (Release 0.16, ADR 0018). Two Hosts having the same game each is intended, so the Duplikat-Hinweis is no longer a check across Hosts.
+- **Deviation (0.19, #689):** the Duplikat-Hinweis compares names only (case, spaces, punctuation, accents), names the match, and „Ist ein anderes Spiel, trotzdem anlegen“ is gone: saving is never blocked.
 
 
 ### 25 Profil & Einstellungen

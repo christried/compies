@@ -42,13 +42,17 @@ registerEndpoint('/api/games/tags', {
     return tagsInUse
   },
 })
-// The whole library: the form must not load it for its suggestions (#365), so a call here is a regression.
+// The whole library: the form loads it for the duplicate hint (#689), not for its Tag suggestions (#365). A test sets the
+// games the Host has and whether the read fails.
+let libraryGames: GameView[] = []
+let libraryFails = false
 const libraryRequested = vi.fn()
 registerEndpoint('/api/games', {
   method: 'GET',
   handler: () => {
     libraryRequested()
-    return { games: [], tagsInUse: suggestedTags }
+    if (libraryFails) throw createError({ statusCode: 500, statusMessage: 'internal' })
+    return { games: libraryGames, tagsInUse: suggestedTags }
   },
 })
 
@@ -104,6 +108,11 @@ describe('the game form', () => {
     tagsInUse = suggestedTags
     tagsRequested.mockClear()
     libraryRequested.mockClear()
+    libraryGames = []
+    libraryFails = false
+    // The library list is kept in state and in the fetch cache between mounts: every test starts without an answer.
+    clearNuxtState('game-library')
+    clearNuxtData('games')
   })
 
   it('has the clip length at 30 seconds from the start', async () => {
@@ -493,6 +502,143 @@ describe('the game form', () => {
 
     await vi.waitFor(() => expect(posted).toHaveBeenCalled())
     expect(posted).toHaveBeenCalledWith({ name: 'Brettspiel', youtubeUrl: '', clipStart: 0, clipLength: 30, playersMin: null, playersMax: null, suitabilities: [], tags: [], notes: null, price: null })
+  })
+
+  // The hint for a game the Host's library already has (#689): the name compared by its letters and numbers, never blocking a save.
+  describe('the duplicate hint (#689)', () => {
+    const counter: GameView = { ...saved, id: '00000000-0000-4000-8000-0000000000b1', name: 'Counter-Strike 2' }
+    const archivedCounter: GameView = { ...counter, id: '00000000-0000-4000-8000-0000000000b2', archived: true }
+
+    function hint(page: Page) {
+      return page.findAll('[role="status"]').find(element => element.text().includes('vielleicht schon'))
+    }
+
+    function take(page: Page) {
+      return page.findAll('button').find(button => button.text().trim() === 'Das nehmen')
+    }
+
+    /** Mounts the form, waits until the library has answered, and types the name. */
+    async function typeName(name: string, props: Record<string, unknown> = {}) {
+      const page = await mountSuspended(GameForm, { props })
+      await vi.waitFor(() => expect(libraryRequested).toHaveBeenCalled())
+      await flushPromises()
+      await field(page, 'Titel').setValue(name)
+      return page
+    }
+
+    it('shows while a name is typed that the library has, politely, and offers „Das nehmen“ when the host handles it', async () => {
+      libraryGames = [counter]
+      const page = await typeName('counter strike 2', { offerExisting: true })
+
+      await vi.waitFor(() => expect(hint(page)).toBeDefined())
+      expect(hint(page)!.text()).toContain('Gibt’s vielleicht schon: „Counter-Strike 2“.')
+      expect(hint(page)!.attributes('role')).toBe('status')
+      expect(take(page)).toBeDefined()
+      // A hint, never an error.
+      expect(field(page, 'Titel').attributes('aria-invalid')).not.toBe('true')
+    })
+
+    it('offers no „Das nehmen“ without offerExisting', async () => {
+      libraryGames = [counter]
+      const page = await typeName('counter strike 2')
+
+      await vi.waitFor(() => expect(hint(page)).toBeDefined())
+      expect(take(page)).toBeUndefined()
+    })
+
+    it('shows none for a new name and none for an abbreviation', async () => {
+      libraryGames = [counter]
+      const page = await typeName('CS 2', { offerExisting: true })
+
+      expect(hint(page)).toBeUndefined()
+      await field(page, 'Titel').setValue('Brettspiel')
+      expect(hint(page)).toBeUndefined()
+    })
+
+    it('shows none while the library has not answered', async () => {
+      libraryGames = [counter]
+      const page = await mountSuspended(GameForm, { props: { offerExisting: true } })
+      await field(page, 'Titel').setValue('counter strike 2')
+
+      expect(hint(page)).toBeUndefined()
+      expect(page.text()).not.toContain('vielleicht schon')
+    })
+
+    it('shows none and no message when the library read fails', async () => {
+      libraryGames = [counter]
+      libraryFails = true
+      const page = await typeName('counter strike 2', { offerExisting: true })
+
+      expect(hint(page)).toBeUndefined()
+      expect(page.findAll('[role="alert"]')).toHaveLength(0)
+    })
+
+    it('names another game when renaming, and never the game itself', async () => {
+      libraryGames = [{ ...saved }, { ...counter }]
+      const page = await typeName('Mario Kart', { game: saved })
+
+      expect(hint(page)).toBeUndefined()
+      await field(page, 'Titel').setValue('counter strike 2')
+      await vi.waitFor(() => expect(hint(page)).toBeDefined())
+      expect(hint(page)!.text()).toContain('„Counter-Strike 2“')
+      await field(page, 'Titel').setValue('mario-kart')
+      expect(hint(page)).toBeUndefined()
+    })
+
+    it('says an Archived game is archived and links to its page, without „Das nehmen“', async () => {
+      libraryGames = [archivedCounter]
+      const page = await typeName('counter strike 2', { offerExisting: true })
+
+      await vi.waitFor(() => expect(hint(page)).toBeDefined())
+      expect(hint(page)!.text()).toContain('Gibt’s vielleicht schon, aber archiviert: „Counter-Strike 2“. Du kannst es zurückholen.')
+      const link = hint(page)!.findAll('a').find(anchor => anchor.text() === 'Zum Spiel')
+      expect(link?.attributes('href')).toBe(`/bibliothek/${archivedCounter.id}`)
+      expect(take(page)).toBeUndefined()
+    })
+
+    it('names a game that is not archived before an Archived one', async () => {
+      libraryGames = [archivedCounter, counter]
+      const page = await typeName('counter strike 2', { offerExisting: true })
+
+      await vi.waitFor(() => expect(hint(page)).toBeDefined())
+      expect(hint(page)!.text()).toContain('Gibt’s vielleicht schon: „Counter-Strike 2“.')
+      expect(hint(page)!.text()).not.toContain('archiviert')
+      expect(take(page)).toBeDefined()
+    })
+
+    it('does not stop „Spiel anlegen“', async () => {
+      libraryGames = [counter]
+      const page = await typeName('counter strike 2')
+      await vi.waitFor(() => expect(hint(page)).toBeDefined())
+
+      expect(cta(page).attributes('aria-disabled')).toBe('false')
+      await page.get('form').trigger('submit')
+
+      await vi.waitFor(() => expect(page.emitted('saved')).toEqual([[saved]]))
+      expect(posted).toHaveBeenCalledWith(expect.objectContaining({ name: 'counter strike 2' }))
+    })
+
+    it('does not stop „Speichern und noch eins“', async () => {
+      libraryGames = [counter]
+      const page = await typeName('counter strike 2', { saveAndNext: true })
+      await vi.waitFor(() => expect(hint(page)).toBeDefined())
+
+      await page.findAll('button').find(button => button.text().trim() === 'Speichern und noch eins')!.trigger('click')
+
+      await vi.waitFor(() => expect(page.emitted('savedAndNext')).toEqual([[saved]]))
+      expect(posted).toHaveBeenCalledOnce()
+    })
+
+    it('hands the existing game to its host on „Das nehmen“ and posts nothing', async () => {
+      libraryGames = [counter]
+      const page = await typeName('counter strike 2', { offerExisting: true })
+      await vi.waitFor(() => expect(take(page)).toBeDefined())
+
+      await take(page)!.trigger('click')
+
+      expect(page.emitted('useExisting')).toEqual([[counter]])
+      expect(posted).not.toHaveBeenCalled()
+    })
   })
 
   describe('player count and Suitabilities (#142, #171)', () => {
@@ -948,13 +1094,13 @@ describe('the game form', () => {
         expect(page.find('[role="listbox"]').exists()).toBe(false)
       })
 
-      it('gets its suggestions from the Tags in use, and does not load the library (#365)', async () => {
+      it('gets its suggestions from the Tags in use (#365)', async () => {
         const page = await mountSuspended(GameForm)
 
         await withSuggestions(page, 'co')
 
         expect(options(page)).toEqual(['Co-op', 'Coop-Klassiker'])
-        expect(libraryRequested).not.toHaveBeenCalled()
+        expect(tagsRequested).toHaveBeenCalled()
       })
 
       it('offers no list and no error while no Tag is in use yet (#365)', async () => {

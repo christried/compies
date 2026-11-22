@@ -42,9 +42,11 @@ const LINK = 'https://youtu.be/dQw4w9WgXcQ'
 const posted = vi.fn()
 const uploads = vi.fn()
 let createFails = false
+// The games the Host's library holds (#689: the form compares the typed name with them).
+let libraryGames: GameView[] = []
 registerEndpoint('/api/games', {
   method: 'GET',
-  handler: () => ({ games: [], tagsInUse: [] }),
+  handler: () => ({ games: libraryGames, tagsInUse: [] }),
 })
 registerEndpoint('/api/games/tags', {
   method: 'GET',
@@ -118,6 +120,9 @@ describe('the create page', () => {
     posted.mockClear()
     uploads.mockClear()
     createFails = false
+    libraryGames = []
+    clearNuxtState('game-library')
+    clearNuxtData('games')
     toCardWebp.mockReset()
     toCardWebp.mockResolvedValue({ blob: cardWebp, width: 2000, height: 1000 })
     refreshGameLibrary.mockReset()
@@ -179,6 +184,20 @@ describe('the create page', () => {
 
     await vi.waitFor(() => expect(useRoute().path).toBe(`/bibliothek/${created.id}`))
     expect(shownToasts().map(toast => toast.text)).toContain('Mario Kart ist in der Bibliothek.')
+    page.unmount()
+  })
+
+  // #689: the hint under the name offers „Das nehmen“ here; it opens the existing game's form, and nothing is saved.
+  it('„Das nehmen“ in the duplicate hint opens the existing game\'s form and saves nothing', async () => {
+    libraryGames = [{ ...created, name: 'Counter-Strike 2' }]
+    const page = await mount()
+    await field(page, 'Titel').setValue('counter strike 2')
+
+    await vi.waitFor(() => expect(button(page, 'Das nehmen')).toBeDefined())
+    await button(page, 'Das nehmen').trigger('click')
+
+    await vi.waitFor(() => expect(useRoute().path).toBe(`/bibliothek/${created.id}/bearbeiten`))
+    expect(posted).not.toHaveBeenCalled()
     page.unmount()
   })
 

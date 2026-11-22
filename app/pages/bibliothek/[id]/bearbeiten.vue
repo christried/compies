@@ -60,7 +60,10 @@ async function onSaved(saved: GameView) {
         </div>
 
         <GameForm
+          :key="game.id"
           :game="game"
+          offer-existing
+          @use-existing="existing => navigateTo(`/bibliothek/${existing.id}/bearbeiten`)"
           @saved="onSaved"
         />
       </template>
