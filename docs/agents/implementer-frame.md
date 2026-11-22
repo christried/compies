@@ -11,7 +11,7 @@ You build ONE ticket in your own git worktree. The orchestrator reviews your dif
 3. Read, in this order:
    - your ticket, read as `docs/agents/issue-tracker.md` § Conventions says (from Git Bash the `gh api` form);
    - its parent spec the same way;
-   - your brief;
+   - your brief; when the spawn prompt says the ticket is its own brief (`docs/agents/subagents.md` § Briefs), the ticket's decisions and the spec sections it names are your brief, and the files and seams it leaves open are yours to find;
    - `CODING_STANDARDS.md`, and `GLOSSARY.md` for the terms you touch;
    - the ADRs and the files your brief names.
 4. Call the Skill tool with `tdd` and build the ticket test-first. The test seams the brief names count as confirmed by the user, so `tdd`'s „confirm with the user“ step is met by the brief; a seam the brief doesn't name goes into your report.
@@ -65,5 +65,6 @@ Before you report, end every background task you started (a server with its `sto
 - Deviations from the brief or the ticket, and why.
 - Checks: pass, or the failing output.
 - The changelog line, when you work for an integration branch: its group and its text.
+- A ticket that is its own brief: the browser-check items of its UI changes, each with the page, the account, the width, what to measure and its pass condition as a number, for the Release's check (no drafter wrote them).
 - The browser-check items you measured on slot 2 (§ Checks): each with its number and PASS or FAIL, every pass condition you corrected, and the `stop`'s last line; or „not measured“ with the reason.
 - Anything the orchestrator must decide or look at (e.g. a page to check in the browser).
