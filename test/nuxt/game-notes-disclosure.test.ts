@@ -268,6 +268,102 @@ describe('GameNotesDisclosure (#224)', () => {
     })
   })
 
+  describe('the Round card remembers open or closed on this device (#838, spec #856)', () => {
+    const KEY = 'compies-round-notes'
+    const card = (props: Record<string, unknown> = {}) => mountSuspended(GameNotesDisclosure, {
+      props: { notes: notesFromLines(['Game-Zeile']), variant: 'round', remember: true, ...props },
+    })
+    const expanded = (disclosure: Awaited<ReturnType<typeof card>>) => disclosure.get('button').attributes('aria-expanded')
+    beforeEach(() => {
+      localStorage.clear()
+      motion('reduced')
+    })
+    afterEach(() => {
+      localStorage.clear()
+      vi.restoreAllMocks()
+    })
+
+    it('is open without an entry, as it was before', async () => {
+      const disclosure = await card()
+
+      expect(expanded(disclosure)).toBe('true')
+      expect(lines(disclosure)).toEqual(['Game-Zeile'])
+    })
+
+    it('stays closed after a remount once the Host closed it, and the entry is the only thing stored', async () => {
+      const first = await card()
+      await first.get('button').trigger('click')
+      expect(expanded(first)).toBe('false')
+      first.unmount()
+
+      const again = await card()
+
+      expect(expanded(again)).toBe('false')
+      expect(again.find('p').exists()).toBe(false)
+      expect(localStorage.length).toBe(1)
+      expect(localStorage.getItem(KEY)).toBe('closed')
+    })
+
+    it('stays open after a remount once the Host opened it again', async () => {
+      const first = await card()
+      await first.get('button').trigger('click')
+      await first.get('button').trigger('click')
+      first.unmount()
+
+      const again = await card()
+
+      expect(expanded(again)).toBe('true')
+      expect(localStorage.getItem(KEY)).toBe('open')
+    })
+
+    it('holds one memory for every Round card: closing one closes the next that shows', async () => {
+      const first = await card()
+      const second = await card({ notes: notesFromLines(['Andere Zeile']) })
+
+      expect(expanded(second)).toBe('true')
+      await first.get('button').trigger('click')
+
+      expect(expanded(second)).toBe('false')
+      const third = await card({ notes: notesFromLines(['Dritte Zeile']) })
+      expect(expanded(third)).toBe('false')
+    })
+
+    it('shows the notes open, and no error, when the storage is blocked', async () => {
+      vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
+        throw new DOMException('blocked', 'SecurityError')
+      })
+      vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+        throw new DOMException('blocked', 'SecurityError')
+      })
+      const disclosure = await card()
+
+      expect(expanded(disclosure)).toBe('true')
+      await disclosure.get('button').trigger('click')
+      expect(expanded(disclosure)).toBe('false')
+    })
+
+    it('reads an entry that is neither open nor closed as open', async () => {
+      localStorage.setItem(KEY, 'banana')
+
+      expect(expanded(await card())).toBe('true')
+    })
+
+    it('leaves the library page\'s disclosure alone: it starts closed and neither reads nor writes the entry', async () => {
+      localStorage.setItem(KEY, 'open')
+      const read = vi.spyOn(Storage.prototype, 'getItem')
+      const written = vi.spyOn(Storage.prototype, 'setItem')
+      const disclosure = await mountSuspended(GameNotesDisclosure, { props: { eventNotes: notesFromLines(['Heute nur Bo1']), variant: 'round' } })
+
+      expect(expanded(disclosure)).toBe('false')
+      await disclosure.get('button').trigger('click')
+      await disclosure.get('button').trigger('click')
+
+      expect(read.mock.calls.filter(([key]) => key === KEY)).toHaveLength(0)
+      expect(written.mock.calls.filter(([key]) => key === KEY)).toHaveLength(0)
+      expect(localStorage.getItem(KEY)).toBe('open')
+    })
+  })
+
   it('shows markup in the notes as text, never as an element or a link', async () => {
     const disclosure = await mountSuspended(GameNotesDisclosure, { props: { notes: notesFromLines(['<b>x</b> https://example.com']) } })
 

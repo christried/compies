@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Neu
+
+- Die Notizen am Spiel, das gerade gespielt wird, bleiben auf diesem Gerät auf oder zu, wie du sie zuletzt gelassen hast. ([#838](https://github.com/christried/compies/issues/838))
+
 ### Geändert
 
 - Auf Bildschirmen ab 600 px stehen die Spiele nebeneinander als Karten, wie auf großen Bildschirmen; auf dem Handy bleiben sie Zeilen. ([#707](https://github.com/christried/compies/issues/707))

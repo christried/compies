@@ -20,6 +20,8 @@
   }
 }
 @custom-variant reduced (&:where([data-motion=reduced], [data-motion=reduced] *));
+/* The Round card's notes stored as closed, before the page has taken the choice over (useRoundNotesMemory, #838): a script in the head sets the attribute before the first paint. */
+@custom-variant round-notes-closed (&:where([data-round-notes=closed], [data-round-notes=closed] *));
 /* A phone held sideways (#550): below md, wide enough for the Clip and the Veto bar side by side, too low to stack them. The 41rem is
    2 × 10 px gutters + 10 px gap + --cp-veto-side-w (16.5rem) + the 356 px video floor (200 × 16/9) + the section's 2 × 3 px border. */
 @custom-variant sideways {
