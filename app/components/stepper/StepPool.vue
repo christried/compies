@@ -60,6 +60,12 @@ async function onSaved(game: GameView) {
   toast({ tone: 'success', text: t('library.saved', { name: game.name }) })
   await refreshGameLibrary()
 }
+
+// „Das nehmen“ in the sheet's duplicate hint (#860): the game the Host already has goes into the pool, or stays there, and the sheet closes.
+function onUseExisting(game: GameView) {
+  draft.value = addPoolGame(draft.value, game)
+  creating.value = false
+}
 </script>
 
 <template>
@@ -169,7 +175,11 @@ async function onSaved(game: GameView) {
       :title="t('stepper.pool.create')"
       @close="creating = false"
     >
-      <GameForm @saved="onSaved" />
+      <GameForm
+        offer-existing
+        @saved="onSaved"
+        @use-existing="onUseExisting"
+      />
     </AppSheet>
   </div>
 </template>
