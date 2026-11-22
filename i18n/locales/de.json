@@ -1071,7 +1071,8 @@
     "saveShortcutApple": "⌘ + Enter speichert",
     "duplicate": "Gibt’s vielleicht schon: „{name}“.",
     "useExisting": "Das nehmen",
-    "createAnyway": "Trotzdem anlegen",
+    "duplicateArchived": "Gibt’s vielleicht schon, aber archiviert: „{name}“. Du kannst es zurückholen.",
+    "openArchived": "Zum Spiel",
     "badLink": "Der Link funktioniert so nicht.",
     "save": "Speichern"
   },
@@ -1869,7 +1870,6 @@
     "uploadTooLarge": "Das Bild ist zu groß (max. {max} MB).",
     "youtubeInvalid": "Das sieht nicht nach einem YouTube-Link aus.",
     "clipTooShort": "Der Clip muss mindestens 10 Sekunden lang sein.",
-    "duplicateGame": "Gibt's vielleicht schon: {name}",
     "pointsOrder": "Ein schlechterer Platz kann nicht mehr Punkte bekommen als ein besserer.",
     "pointsFlat": "Mindestens ein Platz muss weniger Punkte bekommen als Platz 1, sonst zählt die Platzierung nicht.",
     "formatUnavailable": "Dieses Format gibt es noch nicht.",
