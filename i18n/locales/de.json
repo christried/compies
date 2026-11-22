@@ -949,9 +949,6 @@
     "loadMore": "Mehr laden",
     "shownOf": "{shown} von {total} Spielen"
   },
-  "gameNotes": {
-    "open": "Notizen ansehen"
-  },
   "eventNotes": {
     "title": "Notizen für dieses Event",
     "edit": "Notizen für dieses Event bearbeiten",

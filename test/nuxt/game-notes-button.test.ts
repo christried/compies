@@ -11,14 +11,14 @@ import { BLANK_NOTES, FORMATTED_HREF, FORMATTED_NOTES, readFormatted } from './h
 // The Notes button of a game in the pickers (#436, 02-components § GameCard, deviation 0.12): a read-only popover from md up, a
 // sheet below, the notes with their line breaks. Escape or a press outside closes the popover and focus goes back to the button.
 
-const TRIGGER = 'button[aria-label="Notizen ansehen"]'
+const TRIGGER = 'button[aria-label^="Notizen zu "]'
 const NOTES = 'Zeile eins\n\nZeile drei'
 
 let page: Awaited<ReturnType<typeof mountSuspended>> | undefined
 let setWide: (next: boolean) => void
 
 // The Event's name and whether it is finished are the Event page's context's (#821), not props.
-async function mount({ eventName, eventFinished, ...props }: { name?: string, notes: NotesDoc | null, eventNotes?: NotesDoc | null, eventName?: string, eventFinished?: boolean }) {
+async function mount({ eventName, eventFinished, ...props }: { name?: string, notes: NotesDoc | null, eventNotes?: NotesDoc | null, eventName?: string, eventFinished?: boolean, editTo?: string }) {
   const { global } = eventNotesContext({ ...(eventName === undefined ? {} : { eventName }), finished: eventFinished ?? false })
   page = await mountSuspended(GameNotesButton, { props: { name: 'Mario Kart', ...props }, attachTo: document.body, global })
   await flushPromises()
@@ -172,13 +172,127 @@ describe('the Notes button of a game (#436)', () => {
     })
   })
 
-  it('is a button named „Notizen ansehen“ that starts closed', async () => {
+  it('is a button named „Notizen zu {game}“ that starts closed', async () => {
     await mount({ notes: notesFromLines(NOTES.split('\n')) })
 
+    expect(trigger().getAttribute('aria-label')).toBe('Notizen zu Mario Kart')
     expect(trigger().getAttribute('aria-expanded')).toBe('false')
     expect(trigger().getAttribute('aria-haspopup')).toBe('dialog')
     expect(popover()).toBeNull()
     expect(sheet()).toBeNull()
+  })
+
+  // The look of the button (#837, design 18-notizen): the sticky note, a shadow, and an ink fill while its notes are open.
+  describe('the look of the button (#837)', () => {
+    it('is a surface button while closed and an ink one while its notes are open, in the popover and in the sheet', async () => {
+      for (const wide of [true, false]) {
+        setWide(wide)
+        await mount({ notes: notesFromLines(NOTES.split('\n')) })
+
+        expect(trigger().classList).toContain('bg-surface')
+        expect(trigger().classList).not.toContain('bg-ink')
+        expect(trigger().classList).toContain('shadow-sm')
+
+        await open()
+
+        expect(trigger().getAttribute('aria-expanded')).toBe('true')
+        expect(trigger().classList).toContain('bg-ink')
+        expect(trigger().classList).toContain('text-paper')
+        expect(trigger().classList).not.toContain('bg-surface')
+        expect(trigger().hasAttribute('aria-pressed')).toBe(false)
+
+        page!.unmount()
+        document.body.innerHTML = ''
+      }
+    })
+
+    it('leaves the popover’s own close button without aria-expanded and on the surface look (IconButton `expanded` unset)', async () => {
+      await mount({ notes: notesFromLines(NOTES.split('\n')) })
+      await open()
+
+      const close = popover()!.querySelector('button[aria-label="Schließen"]')!
+      expect(close.hasAttribute('aria-expanded')).toBe(false)
+      expect(close.classList).toContain('bg-surface')
+      expect(close.classList).not.toContain('bg-ink')
+    })
+
+    it('goes back to the surface look when the popover closes', async () => {
+      await mount({ notes: notesFromLines(NOTES.split('\n')) })
+      await open()
+
+      trigger().click()
+      await flushPromises()
+
+      expect(popover()).toBeNull()
+      expect(trigger().getAttribute('aria-expanded')).toBe('false')
+      expect(trigger().classList).toContain('bg-surface')
+      expect(trigger().classList).not.toContain('bg-ink')
+    })
+  })
+
+  // The footer „Bearbeiten“ (#837): with `editTo`, a text button with the pencil in a footer under the notes; without it, none (the pickers).
+  describe('the footer „Bearbeiten“ (#837)', () => {
+    const EDIT = '/bibliothek/g-1/bearbeiten'
+    const editLink = (within: Element | null) => [...within!.querySelectorAll('a')].find(link => link.textContent!.includes('Bearbeiten'))
+
+    it('is a link to the game’s form in a footer outside the scrolling body, in the popover', async () => {
+      await mount({ notes: notesFromLines(NOTES.split('\n')), editTo: EDIT })
+      await open()
+
+      const link = editLink(popover())!
+      expect(link.getAttribute('href')).toBe(EDIT)
+      expect(link.closest('footer')).not.toBeNull()
+      expect(popover()!.lastElementChild).toBe(link.closest('footer'))
+      expect(popover()!.querySelector('[data-notes-body]')!.contains(link)).toBe(false)
+      expect(link.querySelector('svg')).not.toBeNull()
+    })
+
+    it('is a link to the game’s form in the sheet’s footer, below md', async () => {
+      setWide(false)
+      await mount({ notes: notesFromLines(NOTES.split('\n')), editTo: EDIT })
+      await open()
+
+      const link = editLink(sheet())!
+      expect(link.getAttribute('href')).toBe(EDIT)
+      expect(link.closest('footer')).not.toBeNull()
+      expect(link.closest('[data-notes-body]')).toBeNull()
+    })
+
+    it('has no footer without editTo, in either container', async () => {
+      await mount({ notes: notesFromLines(NOTES.split('\n')) })
+      await open()
+      expect(popover()!.querySelector('footer')).toBeNull()
+      page!.unmount()
+
+      setWide(false)
+      await mount({ notes: notesFromLines(NOTES.split('\n')) })
+      await open()
+      expect(sheet()!.querySelector('footer')).toBeNull()
+    })
+
+    it('closes the notes when it is used, and leaves the focus to the page it leads to', async () => {
+      await mount({ notes: notesFromLines(NOTES.split('\n')), editTo: EDIT })
+      await open()
+      const link = editLink(popover())!
+      // The router's own navigation is not under test: a capture listener marks the click as handled before RouterLink sees it.
+      document.addEventListener('click', event => event.preventDefault(), { capture: true, once: true })
+
+      link.click()
+      await flushPromises()
+
+      expect(popover()).toBeNull()
+      expect(document.activeElement).not.toBe(trigger())
+    })
+
+    it('stays in view while a 1000-character note scrolls above it', async () => {
+      const long = `${'a'.repeat(495)}\n${'b'.repeat(495)}`
+      await mount({ notes: notesFromLines(long.split('\n')), editTo: EDIT })
+      await open()
+
+      expect(popover()!.querySelector('[data-notes-body]')!.classList).toContain('overflow-y-auto')
+      expect(popover()!.querySelector('footer')!.classList).toContain('flex-none')
+      expect(lines(popover())).toEqual(long.split('\n'))
+    })
   })
 
   it('opens a sheet below md, with the notes exactly as stored, line breaks included', async () => {
@@ -334,7 +448,7 @@ describe('the Notes button of a game (#436)', () => {
     const unsize = stubPopoverSize(288, 300)
     const measure = vi.spyOn(Element.prototype, 'getBoundingClientRect').mockImplementation(function (this: Element) {
       const at = (top: number, left: number, width: number, height: number) => ({ top, left, width, height, bottom: top + height, right: left + width, x: left, y: top, toJSON: () => ({}) }) as DOMRect
-      if (this.getAttribute('aria-label') === 'Notizen ansehen') return at(650, 400, 40, 36)
+      if (this.matches(TRIGGER)) return at(650, 400, 40, 36)
       if (this.getAttribute('role') === 'dialog') return at(0, 0, 288, 300)
       return at(0, 0, 0, 0)
     })
@@ -364,7 +478,7 @@ describe('the Notes button of a game (#436)', () => {
     const unsize = stubPopoverSize(288, 420)
     const measure = vi.spyOn(Element.prototype, 'getBoundingClientRect').mockImplementation(function (this: Element) {
       const at = (top: number, left: number, width: number, height: number) => ({ top, left, width, height, bottom: top + height, right: left + width, x: left, y: top, toJSON: () => ({}) }) as DOMRect
-      if (this.getAttribute('aria-label') === 'Notizen ansehen') return at(430, 400, 40, 36)
+      if (this.matches(TRIGGER)) return at(430, 400, 40, 36)
       if (this.getAttribute('role') === 'dialog') return at(0, 0, 288, 420)
       return at(0, 0, 0, 0)
     })
@@ -394,7 +508,7 @@ describe('the Notes button of a game (#436)', () => {
     const unsize = stubPopoverSize(320, 300)
     const measure = vi.spyOn(Element.prototype, 'getBoundingClientRect').mockImplementation(function (this: Element) {
       const at = (top: number, left: number, width: number, height: number) => ({ top, left, width, height, bottom: top + height, right: left + width, x: left, y: top, toJSON: () => ({}) }) as DOMRect
-      if (this.getAttribute('aria-label') === 'Notizen ansehen') return at(400, 1250, 40, 36)
+      if (this.matches(TRIGGER)) return at(400, 1250, 40, 36)
       if (this.getAttribute('role') === 'dialog') return at(0, 0, 307.2, 288)
       return at(0, 0, 0, 0)
     })

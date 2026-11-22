@@ -804,7 +804,7 @@ describe('the game browser in the pool steps (#173)', () => {
 // other. The ＋ and the ✕ stay where they are.
 describe('the Notes button of a game in the pool steps (#436)', () => {
   const withNotes = game(1, 'Mario Kart', { notes: notesFromLines(['Settings: 3 Runden', 'Warmup: Lobby']) })
-  const notesButtons = (root: { element: Element }) => root.element.querySelectorAll('button[aria-label="Notizen ansehen"]')
+  const notesButtons = (root: { element: Element }) => root.element.querySelectorAll('button[aria-label^="Notizen zu "]')
   const cardOf = (page: Page, name: string) => picker(page).findAll('li').find(card => card.get('b').text() === name)!
 
   beforeEach(async () => {

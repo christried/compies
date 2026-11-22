@@ -660,8 +660,8 @@ describe('„Nächstes Spiel setzen“', () => {
     const poolList = dialog()!.querySelector('ul[aria-label="Spiele, die im Pool noch übrig sind"]')!
     // Halo has Game notes only, Pong Event notes only: both rows have the button.
     const [haloRow, pongRow] = [...poolList.querySelectorAll('li')]
-    expect(haloRow!.querySelector('button[aria-label="Notizen ansehen"]')).not.toBeNull()
-    pongRow!.querySelector<HTMLButtonElement>('button[aria-label="Notizen ansehen"]')!.click()
+    expect(haloRow!.querySelector('button[aria-label^="Notizen zu "]')).not.toBeNull()
+    pongRow!.querySelector<HTMLButtonElement>('button[aria-label^="Notizen zu "]')!.click()
     await flushPromises()
     const popover = document.querySelector<HTMLElement>('[role="dialog"]:not([data-sheet])')!
     expect([...popover.querySelectorAll('h3')].map(heading => heading.textContent)).toEqual(['Notizen für dieses Event'])
