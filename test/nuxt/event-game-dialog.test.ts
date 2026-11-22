@@ -59,7 +59,8 @@ const wheel: WheelView = { count: 2, slices: null, spin, vetoes: { left: [], own
 const saves = { bodies: [] as { gameId: string, body: EventNotesChange }[], refuse: false }
 
 // `leaked`: a Member's read that carries the Host's Event notes anyway (the server never sends them): the Member's page provides no context, so nothing of them shows (#821).
-function serveHost(host: boolean, phase: 'running' | 'finished' = 'running', leaked = false) {
+// `games`: the pool the read carries (#858 tests a pool of one tile and of two).
+function serveHost(host: boolean, phase: 'running' | 'finished' = 'running', leaked = false, games: PoolGame[] = pool) {
   saves.bodies = []
   saves.refuse = false
   // The Event's notes as the server holds them: a save changes them, and the next read of the Event shows the change.
@@ -72,7 +73,7 @@ function serveHost(host: boolean, phase: 'running' | 'finished' = 'running', lea
     settings: { ...defaultSettings(), selectionMode: 'lucky_wheel', hiddenWheel: false, vetoAllowance: 0 },
     runningSessionId: `session-${slug}-0`,
     // A Member sees the pool tiles only with the preview on: the faces here.
-    pool: host ? pool.map(game => ({ ...game, notes: gameNotesOf(game) })) : pool.map(({ id, name, imageUrl, youtubeId, price, playersMin, playersMax, suitabilities }) => ({ id, name, imageUrl, youtubeId, price, playersMin, playersMax, suitabilities })),
+    pool: host ? games.map(game => ({ ...game, notes: gameNotesOf(game) })) : games.map(({ id, name, imageUrl, youtubeId, price, playersMin, playersMax, suitabilities }) => ({ id, name, imageUrl, youtubeId, price, playersMin, playersMax, suitabilities })),
     // The Round's own Notes are the Host's: the server leaves them out of a Member's read.
     rounds: host ? [round('r1', base, gameNotesOf(base) ?? undefined), round('r2', schach, gameNotesOf(schach) ?? undefined)] : [round('r1', base), round('r2', schach)],
     wheel,
@@ -499,5 +500,142 @@ describe('the Host writes Event notes in the game dialogs of the Event page (#46
     zuletzt().click()
     await flushPromises()
     expect(dialog()!.textContent).toContain('Freitags-Zocken')
+  })
+})
+
+// The Notes button on the Event page's tiles (#858): the Host's Spielepool and „Zuletzt gezogen“ carry it for a game with Event notes or Game notes; the Round card's tile and a Member's tiles never do.
+// The notes popover is itself `role="dialog"` with its own label, so the game dialog is the one that is not labelled „Notizen zu“.
+describe('the Notes button on the Event page\'s tiles (#858)', () => {
+  const NOTES_BUTTON = '[aria-label^="Notizen zu "]'
+  const labelsIn = (heading: string) => [...sectionOf(heading)!.querySelectorAll(NOTES_BUTTON)].map(button => button.getAttribute('aria-label'))
+  const notesButton = (heading: string, game: string) => sectionOf(heading)!.querySelector<HTMLButtonElement>(`button[aria-label="Notizen zu ${game}"]`)!
+  const popover = () => document.querySelector<HTMLElement>(`[role="dialog"]${NOTES_BUTTON}`)
+  const gameDialog = () => [...document.querySelectorAll<HTMLElement>('[role="dialog"]')].find(el => !el.matches(NOTES_BUTTON))
+  const textboxes = () => [...document.querySelectorAll<HTMLElement>('[role="textbox"]')]
+  const footerButton = (label: string) => [...document.querySelectorAll<HTMLButtonElement>('footer button')].find(button => button.textContent?.trim() === label)!
+  const escape = (within: Element) => within.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+
+  beforeEach(() => {
+    ensureGeometry()
+  })
+
+  describe('for the Host', () => {
+    beforeEach(() => signInAs({ ...kitty, canHost: true }))
+
+    it('has the button on the tiles of the Spielepool and on the wheel\'s result card that have notes, and none on the one without', async () => {
+      const { slug } = serveHost(true)
+      await mount(slug)
+
+      // Halo and Kart have both kinds of notes, Pong has none.
+      expect(labelsIn('So wird gespielt')).toEqual(['Notizen zu Halo', 'Notizen zu Kart'])
+      expect(labelsIn('Zuletzt gezogen')).toEqual(['Notizen zu Kart'])
+      expect(tileButton('So wird gespielt', 'Pong')).toBeDefined()
+    })
+
+    it('has none on the Round cards\' tiles, while their „Notizen“ disclosure shows (Halo has both notes)', async () => {
+      const { slug } = serveHost(true)
+      await mount(slug)
+
+      expect(tileButton('Läuft aktuell', 'Halo')).toBeDefined()
+      expect(tileButton('Läuft aktuell', 'Schach')).toBeDefined()
+      expect(labelsIn('Läuft aktuell')).toEqual([])
+      expect(sectionOf('Läuft aktuell')!.querySelectorAll('button[aria-expanded]')).toHaveLength(2)
+    })
+
+    it('shows the Event notes above the Game notes in the popover of a pool tile, and a click on the button alone opens no game dialog', async () => {
+      const { slug } = serveHost(true)
+      await mount(slug)
+
+      notesButton('So wird gespielt', 'Halo').click()
+      await flushPromises()
+
+      const text = popover()!.textContent!
+      expect(text.indexOf('Event-Halo: nur Bo1')).toBeLessThan(text.indexOf('Hausregel: keine Raketen'))
+      expect(gameDialog()).toBeUndefined()
+      expect(textboxes()).toHaveLength(0)
+    })
+
+    it.each([
+      ['the Spielepool', () => notesButton('So wird gespielt', 'Halo'), 'Halo', 'g-halo'],
+      ['„Zuletzt gezogen“', () => notesButton('Zuletzt gezogen', 'Kart'), 'Kart', 'g-kart'],
+    ])('opens the game dialog of the tile of %s in the edit mode from „Bearbeiten“, with the Event editor focused', async (_place, button, name) => {
+      const { slug } = serveHost(true)
+      await mount(slug)
+
+      button().click()
+      await flushPromises()
+      footerButton('Bearbeiten').click()
+      await vi.waitFor(() => expect(textboxes()).toHaveLength(2))
+      await flushPromises()
+
+      expect(popover()).toBeNull()
+      expect(gameDialog()!.querySelector('h2')?.textContent).toBe(name)
+      expect(textboxes()[0]!.contains(document.activeElement)).toBe(true)
+    })
+
+    it('shows the Game notes a save in the dialog changed in the tile\'s popover, with no reload', async () => {
+      const { slug } = serveHost(true)
+      const mounted = await mount(slug)
+      notesButton('So wird gespielt', 'Halo').click()
+      await flushPromises()
+      footerButton('Bearbeiten').click()
+      await vi.waitFor(() => expect(textboxes()).toHaveLength(2))
+      const [, gameEditor] = mounted.findAllComponents(RichNotesEditor)
+      editorOf(gameEditor!).commands.setContent(notesFromLines(['Hausregel: Raketen erlaubt'])! as never, { emitUpdate: true })
+
+      footerButton('Speichern').click()
+      await vi.waitFor(() => expect(textboxes()).toHaveLength(0))
+      expect(saves.bodies).toEqual([{ gameId: 'g-halo', body: { gameNotes: notesFromLines(['Hausregel: Raketen erlaubt']) } }])
+      escape(gameDialog()!)
+      await vi.waitFor(() => expect(gameDialog()).toBeUndefined())
+      notesButton('So wird gespielt', 'Halo').click()
+      await flushPromises()
+
+      expect(popover()!.textContent).toContain('Hausregel: Raketen erlaubt')
+      expect(popover()!.textContent).not.toContain('Hausregel: keine Raketen')
+      expect(popover()!.textContent).toContain('Event-Halo: nur Bo1')
+    })
+
+    it('keeps the footer in a finished Event, and „Bearbeiten“ opens the game dialog', async () => {
+      const { slug } = serveHost(true, 'finished')
+      await mount(slug, 'So wird gespielt')
+
+      notesButton('So wird gespielt', 'Kart').click()
+      await flushPromises()
+      footerButton('Bearbeiten').click()
+      await flushPromises()
+
+      expect(popover()).toBeNull()
+      expect(gameDialog()!.querySelector('h2')?.textContent).toBe('Kart')
+    })
+
+    it.each([
+      ['one tile', [base], ['Notizen zu Halo']],
+      ['two tiles, one of them without notes', [base, pong], ['Notizen zu Halo']],
+      ['two tiles with notes', [base, kart], ['Notizen zu Halo', 'Notizen zu Kart']],
+      ['a pool of games without notes', [pong], []],
+    ])('has the right buttons in a pool of %s', async (_name, games, labels) => {
+      const { slug } = serveHost(true, 'running', false, games)
+      await mount(slug)
+
+      expect(labelsIn('So wird gespielt')).toEqual(labels)
+    })
+  })
+
+  describe('for a Member', () => {
+    beforeEach(() => signInAs(kitty))
+
+    it.each([
+      ['a read without Event notes', false],
+      ['a read that carries the Host\'s Event notes anyway', true],
+    ])('has none anywhere on the page, with the Spielepool, „Zuletzt gezogen“ and „Läuft aktuell“ all shown: %s', async (_name, leaked) => {
+      const { slug } = serveHost(false, 'running', leaked)
+      await mount(slug)
+
+      expect(tileButton('So wird gespielt', 'Kart')).toBeDefined()
+      expect(tileButton('Läuft aktuell', 'Halo')).toBeDefined()
+      expect(sectionOf('Zuletzt gezogen')).not.toBeNull()
+      expect(document.querySelector(NOTES_BUTTON)).toBeNull()
+    })
   })
 })

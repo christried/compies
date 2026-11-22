@@ -422,11 +422,14 @@ describe('the game dialog from the pool tiles (#443)', () => {
     'id-Pong': { tags: [{ key: 'klassiker', label: 'Klassiker' }], notes: null },
   }
   const dialog = () => document.querySelector('[role="dialog"]') as HTMLElement
+  const TILE_NAME = 'button:not([aria-label^="Notizen zu "])'
 
   it('opens the dialog of the tapped game with its Tags and Notes, for a pool of one game and for a pool of two', async () => {
     const one = await mountCard({ settings: wheel, isHost: true, pool: [poolGame('Mario Kart', { playersMin: 2, playersMax: 4 })], hostGames })
-    expect(one.findAll('button')).toHaveLength(1)
-    await one.get('button').trigger('click')
+    // The Host's tile also has the Notes button of a game with notes (#858): the name is the tile's own button.
+    expect(one.findAll(TILE_NAME)).toHaveLength(1)
+    expect(one.findAll('button[aria-label="Notizen zu Mario Kart"]')).toHaveLength(1)
+    await one.get(TILE_NAME).trigger('click')
     await flushPromises()
     expect(dialog().querySelector('h2')?.textContent).toBe('Mario Kart')
     expect(dialog().textContent).toContain('Retro')
@@ -436,7 +439,7 @@ describe('the game dialog from the pool tiles (#443)', () => {
     document.body.innerHTML = ''
 
     const two = await mountCard({ settings: wheel, isHost: true, pool: [poolGame('Mario Kart'), poolGame('Pong')], hostGames })
-    const [, pong] = two.findAll('button')
+    const [, pong] = two.findAll(TILE_NAME)
     await pong!.trigger('click')
     await flushPromises()
     expect(document.querySelectorAll('[role="dialog"]')).toHaveLength(1)

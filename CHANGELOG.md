@@ -10,6 +10,7 @@
 - Als Host bearbeitest du die Notizen eines Spiels im Spiel-Dialog deines Events, zusammen mit den Notizen für dieses Event. ([#835](https://github.com/christried/compies/issues/835))
 - Im Profil schaltest du „Weniger Bewegung“ ein: Compies zeigt dann auf diesem Gerät die ruhigen Varianten der großen Animationen. ([#680](https://github.com/christried/compies/issues/680))
 - Legst du im Schritt „Spiele“ ein Spiel an, das deine Bibliothek schon hat, nimmt „Das nehmen“ das vorhandene in den Pool. ([#860](https://github.com/christried/compies/issues/860))
+- Auf der Seite deines Events zeigen die Spiele im Pool und das gezogene Spiel ebenfalls den Notizen-Knopf; „Bearbeiten“ darin öffnet den Spiel-Dialog zum Bearbeiten. ([#858](https://github.com/christried/compies/issues/858))
 
 ### Geändert
 

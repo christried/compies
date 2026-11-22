@@ -1126,7 +1126,7 @@ describe('the Notes button on the card (#837)', () => {
   const NOTES = notesFromLines(['Zeile eins'])
   const TRIGGER = 'button[aria-label^="Notizen zu "]'
 
-  async function mountNotes(props: { layout: Layout, notes?: NotesDoc | null, notesEditTo?: string, to?: string, name?: string, archived?: boolean }, withActions = true) {
+  async function mountNotes(props: { layout: Layout, notes?: NotesDoc | null, eventNotes?: NotesDoc | null, notesEditTo?: string, notesEditable?: boolean, opens?: boolean, onOpen?: () => void, onEditNotes?: () => void, to?: string, name?: string, archived?: boolean }, withActions = true) {
     const { layout, name = 'Mario Kart', ...rest } = props
     page = await mountSuspended(GameCard, {
       props: { game: { id: 'g-1', name, imageUrl: null, youtubeId: null, playersMin: null, playersMax: null, suitabilities: [], tags: [], price: null }, layout, ...rest },
@@ -1168,11 +1168,56 @@ describe('the Notes button on the card (#837)', () => {
     expect(trigger()).toBeNull()
   })
 
-  it('has none in the tile layout, even for a game with notes', async () => {
+  // The tile has it too (#858): the Event page's Host sees it on the pool's tiles and the wheel's result card (GameTile decides who is handed notes).
+  it('has the button in the tile layout for a game with notes, as the root’s third child, with no actions', async () => {
     await mountNotes({ layout: 'tile', notes: NOTES }, false)
 
+    expect(trigger()!.getAttribute('aria-label')).toBe('Notizen zu Mario Kart')
+    expect(root().children).toHaveLength(3)
+    expect(wrapper().parentElement).toBe(root())
+    expect(lastChild()).toBe(wrapper())
+    expect([...root().children].indexOf(wrapper())).toBe([...root().children].indexOf(body()) + 1)
+  })
+
+  it('shows the tile’s button for a game with only Event notes, and none for blank documents in either prop, with no wrapper', async () => {
+    await mountNotes({ layout: 'tile', eventNotes: NOTES }, false)
+    expect(trigger()).not.toBeNull()
+    page!.unmount()
+
+    await mountNotes({ layout: 'tile', notes: BLANK_NOTES[0], eventNotes: BLANK_NOTES[1] }, false)
     expect(trigger()).toBeNull()
     expect(root().children).toHaveLength(2)
+  })
+
+  it('sits at the tile cover’s top right, 4 px in, like the card’s', async () => {
+    await mountNotes({ layout: 'tile', notes: NOTES }, false)
+
+    expect(classes(wrapper())).toEqual(expect.arrayContaining(['absolute', 'top-1', 'right-1']))
+  })
+
+  it('gives the footer „Bearbeiten“ as a button with `notesEditable`; a click on it emits `editNotes` once and no `open`', async () => {
+    const onEditNotes = vi.fn()
+    const onOpen = vi.fn()
+    await mountNotes({ layout: 'tile', notes: NOTES, opens: true, notesEditable: true, onEditNotes, onOpen }, false)
+
+    trigger()!.click()
+    await flushPromises()
+    const edit = [...document.querySelectorAll('[role="dialog"] footer button')].find(button => button.textContent!.includes('Bearbeiten')) as HTMLButtonElement
+    expect(edit).toBeDefined()
+    edit.click()
+    await flushPromises()
+
+    expect(onEditNotes).toHaveBeenCalledTimes(1)
+    expect(onOpen).not.toHaveBeenCalled()
+  })
+
+  it('has no footer without `notesEditable` or `notesEditTo` (the pickers, a Member’s tile)', async () => {
+    await mountNotes({ layout: 'tile', notes: NOTES, opens: true }, false)
+
+    trigger()!.click()
+    await flushPromises()
+
+    expect(document.querySelector('[role="dialog"] footer')).toBeNull()
   })
 
   it('is labelled „Notizen zu {game}“ and starts closed, then reports it is open after a click', async () => {
@@ -1303,6 +1348,25 @@ describe('the Notes button on the card (#837)', () => {
       expect(trigger()).not.toBeNull()
       expect(pressedBy(trigger()!)).toBe(false)
     })
+
+    it('stays still on a tile whose name opens the dialog when the Notes button is pressed, while the name still presses it (#858)', async () => {
+      await mountNotes({ layout: 'tile', notes: NOTES, opens: true }, false)
+
+      expect(pressedBy(root().querySelector<HTMLElement>('[data-lift-owner]')!)).toBe(true)
+      expect(trigger()).not.toBeNull()
+      expect(pressedBy(trigger()!)).toBe(false)
+    })
+  })
+
+  it('does not ask for the game’s dialog when the Notes button is clicked on a tile that opens it (#858)', async () => {
+    const onOpen = vi.fn()
+    await mountNotes({ layout: 'tile', notes: NOTES, opens: true, onOpen }, false)
+
+    trigger()!.click()
+    await flushPromises()
+
+    expect(onOpen).not.toHaveBeenCalled()
+    expect(trigger()!.getAttribute('aria-expanded')).toBe('true')
   })
 })
 
@@ -1357,9 +1421,9 @@ describe('the Event notes on the card (#859)', () => {
     expect(root().children).toHaveLength(3)
   })
 
-  it('has none in the tile layout, even for a game with Event notes', async () => {
+  it('shows the button on a tile for a game with only Event notes (#858)', async () => {
     await mountWith({ layout: 'tile', eventNotes: EVENT_NOTES })
 
-    expect(trigger()).toBeNull()
+    expect(trigger()).not.toBeNull()
   })
 })

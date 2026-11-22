@@ -566,6 +566,7 @@ const headingId = useId()
           :game="card"
           :audience="isHost ? 'host' : 'member'"
           :facts="hostGames?.[card.id] ?? null"
+          notes-button
         />
       </div>
       <!-- „Zum Video“ (#956): the Clip this device closed, back at the second everybody is at, while it runs. -->
