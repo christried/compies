@@ -364,6 +364,47 @@ describe('GameNotesDisclosure (#224)', () => {
     })
   })
 
+  describe('„Bearbeiten“ at the foot of the Round card’s open notes (#836)', () => {
+    const card = (props: Record<string, unknown> = {}) => mountSuspended(GameNotesDisclosure, {
+      props: { notes: notesFromLines(['Game-Zeile']), eventNotes: notesFromLines(['Heute nur Bo1']), variant: 'round', startOpen: true, editable: true, ...props },
+    })
+    const edit = (root: Awaited<ReturnType<typeof card>>) => root.findAll('button').find(button => button.text() === 'Bearbeiten')
+
+    it('shows „Bearbeiten“ as the last thing in the open panel, and emits `edit` on a click', async () => {
+      const disclosure = await card()
+
+      const button = edit(disclosure)
+      expect(button).toBeDefined()
+      const panel = disclosure.get(`[id="${disclosure.get('button').attributes('aria-controls')}"]`).element
+      expect(panel.lastElementChild!.contains(button!.element)).toBe(true)
+      expect(lines(disclosure.get(`[id="${disclosure.get('button').attributes('aria-controls')}"]`))).toEqual(['Heute nur Bo1', 'Game-Zeile'])
+
+      await button!.trigger('click')
+      expect(disclosure.emitted('edit')).toHaveLength(1)
+    })
+
+    it('has none without `editable`, as on the library page', async () => {
+      const disclosure = await card({ editable: false })
+
+      expect(edit(disclosure)).toBeUndefined()
+    })
+
+    it('has none while the notes are closed', async () => {
+      const disclosure = await card({ startOpen: false })
+
+      expect(edit(disclosure)).toBeUndefined()
+      await disclosure.get('button').trigger('click')
+      expect(edit(disclosure)).toBeDefined()
+    })
+
+    it('the library page’s disclosure has none, as it is not told to be editable', async () => {
+      const disclosure = await mountSuspended(GameNotesDisclosure, { props: { notes: notesFromLines(['Game-Zeile']), startOpen: true } })
+
+      expect(lines(disclosure)).toEqual(['Game-Zeile'])
+      expect(edit(disclosure)).toBeUndefined()
+    })
+  })
+
   it('shows markup in the notes as text, never as an element or a link', async () => {
     const disclosure = await mountSuspended(GameNotesDisclosure, { props: { notes: notesFromLines(['<b>x</b> https://example.com']) } })
 
