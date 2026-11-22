@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ChevronDown, Lock, StickyNote } from '@lucide/vue'
+import { ChevronDown, Lock, Pencil, StickyNote } from '@lucide/vue'
 import type { NotesDoc } from '~~/shared/notes-doc'
 
 // The Game notes of a game (#224, GLOSSARY: Game notes) as a disclosure: collapsed by default, announced as open or
@@ -12,6 +12,8 @@ import type { NotesDoc } from '~~/shared/notes-doc'
 // The Round card has its own look (#729, hand-off 18-notizen.md § RoundCard „Notizen“): `variant="round"`, a 44 px button with the sticky note, „Notizen“, the
 // lock and „Nur du siehst das“ and a chevron at the right, and a paper-2 panel that opens in a height run: the Event block (sm, framed), a rule, the game block
 // (bare). Every other place keeps the default look: „Alle Tags“ (#615) and the Session notes (#349).
+// With `editable` (#836, the Round card for the Host) the open panel ends in a footer „Bearbeiten“ that emits `edit`; the Round card asks its game tile for the
+// dialog in the edit mode. The library page's disclosure is not editable and has none.
 const props = withDefaults(defineProps<{
   notes?: NotesDoc | null
   eventNotes?: NotesDoc | null
@@ -19,7 +21,10 @@ const props = withDefaults(defineProps<{
   startOpen?: boolean
   variant?: 'default' | 'round'
   remember?: boolean
-}>(), { notes: null, eventNotes: null, label: undefined, startOpen: false, variant: 'default', remember: false })
+  editable?: boolean
+}>(), { notes: null, eventNotes: null, label: undefined, startOpen: false, variant: 'default', remember: false, editable: false })
+
+const emit = defineEmits<{ edit: [] }>()
 
 const { t } = useI18n()
 const panelId = useId()
@@ -84,6 +89,23 @@ const shown = computed(() => (props.notes === null && props.eventNotes === null)
           size="sm"
           bare
         />
+        <!-- The footer „Bearbeiten“ (#836): the link of the popover's footer (GameNotesButton), 14 px as there. -->
+        <div
+          v-if="editable"
+          class="flex border-t-2 border-line-soft px-1.5 py-0.5"
+        >
+          <button
+            type="button"
+            class="inline-flex h-11 items-center gap-1.5 rounded-pill px-2 text-[14px] font-bold text-ink no-underline hover:tint focus-visible:focus-ring"
+            @click="emit('edit')"
+          >
+            <AppIcon
+              :icon="Pencil"
+              :size="16"
+            />
+            {{ t('library.edit') }}
+          </button>
+        </div>
       </div>
     </Transition>
   </div>
