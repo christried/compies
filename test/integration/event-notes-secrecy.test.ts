@@ -18,7 +18,9 @@ const trace = notesFromLines([TRACE])!
 const fan = { provider: 'discord', id: '8', name: 'Zuschauer', email: 'fan@example.com', image: undefined } as const
 const otherHost = { provider: 'discord', id: '9', name: 'Andere', email: 'otherhost@example.com', image: undefined } as const
 
-describe('Event notes are in no read but the Host\'s (#731)', () => {
+// Each case runs whole Events through the API; the sweep of every GET route takes 1.7 s on a free machine and passed the default 5 s once in
+// CI (#833), hence the limit of dev-sign-in.test.ts.
+describe('Event notes are in no read but the Host\'s (#731)', { timeout: 20_000 }, () => {
   const world = hiddenWheelWorld()
   const { request, notifier, clock, rawRead, runningEvent, setUp, expectNone, rig, host, stranger, playerTraces } = world
   // The world's app has no share assets: the sweep of a finished Event asks the same database through an app that renders the Share image.
