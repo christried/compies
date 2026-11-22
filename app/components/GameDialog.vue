@@ -42,9 +42,8 @@ const library = computed(() => isHost.value && canSeeLibrary(user.value))
 // Who may edit what, per field: a finished Event freezes the Event notes alone (#857), the Game notes are the game's own in the library and stay editable.
 const canEditGame = computed(() => isHost.value && saveEventNotes.value != null)
 const canEditEvent = computed(() => canEditGame.value && !finished.value)
-const canEdit = computed(() => canEditGame.value)
 // Where no pencil is on screen the Host gets „Notizen hinzufügen“: neither block is there to edit (no notes at all, or a finished Event with no Game notes).
-const noPencil = computed(() => canEdit.value && !(eventBlock.value && canEditEvent.value) && !gameBlock.value)
+const noPencil = computed(() => canEditGame.value && !(eventBlock.value && canEditEvent.value) && !gameBlock.value)
 
 // The edit: `initial*` is the document at its start, `draft*` what the editor holds, one pair per field. Both are shallow so that an editor that emitted nothing leaves
 // `draft === initial`: that is „nothing typed“, and a field nobody typed in is not sent. The documents are the blocks' (a blank one counts as none).
@@ -63,7 +62,7 @@ const body = useTemplateRef<HTMLElement>('body')
 const blockerId = useId()
 
 function startEdit(field: 'event' | 'game') {
-  if (!canEdit.value) return
+  if (!canEditGame.value) return
   initialEvent.value = draftEvent.value = eventBlock.value
   initialGame.value = draftGame.value = gameBlock.value
   overEvent.value = overGame.value = false
@@ -122,7 +121,7 @@ watch(() => props.open, (isOpen) => {
   if (!isOpen) return forgetDrafts()
   if (props.edit) startEdit(props.edit)
 }, { immediate: true })
-watch(canEdit, (allowed) => {
+watch(canEditGame, (allowed) => {
   if (!allowed) editing.value = false
 })
 
@@ -165,7 +164,7 @@ function onShortcut(event: KeyboardEvent) {
           />
           <!-- The Event block first, the game block below it, 20 px apart (#729); their subs only while both show, a pencil on each block for the Host (#835). Where a game has Game notes and no Event notes the Host's add button sits above the game block, where it has neither one button „Notizen hinzufügen“ stands alone. -->
           <div
-            v-if="eventBlock || gameBlock || canEdit"
+            v-if="eventBlock || gameBlock || canEditGame"
             class="flex min-w-0 flex-col gap-5"
           >
             <EventNotes

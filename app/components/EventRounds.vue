@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type GameTile from '~/components/GameTile.vue'
 import { GAME_GRID } from '~/utils/game-grid'
 import { CARD_REFLOW_CLASS, leaveInPlace, unwatched } from '~/utils/motion'
 import type { BoardTeam } from '~~/shared/event'
@@ -42,10 +43,14 @@ const headingId = useId()
 // The Round card's „Bearbeiten“ (#836) is the Host's, and needs the page's save to edit with, as the tiles' does (GameTile, #858).
 const notesEditable = computed(() => props.isHost && save.value != null)
 
+/** The part of a game tile the Round card uses: its exposed `openEditor` (GameTile). */
+type GameTileHandle = Pick<InstanceType<typeof GameTile>, 'openEditor'>
+const isGameTileHandle = (tile: unknown): tile is GameTileHandle => typeof tile === 'object' && tile !== null && 'openEditor' in tile && typeof tile.openEditor === 'function'
+
 /** Each Round's game tile, so its card's „Bearbeiten“ opens that tile's dialog in the edit mode (#836); a tile that leaves drops its entry. */
-const tiles = new Map<string, { openEditor: () => void }>()
+const tiles = new Map<string, GameTileHandle>()
 function keepTile(roundId: string, tile: unknown) {
-  if (tile) tiles.set(roundId, tile as { openEditor: () => void })
+  if (isGameTileHandle(tile)) tiles.set(roundId, tile)
   else tiles.delete(roundId)
 }
 function editNotes(roundId: string) {

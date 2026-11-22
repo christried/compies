@@ -65,17 +65,6 @@ describe('GameNotesDisclosure (#224)', () => {
     expect(disclosure.find('p').exists()).toBe(false)
   })
 
-  it('starts open on the Round card, with its panel and the notes (#228)', async () => {
-    const disclosure = await mountSuspended(GameNotesDisclosure, { props: { notes: notesFromLines(NOTES.split('\n')), startOpen: true } })
-
-    const button = disclosure.get('button')
-    expect(button.attributes('aria-expanded')).toBe('true')
-    expect(lines(disclosure.get(`[id="${button.attributes('aria-controls')}"]`))).toEqual(NOTES.split('\n'))
-
-    await button.trigger('click')
-    expect(button.attributes('aria-expanded')).toBe('false')
-  })
-
   it('shows its slot instead of the notes, with its own label: the Vote notes of a Slot (#349) take no document', async () => {
     const disclosure = await mountSuspended(GameNotesDisclosure, { props: { label: '2 Notizen' }, slots: { default: '<ul><li>Eine Stimme</li></ul>' } })
 
@@ -89,7 +78,8 @@ describe('GameNotesDisclosure (#224)', () => {
   describe('with Event notes (#732)', () => {
     const EVENT_LABEL = 'Notizen für dieses Event'
     const opened = async (props: { notes: NotesDoc | null, eventNotes: NotesDoc | null }) => {
-      const disclosure = await mountSuspended(GameNotesDisclosure, { props: { ...props, startOpen: true } })
+      const disclosure = await mountSuspended(GameNotesDisclosure, { props })
+      await disclosure.get('button').trigger('click')
       return disclosure.get(`[id="${disclosure.get('button').attributes('aria-controls')}"]`)
     }
 
@@ -105,7 +95,8 @@ describe('GameNotesDisclosure (#224)', () => {
     })
 
     it('shows its button for a game with only Event notes, and no Game notes block', async () => {
-      const disclosure = await mountSuspended(GameNotesDisclosure, { props: { notes: null, eventNotes: notesFromLines(['Heute nur Bo1']), startOpen: true } })
+      const disclosure = await mountSuspended(GameNotesDisclosure, { props: { notes: null, eventNotes: notesFromLines(['Heute nur Bo1']) } })
+      await disclosure.get('button').trigger('click')
 
       expect(disclosure.get('button').text()).toBe('Notizen')
       expect(lines(disclosure)).toEqual(['Heute nur Bo1'])
@@ -137,11 +128,16 @@ describe('GameNotesDisclosure (#224)', () => {
   })
 
   describe('the Round card variant (#729)', () => {
-    // The Event's name and whether it is finished are the Event page's context's (#821), not props.
-    const round = ({ eventName, eventFinished, ...props }: Record<string, unknown> = {}) => mountSuspended(GameNotesDisclosure, {
-      props: { notes: notesFromLines(['Game-Zeile']), eventNotes: notesFromLines(['Heute nur Bo1']), variant: 'round', startOpen: true, ...props },
-      global: eventNotesContext({ ...(eventName === undefined ? {} : { eventName: eventName as string }), finished: eventFinished === true }).global,
-    })
+    // The Event's name and whether it is finished are the Event page's context's (#821), not props. The card mounts closed and the
+    // Host's click opens it, as on the page.
+    const round = async ({ eventName, eventFinished, ...props }: Record<string, unknown> = {}) => {
+      const disclosure = await mountSuspended(GameNotesDisclosure, {
+        props: { notes: notesFromLines(['Game-Zeile']), eventNotes: notesFromLines(['Heute nur Bo1']), variant: 'round', ...props },
+        global: eventNotesContext({ ...(eventName === undefined ? {} : { eventName: eventName as string }), finished: eventFinished === true }).global,
+      })
+      await disclosure.get('button').trigger('click')
+      return disclosure
+    }
 
     it('is a 44 px button with a sticky note, „Notizen“, the lock with „Nur du siehst das“ and a chevron at the right', async () => {
       const disclosure = await round()
@@ -365,10 +361,16 @@ describe('GameNotesDisclosure (#224)', () => {
   })
 
   describe('„Bearbeiten“ at the foot of the Round card’s open notes (#836)', () => {
-    const card = (props: Record<string, unknown> = {}) => mountSuspended(GameNotesDisclosure, {
-      props: { notes: notesFromLines(['Game-Zeile']), eventNotes: notesFromLines(['Heute nur Bo1']), variant: 'round', startOpen: true, editable: true, ...props },
+    const mountCard = (props: Record<string, unknown> = {}) => mountSuspended(GameNotesDisclosure, {
+      props: { notes: notesFromLines(['Game-Zeile']), eventNotes: notesFromLines(['Heute nur Bo1']), variant: 'round', editable: true, ...props },
     })
-    const edit = (root: Awaited<ReturnType<typeof card>>) => root.findAll('button').find(button => button.text() === 'Bearbeiten')
+    // The card opened by the Host's click.
+    const card = async (props: Record<string, unknown> = {}) => {
+      const disclosure = await mountCard(props)
+      await disclosure.get('button').trigger('click')
+      return disclosure
+    }
+    const edit = (root: Awaited<ReturnType<typeof mountCard>>) => root.findAll('button').find(button => button.text() === 'Bearbeiten')
 
     it('shows „Bearbeiten“ as the last thing in the open panel, and emits `edit` on a click', async () => {
       const disclosure = await card()
@@ -390,7 +392,7 @@ describe('GameNotesDisclosure (#224)', () => {
     })
 
     it('has none while the notes are closed', async () => {
-      const disclosure = await card({ startOpen: false })
+      const disclosure = await mountCard()
 
       expect(edit(disclosure)).toBeUndefined()
       await disclosure.get('button').trigger('click')
@@ -398,7 +400,8 @@ describe('GameNotesDisclosure (#224)', () => {
     })
 
     it('the library page’s disclosure has none, as it is not told to be editable', async () => {
-      const disclosure = await mountSuspended(GameNotesDisclosure, { props: { notes: notesFromLines(['Game-Zeile']), startOpen: true } })
+      const disclosure = await mountSuspended(GameNotesDisclosure, { props: { notes: notesFromLines(['Game-Zeile']) } })
+      await disclosure.get('button').trigger('click')
 
       expect(lines(disclosure)).toEqual(['Game-Zeile'])
       expect(edit(disclosure)).toBeUndefined()
