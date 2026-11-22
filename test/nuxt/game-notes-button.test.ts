@@ -513,18 +513,38 @@ describe('the Notes button of a game (#436)', () => {
       expect(popover()).not.toBeNull()
     })
 
-    it('keeps the popover open when the button moved by 1 px or less', async () => {
+    // The button's lift transitions (hover 2 px up, press 4 px right and down, the card's own 2 px) are still running when the first press's
+    // scroll arrives: up to 8 px off where place() measured it still counts as where it was.
+    it('keeps the popover open when the button moved by 8 px or less, on either axis', async () => {
       await mount({ notes: notesFromLines(NOTES.split('\n')) })
       await open()
 
-      buttonTop = 101
+      buttonTop = 108
+      window.dispatchEvent(new Event('scroll'))
+      await flushPromises()
+
+      expect(popover()).not.toBeNull()
+
+      buttonTop = 92
       window.dispatchEvent(new Event('scroll'))
       await flushPromises()
 
       expect(popover()).not.toBeNull()
     })
 
-    it('closes the popover and gives the focus back to the button when the scroll moved the button by more than 1 px', async () => {
+    it('closes the popover and gives the focus back to the button when the scroll moved the button by 9 px', async () => {
+      await mount({ notes: notesFromLines(NOTES.split('\n')) })
+      await open()
+
+      buttonTop = 109
+      window.dispatchEvent(new Event('scroll'))
+      await flushPromises()
+
+      expect(popover()).toBeNull()
+      expect(document.activeElement).toBe(trigger())
+    })
+
+    it('closes the popover and gives the focus back to the button when a wheel scroll moved the button far', async () => {
       await mount({ notes: notesFromLines(NOTES.split('\n')) })
       await open()
 

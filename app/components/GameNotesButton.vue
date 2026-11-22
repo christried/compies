@@ -8,7 +8,7 @@ import type { NotesDoc } from '~~/shared/notes-doc'
 // The Notes of a game in a picker (#436, 02-components § GameCard, deviation 0.12): a Notes button that opens the game's notes read-only,
 // formatted (#728). From md up a popover beside the button, below it a sheet from the bottom (the pattern of the Sessions card's „Mehr“,
 // #349). It is not a menu: MoveToMenu holds menu targets, so it stays out. Esc, a press outside and a scroll that moved the button (by more
-// than 1 px, so the popover would float beside nothing; a scroll that left it where it was keeps it open, #974) close it; the focus goes back to the button. No notes, no button (a document without a visible character is none). The popover sits where placeNotePopover puts it
+// than 8 px, the reach of the button's lifts, so the popover would float beside nothing; a scroll that left it where it was keeps it open, #974) close it; the focus goes back to the button. No notes, no button (a document without a visible character is none). The popover sits where placeNotePopover puts it
 // (above or below the button, inside the window), measured once it is drawn (#488). When it fits on neither side it is capped to the
 // roomier one and scrolls (#494). The button is a sticky note, labelled „Notizen zu {game}“ like the dialog, and wears the ink fill while its notes are open (#837). With `editTo`
 // (the library's cards) a footer „Bearbeiten“ leads to the game's form; the pickers give none; with `editable` (the Event page's tiles, #858) it is a button that emits `edit`.
@@ -44,6 +44,11 @@ const popover = useTemplateRef<HTMLElement>('popover')
 const closeButton = useTemplateRef<{ $el: HTMLElement }>('close')
 // Where the button was when place() put the popover beside it: onScroll closes only when a scroll moved the button from here (#974).
 let placedAgainst: { top: number, left: number } | null = null
+// How far (px, on either axis) the button may sit from there before a scroll counts as having moved it. The `lift` transition (compies-theme.css)
+// moves the button 2 px up on hover and 4 px right and 4 px down while pressed, and the game card around it lifts 2 px on hover, so in the
+// frames after a press the button can be up to 8 px from where it settles; the first fix's 1 px lost the popover in 3 of 6 presses (#974).
+// A wheel or touch scroll moves the button far more.
+const BUTTON_MOVED_PX = 8
 
 function show() {
   scrolled.value = false
@@ -95,14 +100,14 @@ function onDocumentPointerDown(event: PointerEvent) {
 }
 
 // The popover is fixed, so a scroll that moves its button would leave it floating beside nothing: it closes instead. A scroll that leaves
-// the button where place() measured it (within 1 px) keeps it open: the browser's clamp or its scroll anchoring after the layout
+// the button where place() measured it (within BUTTON_MOVED_PX) keeps it open: the browser's clamp or its scroll anchoring after the layout
 // above the button changed (the Event page's „Ton aktivieren“ goes with the first press, #974), or a scroll of another container (the chat, a
 // list). A scroll inside the popover itself (its long notes) is its own.
 function onScroll(event: Event) {
   if (!open.value || narrow.value) return
   if (popover.value?.contains(event.target as Node)) return
   const now = trigger.value?.$el.getBoundingClientRect()
-  if (now && placedAgainst && Math.abs(now.top - placedAgainst.top) <= 1 && Math.abs(now.left - placedAgainst.left) <= 1) return
+  if (now && placedAgainst && Math.abs(now.top - placedAgainst.top) <= BUTTON_MOVED_PX && Math.abs(now.left - placedAgainst.left) <= BUTTON_MOVED_PX) return
   close()
 }
 
