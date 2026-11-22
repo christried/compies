@@ -5,6 +5,7 @@
 ### Neu
 
 - Die Notizen am Spiel, das gerade gespielt wird, bleiben auf diesem Gerät auf oder zu, wie du sie zuletzt gelassen hast. ([#838](https://github.com/christried/compies/issues/838))
+- In deiner Bibliothek zeigt eine Karte einen Notizen-Knopf, wenn das Spiel Notizen hat; er öffnet sie, ohne das Spiel zu öffnen. ([#837](https://github.com/christried/compies/issues/837))
 
 ### Geändert
 

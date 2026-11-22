@@ -47,6 +47,7 @@ const filters = useRouteFilters()
       <GameBrowser
         v-model:filters="filters"
         marks-events
+        notes-on-cover
         :to="game => `/bibliothek/${game.id}`"
       >
         <template #empty-action>

@@ -5,6 +5,7 @@ import { describeGame } from '~/utils/describe-game'
 import { gameCover } from '~/utils/game-cover'
 import type { GameView, PoolGameFace } from '~~/shared/game'
 import { priceLine } from '~/utils/price'
+import { notesHasText, type NotesDoc } from '~~/shared/notes-doc'
 import { colorTags } from '~~/shared/tag-colors'
 
 // A game as a card or a row (02-components § GameCard, #141). The cover is the uploaded image, else the
@@ -17,6 +18,8 @@ import { colorTags } from '~~/shared/tag-colors'
 // sits between the Price line and the Tags; it is a count, no Tag, so it is not a `TagChip`, and no control, so it adds no tab stop. With `archived` (#726) the same pill reads „Archiviert“ right under the name, tile included.
 // The `tile` layout (#435) is the cover and the name only, on the Event page: no players, Suitabilities, Tags or Price, and no link. With `opens` (#443) the
 // name is a button that emits `open` (a tile opens the game dialog, #443, #444) and stretches over the tile like the link does; a tile without it stays plain.
+// With `notes` (#837, the library page) a game with Game notes has the Notes button of the pickers on its cover: a sibling of the name, above it, so it never follows the link or presses the card (as „+N“).
+// The card places it by its form: at the cover's top right in the card form, at the row's right in the row form (`notes` of LAYOUT); the tile has none (#858).
 const props = withDefaults(defineProps<{
   game: PoolGameFace & Partial<Pick<GameView, 'playersMin' | 'playersMax' | 'suitabilities' | 'tags' | 'price'>>
   layout?: 'card' | 'row' | 'responsive' | 'tile'
@@ -27,7 +30,11 @@ const props = withDefaults(defineProps<{
   inEvents?: number
   /** The Host's pool shows the game as Archived (#726): a pill „Archiviert“ under the name, in every layout. Not read off `game`: the library's cards are GameViews that carry the flag too. */
   archived?: boolean
-}>(), { layout: 'card', to: undefined, opens: false, inEvents: 0, archived: false })
+  /** The game's Game notes (#837): with a visible character the card draws the Notes button, in the tile layout never. Null or absent: no button, and no wrapper for it. */
+  notes?: NotesDoc | null
+  /** Where the Notes popover's footer „Bearbeiten“ leads (#837): the game's form. */
+  notesEditTo?: RouteLocationRaw
+}>(), { layout: 'card', to: undefined, opens: false, inEvents: 0, archived: false, notes: null, notesEditTo: undefined })
 
 const emit = defineEmits<{ open: [] }>()
 
@@ -37,6 +44,8 @@ const now = new Date()
 const priceText = computed(() => (props.game.price ? priceLine(props.game.price, now, t) : null))
 // The meta lines (players, Suitabilities, Price, Tags) are not part of a tile (#435).
 const showMeta = computed(() => props.layout !== 'tile')
+// The Notes button (#837): not on a tile, and only for a document with a visible character (the one rule, notesHasText).
+const showNotes = computed(() => props.layout !== 'tile' && notesHasText(props.notes))
 
 const cover = computed(() => gameCover(props.game))
 /** What the name is: the link, else the button that opens the dialog (#443), else a plain element. */
@@ -64,7 +73,8 @@ const { open, triggerAttrs, popoverAttrs } = useRevealPopover(moreEl)
 // The neutral pill of „in 2 Events“ (#733) and „Archiviert“ (#726): text only, no fill swap.
 const PILL = 'w-fit max-w-full truncate rounded-pill border-2 border-line bg-paper-2 px-2 text-[11px] leading-5 font-bold text-ink-2'
 
-// One class set per layout; Tailwind needs the strings whole. The responsive set is the row's, undone from 600 px up (sm).
+// One class set per layout; Tailwind needs the strings whole. The responsive set is the row's, undone from 600 px up (sm). `notes` is the Notes button's wrapper (#837): in the row's flow
+// before the actions, or on the cover's corner, 4 px in (the card is `relative`, so an absolute child is placed from its padding box, the cover's edge).
 // The body grows, so the actions sit on the card's bottom edge in a stretched grid row (#351).
 const LAYOUT = {
   row: {
@@ -74,6 +84,7 @@ const LAYOUT = {
     name: 'truncate',
     actions: '',
     tags: 'flex-nowrap',
+    notes: 'relative flex-none',
   },
   card: {
     box: 'flex-col overflow-hidden rounded-[14px]',
@@ -83,6 +94,7 @@ const LAYOUT = {
     actions: 'px-3 pb-3',
     // The Tags sit on the card's bottom edge, one line, so every card of a row shares their top edge (#614).
     tags: 'mt-auto flex-nowrap',
+    notes: 'absolute top-1 right-1',
   },
   // The tile fills its grid cell: the grid stretches each cell to its row's tallest tile, so a tile with the pill and one without share the height (#824).
   tile: {
@@ -92,6 +104,7 @@ const LAYOUT = {
     name: 'line-clamp-2 break-words min-h-[2lh]',
     actions: '',
     tags: '',
+    notes: '',
   },
   responsive: {
     box: 'min-h-15 items-center gap-3 rounded-[12px] py-1.5 pr-2.5 pl-1.5 sm:min-h-0 sm:flex-col sm:items-stretch sm:gap-0 sm:overflow-hidden sm:rounded-[14px] sm:p-0',
@@ -100,6 +113,7 @@ const LAYOUT = {
     name: 'truncate sm:line-clamp-2 sm:min-h-[2lh] sm:whitespace-normal',
     actions: 'sm:px-3 sm:pb-3',
     tags: 'flex-nowrap sm:mt-auto',
+    notes: 'relative flex-none sm:absolute sm:top-1 sm:right-1',
   },
 }
 const look = computed(() => LAYOUT[props.layout])
@@ -231,6 +245,19 @@ const look = computed(() => LAYOUT[props.layout])
           </TagChip>
         </div>
       </RevealPopover>
+    </div>
+
+    <!-- After the body, so it paints above the name's stretched `after:`, and before the actions, which stay the last child (#351). Not in the cover (overflow-hidden) and not in the link. -->
+    <div
+      v-if="showNotes"
+      :class="look.notes"
+    >
+      <GameNotesButton
+        :name="game.name"
+        :notes="notes"
+        :edit-to="notesEditTo"
+        :size="32"
+      />
     </div>
 
     <div

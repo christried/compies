@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { NotebookText, X } from '@lucide/vue'
+import { Pencil, StickyNote, X } from '@lucide/vue'
+import type { RouteLocationRaw } from 'vue-router'
 import { MD_QUERY } from '~/composables/useMediaQuery'
 import { placeNotePopover } from '~/utils/note-popover'
 import type { NotesDoc } from '~~/shared/notes-doc'
@@ -9,24 +10,30 @@ import type { NotesDoc } from '~~/shared/notes-doc'
 // #349). It is not a menu: MoveToMenu holds menu targets, so it stays out. Esc, a press outside and a scroll that would move the popover
 // away from its button close it; the focus goes back to the button. No notes, no button (a document without a visible character is none). The popover sits where placeNotePopover puts it
 // (above or below the button, inside the window), measured once it is drawn (#488). When it fits on neither side it is capped to the
-// roomier one and scrolls (#494).
+// roomier one and scrolls (#494). The button is a sticky note, labelled „Notizen zu {game}“ like the dialog, and wears the ink fill while its notes are open (#837). With `editTo`
+// (the library's cards) a footer „Bearbeiten“ leads to the game's form; the pickers give none.
 const props = withDefaults(defineProps<{
   name: string
   /** The game's notes as a document (#727); null = none, and then there is no button (a document is never an empty one, parseNotes makes those null). */
   notes: NotesDoc | null
   /** The Host's Event notes of the game (#732, GLOSSARY: Event notes); null = none. A game with only these still has the button. */
   eventNotes?: NotesDoc | null
-  /** The button's visual diameter: the picker's rows are 36, its cards 40. */
-  size?: 36 | 40
-}>(), { size: 40, eventNotes: null })
+  /** The button's visual diameter: the picker's rows are 36, its cards 40, the library's covers 32. */
+  size?: 32 | 36 | 40
+  /** The game's form (#837): with it the popover and the sheet end in a footer „Bearbeiten“; without it they have none. */
+  editTo?: RouteLocationRaw
+}>(), { size: 40, eventNotes: null, editTo: undefined })
 
 const { t } = useI18n()
+const NuxtLink = resolveComponent('NuxtLink')
 // The documents to show: null for none or for blank notes, so the template narrows on them. The Event's name and finished state (the Event block's sub and chip, #729)
 // are the Event page's context's, read by the pair (#821).
 const { doc, eventDoc } = useNotePair(() => props.notes, () => props.eventNotes)
 const wide = useMediaQuery(MD_QUERY)
 const narrow = computed(() => wide.value === false)
 const open = ref(false)
+// The footer's link: a text button with the pencil, 44 px high; the text size is the container's (14 in the popover, 15 in the sheet, 18-notizen).
+const EDIT_LINK = 'inline-flex h-11 items-center gap-1.5 rounded-pill px-2 font-bold text-ink no-underline hover:tint focus-visible:focus-ring'
 const position = ref<{ top: number, left: number, maxHeight?: number, origin?: string }>({ top: 0, left: 0 })
 // The body scrolls under a header that stays; a 2 px rule shows under the header once it has (#729). Nothing is kept: it is the scroll position, read.
 const scrolled = ref(false)
@@ -100,11 +107,12 @@ onBeforeUnmount(() => {
   <template v-if="doc || eventDoc">
     <IconButton
       ref="trigger"
-      :icon="NotebookText"
-      :label="t('gameNotes.open')"
+      :icon="StickyNote"
+      :label="t('notes.open_a11y', { game: name })"
       :size="size"
+      :expanded="open"
+      class="shadow-sm"
       aria-haspopup="dialog"
-      :aria-expanded="open"
       @click="open ? close() : show()"
     />
     <AppSheet
@@ -118,6 +126,23 @@ onBeforeUnmount(() => {
         :event-notes="eventDoc"
         size="md"
       />
+      <template
+        v-if="editTo"
+        #footer
+      >
+        <component
+          :is="NuxtLink"
+          :to="editTo"
+          :class="[EDIT_LINK, 'text-[15px]']"
+          @click="open = false"
+        >
+          <AppIcon
+            :icon="Pencil"
+            :size="16"
+          />
+          {{ t('library.edit') }}
+        </component>
+      </template>
     </AppSheet>
     <Teleport
       v-else
@@ -163,6 +188,24 @@ onBeforeUnmount(() => {
             size="sm"
           />
         </div>
+        <!-- Outside the scrolling body, so it stays while the text scrolls (#837). -->
+        <footer
+          v-if="editTo"
+          class="flex flex-none border-t-2 border-line-soft px-2 py-0.5"
+        >
+          <component
+            :is="NuxtLink"
+            :to="editTo"
+            :class="[EDIT_LINK, 'text-[14px]']"
+            @click="open = false"
+          >
+            <AppIcon
+              :icon="Pencil"
+              :size="16"
+            />
+            {{ t('library.edit') }}
+          </component>
+        </footer>
       </div>
     </Teleport>
   </template>

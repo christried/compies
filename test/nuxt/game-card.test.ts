@@ -5,6 +5,8 @@ import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 import GameCard from '~/components/GameCard.vue'
 import { build, parse, themeBlock } from '../unit/css-tokens'
 import { GAME_NAME_MAX, TAG_MAX, type GameView } from '~~/shared/game'
+import { notesFromLines, type NotesDoc } from '~~/shared/notes-doc'
+import { BLANK_NOTES } from './helpers/formatted-notes'
 
 // The card's structure (#351): the actions sit in the card's last child, and the body grows, so in a stretched grid row the
 // buttons of every card share one bottom edge, whatever the length of the name, the player count, Suitabilities, Price and Tags.
@@ -755,5 +757,192 @@ describe('the tile in a grid row (#824)', () => {
       expect(root().classList).toContain('h-full')
       page?.unmount()
     }
+  })
+})
+
+// The Notes button on the card (#837): the picker's button, placed by the card. A sibling of the stretched name, above it, so a click on it
+// never follows the link and the card does not press (as „+N“, #614, #658). The card places it by form: on the cover's corner in the card form,
+// at the row's right in the row form; the popover/sheet switch is the button's own and stays at 980 px.
+describe('the Notes button on the card (#837)', () => {
+  const NOTES = notesFromLines(['Zeile eins'])
+  const TRIGGER = 'button[aria-label^="Notizen zu "]'
+
+  async function mountNotes(props: { layout: Layout, notes?: NotesDoc | null, notesEditTo?: string, to?: string, name?: string, archived?: boolean }, withActions = true) {
+    const { layout, name = 'Mario Kart', ...rest } = props
+    page = await mountSuspended(GameCard, {
+      props: { game: { id: 'g-1', name, imageUrl: null, youtubeId: null, playersMin: null, playersMax: null, suitabilities: [], tags: [], price: null }, layout, ...rest },
+      slots: withActions ? { actions: () => h('button', { type: 'button' }, 'Hinzufügen') } : {},
+      attachTo: document.body,
+    })
+    await flushPromises()
+    return page
+  }
+  const trigger = () => root().querySelector<HTMLButtonElement>(TRIGGER)
+  /** The wrapper the card puts around the button: the root's child that holds it. */
+  const wrapper = () => trigger()!.parentElement as HTMLElement
+  const classes = (el: Element) => el.className.split(' ')
+  /** The variant prefix the responsive entry uses for its card form (read off the rendered cover, not typed here). */
+  const cardPrefix = () => classes(root().querySelector('[data-cover]')!).find(token => token.includes(':'))!.split(':')[0]!
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it.each<Layout>(['card', 'row', 'responsive'])('has none for a game without notes, in the %s layout, and leaves no wrapper in the DOM', async (layout) => {
+    await mountNotes({ layout, notes: null })
+
+    expect(trigger()).toBeNull()
+    // The cover, the body and the actions only: an empty wrapper would still add the row's gap.
+    expect(root().children).toHaveLength(3)
+  })
+
+  it.each(BLANK_NOTES)('has none for a document without a visible character, and no wrapper', async (blank) => {
+    await mountNotes({ layout: 'card', notes: blank })
+
+    expect(trigger()).toBeNull()
+    expect(root().children).toHaveLength(3)
+  })
+
+  it('has none for a card that is given no notes at all', async () => {
+    await mountNotes({ layout: 'responsive' })
+
+    expect(trigger()).toBeNull()
+  })
+
+  it('has none in the tile layout, even for a game with notes', async () => {
+    await mountNotes({ layout: 'tile', notes: NOTES }, false)
+
+    expect(trigger()).toBeNull()
+    expect(root().children).toHaveLength(2)
+  })
+
+  it('is labelled „Notizen zu {game}“ and starts closed, then reports it is open after a click', async () => {
+    await mountNotes({ layout: 'card', notes: NOTES })
+
+    expect(trigger()!.getAttribute('aria-label')).toBe('Notizen zu Mario Kart')
+    expect(trigger()!.getAttribute('aria-expanded')).toBe('false')
+
+    trigger()!.click()
+    await flushPromises()
+
+    expect(trigger()!.getAttribute('aria-expanded')).toBe('true')
+    expect(document.querySelector('[role="dialog"]')).not.toBeNull()
+  })
+
+  it('is a child of the card, after the body and before the actions wrapper, which stays the last child', async () => {
+    await mountNotes({ layout: 'card', notes: NOTES })
+
+    expect(wrapper().parentElement).toBe(root())
+    expect([...root().children].indexOf(wrapper())).toBe([...root().children].indexOf(body()) + 1)
+    expect(lastChild().querySelector('button')?.textContent).toBe('Hinzufügen')
+    expect(root().querySelector('[data-cover]')!.contains(trigger())).toBe(false)
+    expect(body().contains(trigger())).toBe(false)
+  })
+
+  it('is the last child when the card has no actions', async () => {
+    await mountNotes({ layout: 'row', notes: NOTES }, false)
+
+    expect(lastChild()).toBe(wrapper())
+  })
+
+  it('sits at the cover’s top right, 4 px in, in the card layout', async () => {
+    await mountNotes({ layout: 'card', notes: NOTES })
+
+    expect(classes(wrapper())).toEqual(expect.arrayContaining(['absolute', 'top-1', 'right-1']))
+  })
+
+  it('sits in the row’s flow at its right, in the row layout', async () => {
+    await mountNotes({ layout: 'row', notes: NOTES })
+
+    expect(classes(wrapper())).toEqual(expect.arrayContaining(['relative', 'flex-none']))
+    expect(classes(wrapper())).not.toContain('absolute')
+  })
+
+  it('is the row’s in the responsive layout, and the cover’s corner from the card form’s breakpoint, the one the card’s other classes use', async () => {
+    await mountNotes({ layout: 'responsive', notes: NOTES })
+    const prefix = cardPrefix()
+
+    expect(prefix).not.toBe('md')
+    expect(classes(wrapper())).toEqual(expect.arrayContaining(['relative', 'flex-none', `${prefix}:absolute`, `${prefix}:top-1`, `${prefix}:right-1`]))
+    expect(classes(wrapper())).not.toContain('absolute')
+  })
+
+  it('draws the button at 32 px, with the shadow of the design', async () => {
+    await mountNotes({ layout: 'card', notes: NOTES })
+
+    expect(classes(trigger()!)).toEqual(expect.arrayContaining(['size-8', 'shadow-sm']))
+  })
+
+  it('does not follow the card’s link: a click on it leaves the link and the router alone and opens the notes', async () => {
+    await mountNotes({ layout: 'card', notes: NOTES, to: '/bibliothek/g-1' })
+    const onLinkClick = vi.fn()
+    root().querySelector('a')!.addEventListener('click', onLinkClick)
+    const pushState = vi.spyOn(window.history, 'pushState')
+
+    trigger()!.click()
+    await flushPromises()
+
+    expect(onLinkClick).not.toHaveBeenCalled()
+    expect(pushState).not.toHaveBeenCalled()
+    expect(document.querySelector('[role="dialog"]')).not.toBeNull()
+    pushState.mockRestore()
+  })
+
+  it('leads to the game’s form from the notes’ footer', async () => {
+    await mountNotes({ layout: 'card', notes: NOTES, notesEditTo: '/bibliothek/g-1/bearbeiten' })
+
+    trigger()!.click()
+    await flushPromises()
+
+    const edit = [...document.querySelectorAll('[role="dialog"] a')].find(link => link.textContent!.includes('Bearbeiten'))
+    expect(edit!.getAttribute('href')).toBe('/bibliothek/g-1/bearbeiten')
+  })
+
+  it('keeps a game name of the longest allowed length in the label', async () => {
+    const name = 'W'.repeat(GAME_NAME_MAX)
+    await mountNotes({ layout: 'card', notes: NOTES, name })
+
+    expect(trigger()!.getAttribute('aria-label')).toBe(`Notizen zu ${name}`)
+  })
+
+  it('stands before the „Wiederherstellen“ button of an Archived card, in the row form, and both are there', async () => {
+    page = await mountSuspended(GameCard, {
+      props: { game: { id: 'g-1', name: 'Alt Halo', imageUrl: null, youtubeId: null, playersMin: null, playersMax: null, suitabilities: [], tags: [], price: null }, layout: 'row', notes: NOTES, archived: true },
+      slots: { actions: () => h('button', { type: 'button' }, 'Wiederherstellen') },
+    })
+
+    const buttons = [...root().querySelectorAll('button')]
+    const notes = buttons.find(button => button.getAttribute('aria-label')?.startsWith('Notizen zu '))!
+    const restore = buttons.find(button => button.textContent === 'Wiederherstellen')!
+    expect(notes.compareDocumentPosition(restore) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  })
+
+  // The press (#658): the same stand-in for `:active` as above.
+  describe('does not press the card', () => {
+    let pressSelector: string
+    beforeAll(async () => {
+      const css = await build(`${themeBlock(/@utility tint/)}\n${themeBlock(/@utility lift/)}`, ['lift'])
+      const flat = parse(css).find(rule => rule.decls.includes('box-shadow: none') && rule.chain.at(-1)!.startsWith('&:active'))
+      pressSelector = flat!.chain.at(-1)!.replace(/^&/, '.lift').replaceAll(':active', '[data-down]')
+    })
+
+    function pressedBy(target: HTMLElement) {
+      const down: HTMLElement[] = []
+      for (let el: HTMLElement | null = target; el; el = el.parentElement) {
+        el.setAttribute('data-down', '')
+        down.push(el)
+      }
+      const presses = root().matches(pressSelector)
+      for (const el of down) el.removeAttribute('data-down')
+      return presses
+    }
+
+    it('stays still when the Notes button is pressed, while the name still presses it', async () => {
+      await mountNotes({ layout: 'card', notes: NOTES, to: '/bibliothek/g-1' })
+
+      expect(pressedBy(root().querySelector<HTMLElement>('a[href="/bibliothek/g-1"]')!)).toBe(true)
+      expect(trigger()).not.toBeNull()
+      expect(pressedBy(trigger()!)).toBe(false)
+    })
   })
 })

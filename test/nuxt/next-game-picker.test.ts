@@ -303,7 +303,7 @@ describe('the Notes button of a game in the picker (#436)', () => {
   const poolWithout: PoolGame = { ...halo, id: 'g-pong', name: 'Pong', notes: null }
   const poolList = () => dialog()!.querySelector<HTMLElement>('ul[aria-label="Spiele, die im Pool noch übrig sind"]')!
   const libraryList = () => dialog()!.querySelector<HTMLElement>('ul[aria-label="Bibliothek"]')!
-  const notesButtons = (root: ParentNode) => root.querySelectorAll<HTMLButtonElement>('button[aria-label="Notizen ansehen"]')
+  const notesButtons = (root: ParentNode) => root.querySelectorAll<HTMLButtonElement>('button[aria-label^="Notizen zu "]')
   const rowOf = (list: HTMLElement, name: string) => [...list.querySelectorAll<HTMLElement>('li')].find(row => row.querySelector('b')?.textContent?.trim() === name)!
   const popover = () => document.querySelector<HTMLElement>('[role="dialog"]:not([data-sheet])')
   const sheet = () => document.querySelector('[data-sheet="panel"]')
