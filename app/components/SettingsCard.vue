@@ -1,12 +1,14 @@
 <script setup lang="ts">
-import { Compass, Sun, Volume2 } from '@lucide/vue'
+import { Compass, Sun, Volume2, Zap } from '@lucide/vue'
 
 // The card „Einstellungen“ on the Profil page (screen 25, shipped trimmed, #400): one SettingsRow per setting. Ton is the device's Sound
-// (GLOSSARY § Sound), the same state as the header's button, stored as before. Darstellung is the User's Appearance (GLOSSARY § Appearance,
+// (GLOSSARY § Sound), the same state as the header's button, stored as before. Weniger Bewegung is the device's Reduced motion (GLOSSARY,
+// #680): a tap shows it at once and saves it in a cookie; a failed save switches back with a notice. Darstellung is the User's Appearance (GLOSSARY § Appearance,
 // #404): a tap shows it at once and saves it; a failed save switches back with a notice. Rundgang (GLOSSARY: Tour, #649) sets the User's
 // stored Tour version back to 0, so the Tour shows again; a failed reset changes nothing and says so.
 const { t } = useI18n()
 const sound = useSound()
+const motion = useReducedMotionSetting()
 const appearance = useAppearance()
 const { reset: resetSeen } = useTourSeen()
 const { toast } = useToast()
@@ -60,6 +62,21 @@ async function resetTour() {
       </SettingsRow>
 
       <SettingsRow
+        :icon="Zap"
+        :title="t('settings.motion')"
+        :description="t('settings.motionHelp')"
+      >
+        <template #default="{ titleId, descriptionId }">
+          <ToggleSwitch
+            :model-value="motion.reduced.value"
+            :labelledby="titleId"
+            :describedby="descriptionId"
+            @update:model-value="motion.choose"
+          />
+        </template>
+      </SettingsRow>
+
+      <SettingsRow
         :icon="Sun"
         :title="t('settings.appearance')"
         :description="t('settings.appearanceHelp')"
@@ -100,6 +117,15 @@ async function resetTour() {
     >
       <NoticeBanner tone="critical">
         {{ t('settings.appearanceSaveFailed') }}
+      </NoticeBanner>
+    </div>
+
+    <div
+      v-if="motion.failed.value"
+      class="px-[18px] pt-1.5 pb-3"
+    >
+      <NoticeBanner tone="critical">
+        {{ t('settings.motionSaveFailed') }}
       </NoticeBanner>
     </div>
 
