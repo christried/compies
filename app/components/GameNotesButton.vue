@@ -18,13 +18,11 @@ const props = withDefaults(defineProps<{
   notes: NotesDoc | null
   /** The Host's Event notes of the game (#732, GLOSSARY: Event notes); null = none. A game with only these still has the button. */
   eventNotes?: NotesDoc | null
-  /** The button's visual diameter: GameCard draws it at 32 in every place, the library's cover and the pickers alike (#837, #859). */
-  size?: 32 | 36 | 40
   /** The game's form (#837): with it the popover and the sheet end in a footer „Bearbeiten“; without it they have none. */
   editTo?: RouteLocationRaw
   /** The Event page's tiles (#858): with no `editTo` the footer „Bearbeiten“ is a button that asks the tile for its game dialog (`edit`); a caller gives one of the two. */
   editable?: boolean
-}>(), { size: 40, eventNotes: null, editTo: undefined, editable: false })
+}>(), { eventNotes: null, editTo: undefined, editable: false })
 
 const emit = defineEmits<{ edit: [] }>()
 
@@ -116,11 +114,12 @@ onBeforeUnmount(() => {
 
 <template>
   <template v-if="doc || eventDoc">
+    <!-- 32 px in every place, the library's cover and the pickers alike (#837, #859) -->
     <IconButton
       ref="trigger"
       :icon="StickyNote"
       :label="t('notes.open_a11y', { game: name })"
-      :size="size"
+      :size="32"
       :expanded="open"
       class="shadow-sm"
       aria-haspopup="dialog"

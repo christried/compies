@@ -301,7 +301,6 @@ const look = computed(() => LAYOUT[props.layout])
         :event-notes="eventNotes"
         :edit-to="notesEditTo"
         :editable="notesEditable"
-        :size="32"
         @edit="emit('editNotes')"
       />
     </div>
