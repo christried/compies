@@ -11,7 +11,7 @@ import { colorTags } from '~~/shared/tag-colors'
 // clip's YouTube thumbnail, else a neutral placeholder. It is decorative: the name is the text. With `to`
 // the name is the link and stretches over the whole card (so `#actions` can hold buttons of their own);
 // without it the card is a plain element, not a button. #146 and #148 reuse it; a game with no player count and no Suitabilities shows neither. `layout="responsive"` (#173) is a row
-// below md and a card from md up, decided in CSS, so the game browser needs no `matchMedia`. A library game shows its first
+// below 600 px and a card from 600 px up (sm, #707), decided in CSS, so the game browser needs no `matchMedia`. A library game shows its first
 // three Tags and „+N“ (#335), each in the colour the game's whole Tag order gives it (#427, as on its page) and its Price line under the meta line (#337, #338: a pool and a Round game carry the Price too); only a wheel slice carries neither. „+N“ is a button above the link, and its popover lists every Tag (#614). They are
 // spans, not a list: the tests count the cards as `li`. The picker's rows are these cards too, so they show the Price as well. With `inEvents` (#733) a neutral pill „in 2 Events“
 // sits between the Price line and the Tags; it is a count, no Tag, so it is not a `TagChip`, and no control, so it adds no tab stop. With `archived` (#726) the same pill reads „Archiviert“ right under the name, tile included.
@@ -64,7 +64,7 @@ const { open, triggerAttrs, popoverAttrs } = useRevealPopover(moreEl)
 // The neutral pill of „in 2 Events“ (#733) and „Archiviert“ (#726): text only, no fill swap.
 const PILL = 'w-fit max-w-full truncate rounded-pill border-2 border-line bg-paper-2 px-2 text-[11px] leading-5 font-bold text-ink-2'
 
-// One class set per layout; Tailwind needs the strings whole. The responsive set is the row's, undone from md up.
+// One class set per layout; Tailwind needs the strings whole. The responsive set is the row's, undone from 600 px up (sm).
 // The body grows, so the actions sit on the card's bottom edge in a stretched grid row (#351).
 const LAYOUT = {
   row: {
@@ -94,12 +94,12 @@ const LAYOUT = {
     tags: '',
   },
   responsive: {
-    box: 'min-h-15 items-center gap-3 rounded-[12px] py-1.5 pr-2.5 pl-1.5 md:min-h-0 md:flex-col md:items-stretch md:gap-0 md:overflow-hidden md:rounded-[14px] md:p-0',
-    cover: 'size-[46px] rounded-[9px] border-2 md:aspect-[16/10] md:size-auto md:w-full md:rounded-none md:border-0 md:border-b-2',
-    body: 'flex-1 md:flex-auto md:px-3 md:pt-2.5 md:pb-3',
-    name: 'truncate md:line-clamp-2 md:min-h-[2lh] md:whitespace-normal',
-    actions: 'md:px-3 md:pb-3',
-    tags: 'flex-nowrap md:mt-auto',
+    box: 'min-h-15 items-center gap-3 rounded-[12px] py-1.5 pr-2.5 pl-1.5 sm:min-h-0 sm:flex-col sm:items-stretch sm:gap-0 sm:overflow-hidden sm:rounded-[14px] sm:p-0',
+    cover: 'size-[46px] rounded-[9px] border-2 sm:aspect-[16/10] sm:size-auto sm:w-full sm:rounded-none sm:border-0 sm:border-b-2',
+    body: 'flex-1 sm:flex-auto sm:px-3 sm:pt-2.5 sm:pb-3',
+    name: 'truncate sm:line-clamp-2 sm:min-h-[2lh] sm:whitespace-normal',
+    actions: 'sm:px-3 sm:pb-3',
+    tags: 'flex-nowrap sm:mt-auto',
   },
 }
 const look = computed(() => LAYOUT[props.layout])
@@ -178,7 +178,7 @@ const look = computed(() => LAYOUT[props.layout])
         data-price
         :title="priceText"
         class="text-[12px] font-bold text-ink-2"
-        :class="layout === 'card' ? 'line-clamp-2 min-h-[2lh]' : layout === 'row' ? 'truncate' : 'truncate md:line-clamp-2 md:min-h-[2lh] md:whitespace-normal'"
+        :class="layout === 'card' ? 'line-clamp-2 min-h-[2lh]' : layout === 'row' ? 'truncate' : 'truncate sm:line-clamp-2 sm:min-h-[2lh] sm:whitespace-normal'"
       >{{ priceText }}</span>
       <span
         v-if="showMeta && inEvents > 0"

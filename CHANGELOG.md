@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Geändert
+
+- Auf Bildschirmen ab 600 px stehen die Spiele nebeneinander als Karten, wie auf großen Bildschirmen; auf dem Handy bleiben sie Zeilen. ([#707](https://github.com/christried/compies/issues/707))
+
 ## [0.18.1] - 2026-11-21 – Hotfixes
 
 ### Neu

@@ -12,7 +12,7 @@ import { CHIP_OFF, CHIP_ON, CHIP_SHAPE } from '~/utils/chip-look'
 // filter state (`v-model:filters`, the library binds it to the address, the picker keeps it local), `compact` (only the
 // search, „Alle“ and the Tag; the library page also has „Archiviert“, #467), `to` (the card links to the game), `#card-actions` (the picker's ＋ and ✕) and `#toolbar`
 // („Neues Spiel anlegen“, on the search row), `marksEvents` (#733, the library page's „in 2 Events“ on each card). The filtering is client side (`filterGames`), so it follows every
-// keystroke. The grid from md up and the rows below are CSS (GameCard `responsive`), not `matchMedia`.
+// keystroke. The grid from 600 px up (sm, #707) and the rows below are CSS (GameCard `responsive`), not `matchMedia`.
 const props = defineProps<{
   compact?: boolean
   /** Where a card leads; without it the cards are plain. */
@@ -122,8 +122,8 @@ function set(changes: Partial<GameFilters>) {
   filters.value = { ...filters.value, ...changes }
 }
 
-// The grid wraps as many cards as fit from md up; below it the cards are rows.
-const GRID = 'md:grid md:grid-cols-[repeat(auto-fill,minmax(170px,1fr))] md:items-stretch md:gap-3'
+// The grid wraps as many cards as fit from 600 px up (sm, #707); below it the cards are rows.
+const GRID = 'sm:grid sm:grid-cols-[repeat(auto-fill,minmax(170px,1fr))] sm:items-stretch sm:gap-3'
 const CHIP = `inline-flex ${CHIP_SHAPE} items-center gap-1.5 px-4 text-small`
 </script>
 

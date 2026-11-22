@@ -712,8 +712,8 @@ describe('the game browser in the pool steps (#173)', () => {
     const page = await mountCreate()
     await toPoolStep(page)
 
-    expect(picker(page).classes()).toContain('md:grid')
-    expect(picker(page).classes()).toContain('md:items-stretch')
+    expect(picker(page).classes()).toContain('sm:grid')
+    expect(picker(page).classes()).toContain('sm:items-stretch')
     for (const item of picker(page).findAll('li')) {
       const card = item.element.firstElementChild as HTMLElement
       expect(card.className).toContain('h-full')
@@ -722,6 +722,18 @@ describe('the game browser in the pool steps (#173)', () => {
     const plus = toggle(page, 'Mario Kart in den Pool').element
     const kartCard = plus.closest('li')!.firstElementChild as HTMLElement
     expect(kartCard.lastElementChild!.contains(plus)).toBe(true)
+  })
+
+  it('sets the chosen games in two columns from 600 px (sm) and in one below, the library in its grid from 600 px too (#707)', async () => {
+    const page = await mountCreate()
+    await toPoolStep(page)
+    await toggle(page, 'Mario Kart in den Pool').trigger('click')
+    await toggle(page, 'Pong in den Pool').trigger('click')
+
+    const classes = inPool(page)!.classes()
+    expect(classes).toEqual(expect.arrayContaining(['grid-cols-1', 'sm:grid-cols-2']))
+    expect(classes.filter(token => token.startsWith('md:'))).toEqual([])
+    expect(picker(page).classes().filter(token => token.startsWith('md:'))).toEqual([])
   })
 
   it('keeps its filters out of the address', async () => {

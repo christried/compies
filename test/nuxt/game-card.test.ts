@@ -43,14 +43,22 @@ afterEach(() => {
 })
 
 describe('the game card structure (#351)', () => {
-  it('in the responsive layout, the actions are the last child and the body grows in the md column', async () => {
+  it('in the responsive layout, the actions are the last child and the body grows in the sm column', async () => {
     await mount({ name: 'Mario Kart' }, 'responsive')
 
     expect(lastChild().querySelector('button')?.textContent).toBe('Hinzufügen')
-    expect(root().className).toContain('md:flex-col')
-    expect(root().className).toContain('md:items-stretch')
-    expect(body().className).toContain('md:flex-auto')
-    expect(body().className).not.toContain('md:flex-none')
+    expect(root().className).toContain('sm:flex-col')
+    expect(root().className).toContain('sm:items-stretch')
+    expect(body().className).toContain('sm:flex-auto')
+    expect(body().className).not.toContain('sm:flex-none')
+  })
+
+  it('switches the responsive card to its card form at 600 px (sm), not at 980 px: no md: class is left in it (#707)', async () => {
+    await mount({ name: 'Mario Kart' }, 'responsive')
+
+    expect(root().className.split(' ').filter(token => token.startsWith('md:'))).toEqual([])
+    expect(body().className.split(' ').filter(token => token.startsWith('md:'))).toEqual([])
+    expect(root().className).toContain('sm:flex-col')
   })
 
   it('in the card layout, the card is a column, the body grows, and the actions are the last child', async () => {
@@ -79,7 +87,7 @@ describe('the game card structure (#351)', () => {
     expect(root().className).toBe(longRoot)
     expect(longLast).toBe(true)
     expect(lastChild().querySelector('button')?.textContent).toBe('Hinzufügen')
-    expect(body().className).toContain('md:flex-auto')
+    expect(body().className).toContain('sm:flex-auto')
   })
 
   it('without an actions slot there is no actions wrapper, and the body is the last child', async () => {
@@ -486,11 +494,11 @@ describe('the two reserved title lines (#612)', () => {
     expect(tokens(root().querySelector('b')!)).toEqual(expect.arrayContaining(['min-h-[2lh]', 'line-clamp-2']))
   })
 
-  it.each(TITLES)('keeps two lines for %s only from md in the responsive layout, the row below stays one line', async (_what, name) => {
+  it.each(TITLES)('keeps two lines for %s only from 600 px (sm) in the responsive layout, the row below stays one line', async (_what, name) => {
     await mount({ name }, 'responsive', false)
 
     const classes = tokens(root().querySelector('b')!)
-    expect(classes).toEqual(expect.arrayContaining(['md:min-h-[2lh]', 'truncate', 'md:line-clamp-2']))
+    expect(classes).toEqual(expect.arrayContaining(['sm:min-h-[2lh]', 'truncate', 'sm:line-clamp-2']))
     expect(classes).not.toContain('min-h-[2lh]')
   })
 
@@ -512,13 +520,13 @@ describe('the two reserved title lines (#612)', () => {
     expect(button.textContent).toBe(LONG_NAME)
   })
 
-  it('reserves the lines on the link of a responsive card from md, and shows the whole title', async () => {
+  it('reserves the lines on the link of a responsive card from 600 px (sm), and shows the whole title', async () => {
     page = await mountSuspended(GameCard, {
       props: { game: { id: 'g-1', name: LONG_NAME, imageUrl: null, youtubeId: null, price: null, playersMin: null, playersMax: null, suitabilities: [] }, layout: 'responsive', to: '/bibliothek/g-1' },
     })
 
     const link = root().querySelector('a')!
-    expect(tokens(link)).toContain('md:min-h-[2lh]')
+    expect(tokens(link)).toContain('sm:min-h-[2lh]')
     expect(tokens(link)).not.toContain('min-h-[2lh]')
     expect(link.textContent).toBe(LONG_NAME)
   })
@@ -560,11 +568,11 @@ describe('the price line wraps to two lines (#804)', () => {
     expect(priceSpan().className).toBe(long)
   })
 
-  it.each(PRICES)('keeps the %s line on one line below md and clamps it to two from md in the responsive layout', async (_what, price) => {
+  it.each(PRICES)('keeps the %s line on one line below 600 px and clamps it to two from 600 px (sm) in the responsive layout', async (_what, price) => {
     await mount({ name: 'Pong', price }, 'responsive', false)
 
     const classes = tokens(priceSpan())
-    expect(classes).toEqual(expect.arrayContaining(['truncate', 'md:line-clamp-2', 'md:min-h-[2lh]', 'md:whitespace-normal']))
+    expect(classes).toEqual(expect.arrayContaining(['truncate', 'sm:line-clamp-2', 'sm:min-h-[2lh]', 'sm:whitespace-normal']))
     expect(classes).not.toContain('min-h-[2lh]')
   })
 

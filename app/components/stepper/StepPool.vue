@@ -88,7 +88,7 @@ async function onSaved(game: GameView) {
       <ul
         v-else
         :aria-label="t('stepper.pool.listMain')"
-        class="m-0 grid list-none grid-cols-1 gap-2 p-0 md:grid-cols-2"
+        class="m-0 grid list-none grid-cols-1 gap-2 p-0 sm:grid-cols-2"
       >
         <li
           v-for="game in games"
