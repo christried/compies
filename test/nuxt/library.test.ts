@@ -807,20 +807,20 @@ describe('Tags on the card and the game page (#335)', () => {
 
   const group = (card: { find: (selector: string) => DOMWrapper<Element> }) => card.find('[role="group"][aria-label="Tags"]')
 
-  it('shows the first three Tags and „+2“ for five, with the number spelled out for assistive technology', async () => {
+  // The fit by width is the card's (game-card.test.ts, with a layout of its own); happy-dom has none, so the page shows every Tag and keeps no fixed three (#711).
+  it('shows every Tag of a game, however many, and no „+N“ where the page has no layout', async () => {
     list = { games: [game({ id: withClip.id, name: 'Fünf', tags: tagged(5) })] }
 
     const page = await mountSuspended(LibraryPage, { route: '/bibliothek' })
     await settle(page)
 
     const card = page.get('main li')
-    expect(group(card).element.children.length).toBe(4)
-    expect([...group(card).element.children].map(child => child.textContent?.trim())).toEqual(['Tag 1', 'Tag 2', 'Tag 3', '+2'])
-    expect(group(card).get('[aria-label="2 weitere Tags"]').text()).toBe('+2')
+    expect([...group(card).element.children].map(child => child.textContent?.trim())).toEqual(['Tag 1', 'Tag 2', 'Tag 3', 'Tag 4', 'Tag 5'])
+    expect(group(card).find('button').exists()).toBe(false)
     expect(page.findAll('main li')).toHaveLength(1)
   })
 
-  it('shows three Tags without „+N“, one with the singular label, and none for a game without Tags', async () => {
+  it('shows the Tags of three and four games alike, and none for a game without Tags', async () => {
     list = {
       games: [
         game({ id: withClip.id, name: 'Drei', tags: tagged(3) }),
@@ -834,7 +834,7 @@ describe('Tags on the card and the game page (#335)', () => {
 
     const [three, four, none] = page.findAll('main li')
     expect(group(three!).text()).toBe('Tag 1Tag 2Tag 3')
-    expect(group(four!).get('[aria-label="1 weiterer Tag"]').text()).toBe('+1')
+    expect(group(four!).text()).toBe('Tag 1Tag 2Tag 3Tag 4')
     expect(group(none!).exists()).toBe(false)
   })
 
@@ -851,6 +851,67 @@ describe('Tags on the card and the game page (#335)', () => {
     const plain = await mountSuspended(DetailPage, { route: `/bibliothek/${withClip.id}` })
     await vi.waitFor(() => expect(plain.find('h1').exists()).toBe(true))
     expect(plain.find('ul[aria-label="Tags"]').exists()).toBe(false)
+  })
+})
+
+// Every card of the list keeps the room of two Tag lines once some game of the list has Tags, so the cards of the grid are as high and the Tag lines line up (#711).
+describe('the room of the Tag lines on the library cards (#711)', () => {
+  beforeEach(async () => {
+    signInAs(host)
+    await useRouter().push('/bibliothek')
+    listMode = 'ok'
+    await clearNuxtData('games')
+    useState('game-library').value = null
+  })
+
+  const id = (n: number) => '00000000-0000-4000-8000-' + String(n).padStart(12, '0')
+  const room = (card: { element: Element }) => card.element.querySelectorAll('[aria-hidden="true"][class*="h-[52px]"]').length
+  const mountLibrary = async () => {
+    const page = await mountSuspended(LibraryPage, { route: '/bibliothek' })
+    await settle(page)
+    return page
+  }
+
+  it('gives a card without Tags the room when another card of the list has Tags, and the card with Tags none of its own', async () => {
+    list = { games: [game({ id: id(1), name: 'Mit', tags: tagged(2) }), game({ id: id(2), name: 'Ohne' })] }
+
+    const page = await mountLibrary()
+
+    const [withTags, without] = page.findAll('main li')
+    expect(room(without!)).toBe(1)
+    expect(room(withTags!)).toBe(0)
+    expect(withTags!.find('[role="group"]').exists()).toBe(true)
+  })
+
+  it('keeps no room in a list without Tags', async () => {
+    list = { games: [game({ id: id(1), name: 'Eins' }), game({ id: id(2), name: 'Zwei' })] }
+
+    const page = await mountLibrary()
+
+    expect(page.findAll('main li').map(room)).toEqual([0, 0])
+  })
+
+  it('keeps the room on page 1 when the only game with Tags is on page 2', async () => {
+    // 41 games, PAGE_SIZE 40: the one with Tags is the 41st, not drawn yet. The cards of page 1 must not change when it loads.
+    list = { games: Array.from({ length: 41 }, (_, i) => game({ id: id(i + 1), name: 'Spiel ' + String(i + 1).padStart(2, '0'), tags: i === 40 ? tagged(1) : [] })) }
+
+    const page = await mountLibrary()
+
+    expect(page.findAll('main li')).toHaveLength(40)
+    expect(page.findAll('main li').map(room)).toEqual(Array.from({ length: 40 }, () => 1))
+  })
+
+  it('drops the room when a search leaves only games without Tags, and brings it back with the search cleared', async () => {
+    list = { games: [game({ id: id(1), name: 'Alpha', tags: tagged(1) }), game({ id: id(2), name: 'Beta' }), game({ id: id(3), name: 'Bravo' })] }
+
+    const page = await mountLibrary()
+    expect(room(page.findAll('main li')[1]!)).toBe(1)
+
+    await page.get('input[type="search"]').setValue('b')
+    expect(page.findAll('main li').map(card => room(card))).toEqual([0, 0])
+
+    await page.get('input[type="search"]').setValue('')
+    expect(page.findAll('main li').map(room)).toEqual([0, 1, 1])
   })
 })
 

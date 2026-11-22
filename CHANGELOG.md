@@ -16,6 +16,7 @@
 - Die Scrollbalken haben jetzt die Farben der App, in Hell und Dunkel; ihre Breite bleibt die deines Browsers. ([#706](https://github.com/christried/compies/issues/706))
 - Der Notizen-Knopf sieht überall gleich aus und sitzt an derselben Stelle, auch wenn du ein Spiel auswählst. ([#859](https://github.com/christried/compies/issues/859))
 - Auch nach dem Ende eines Events bearbeitest du im Spiel-Dialog die Notizen eines Spiels; die Notizen für das Event bleiben gesperrt. ([#857](https://github.com/christried/compies/issues/857))
+- Eine Spielkarte zeigt so viele Tags, wie in zwei Zeilen passen, keiner wird abgeschnitten, und alle Karten sind gleich hoch. ([#711](https://github.com/christried/compies/issues/711))
 
 ## [0.18.1] - 2026-11-21 – Hotfixes
 
