@@ -5,7 +5,8 @@ import type { NotesDoc } from '~~/shared/notes-doc'
 // The Game notes of a game (#224, GLOSSARY: Game notes) as a disclosure: collapsed by default, announced as open or
 // closed, and the document formatted by RichNotes (#728). A document without a visible character shows no button; `notes` left at null (the slot's use) shows it. The panel is rendered only while it is open.
 // Only the Host gets the notes of a pool game (#224); 0.7 reuses it for the Host on the Round card (#217), where it starts
-// open (`startOpen`, #228): the notes are what the Host needs while the game is played. The Session rows reuse it for the Notes
+// open (#228): the notes are what the Host needs while the game is played. Since 0.19 the Round card sets `remember` (#838) instead of `startOpen`: open the first
+// time, then open or closed as the Host left it on this device (`useRoundNotesMemory`); the library page's list of a game's Events does not, and stays closed. The Session rows reuse it for the Notes
 // on a Slot's Votes (#349): the `label` names it with the count, and its default slot is the panel's content instead of the text.
 // The Host's Event notes of the game (#732) come above the Game notes in the same panel: a game with only Event notes shows the disclosure too.
 // The Round card has its own look (#729, hand-off 18-notizen.md § RoundCard „Notizen“): `variant="round"`, a 44 px button with the sticky note, „Notizen“, the
@@ -17,11 +18,20 @@ const props = withDefaults(defineProps<{
   label?: string
   startOpen?: boolean
   variant?: 'default' | 'round'
-}>(), { notes: null, eventNotes: null, label: undefined, startOpen: false, variant: 'default' })
+  remember?: boolean
+}>(), { notes: null, eventNotes: null, label: undefined, startOpen: false, variant: 'default', remember: false })
 
 const { t } = useI18n()
 const panelId = useId()
-const open = ref(props.startOpen)
+// The Round card's notes remember open or closed on this device (`remember`, #838); every other place keeps its own state, starting as `startOpen` says.
+const memory = props.remember ? useRoundNotesMemory() : null
+const local = ref(props.startOpen)
+const open = computed({
+  get: () => (memory ? memory.open.value : local.value),
+  set: (value: boolean) => (memory ? memory.set(value) : (local.value = value)),
+})
+// The panel of a stored `closed` is already hidden by the head script when the page takes the choice over, so its leave has nothing to run.
+const leave = (element: Element, done: () => void) => (memory?.hiddenByScript() ? done() : disclosureLeave(element, done))
 const { doc, eventDoc } = useNotePair(() => props.notes, () => props.eventNotes)
 const shown = computed(() => (props.notes === null && props.eventNotes === null) || doc.value !== null || eventDoc.value !== null)
 </script>
@@ -53,19 +63,19 @@ const shown = computed(() => (props.notes === null && props.eventNotes === null)
       <AppIcon
         :icon="ChevronDown"
         :size="20"
-        class="ml-auto transition-transform dur-base ease-snap motion-reduce:transition-none reduced:transition-none"
+        class="ml-auto transition-transform dur-base ease-snap motion-reduce:transition-none reduced:transition-none round-notes-closed:rotate-0"
         :class="open && 'rotate-180'"
       />
     </button>
     <Transition
       :css="false"
       @enter="disclosureEnter"
-      @leave="disclosureLeave"
+      @leave="leave"
     >
       <div
         v-if="open"
         :id="panelId"
-        class="overflow-hidden rounded-[12px] bg-paper-2"
+        class="overflow-hidden rounded-[12px] bg-paper-2 round-notes-closed:hidden"
       >
         <GameNotesStack
           class="px-3.5 pt-3 pb-3.5"

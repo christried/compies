@@ -111,7 +111,7 @@ watch(resultFor, async (id, was) => {
           :notes="round.notes ?? null"
           :event-notes="notesOf(round.game.id)"
           variant="round"
-          start-open
+          remember
         />
         <div
           v-if="isHost"
