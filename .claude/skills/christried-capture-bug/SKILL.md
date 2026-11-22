@@ -38,6 +38,8 @@ Look these up yourself:
 
 Then ask one round of at most three questions, only for fields the report and the lookups leave open. The reporter is often out of reach, so take the answers as they come: a field the user cannot answer goes into the draft as „unknown“, and its question goes under **Open questions**.
 
+Never ask what a word already settles or the user has already answered: „prod“, „Prod-System“, „production“ mean production (so `urgent`), and a field the user has answered is not asked again. Ask only for what stays open after that, and draft at once when nothing does.
+
 Done when each field is filled from the report, a lookup or an answer, or is „unknown“ after one question.
 
 ## 3. Draft

@@ -31,3 +31,6 @@ scripts/browser/scratch/
 # Local secrets of the realtime Worker, and wrangler state
 .dev.vars
 .wrangler
+
+# Personal editor settings (the user's VS Code window colours)
+.vscode/
