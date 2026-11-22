@@ -878,4 +878,29 @@ describe('the Notes button of a game in the pool steps (#436)', () => {
     expect(page.text()).toContain('Noch leer. Du kannst auch ohne Spiele weitermachen.')
     expect(notesButtons(picker(page))).toHaveLength(1)
   })
+
+  // The button is the card's own, in the card's place (#859): not beside the ✕ or the ＋, and no footer „Bearbeiten“.
+  it('is not beside the ✕ of a chosen game, nor beside the ＋ of a library game', async () => {
+    const page = await mountCreate()
+    await toPoolStep(page)
+    await toggle(page, 'Mario Kart in den Pool').trigger('click')
+
+    const chosen = inPool(page)!.findAll('li').find(row => row.get('b').text() === 'Mario Kart')!
+    expect(notesButtons(chosen)[0]!.parentElement!.querySelector('button[aria-label="Mario Kart aus dem Pool nehmen"]')).toBeNull()
+    expect(chosen.element.querySelector('button[aria-label="Mario Kart aus dem Pool nehmen"]')).not.toBeNull()
+    expect(notesButtons(cardOf(page, 'Mario Kart'))[0]!.parentElement!.querySelector('button[aria-label="Mario Kart in den Pool"]')).toBeNull()
+  })
+
+  it('has no „Bearbeiten“ footer in the popover of a chosen game', async () => {
+    const page = await mountCreate()
+    await toPoolStep(page)
+    await toggle(page, 'Mario Kart in den Pool').trigger('click')
+
+    ;(notesButtons(inPool(page)!)[0] as HTMLButtonElement).click()
+    await flushPromises()
+
+    const popover = document.querySelector('[role="dialog"]:not([data-sheet])')!
+    expect(popover.textContent).toContain('Settings: 3 Runden')
+    expect(popover.textContent).not.toContain('Bearbeiten')
+  })
 })

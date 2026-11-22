@@ -61,6 +61,11 @@ export interface SavedAppearance {
   appearance: Appearance
 }
 
+/** What POST /api/me/motion returns: whether this device's Reduced motion is on after the save (#680). */
+export interface SavedMotion {
+  reduced: boolean
+}
+
 /** What POST /api/me/tour-seen and POST /api/me/tour-reset return: the Tour version stored now (#646). */
 export interface SavedTourSeen {
   tourSeen: number

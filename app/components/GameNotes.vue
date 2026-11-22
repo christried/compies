@@ -11,7 +11,12 @@ const props = withDefaults(defineProps<{
   notes: NotesDoc
   level?: 'h2' | 'h3'
   sub?: string
-}>(), { level: 'h2', sub: undefined })
+  /** The Host may edit the block (#835, the dialog's h3 branch only: the library page's section never has a pencil): the pencil named `editLabel` emits `edit`. */
+  editable?: boolean
+  editLabel?: string
+}>(), { level: 'h2', sub: undefined, editable: false, editLabel: undefined })
+
+defineEmits<{ edit: [] }>()
 
 const { t } = useI18n()
 const wide = useMediaQuery(MD_QUERY)
@@ -55,5 +60,8 @@ const shown = computed(() => notesHasText(props.notes))
     size="md"
     :sub="sub"
     :level="level"
+    :editable="editable"
+    :edit-label="editLabel"
+    @edit="$emit('edit')"
   />
 </template>

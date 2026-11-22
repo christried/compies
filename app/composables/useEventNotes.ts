@@ -1,8 +1,9 @@
 import type { ComputedRef, InjectionKey } from 'vue'
+import type { EventNotesChange } from '~~/shared/event'
 import type { NotesDoc } from '~~/shared/notes-doc'
 
-/** Saves one game's Event notes, `null` clears them (#464); resolves to whether the server took it. */
-export type SaveEventNotes = (gameId: string, notes: NotesDoc | null) => Promise<boolean>
+/** Saves what changed of one game's notes (#464, #835): the Event notes (`notes`) and the Game notes (`gameNotes`), each only when the Host changed it, `null` clears; resolves to whether the server took it. */
+export type SaveEventNotes = (gameId: string, change: EventNotesChange) => Promise<boolean>
 
 /**
  * What the Host's Event page knows about the Event notes (#732, GLOSSARY: Event notes): the map by game id, the Event's name and whether it is finished (the

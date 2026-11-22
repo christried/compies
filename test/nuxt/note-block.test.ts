@@ -1,6 +1,7 @@
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import { describe, expect, it } from 'vitest'
 import EventNotes from '~/components/EventNotes.vue'
+import GameNotes from '~/components/GameNotes.vue'
 import NoteBlock from '~/components/NoteBlock.vue'
 import { notesFromLines } from '~~/shared/notes-doc'
 import { BLANK_NOTES, FORMATTED_NOTES } from './helpers/formatted-notes'
@@ -133,5 +134,27 @@ describe('the Host\'s edit button (#464)', () => {
     expect(finished.text()).toContain('Event beendet')
     expect(unlabelled.find('button').exists()).toBe(false)
     expect(game.find('button').exists()).toBe(false)
+  })
+
+  // The Game block's pencil (#835): the same button, named by the place, and `data-notes-edit` names the block's kind so the dialog finds the entry again.
+  it('ends the header of a game block with a pencil named by editLabel too, and each pencil names its kind in data-notes-edit (#835)', async () => {
+    const gameBlock = await mountSuspended(NoteBlock, { props: { kind: 'game', doc, size: 'md', editable: true, editLabel: 'Notizen bearbeiten' } })
+    const eventBlock = await mountSuspended(EventNotes, { props: { notes: doc, size: 'md', editable: true } })
+
+    const gamePencil = gameBlock.get('button[aria-label="Notizen bearbeiten"]')
+    expect(gamePencil.attributes('data-notes-edit')).toBe('game')
+    expect(eventBlock.get(`button[aria-label="${EDIT}"]`).attributes('data-notes-edit')).toBe('event')
+    await gamePencil.trigger('click')
+    expect(gameBlock.emitted('edit')).toHaveLength(1)
+  })
+
+  it('has the library page\'s Game notes section no pencil, whatever it is handed (#835)', async () => {
+    const section = await mountSuspended(GameNotes, { props: { notes: doc, level: 'h2', editable: true, editLabel: 'Notizen bearbeiten' } })
+
+    expect(section.find('button').exists()).toBe(false)
+    const block = await mountSuspended(GameNotes, { props: { notes: doc, level: 'h3', editable: true, editLabel: 'Notizen bearbeiten' } })
+    expect(block.find('button[aria-label="Notizen bearbeiten"]').exists()).toBe(true)
+    await block.get('button').trigger('click')
+    expect(block.emitted('edit')).toHaveLength(1)
   })
 })

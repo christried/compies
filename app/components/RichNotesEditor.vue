@@ -249,7 +249,7 @@ const helpLine = computed(() => {
           :icon="helpLine.icon"
           :size="16"
           class="-mt-px"
-          :class="{ 'animate-spin motion-reduce:animate-none': disabled }"
+          :class="{ 'animate-spin motion-reduce:animate-none reduced:animate-none': disabled }"
         />
         {{ helpLine.text }}
       </span>
