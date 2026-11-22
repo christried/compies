@@ -3,7 +3,7 @@ import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
-import { results } from '../../scripts/browser/kit.mjs'
+import { results, standingFails } from '../../scripts/browser/kit.mjs'
 
 // The results log of a browser check (scripts/browser/kit.mjs). A run name is reused from Release to Release (`l1`, `m2`):
 // in 0.13.1 and 0.13.2 a run's lines landed under the log of an earlier Release's run of the same name, and every report
@@ -93,5 +93,19 @@ describe('results', () => {
     results(RUN, { sha: OTHER, base: 'http://localhost:3001' })
 
     expect(readFileSync(LOG, 'utf8')).toMatch(new RegExp(`^== .+ on ${HEAD}, [^(]+$`, 'm'))
+  })
+
+  // 0.18: thirteen and fourteen FAIL lines of two check tickets were faults of the check's own script, measured again under
+  // another label, and the orchestrator's summary needed a hand-made list of them (#833).
+  it('marks an earlier line void, and the void FAIL no longer stands', () => {
+    const log = results(RUN)
+    log.check('chip at 1440 (script read the wrong tab)', false, '0 px')
+    log.check('chip at 1440', true, '12 px')
+    log.check('row fits at 390', false, '412 px of 390')
+    log.void('chip at 1440 (script read the wrong tab)', 'script fault: measured again as „chip at 1440“')
+
+    const text = readFileSync(LOG, 'utf8')
+    expect(text).toContain('VOID  chip at 1440 (script read the wrong tab)  (script fault: measured again as „chip at 1440“)')
+    expect(standingFails(text)).toEqual(['FAIL  row fits at 390  (412 px of 390)'])
   })
 })
