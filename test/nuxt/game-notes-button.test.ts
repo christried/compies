@@ -487,6 +487,67 @@ describe('the Notes button of a game (#436)', () => {
     expect(document.activeElement).toBe(trigger())
   })
 
+  // A scroll closes the popover only when it moved the button (#974): the Event page's first press removes „Ton aktivieren“, the document gets
+  // shorter and the browser clamps the scroll position, a scroll that leaves the button where it was. happy-dom has no layout, so the
+  // button's rect is a variable the test moves.
+  describe('on a scroll (#974)', () => {
+    let buttonTop = 100
+    let measure: ReturnType<typeof vi.spyOn>
+    beforeEach(() => {
+      buttonTop = 100
+      measure = vi.spyOn(Element.prototype, 'getBoundingClientRect').mockImplementation(function (this: Element) {
+        const at = (top: number, left: number, width: number, height: number) => ({ top, left, width, height, bottom: top + height, right: left + width, x: left, y: top, toJSON: () => ({}) }) as DOMRect
+        return this.matches(TRIGGER) ? at(buttonTop, 400, 40, 36) : at(0, 0, 0, 0)
+      })
+    })
+    afterEach(() => measure.mockRestore())
+
+    it('keeps the popover open when the page scrolls and the button stays where it was', async () => {
+      await mount({ notes: notesFromLines(NOTES.split('\n')) })
+      await open()
+
+      window.dispatchEvent(new Event('scroll'))
+      document.body.dispatchEvent(new Event('scroll'))
+      await flushPromises()
+
+      expect(popover()).not.toBeNull()
+    })
+
+    it('keeps the popover open when the button moved by 1 px or less', async () => {
+      await mount({ notes: notesFromLines(NOTES.split('\n')) })
+      await open()
+
+      buttonTop = 101
+      window.dispatchEvent(new Event('scroll'))
+      await flushPromises()
+
+      expect(popover()).not.toBeNull()
+    })
+
+    it('closes the popover and gives the focus back to the button when the scroll moved the button by more than 1 px', async () => {
+      await mount({ notes: notesFromLines(NOTES.split('\n')) })
+      await open()
+
+      buttonTop = 160
+      window.dispatchEvent(new Event('scroll'))
+      await flushPromises()
+
+      expect(popover()).toBeNull()
+      expect(document.activeElement).toBe(trigger())
+    })
+
+    it('keeps the popover open on a scroll inside it, even when the button moved', async () => {
+      await mount({ notes: notesFromLines(NOTES.split('\n')) })
+      await open()
+
+      buttonTop = 160
+      popover()!.querySelector('p')!.dispatchEvent(new Event('scroll', { bubbles: false }))
+      await flushPromises()
+
+      expect(popover()).not.toBeNull()
+    })
+  })
+
   it('keeps all of a 1000-character note, line breaks included, inside a scrolling popover', async () => {
     const long = `${'a'.repeat(495)}\n${'b'.repeat(495)}\n\n`
     expect(long.length).toBeLessThanOrEqual(1000)
