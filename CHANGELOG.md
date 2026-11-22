@@ -9,6 +9,7 @@
 - Das Spielformular sagt dir, wenn deine Bibliothek schon ein Spiel mit diesem Namen hat, und bringt dich mit „Das nehmen“ dorthin. ([#689](https://github.com/christried/compies/issues/689))
 - Als Host bearbeitest du die Notizen eines Spiels im Spiel-Dialog deines Events, zusammen mit den Notizen für dieses Event. ([#835](https://github.com/christried/compies/issues/835))
 - Im Profil schaltest du „Weniger Bewegung“ ein: Compies zeigt dann auf diesem Gerät die ruhigen Varianten der großen Animationen. ([#680](https://github.com/christried/compies/issues/680))
+- Legst du im Schritt „Spiele“ ein Spiel an, das deine Bibliothek schon hat, nimmt „Das nehmen“ das vorhandene in den Pool. ([#860](https://github.com/christried/compies/issues/860))
 
 ### Geändert
 
