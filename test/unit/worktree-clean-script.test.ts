@@ -215,3 +215,54 @@ describe('scripts/worktree-clean.mjs', () => {
     expect(lines().some(line => line.startsWith('kept leftover-git: it has a .git'))).toBe(true)
   })
 })
+
+// A session whose working directory had moved into a worktree ran the cleaner there: it read that worktree's own, empty
+// .claude/worktrees/, printed nothing and removed nothing (0.18, #833).
+describe('scripts/worktree-clean.mjs run inside a worktree', () => {
+  let tmp: string
+  let work: string
+  let output: string
+
+  const folder = (name: string) => join(work, '.claude', 'worktrees', name)
+
+  beforeAll(() => {
+    tmp = realpathSync.native(mkdtempSync(join(tmpdir(), 'worktree-clean-inside-')))
+    work = join(tmp, 'work')
+    git(tmp, 'init', '--bare', '-b', 'main', 'origin.git')
+    git(tmp, 'init', '-b', 'main', 'work')
+    git(work, 'commit', '--allow-empty', '-m', 'init')
+    git(work, 'remote', 'add', 'origin', join(tmp, 'origin.git'))
+    git(work, 'push', '-u', 'origin', 'main')
+    git(work, 'worktree', 'add', '-b', 'worktree-agent-m1m1m1', folder('agent-m1m1m1'), 'origin/main')
+    git(work, 'worktree', 'add', '-b', 'session-branch', folder('session'), 'origin/main')
+
+    output = spawnSync(process.execPath, [script, 'agent-m1m1m1'], { cwd: folder('session'), env: { ...process.env, ...identity }, encoding: 'utf8' }).stdout
+  }, 120_000)
+
+  afterAll(() => {
+    rmSync(tmp, { recursive: true, force: true, maxRetries: 5 })
+  })
+
+  // Windows keeps a folder that a process stands in; git lets go of the worktree and fails on the folder. Its branches went on
+  // staying behind until #833. Linux deletes such a folder, so the case is Windows's.
+  it.runIf(process.platform === 'win32')('deletes the branches of a worktree whose folder a process holds, and says the folder stays', async () => {
+    git(work, 'worktree', 'add', '-b', 'worktree-agent-n2n2n2', folder('agent-n2n2n2'), 'origin/main')
+    const holder = spawn(process.execPath, ['-e', 'setInterval(() => {}, 1000)'], { cwd: folder('agent-n2n2n2') })
+    try {
+      const held = spawnSync(process.execPath, [script, 'agent-n2n2n2'], { cwd: work, env: { ...process.env, ...identity }, encoding: 'utf8' }).stdout
+      expect(git(work, 'branch', '--list', 'worktree-agent-n2n2n2')).toBe('')
+      expect(held).toMatch(/^removed agent-n2n2n2 and worktree-agent-n2n2n2 \(its folder stays: .+\)$/m)
+    }
+    finally {
+      holder.kill()
+      await new Promise(resolve => holder.on('exit', resolve))
+    }
+  }, 60_000)
+
+  it('cleans the main checkout\'s worktrees and keeps the one it runs in', () => {
+    expect(existsSync(folder('agent-m1m1m1'))).toBe(false)
+    expect(git(work, 'branch', '--list', 'worktree-agent-m1m1m1')).toBe('')
+    expect(output).toContain('removed agent-m1m1m1 and worktree-agent-m1m1m1')
+    expect(output).toContain('kept session: not named; name it if it is yours')
+  })
+})
