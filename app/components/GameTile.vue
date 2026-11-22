@@ -37,6 +37,9 @@ function openEditor() {
   editField.value = 'event'
   dialogOpen.value = true
 }
+
+// The Round card's „Bearbeiten“ (#836) opens this tile's dialog in the edit mode from outside: the Round card holds the tile's notes, not the tile.
+defineExpose({ openEditor })
 </script>
 
 <template>
