@@ -19,6 +19,8 @@
 - Der Notizen-Knopf sieht überall gleich aus und sitzt an derselben Stelle, auch wenn du ein Spiel auswählst. ([#859](https://github.com/christried/compies/issues/859))
 - Auch nach dem Ende eines Events bearbeitest du im Spiel-Dialog die Notizen eines Spiels; die Notizen für das Event bleiben gesperrt. ([#857](https://github.com/christried/compies/issues/857))
 - Eine Spielkarte zeigt so viele Tags, wie in zwei Zeilen passen, keiner wird abgeschnitten, und alle Karten sind gleich hoch. ([#711](https://github.com/christried/compies/issues/711))
+- Die Datenschutzerklärung nennt den neuen Eintrag im Speicher des Browsers (compies-round-notes). ([#838](https://github.com/christried/compies/issues/838))
+- Die Datenschutzerklärung nennt in Abschnitt 9 jetzt auch das Cookie „compies-motion“, das sich auf deinem Gerät merkt, ob „Weniger Bewegung“ eingeschaltet ist. ([#680](https://github.com/christried/compies/issues/680))
 
 ## [0.18.1] - 2026-11-21 – Hotfixes
 
