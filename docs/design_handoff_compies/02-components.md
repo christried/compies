@@ -107,6 +107,7 @@ Common rules for every component:
 - [`PageFooter`](#pagefooter) [1.x] (Impressum, Datenschutz, Version; in UserMenu below md)
 - [`NewChip`](#newchip) [1.x]
 - [`SettingsRow`](#settingsrow) [1.x]
+- [`Scrollbar`](#scrollbar) [0.19] (one root rule, no component)
 
 ## AppButton
 **Scope:** [MVP] · **Ref:** DS Basics
@@ -1314,5 +1315,20 @@ One setting on the Profil page's card „Einstellungen“ (#400): an icon tile, 
 - **Slots:** default, the control, with `{ titleId, descriptionId }` to name and describe it (ToggleSwitch without `label` takes them as `labelledby` and `describedby`)
 - **Desktop / mobile:** one line: 40 px tile (radius 12, 2 px line, `paper-2`), title 15 px bold, description 12 px `ink-2`, control at the right. A control too wide for the text's 140 px minimum wraps to its own line, right-aligned. The card draws 1.5 px `line-soft` lines between rows.
 - **Accessibility:** the icon is decorative; the control's name is the title and its description the description, by id.
+- **Motion:** —
+
+## Scrollbar
+**Scope:** [0.19] (#706) · **Ref:** none, the browser draws it · **Spec:** #856 § Implementation Decisions „Scrollbars“
+
+Not a component: one rule on the document's root, in `app/assets/css/compies-theme.css` (`@layer base`): `:root { scrollbar-color: var(--cp-ink) transparent; }`. The property is inherited, so the page's scrollbar and that of every sheet, dialog and list that scrolls on its own (the Chat, the Activity feed, the Date poll's matrix, the Award ceremony among them) take it without a rule of their own.
+
+- **Props / variants:** —
+- **States:** — (the browser's own states stay)
+- **Slots:** —
+- **Colours:** thumb `ink` (#151515 in Hell, #f7efe1 in Dunkel; System takes the Dunkel set), track transparent. Both follow the Appearance through the token.
+- **Width:** the browser's. The rule sets no `scrollbar-width`, so a classic bar keeps its width and an overlay bar (phone, Mac) stays an overlay that takes no room.
+- **Exceptions:** the notes editor keeps `scrollbar-width: thin`, the Changelog's version strip keeps `scrollbar-width: none`, and the scroll gutter of a locked page (`scroll-gutter`, #658) is untouched.
+- **Not written:** a `::-webkit-scrollbar` rule (it would not reach Firefox, and on a Mac it replaces the overlay scrollbars with permanent ones), a choice of styles, a setting.
+- **Accessibility:** the scrollbar stays the browser's control; the rule sets only its colours.
 - **Motion:** —
 

@@ -5,6 +5,7 @@
 ### Geändert
 
 - Auf Bildschirmen ab 600 px stehen die Spiele nebeneinander als Karten, wie auf großen Bildschirmen; auf dem Handy bleiben sie Zeilen. ([#707](https://github.com/christried/compies/issues/707))
+- Die Scrollbalken haben jetzt die Farben der App, in Hell und Dunkel; ihre Breite bleibt die deines Browsers. ([#706](https://github.com/christried/compies/issues/706))
 
 ## [0.18.1] - 2026-11-21 – Hotfixes
 
