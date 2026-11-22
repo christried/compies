@@ -68,14 +68,11 @@ const isChosen = (id: string) => chosen.value?.id === id
         >
           <GameCard
             :game="game"
+            :notes="game.notes"
+            :event-notes="eventNotesOf(game.id)"
             layout="row"
           >
             <template #actions>
-              <GameNotesButton
-                :name="game.name"
-                :notes="game.notes"
-                :event-notes="eventNotesOf(game.id)"
-              />
               <IconButton
                 :icon="Check"
                 :label="t(isChosen(game.id) ? 'nextGame.selected' : 'nextGame.select', { name: game.name })"
@@ -99,13 +96,10 @@ const isChosen = (id: string) => chosen.value?.id === id
       <GameBrowser
         v-model:filters="filters"
         compact
+        card-notes="view"
+        :event-notes-of="eventNotesOf"
       >
         <template #card-actions="{ game }">
-          <GameNotesButton
-            :name="game.name"
-            :notes="game.notes"
-            :event-notes="eventNotesOf(game.id)"
-          />
           <IconButton
             :icon="Check"
             :label="t(isChosen(game.id) ? 'nextGame.selected' : 'nextGame.select', { name: game.name })"

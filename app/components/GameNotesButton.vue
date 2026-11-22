@@ -18,7 +18,7 @@ const props = withDefaults(defineProps<{
   notes: NotesDoc | null
   /** The Host's Event notes of the game (#732, GLOSSARY: Event notes); null = none. A game with only these still has the button. */
   eventNotes?: NotesDoc | null
-  /** The button's visual diameter: the picker's rows are 36, its cards 40, the library's covers 32. */
+  /** The button's visual diameter: GameCard draws it at 32 in every place, the library's cover and the pickers alike (#837, #859). */
   size?: 32 | 36 | 40
   /** The game's form (#837): with it the popover and the sheet end in a footer „Bearbeiten“; without it they have none. */
   editTo?: RouteLocationRaw
