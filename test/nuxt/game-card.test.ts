@@ -946,3 +946,61 @@ describe('the Notes button on the card (#837)', () => {
     })
   })
 })
+
+// The Event notes on the card (#859): a card that is given the Host's Event notes of its game shows the same Notes button as one with Game notes,
+// the popover names the Event notes above the Game notes, and a card with no visible character in either draws none.
+describe('the Event notes on the card (#859)', () => {
+  const GAME_NOTES = notesFromLines(['Zeile eins'])
+  const EVENT_NOTES = notesFromLines(['Heute nur Bo1'])
+  const TRIGGER = 'button[aria-label^="Notizen zu "]'
+
+  async function mountWith(props: { layout: Layout, notes?: NotesDoc | null, eventNotes?: NotesDoc | null }) {
+    const { layout, ...rest } = props
+    page = await mountSuspended(GameCard, {
+      props: { game: { id: 'g-1', name: 'Mario Kart', imageUrl: null, youtubeId: null, playersMin: null, playersMax: null, suitabilities: [], tags: [], price: null }, layout, ...rest },
+      slots: { actions: () => h('button', { type: 'button' }, 'Hinzufügen') },
+      attachTo: document.body,
+    })
+    await flushPromises()
+    return page
+  }
+  const trigger = () => root().querySelector<HTMLButtonElement>(TRIGGER)
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('shows the button for a game with only Event notes, in the row layout, and its popover shows them', async () => {
+    await mountWith({ layout: 'row', eventNotes: EVENT_NOTES })
+
+    expect(trigger()!.getAttribute('aria-label')).toBe('Notizen zu Mario Kart')
+    trigger()!.click()
+    await flushPromises()
+
+    expect(document.querySelector('[role="dialog"]')!.textContent).toContain('Heute nur Bo1')
+  })
+
+  it('shows the Event notes above the Game notes in the popover', async () => {
+    await mountWith({ layout: 'card', notes: GAME_NOTES, eventNotes: EVENT_NOTES })
+
+    trigger()!.click()
+    await flushPromises()
+
+    const text = document.querySelector('[role="dialog"]')!.textContent!
+    expect(text.indexOf('Heute nur Bo1')).toBeGreaterThanOrEqual(0)
+    expect(text.indexOf('Heute nur Bo1')).toBeLessThan(text.indexOf('Zeile eins'))
+  })
+
+  it('has none when neither note has a visible character, and leaves no wrapper in the DOM', async () => {
+    await mountWith({ layout: 'card', notes: BLANK_NOTES[0], eventNotes: BLANK_NOTES[1] })
+
+    expect(trigger()).toBeNull()
+    expect(root().children).toHaveLength(3)
+  })
+
+  it('has none in the tile layout, even for a game with Event notes', async () => {
+    await mountWith({ layout: 'tile', eventNotes: EVENT_NOTES })
+
+    expect(trigger()).toBeNull()
+  })
+})
