@@ -9,10 +9,10 @@ import { readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { sleep } from './chrome.mjs'
-import { api, centre, clickText, createGame, enterResult, open, ok, placesOf, runningEvent } from './kit.mjs'
-import { noAutoLoad, page, step } from './dark-states-app.mjs'
+import { api, centre, clickText, createGame, enterResult, open, ok, placesOf, runningEvent, typeInto } from './kit.mjs'
+import { next, noAutoLoad, page, step } from './dark-states-app.mjs'
 import { BUILDS, host, keepToasts, layerOpen, member, pair, pool, press, running, signIn, stop, toastShown, until } from './dark-states-event.mjs'
-import { backspace, blockUrls, focusNotes, releaseToasts, scriptFromLoad, setField, typeNotes, unblockUrls, UNTAG } from './walk-kit.mjs'
+import { backspace, blockUrls, fieldByLabel, focusNotes, releaseToasts, scriptFromLoad, setField, typeNotes, unblockUrls, UNTAG } from './walk-kit.mjs'
 
 const COPY = JSON.parse(readFileSync(join(dirname(fileURLToPath(import.meta.url)), '../../i18n/locales/de.json'), 'utf8'))
 const GAME_PREFIX = 'R011 Dunkel-Check '
@@ -79,6 +79,16 @@ export const CLAIMS = {
   'notes.from_library': 'spiel-notizen-host',
   'notes.finished.chip': 'fertig-notizen-host',
   'notes.open_a11y': 'picker-notizen-host',
+  // The texts 0.19 adds or changes (#861, spec #856): the game form's duplicate hint, the settings row „Weniger Bewegung“ and § 9 of the Datenschutzerklärung.
+  'gameEdit.duplicate': 'bibliothek-neu-doppelt',
+  'gameEdit.useExisting': 'bibliothek-neu-doppelt',
+  'gameEdit.duplicateArchived': 'bibliothek-neu-doppelt-archiviert',
+  'gameEdit.openArchived': 'bibliothek-neu-doppelt-archiviert',
+  'settings.motion': 'profil',
+  'settings.motionHelp': 'profil',
+  'settings.motionSaveFailed': 'profil-weniger-bewegung-fehler',
+  'legal.datenschutz.cookies.text': 'datenschutz',
+  'legal.datenschutz.changes.text': 'datenschutz',
 }
 
 /** The texts of 0.16 no state can show (key → why). */
@@ -113,7 +123,10 @@ export const EVENT_NOTES = {
 }
 
 let library
-/** The two library games of the states, found by name or made once: `Spiel Notizen` (2 to 6 players, 60 s, Tags, Game notes) and `Spiel Archiv` (plain, archived). Library data, never purged, as `Spiel 2`. */
+/** The Tags of `Spiel Schlagworte`: the most a game may have (`TAGS_PER_GAME_MAX`, 8), so the card's Tags take two rows and a „+X“ at the widths of the library. */
+const TAGGED_TAGS = ['Koop', 'Schnell', 'Familie', 'Party', 'Taktik', 'Retro', 'Rätselspaß', 'Wortspiele']
+
+/** The library games of the states, found by name or made once: `Spiel Notizen` (2 to 6 players, 60 s, Tags, Game notes), `Spiel Archiv` (plain, archived) and `Spiel Schlagworte` (the most Tags). Library data, never purged, as `Spiel 2`. */
 function libraryGames(ctx) {
   library ??= (async () => {
     const tab = host(ctx)
@@ -121,9 +134,10 @@ function libraryGames(ctx) {
     const named = async (name, fields) => known.find(game => game.name === `${GAME_PREFIX}${name}`) ?? await createGame(tab, { name: `${GAME_PREFIX}${name}`, clipLength: 60, ...fields })
     const notes = await named('Spiel Notizen', { playersMin: 2, playersMax: 6, tags: ['Koop', 'Schnell'], notes: WALK_NOTES })
     const archive = await named('Spiel Archiv', { playersMin: 1, playersMax: 8 })
+    const tagged = await named('Spiel Schlagworte', { playersMin: 1, playersMax: 4, tags: TAGGED_TAGS })
     // Idempotent: a game that is archived already is answered as it is.
     await ok(api(tab, 'PUT', `/api/games/${archive.id}/archived`, { archived: true }), 'archive Spiel Archiv')
-    return { notes, archive }
+    return { notes, archive, tagged }
   })()
   return library
 }
@@ -236,6 +250,53 @@ async function openTile(tab, anchor, game) {
   if (!pressed) throw new Error(`no tile „${game}“ under „${anchor}“`)
 }
 
+/** The button `label` (its text, or with `byLabel` its `aria-label`) in the nearest block under the heading `anchor` that has one: pressed. Throws when there is none. */
+async function pressUnder(tab, anchor, label, { byLabel = false } = {}) {
+  const pressed = await tab.evaluate(`(() => {
+    const seen = el => el.getBoundingClientRect().width > 0
+    const named = el => (${byLabel} ? el.getAttribute('aria-label') ?? '' : el.textContent).replace(${UNTAG}, '').trim()
+    const heading = [...document.querySelectorAll('h2, h3, p')].find(el => seen(el) && el.textContent.replace(${UNTAG}, '').trim() === ${JSON.stringify(anchor)})
+    for (let block = heading?.parentElement; block; block = block.parentElement) {
+      const button = [...block.querySelectorAll('button')].find(el => seen(el) && named(el) === ${JSON.stringify(label)})
+      if (!button) continue
+      button.scrollIntoView({ block: 'center', behavior: 'instant' })
+      button.click()
+      return true
+    }
+    return false
+  })()`)
+  if (!pressed) throw new Error(`no „${label}“ under „${anchor}“`)
+}
+
+/** The Event notes' and the Game notes' first words in the walk's copy: the popover and the dialog show them, so a reading waits for them. */
+const GAME_NOTES_TEXT = 'Aufbau'
+const EVENT_NOTES_TEXT = 'Heute nur'
+
+/** The button „Bearbeiten“ of the popover or sheet that is open (`GameNotesButton`'s footer): pressed, the dialog of the game opens in edit mode after it. */
+async function editFromPopover(tab) {
+  await layerOpen(tab, 'the notes popover')
+  if (!await clickText(tab, '[role=dialog] button', COPY.library.edit)) throw new Error('no „Bearbeiten“ in the notes popover')
+  await until(tab, `!!document.querySelector('[role=dialog] [data-notes-editor]')`, 'the editor of the dialog')
+}
+
+/** The library list with `name` typed in its search: the card of the game is on the page, and the auto-load sentinel is taken away. Nothing is changed. */
+async function searchLibrary(tab, name) {
+  await until(tab, `!!document.querySelector('ul[aria-label*=${JSON.stringify(COPY.library.title)}] li')`, 'the library', 30_000)
+  await noAutoLoad(tab)
+  await typeInto(tab, 'input[type=search]', name)
+  await until(tab, shows(name), `the card of ${name}`)
+  await sleep(300)
+}
+
+/** `name` typed into the game form's name field, and the duplicate hint `copy` (its `{name}` filled in) waited for. Nothing is sent. */
+async function typeName(tab, name, copy) {
+  await setField(tab, fieldByLabel(COPY.gameEdit.name), name)
+  await until(tab, shows(copy.replace('{name}', name)), 'the duplicate hint')
+}
+
+/** The `aria-label` of the notes button of the card or tile of `game` (`notes.open_a11y`). */
+const notesButtonOf = game => COPY.notes.open_a11y.replace('{game}', game)
+
 /** A state of the library of the Host (or `account`) that needs the two library games first: `before` runs ahead of the page, and `ctx.games` holds them for the address and the stops. */
 function libraryPage(name, account, address, { before, ...rest } = {}) {
   const state = page(name, 'library', account, address, rest)
@@ -293,6 +354,21 @@ const libraryStates = [
       if (!await clickText(tab, 'button[aria-pressed]', COPY.library.filterArchived)) throw new Error('no „Archiviert“ filter on the library')
       await until(tab, `${shows(ctx.games.archive.name)} && [...document.querySelectorAll('button')].some(b => b.textContent.replace(${UNTAG}, '').trim() === ${JSON.stringify(COPY.library.restore)})`, 'the archived game with its restore button', 30_000)
       await noAutoLoad(tab)
+    },
+  }),
+
+  // The card with the most Tags (#711): two rows of Tags and „+X“ on the card of `Spiel Schlagworte`, found by the search. Nothing is changed.
+  libraryPage('bibliothek-karte-schlagworte', 'host', () => '/bibliothek', {
+    after: ctx => searchLibrary(ctx.tab, ctx.games.tagged.name),
+  }),
+
+  // The card's notes (#837, #859): the button of `Spiel Notizen` opens its popover at 1440 px and its sheet at 390 px, with „Bearbeiten“ in the footer. Nothing is saved.
+  libraryPage('bibliothek-karte-notizen', 'host', () => '/bibliothek', {
+    async after(ctx) {
+      const { tab } = ctx
+      await searchLibrary(tab, ctx.games.notes.name)
+      if (!await tab.evaluate(`(() => { const el = [...document.querySelectorAll('button')].find(b => (b.getAttribute('aria-label') ?? '').replace(${UNTAG}, '') === ${JSON.stringify(notesButtonOf(ctx.games.notes.name))}); if (!el) return false; el.click(); return true })()`)) throw new Error('no notes button on the card of Spiel Notizen')
+      await until(tab, shows(GAME_NOTES_TEXT), 'the Game notes of the card')
     },
   }),
 
@@ -361,6 +437,17 @@ const libraryStates = [
     after: ctx => unblockUrls(ctx.tab),
   },
 
+  // The name of a library game typed into the new game's form (#689): the hint under the name field, with „Das nehmen“ (the form never navigates). Never saved.
+  libraryPage('bibliothek-neu-doppelt', 'host', () => '/bibliothek/neu', {
+    waitFor: 'form',
+    after: ctx => typeName(ctx.tab, ctx.games.notes.name, COPY.gameEdit.duplicate),
+  }),
+  // The same with an Archived game (#689): the hint says so and „Zum Spiel“ links to its page; „Das nehmen“ is not offered for it here. Never saved.
+  libraryPage('bibliothek-neu-doppelt-archiviert', 'host', () => '/bibliothek/neu', {
+    waitFor: 'form',
+    after: ctx => typeName(ctx.tab, ctx.games.archive.name, COPY.gameEdit.duplicateArchived),
+  }),
+
   // The editor of `Spiel Notizen`; every stop goes on from the page the last one left. Never saved.
   libraryPage('bibliothek-bearbeiten-notizen', 'host', ctx => gamePath(ctx, '/bearbeiten'), {
     waitFor: 'form',
@@ -424,10 +511,18 @@ const eventStates = [
     only: 'host',
     hostWidths: [390, 1440],
     hostStops: [
+      // The open Round card's „Bearbeiten“ (#836): the footer opens the game's dialog in edit mode, both fields. The panel is open from the page's first reading.
+      stop('runde-bearbeiten', async (tab) => {
+        await pressUnder(tab, COPY.rounds.title, COPY.library.edit)
+        await layerOpen(tab, 'the game dialog of the Round in edit mode')
+        await until(tab, `!!document.querySelector('[role=dialog] [data-notes-editor]')`, 'the editors of the dialog')
+      }),
+      // Keeps the layer of the stop before: an edit-mode dialog takes two presses of its close button (`closeDialogs`), which `closeLayer` does not make.
       stop('dialog-runde', async (tab, ctx) => {
+        await closeDialogs(tab)
         await openTile(tab, COPY.rounds.title, ctx.event.games[0].name)
         await layerOpen(tab, 'the game dialog of the Round')
-      }),
+      }, { keep: true }),
       stop('bearbeiten', async (tab) => {
         await press(tab, 'button', COPY.eventNotes.edit)
         await focusNotes(tab, { scope: '[role=dialog]' })
@@ -440,6 +535,21 @@ const eventStates = [
         await typeNotes(tab, 'x'.repeat(NOTES_LIMIT + 1), { scope: '[role=dialog]' })
         await until(tab, shows(COPY.notesEditor.saveBlocked), 'the blocker in the dialog\'s footer')
       }, { keep: true }),
+      // The pool tile's notes button (#858): the popover of `Spiel Notizen` with its Game notes and „Bearbeiten“, then that footer's dialog in edit mode.
+      // The popover closes on a window scroll (`GameNotesButton`'s `onScroll`), and the reading scrolls the page: its picture is taken on a phone's sheet only,
+      // and the popover does not open in this stop at 1440 px (#861: not measured there, the Bearbeiten stop below covers the desktop dialog).
+      stop('notizen-pool', async (tab, ctx) => {
+        await closeDialogs(tab)
+        await pressUnder(tab, COPY.howWePlay.mainPool, notesButtonOf(ctx.event.games[3].name), { byLabel: true })
+        await until(tab, `!!document.querySelector('[role=dialog]')`, 'the notes popover of the pool tile')
+      }, { keep: true, widths: [390] }),
+      // Opens the popover again within the same stop (no reading between), then its „Bearbeiten“: the dialog in edit mode. Closes what is open first.
+      stop('notizen-pool-bearbeiten', async (tab, ctx) => {
+        await closeDialogs(tab)
+        await pressUnder(tab, COPY.howWePlay.mainPool, notesButtonOf(ctx.event.games[3].name), { byLabel: true })
+        await until(tab, `!!document.querySelector('[role=dialog]')`, 'the notes popover of the pool tile')
+        await editFromPopover(tab)
+      }, { keep: true, widths: [390] }),
       stop('dialog-pool-leer', async (tab, ctx) => {
         await closeDialogs(tab)
         await openTile(tab, COPY.howWePlay.mainPool, ctx.event.games[3].name)
@@ -468,11 +578,48 @@ const eventStates = [
         await layerOpen(tab, 'the game dialog of the pool')
         await until(tab, shows(COPY.notes.finished.chip), 'the chip of the finished Event\'s notes')
       }),
+      // A game with no Game notes in the finished Event: the dialog shows „Notizen hinzufügen“ (#857: the Game field stays open).
+      stop('dialog-pool-keine', async (tab, ctx) => {
+        await openTile(tab, COPY.howWePlay.mainPool, ctx.event.games[2].name)
+        await layerOpen(tab, 'the game dialog of the pool')
+        await until(tab, shows(COPY.notes.add), 'the add button of the Game notes')
+      }),
+      // The Event notes' popover of the first game (#858), then „Bearbeiten“: the dialog of the finished Event in edit mode, the Event notes locked (#857).
+      stop('notizen-bearbeiten', async (tab, ctx) => {
+        await pressUnder(tab, COPY.howWePlay.mainPool, notesButtonOf(ctx.event.games[0].name), { byLabel: true })
+        await until(tab, shows(EVENT_NOTES_TEXT), 'the Event notes of the popover')
+        await editFromPopover(tab)
+      }),
     ],
   }),
 ]
 
-export const STATES = [...libraryStates, ...eventStates]
+// The create stepper's pool step: the new-game sheet with the name of a library game, the hint with „Das nehmen“ (#860); then the name of an Archived one, with
+// its archived hint and no „Das nehmen“ (#689). The stepper is walked from its first step as a Host walks it. Nothing is saved.
+const stepperStates = [
+  {
+    name: 'neu-spiele-doppelt',
+    group: 'stepper',
+    account: 'host',
+    async open(ctx) {
+      await libraryGames(ctx)
+      await open(ctx.tab, '/neu', ctx.width, ctx.height, 'form h1', { appearance: ctx.appearance })
+      await typeInto(ctx.tab, 'form input', 'R011 Dunkel-Check Neu')
+      // Five „Weiter“ of the stepper: the format, the games, the points, the mode, and the pool step.
+      for (let i = 0; i < 5; i++) await next(ctx.tab)
+      await until(ctx.tab, `!!document.querySelector('button[aria-label*="in den Pool"]')`, 'the library in the pool step', 30_000)
+      await noAutoLoad(ctx.tab)
+      if (!await clickText(ctx.tab, 'button', COPY.stepper.pool.create)) throw new Error('no „Neues Spiel“ button')
+      await until(ctx.tab, `!!document.querySelector('[role=dialog]')`, 'the new-game sheet')
+      await typeName(ctx.tab, `${GAME_PREFIX}Spiel Notizen`, COPY.gameEdit.duplicate)
+    },
+    stops: [
+      step('archiviert', tab => typeName(tab, `${GAME_PREFIX}Spiel Archiv`, COPY.gameEdit.duplicateArchived)),
+    ],
+  },
+]
+
+export const STATES = [...libraryStates, ...eventStates, ...stepperStates]
 
 /** `Spiel Notizen` is unarchived also when the state that archives it never got to its `after` (the run stopped). */
 export async function cleanup({ tabs }) {
