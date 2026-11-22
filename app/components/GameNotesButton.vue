@@ -11,7 +11,7 @@ import type { NotesDoc } from '~~/shared/notes-doc'
 // away from its button close it; the focus goes back to the button. No notes, no button (a document without a visible character is none). The popover sits where placeNotePopover puts it
 // (above or below the button, inside the window), measured once it is drawn (#488). When it fits on neither side it is capped to the
 // roomier one and scrolls (#494). The button is a sticky note, labelled „Notizen zu {game}“ like the dialog, and wears the ink fill while its notes are open (#837). With `editTo`
-// (the library's cards) a footer „Bearbeiten“ leads to the game's form; the pickers give none.
+// (the library's cards) a footer „Bearbeiten“ leads to the game's form; the pickers give none; with `editable` (the Event page's tiles, #858) it is a button that emits `edit`.
 const props = withDefaults(defineProps<{
   name: string
   /** The game's notes as a document (#727); null = none, and then there is no button (a document is never an empty one, parseNotes makes those null). */
@@ -22,7 +22,11 @@ const props = withDefaults(defineProps<{
   size?: 32 | 36 | 40
   /** The game's form (#837): with it the popover and the sheet end in a footer „Bearbeiten“; without it they have none. */
   editTo?: RouteLocationRaw
-}>(), { size: 40, eventNotes: null, editTo: undefined })
+  /** The Event page's tiles (#858): with no `editTo` the footer „Bearbeiten“ is a button that asks the tile for its game dialog (`edit`); a caller gives one of the two. */
+  editable?: boolean
+}>(), { size: 40, eventNotes: null, editTo: undefined, editable: false })
+
+const emit = defineEmits<{ edit: [] }>()
 
 const { t } = useI18n()
 const NuxtLink = resolveComponent('NuxtLink')
@@ -64,6 +68,13 @@ function place() {
 function close() {
   open.value = false
   trigger.value?.$el.focus()
+}
+
+// The footer's button (#858): the notes close and the focus goes back to the Notes button first, synchronously, and only then the tile is asked for its dialog: useDialog takes
+// `document.activeElement` as its return target in the tick the dialog opens, so the dialog gives the focus back to this button and not to a „Bearbeiten“ that is unmounted.
+function requestEdit() {
+  close()
+  emit('edit')
 }
 
 watch(open, async (isOpen) => {
@@ -127,11 +138,12 @@ onBeforeUnmount(() => {
         size="md"
       />
       <template
-        v-if="editTo"
+        v-if="editTo || editable"
         #footer
       >
         <component
           :is="NuxtLink"
+          v-if="editTo"
           :to="editTo"
           :class="[EDIT_LINK, 'text-[15px]']"
           @click="open = false"
@@ -142,6 +154,18 @@ onBeforeUnmount(() => {
           />
           {{ t('library.edit') }}
         </component>
+        <button
+          v-else
+          type="button"
+          :class="[EDIT_LINK, 'text-[15px]']"
+          @click="requestEdit"
+        >
+          <AppIcon
+            :icon="Pencil"
+            :size="16"
+          />
+          {{ t('library.edit') }}
+        </button>
       </template>
     </AppSheet>
     <Teleport
@@ -190,11 +214,12 @@ onBeforeUnmount(() => {
         </div>
         <!-- Outside the scrolling body, so it stays while the text scrolls (#837). -->
         <footer
-          v-if="editTo"
+          v-if="editTo || editable"
           class="flex flex-none border-t-2 border-line-soft px-2 py-0.5"
         >
           <component
             :is="NuxtLink"
+            v-if="editTo"
             :to="editTo"
             :class="[EDIT_LINK, 'text-[14px]']"
             @click="open = false"
@@ -205,6 +230,18 @@ onBeforeUnmount(() => {
             />
             {{ t('library.edit') }}
           </component>
+          <button
+            v-else
+            type="button"
+            :class="[EDIT_LINK, 'text-[14px]']"
+            @click="requestEdit"
+          >
+            <AppIcon
+              :icon="Pencil"
+              :size="16"
+            />
+            {{ t('library.edit') }}
+          </button>
         </footer>
       </div>
     </Teleport>
