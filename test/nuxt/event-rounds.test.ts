@@ -627,7 +627,7 @@ describe('„Nächstes Spiel setzen“', () => {
   })
 
   it('opens a sheet that lists the games left in the Game pool first, then the library', async () => {
-    registerEndpoint('/api/games', { method: 'GET', handler: () => ({ games: [kart, schach], tagsInUse: [] }) })
+    registerEndpoint('/api/games', { method: 'GET', handler: () => ({ games: [{ ...kart, tags: [] }, schach], tagsInUse: [] }) })
     signInAs({ ...kitty, canHost: true })
     const { slug } = serveHostPick({ rejection: null, spinRejection: 'no_wheel', respin: false, left: [halo.id, pong.id], poolWarning: null })
     const stage = await mount(slug)
@@ -648,7 +648,7 @@ describe('„Nächstes Spiel setzen“', () => {
   })
 
   it('shows the Event notes in the popover of a pool row, for a game without Game notes (#732)', async () => {
-    registerEndpoint('/api/games', { method: 'GET', handler: () => ({ games: [kart, schach], tagsInUse: [] }) })
+    registerEndpoint('/api/games', { method: 'GET', handler: () => ({ games: [{ ...kart, tags: [] }, schach], tagsInUse: [] }) })
     signInAs({ ...kitty, canHost: true })
     stubScreen(true)
     const served = serveRunning({ host: true, setGame: { rejection: null, spinRejection: 'no_wheel', respin: false, left: [halo.id, pong.id], poolWarning: null }, eventNotes: { 'g-pong': notesFromLines(['Heute nur Bo1'])! } })
@@ -670,7 +670,7 @@ describe('„Nächstes Spiel setzen“', () => {
   })
 
   it('sets the chosen game from the bar and closes once the server took it', async () => {
-    registerEndpoint('/api/games', { method: 'GET', handler: () => ({ games: [kart, schach], tagsInUse: [] }) })
+    registerEndpoint('/api/games', { method: 'GET', handler: () => ({ games: [{ ...kart, tags: [] }, schach], tagsInUse: [] }) })
     signInAs({ ...kitty, canHost: true })
     const { slug } = serveHostPick({ rejection: null, spinRejection: 'no_wheel', respin: false, left: [halo.id, pong.id], poolWarning: null })
     const stage = await mount(slug)
@@ -729,7 +729,7 @@ describe('„Nächstes Spiel setzen“', () => {
   })
 
   it('can pick a game of the library that is not in the pool', async () => {
-    registerEndpoint('/api/games', { method: 'GET', handler: () => ({ games: [kart, schach], tagsInUse: [] }) })
+    registerEndpoint('/api/games', { method: 'GET', handler: () => ({ games: [{ ...kart, tags: [] }, schach], tagsInUse: [] }) })
     signInAs({ ...kitty, canHost: true })
     const { slug } = serveHostPick({ rejection: null, spinRejection: 'no_wheel', respin: false, left: [halo.id], poolWarning: null })
     const stage = await mount(slug)

@@ -77,6 +77,8 @@ const PAGE_SIZE = 40
 const limit = ref(PAGE_SIZE)
 const visible = computed(() => shown.value.slice(0, limit.value))
 const remaining = computed(() => shown.value.length - visible.value.length)
+// Some game of the filtered list has Tags (#711): then every card keeps the room of two Tag lines. The whole list, not the 40 drawn: a game with Tags on page 2 must not change the cards of page 1 when it loads.
+const anyTags = computed(() => shown.value.some(game => game.tags.length > 0))
 // Any change of the filters starts at the first page again (#369): after a search narrowed the list and „Alle“ widened it, 40 cards, not the 120 loaded before.
 // Compared by value, not by identity (#369): „Alle“ replaces the object with `{ ...NO_FILTERS }`, and with nothing chosen that click must keep the loaded cards; a deep watch would reset them.
 watch(() => JSON.stringify(filters.value), () => {
@@ -271,6 +273,7 @@ const CHIP = `inline-flex ${CHIP_SHAPE} items-center gap-1.5 px-4 text-small`
           :to="to?.(game)"
           :in-events="marksEvents ? eventCounts[game.id] ?? 0 : 0"
           :notes="notesOnCover ? game.notes : null"
+          :tags-room="anyTags"
           :notes-edit-to="notesOnCover ? `/bibliothek/${game.id}/bearbeiten` : undefined"
           class="h-full"
         >

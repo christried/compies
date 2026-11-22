@@ -1,29 +1,30 @@
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import { flushPromises, type VueWrapper } from '@vue/test-utils'
 import { h } from 'vue'
-import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import GameCard from '~/components/GameCard.vue'
 import { build, parse, themeBlock } from '../unit/css-tokens'
-import { GAME_NAME_MAX, TAG_MAX, type GameView } from '~~/shared/game'
+import { GAME_NAME_MAX, TAG_MAX, TAGS_PER_GAME_MAX, type GameView } from '~~/shared/game'
 import { notesFromLines, type NotesDoc } from '~~/shared/notes-doc'
 import { BLANK_NOTES } from './helpers/formatted-notes'
 
 // The card's structure (#351): the actions sit in the card's last child, and the body grows, so in a stretched grid row the
 // buttons of every card share one bottom edge, whatever the length of the name, the player count, Suitabilities, Price and Tags.
 
-type Props = Partial<Pick<GameView, 'playersMin' | 'playersMax' | 'suitabilities' | 'tags' | 'price' | 'imageUrl' | 'youtubeId'>> & { name: string, inEvents?: number, archived?: boolean }
+type Props = Partial<Pick<GameView, 'playersMin' | 'playersMax' | 'suitabilities' | 'tags' | 'price' | 'imageUrl' | 'youtubeId'>> & { name: string, inEvents?: number, archived?: boolean, tagsRoom?: boolean }
 type Layout = 'card' | 'row' | 'responsive' | 'tile'
 
 let page: VueWrapper | undefined
 
 async function mount(game: Props, layout: Layout, withActions = true, attachTo?: HTMLElement) {
-  const { name, inEvents, archived, ...rest } = game
+  const { name, inEvents, archived, tagsRoom, ...rest } = game
   page = await mountSuspended(GameCard, {
     props: {
       game: { id: 'g-1', imageUrl: null, youtubeId: null, playersMin: null, playersMax: null, suitabilities: [], tags: [], price: null, ...rest, name },
       layout,
       inEvents,
       archived,
+      tagsRoom,
     },
     slots: withActions ? { actions: () => h('button', { type: 'button' }, 'Hinzufügen') } : {},
     attachTo,
@@ -100,22 +101,84 @@ describe('the game card structure (#351)', () => {
   })
 })
 
+// happy-dom has no layout, so the tests lay the chips out by hand (#711): a chip is 10 px a character plus 16 px of padding and border, the row is as wide as the test
+// says (0: no layout at all), the gap is 4 px, and the „+N“ probe is measured as a chip of its text. The row wraps where the CSS says so: `flex-wrap` of the card
+// form, `sm:flex-wrap` of `responsive` (the tests stand at 600 px or more). The ResizeObserver delivers a first callback on `observe` and again on `refit`.
+const lines = { rowWidth: 0 }
+const observed = new Set<() => void>()
+
+function stubLayout() {
+  const rect = (width: number) => ({ width, height: 24, top: 0, left: 0, right: width, bottom: 24, x: 0, y: 0, toJSON: () => ({}) }) as DOMRect
+  const textWidth = (el: Element) => el.textContent!.trim().length * 10 + 16
+  vi.spyOn(Element.prototype, 'getBoundingClientRect').mockImplementation(function (this: Element) {
+    if (this.hasAttribute('data-tag-chip')) return rect(textWidth(this))
+    if (this.getAttribute('role') === 'group') return rect(lines.rowWidth)
+    if (this.getAttribute('aria-hidden') === 'true') return rect(textWidth(this))
+    return rect(0)
+  })
+  const real = window.getComputedStyle.bind(window)
+  vi.spyOn(window, 'getComputedStyle').mockImplementation((el: Element, pseudo?: string | null) => {
+    if (el.getAttribute?.('role') !== 'group') return real(el, pseudo)
+    const wraps = el.classList.contains('flex-wrap') || el.classList.contains('sm:flex-wrap')
+    return { flexWrap: wraps ? 'wrap' : 'nowrap', columnGap: '4px' } as CSSStyleDeclaration
+  })
+  vi.stubGlobal('ResizeObserver', class {
+    constructor(private readonly callback: () => void) {}
+    observe() {
+      observed.add(this.callback)
+      this.callback()
+    }
+
+    unobserve() {}
+    disconnect() {
+      observed.delete(this.callback)
+    }
+  })
+}
+
+/** The row's width changes: every observer is told, as a browser does. */
+async function refit(width: number) {
+  lines.rowWidth = width
+  for (const callback of observed) callback()
+  await flushPromises()
+}
+
+/** A test with a laid-out row: it gets the stub, and the width as the first measurement sees it. */
+function withLayout(width: number) {
+  beforeEach(() => {
+    observed.clear()
+    lines.rowWidth = width
+    stubLayout()
+  })
+  afterEach(() => {
+    vi.restoreAllMocks()
+    vi.unstubAllGlobals()
+  })
+}
+
+const FIVE = [{ key: 'retro', label: 'Retro' }, { key: 'co-op', label: 'Co-op' }, { key: 'koop', label: 'Koop' }, { key: 'horror', label: 'Horror' }, { key: 'indie', label: 'Indie' }]
+// Widths 66, 66, 56, 76, 66 at 10 px a character and 16 of padding; the „+N“ probe of five Tags is 36.
+const tagBlock = () => root().querySelector('[role="group"]')!.parentElement as HTMLElement
+const chips = () => [...root().querySelectorAll<HTMLElement>('[role="group"] > span')]
+const moreButton = () => root().querySelector<HTMLButtonElement>('[role="group"] > button')
+const chipTexts = () => chips().map(chip => chip.textContent!.trim())
+
 // Each Tag chip wears a Team colour by its key (#427); `tag-colors.test.ts` pins the colours of these keys (retro 7, co-op 1,
 // koop 2, horror 5, indie 7). The „+N“ stays neutral.
 describe('the Tag chips on a game card (#427)', () => {
-  const chips = () => [...root().querySelectorAll<HTMLElement>('[role="group"] > span')]
-  const moreButton = () => root().querySelector<HTMLButtonElement>('[role="group"] > button')
+  withLayout(150)
 
   it('colours each shown Tag by its key, with its ink, and leaves the „+N“ neutral', async () => {
-    const tags = [{ key: 'retro', label: 'Retro' }, { key: 'co-op', label: 'Co-op' }, { key: 'koop', label: 'Koop' }, { key: 'horror', label: 'Horror' }]
-    await mount({ name: 'Mario Kart', tags }, 'card')
+    await mount({ name: 'Mario Kart', tags: FIVE }, 'card')
+    await flushPromises()
 
     const [retro, coop, koop] = chips()
+    expect(chips()).toHaveLength(3)
     expect(retro!.getAttribute('style')).toContain('var(--cp-team-7)')
     expect(retro!.getAttribute('style')).toContain('var(--cp-team-7-ink)')
     expect(coop!.getAttribute('style')).toContain('var(--cp-team-1)')
     expect(koop!.getAttribute('style')).toContain('var(--cp-team-2)')
-    expect(moreButton()!.textContent).toBe('+1')
+    expect(moreButton()!.textContent).toBe('+2')
     expect(moreButton()!.getAttribute('style') ?? '').not.toContain('--cp-team')
   })
 
@@ -123,30 +186,35 @@ describe('the Tag chips on a game card (#427)', () => {
     // „Indie“ has the colour 7 of its own, like „Retro“ before it.
     const tags = [{ key: 'retro', label: 'Retro' }, { key: 'indie', label: 'Indie' }]
     await mount({ name: 'Mario Kart', tags }, 'card')
+    await flushPromises()
 
     expect(chips()[0]!.getAttribute('style')).toContain('var(--cp-team-7)')
     expect(chips()[1]!.getAttribute('style')).toContain('var(--cp-team-8)')
   })
 
-  it('renders no Tag group for a game without Tags', async () => {
+  it('renders no Tag group, no block and no probe for a game without Tags', async () => {
     await mount({ name: 'Mario Kart', tags: [] }, 'card')
+    await flushPromises()
 
     expect(root().querySelector('[role="group"]')).toBeNull()
     expect(chips()).toHaveLength(0)
+    expect(root().querySelector('.invisible')).toBeNull()
   })
 
   it('renders one Tag as one chip in its colour, and no „+N“', async () => {
     await mount({ name: 'Mario Kart', tags: [{ key: 'co-op', label: 'Co-op' }] }, 'card')
+    await flushPromises()
 
     expect(chips()).toHaveLength(1)
     expect(chips()[0]!.getAttribute('style')).toContain('var(--cp-team-1)')
     expect(chips()[0]!.getAttribute('style')).toContain('var(--cp-team-1-ink)')
-    expect(root().textContent).not.toContain('+')
+    expect(moreButton()).toBeNull()
   })
 
-  it('renders a Tag with the longest allowed label in its colour, cut inside the card', async () => {
+  it('renders a Tag with the longest allowed label in its colour, cut to the row, not to a fixed width', async () => {
     const label = 'M'.repeat(TAG_MAX)
     await mount({ name: 'Mario Kart', tags: [{ key: label.toLowerCase(), label }] }, 'card')
+    await flushPromises()
 
     const chip = chips()[0]!
     expect(chip.textContent!.trim()).toBe(label)
@@ -154,15 +222,287 @@ describe('the Tag chips on a game card (#427)', () => {
     expect(chip.getAttribute('style')).toContain('var(--cp-team-4)')
     expect(chip.getAttribute('style')).toContain('var(--cp-team-4-ink)')
     expect(chip.className).toContain('truncate')
-    expect(chip.className).toContain('max-w-[9rem]')
+    expect(chip.className).toContain('max-w-full')
+    expect(chip.className).not.toContain('max-w-[')
+  })
+})
+
+// The fit (#711): the Tags fill two lines of the card by their width, one line of a row; what does not fit sits behind „+N“.
+describe('the Tags of a card fill the row by width (#711)', () => {
+  describe('on a wide row', () => {
+    withLayout(400)
+
+    it('shows all five Tags and no „+N“', async () => {
+      await mount({ name: 'Mario Kart', tags: FIVE }, 'card')
+      await flushPromises()
+
+      expect(chipTexts()).toEqual(['Retro', 'Co-op', 'Koop', 'Horror', 'Indie'])
+      expect(moreButton()).toBeNull()
+      expect(root().querySelector('button[aria-haspopup]')).toBeNull()
+    })
+
+    it('shows no Tag cut, so no chip has a tooltip', async () => {
+      await mount({ name: 'Mario Kart', tags: FIVE }, 'card')
+      await flushPromises()
+
+      expect(chips().filter(chip => chip.hasAttribute('title'))).toEqual([])
+    })
+
+    it('shows the chips in the game’s order for 0, 1 and 2 Tags', async () => {
+      for (const count of [0, 1, 2]) {
+        await mount({ name: 'Mario Kart', tags: FIVE.slice(0, count) }, 'card')
+        await flushPromises()
+        expect(chipTexts()).toEqual(['Retro', 'Co-op'].slice(0, count))
+        expect(moreButton()).toBeNull()
+        page?.unmount()
+      }
+    })
+  })
+
+  describe('on a narrow row', () => {
+    withLayout(150)
+
+    it('shows three of five and „+2“ with the number spelled out for assistive technology', async () => {
+      await mount({ name: 'Mario Kart', tags: FIVE }, 'card')
+      await flushPromises()
+
+      expect(chipTexts()).toEqual(['Retro', 'Co-op', 'Koop'])
+      expect(moreButton()!.textContent).toBe('+2')
+      expect(moreButton()!.getAttribute('aria-label')).toBe('2 weitere Tags')
+    })
+
+    it('counts the hidden Tags in „+N“: one hidden reads „+1“, with the singular label', async () => {
+      const four = [{ key: 'a', label: 'Aaaaa' }, { key: 'b', label: 'Bbbbb' }, { key: 'c', label: 'Cc' }, { key: 'd', label: 'D'.repeat(12) }]
+      await mount({ name: 'Mario Kart', tags: four }, 'card')
+      await flushPromises()
+
+      expect(chipTexts()).toEqual(['Aaaaa', 'Bbbbb', 'Cc'])
+      expect(moreButton()!.textContent).toBe('+1')
+      expect(moreButton()!.getAttribute('aria-label')).toBe('1 weiterer Tag')
+    })
+
+    it('puts „+N“ at the end of the chips, in the same line group, and gives it no tooltip', async () => {
+      await mount({ name: 'Mario Kart', tags: FIVE }, 'card')
+      await flushPromises()
+
+      expect(root().querySelector('[role="group"]')!.lastElementChild).toBe(moreButton())
+      expect(moreButton()!.hasAttribute('title')).toBe(false)
+    })
+
+    it('fills the longest allowed set, 8 Tags, to what the width holds and counts the other three', async () => {
+      const labels = ['Retro', 'Co-op', 'Koop', 'Horror', 'Indie', 'Party', 'Rennen', 'Taktik']
+      expect(labels).toHaveLength(TAGS_PER_GAME_MAX)
+      lines.rowWidth = 250
+      await mount({ name: 'Mario Kart', tags: labels.map(label => ({ key: label.toLowerCase(), label })) }, 'card')
+      await flushPromises()
+
+      expect(chipTexts()).toEqual(['Retro', 'Co-op', 'Koop', 'Horror', 'Indie'])
+      expect(moreButton()!.textContent).toBe('+3')
+      expect(moreButton()!.getAttribute('aria-label')).toBe('3 weitere Tags')
+    })
+
+    it('shows one line in the row form: one chip and „+4“', async () => {
+      await mount({ name: 'Mario Kart', tags: FIVE }, 'row')
+      await flushPromises()
+
+      expect(chipTexts()).toEqual(['Retro'])
+      expect(moreButton()!.textContent).toBe('+4')
+    })
+
+    it('fills two lines in the responsive layout from 600 px, as the card form does', async () => {
+      await mount({ name: 'Mario Kart', tags: FIVE }, 'responsive')
+      await flushPromises()
+
+      expect(chipTexts()).toEqual(['Retro', 'Co-op', 'Koop'])
+      expect(moreButton()!.textContent).toBe('+2')
+    })
+
+    it('lets the last chip of a single line shrink, so „+N“ keeps its room; a card’s chips never shrink', async () => {
+      await mount({ name: 'Mario Kart', tags: FIVE }, 'row')
+      await flushPromises()
+      expect(chips()[0]!.className).toContain('min-w-0')
+      expect(chips()[0]!.className).not.toContain('shrink-0')
+      page!.unmount()
+
+      await mount({ name: 'Mario Kart', tags: FIVE }, 'card')
+      await flushPromises()
+      for (const chip of chips()) {
+        expect(chip.className).toContain('shrink-0')
+        expect(chip.className).not.toContain('min-w-0')
+      }
+    })
+
+    it('cuts only the Tag wider than the whole row, and gives only that chip its full word as a tooltip', async () => {
+      const long = 'M'.repeat(TAG_MAX)
+      const tags = [{ key: 'retro', label: 'Retro' }, { key: 'm', label: long }]
+      await mount({ name: 'Mario Kart', tags }, 'card')
+      await flushPromises()
+
+      expect(chips()).toHaveLength(2)
+      expect(chips().filter(chip => chip.hasAttribute('title')).map(chip => chip.getAttribute('title'))).toEqual([long])
+      expect(chips()[1]!.getAttribute('title')).toBe(long)
+      expect(chips()[1]!.className).toContain('truncate')
+      expect(chips()[0]!.hasAttribute('title')).toBe(false)
+    })
+
+    it('gives a first chip as wide as the row its word as a tooltip when „+N“ takes room from it in a single line', async () => {
+      const long = 'M'.repeat(TAG_MAX)
+      await mount({ name: 'Mario Kart', tags: [{ key: 'm', label: long }, { key: 'retro', label: 'Retro' }] }, 'row')
+      await flushPromises()
+
+      expect(chipTexts()).toEqual([long])
+      expect(chips()[0]!.getAttribute('title')).toBe(long)
+      expect(moreButton()!.textContent).toBe('+1')
+    })
+  })
+
+  describe('when the row changes', () => {
+    withLayout(400)
+
+    it('fits again after the row narrows and after it widens', async () => {
+      await mount({ name: 'Mario Kart', tags: FIVE }, 'card')
+      await flushPromises()
+      expect(chips()).toHaveLength(5)
+      expect(moreButton()).toBeNull()
+
+      await refit(150)
+      expect(chipTexts()).toEqual(['Retro', 'Co-op', 'Koop'])
+      expect(moreButton()!.textContent).toBe('+2')
+
+      await refit(400)
+      expect(chipTexts()).toEqual(['Retro', 'Co-op', 'Koop', 'Horror', 'Indie'])
+      expect(moreButton()).toBeNull()
+    })
+
+    it('measures again when the Tags change', async () => {
+      page = await mountSuspended(GameCard, {
+        props: { game: { id: 'g-1', name: 'Mario Kart', imageUrl: null, youtubeId: null, playersMin: null, playersMax: null, suitabilities: [], tags: FIVE.slice(0, 2), price: null }, layout: 'card' },
+      })
+      await flushPromises()
+      expect(chips()).toHaveLength(2)
+
+      await refit(150)
+      await page.setProps({ game: { id: 'g-1', name: 'Mario Kart', imageUrl: null, youtubeId: null, playersMin: null, playersMax: null, suitabilities: [], tags: FIVE, price: null } })
+      await flushPromises()
+
+      expect(chipTexts()).toEqual(['Retro', 'Co-op', 'Koop'])
+      expect(moreButton()!.textContent).toBe('+2')
+    })
+  })
+
+  describe('where there is no layout', () => {
+    withLayout(0)
+
+    it('shows every chip and no „+N“', async () => {
+      await mount({ name: 'Mario Kart', tags: FIVE }, 'card')
+      await flushPromises()
+
+      expect(chipTexts()).toEqual(['Retro', 'Co-op', 'Koop', 'Horror', 'Indie'])
+      expect(moreButton()).toBeNull()
+      expect(chips().filter(chip => chip.hasAttribute('title'))).toEqual([])
+    })
+  })
+
+  describe('before the first fit', () => {
+    it('draws every chip invisible, so the block already has its final height and nothing moves', async () => {
+      // No stub: the ResizeObserver of happy-dom does not exist and the row has no width, so this is what the server and the first client render draw.
+      await mount({ name: 'Mario Kart', tags: FIVE }, 'card')
+
+      expect(tagBlock().className).toContain('h-[52px]')
+      expect(root().querySelector('[role="group"]')!.className).toContain('max-h-[52px]')
+    })
+  })
+})
+
+// The room (#711): a card without Tags keeps the block of two lines while the list has Tags, so every card of the grid is as high.
+describe('the room of two Tag lines (#711)', () => {
+  withLayout(150)
+
+  const room = () => [...root().querySelectorAll<HTMLElement>('[aria-hidden="true"]')].filter(el => el.className.includes('h-[52px]'))
+
+  it('has a Tag block of two lines on a card, and of one on a row', async () => {
+    await mount({ name: 'Mario Kart', tags: FIVE }, 'card')
+    await flushPromises()
+    expect(tagBlock().className).toContain('h-[52px]')
+    expect(tagBlock().className).toContain('mt-auto')
+    page!.unmount()
+
+    await mount({ name: 'Mario Kart', tags: FIVE }, 'row')
+    await flushPromises()
+    expect(tagBlock().className).toContain('h-6')
+    expect(tagBlock().className).not.toContain('h-[52px]')
+  })
+
+  it('is a block of two lines in the responsive layout from 600 px, one line below', async () => {
+    await mount({ name: 'Mario Kart', tags: FIVE }, 'responsive')
+    await flushPromises()
+
+    expect(tagBlock().className).toContain('h-6')
+    expect(tagBlock().className).toContain('sm:h-[52px]')
+  })
+
+  it('puts the spare room above the Tags: the block is a column that ends in the Tags', async () => {
+    await mount({ name: 'Mario Kart', tags: FIVE.slice(0, 2) }, 'card')
+    await flushPromises()
+
+    expect(tagBlock().className).toContain('flex-col')
+    expect(tagBlock().className).toContain('justify-end')
+  })
+
+  it('draws a spacer of the block’s height on a card without Tags when the list has Tags', async () => {
+    await mount({ name: 'Pong', tags: [], tagsRoom: true }, 'card')
+
+    expect(room()).toHaveLength(1)
+    expect(room()[0]!.className).toContain('mt-auto')
+    expect(root().querySelector('[role="group"]')).toBeNull()
+  })
+
+  it('draws the spacer in the responsive layout from 600 px only', async () => {
+    await mount({ name: 'Pong', tags: [], tagsRoom: true }, 'responsive')
+
+    expect(room()).toHaveLength(1)
+    expect(room()[0]!.className).toContain('hidden')
+    expect(room()[0]!.className).toContain('sm:block')
+    expect(room()[0]!.className).toContain('sm:h-[52px]')
+  })
+
+  it('draws none on a row, none on a tile, and none without the flag', async () => {
+    await mount({ name: 'Pong', tags: [], tagsRoom: true }, 'row')
+    expect(room()).toHaveLength(0)
+    page!.unmount()
+
+    await mount({ name: 'Pong', tags: [], tagsRoom: true }, 'tile')
+    expect(room()).toHaveLength(0)
+    expect(root().innerHTML).not.toContain('h-[52px]')
+    page!.unmount()
+
+    for (const layout of ['card', 'responsive'] as const) {
+      await mount({ name: 'Pong', tags: [] }, layout)
+      expect(room()).toHaveLength(0)
+      page!.unmount()
+    }
+  })
+
+  it('draws no spacer on a card that has Tags: the block is its own room', async () => {
+    await mount({ name: 'Mario Kart', tags: FIVE, tagsRoom: true }, 'card')
+    await flushPromises()
+
+    expect(room()).toHaveLength(0)
+    expect(root().querySelectorAll('[role="group"]')).toHaveLength(1)
+  })
+
+  it('sits after the Price line, “in N Events” and the Archived pill, which do not change the block', async () => {
+    await mount({ name: 'Pong', tags: [], tagsRoom: true, inEvents: 2, archived: true, price: FULL.price }, 'card')
+
+    const children = [...body().children]
+    expect(children.at(-1)).toBe(room()[0])
   })
 })
 
 // The „+N“ button (#614): it names its count, sits on the chips' line and opens a popover of every Tag. Using it never follows the card's link.
 describe('the „+N“ button and its popover (#614)', () => {
-  const FIVE = [{ key: 'retro', label: 'Retro' }, { key: 'co-op', label: 'Co-op' }, { key: 'koop', label: 'Koop' }, { key: 'horror', label: 'Horror' }, { key: 'indie', label: 'Indie' }]
-  const chips = () => [...root().querySelectorAll<HTMLElement>('[role="group"] > span')]
-  const moreButton = () => root().querySelector<HTMLButtonElement>('[role="group"] > button')
+  withLayout(150)
+
   const popover = () => document.querySelector<HTMLElement>('[role="note"]')
   const popoverChips = () => [...popover()!.querySelectorAll<HTMLElement>('[role="group"] > span')]
   const hover = async (target: HTMLElement) => {
@@ -170,31 +510,28 @@ describe('the „+N“ button and its popover (#614)', () => {
     await flushPromises()
   }
 
-  it('is a button named by the Tags beyond three, with no native tooltip: „+2“ for five, „+1“ for four', async () => {
+  it('is a button named by the Tags that did not fit, with no native tooltip: „+2“ for five', async () => {
     await mount({ name: 'Mario Kart', tags: FIVE }, 'card')
+    await flushPromises()
 
     expect(moreButton()!.tagName).toBe('BUTTON')
     expect(moreButton()!.textContent).toBe('+2')
     expect(moreButton()!.getAttribute('aria-label')).toBe('2 weitere Tags')
     expect(moreButton()!.hasAttribute('title')).toBe(false)
-    page!.unmount()
-
-    await mount({ name: 'Mario Kart', tags: FIVE.slice(0, 4) }, 'card')
-
-    expect(moreButton()!.textContent).toBe('+1')
-    expect(moreButton()!.getAttribute('aria-label')).toBe('1 weiterer Tag')
   })
 
-  it('shows no „+N“ and no popover at three Tags or fewer', async () => {
+  it('shows no „+N“ and no popover at the Tags that fit', async () => {
     await mount({ name: 'Mario Kart', tags: FIVE.slice(0, 3) }, 'card')
+    await flushPromises()
 
     expect(chips()).toHaveLength(3)
     expect(moreButton()).toBeNull()
     expect(root().querySelector('button[aria-haspopup]')).toBeNull()
   })
 
-  it('opens on hover a popover of every Tag, in the game’s order, with the colours the chips wear', async () => {
+  it('opens on hover a popover of every Tag, hidden ones too, in the game’s order, with the colours the chips wear', async () => {
     await mount({ name: 'Mario Kart', tags: FIVE }, 'card')
+    await flushPromises()
     expect(popover()).toBeNull()
 
     await hover(moreButton()!)
@@ -203,7 +540,7 @@ describe('the „+N“ button and its popover (#614)', () => {
     expect(popover()!.parentElement).toBe(document.body)
     expect(popover()!.querySelector('[role="group"]')!.getAttribute('aria-label')).toBe('Tags')
     expect(popoverChips().map(chip => chip.textContent!.trim())).toEqual(['Retro', 'Co-op', 'Koop', 'Horror', 'Indie'])
-    // The first three wear the colours of the card's chips; „Horror“ its own, „Indie“ the next free one after „Retro“ (#427).
+    // The shown ones wear the colours of the card's chips; „Horror“ its own, „Indie“ the next free one after „Retro“ (#427).
     expect(popoverChips()[0]!.getAttribute('style')).toBe(chips()[0]!.getAttribute('style'))
     expect(popoverChips()[1]!.getAttribute('style')).toBe(chips()[1]!.getAttribute('style'))
     expect(popoverChips()[2]!.getAttribute('style')).toBe(chips()[2]!.getAttribute('style'))
@@ -215,6 +552,7 @@ describe('the „+N“ button and its popover (#614)', () => {
     page = await mountSuspended(GameCard, {
       props: { game: { id: 'g-1', name: 'Mario Kart', imageUrl: null, youtubeId: null, playersMin: null, playersMax: null, suitabilities: [], tags: FIVE, price: null }, layout: 'card', to: '/bibliothek/g-1' },
     })
+    await flushPromises()
     const link = root().querySelector('a')!
     const onLinkClick = vi.fn()
     link.addEventListener('click', onLinkClick)
@@ -235,6 +573,7 @@ describe('the „+N“ button and its popover (#614)', () => {
       props: { game: { id: 'g-1', name: 'Mario Kart', imageUrl: null, youtubeId: null, playersMin: null, playersMax: null, suitabilities: [], tags: FIVE, price: null }, layout: 'row' },
       slots: { actions: () => h('button', { type: 'button', onClick: onPick }, 'Wählen') },
     })
+    await flushPromises()
 
     moreButton()!.click()
     await flushPromises()
@@ -245,6 +584,7 @@ describe('the „+N“ button and its popover (#614)', () => {
 
   it('has a 44 px hit area, and keeps its own height, font and line (#658, #614)', async () => {
     await mount({ name: 'Mario Kart', tags: FIVE }, 'card')
+    await flushPromises()
 
     const classes = moreButton()!.classList
     expect(classes.contains('hit-44')).toBe(true)
@@ -252,10 +592,23 @@ describe('the „+N“ button and its popover (#614)', () => {
     for (const kept of ['h-6', 'px-1.5', 'text-[12px]', 'leading-5', 'font-bold']) expect(classes.contains(kept)).toBe(true)
   })
 
+  it('is measured by a probe that is no tab stop and no text for assistive technology', async () => {
+    await mount({ name: 'Mario Kart', tags: FIVE }, 'card')
+    await flushPromises()
+
+    const probe = tagBlock().querySelector<HTMLElement>(':scope > [aria-hidden="true"]')!
+    expect(probe.tagName).toBe('SPAN')
+    expect(probe.textContent!.trim()).toBe('+5')
+    expect(probe.className).toContain('invisible')
+    expect(probe.className).toContain('absolute')
+    expect(root().querySelectorAll('button')).toHaveLength(2)
+  })
+
   it('closes on Esc and keeps the focus on „+N“, which the focus opened', async () => {
     const container = document.createElement('div')
     document.body.append(container)
     await mount({ name: 'Mario Kart', tags: FIVE }, 'card', true, container)
+    await flushPromises()
 
     moreButton()!.focus()
     await flushPromises()
@@ -298,7 +651,7 @@ describe('the „in N Events“ marker (#733)', () => {
     const lines = [...body().children]
     const at = lines.indexOf(marker()!)
     expect(lines[at - 1]?.textContent).toContain('€')
-    expect(lines[at + 1]?.getAttribute('role')).toBe('group')
+    expect(lines[at + 1]?.querySelector('[role="group"]')).not.toBeNull()
   })
 
   it('is no Tag chip: neutral paper-2 fill and line border, ink-2 text', async () => {
@@ -432,6 +785,12 @@ describe('the tile layout (#435)', () => {
     expect(root().textContent).not.toContain('€')
     expect(root().querySelector('[role="group"]')).toBeNull()
     expect(root().querySelector('svg')).toBeNull()
+  })
+
+  it('keeps no room for Tags, even when the list has Tags: no spacer and no Tag block', async () => {
+    await mount({ ...FULL_TILE, tagsRoom: true }, 'tile')
+
+    expect(root().innerHTML).not.toContain('h-[52px]')
   })
 
   it('has no actions wrapper: the body is the last child, as no consumer gives the tile an actions slot', async () => {
