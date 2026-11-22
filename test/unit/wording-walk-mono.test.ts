@@ -15,13 +15,18 @@ function vueFiles(dir: string): string[] {
 }
 
 describe('the walk’s table of font-mono uses', () => {
-  it('has one row for every line of app/ that sets font-mono', () => {
+  // Per file, not in all: a use that moved to another file is caught too. The rows name no line number, which went stale
+  // twice in 0.16.1 while the count still held (#833).
+  it('has as many rows for each file of app/ as the file has lines that set font-mono, and no row names a line number', () => {
     const walk = readFileSync(join(ROOT, 'scripts/wording/walk.mjs'), 'utf8')
-    const rows = walk.match(/^ {2}\{ site: /gm) ?? []
-    const lines = vueFiles(join(ROOT, 'app'))
-      .flatMap(file => readFileSync(file, 'utf8').split('\n'))
+    const rows = walk.split('\n').filter(line => /^ {2}\{ site: /.test(line))
+    const count = (names: string[]) => names.reduce<Record<string, number>>((counts, name) => ({ ...counts, [name]: (counts[name] ?? 0) + 1 }), {})
+    const rowFiles = rows.map(line => line.match(/component: '(app\/[^']+)'/)?.[1] ?? '')
+    const useFiles = vueFiles(join(ROOT, 'app')).flatMap(file => readFileSync(file, 'utf8').split('\n')
       .filter(line => line.includes('font-mono'))
-    expect(rows.length).toBe(lines.length)
+      .map(() => file.slice(ROOT.length + 1).replaceAll('\\', '/')))
+    expect(count(rowFiles)).toEqual(count(useFiles))
+    expect(rows.filter(line => /site: '[^']*\.vue:\d/.test(line))).toEqual([])
   })
 
   // An untagged mono element (`entry: true`) is labelled by MONO_WHAT, else the report calls its component unlabelled; keyed rows are not.
