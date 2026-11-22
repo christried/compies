@@ -16,7 +16,18 @@
       "Bash(git push origin --delete *)"
     ],
     "deny": [
-      "Bash(git push origin --delete v*)"
+      "Bash(git push origin --delete v*)",
+      "mcp__claude_ai_Neon",
+      "mcp__claude_ai_Resend",
+      "mcp__claude_ai_Gmail",
+      "mcp__claude_ai_Google_Calendar",
+      "mcp__claude_ai_Google_Docs",
+      "mcp__claude_ai_Google_Drive",
+      "mcp__claude_ai_Google_Sheets",
+      "mcp__claude_ai_Google_Slides",
+      "mcp__claude_ai_Notion",
+      "mcp__claude_ai_Spotify",
+      "mcp__claude_ai_Claude_Academy"
     ]
   },
   "enabledPlugins": {
