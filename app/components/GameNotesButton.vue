@@ -7,8 +7,8 @@ import type { NotesDoc } from '~~/shared/notes-doc'
 
 // The Notes of a game in a picker (#436, 02-components § GameCard, deviation 0.12): a Notes button that opens the game's notes read-only,
 // formatted (#728). From md up a popover beside the button, below it a sheet from the bottom (the pattern of the Sessions card's „Mehr“,
-// #349). It is not a menu: MoveToMenu holds menu targets, so it stays out. Esc, a press outside and a scroll that would move the popover
-// away from its button close it; the focus goes back to the button. No notes, no button (a document without a visible character is none). The popover sits where placeNotePopover puts it
+// #349). It is not a menu: MoveToMenu holds menu targets, so it stays out. Esc, a press outside and a scroll that moved the button (by more
+// than 1 px, so the popover would float beside nothing; a scroll that left it where it was keeps it open, #974) close it; the focus goes back to the button. No notes, no button (a document without a visible character is none). The popover sits where placeNotePopover puts it
 // (above or below the button, inside the window), measured once it is drawn (#488). When it fits on neither side it is capped to the
 // roomier one and scrolls (#494). The button is a sticky note, labelled „Notizen zu {game}“ like the dialog, and wears the ink fill while its notes are open (#837). With `editTo`
 // (the library's cards) a footer „Bearbeiten“ leads to the game's form; the pickers give none; with `editable` (the Event page's tiles, #858) it is a button that emits `edit`.
@@ -42,9 +42,12 @@ const scrolled = ref(false)
 const trigger = useTemplateRef<{ $el: HTMLElement }>('trigger')
 const popover = useTemplateRef<HTMLElement>('popover')
 const closeButton = useTemplateRef<{ $el: HTMLElement }>('close')
+// Where the button was when place() put the popover beside it: onScroll closes only when a scroll moved the button from here (#974).
+let placedAgainst: { top: number, left: number } | null = null
 
 function show() {
   scrolled.value = false
+  placedAgainst = null
   open.value = true
 }
 
@@ -61,6 +64,7 @@ function place() {
   })
   // The opening grows from the corner of the button's side (04-motion § Notizen): the arrow's foot, on the edge facing the button.
   position.value = { top, left, maxHeight, origin: `${arrowLeft}px ${side === 'above' ? '100%' : '0'}` }
+  placedAgainst = { top: cell.top, left: cell.left }
 }
 
 function close() {
@@ -90,11 +94,15 @@ function onDocumentPointerDown(event: PointerEvent) {
   close()
 }
 
-// The popover is fixed, so a scroll of the page or of the picker's sheet would leave it floating beside nothing: it closes instead. A
-// scroll inside the popover itself (its long notes) is its own.
+// The popover is fixed, so a scroll that moves its button would leave it floating beside nothing: it closes instead. A scroll that leaves
+// the button where place() measured it (by more than 1 px) keeps it open: the browser's clamp or its scroll anchoring after the layout
+// above the button changed (the Event page's „Ton aktivieren“ goes with the first press, #974), or a scroll of another container (the chat, a
+// list). A scroll inside the popover itself (its long notes) is its own.
 function onScroll(event: Event) {
   if (!open.value || narrow.value) return
   if (popover.value?.contains(event.target as Node)) return
+  const now = trigger.value?.$el.getBoundingClientRect()
+  if (now && placedAgainst && Math.abs(now.top - placedAgainst.top) <= 1 && Math.abs(now.left - placedAgainst.left) <= 1) return
   close()
 }
 
