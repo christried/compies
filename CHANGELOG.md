@@ -7,6 +7,7 @@
 - Die Notizen am Spiel, das gerade gespielt wird, bleiben auf diesem Gerät auf oder zu, wie du sie zuletzt gelassen hast. ([#838](https://github.com/christried/compies/issues/838))
 - In deiner Bibliothek zeigt eine Karte einen Notizen-Knopf, wenn das Spiel Notizen hat; er öffnet sie, ohne das Spiel zu öffnen. ([#837](https://github.com/christried/compies/issues/837))
 - Das Spielformular sagt dir, wenn deine Bibliothek schon ein Spiel mit diesem Namen hat, und bringt dich mit „Das nehmen“ dorthin. ([#689](https://github.com/christried/compies/issues/689))
+- Als Host bearbeitest du die Notizen eines Spiels im Spiel-Dialog deines Events, zusammen mit den Notizen für dieses Event. ([#835](https://github.com/christried/compies/issues/835))
 
 ### Geändert
 

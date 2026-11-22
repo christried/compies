@@ -18,7 +18,7 @@ const props = withDefaults(defineProps<{
   bare?: boolean
   /** The title's heading level; the notes' headings are the next one. */
   level?: 'h2' | 'h3'
-  /** The Host may edit this block (#464): the header ends in a pencil named `editLabel` that emits `edit`. Never on a frozen block. */
+  /** The Host may edit this block (#464, #835): the header ends in a pencil named `editLabel` that emits `edit`; its `data-notes-edit` names the block's kind, so the dialog finds it again. Never on a frozen block. */
   editable?: boolean
   editLabel?: string
 }>(), { sub: undefined, finished: false, bare: false, level: 'h3', editable: false, editLabel: undefined })
@@ -72,7 +72,7 @@ const padding = computed(() => (props.size === 'sm' ? 'px-3 py-2.5' : 'px-3.5 py
         :icon="Pencil"
         :label="editLabel"
         :size="36"
-        data-event-notes-edit
+        :data-notes-edit="kind"
         @click="emit('edit')"
       />
     </div>

@@ -71,6 +71,8 @@ export const CLAIMS = {
   'eventNotes.title': 'spiel-notizen-host',
   'eventNotes.edit': 'spiel-notizen-host',
   'eventNotes.add': 'spiel-notizen-host',
+  'notes.edit_a11y': 'spiel-notizen-host',
+  'notes.add': 'spiel-notizen-host',
   'notesEditor.eventLabel': 'spiel-notizen-host',
   'notesEditor.eventHelp': 'spiel-notizen-host',
   'notesEditor.eventPlaceholder': 'spiel-notizen-host',
@@ -138,9 +140,10 @@ async function eventNotes(ctx, event) {
   for (const game of event.games.slice(0, 2)) await ok(api(host(ctx), 'PUT', `/api/e/${event.slug}/games/${game.id}/notes`, { notes: EVENT_NOTES }), 'save the Event notes')
 }
 
-// The Round (the first game) holds both blocks, the second game only the Event block, the third none (its dialog has the add button).
+// The Round (the first game) holds both blocks, the second game only the Event block, the third none (its dialog has the add button „Notizen hinzufügen“, #835), and the fourth,
+// `Spiel Notizen`, only Game notes (its dialog has „Notizen für dieses Event hinzufügen“ above them).
 BUILDS.notizen = async (ctx) => {
-  const event = await running(ctx, 'Notizen', { list: await pool(ctx, 3), settings: { gameCount: 3 }, set: 1 })
+  const event = await running(ctx, 'Notizen', { list: [...await pool(ctx, 3), (await libraryGames(ctx)).notes], settings: { gameCount: 3 }, set: 1 })
   await eventNotes(ctx, event)
   return event
 }
@@ -439,9 +442,15 @@ const eventStates = [
       }, { keep: true }),
       stop('dialog-pool-leer', async (tab, ctx) => {
         await closeDialogs(tab)
-        await openTile(tab, COPY.howWePlay.mainPool, ctx.event.games[2].name)
+        await openTile(tab, COPY.howWePlay.mainPool, ctx.event.games[3].name)
         await layerOpen(tab, 'the game dialog of the pool')
         await until(tab, shows(COPY.eventNotes.add), 'the add button of the Event notes')
+      }, { keep: true }),
+      stop('dialog-pool-keine', async (tab, ctx) => {
+        await closeDialogs(tab)
+        await openTile(tab, COPY.howWePlay.mainPool, ctx.event.games[2].name)
+        await layerOpen(tab, 'the game dialog of the pool')
+        await until(tab, shows(COPY.notes.add), 'the button for a game with no notes')
       }, { keep: true }),
     ],
   }),

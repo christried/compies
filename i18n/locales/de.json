@@ -986,6 +986,8 @@
   "notes": {
     "from_library": "aus deiner Bibliothek",
     "open_a11y": "Notizen zu {game}",
+    "edit_a11y": "Notizen bearbeiten",
+    "add": "Notizen hinzufügen",
     "link": {
       "new_tab": "(öffnet in neuem Tab)"
     },
