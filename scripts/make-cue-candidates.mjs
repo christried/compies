@@ -126,7 +126,10 @@ for (const id of CUE_IDS) {
   }
 }
 for (const id of Object.keys(RECIPES)) if (!CUE_IDS.includes(id)) throw new Error(`${id}: a recipe for no cue id`)
-writeFileSync(resolve(OUT, 'manifest.json'), `${JSON.stringify(manifest, null, 2)}\n`)
+// The cues sorted by id, as in credits.json (scripts/ship-cue-sound.mjs): tickets that add different cue groups then write different
+// places of the file, where in CUE_IDS order every new group landed at the end and conflicted at every merge of 0.17 (#833).
+const sorted = { ...manifest, cues: Object.fromEntries(Object.keys(manifest.cues).sort().map(id => [id, manifest.cues[id]])) }
+writeFileSync(resolve(OUT, 'manifest.json'), `${JSON.stringify(sorted, null, 2)}\n`)
 
 // ---- check what was written ----------------------------------------------------------------------------------------------------------
 

@@ -5,6 +5,7 @@
 //   REFUSED <key> <code> <reason>   a replacement or alternative the app would break on (a lost placeholder or plural form, bad syntax)
 //   CHANGED <key> was „…“ now „…“   the message (or `fixed:<id>`, a fixed text of the files) was reworded since the sweep: a finding, not a failure, and its replacement is not checked
 //   WARN <key> <code>               a copy rule the user may overrule; never changes the exit code
+//   COMMENT <key> (<answer>): <text> a remark of the user's on any answer, „passt“ included, on one line; never changes the exit code
 //   PROBLEM <text>                  the file itself is wrong
 // An alternative is named `<key> alternative <n>`. The last line counts what was answered, refused and changed.
 import { readdirSync, readFileSync } from 'node:fs'
@@ -111,6 +112,16 @@ const fixedNow = fixedTexts({
 })
 const changed = changedSince(answers, messages, fixedNow)
 for (const { id, swept, now } of changed) console.log(`CHANGED ${id} was „${swept}“ now ${now === null ? 'gone' : `„${now}“`}`)
+
+// The user's remarks, whatever the answer: in 0.18 the remarks on the look came as comments on „passt“ answers, and a session
+// wrote its own script to find them (#833).
+const oneLine = comment => comment.trim().split(/\s*\r?\n\s*/).join(' / ')
+for (const [id, entry] of [...Object.entries(answers.texts), ...Object.entries(answers.fixed)]) {
+  if (entry.comment.trim()) console.log(`COMMENT ${id} (${entry.answer ?? 'ohne Antwort'}): ${oneLine(entry.comment)}`)
+}
+for (const [component, entry] of Object.entries(answers.mono)) {
+  if (entry.comment.trim()) console.log(`COMMENT mono ${component}: ${oneLine(entry.comment)}`)
+}
 
 const answered = [...Object.values(answers.texts), ...Object.values(answers.fixed)].filter(entry => entry.answer !== null).length
 console.log(`answered ${answered}, refused ${refused}, changed ${changed.length}`)

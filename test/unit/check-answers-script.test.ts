@@ -58,7 +58,17 @@ describe('scripts/wording/check-answers.mjs', { timeout: 30_000 }, () => {
     answers = answerText(answers, 'home.title', { text: 'Deine Events', comment: 'später' })
     writeAnswers('wording_2026-11-20.json', serializeAnswers(answers))
     const { code, lines } = run()
-    expect(lines).toEqual(['answered 2, refused 0, changed 0'])
+    expect(lines).toEqual(['COMMENT home.title (ohne Antwort): später', 'answered 2, refused 0, changed 0'])
+    expect(code).toBe(0)
+  })
+
+  // 0.18's sweep: the user's remarks on the look came as comments on „passt“ answers, and nothing listed them (#833).
+  it('lists every answer that carries a comment, a „passt“ too, on one line each, and keeps the exit code', () => {
+    let answers = answerText(base, 'common.save', { text: 'Speichern', answer: 'passt', comment: 'Knopf wirkt zu klein\nauf dem Handy' })
+    answers = answerText(answers, 'vote.count', { text: '{n} Stimme | {n} Stimmen', answer: 'passt' })
+    writeAnswers('wording_2026-11-20.json', serializeAnswers(answers))
+    const { code, lines } = run()
+    expect(lines).toEqual(['COMMENT common.save (passt): Knopf wirkt zu klein / auf dem Handy', 'answered 2, refused 0, changed 0'])
     expect(code).toBe(0)
   })
 

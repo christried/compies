@@ -84,6 +84,38 @@ if (!session) {
   }
   session = sessions[0]
 }
+
+/** The ids a transcript says it derives from (`/clear`, a resume), from its `derived-from` line near the head, with how. */
+function derivedFrom(id) {
+  const fd = openSync(join(folder, `${id}.jsonl`), 'r')
+  const head = Buffer.alloc(16 * 1024)
+  const read = readSync(fd, head, 0, head.length, 0)
+  closeSync(fd)
+  for (const line of head.subarray(0, read).toString('utf8').split('\n').slice(0, 20)) {
+    if (!line.includes('"derived-from"')) continue
+    try {
+      const entry = JSON.parse(line)
+      return (entry.sessions ?? []).map(from => ({ id: from.id, via: from.via }))
+    }
+    catch {
+      // a line cut by the buffer: no derivation read
+    }
+  }
+  return []
+}
+
+// After `/clear` or a resume the session writes a new transcript, and the id the agent knows (its environment, its
+// scratchpad folder) still names the old one: 0.16 measured the old transcript twice (#833). The new transcript names
+// the old id in its head, so the id is followed to the newest transcript that derives from it.
+const notes = []
+for (let hops = 0; hops < 20; hops++) {
+  const from = session.id
+  const next = sessions.map(s => ({ s, how: derivedFrom(s.id).find(d => d.id === from) })).find(({ how }) => how)
+  if (!next) break
+  notes.push(`${from} went on as ${next.s.id} (${next.how.via ?? 'derived'})`)
+  session = next.s
+}
+for (const note of notes) console.log(`Note: ${note}.`)
 const file = join(folder, `${session.id}.jsonl`)
 
 const contextOf = usage => (usage.input_tokens ?? 0) + (usage.cache_creation_input_tokens ?? 0) + (usage.cache_read_input_tokens ?? 0)

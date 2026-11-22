@@ -5,7 +5,7 @@
 //   node scripts/ship-cue-sound.mjs wheel-windup=holz-ratsche wheel-tick=plastik-klapper ...     <cue id>=<candidate name>, any number of pairs
 //
 // An operator's own CC0 sound is first added to sound-candidates/ and its manifest as a candidate, then shipped by this script. Only the
-// named cues are touched; credits.json is read when it exists and written back in the order of CUE_IDS, so a second run changes nothing.
+// named cues are touched; credits.json is read when it exists and written back with its cues sorted by id, so a second run changes nothing.
 // Nothing is written when any pair is refused: an unknown cue id, a candidate the manifest does not list, a file that is not a .wav (the
 // shipped file is a byte copy, so another format has to be converted first), a licence other than CC0 or generated, a file that is missing.
 import { existsSync, readFileSync, writeFileSync } from 'node:fs'
@@ -53,5 +53,7 @@ for (const { id, entry } of jobs) {
   credits.cues[id] = { candidate: entry.name, source: entry.source, author: entry.author ?? null, licence: entry.licence }
   console.log(`${id.padEnd(16)} <- ${entry.name}`)
 }
-const ordered = { cues: Object.fromEntries(CUE_IDS.filter(id => credits.cues[id]).map(id => [id, credits.cues[id]])) }
+// Sorted by id, not in CUE_IDS order: tickets that add different cue groups then write different places of the file, where in
+// CUE_IDS order every new group landed at the end and the file conflicted at every merge of 0.17 (#833).
+const ordered = { cues: Object.fromEntries(CUE_IDS.filter(id => credits.cues[id]).sort().map(id => [id, credits.cues[id]])) }
 writeFileSync(CREDITS, `${JSON.stringify(ordered, null, 2)}\n`)

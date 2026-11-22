@@ -15,9 +15,35 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
+# Until 0.18 one job ran everything in about 14 minutes, 11.6 of them `pnpm test`, and every merge of a run waited for
+# it (#833). The suite now runs in four shards beside the static checks, each on its own runner.
 jobs:
-  check:
+  static:
     runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm typecheck
+      - run: pnpm lint
+      - run: pnpm knip
+      - run: pnpm test:build
+      # The realtime Worker is its own install and has its own checks (#156).
+      - run: pnpm --dir realtime install --frozen-lockfile
+      - run: pnpm --dir realtime typecheck
+      - run: pnpm --dir realtime test
+
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      # Every shard reports, so one run names every failing file.
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
     steps:
       - uses: actions/checkout@v4
       # The changelog check compares every released section with main's (#566). checkout leaves a shallow clone of the
@@ -32,12 +58,17 @@ jobs:
           node-version-file: .nvmrc
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: pnpm typecheck
-      - run: pnpm lint
-      - run: pnpm knip
-      - run: pnpm test
-      - run: pnpm test:build
-      # The realtime Worker is its own install and has its own checks (#156).
-      - run: pnpm --dir realtime install --frozen-lockfile
-      - run: pnpm --dir realtime typecheck
-      - run: pnpm --dir realtime test
+      - run: pnpm test --shard=${{ matrix.shard }}/4
+
+  # The required check of both protected branches. It fails unless every job above passed. It runs always, a cancelled
+  # run included: a required check skipped by its `if` counts as passed, so a cancelled head would be mergeable.
+  check:
+    needs: [static, test]
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Every job passed
+        run: |
+          echo "static: ${{ needs.static.result }}, test: ${{ needs.test.result }}"
+          test "${{ needs.static.result }}" = success
+          test "${{ needs.test.result }}" = success

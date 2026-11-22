@@ -52,13 +52,18 @@ serveCueFiles()
 
 let page: Awaited<ReturnType<typeof mountSuspended>> | undefined
 
+// The page's clock (`Date.now`) and the fake audio clock (`performance.now`, `FakeAudioContext.follows`) stand still in this file, so a cue
+// never passes while a slow runner mounts, fetches or re-plans: only `skewBy` and the reads move time. Running on real time, three cases went red
+// once each in CI (#833: 0.16, and twice in 0.18.1, once on the cut commit), each with a cue that had passed by the time the test looked.
 beforeEach(() => {
   setUpCuePage()
+  vi.useFakeTimers({ toFake: ['Date', 'performance'] })
 })
 
 afterEach(() => {
   page?.unmount()
   page = undefined
+  vi.useRealTimers()
   tearDownCuePage()
 })
 

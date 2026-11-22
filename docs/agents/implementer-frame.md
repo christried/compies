@@ -6,9 +6,7 @@ You build ONE ticket in your own git worktree. The orchestrator reviews your dif
 
 ## Before you start
 
-1. Base your worktree on the integration branch (on `origin`):
-   - `git fetch origin && git merge-base --is-ancestor origin/<integration branch> HEAD || git reset --hard origin/<integration branch>`;
-   - then create your branch: `git checkout -b <your branch>`.
+1. Base your branch on the integration branch (on `origin`), in two calls: `git fetch origin`, then `git checkout -b <your branch> origin/<integration branch>`. A fresh worktree has nothing to keep, so no reset is needed: until 0.18 this step chained a `git reset --hard`, which the harness refused three times in 0.18's cloud run and twice in 0.18.1 (#833).
 2. `pnpm install --frozen-lockfile` (runs `nuxt prepare`). If you add a dependency, use `pnpm add` and commit the lockfile.
 3. Read, in this order:
    - your ticket, read as `docs/agents/issue-tracker.md` § Conventions says (from Git Bash the `gh api` form);
@@ -30,7 +28,8 @@ You build ONE ticket in your own git worktree. The orchestrator reviews your dif
   - A branch whose PR goes straight into `staging`: add it under `## [Unreleased]` in `CHANGELOG.md`, in the group the brief names.
 - Shell: this is Windows, and the Bash tool is Git Bash. Script with `node` from a file, never Python; inline `node -e` in bash mangles backticks.
   - Create every file with the Write tool: a script, a commit message's file, a scratch note. A heredoc that writes a file (`cat > x.mjs <<EOF`) is refused by the guard of `CLAUDE.md` § Scripting, 77 times in 53 subagents between 2026-11-11 and 2026-11-13 (#599).
-  - Write a git call plainly: from your worktree's folder, with no shell variable (`$R`, `B=…`), no `cd` and no `git -C` in the call. The harness refuses a git call it cannot verify stays in your worktree: 184 refusals in 89 of 149 subagents in those three days, most of them a call with a variable or a `cd` in front (#599). When a call is refused, run its git command alone, as its own call: of 173 such calls none was refused. The exit code is in the tool's result, so no `; echo $?`.
+  - One git command per call, written plainly: from your worktree's folder, with no shell variable (`$R`, `B=…`), no `cd`, no `git -C`, and nothing chained to it (`&&`, `||`, `;`, `$(…)`). The harness refuses a git call it cannot verify stays in your worktree: 184 refusals in 89 of 149 subagents in those three days, most of them a call with a variable or a `cd` in front (#599), and 11 in 0.18.1, each a chain such as `git fetch … && git merge-tree …; echo $?` (#833). Of 173 git commands run alone none was refused. The exit code is in the tool's result, so no `echo $?`.
+- Call only the tools your work needs: the repository's, `gh` and the browser kit. A tool that creates a session, a schedule or an environment (`create_session`, a trigger, a cron) is never one of them: five agents of 0.16 to 0.18 called one, and the classifier refused each (#833).
 - Scratch files (`red.log`, a throwaway script) go to a folder of your own, `<your scratchpad directory>/<your ticket's number>/`, never loose in the scratchpad and never into the checkout. Every agent of a session has the same scratchpad directory, and the orchestrator's folder in it is named after the spec: five implementers of 0.14 wrote their logs into it or beside it (#780). The checkout is out because `*.log` is gitignored, so git status hides them, and two stayed in the root after 0.10.
 - Touch only what your brief allows. If the brief and the ticket disagree, or the code makes the brief wrong, do what the ticket needs and say so in the report.
 
@@ -52,14 +51,16 @@ You build ONE ticket in your own git worktree. The orchestrator reviews your dif
 ## Before you report
 
 1. Push your branch: `git push -u origin <your branch>`.
-2. Wait for CI on your pushed head: `node scripts/ci-wait.mjs`, in the foreground. One call waits at most 2.5 minutes; exit 2 means CI is still running (a run takes about 6 minutes), so call it again until it exits 0 or 1. It prints one line, then the failures if any. Red: fix, push, and wait again. Report a green head; a red one you can't fix goes into the report with its output.
+2. Wait for CI on your pushed head: `node scripts/ci-wait.mjs`, in the foreground. One call waits at most 2.5 minutes; exit 2 means CI is still running (a run takes about 3 minutes since #833, plus a queue when many branches push), so call it again until it exits 0 or 1. It prints one line, then the failures if any. Red: fix, push, and wait again. Report a green head; a red one you can't fix goes into the report with its output.
 3. Then `git fetch origin` and test the merge: `git merge-tree --write-tree --name-only origin/<integration branch> HEAD`. Exit 0 → done: your head merges cleanly, also when the integration branch moved during your CI run. The orchestrator's merge builds the result, and CI runs on it. Exit 1 lists the conflicting paths → `git merge origin/<integration branch>`, resolving conflicts by keeping both sides (i18n keys) and keeping every removal the integration branch made, then rerun the checks, push, and wait for CI again from step 2. Until 0.14 a head had to contain the tip, so every other ticket's merge sent a waiting implementer round again (#610 six times, #607 five in 84 minutes; #780).
 4. The loop ends when the reported head is green and merges cleanly into the integration tip you last fetched.
 
 ## Report (once, short, this shape)
 
+Before you report, end every background task you started (a server with its `stop`, a wait with TaskStop): a task that ends after your report wakes you again, and agents of 0.17 sent their report two to four times so (#833).
+
 - Branch and head SHA, CI on it (green, or the failing output), and the integration tip it merges cleanly into.
-- The red run: the first test you wrote, and its failing line before any production code existed. Twice in 0.7 an implementer wrote the code first, and once a bug the test would have caught got as far as the review.
+- The red runs: for each test file you added or changed, its failing line before the production code that makes it pass existed. Twice in 0.7 an implementer wrote the code first, and once a bug the test would have caught got as far as the review; while the report asked for the first test only, four implementers of 0.16.1 to 0.18 wrote their later test files after the code, and a spawn prompt asking for every file's red run fixed it in each run that used it (#833).
 - Acceptance criteria of the ticket: each one ✅ / ❌, with one line on how it is covered (test file and case name).
 - Deviations from the brief or the ticket, and why.
 - Checks: pass, or the failing output.
