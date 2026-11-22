@@ -19,7 +19,7 @@ import { colorTags } from '~~/shared/tag-colors'
 // The `tile` layout (#435) is the cover and the name only, on the Event page: no players, Suitabilities, Tags or Price, and no link. With `opens` (#443) the
 // name is a button that emits `open` (a tile opens the game dialog, #443, #444) and stretches over the tile like the link does; a tile without it stays plain.
 // With `notes` and `eventNotes` (#837, #859: the library page and the pickers) a game with a visible note has the Notes button on its cover: a sibling of the name, above it, so it never follows the link or presses the card (as „+N“).
-// The card places it by its form: at the cover's top right in the card form, at the row's right in the row form (`notes` of LAYOUT); the tile has none (#858).
+// The card places it by its form: at the cover's top right in the card form and on the tile (#858), at the row's right in the row form (`notes` of LAYOUT). With `notesEditable` (the Event page's Host, #858) its footer „Bearbeiten“ is a button that emits `editNotes`.
 const props = withDefaults(defineProps<{
   game: PoolGameFace & Partial<Pick<GameView, 'playersMin' | 'playersMax' | 'suitabilities' | 'tags' | 'price'>>
   layout?: 'card' | 'row' | 'responsive' | 'tile'
@@ -30,15 +30,17 @@ const props = withDefaults(defineProps<{
   inEvents?: number
   /** The Host's pool shows the game as Archived (#726): a pill „Archiviert“ under the name, in every layout. Not read off `game`: the library's cards are GameViews that carry the flag too. */
   archived?: boolean
-  /** The game's Game notes (#837): with a visible character the card draws the Notes button, in the tile layout never. Null or absent: no button, and no wrapper for it. */
+  /** The game's Game notes (#837): with a visible character the card draws the Notes button, on a tile too (#858). Null or absent: no button, and no wrapper for it. */
   notes?: NotesDoc | null
   /** The Host's Event notes of the game (#859, GLOSSARY: Event notes): with a visible character they count for the button too, and the popover shows them above the Game notes. */
   eventNotes?: NotesDoc | null
   /** Where the Notes popover's footer „Bearbeiten“ leads (#837): the game's form. Absent in the pickers (#859). */
   notesEditTo?: RouteLocationRaw
-}>(), { layout: 'card', to: undefined, opens: false, inEvents: 0, archived: false, notes: null, eventNotes: null, notesEditTo: undefined })
+  /** The Notes popover's footer „Bearbeiten“ is a button that asks for the game's dialog in edit mode (#858: the Event page's tiles, for the Host); a caller gives this or `notesEditTo`. */
+  notesEditable?: boolean
+}>(), { layout: 'card', to: undefined, opens: false, inEvents: 0, archived: false, notes: null, eventNotes: null, notesEditTo: undefined, notesEditable: false })
 
-const emit = defineEmits<{ open: [] }>()
+const emit = defineEmits<{ open: [], editNotes: [] }>()
 
 const { t } = useI18n()
 const NuxtLink = resolveComponent('NuxtLink')
@@ -46,8 +48,8 @@ const now = new Date()
 const priceText = computed(() => (props.game.price ? priceLine(props.game.price, now, t) : null))
 // The meta lines (players, Suitabilities, Price, Tags) are not part of a tile (#435).
 const showMeta = computed(() => props.layout !== 'tile')
-// The Notes button (#837, #859): not on a tile, and only for a document with a visible character (the one rule, notesHasText), Game or Event notes alike.
-const showNotes = computed(() => props.layout !== 'tile' && (notesHasText(props.notes) || notesHasText(props.eventNotes)))
+// The Notes button (#837, #859, #858): in every layout, and only for a document with a visible character (the one rule, notesHasText), Game or Event notes alike.
+const showNotes = computed(() => notesHasText(props.notes) || notesHasText(props.eventNotes))
 
 const cover = computed(() => gameCover(props.game))
 /** What the name is: the link, else the button that opens the dialog (#443), else a plain element. */
@@ -106,7 +108,7 @@ const LAYOUT = {
     name: 'line-clamp-2 break-words min-h-[2lh]',
     actions: '',
     tags: '',
-    notes: '',
+    notes: 'absolute top-1 right-1',
   },
   responsive: {
     box: 'min-h-15 items-center gap-3 rounded-[12px] py-1.5 pr-2.5 pl-1.5 sm:min-h-0 sm:flex-col sm:items-stretch sm:gap-0 sm:overflow-hidden sm:rounded-[14px] sm:p-0',
@@ -259,7 +261,9 @@ const look = computed(() => LAYOUT[props.layout])
         :notes="notes"
         :event-notes="eventNotes"
         :edit-to="notesEditTo"
+        :editable="notesEditable"
         :size="32"
+        @edit="emit('editNotes')"
       />
     </div>
 

@@ -18,7 +18,7 @@ let page: Awaited<ReturnType<typeof mountSuspended>> | undefined
 let setWide: (next: boolean) => void
 
 // The Event's name and whether it is finished are the Event page's context's (#821), not props.
-async function mount({ eventName, eventFinished, ...props }: { name?: string, notes: NotesDoc | null, eventNotes?: NotesDoc | null, eventName?: string, eventFinished?: boolean, editTo?: string }) {
+async function mount({ eventName, eventFinished, ...props }: { name?: string, notes: NotesDoc | null, eventNotes?: NotesDoc | null, eventName?: string, eventFinished?: boolean, editTo?: string, editable?: boolean, onEdit?: () => void }) {
   const { global } = eventNotesContext({ ...(eventName === undefined ? {} : { eventName }), finished: eventFinished ?? false })
   page = await mountSuspended(GameNotesButton, { props: { name: 'Mario Kart', ...props }, attachTo: document.body, global })
   await flushPromises()
@@ -282,6 +282,79 @@ describe('the Notes button of a game (#436)', () => {
 
       expect(popover()).toBeNull()
       expect(document.activeElement).not.toBe(trigger())
+    })
+
+    // `editable` (#858): the Event page's tiles have no page to lead to, so the footer is a button that asks the tile for its dialog.
+    describe('as a button with `editable` (#858)', () => {
+      const editButton = (within: Element | null) => [...within!.querySelectorAll('button')].find(button => button.textContent!.includes('Bearbeiten'))
+
+      it('is a button in a footer outside the scrolling body, in the popover, with the pencil', async () => {
+        await mount({ notes: notesFromLines(NOTES.split('\n')), editable: true })
+        await open()
+
+        const button = editButton(popover())!
+        expect(button.getAttribute('type')).toBe('button')
+        expect(button.closest('footer')).not.toBeNull()
+        expect(popover()!.lastElementChild).toBe(button.closest('footer'))
+        expect(popover()!.querySelector('[data-notes-body]')!.contains(button)).toBe(false)
+        expect(button.querySelector('svg')).not.toBeNull()
+        expect(popover()!.querySelector('footer a')).toBeNull()
+      })
+
+      it('is a button in the sheet’s footer, below md', async () => {
+        setWide(false)
+        await mount({ notes: notesFromLines(NOTES.split('\n')), editable: true })
+        await open()
+
+        const button = editButton(sheet())!
+        expect(button.closest('footer')).not.toBeNull()
+        expect(button.closest('[data-notes-body]')).toBeNull()
+      })
+
+      it('closes the popover, emits `edit` once and leaves the focus on the Notes button', async () => {
+        const onEdit = vi.fn()
+        await mount({ notes: notesFromLines(NOTES.split('\n')), editable: true, onEdit })
+        await open()
+
+        editButton(popover())!.click()
+        await flushPromises()
+
+        expect(popover()).toBeNull()
+        expect(onEdit).toHaveBeenCalledTimes(1)
+        expect(document.activeElement).toBe(trigger())
+      })
+
+      it('closes the sheet, emits `edit` once and leaves the focus on the Notes button, below md', async () => {
+        setWide(false)
+        const onEdit = vi.fn()
+        await mount({ notes: notesFromLines(NOTES.split('\n')), editable: true, onEdit })
+        // A real tap focuses the button before it opens the sheet, which is where the sheet returns the focus to; `click()` alone does not.
+        trigger().focus()
+        await open()
+
+        editButton(sheet())!.click()
+        await flushPromises()
+
+        expect(trigger().getAttribute('aria-expanded')).toBe('false')
+        expect(onEdit).toHaveBeenCalledTimes(1)
+        expect(document.activeElement).toBe(trigger())
+      })
+
+      it('has the Event notes first and the button under them, for a game with both', async () => {
+        await mount({ notes: notesFromLines(['Game-Zeile']), eventNotes: notesFromLines(['Heute nur Bo1']), editable: true })
+        await open()
+
+        expect(popover()!.textContent!.indexOf('Heute nur Bo1')).toBeLessThan(popover()!.textContent!.indexOf('Game-Zeile'))
+        expect(editButton(popover())).toBeDefined()
+      })
+
+      it('stays a link with `editTo`, even when `editable` is set too', async () => {
+        await mount({ notes: notesFromLines(NOTES.split('\n')), editTo: EDIT, editable: true })
+        await open()
+
+        expect(editLink(popover())!.getAttribute('href')).toBe(EDIT)
+        expect(editButton(popover())).toBeUndefined()
+      })
     })
 
     it('stays in view while a 1000-character note scrolls above it', async () => {

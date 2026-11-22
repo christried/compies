@@ -140,6 +140,7 @@ const rows = computed(() => (props.settings === null
                   :audience="isHost ? 'host' : 'member'"
                   :archived="isFullPoolGame(game) && game.archived"
                   :facts="hostGames?.[game.id] ?? null"
+                  notes-button
                 />
               </li>
             </ul>
