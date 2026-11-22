@@ -95,7 +95,7 @@ function onDocumentPointerDown(event: PointerEvent) {
 }
 
 // The popover is fixed, so a scroll that moves its button would leave it floating beside nothing: it closes instead. A scroll that leaves
-// the button where place() measured it (by more than 1 px) keeps it open: the browser's clamp or its scroll anchoring after the layout
+// the button where place() measured it (within 1 px) keeps it open: the browser's clamp or its scroll anchoring after the layout
 // above the button changed (the Event page's „Ton aktivieren“ goes with the first press, #974), or a scroll of another container (the chat, a
 // list). A scroll inside the popover itself (its long notes) is its own.
 function onScroll(event: Event) {
