@@ -32,6 +32,7 @@ function entry(overrides: Partial<ArchiveEntry> = {}): ArchiveEntry {
     memberCount: 9,
     isHost: false,
     seated: true,
+    resultOpen: false,
     ...overrides,
   }
 }
