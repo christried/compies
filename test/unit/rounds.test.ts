@@ -380,9 +380,8 @@ describe('Bonus Vetoes (#233)', () => {
     expect(bonusVetoRejection({ ...base, settings: { teamCount: 2, selectionMode: 'admin_pick' } })).toBe('no_wheel')
   })
 
-  it('is refused once the Event has finished or is archived, and not before', () => {
+  it('is refused once the Event has finished, and not before', () => {
     expect(bonusVetoRejection({ ...base, phase: 'finished' })).toBe('wrong_phase')
-    expect(bonusVetoRejection({ ...base, phase: 'archived' })).toBe('wrong_phase')
     expect(bonusVetoRejection({ ...base, phase: 'date_set' })).toBeNull()
   })
 

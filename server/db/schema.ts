@@ -116,11 +116,11 @@ export const events = pgTable('events', {
   createdAt: createdAt(),
   updatedAt: updatedAt(),
 }, table => [
-  // A stored end belongs to a finished (or archived) Event, never to a running one (#277). The converse is not checked: the code under the Event lock is the one writer.
-  check('events_finished_at_phase_check', sql`${table.finishedAt} IS NULL OR ${table.phase} IN ('finished', 'archived')`),
-  // The ceremony's start and gag are set together, and only in a finished (or archived) Event (#309).
+  // A stored end belongs to a finished Event, never to a running one (#277). The converse is not checked: the code under the Event lock is the one writer.
+  check('events_finished_at_phase_check', sql`${table.finishedAt} IS NULL OR ${table.phase} = 'finished'`),
+  // The ceremony's start and gag are set together, and only in a finished Event (#309).
   check('events_ceremony_pair_check', sql`(${table.ceremonyStartsAt} IS NULL) = (${table.ceremonyGag} IS NULL)`),
-  check('events_ceremony_phase_check', sql`${table.ceremonyStartsAt} IS NULL OR ${table.phase} IN ('finished', 'archived')`),
+  check('events_ceremony_phase_check', sql`${table.ceremonyStartsAt} IS NULL OR ${table.phase} = 'finished'`),
 ])
 
 // A sitting of an Event on one Date (ADR 0011, #48). The Date lives here, not on the Event.

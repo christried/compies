@@ -147,7 +147,6 @@ describe('HubNav on an Event page', () => {
     ['date_set', 'Termin steht'],
     ['running', 'Läuft'],
     ['finished', 'Beendet'],
-    ['archived', 'Archiv'],
   ] as const)('names the Phase %s as „%s“', async (phase, word) => {
     const nav = await mountSuspended(HubNav, { props: { layout: 'header', context: context({ phase }) }, route: EVENT })
     const events = nav.findAll('a')[phase === 'finished' ? 1 : 0]!

@@ -2,7 +2,7 @@ import { rmSync } from 'node:fs'
 import type { PGlite } from '@electric-sql/pglite'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { createTestApp } from './app'
-import { createTestDbBefore, migrateTo } from './harness'
+import { createTestDbBefore, migrateThrough, migrateTo } from './harness'
 import { signIn, stubAuthEnv } from './sign-in'
 
 // The migration that opens the Team names (#438, spec #425, ADR 0007): data only. In every Event that is not finished the frozen names go, and a team
@@ -58,6 +58,9 @@ describe('migration: Team names open', () => {
     await client.query(`INSERT INTO event_teams (event_id, position, frozen_name) VALUES ($1, 1, 'Wilde Gurken'), ($1, 2, NULL)`, [RUNNING])
     for (const id of [FINISHED, ARCHIVED]) await client.query(`INSERT INTO event_teams (event_id, position, frozen_name) VALUES ($1, 1, 'Alte Hasen'), ($1, 2, NULL)`, [id])
 
+    await migrateThrough(before.db, MIGRATION)
+    // 0042 stops on an `archived` Event: the operator moves it by hand first, so the rest of the file reads it as finished.
+    await client.query(`UPDATE events SET phase = 'finished' WHERE phase = 'archived'`)
     await migrateTo(before.db)
   })
 

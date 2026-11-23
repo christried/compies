@@ -202,7 +202,7 @@ describe('resultRejection', () => {
   })
 
   it('refuses every Phase but running, before an unknown Round', () => {
-    for (const phase of ['poll', 'date_set', 'finished', 'archived', 'draft'] as const) {
+    for (const phase of ['poll', 'date_set', 'finished', 'draft'] as const) {
       expect(resultRejection(input({ phase, round: null })), phase).toBe('wrong_phase')
     }
   })

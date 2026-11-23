@@ -136,13 +136,6 @@ describe('the Share image route', () => {
       }
     }, 30_000)
 
-    it('gives one for an archived Event too', async () => {
-      const { slug, eventId, cookies } = await event()
-      await testDb.db.update(events).set({ phase: 'archived' }).where(eq(events.id, eventId))
-
-      expect((await image(slug, cookies.one)).status).toBe(200)
-    }, 30_000)
-
     it('refuses a non-Member exactly as the Event read does, and an unknown slug the same', async () => {
       const { slug, cookies } = await event()
 

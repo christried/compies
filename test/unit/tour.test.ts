@@ -162,7 +162,6 @@ describe('tourMayStart', () => {
     ['nobody is signed in', { storedVersion: null }],
     ['the viewer is the Host', { role: 'host' as const }],
     ['the Event is finished', { phase: 'finished' as const }],
-    ['the Event is archived', { phase: 'archived' as const }],
     ['there is no Event', { phase: null }],
     ['a Session runs', { sessionRunning: true }],
     ['a layer is open', { layerOpen: true }],
