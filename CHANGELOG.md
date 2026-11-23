@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Geändert
+
+- Auf der Seite eines beendeten Events markiert die Navigation jetzt „Archiv“ statt „Events“. ([#886](https://github.com/christried/compies/issues/886))
+
 ## [0.19.0] - 2026-11-23 – Bibliothek again
 
 ### Neu

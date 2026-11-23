@@ -458,6 +458,8 @@ Main navigation: Events, (Crews Post-1.0), Archiv, Bibliothek, Profil, (Admin). 
 - **Accessibility:** `<nav aria-label="Hauptnavigation">`, `aria-current="page"`.
 - **Motion:** —
 
+On a finished Event's address the current tab is Archiv, not Events, and the Event context row hangs on it (0.20, #886; see 15-header-eventseite § HubNav).
+
 ## PhasePill
 **Scope:** [MVP] · **Ref:** AppFrame
 
