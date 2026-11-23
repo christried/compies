@@ -251,13 +251,40 @@ describe('archive page', () => {
       expect(page.find('ul').exists()).toBe(false)
     })
 
-    it('shows two skeleton cards marked busy while the list loads', async () => {
+    it('shows six skeleton cards in the Archive shape on a busy list, the last three hidden below 600 px', async () => {
       mode = 'hang'
       const page = await mountSuspended(ArchivePage)
 
-      const busy = page.get('[aria-busy="true"]')
-      expect(busy.findAll('[aria-hidden="true"]').length).toBeGreaterThanOrEqual(2)
+      const list = page.get('[aria-busy="true"]')
+      expect(list.classes()).toEqual(expect.arrayContaining(['grid-cols-1', 'min-[600px]:grid-cols-2', 'min-[1024px]:grid-cols-3']))
+      const cards = list.findAll('[aria-hidden="true"]')
+      expect(cards).toHaveLength(6)
+      expect(cards.map(card => card.classes().includes('max-[599px]:hidden'))).toEqual([false, false, false, true, true, true])
+      expect(cards.every(card => card.classes().includes('rounded-[16px]'))).toBe(true)
       expect(page.findAll('li').length).toBe(0)
+    })
+
+    it('says „Archiv lädt …“ in a status line under the skeleton cards', async () => {
+      mode = 'hang'
+      const page = await mountSuspended(ArchivePage)
+
+      const status = page.get('[role="status"]')
+      expect(status.text()).toBe('Archiv lädt …')
+      expect(status.element.previousElementSibling).toBe(page.get('[aria-busy="true"]').element)
+    })
+
+    it('takes the skeleton cards and the status line away once the read resolves', async () => {
+      mode = 'hang'
+      const page = await mountSuspended(ArchivePage)
+      expect(page.get('[aria-busy="true"]').findAll('[aria-hidden="true"]')).toHaveLength(6)
+
+      mode = 'ok'
+      entries = [entry()]
+      window.dispatchEvent(new Event('focus'))
+
+      await settle(page)
+      expect(page.find('[role="status"]').exists()).toBe(false)
+      expect(page.findAll('li a')).toHaveLength(1)
     })
 
     it('shows the error state with a retry, and a click on it loads the list again', async () => {
