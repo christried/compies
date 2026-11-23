@@ -109,7 +109,7 @@ describe('the Rundgang row on the Profil card', () => {
 // is stored in the cookie `compies-motion` (a change shows at once, then the route saves it), not whether the page is calm.
 describe('the Weniger Bewegung row on the Profil card', () => {
   const MOTION_TITLE = 'Weniger Bewegung'
-  const MOTION_DESCRIPTION = 'Ruhige Varianten der großen Animationen, nur auf diesem Gerät. Die Einstellung deines Geräts zählt immer mit.'
+  const MOTION_DESCRIPTION = 'Ruhige Varianten der großen Animationen, nur auf diesem Gerät.'
   const MOTION_FAILED = 'Das hat nicht geklappt, „Weniger Bewegung“ ist wieder wie vorher. Versuch’s nochmal.'
 
   const motionSwitch = (card: VueWrapper) => card.findAll('[role="switch"]')[1]!
