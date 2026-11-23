@@ -15,12 +15,15 @@ import { requireSettings } from './settings'
 // count, the Winner count and the gag (shared/ceremony.ts), so it is never stored. The Winner count is the Parties on rank 1 of the
 // Standings; a finished Event is read-only (no reopening), so it cannot change after the Finish and no column keeps it (#315).
 
+/** The columns `ceremonyViewOf` reads: the settings' (the Party count) and the ceremony's own. The Archive's read selects exactly these (#883). */
+export type CeremonyRow = Parameters<typeof settingsFromRow>[0] & Pick<EventRow, 'ceremonyStartsAt' | 'ceremonyGag'>
+
 /**
  * The ceremony as the Event read sends it (ISO instants): the latest start, its end and its gag, the same for every viewer. Null before the
  * first start, and for an Event without settings (no Party count, no end). `winners` is the Winner count of the Standings (#315); the end is
  * the one of the default layout, never of a viewer's screen.
  */
-export function ceremonyViewOf(row: EventRow, winners: number): CeremonyView | null {
+export function ceremonyViewOf(row: CeremonyRow, winners: number): CeremonyView | null {
   const settings = settingsFromRow(row)
   if (row.ceremonyStartsAt === null || row.ceremonyGag === null || settings === null) return null
   return {

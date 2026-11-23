@@ -1,10 +1,11 @@
 import { eq } from 'drizzle-orm'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
-import { eventMembers, events, games, rounds, users } from '../../server/db/schema'
+import { eventMembers, events, eventTeams, games, roundPlaces, rounds, users } from '../../server/db/schema'
+import { testClock } from '../../server/utils/clock'
 import type { ArchiveView } from '../../shared/archive'
 import { createTestApp, type TestRequest } from './app'
 import { createTestDb, resetDatabase } from './harness'
-import { hostEntersResult, hostFinishes, hostSets, startRunningEvent, type Rig, type Signed } from './scenario'
+import { hostEntersResult, hostFinishes, hostSets, hostStartsCeremony, readEvent, startRunningEvent, type Rig, type Signed } from './scenario'
 import { setAllowlist, signIn, stubAuthEnv, type ProviderProfile } from './sign-in'
 
 // The Archive list (#882, spec #683): `GET /api/archive` through the HTTP API. Every finished, not deleted Event the viewer is a Member
@@ -20,16 +21,23 @@ const stander = { provider: 'twitch', id: '6', name: 'Tribuene', email: 'stand@e
 const outsider = { provider: 'twitch', id: '7', name: 'Fremd', email: 'out@example.com', image: undefined } as const
 const admin = { provider: 'discord', id: '9', name: 'Chefin', email: 'admin@example.com', image: undefined } as const
 
+const T0 = '2026-11-22T12:00:00.000Z'
+
+/** One Round with a Result: each Party's Place (`[team, place]`); two Parties on one Place share it. */
+type Placed = readonly (readonly [team: number, place: number])[]
+
 describe('GET /api/archive', () => {
   let testDb: Awaited<ReturnType<typeof createTestDb>>
   let request: TestRequest
   let rig: Rig
   let counter = 0
+  // The request's clock (ADR 0013): the Award ceremony stamps its start from it, and the read decides on it whether a run is going (#883).
+  const clock = testClock(T0)
 
   beforeAll(async () => {
     testDb = await createTestDb()
-    request = createTestApp(testDb.db)
-    rig = { request, db: testDb.db }
+    request = createTestApp(testDb.db, { clock })
+    rig = { request, db: testDb.db, clock }
   })
 
   afterAll(async () => {
@@ -39,6 +47,7 @@ describe('GET /api/archive', () => {
   beforeEach(async () => {
     stubAuthEnv()
     counter = 0
+    clock.set(T0)
     await resetDatabase(testDb.db)
   })
 
@@ -76,11 +85,21 @@ describe('GET /api/archive', () => {
     createdAt?: Date
     deletedAt?: Date
     settings?: 'set' | 'null'
-    members?: readonly { userId: string, team?: number }[]
+    members?: readonly { userId: string, team?: number, word?: string, joinedAt?: Date }[]
+    /** The Event's Party count; its Points table is linear down to 0, 10 games planned. */
+    teams?: number
     results?: number
+    /** Rounds with a Result and their Places (the Standings stand on them); they count as games like `results`. */
+    placed?: readonly Placed[]
     openRounds?: number
+    /** The ceremony columns as an old deployment or the Host's start leaves them. */
+    ceremonyShown?: boolean
+    ceremonyStartsAt?: Date
+    /** Stored names (`event_teams`), which an Event finished before 0.12 still has. */
+    stored?: readonly { position: number, frozenName: string | null }[]
   }): Promise<Inserted> {
     counter += 1
+    const teams = options.teams ?? 2
     const name = options.name ?? `Archiv-Event ${counter}`
     const slug = `archiv-event-${counter}`
     const [row] = await testDb.db.insert(events).values({
@@ -92,20 +111,47 @@ describe('GET /api/archive', () => {
       finishedAt: options.finishedAt === undefined ? new Date('2026-10-25T21:00:00Z') : options.finishedAt,
       ...(options.createdAt ? { createdAt: options.createdAt } : {}),
       ...(options.deletedAt ? { deletedAt: options.deletedAt } : {}),
-      ...(options.settings === 'null' ? {} : { format: 'teams' as const, teamCount: 2, teamSize: 3 }),
+      ...(options.settings === 'null'
+        ? {}
+        : {
+            format: 'teams' as const,
+            teamCount: teams,
+            teamSize: 3,
+            gameCount: 10,
+            pointsTable: { preset: 'linear' as const, values: Array.from({ length: teams }, (_, index) => teams - 1 - index) },
+            selectionMode: 'admin_pick' as const,
+          }),
+      ...(options.ceremonyShown ? { ceremonyShown: true } : {}),
+      ...(options.ceremonyStartsAt ? { ceremonyStartsAt: options.ceremonyStartsAt, ceremonyGag: 'trip' as const } : {}),
     }).returning({ id: events.id })
     const eventId = row!.id
-    await testDb.db.insert(eventMembers).values([{ eventId, userId: options.hostId }, ...(options.members ?? [])].map(member => ({
+    const members = options.members ?? []
+    // The Host may be one of the seated Players: then their row is the one with the seat.
+    const rows = members.some(member => member.userId === options.hostId) ? members : [{ userId: options.hostId }, ...members]
+    await testDb.db.insert(eventMembers).values(rows.map(member => ({
       eventId,
       userId: member.userId,
-      ...('team' in member && member.team ? { zone: 'team' as const, team: member.team, teamJoinedAt: new Date('2026-10-20T18:00:00Z') } : {}),
+      ...('team' in member && member.team
+        ? {
+            zone: 'team' as const,
+            team: member.team,
+            teamJoinedAt: 'joinedAt' in member && member.joinedAt ? member.joinedAt : new Date('2026-10-20T18:00:00Z'),
+            ...('word' in member && member.word ? { teamWord: member.word } : {}),
+          }
+        : {}),
     })))
+    if (options.stored?.length) await testDb.db.insert(eventTeams).values(options.stored.map(entry => ({ eventId, ...entry })))
     const results = options.results ?? 0
-    if (results > 0 || options.openRounds) {
+    const placed = options.placed ?? []
+    if (results > 0 || placed.length > 0 || options.openRounds) {
       const [game] = await testDb.db.insert(games).values({ name: `Spiel ${counter}`, createdBy: options.hostId }).returning({ id: games.id })
       const at = new Date('2026-10-25T19:00:00Z')
       for (let number = 1; number <= results; number++) {
         await testDb.db.insert(rounds).values({ eventId, gameId: game!.id, startedAt: at, setAt: at, number, resultAt: at })
+      }
+      for (const [index, places] of placed.entries()) {
+        const [round] = await testDb.db.insert(rounds).values({ eventId, gameId: game!.id, startedAt: at, setAt: at, number: results + index + 1, resultAt: at }).returning({ id: rounds.id })
+        await testDb.db.insert(roundPlaces).values(places.map(([team, place]) => ({ roundId: round!.id, team, place })))
       }
       // A Round set but without a Result (the finish ended the Session before its Result came).
       if (options.openRounds) await testDb.db.insert(rounds).values({ eventId, gameId: game!.id, startedAt: at, setAt: at })
@@ -332,6 +378,313 @@ describe('GET /api/archive', () => {
       const view = await read(hostUser.cookie)
 
       expect(view.events.map(entry => entry.slug)).toEqual([newer.slug, older.slug])
+    })
+  })
+
+  // The Winners and the viewer's rank (#883, spec #683): derived on read from the Results and the Points table, and only once the Award
+  // ceremony has been started and its run is over. A closed entry carries neither, nor anything derived from them (CODING_STANDARDS § Secrecy).
+  describe('the result of an Event', () => {
+    /** The keys of an entry whose result is closed: `resultOpen` is the only new one. */
+    const CLOSED_KEYS = ['finishedAt', 'format', 'gameCount', 'isHost', 'memberCount', 'name', 'resultOpen', 'seated', 'slug']
+
+    /** A Host and two seated Players on teams 1 and 2 with their words, an Event whose Winner is team 1. */
+    async function twoPartyEvent(options: { ceremonyShown?: boolean, ceremonyStartsAt?: Date } = {}) {
+      const hostUser = await signInAs(host)
+      const player = await signInAs(one)
+      const other = await signInAs(two)
+      const ev = await insertEvent({
+        hostId: hostUser.id,
+        teams: 2,
+        members: [{ userId: player.id, team: 1, word: 'Quokkas' }, { userId: other.id, team: 2, word: 'Wombats' }],
+        placed: [[[1, 1], [2, 2]]],
+        ...options,
+      })
+      return { hostUser, player, other, ev }
+    }
+
+    describe('before the Award ceremony', () => {
+      it('holds no Winner and no rank, in the object and in the raw text, for the Host and for a Member alike', async () => {
+        const { hostUser, player, ev } = await twoPartyEvent()
+
+        const texts = []
+        for (const viewer of [hostUser, player]) {
+          const response = await list(viewer.cookie)
+          const text = await response.text()
+          texts.push(text)
+          const entry = (JSON.parse(text) as ArchiveView).events[0]!
+
+          expect(entry.slug).toBe(ev.slug)
+          expect(Object.keys(entry).sort()).toEqual(CLOSED_KEYS)
+          expect(entry.resultOpen).toBe(false)
+          expect('winners' in entry).toBe(false)
+          expect('rank' in entry).toBe(false)
+          for (const secret of ['winners', 'rank', 'Quokkas', 'Wombats']) expect(text).not.toContain(secret)
+        }
+        // The same closed entry for both, but for the viewer's own seat and Host mark.
+        const [hostEntry, playerEntry] = texts.map(text => (JSON.parse(text) as ArchiveView).events[0]!)
+        expect({ ...hostEntry, isHost: null, seated: null }).toEqual({ ...playerEntry, isHost: null, seated: null })
+      })
+
+      it('holds nothing of a Tie either: no second Winner, no count of Winners', async () => {
+        const hostUser = await signInAs(host)
+        const player = await signInAs(one)
+        await insertEvent({
+          hostId: hostUser.id,
+          teams: 4,
+          members: [{ userId: player.id, team: 3, word: 'Dachse' }],
+          placed: [[[1, 1], [2, 1], [3, 3], [4, 3]]],
+        })
+
+        const text = await (await list(player.cookie)).text()
+
+        expect(Object.keys((JSON.parse(text) as ArchiveView).events[0]!).sort()).toEqual(CLOSED_KEYS)
+        expect(text).not.toContain('Dachse')
+      })
+
+      it('keeps the Tribüne and the Host mark on a closed entry', async () => {
+        const { hostUser, ev } = await twoPartyEvent()
+        const stands = await signInAs(stander)
+        await testDb.db.insert(eventMembers).values({ eventId: ev.eventId, userId: stands.id })
+
+        expect((await read(stands.cookie)).events[0]).toMatchObject({ seated: false, isHost: false, resultOpen: false })
+        expect((await read(hostUser.cookie)).events[0]).toMatchObject({ seated: false, isHost: true, resultOpen: false })
+      })
+    })
+
+    describe('once the Award ceremony has run', () => {
+      it('names the one Winner with its Team name and gives each Player their rank', async () => {
+        const { hostUser, player, other } = await twoPartyEvent({ ceremonyShown: true })
+
+        const first = (await read(player.cookie)).events[0]!
+        const second = (await read(other.cookie)).events[0]!
+
+        expect(first).toMatchObject({ resultOpen: true, winners: [{ position: 1, name: 'Quokkas' }], rank: 1, seated: true })
+        expect(second).toMatchObject({ resultOpen: true, winners: [{ position: 1, name: 'Quokkas' }], rank: 2 })
+        // The Winner count is the Winners' list; the other Party's name is never sent.
+        expect(JSON.stringify(second)).not.toContain('Wombats')
+        expect((await read(hostUser.cookie)).events[0]).toMatchObject({ resultOpen: true, winners: [{ position: 1, name: 'Quokkas' }], rank: null })
+      })
+
+      it('lists every Party on Place 1 as a Winner in the order of the teams (Unentschieden), each Player with rank 1', async () => {
+        const hostUser = await signInAs(host)
+        const a = await signInAs(one)
+        const b = await signInAs(two)
+        const c = await signInAs(three)
+        await insertEvent({
+          hostId: hostUser.id,
+          teams: 3,
+          ceremonyShown: true,
+          members: [{ userId: a.id, team: 1, word: 'Eins' }, { userId: b.id, team: 3, word: 'Drei' }, { userId: c.id, team: 2, word: 'Zwei' }],
+          placed: [[[3, 1], [1, 1], [2, 3]]],
+        })
+
+        const first = (await read(a.cookie)).events[0]!
+
+        expect(first.winners).toEqual([{ position: 1, name: 'Eins' }, { position: 3, name: 'Drei' }])
+        expect(first.rank).toBe(1)
+        expect((await read(b.cookie)).events[0]!.rank).toBe(1)
+        expect((await read(c.cookie)).events[0]!.rank).toBe(3)
+      })
+
+      it('gives a shared rank below the top as it is (1, 2, 2), and the skipped one after a shared first (1, 1, 3)', async () => {
+        const hostUser = await signInAs(host)
+        const a = await signInAs(one)
+        const b = await signInAs(two)
+        const c = await signInAs(three)
+        const seats = [{ userId: a.id, team: 1 }, { userId: b.id, team: 2 }, { userId: c.id, team: 3 }]
+        await insertEvent({ hostId: hostUser.id, teams: 3, ceremonyShown: true, members: seats, placed: [[[1, 1], [2, 2], [3, 2]]], finishedAt: new Date('2026-10-26T21:00:00Z') })
+        await insertEvent({ hostId: hostUser.id, teams: 3, ceremonyShown: true, members: seats, placed: [[[1, 1], [2, 1], [3, 3]]], finishedAt: new Date('2026-10-25T21:00:00Z') })
+
+        const forB = (await read(b.cookie)).events.map(entry => entry.rank)
+        const forC = (await read(c.cookie)).events.map(entry => entry.rank)
+
+        expect(forB).toEqual([2, 1])
+        expect(forC).toEqual([2, 3])
+      })
+
+      it('adds up several Rounds with the Points table', async () => {
+        const hostUser = await signInAs(host)
+        const a = await signInAs(one)
+        const b = await signInAs(two)
+        await insertEvent({
+          hostId: hostUser.id,
+          ceremonyShown: true,
+          members: [{ userId: a.id, team: 1 }, { userId: b.id, team: 2 }],
+          placed: [[[2, 1], [1, 2]], [[2, 1], [1, 2]], [[1, 1], [2, 2]]],
+        })
+
+        expect((await read(a.cookie)).events[0]).toMatchObject({ winners: [{ position: 2, name: null }], rank: 2, gameCount: 3 })
+        expect((await read(b.cookie)).events[0]).toMatchObject({ rank: 1 })
+      })
+
+      it('gives a Member on the Stands no rank, and a Host who plays theirs, with the Host mark', async () => {
+        const hostUser = await signInAs(host)
+        const a = await signInAs(one)
+        const stands = await signInAs(stander)
+        await insertEvent({
+          hostId: hostUser.id,
+          ceremonyShown: true,
+          members: [{ userId: hostUser.id, team: 2 }, { userId: a.id, team: 1 }, { userId: stands.id }],
+          placed: [[[1, 1], [2, 2]]],
+        })
+
+        const onStands = (await read(stands.cookie)).events[0]!
+        const hosting = (await read(hostUser.cookie)).events[0]!
+
+        expect(onStands).toMatchObject({ resultOpen: true, seated: false, rank: null, winners: [{ position: 1, name: null }] })
+        expect(hosting).toMatchObject({ isHost: true, seated: true, rank: 2 })
+      })
+
+      it('shows the same Team name as the Event read: words in the order they joined, null without words', async () => {
+        const hostUser = await signInAs(host)
+        const a = await signInAs(one)
+        const b = await signInAs(two)
+        const c = await signInAs(three)
+        const ev = await insertEvent({
+          hostId: hostUser.id,
+          teams: 3,
+          ceremonyShown: true,
+          members: [
+            { userId: a.id, team: 1, word: 'Gurken', joinedAt: new Date('2026-10-20T19:00:00Z') },
+            { userId: b.id, team: 1, word: 'Wilde', joinedAt: new Date('2026-10-20T18:00:00Z') },
+            { userId: c.id, team: 2, word: 'Hasen' },
+          ],
+          // Everyone on Place 1: a three-way Tie puts every Party on the card.
+          placed: [[[1, 1], [2, 1], [3, 1]]],
+        })
+
+        const winners = (await read(a.cookie)).events[0]!.winners!
+        const names = (await readEvent(rig, a.cookie, ev.slug)).teams
+
+        expect(winners.map(winner => winner.name)).toEqual(['Wilde Gurken', 'Hasen', null])
+        expect(winners).toEqual(names)
+      })
+
+      it('takes a stored name of an Event finished before 0.12 only for a team that has a row, and null stays the colour name', async () => {
+        const hostUser = await signInAs(host)
+        const a = await signInAs(one)
+        const b = await signInAs(two)
+        const c = await signInAs(three)
+        const ev = await insertEvent({
+          hostId: hostUser.id,
+          teams: 3,
+          ceremonyShown: true,
+          members: [{ userId: a.id, team: 1, word: 'Neu' }, { userId: b.id, team: 2, word: 'Auch' }, { userId: c.id, team: 3, word: 'Wort' }],
+          placed: [[[1, 1], [2, 1], [3, 1]]],
+          stored: [{ position: 1, frozenName: 'Alte Hasen' }, { position: 2, frozenName: null }],
+        })
+
+        const winners = (await read(a.cookie)).events[0]!.winners!
+        const names = (await readEvent(rig, a.cookie, ev.slug)).teams
+
+        expect(winners).toEqual([{ position: 1, name: 'Alte Hasen' }, { position: 2, name: null }, { position: 3, name: 'Wort' }])
+        expect(winners).toEqual(names)
+      })
+
+      it('is open for an Event whose start was never stored, only the flag (the previous deployment)', async () => {
+        const { player } = await twoPartyEvent({ ceremonyShown: true })
+
+        expect((await read(player.cookie)).events[0]).toMatchObject({ resultOpen: true, rank: 1 })
+      })
+
+      it('is open for an Event with a stored start and no flag, the previous deployment\'s start, once its run is over', async () => {
+        const { player } = await twoPartyEvent({ ceremonyStartsAt: new Date('2026-11-22T11:00:00Z') })
+
+        expect((await read(player.cookie)).events[0]).toMatchObject({ resultOpen: true, rank: 1 })
+      })
+
+      it('shows an open entry without Winners and without rank when no Round has a Result', async () => {
+        const hostUser = await signInAs(host)
+        const a = await signInAs(one)
+        await insertEvent({ hostId: hostUser.id, ceremonyShown: true, members: [{ userId: a.id, team: 1 }] })
+
+        const entry = (await read(a.cookie)).events[0]!
+
+        expect(entry).toMatchObject({ resultOpen: true, winners: [], rank: null, gameCount: 0 })
+      })
+
+      it('shows an open entry without Winners and without rank when the Event has no settings', async () => {
+        const hostUser = await signInAs(host)
+        const a = await signInAs(one)
+        await insertEvent({ hostId: hostUser.id, ceremonyShown: true, settings: 'null', members: [{ userId: a.id, team: 1 }], results: 2 })
+
+        expect((await read(a.cookie)).events[0]).toMatchObject({ resultOpen: true, winners: [], rank: null, format: null })
+      })
+    })
+
+    describe('around the run of the ceremony', () => {
+      /** The Host starts the ceremony at the clock's now; answers the run's end as a number. */
+      async function start(hostUser: Signed, slug: string): Promise<{ startsAt: number, endsAt: number }> {
+        const started = await hostStartsCeremony(rig, { slug, host: hostUser })
+        return { startsAt: Date.parse(started.startsAt), endsAt: Date.parse(started.endsAt) }
+      }
+
+      it('stays closed in the lead and during the first run for the Host and a Member, and opens at the end of the run', async () => {
+        const { hostUser, player, ev } = await twoPartyEvent()
+        const { startsAt, endsAt } = await start(hostUser, ev.slug)
+
+        for (const at of [Date.parse(T0), startsAt, startsAt + 1, endsAt - 1]) {
+          clock.set(new Date(at))
+          for (const viewer of [hostUser, player]) {
+            const text = await (await list(viewer.cookie)).text()
+            expect(JSON.parse(text).events[0].resultOpen, `at ${at - startsAt} ms`).toBe(false)
+            for (const secret of ['winners', 'rank', 'Quokkas']) expect(text).not.toContain(secret)
+          }
+        }
+
+        clock.set(new Date(endsAt))
+        expect((await read(player.cookie)).events[0]).toMatchObject({ resultOpen: true, rank: 1, winners: [{ position: 1, name: 'Quokkas' }] })
+        expect((await read(hostUser.cookie)).events[0]).toMatchObject({ resultOpen: true })
+        clock.set(new Date(endsAt + 60_000))
+        expect((await read(player.cookie)).events[0]).toMatchObject({ resultOpen: true, rank: 1 })
+      })
+
+      it('closes again during a restart of the ceremony and opens after its new end', async () => {
+        const { hostUser, player, ev } = await twoPartyEvent()
+        const first = await start(hostUser, ev.slug)
+        clock.set(new Date(first.endsAt))
+        expect((await read(player.cookie)).events[0]!.resultOpen).toBe(true)
+
+        const second = await start(hostUser, ev.slug)
+        expect(second.endsAt).toBeGreaterThan(first.endsAt)
+
+        for (const at of [first.endsAt, second.startsAt, second.endsAt - 1]) {
+          clock.set(new Date(at))
+          const text = await (await list(player.cookie)).text()
+          expect(JSON.parse(text).events[0].resultOpen, `at ${at}`).toBe(false)
+          expect(text).not.toContain('Quokkas')
+        }
+        clock.set(new Date(second.endsAt))
+        expect((await read(player.cookie)).events[0]).toMatchObject({ resultOpen: true, rank: 1 })
+      })
+
+      it('ends the run later for a Tie: its end follows the Winner count, as the ceremony\'s answer does', async () => {
+        const hostUser = await signInAs(host)
+        const player = await signInAs(one)
+        const ev = await insertEvent({ hostId: hostUser.id, teams: 4, members: [{ userId: player.id, team: 1, word: 'Eins' }], placed: [[[1, 1], [2, 1], [3, 3], [4, 3]]] })
+        const { endsAt } = await start(hostUser, ev.slug)
+
+        clock.set(new Date(endsAt - 1))
+        expect((await read(player.cookie)).events[0]!.resultOpen).toBe(false)
+        clock.set(new Date(endsAt))
+        expect((await read(player.cookie)).events[0]).toMatchObject({ resultOpen: true, winners: [{ position: 1, name: 'Eins' }, { position: 2, name: null }] })
+      })
+    })
+
+    it('answers the list of several Events in one read, each with its own result', async () => {
+      const hostUser = await signInAs(host)
+      const a = await signInAs(one)
+      const shown = await insertEvent({ hostId: hostUser.id, ceremonyShown: true, members: [{ userId: a.id, team: 2, word: 'Zwei' }], placed: [[[2, 1], [1, 2]]], finishedAt: new Date('2026-10-26T21:00:00Z') })
+      const closed = await insertEvent({ hostId: hostUser.id, members: [{ userId: a.id, team: 2, word: 'Zwei' }], placed: [[[2, 1], [1, 2]]], finishedAt: new Date('2026-10-25T21:00:00Z') })
+      await insertEvent({ hostId: hostUser.id, ceremonyShown: true, members: [{ userId: a.id, team: 1 }], placed: [[[2, 1], [1, 2]]], finishedAt: new Date('2026-10-24T21:00:00Z') })
+
+      const entries = (await read(a.cookie)).events
+
+      expect(entries.map(entry => [entry.slug, entry.resultOpen, entry.rank])).toEqual([
+        [shown.slug, true, 1],
+        [closed.slug, false, undefined],
+        [entries[2]!.slug, true, 2],
+      ])
     })
   })
 })
