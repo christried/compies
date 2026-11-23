@@ -4,3 +4,5 @@ export const CHIP_ON = 'border-line bg-ink text-paper'
 export const CHIP_OFF = 'border-line bg-surface text-ink hover:bg-paper-2'
 // The shape both read (#362): the 44 px height, the pill, the border width and the weight. Their paddings and text sizes differ.
 export const CHIP_SHAPE = 'h-11 rounded-pill border-(length:--cp-bw) font-bold transition-colors'
+// A chip that is a plain button (#885): the Game browser's „Alle“ and „Archiviert“, the Archive's three. FilterSelect has its own paddings.
+export const CHIP_BUTTON = `inline-flex ${CHIP_SHAPE} items-center gap-1.5 px-4 text-small`

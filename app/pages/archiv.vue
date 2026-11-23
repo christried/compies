@@ -1,10 +1,12 @@
 <script setup lang="ts">
-import type { ArchiveView } from '~~/shared/archive'
+import { archiveChip, filterArchive, type ArchiveChip, type ArchiveView } from '~~/shared/archive'
 import { ARCHIVE_KEY } from '~/utils/event-data'
+import { CHIP_BUTTON, CHIP_OFF, CHIP_ON } from '~/utils/chip-look'
 
 // The Archive (#882, spec #683): every finished Event the User is a Member of, newest Finish first, as the server sends it. Each card opens the
 // Event's own page. The list shows six skeleton cards in the Archive shape while it loads (three on phones, #884), an empty state for a User with no finished Event, and a generic
 // error with a retry. It refetches on window focus and when the tab becomes visible again (ADR 0001), not on a timer, and the room is not involved.
+// Three chips and a search narrow the list in the browser (#885); they live in the address like the game browser's filters (`useArchiveFilters`), so back from a card keeps them.
 
 const { t } = useI18n()
 const { data, status, error, refresh } = useFetch<ArchiveView>('/api/archive', { key: ARCHIVE_KEY })
@@ -12,6 +14,27 @@ const { data, status, error, refresh } = useFetch<ArchiveView>('/api/archive', {
 const pending = computed(() => status.value === 'pending')
 const events = computed(() => data.value?.events ?? [])
 const empty = computed(() => !error.value && !!data.value && events.value.length === 0)
+
+const filters = useArchiveFilters()
+// „Als Host“ for a User who hosts none reads as „Alle“ (an old address, a refetch), and the chip is not offered then.
+const chip = computed(() => archiveChip(filters.value.chip, events.value))
+const hosts = computed(() => events.value.some(entry => entry.isHost))
+const shown = computed(() => filterArchive(events.value, filters.value))
+const search = computed(() => filters.value.q.trim())
+
+const CHIPS = computed<{ chip: ArchiveChip, label: string }[]>(() => [
+  { chip: 'all', label: t('archiveList.all') },
+  { chip: 'won', label: t('archiveList.won') },
+  ...(hosts.value ? [{ chip: 'host' as const, label: t('archiveList.asHost') }] : []),
+])
+
+// „Alle zeigen“ keeps the search and leaves the page's DOM (the state it sat in is gone), so the focus goes to the „Alle“ chip, not to the page.
+const chipButtons = useTemplateRef<HTMLButtonElement[]>('chips')
+async function showAll() {
+  filters.value = { ...filters.value, chip: 'all' }
+  await nextTick()
+  chipButtons.value?.find(button => button.dataset.chip === 'all')?.focus()
+}
 
 useRefreshOnReturn(refresh)
 </script>
@@ -26,8 +49,34 @@ useRefreshOnReturn(refresh)
         <span
           v-if="!error && events.length > 0"
           class="text-[13px] text-ink-2"
-        >{{ t('archiveList.count', { n: events.length }, events.length) }}</span>
+        >{{ t('archiveList.count', { n: shown.length }, shown.length) }}</span>
       </header>
+
+      <div
+        v-if="data && !error && events.length > 0"
+        class="flex flex-wrap items-center gap-2.5"
+      >
+        <SearchField
+          :model-value="filters.q"
+          :label="t('archiveList.search')"
+          :placeholder="t('archiveList.search')"
+          @update:model-value="filters = { ...filters, q: $event }"
+        />
+        <div class="flex flex-wrap items-center gap-2">
+          <button
+            v-for="item in CHIPS"
+            :key="item.chip"
+            ref="chips"
+            type="button"
+            :data-chip="item.chip"
+            :aria-pressed="chip === item.chip ? 'true' : 'false'"
+            :class="[CHIP_BUTTON, chip === item.chip ? CHIP_ON : CHIP_OFF]"
+            @click="filters = { ...filters, chip: item.chip }"
+          >
+            {{ item.label }}
+          </button>
+        </div>
+      </div>
 
       <FullScreenState
         v-if="error"
@@ -72,12 +121,30 @@ useRefreshOnReturn(refresh)
         :text="t('archiveList.emptyText')"
       />
 
+      <EmptyState
+        v-else-if="data && shown.length === 0"
+        :title="search ? t('archiveList.noMatch', { q: search }) : t('archiveList.noWin')"
+        :text="search ? t('archiveList.noMatchText') : undefined"
+      >
+        <template
+          v-if="chip !== 'all'"
+          #action
+        >
+          <AppButton
+            variant="secondary"
+            @click="showAll"
+          >
+            {{ t('archiveList.showAll') }}
+          </AppButton>
+        </template>
+      </EmptyState>
+
       <ul
         v-else-if="data"
         class="m-0 grid list-none grid-cols-1 gap-3 p-0 min-[600px]:grid-cols-2 min-[1024px]:grid-cols-3"
       >
         <li
-          v-for="entry in events"
+          v-for="entry in shown"
           :key="entry.slug"
           class="min-w-0"
         >
