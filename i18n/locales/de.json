@@ -58,8 +58,7 @@
     "noDate": "Kein Termin",
     "draft": "Entwurf",
     "running": "Läuft",
-    "finished": "Beendet",
-    "archived": "Archiv"
+    "finished": "Beendet"
   },
   "dock": {
     "label": "Host-Steuerung",

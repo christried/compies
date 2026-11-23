@@ -491,12 +491,10 @@ describe('teamNamesOf', () => {
   })
 
   it('shows the stored name of a finished Event, null for the colour whatever the words say', () => {
-    for (const phase of ['finished', 'archived'] as const) {
-      expect(teamNamesOf(state({ members: words, teams: [{ position: 1, frozenName: 'Alt' }, { position: 2, frozenName: null }] }, eventRow({ phase })))).toEqual([
-        { position: 1, name: 'Alt' },
-        { position: 2, name: null },
-      ])
-    }
+    expect(teamNamesOf(state({ members: words, teams: [{ position: 1, frozenName: 'Alt' }, { position: 2, frozenName: null }] }, eventRow({ phase: 'finished' })))).toEqual([
+      { position: 1, name: 'Alt' },
+      { position: 2, name: null },
+    ])
     expect(teamNamesOf(state({ members: words, teams: [{ position: 1, frozenName: null }] }, finished()))[0]).toEqual({ position: 1, name: null })
   })
 

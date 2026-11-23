@@ -186,7 +186,6 @@ const PHASE_WORD_KEY: Record<Phase, string> = {
   date_set: 'dateSet',
   running: 'running',
   finished: 'finished',
-  archived: 'archived',
 }
 
 /** The word a Phase is shown with: the page's `label` where it knows more (headerPill), else the Phase's own word. One home for the pill and the nav's description (#426). */

@@ -3,8 +3,7 @@ import type { Phase } from '~~/shared/event'
 import { phaseWord } from '~/utils/event-page'
 
 // Phase chip in the Event header and on cards (02-components § PhasePill). The text carries the
-// meaning; the dot only adds colour. Phases beyond the MVP (running, finished, archived) are styled
-// too, so 1.0 needs no change here.
+// meaning; the dot only adds colour. Every Phase is styled.
 // `label` replaces the Phase's word where the page knows more (the running Event: „Läuft · Session 1 von 2“, #166).
 // `sm` is the chip under „Events“ in the header of the Event page (#426, 15-header-eventseite): the same fills and dots, smaller.
 withDefaults(defineProps<{ phase: Phase, label?: string, size?: 'md' | 'sm' }>(), { label: undefined, size: 'md' })
@@ -17,7 +16,6 @@ const DOT: Record<Phase, string> = {
   date_set: 'bg-success',
   running: 'bg-hot',
   finished: 'bg-surface-2',
-  archived: 'bg-surface-2',
 }
 </script>
 

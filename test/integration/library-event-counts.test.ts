@@ -138,10 +138,9 @@ describe('the live Event count of the library (#733)', () => {
   })
 
   describe('what is not counted', () => {
-    it('leaves out a finished Event, an archived one and a deleted one', async () => {
+    it('leaves out a finished Event and a deleted one', async () => {
       const kart = await newGame('Mario Kart')
       await newEvent([kart], 'finished')
-      await newEvent([kart], 'archived')
       await newEvent([kart], 'poll', { deletedAt: new Date() })
 
       expect((await list()).eventCounts).toEqual({})

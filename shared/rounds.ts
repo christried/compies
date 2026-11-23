@@ -242,14 +242,14 @@ export interface BonusVetoInput {
 
 /**
  * The reason the Host cannot grant a Bonus Veto now, or null (#233, spec #218 § Bonus Vetoes): the Host asks, the Event is set up
- * and has a Lucky Wheel, it has not finished or been archived, and, for a Party, the team exists and has fewer than BONUS_VETO_MAX.
+ * and has a Lucky Wheel, it has not finished, and, for a Party, the team exists and has fewer than BONUS_VETO_MAX.
  * It is no Running Session rule: a Bonus Veto counts at once, in any Phase before the Event finishes.
  */
 export function bonusVetoRejection({ isHost, settings, phase, team, granted }: BonusVetoInput): BonusVetoRejection | null {
   if (!isHost) return 'not_host'
   if (settings === null) return 'not_set_up'
   if (!hasWheel(settings.selectionMode)) return 'no_wheel'
-  if (phase === 'finished' || phase === 'archived') return 'wrong_phase'
+  if (phase === 'finished') return 'wrong_phase'
   if (team === null) return null
   if (!Number.isInteger(team) || team < 1 || team > settings.teamCount) return 'invalid_value'
   return (granted[team - 1] ?? 0) >= BONUS_VETO_MAX ? 'bonus_veto_limit' : null

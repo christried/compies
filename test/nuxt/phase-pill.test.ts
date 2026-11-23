@@ -10,6 +10,14 @@ describe('PhasePill', () => {
     }
   })
 
+  it('says the word of each of the five Phases', async () => {
+    const words = { draft: 'Entwurf', poll: 'Terminumfrage', date_set: 'Termin steht', running: 'Läuft', finished: 'Beendet' } as const
+
+    for (const [phase, word] of Object.entries(words) as [keyof typeof words, string][]) {
+      expect((await mountSuspended(PhasePill, { props: { phase } })).text()).toBe(word)
+    }
+  })
+
   it('says the page’s label instead of the word', async () => {
     expect((await mountSuspended(PhasePill, { props: { phase: 'running', label: 'Kein Termin', size: 'sm' } })).text()).toBe('Kein Termin')
   })

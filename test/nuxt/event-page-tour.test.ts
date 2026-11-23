@@ -635,7 +635,7 @@ describe('when it does not start', () => {
     expect(tour()).toBeNull()
   })
 
-  it.each(['finished', 'archived'])('does not show in a %s Event', async (phase) => {
+  it.each(['finished'])('does not show in a %s Event', async (phase) => {
     const { slug } = serveEvent(s => poll(s, false, phase))
     await mount(slug)
 
