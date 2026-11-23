@@ -2,6 +2,132 @@
   "version": 1,
   "sweptAt": "2026-11-23",
   "texts": {
+    "archiveList.all": {
+      "text": "Alle",
+      "answer": "passt",
+      "replacement": null,
+      "comment": "",
+      "alternatives": []
+    },
+    "archiveList.asHost": {
+      "text": "Als Host",
+      "answer": "passt",
+      "replacement": null,
+      "comment": "",
+      "alternatives": []
+    },
+    "archiveList.count": {
+      "text": "{n} Event | {n} Events",
+      "answer": "passt",
+      "replacement": null,
+      "comment": "",
+      "alternatives": []
+    },
+    "archiveList.emptyText": {
+      "text": "Events landen hier, sobald sie abgeschlossen sind.",
+      "answer": "passt",
+      "replacement": null,
+      "comment": "",
+      "alternatives": []
+    },
+    "archiveList.emptyTitle": {
+      "text": "Hier wird’s bald voll.",
+      "answer": "passt",
+      "replacement": null,
+      "comment": "",
+      "alternatives": []
+    },
+    "archiveList.games": {
+      "text": "{n} Spiel | {n} Spiele",
+      "answer": "passt",
+      "replacement": null,
+      "comment": "",
+      "alternatives": []
+    },
+    "archiveList.loading": {
+      "text": "Archiv lädt …",
+      "answer": "passt",
+      "replacement": null,
+      "comment": "",
+      "alternatives": []
+    },
+    "archiveList.meta": {
+      "text": "{date}, {games}, {people}",
+      "answer": "passt",
+      "replacement": null,
+      "comment": "",
+      "alternatives": []
+    },
+    "archiveList.metaNoDate": {
+      "text": "{games}, {people}",
+      "answer": "passt",
+      "replacement": null,
+      "comment": "",
+      "alternatives": []
+    },
+    "archiveList.noMatch": {
+      "text": "Nix gefunden zu „{q}“.",
+      "answer": "passt",
+      "replacement": null,
+      "comment": "",
+      "alternatives": []
+    },
+    "archiveList.noMatchText": {
+      "text": "Probier einen anderen Namen oder nimm den Filter raus.",
+      "answer": "passt",
+      "replacement": null,
+      "comment": "",
+      "alternatives": []
+    },
+    "archiveList.noWin": {
+      "text": "Noch kein Sieg dabei.",
+      "answer": "passt",
+      "replacement": null,
+      "comment": "",
+      "alternatives": []
+    },
+    "archiveList.people": {
+      "text": "{n} Person | {n} Leute",
+      "answer": "passt",
+      "replacement": null,
+      "comment": "",
+      "alternatives": []
+    },
+    "archiveList.place": {
+      "text": "Platz {n}",
+      "answer": "passt",
+      "replacement": null,
+      "comment": "",
+      "alternatives": []
+    },
+    "archiveList.search": {
+      "text": "Event suchen",
+      "answer": "passt",
+      "replacement": null,
+      "comment": "",
+      "alternatives": []
+    },
+    "archiveList.showAll": {
+      "text": "Alle zeigen",
+      "answer": "passt",
+      "replacement": null,
+      "comment": "",
+      "alternatives": []
+    },
+    "archiveList.title": {
+      "text": "Archiv",
+      "answer": "passt",
+      "replacement": null,
+      "comment": "",
+      "alternatives": []
+    },
+    "archiveList.won": {
+      "text": "Gewonnen",
+      "answer": "passt",
+      "replacement": null,
+      "comment": "",
+      "alternatives": []
+    },
     "gameEdit.duplicate": {
       "text": "Gibt’s vielleicht schon: „{name}“.",
       "answer": "passt",
