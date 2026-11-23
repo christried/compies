@@ -542,6 +542,16 @@ describe('archive page', () => {
         expect(page.find('ul').exists()).toBe(false)
       })
 
+      it('lets a long term without spaces wrap in the title instead of widening the page', async () => {
+        const page = await mountPage(mixed)
+        const long = 'W'.repeat(60)
+
+        await typeInto(page, long)
+
+        expect(page.get('h2').text()).toBe(`Nix gefunden zu „${long}“.`)
+        expect(page.get('h2').classes()).toContain('[overflow-wrap:anywhere]')
+      })
+
       it('offers „Alle zeigen“ with „Gewonnen“ and a search', async () => {
         const page = await mountPage(mixed)
         await chip(page, 'Gewonnen')!.trigger('click')
