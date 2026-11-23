@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.20.0] - 2026-11-23 – Archiv
+
 ### Neu
 
 - Unter „Archiv“ findest du jedes abgeschlossene Event, auch wenn es nicht mehr auf der Startseite steht. ([#882](https://github.com/christried/compies/issues/882))
