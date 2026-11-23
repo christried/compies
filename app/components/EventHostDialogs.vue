@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Lock, Play } from '@lucide/vue'
 import { teamNameAt } from '~/utils/board'
-import { HOME_EVENTS_KEY } from '~/utils/event-data'
+import { ARCHIVE_KEY, HOME_EVENTS_KEY } from '~/utils/event-data'
 import { dateBlockedKey } from '~/utils/event-page'
 import { leadersOf } from '~~/shared/finish'
 import { isFullPoolGame } from '~~/shared/game'
@@ -145,7 +145,7 @@ function grantBonusVeto(team: number) {
 }
 
 // „Event löschen“ (#333): the sheet's hold deletes. Once the server took it the page reads nothing more (its read answers 410 from now on):
-// Home's list is dropped so the Event is gone on arrival, the toast says so and the Host lands on Home.
+// Home's list and the Archive's (a finished Event is in it, #984) are dropped so the Event is gone on arrival, the toast says so and the Host lands on Home.
 const deleteOpen = ref(false)
 let deleted = false
 const { send: sendDelete } = useEventMutation(() => props.slug, () => (deleted ? undefined : props.refresh()))
@@ -156,6 +156,7 @@ function deleteEvent() {
     done: () => {
       deleted = true
       clearNuxtData(HOME_EVENTS_KEY)
+      clearNuxtData(ARCHIVE_KEY)
       toast({ tone: 'success', text: t('eventDelete.done') })
       void navigateTo('/')
     },
