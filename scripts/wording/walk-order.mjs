@@ -10,12 +10,14 @@ export const SECTIONS = [
   { id: 'signed-out', groups: ['signed-out'] },
   { id: 'setup', names: ['einrichten', 'einrichten-fehler'] },
   { id: 'home', names: ['home-leer', 'home', 'home-menue', 'was-ist-neu'] },
+  // The Archive sits between Home and the Bibliothek in the nav (`HubNav.vue`): its plain page (`archiv`, the dark check's) leads, then the walk's states of the list (#888).
+  { id: 'archiv', names: ['archiv'], groups: ['archiv'] },
   { id: 'library', groups: ['library'] },
   { id: 'stepper', groups: ['stepper'] },
   // 0.12's states were appended at the end of dark-states-event.mjs: the groups, not the file order, put them where the Event shows them.
   // 0.18's Emotes and Chat (#773) sit after the live states, the order a Member meets them, and before the finished page; the finished Chat state is in `event-finished`.
   { id: 'event', groups: ['event-tour', 'event-poll', 'event-board', 'event-live', 'event-emote', 'event-chat', 'event-finished'] },
-  { id: 'profil', names: ['profil', 'profil-fehler', 'profil-gespeichert', 'profil-rundgang', 'profil-weniger-bewegung-fehler', 'baustelle-archiv', 'baustelle-admin', 'baustelle-allgemein', 'baustelle-event'] },
+  { id: 'profil', names: ['profil', 'profil-fehler', 'profil-gespeichert', 'profil-rundgang', 'profil-weniger-bewegung-fehler', 'baustelle-admin', 'baustelle-allgemein', 'baustelle-event'] },
 ]
 
 /**
