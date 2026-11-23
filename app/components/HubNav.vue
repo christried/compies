@@ -80,9 +80,13 @@ onBeforeUnmount(() => observer?.disconnect())
 // The server renders the line (its `arrives` is false), and so does the hydrating client.
 // A client-side switch builds the header while the Event page's `setup` is still awaiting its data, inside the router's pending Suspense, and Vue calls no Transition hook for what mounts
 // there (`needTransition` in runtime-core): the line appeared without its enter (#498). So that switch leaves the Transition out of the first render and mounts it once the header is mounted, which for a pending Suspense is when the page is in.
-const arrives = import.meta.client && !useNuxtApp().isHydrating
-const mounted = ref(!arrives)
+// A page loaded in full hydrates its header without the enter, but a row built after it (the Event finishes under the open page, so the context moves from Events to Archiv, or the
+// context arrives late) is a new Transition and plays it, as after a client-side switch (#984). So `arrives` turns true, before that render, when the row's tab or its presence changes.
+// A page loaded on an already finished Event hydrates its row at once and changes nothing, so it plays no enter.
+const arrives = ref(import.meta.client && !useNuxtApp().isHydrating)
+const mounted = ref(!arrives.value)
 onMounted(() => (mounted.value = true))
+watch([eventTab, () => !!props.context], () => (arrives.value = true), { flush: 'pre' })
 const OFF = 'motion-reduce:transition-none reduced:transition-none'
 const ENTER = `transition-[opacity,translate] dur-base ease-out ${OFF}`
 const FADE = `transition-opacity dur-fast ease-out ${OFF}`

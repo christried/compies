@@ -328,6 +328,33 @@ describe('HubNav on an Event page', () => {
     }
   })
 
+  // A full load fixes `isHydrating` for the header's first render only: the row that arrives under Archiv at the Finish is built after it and plays the enter (#984).
+  it('plays the enter for the row that moves to Archiv at the Finish on a page loaded in full, and none on a page loaded finished (#984)', async () => {
+    const nuxtApp = useNuxtApp()
+    const was = nuxtApp.isHydrating
+    nuxtApp.isHydrating = true
+    try {
+      const nav = await mountSuspended(HubNav, { props: { layout: 'header', context: context() }, route: EVENT })
+      expect(nav.findComponent({ name: 'Transition' }).props('appear')).toBe(false)
+      nuxtApp.isHydrating = false
+
+      await nav.setProps({ context: context({ phase: 'finished' }) })
+
+      const enter = tab(nav, 'Archiv').findAllComponents({ name: 'Transition' })[0]!
+      expect(enter.props('appear')).toBe(true)
+      expect(enter.props('enterActiveClass')).toEqual(expect.stringContaining('dur-base'))
+
+      const finished = await mountSuspended(HubNav, { props: { layout: 'header', context: context({ phase: 'finished' }) }, route: EVENT })
+      nuxtApp.isHydrating = true
+      const loaded = await mountSuspended(HubNav, { props: { layout: 'header', context: context({ phase: 'finished' }) }, route: EVENT })
+      expect(loaded.findAllComponents({ name: 'Transition' })[0]!.props('appear')).toBe(false)
+      expect(finished.findAllComponents({ name: 'Transition' })[0]!.props('appear')).toBe(true)
+    }
+    finally {
+      nuxtApp.isHydrating = was
+    }
+  })
+
   // The Event page awaits its data in `setup`, so on a client-side switch the whole header is built inside the router's pending Suspense,
   // and Vue calls no Transition hook for anything mounted there (#498). The page here awaits the same way; `requestAnimationFrame` never
   // fires, so the enter's first frame (the classes the hooks put on) stays on the element for the test to read.
