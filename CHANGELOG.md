@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.19.0] - 2026-11-23 – Bibliothek again
+
 ### Neu
 
 - Die Notizen am Spiel, das gerade gespielt wird, bleiben auf diesem Gerät auf oder zu, wie du sie zuletzt gelassen hast. ([#838](https://github.com/christried/compies/issues/838))
