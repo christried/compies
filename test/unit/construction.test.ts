@@ -7,8 +7,13 @@ const admin = { canHost: true, isAdmin: true }
 
 describe('constructionSite', () => {
   it('maps each unbuilt hub area to its own Construction page in the hub shell for those who may see it', () => {
-    expect(constructionSite('/archiv', visitor)).toEqual({ area: 'archiv', shell: 'hub' })
     expect(constructionSite('/admin', admin)).toEqual({ area: 'admin', shell: 'hub' })
+  })
+
+  it('`/archiv` is no unbuilt area, it has its own page (#882)', () => {
+    expect(constructionSite('/archiv', visitor)).toEqual({ area: 'generic', shell: 'hub' })
+    expect(constructionSite('/archiv/', visitor)).toEqual({ area: 'generic', shell: 'hub' })
+    expect(constructionSite('/archiv', null)).toEqual({ area: 'generic', shell: 'hub' })
   })
 
   it('no longer treats Profil as an unbuilt area, it has its own page (#399)', () => {
@@ -17,7 +22,6 @@ describe('constructionSite', () => {
   })
 
   it('keeps the area for deeper paths and trailing slashes', () => {
-    expect(constructionSite('/archiv/', visitor)).toEqual({ area: 'archiv', shell: 'hub' })
     expect(constructionSite('/admin/users', admin)).toEqual({ area: 'admin', shell: 'hub' })
   })
 
@@ -34,7 +38,6 @@ describe('constructionSite', () => {
 
   it('treats a signed-out visitor like a User without rights', () => {
     expect(constructionSite('/admin', null)).toEqual({ area: 'generic', shell: 'hub' })
-    expect(constructionSite('/archiv', null)).toEqual({ area: 'archiv', shell: 'hub' })
   })
 
   it('shows the generic state for any other Event sub-route', () => {

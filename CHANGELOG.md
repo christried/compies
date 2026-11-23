@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Neu
+
+- Unter „Archiv“ findest du jedes abgeschlossene Event, auch wenn es nicht mehr auf der Startseite steht. ([#882](https://github.com/christried/compies/issues/882))
+
 ### Geändert
 
 - Auf der Seite eines beendeten Events markiert die Navigation jetzt „Archiv“ statt „Events“. ([#886](https://github.com/christried/compies/issues/886))
