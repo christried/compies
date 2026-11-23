@@ -6,12 +6,12 @@ import { canSeeAdmin, HUB_SITES, type Viewer } from '~/utils/construction'
 import { phaseWord, type EventContext } from '~/utils/event-page'
 
 // Main navigation: the header nav on desktop, the bottom tab bar (TabBar) below md.
-// On the Event page (#426) the header nav stays, with Events current; `context` hangs the Event's name and Phase under that tab.
+// On the Event page (#426) the header nav stays, with Events current (Archiv for a finished Event, #886); `context` hangs the Event's name and Phase under that tab.
 const props = withDefaults(defineProps<{
   layout: 'header' | 'tabs'
   /** Who sees the hidden areas (Bibliothek, Admin); null when signed out. The rules live in construction.ts (Admin) and shared/game.ts (Bibliothek). */
   viewer?: Viewer
-  /** The Event the page shows: a second line under the current Events tab of the header layout. */
+  /** The Event the page shows: a second line under the current Events tab of the header layout, or under Archiv for a finished Event (#886). */
   context?: EventContext
 }>(), { viewer: null, context: undefined })
 
@@ -28,16 +28,18 @@ const items = computed<NavItem[]>(() => [
   ...(canSeeAdmin(props.viewer) ? [{ key: 'admin', to: '/admin', label: t('nav.admin'), icon: Shield }] : []),
 ])
 
-// An Event's address (/e/<slug>…) belongs to Events: the first segment `e` is no item's key.
+// An Event's address (/e/<slug>…) belongs to Events, or to Archiv once the Event is finished (#886): the first segment `e` is no item's key.
+// Without a context (loading, an error) the Phase is unknown and the tab is Events.
+const eventTab = computed(() => (props.context?.phase === 'finished' ? 'archiv' : 'events'))
 const current = computed(() => {
   const first = route.path.split('/').filter(Boolean)[0]
-  const area = first === 'e' ? 'events' : first
+  const area = first === 'e' ? eventTab.value : first
   return items.value.find(item => item.key === area)?.key ?? (first ? undefined : 'events')
 })
 const soon = (key: string) => (HUB_SITES as readonly string[]).includes(key)
 
-// The context hangs on the current Events tab of the header, and nowhere else (15-header-eventseite § HubNav).
-const withContext = (key: string) => props.layout === 'header' && !!props.context && key === 'events' && key === current.value
+// The context hangs on the current Events tab of the header (Archiv for a finished Event, #886), and nowhere else (15-header-eventseite § HubNav).
+const withContext = (key: string) => props.layout === 'header' && !!props.context && key === eventTab.value && key === current.value
 const description = computed(() => (props.context ? t('nav.eventContext', { name: props.context.name, phase: phaseWord(props.context.phase, props.context.label, t) }) : ''))
 const descId = useId()
 

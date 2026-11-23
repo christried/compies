@@ -54,6 +54,7 @@ Entscheidung: Der Event-Kontext steht als **Unterzeile im Events-Tab** (Name + P
   - Zeile 2 beim Wechsel /events → Event: Opacity 0→1 und translateY 4 px→0, `--cp-dur-base` `--cp-ease-out`. Beim Verlassen ohne Animation.
   - Name- oder Phasenwechsel live: Crossfade `--cp-dur-fast`.
   - Reduced (`data-motion="reduced"` / OS): alles sofort.
+- **Abweichung 0.20 (#886):** Für ein beendetes Event hängt der Kontext am Tab „Archiv“ statt „Events“ (Phase `finished`); Zeilen, Mindestbreite, Beschreibung, `aria-current` und Motion sind dieselben. Die Zeilen 30, 36, 37 und 48 oben nennen „Events“ als Träger und gelten für alle anderen Phasen.
 
 ## PhasePill (geändert)
 **Scope:** [MVP] · **Ref:** AppFrame, Header auf der Eventseite
