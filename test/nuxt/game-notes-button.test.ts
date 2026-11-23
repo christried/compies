@@ -11,14 +11,14 @@ import { BLANK_NOTES, FORMATTED_HREF, FORMATTED_NOTES, readFormatted } from './h
 // The Notes button of a game in the pickers (#436, 02-components § GameCard, deviation 0.12): a read-only popover from md up, a
 // sheet below, the notes with their line breaks. Escape or a press outside closes the popover and focus goes back to the button.
 
-const TRIGGER = 'button[aria-label="Notizen ansehen"]'
+const TRIGGER = 'button[aria-label^="Notizen zu "]'
 const NOTES = 'Zeile eins\n\nZeile drei'
 
 let page: Awaited<ReturnType<typeof mountSuspended>> | undefined
 let setWide: (next: boolean) => void
 
 // The Event's name and whether it is finished are the Event page's context's (#821), not props.
-async function mount({ eventName, eventFinished, ...props }: { name?: string, notes: NotesDoc | null, eventNotes?: NotesDoc | null, eventName?: string, eventFinished?: boolean }) {
+async function mount({ eventName, eventFinished, ...props }: { name?: string, notes: NotesDoc | null, eventNotes?: NotesDoc | null, eventName?: string, eventFinished?: boolean, editTo?: string, editable?: boolean, onEdit?: () => void }) {
   const { global } = eventNotesContext({ ...(eventName === undefined ? {} : { eventName }), finished: eventFinished ?? false })
   page = await mountSuspended(GameNotesButton, { props: { name: 'Mario Kart', ...props }, attachTo: document.body, global })
   await flushPromises()
@@ -172,13 +172,200 @@ describe('the Notes button of a game (#436)', () => {
     })
   })
 
-  it('is a button named „Notizen ansehen“ that starts closed', async () => {
+  it('is a button named „Notizen zu {game}“ that starts closed', async () => {
     await mount({ notes: notesFromLines(NOTES.split('\n')) })
 
+    expect(trigger().getAttribute('aria-label')).toBe('Notizen zu Mario Kart')
     expect(trigger().getAttribute('aria-expanded')).toBe('false')
     expect(trigger().getAttribute('aria-haspopup')).toBe('dialog')
     expect(popover()).toBeNull()
     expect(sheet()).toBeNull()
+  })
+
+  // The look of the button (#837, design 18-notizen): the sticky note, a shadow, and an ink fill while its notes are open.
+  describe('the look of the button (#837)', () => {
+    it('is a surface button while closed and an ink one while its notes are open, in the popover and in the sheet', async () => {
+      for (const wide of [true, false]) {
+        setWide(wide)
+        await mount({ notes: notesFromLines(NOTES.split('\n')) })
+
+        expect(trigger().classList).toContain('bg-surface')
+        expect(trigger().classList).not.toContain('bg-ink')
+        expect(trigger().classList).toContain('shadow-sm')
+
+        await open()
+
+        expect(trigger().getAttribute('aria-expanded')).toBe('true')
+        expect(trigger().classList).toContain('bg-ink')
+        expect(trigger().classList).toContain('text-paper')
+        expect(trigger().classList).not.toContain('bg-surface')
+        expect(trigger().hasAttribute('aria-pressed')).toBe(false)
+
+        page!.unmount()
+        document.body.innerHTML = ''
+      }
+    })
+
+    it('leaves the popover’s own close button without aria-expanded and on the surface look (IconButton `expanded` unset)', async () => {
+      await mount({ notes: notesFromLines(NOTES.split('\n')) })
+      await open()
+
+      const close = popover()!.querySelector('button[aria-label="Schließen"]')!
+      expect(close.hasAttribute('aria-expanded')).toBe(false)
+      expect(close.classList).toContain('bg-surface')
+      expect(close.classList).not.toContain('bg-ink')
+    })
+
+    it('goes back to the surface look when the popover closes', async () => {
+      await mount({ notes: notesFromLines(NOTES.split('\n')) })
+      await open()
+
+      trigger().click()
+      await flushPromises()
+
+      expect(popover()).toBeNull()
+      expect(trigger().getAttribute('aria-expanded')).toBe('false')
+      expect(trigger().classList).toContain('bg-surface')
+      expect(trigger().classList).not.toContain('bg-ink')
+    })
+  })
+
+  // The footer „Bearbeiten“ (#837): with `editTo`, a text button with the pencil in a footer under the notes; without it, none (the pickers).
+  describe('the footer „Bearbeiten“ (#837)', () => {
+    const EDIT = '/bibliothek/g-1/bearbeiten'
+    const editLink = (within: Element | null) => [...within!.querySelectorAll('a')].find(link => link.textContent!.includes('Bearbeiten'))
+
+    it('is a link to the game’s form in a footer outside the scrolling body, in the popover', async () => {
+      await mount({ notes: notesFromLines(NOTES.split('\n')), editTo: EDIT })
+      await open()
+
+      const link = editLink(popover())!
+      expect(link.getAttribute('href')).toBe(EDIT)
+      expect(link.closest('footer')).not.toBeNull()
+      expect(popover()!.lastElementChild).toBe(link.closest('footer'))
+      expect(popover()!.querySelector('[data-notes-body]')!.contains(link)).toBe(false)
+      expect(link.querySelector('svg')).not.toBeNull()
+    })
+
+    it('is a link to the game’s form in the sheet’s footer, below md', async () => {
+      setWide(false)
+      await mount({ notes: notesFromLines(NOTES.split('\n')), editTo: EDIT })
+      await open()
+
+      const link = editLink(sheet())!
+      expect(link.getAttribute('href')).toBe(EDIT)
+      expect(link.closest('footer')).not.toBeNull()
+      expect(link.closest('[data-notes-body]')).toBeNull()
+    })
+
+    it('has no footer without editTo, in either container', async () => {
+      await mount({ notes: notesFromLines(NOTES.split('\n')) })
+      await open()
+      expect(popover()!.querySelector('footer')).toBeNull()
+      page!.unmount()
+
+      setWide(false)
+      await mount({ notes: notesFromLines(NOTES.split('\n')) })
+      await open()
+      expect(sheet()!.querySelector('footer')).toBeNull()
+    })
+
+    it('closes the notes when it is used, and leaves the focus to the page it leads to', async () => {
+      await mount({ notes: notesFromLines(NOTES.split('\n')), editTo: EDIT })
+      await open()
+      const link = editLink(popover())!
+      // The router's own navigation is not under test: a capture listener marks the click as handled before RouterLink sees it.
+      document.addEventListener('click', event => event.preventDefault(), { capture: true, once: true })
+
+      link.click()
+      await flushPromises()
+
+      expect(popover()).toBeNull()
+      expect(document.activeElement).not.toBe(trigger())
+    })
+
+    // `editable` (#858): the Event page's tiles have no page to lead to, so the footer is a button that asks the tile for its dialog.
+    describe('as a button with `editable` (#858)', () => {
+      const editButton = (within: Element | null) => [...within!.querySelectorAll('button')].find(button => button.textContent!.includes('Bearbeiten'))
+
+      it('is a button in a footer outside the scrolling body, in the popover, with the pencil', async () => {
+        await mount({ notes: notesFromLines(NOTES.split('\n')), editable: true })
+        await open()
+
+        const button = editButton(popover())!
+        expect(button.getAttribute('type')).toBe('button')
+        expect(button.closest('footer')).not.toBeNull()
+        expect(popover()!.lastElementChild).toBe(button.closest('footer'))
+        expect(popover()!.querySelector('[data-notes-body]')!.contains(button)).toBe(false)
+        expect(button.querySelector('svg')).not.toBeNull()
+        expect(popover()!.querySelector('footer a')).toBeNull()
+      })
+
+      it('is a button in the sheet’s footer, below md', async () => {
+        setWide(false)
+        await mount({ notes: notesFromLines(NOTES.split('\n')), editable: true })
+        await open()
+
+        const button = editButton(sheet())!
+        expect(button.closest('footer')).not.toBeNull()
+        expect(button.closest('[data-notes-body]')).toBeNull()
+      })
+
+      it('closes the popover, emits `edit` once and leaves the focus on the Notes button', async () => {
+        const onEdit = vi.fn()
+        await mount({ notes: notesFromLines(NOTES.split('\n')), editable: true, onEdit })
+        await open()
+
+        editButton(popover())!.click()
+        await flushPromises()
+
+        expect(popover()).toBeNull()
+        expect(onEdit).toHaveBeenCalledTimes(1)
+        expect(document.activeElement).toBe(trigger())
+      })
+
+      it('closes the sheet, emits `edit` once and leaves the focus on the Notes button, below md', async () => {
+        setWide(false)
+        const onEdit = vi.fn()
+        await mount({ notes: notesFromLines(NOTES.split('\n')), editable: true, onEdit })
+        // A real tap focuses the button before it opens the sheet, which is where the sheet returns the focus to; `click()` alone does not.
+        trigger().focus()
+        await open()
+
+        editButton(sheet())!.click()
+        await flushPromises()
+
+        expect(trigger().getAttribute('aria-expanded')).toBe('false')
+        expect(onEdit).toHaveBeenCalledTimes(1)
+        expect(document.activeElement).toBe(trigger())
+      })
+
+      it('has the Event notes first and the button under them, for a game with both', async () => {
+        await mount({ notes: notesFromLines(['Game-Zeile']), eventNotes: notesFromLines(['Heute nur Bo1']), editable: true })
+        await open()
+
+        expect(popover()!.textContent!.indexOf('Heute nur Bo1')).toBeLessThan(popover()!.textContent!.indexOf('Game-Zeile'))
+        expect(editButton(popover())).toBeDefined()
+      })
+
+      it('stays a link with `editTo`, even when `editable` is set too', async () => {
+        await mount({ notes: notesFromLines(NOTES.split('\n')), editTo: EDIT, editable: true })
+        await open()
+
+        expect(editLink(popover())!.getAttribute('href')).toBe(EDIT)
+        expect(editButton(popover())).toBeUndefined()
+      })
+    })
+
+    it('stays in view while a 1000-character note scrolls above it', async () => {
+      const long = `${'a'.repeat(495)}\n${'b'.repeat(495)}`
+      await mount({ notes: notesFromLines(long.split('\n')), editTo: EDIT })
+      await open()
+
+      expect(popover()!.querySelector('[data-notes-body]')!.classList).toContain('overflow-y-auto')
+      expect(popover()!.querySelector('footer')!.classList).toContain('flex-none')
+      expect(lines(popover())).toEqual(long.split('\n'))
+    })
   })
 
   it('opens a sheet below md, with the notes exactly as stored, line breaks included', async () => {
@@ -300,6 +487,87 @@ describe('the Notes button of a game (#436)', () => {
     expect(document.activeElement).toBe(trigger())
   })
 
+  // A scroll closes the popover only when it moved the button (#974): the Event page's first press removes „Ton aktivieren“, the document gets
+  // shorter and the browser clamps the scroll position, a scroll that leaves the button where it was. happy-dom has no layout, so the
+  // button's rect is a variable the test moves.
+  describe('on a scroll (#974)', () => {
+    let buttonTop = 100
+    let measure: ReturnType<typeof vi.spyOn>
+    beforeEach(() => {
+      buttonTop = 100
+      measure = vi.spyOn(Element.prototype, 'getBoundingClientRect').mockImplementation(function (this: Element) {
+        const at = (top: number, left: number, width: number, height: number) => ({ top, left, width, height, bottom: top + height, right: left + width, x: left, y: top, toJSON: () => ({}) }) as DOMRect
+        return this.matches(TRIGGER) ? at(buttonTop, 400, 40, 36) : at(0, 0, 0, 0)
+      })
+    })
+    afterEach(() => measure.mockRestore())
+
+    it('keeps the popover open when the page scrolls and the button stays where it was', async () => {
+      await mount({ notes: notesFromLines(NOTES.split('\n')) })
+      await open()
+
+      window.dispatchEvent(new Event('scroll'))
+      document.body.dispatchEvent(new Event('scroll'))
+      await flushPromises()
+
+      expect(popover()).not.toBeNull()
+    })
+
+    // The button's lift transitions (hover 2 px up, press 4 px right and down, the card's own 2 px) are still running when the first press's
+    // scroll arrives: up to 8 px off where place() measured it still counts as where it was.
+    it('keeps the popover open when the button moved by 8 px or less, on either axis', async () => {
+      await mount({ notes: notesFromLines(NOTES.split('\n')) })
+      await open()
+
+      buttonTop = 108
+      window.dispatchEvent(new Event('scroll'))
+      await flushPromises()
+
+      expect(popover()).not.toBeNull()
+
+      buttonTop = 92
+      window.dispatchEvent(new Event('scroll'))
+      await flushPromises()
+
+      expect(popover()).not.toBeNull()
+    })
+
+    it('closes the popover and gives the focus back to the button when the scroll moved the button by 9 px', async () => {
+      await mount({ notes: notesFromLines(NOTES.split('\n')) })
+      await open()
+
+      buttonTop = 109
+      window.dispatchEvent(new Event('scroll'))
+      await flushPromises()
+
+      expect(popover()).toBeNull()
+      expect(document.activeElement).toBe(trigger())
+    })
+
+    it('closes the popover and gives the focus back to the button when a wheel scroll moved the button far', async () => {
+      await mount({ notes: notesFromLines(NOTES.split('\n')) })
+      await open()
+
+      buttonTop = 160
+      window.dispatchEvent(new Event('scroll'))
+      await flushPromises()
+
+      expect(popover()).toBeNull()
+      expect(document.activeElement).toBe(trigger())
+    })
+
+    it('keeps the popover open on a scroll inside it, even when the button moved', async () => {
+      await mount({ notes: notesFromLines(NOTES.split('\n')) })
+      await open()
+
+      buttonTop = 160
+      popover()!.querySelector('p')!.dispatchEvent(new Event('scroll', { bubbles: false }))
+      await flushPromises()
+
+      expect(popover()).not.toBeNull()
+    })
+  })
+
   it('keeps all of a 1000-character note, line breaks included, inside a scrolling popover', async () => {
     const long = `${'a'.repeat(495)}\n${'b'.repeat(495)}\n\n`
     expect(long.length).toBeLessThanOrEqual(1000)
@@ -334,7 +602,7 @@ describe('the Notes button of a game (#436)', () => {
     const unsize = stubPopoverSize(288, 300)
     const measure = vi.spyOn(Element.prototype, 'getBoundingClientRect').mockImplementation(function (this: Element) {
       const at = (top: number, left: number, width: number, height: number) => ({ top, left, width, height, bottom: top + height, right: left + width, x: left, y: top, toJSON: () => ({}) }) as DOMRect
-      if (this.getAttribute('aria-label') === 'Notizen ansehen') return at(650, 400, 40, 36)
+      if (this.matches(TRIGGER)) return at(650, 400, 40, 36)
       if (this.getAttribute('role') === 'dialog') return at(0, 0, 288, 300)
       return at(0, 0, 0, 0)
     })
@@ -364,7 +632,7 @@ describe('the Notes button of a game (#436)', () => {
     const unsize = stubPopoverSize(288, 420)
     const measure = vi.spyOn(Element.prototype, 'getBoundingClientRect').mockImplementation(function (this: Element) {
       const at = (top: number, left: number, width: number, height: number) => ({ top, left, width, height, bottom: top + height, right: left + width, x: left, y: top, toJSON: () => ({}) }) as DOMRect
-      if (this.getAttribute('aria-label') === 'Notizen ansehen') return at(430, 400, 40, 36)
+      if (this.matches(TRIGGER)) return at(430, 400, 40, 36)
       if (this.getAttribute('role') === 'dialog') return at(0, 0, 288, 420)
       return at(0, 0, 0, 0)
     })
@@ -394,7 +662,7 @@ describe('the Notes button of a game (#436)', () => {
     const unsize = stubPopoverSize(320, 300)
     const measure = vi.spyOn(Element.prototype, 'getBoundingClientRect').mockImplementation(function (this: Element) {
       const at = (top: number, left: number, width: number, height: number) => ({ top, left, width, height, bottom: top + height, right: left + width, x: left, y: top, toJSON: () => ({}) }) as DOMRect
-      if (this.getAttribute('aria-label') === 'Notizen ansehen') return at(400, 1250, 40, 36)
+      if (this.matches(TRIGGER)) return at(400, 1250, 40, 36)
       if (this.getAttribute('role') === 'dialog') return at(0, 0, 307.2, 288)
       return at(0, 0, 0, 0)
     })

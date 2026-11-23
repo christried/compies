@@ -186,6 +186,27 @@ export function gameNameProblem(raw: string): 'empty' | 'too_long' | null {
   return length > GAME_NAME_MAX ? 'too_long' : null
 }
 
+/**
+ * What two game names share when they only differ in case, spaces, punctuation or accents (#689): after Unicode NFD,
+ * accents removed, lower-cased (`'de'`, as `filterGames`), and everything that is no letter and no number removed.
+ * Empty for a name without any letter or number.
+ */
+export function gameNameKey(name: string): string {
+  return name.normalize('NFD').replace(/\p{M}/gu, '').toLocaleLowerCase('de').replace(/[^\p{L}\p{N}]/gu, '')
+}
+
+/**
+ * The game of the list the typed name collides with (#689): the same `gameNameKey`, another game than `exceptId`.
+ * With several, the first that is not archived, else the first Archived one; „first“ is list order (the server
+ * sorts by name). A name without a key (nothing typed, only punctuation or an emoji) matches nothing.
+ */
+export function sameNameGame(name: string, games: readonly GameView[], exceptId?: string): GameView | null {
+  const key = gameNameKey(name)
+  if (key === '') return null
+  const same = games.filter(game => game.id !== exceptId && gameNameKey(game.name) === key)
+  return same.find(game => !game.archived) ?? same[0] ?? null
+}
+
 /** The game name: trimmed, 1 to GAME_NAME_MAX characters. Null when invalid. */
 export function parseGameName(raw: unknown): string | null {
   if (typeof raw !== 'string' || gameNameProblem(raw) !== null) return null

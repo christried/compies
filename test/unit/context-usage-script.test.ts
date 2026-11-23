@@ -162,6 +162,23 @@ describe('scripts/context-usage.mjs', { timeout: 20_000 }, () => {
     expect(argument.stdout).toContain('310k tokens (310000)')
   })
 
+  // After `/clear` (or a resume) the session writes a new transcript, whose head names the old one, while the id the
+  // agent knows (its environment, its scratchpad folder) stays the old one: 0.16 measured the old transcript twice (#833).
+  it('follows a /clear from the id it knows to the transcript that derives from it, and says so', async () => {
+    stage([mine(40), other(0)])
+    writeFileSync(join(project, `${OTHER}.jsonl`), `${JSON.stringify({ type: 'derived-from', v: 1, sessionId: OTHER, sessions: [{ type: 'claude_code_session', id: MINE, via: 'clear' }] })}\n${turn(90_000)}`)
+
+    const fromEnv = await run([], { sessionId: MINE })
+    const given = await run([MINE])
+
+    for (const result of [fromEnv, given]) {
+      expect(result.code).toBe(0)
+      expect(result.stdout).toContain('90k tokens (90000)')
+      expect(result.stdout).toContain(`session ${OTHER}`)
+      expect(result.stdout).toContain(`${MINE} went on as ${OTHER} (clear)`)
+    }
+  })
+
   it('takes the id from the environment when its own transcript is idle and another one is newer', async () => {
     stage([mine(30), other(0)])
 

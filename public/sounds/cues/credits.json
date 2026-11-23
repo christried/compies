@@ -1,32 +1,14 @@
 {
   "cues": {
-    "wheel-windup": {
-      "candidate": "filz-zug",
-      "source": "scripts/cue-recipes/wheel.mjs, Rezept filz-zug",
+    "cb-gulp": {
+      "candidate": "glup-bogen",
+      "source": "scripts/cue-recipes/wheel-voice.mjs, Rezept glup-bogen",
       "author": null,
       "licence": "generated"
     },
-    "wheel-tick": {
-      "candidate": "filz-tupf",
-      "source": "scripts/cue-recipes/wheel.mjs, Rezept filz-tupf",
-      "author": null,
-      "licence": "generated"
-    },
-    "wheel-stop": {
-      "candidate": "holz-dur",
-      "source": "scripts/cue-recipes/wheel.mjs, Rezept holz-dur",
-      "author": null,
-      "licence": "generated"
-    },
-    "wheel-morph": {
-      "candidate": "reissverschluss",
-      "source": "scripts/cue-recipes/wheel.mjs, Rezept reissverschluss",
-      "author": null,
-      "licence": "generated"
-    },
-    "wheel-slice-out": {
-      "candidate": "schwupp-gleiter",
-      "source": "scripts/cue-recipes/wheel.mjs, Rezept schwupp-gleiter",
+    "cb-hi": {
+      "candidate": "gleiter-mit-wobble",
+      "source": "scripts/cue-recipes/tour.mjs, Rezept gleiter-mit-wobble",
       "author": null,
       "licence": "generated"
     },
@@ -36,9 +18,9 @@
       "author": null,
       "licence": "generated"
     },
-    "cb-gulp": {
-      "candidate": "glup-bogen",
-      "source": "scripts/cue-recipes/wheel-voice.mjs, Rezept glup-bogen",
+    "cb-laugh": {
+      "candidate": "kichern-blips",
+      "source": "scripts/cue-recipes/ceremony-laugh.mjs, Rezept kichern-blips",
       "author": null,
       "licence": "generated"
     },
@@ -48,105 +30,27 @@
       "author": null,
       "licence": "generated"
     },
-    "veto-open": {
-      "candidate": "rollladen",
-      "source": "scripts/cue-recipes/veto.mjs, Rezept rollladen",
+    "cer-bonk": {
+      "candidate": "holz-bonk",
+      "source": "scripts/cue-recipes/ceremony-run.mjs, Rezept holz-bonk",
       "author": null,
       "licence": "generated"
     },
-    "veto-clock": {
-      "candidate": "uhr-tick",
-      "source": "scripts/cue-recipes/veto.mjs, Rezept uhr-tick",
-      "author": null,
-      "licence": "generated"
-    },
-    "veto-clip-close": {
-      "candidate": "schalter-aus",
-      "source": "scripts/cue-recipes/veto.mjs, Rezept schalter-aus",
-      "author": null,
-      "licence": "generated"
-    },
-    "veto-seal": {
-      "candidate": "chip-bumm",
-      "source": "scripts/cue-recipes/veto.mjs, Rezept chip-bumm",
-      "author": null,
-      "licence": "generated"
-    },
-    "veto-drumroll": {
-      "candidate": "tom-wirbel",
-      "source": "scripts/cue-recipes/veto.mjs, Rezept tom-wirbel",
-      "author": null,
-      "licence": "generated"
-    },
-    "veto-reveal": {
-      "candidate": "becken-spielzeug",
-      "source": "scripts/cue-recipes/veto.mjs, Rezept becken-spielzeug",
-      "author": null,
-      "licence": "generated"
-    },
-    "coin-toss": {
-      "candidate": "filz-wusch",
-      "source": "scripts/cue-recipes/coin.mjs, Rezept filz-wusch",
-      "author": null,
-      "licence": "generated"
-    },
-    "coin-spin": {
-      "candidate": "glocken-hauch",
-      "source": "scripts/cue-recipes/coin.mjs, Rezept glocken-hauch",
-      "author": null,
-      "licence": "generated"
-    },
-    "coin-land": {
-      "candidate": "filz-plumps-klimper",
-      "source": "scripts/cue-recipes/coin.mjs, Rezept filz-plumps-klimper",
-      "author": null,
-      "licence": "generated"
-    },
-    "coin-result": {
-      "candidate": "ting-zweiklang",
-      "source": "scripts/cue-recipes/coin.mjs, Rezept ting-zweiklang",
-      "author": null,
-      "licence": "generated"
-    },
-    "lb-swap": {
-      "candidate": "karten-schnipp",
-      "source": "scripts/cue-recipes/standings.mjs, Rezept karten-schnipp",
-      "author": null,
-      "licence": "generated"
-    },
-    "lb-count": {
-      "candidate": "chip-blip",
-      "source": "scripts/cue-recipes/standings.mjs, Rezept chip-blip",
-      "author": null,
-      "licence": "generated"
-    },
-    "lb-winner": {
-      "candidate": "ratsche-konfetti",
-      "source": "scripts/cue-recipes/standings.mjs, Rezept ratsche-konfetti",
-      "author": null,
-      "licence": "generated"
-    },
-    "drag-pick": {
-      "candidate": "blubb-hoch",
-      "source": "scripts/cue-recipes/board.mjs, Rezept blubb-hoch",
-      "author": null,
-      "licence": "generated"
-    },
-    "drag-snap": {
-      "candidate": "stift-ins-loch",
-      "source": "scripts/cue-recipes/board.mjs, Rezept stift-ins-loch",
-      "author": null,
-      "licence": "generated"
-    },
-    "drag-reject": {
-      "candidate": "gummi-boing",
-      "source": "scripts/cue-recipes/board.mjs, Rezept gummi-boing",
+    "cer-crowd": {
+      "candidate": "klatsch-publikum",
+      "source": "scripts/cue-recipes/ceremony-peak.mjs, Rezept klatsch-publikum",
       "author": null,
       "licence": "generated"
     },
     "cer-drop": {
       "candidate": "tuch-klatsch",
       "source": "scripts/cue-recipes/ceremony-run.mjs, Rezept tuch-klatsch",
+      "author": null,
+      "licence": "generated"
+    },
+    "cer-fanfare": {
+      "candidate": "chip-arpeggio",
+      "source": "scripts/cue-recipes/ceremony-peak.mjs, Rezept chip-arpeggio",
       "author": null,
       "licence": "generated"
     },
@@ -162,45 +66,57 @@
       "author": null,
       "licence": "generated"
     },
-    "cer-trip": {
-      "candidate": "purzel-ticks",
-      "source": "scripts/cue-recipes/ceremony-run.mjs, Rezept purzel-ticks",
-      "author": null,
-      "licence": "generated"
-    },
-    "cer-bonk": {
-      "candidate": "holz-bonk",
-      "source": "scripts/cue-recipes/ceremony-run.mjs, Rezept holz-bonk",
-      "author": null,
-      "licence": "generated"
-    },
     "cer-stamp": {
       "candidate": "holz-griff",
       "source": "scripts/cue-recipes/ceremony-peak.mjs, Rezept holz-griff",
       "author": null,
       "licence": "generated"
     },
-    "cer-fanfare": {
-      "candidate": "chip-arpeggio",
-      "source": "scripts/cue-recipes/ceremony-peak.mjs, Rezept chip-arpeggio",
+    "cer-trip": {
+      "candidate": "purzel-ticks",
+      "source": "scripts/cue-recipes/ceremony-run.mjs, Rezept purzel-ticks",
       "author": null,
       "licence": "generated"
     },
-    "cer-crowd": {
-      "candidate": "klatsch-publikum",
-      "source": "scripts/cue-recipes/ceremony-peak.mjs, Rezept klatsch-publikum",
+    "coin-land": {
+      "candidate": "filz-plumps-klimper",
+      "source": "scripts/cue-recipes/coin.mjs, Rezept filz-plumps-klimper",
       "author": null,
       "licence": "generated"
     },
-    "cb-laugh": {
-      "candidate": "kichern-blips",
-      "source": "scripts/cue-recipes/ceremony-laugh.mjs, Rezept kichern-blips",
+    "coin-result": {
+      "candidate": "ting-zweiklang",
+      "source": "scripts/cue-recipes/coin.mjs, Rezept ting-zweiklang",
       "author": null,
       "licence": "generated"
     },
-    "cb-hi": {
-      "candidate": "gleiter-mit-wobble",
-      "source": "scripts/cue-recipes/tour.mjs, Rezept gleiter-mit-wobble",
+    "coin-spin": {
+      "candidate": "glocken-hauch",
+      "source": "scripts/cue-recipes/coin.mjs, Rezept glocken-hauch",
+      "author": null,
+      "licence": "generated"
+    },
+    "coin-toss": {
+      "candidate": "filz-wusch",
+      "source": "scripts/cue-recipes/coin.mjs, Rezept filz-wusch",
+      "author": null,
+      "licence": "generated"
+    },
+    "drag-pick": {
+      "candidate": "blubb-hoch",
+      "source": "scripts/cue-recipes/board.mjs, Rezept blubb-hoch",
+      "author": null,
+      "licence": "generated"
+    },
+    "drag-reject": {
+      "candidate": "gummi-boing",
+      "source": "scripts/cue-recipes/board.mjs, Rezept gummi-boing",
+      "author": null,
+      "licence": "generated"
+    },
+    "drag-snap": {
+      "candidate": "stift-ins-loch",
+      "source": "scripts/cue-recipes/board.mjs, Rezept stift-ins-loch",
       "author": null,
       "licence": "generated"
     },
@@ -210,21 +126,105 @@
       "author": null,
       "licence": "generated"
     },
-    "emo-haha": {
-      "candidate": "quietschtier",
-      "source": "scripts/cue-recipes/emote.mjs, Rezept quietschtier",
-      "author": null,
-      "licence": "generated"
-    },
     "emo-grr": {
       "candidate": "puls-rasseln",
       "source": "scripts/cue-recipes/emote.mjs, Rezept puls-rasseln",
       "author": null,
       "licence": "generated"
     },
+    "emo-haha": {
+      "candidate": "quietschtier",
+      "source": "scripts/cue-recipes/emote.mjs, Rezept quietschtier",
+      "author": null,
+      "licence": "generated"
+    },
     "emo-roar": {
       "candidate": "dino-schnauben",
       "source": "scripts/cue-recipes/emote.mjs, Rezept dino-schnauben",
+      "author": null,
+      "licence": "generated"
+    },
+    "lb-count": {
+      "candidate": "chip-blip",
+      "source": "scripts/cue-recipes/standings.mjs, Rezept chip-blip",
+      "author": null,
+      "licence": "generated"
+    },
+    "lb-swap": {
+      "candidate": "karten-schnipp",
+      "source": "scripts/cue-recipes/standings.mjs, Rezept karten-schnipp",
+      "author": null,
+      "licence": "generated"
+    },
+    "lb-winner": {
+      "candidate": "ratsche-konfetti",
+      "source": "scripts/cue-recipes/standings.mjs, Rezept ratsche-konfetti",
+      "author": null,
+      "licence": "generated"
+    },
+    "veto-clip-close": {
+      "candidate": "schalter-aus",
+      "source": "scripts/cue-recipes/veto.mjs, Rezept schalter-aus",
+      "author": null,
+      "licence": "generated"
+    },
+    "veto-clock": {
+      "candidate": "uhr-tick",
+      "source": "scripts/cue-recipes/veto.mjs, Rezept uhr-tick",
+      "author": null,
+      "licence": "generated"
+    },
+    "veto-drumroll": {
+      "candidate": "tom-wirbel",
+      "source": "scripts/cue-recipes/veto.mjs, Rezept tom-wirbel",
+      "author": null,
+      "licence": "generated"
+    },
+    "veto-open": {
+      "candidate": "rollladen",
+      "source": "scripts/cue-recipes/veto.mjs, Rezept rollladen",
+      "author": null,
+      "licence": "generated"
+    },
+    "veto-reveal": {
+      "candidate": "becken-spielzeug",
+      "source": "scripts/cue-recipes/veto.mjs, Rezept becken-spielzeug",
+      "author": null,
+      "licence": "generated"
+    },
+    "veto-seal": {
+      "candidate": "chip-bumm",
+      "source": "scripts/cue-recipes/veto.mjs, Rezept chip-bumm",
+      "author": null,
+      "licence": "generated"
+    },
+    "wheel-morph": {
+      "candidate": "reissverschluss",
+      "source": "scripts/cue-recipes/wheel.mjs, Rezept reissverschluss",
+      "author": null,
+      "licence": "generated"
+    },
+    "wheel-slice-out": {
+      "candidate": "schwupp-gleiter",
+      "source": "scripts/cue-recipes/wheel.mjs, Rezept schwupp-gleiter",
+      "author": null,
+      "licence": "generated"
+    },
+    "wheel-stop": {
+      "candidate": "holz-dur",
+      "source": "scripts/cue-recipes/wheel.mjs, Rezept holz-dur",
+      "author": null,
+      "licence": "generated"
+    },
+    "wheel-tick": {
+      "candidate": "filz-tupf",
+      "source": "scripts/cue-recipes/wheel.mjs, Rezept filz-tupf",
+      "author": null,
+      "licence": "generated"
+    },
+    "wheel-windup": {
+      "candidate": "filz-zug",
+      "source": "scripts/cue-recipes/wheel.mjs, Rezept filz-zug",
       "author": null,
       "licence": "generated"
     }

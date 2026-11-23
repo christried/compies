@@ -467,6 +467,20 @@ export function results(name, { sha: served = process.env.COMPIES_TESTED_SHA, ba
     },
     skip: (label, why) => write(`SKIP  ${label}  (${why})`),
     note: text => write(`NOTE  ${text}`),
+    /** An earlier line of this label was the check's own fault (a script that read the wrong thing): it stays in the log, and `standingFails` drops it (#833). */
+    void: (label, reason) => write(`VOID  ${label}  (${reason})`),
     shot: (tab, file, selector) => shot(tab, file, selector, dir),
   }
+}
+
+/**
+ * The FAIL lines of a `results.log` text that stand: every FAIL whose label no later VOID line names. In 0.18 the orchestrator's
+ * summary of two check tickets needed a hand-made list of 27 FAIL lines that were the scripts' own faults (#833).
+ * @param {string} text
+ * @returns {string[]}
+ */
+export function standingFails(text) {
+  const lines = text.split(/\r?\n/)
+  const label = line => /^(?:FAIL|VOID) {2}(.*?)(?: {2}\(.*\))?$/.exec(line)?.[1]
+  return lines.filter((line, index) => line.startsWith('FAIL  ') && !lines.slice(index + 1).some(later => later.startsWith('VOID  ') && label(later) === label(line)))
 }

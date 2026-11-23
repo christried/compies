@@ -751,7 +751,7 @@ export const STATES = [
     only: 'host',
     hostWidths: [390, 1440],
     hostStops: [
-      stop('notizen', async (tab) => {
+      stop('notizen', async (tab, ctx) => {
         // On a phone the crown button opens the actions in a sheet (no „Mehr“ step, HostDock), and the action closes it.
         if (await tab.evaluate('innerWidth < 768')) {
           await press(tab, 'button[aria-haspopup=dialog]', COPY.dock.label)
@@ -763,7 +763,7 @@ export const STATES = [
         await layerOpen(tab, 'the game picker')
         await noAutoLoad(tab)
         await until(tab, `document.querySelectorAll('[role=dialog] li').length > 10`, 'the library in the picker', 30_000)
-        await press(tab, '[role=dialog] button', COPY.gameNotes.open)
+        await press(tab, '[role=dialog] button', COPY.notes.open_a11y.replace('{game}', (await games(ctx))[0].name))
         await until(tab, `document.querySelectorAll('[role=dialog]').length > 1`, 'the Notes')
         // The popover closes on a scroll that is not its own (`GameNotesButton`'s `onScroll` asks `popover.contains(target)`), and the reading scrolls the page: it
         // takes the popover for the target's container, so that it stays open for the reading and the screenshot.

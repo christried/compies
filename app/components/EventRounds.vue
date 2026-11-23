@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type GameTile from '~/components/GameTile.vue'
 import { GAME_GRID } from '~/utils/game-grid'
 import { CARD_REFLOW_CLASS, leaveInPlace, unwatched } from '~/utils/motion'
 import type { BoardTeam } from '~~/shared/event'
@@ -36,9 +37,25 @@ const props = withDefaults(defineProps<{
 }>(), { hostGames: null })
 
 // The Host's Event notes by game id are the Event page's context's (#821): each Round's Notizen disclosure reads its entry, the tiles read theirs in the dialog.
-const { notesOf } = useEventNotes()
+const { notesOf, save } = useEventNotes()
 const { t } = useI18n()
 const headingId = useId()
+// The Round card's „Bearbeiten“ (#836) is the Host's, and needs the page's save to edit with, as the tiles' does (GameTile, #858).
+const notesEditable = computed(() => props.isHost && save.value != null)
+
+/** The part of a game tile the Round card uses: its exposed `openEditor` (GameTile). */
+type GameTileHandle = Pick<InstanceType<typeof GameTile>, 'openEditor'>
+const isGameTileHandle = (tile: unknown): tile is GameTileHandle => typeof tile === 'object' && tile !== null && 'openEditor' in tile && typeof tile.openEditor === 'function'
+
+/** Each Round's game tile, so its card's „Bearbeiten“ opens that tile's dialog in the edit mode (#836); a tile that leaves drops its entry. */
+const tiles = new Map<string, GameTileHandle>()
+function keepTile(roundId: string, tile: unknown) {
+  if (isGameTileHandle(tile)) tiles.set(roundId, tile)
+  else tiles.delete(roundId)
+}
+function editNotes(roundId: string) {
+  tiles.get(roundId)?.openEditor()
+}
 
 /** The Round whose result sheet is open. */
 const resultFor = ref<string | null>(null)
@@ -101,6 +118,7 @@ watch(resultFor, async (id, was) => {
         <!-- The Round's game as a tile in the pool's grid, one column wide (#435); the „wird gespielt“ badge is gone. -->
         <div :class="GAME_GRID">
           <GameTile
+            :ref="tile => keepTile(round.id, tile)"
             :game="round.game"
             :audience="isHost ? 'host' : 'member'"
             :facts="hostGames?.[round.game.id] ?? null"
@@ -111,7 +129,9 @@ watch(resultFor, async (id, was) => {
           :notes="round.notes ?? null"
           :event-notes="notesOf(round.game.id)"
           variant="round"
-          start-open
+          remember
+          :editable="notesEditable"
+          @edit="editNotes(round.id)"
         />
         <div
           v-if="isHost"

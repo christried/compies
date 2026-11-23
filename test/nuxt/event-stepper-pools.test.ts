@@ -4,9 +4,12 @@ import { createError, readBody } from 'h3'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import RichNotesEditor from '~/components/RichNotesEditor.vue'
 import CreatePage from '~/pages/neu.vue'
+import EditorPage from '~/pages/e/[slug]/einstellungen.vue'
 import type { GameView } from '~~/shared/game'
 import { notesFromLines, type NotesDoc } from '~~/shared/notes-doc'
+import { defaultSettings } from '~~/shared/settings'
 import { kitty, signInAs } from './auth'
+import { serve, view } from './event-page'
 import { FORMATTED_HREF, FORMATTED_NOTES, readFormatted } from './helpers/formatted-notes'
 import { editorOf } from './helpers/notes-editor'
 
@@ -577,6 +580,63 @@ describe('the pool steps', () => {
   })
 
   // An Archived game (#726) is never offered here, so a new Event's pool holds none: its rows carry no mark and the count is the rows.
+  describe('the duplicate hint in the sheet (#860)', () => {
+    const newGameButton = (page: Page) => page.findAll('button').find(button => button.text().includes('Neues Spiel'))!
+    const dialog = () => document.body.querySelector('[role="dialog"]')
+    const takeButton = () => [...dialog()!.querySelectorAll('button')].find(button => button.textContent?.trim() === 'Das nehmen')
+    const hintIn = () => [...dialog()!.querySelectorAll('[role="status"]')].find(element => element.textContent!.includes('vielleicht schon'))
+
+    /** Opens the sheet on the Game pool step and types the name; the hint shows once the library has answered. */
+    async function typeNameInSheet(page: Page, name: string) {
+      await newGameButton(page).trigger('click')
+      await vi.waitFor(() => expect(dialog()).not.toBeNull())
+      const label = [...dialog()!.querySelectorAll('label')].find(element => element.textContent === 'Titel')!
+      const input = dialog()!.querySelector<HTMLInputElement>(`[id="${label.getAttribute('for')}"]`)!
+      input.value = name
+      input.dispatchEvent(new Event('input'))
+      await vi.waitFor(() => expect(hintIn()).toBeDefined())
+    }
+
+    it('puts the existing game into the pool on „Das nehmen“, closes the sheet and posts nothing', async () => {
+      const page = await mountCreate()
+      await toPoolStep(page)
+      await typeNameInSheet(page, 'mario kart')
+      expect(hintIn()!.textContent).toContain('Gibt’s vielleicht schon: „Mario Kart“.')
+
+      await takeButton()!.click()
+
+      await vi.waitFor(() => expect(dialog()).toBeNull())
+      expect(postedGame).not.toHaveBeenCalled()
+      expect(inPool(page)!.findAll('li').map(row => row.get('b').text())).toEqual(['Mario Kart'])
+      expect(page.text()).toContain('Im Pool: 1 Spiel')
+    })
+
+    it('leaves a game that is in the pool already there once, and closes the sheet', async () => {
+      const page = await mountCreate()
+      await toPoolStep(page)
+      await toggle(page, 'Mario Kart in den Pool').trigger('click')
+      await typeNameInSheet(page, 'mario kart')
+
+      await takeButton()!.click()
+
+      await vi.waitFor(() => expect(dialog()).toBeNull())
+      expect(inPool(page)!.findAll('li').map(row => row.get('b').text())).toEqual(['Mario Kart'])
+      expect(page.text()).toContain('Im Pool: 1 Spiel')
+    })
+
+    it('shows the Archived match with its link and no „Das nehmen“, and keeps the sheet open', async () => {
+      library = [kart, pong, chess, game(7, 'Counter-Strike 2', { archived: true })]
+      const page = await mountCreate()
+      await toPoolStep(page)
+      await typeNameInSheet(page, 'counter strike 2')
+
+      expect(hintIn()!.textContent).toContain('Gibt’s vielleicht schon, aber archiviert: „Counter-Strike 2“.')
+      expect(takeButton()).toBeUndefined()
+      expect(dialog()).not.toBeNull()
+      expect(inPool(page)!.exists()).toBe(false)
+    })
+  })
+
   describe('Archived library games (#726)', () => {
     it('offers none, marks no game added from the library, and counts the pool on the Fertig screen', async () => {
       library = [kart, pong, game(4, 'Altes Spiel', { archived: true })]
@@ -637,6 +697,65 @@ describe('the pool steps', () => {
 
       await vi.waitFor(() => expect(page.get('[role="alert"]').text()).toBe('Ein Spiel aus dem Pool gibt es nicht mehr.'))
     })
+  })
+})
+
+// The same step in the settings editor (#860): the Event's settings use the same sheet as /neu.
+describe('the duplicate hint in the settings editor\'s Game pool (#860)', () => {
+  beforeEach(() => {
+    useState('toasts').value = []
+    library = [kart, pong, chess]
+    postedGame.mockClear()
+    useState('game-library').value = null
+  })
+
+  async function mountSettings(): Promise<Page> {
+    const { slug } = serve(s => view(s, [], { event: { isHost: true, phase: 'poll' }, settings: defaultSettings(), pool: [] }))
+    signInAs({ ...kitty, canHost: true })
+    const page = await mountSuspended(EditorPage, { route: `/e/${slug}/einstellungen`, attachTo: document.body })
+    mounted.push(page)
+    await goToPool(page)
+    return page
+  }
+
+  async function goToPool(page: Page) {
+    await page.get('nav[aria-label="Schritte"]').findAll('li').find(item => item.text().endsWith('Spielepool'))!.get('button').trigger('click')
+    await settle(page)
+  }
+
+  const dialog = () => document.body.querySelector('[role="dialog"]')
+  const takeButton = () => [...dialog()!.querySelectorAll('button')].find(button => button.textContent?.trim() === 'Das nehmen')
+  const hintIn = () => [...dialog()!.querySelectorAll('[role="status"]')].find(element => element.textContent!.includes('vielleicht schon'))
+
+  async function typeNameInSheet(page: Page, name: string) {
+    await page.findAll('button').find(button => button.text().includes('Neues Spiel'))!.trigger('click')
+    await vi.waitFor(() => expect(dialog()).not.toBeNull())
+    const label = [...dialog()!.querySelectorAll('label')].find(element => element.textContent === 'Titel')!
+    const input = dialog()!.querySelector<HTMLInputElement>(`[id="${label.getAttribute('for')}"]`)!
+    input.value = name
+    input.dispatchEvent(new Event('input'))
+    await vi.waitFor(() => expect(hintIn()).toBeDefined())
+  }
+
+  it('„Das nehmen“ puts the existing game into the pool and closes the sheet', async () => {
+    const page = await mountSettings()
+    await typeNameInSheet(page, 'mario kart')
+
+    await takeButton()!.click()
+
+    await vi.waitFor(() => expect(dialog()).toBeNull())
+    expect(postedGame).not.toHaveBeenCalled()
+    expect(inPool(page)!.findAll('li').map(row => row.get('b').text())).toEqual(['Mario Kart'])
+  })
+
+  it('an Archived match has no „Das nehmen“', async () => {
+    library = [kart, pong, chess, game(7, 'Counter-Strike 2', { archived: true })]
+    const page = await mountSettings()
+    await typeNameInSheet(page, 'counter strike 2')
+
+    expect(hintIn()!.textContent).toContain('aber archiviert')
+    expect(takeButton()).toBeUndefined()
+    expect(dialog()).not.toBeNull()
   })
 })
 
@@ -712,8 +831,8 @@ describe('the game browser in the pool steps (#173)', () => {
     const page = await mountCreate()
     await toPoolStep(page)
 
-    expect(picker(page).classes()).toContain('md:grid')
-    expect(picker(page).classes()).toContain('md:items-stretch')
+    expect(picker(page).classes()).toContain('sm:grid')
+    expect(picker(page).classes()).toContain('sm:items-stretch')
     for (const item of picker(page).findAll('li')) {
       const card = item.element.firstElementChild as HTMLElement
       expect(card.className).toContain('h-full')
@@ -722,6 +841,18 @@ describe('the game browser in the pool steps (#173)', () => {
     const plus = toggle(page, 'Mario Kart in den Pool').element
     const kartCard = plus.closest('li')!.firstElementChild as HTMLElement
     expect(kartCard.lastElementChild!.contains(plus)).toBe(true)
+  })
+
+  it('sets the chosen games in two columns from 600 px (sm) and in one below, the library in its grid from 600 px too (#707)', async () => {
+    const page = await mountCreate()
+    await toPoolStep(page)
+    await toggle(page, 'Mario Kart in den Pool').trigger('click')
+    await toggle(page, 'Pong in den Pool').trigger('click')
+
+    const classes = inPool(page)!.classes()
+    expect(classes).toEqual(expect.arrayContaining(['grid-cols-1', 'sm:grid-cols-2']))
+    expect(classes.filter(token => token.startsWith('md:'))).toEqual([])
+    expect(picker(page).classes().filter(token => token.startsWith('md:'))).toEqual([])
   })
 
   it('keeps its filters out of the address', async () => {
@@ -792,7 +923,7 @@ describe('the game browser in the pool steps (#173)', () => {
 // other. The ＋ and the ✕ stay where they are.
 describe('the Notes button of a game in the pool steps (#436)', () => {
   const withNotes = game(1, 'Mario Kart', { notes: notesFromLines(['Settings: 3 Runden', 'Warmup: Lobby']) })
-  const notesButtons = (root: { element: Element }) => root.element.querySelectorAll('button[aria-label="Notizen ansehen"]')
+  const notesButtons = (root: { element: Element }) => root.element.querySelectorAll('button[aria-label^="Notizen zu "]')
   const cardOf = (page: Page, name: string) => picker(page).findAll('li').find(card => card.get('b').text() === name)!
 
   beforeEach(async () => {
@@ -865,5 +996,30 @@ describe('the Notes button of a game in the pool steps (#436)', () => {
 
     expect(page.text()).toContain('Noch leer. Du kannst auch ohne Spiele weitermachen.')
     expect(notesButtons(picker(page))).toHaveLength(1)
+  })
+
+  // The button is the card's own, in the card's place (#859): not beside the ✕ or the ＋, and no footer „Bearbeiten“.
+  it('is not beside the ✕ of a chosen game, nor beside the ＋ of a library game', async () => {
+    const page = await mountCreate()
+    await toPoolStep(page)
+    await toggle(page, 'Mario Kart in den Pool').trigger('click')
+
+    const chosen = inPool(page)!.findAll('li').find(row => row.get('b').text() === 'Mario Kart')!
+    expect(notesButtons(chosen)[0]!.parentElement!.querySelector('button[aria-label="Mario Kart aus dem Pool nehmen"]')).toBeNull()
+    expect(chosen.element.querySelector('button[aria-label="Mario Kart aus dem Pool nehmen"]')).not.toBeNull()
+    expect(notesButtons(cardOf(page, 'Mario Kart'))[0]!.parentElement!.querySelector('button[aria-label="Mario Kart in den Pool"]')).toBeNull()
+  })
+
+  it('has no „Bearbeiten“ footer in the popover of a chosen game', async () => {
+    const page = await mountCreate()
+    await toPoolStep(page)
+    await toggle(page, 'Mario Kart in den Pool').trigger('click')
+
+    ;(notesButtons(inPool(page)!)[0] as HTMLButtonElement).click()
+    await flushPromises()
+
+    const popover = document.querySelector('[role="dialog"]:not([data-sheet])')!
+    expect(popover.textContent).toContain('Settings: 3 Runden')
+    expect(popover.textContent).not.toContain('Bearbeiten')
   })
 })

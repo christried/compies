@@ -4,6 +4,7 @@ import { createError, readBody } from 'h3'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import RichNotesEditor from '~/components/RichNotesEditor.vue'
 import EventPage from '~/pages/e/[slug]/index.vue'
+import type { EventNotesChange } from '~~/shared/event'
 import type { PoolGame, RoundGame } from '~~/shared/game'
 import type { RoundView, SpinView, WheelView } from '~~/shared/stage'
 import { notesFromLines, type NotesDoc } from '~~/shared/notes-doc'
@@ -55,24 +56,28 @@ const spin: SpinView = {
 const wheel: WheelView = { count: 2, slices: null, spin, vetoes: { left: [], own: null, revealed: null, draw: null } }
 
 // What the Host's PUT of Event notes (#731) did, for the tests of the editing in the dialogs (#464): the bodies it got, and whether it refuses.
-const saves = { bodies: [] as { gameId: string, body: { notes: NotesDoc | null } }[], refuse: false }
+const saves = { bodies: [] as { gameId: string, body: EventNotesChange }[], refuse: false }
 
 // `leaked`: a Member's read that carries the Host's Event notes anyway (the server never sends them): the Member's page provides no context, so nothing of them shows (#821).
-function serveHost(host: boolean, phase: 'running' | 'finished' = 'running', leaked = false) {
+// `games`: the pool the read carries (#858 tests a pool of one tile and of two).
+function serveHost(host: boolean, phase: 'running' | 'finished' = 'running', leaked = false, games: PoolGame[] = pool) {
   saves.bodies = []
   saves.refuse = false
   // The Event's notes as the server holds them: a save changes them, and the next read of the Event shows the change.
   const stored: Record<string, NotesDoc> = { ...eventNotes }
+  // The games' own notes as the server holds them (#835): a save of `gameNotes` changes them in every place the read shows them.
+  const storedGame: Record<string, NotesDoc | null> = {}
+  const gameNotesOf = (game: PoolGame): NotesDoc | null => (game.id in storedGame ? storedGame[game.id]! : game.notes)
   const viewOf = (slug: string) => viewWithSessions(slug, [{ number: null, startsAt: '2026-10-30T19:00:00.000Z', startedAt: STARTED }], 0, {
     event: { isHost: host, phase },
     settings: { ...defaultSettings(), selectionMode: 'lucky_wheel', hiddenWheel: false, vetoAllowance: 0 },
     runningSessionId: `session-${slug}-0`,
     // A Member sees the pool tiles only with the preview on: the faces here.
-    pool: host ? pool : pool.map(({ id, name, imageUrl, youtubeId, price, playersMin, playersMax, suitabilities }) => ({ id, name, imageUrl, youtubeId, price, playersMin, playersMax, suitabilities })),
+    pool: host ? games.map(game => ({ ...game, notes: gameNotesOf(game) })) : games.map(({ id, name, imageUrl, youtubeId, price, playersMin, playersMax, suitabilities }) => ({ id, name, imageUrl, youtubeId, price, playersMin, playersMax, suitabilities })),
     // The Round's own Notes are the Host's: the server leaves them out of a Member's read.
-    rounds: host ? [round('r1', base, base.notes!), round('r2', schach, schach.notes!)] : [round('r1', base), round('r2', schach)],
+    rounds: host ? [round('r1', base, gameNotesOf(base) ?? undefined), round('r2', schach, gameNotesOf(schach) ?? undefined)] : [round('r1', base), round('r2', schach)],
     wheel,
-    hostGames: host ? hostGames : null,
+    hostGames: host ? Object.fromEntries(Object.entries(hostGames).map(([id, facts]) => [id, { ...facts, notes: id in storedGame ? storedGame[id]! : facts.notes }])) : null,
     eventNotes: host || leaked ? stored : null,
   })
   const served = serve(viewOf)
@@ -80,13 +85,14 @@ function serveHost(host: boolean, phase: 'running' | 'finished' = 'running', lea
     registerEndpoint(`/api/e/${served.slug}/games/${game.id}/notes`, {
       method: 'PUT',
       handler: async (event) => {
-        const body = await readBody(event) as { notes: NotesDoc | null }
+        const body = await readBody(event) as EventNotesChange
         saves.bodies.push({ gameId: game.id, body })
         if (saves.refuse) throw createError({ statusCode: 409, statusMessage: 'wrong_phase' })
         if (body.notes) stored[game.id] = body.notes
-        else Reflect.deleteProperty(stored, game.id)
+        else if (Object.hasOwn(body, 'notes')) Reflect.deleteProperty(stored, game.id)
+        if (Object.hasOwn(body, 'gameNotes')) storedGame[game.id] = body.gameNotes ?? null
         served.set(viewOf(served.slug))
-        return { gameId: game.id, notes: body.notes }
+        return { gameId: game.id, ...body }
       },
     })
   }
@@ -336,7 +342,7 @@ describe('a Member\'s tiles on the Event page open the dialog (#444)', () => {
 
 describe('the Host writes Event notes in the game dialogs of the Event page (#464)', () => {
   const EDIT = 'button[aria-label="Notizen für dieses Event bearbeiten"]'
-  const entry = () => dialog()!.querySelector<HTMLButtonElement>(EDIT) ?? [...dialog()!.querySelectorAll('button')].find(button => button.textContent?.trim() === 'Notizen für dieses Event hinzufügen') ?? null
+  const entry = () => dialog()!.querySelector<HTMLButtonElement>(EDIT) ?? [...dialog()!.querySelectorAll('button')].find(button => ['Notizen für dieses Event hinzufügen', 'Notizen hinzufügen'].includes(button.textContent?.trim() ?? '')) ?? null
   const textbox = () => dialog()!.querySelector<HTMLElement>('[role="textbox"]')
   const footerButton = (label: string) => [...dialog()!.querySelectorAll<HTMLButtonElement>('footer button')].find(button => button.textContent?.trim() === label)!
   const zuletzt = () => [...sectionOf('Zuletzt gezogen')!.querySelectorAll<HTMLButtonElement>('button[aria-haspopup="dialog"]')][0]!
@@ -360,7 +366,8 @@ describe('the Host writes Event notes in the game dialogs of the Event page (#46
     open().click()
     await flushPromises()
     expect(entry()).not.toBeNull()
-    expect(stored === null ? entry()!.textContent?.trim() : entry()!.getAttribute('aria-label')).toBe(stored === null ? 'Notizen für dieses Event hinzufügen' : 'Notizen für dieses Event bearbeiten')
+    // A game with Game notes and no Event notes has the Event add button (#835); one with neither has „Notizen hinzufügen“.
+    expect(stored === null ? entry()!.textContent?.trim() : entry()!.getAttribute('aria-label')).toBe(stored === null ? (gameText ? 'Notizen für dieses Event hinzufügen' : 'Notizen hinzufügen') : 'Notizen für dieses Event bearbeiten')
     entry()!.click()
     await vi.waitFor(() => expect(textbox()).not.toBeNull())
     type(mounted.findComponent(RichNotesEditor), typed)
@@ -372,6 +379,28 @@ describe('the Host writes Event notes in the game dialogs of the Event page (#46
     expect(dialog()!.textContent).toContain(saved[0])
     if (gameText) expectEventNotesAboveGameNotes(saved[0]!, gameText)
     expect(document.activeElement).toBe(dialog()!.querySelector(EDIT))
+    expect(shownToasts()).toEqual([])
+  })
+
+  // The Game notes in the same dialog (#835): one request with only the Game field, and the refetch brings the new text to the dialog and the Round card alike.
+  it('saves the Game notes from the dialog of „Läuft aktuell“ through the route, alone, shows them in the dialog and puts the focus on the Game pencil', async () => {
+    const { slug } = serveHost(true)
+    const mounted = await mount(slug)
+    tileButton('Läuft aktuell', 'Halo')!.click()
+    await flushPromises()
+    dialog()!.querySelector<HTMLButtonElement>('button[aria-label="Notizen bearbeiten"]')!.click()
+    await vi.waitFor(() => expect(dialog()!.querySelectorAll('[role="textbox"]')).toHaveLength(2))
+    const [, gameEditor] = mounted.findAllComponents(RichNotesEditor)
+    editorOf(gameEditor!).commands.setContent(notesFromLines(['Hausregel: Raketen erlaubt'])! as never, { emitUpdate: true })
+
+    footerButton('Speichern').click()
+
+    await vi.waitFor(() => expect(textbox()).toBeNull())
+    expect(saves.bodies).toEqual([{ gameId: 'g-halo', body: { gameNotes: notesFromLines(['Hausregel: Raketen erlaubt']) } }])
+    expect(dialog()!.textContent).toContain('Hausregel: Raketen erlaubt')
+    expect(dialog()!.textContent).toContain('Event-Halo: nur Bo1')
+    expect(document.body.textContent).not.toContain('Hausregel: keine Raketen')
+    expect(document.activeElement).toBe(dialog()!.querySelector('button[aria-label="Notizen bearbeiten"]'))
     expect(shownToasts()).toEqual([])
   })
 
@@ -426,15 +455,35 @@ describe('the Host writes Event notes in the game dialogs of the Event page (#46
     expect(textbox()).toBeNull()
   })
 
-  it('offers no entry for a game without Event notes once the Event is finished', async () => {
+  it('offers no Event entry for a game without Event notes once the Event is finished, but „Notizen hinzufügen“ where it has no Game notes either (#857)', async () => {
     const { slug } = serveHost(true, 'finished')
     await mount(slug, 'So wird gespielt')
 
     tileButton('So wird gespielt', 'Pong')!.click()
     await flushPromises()
 
-    expect(entry()).toBeNull()
+    expect(entry()?.textContent?.trim()).toBe('Notizen hinzufügen')
+    expect(dialog()!.querySelector(EDIT)).toBeNull()
     expect(textbox()).toBeNull()
+  })
+
+  it('saves a finished Event\'s Game notes from the Spielepool\'s dialog: one request with the Game notes alone, the Event notes stay frozen (#857)', async () => {
+    const { slug } = serveHost(true, 'finished')
+    const mounted = await mount(slug, 'So wird gespielt')
+    tileButton('So wird gespielt', 'Kart')!.click()
+    await flushPromises()
+
+    dialog()!.querySelector<HTMLButtonElement>('button[aria-label="Notizen bearbeiten"]')!.click()
+    await vi.waitFor(() => expect(textbox()).not.toBeNull())
+    type(mounted.findComponent(RichNotesEditor), ' und Uhr')
+    footerButton('Speichern').click()
+
+    await vi.waitFor(() => expect(saves.bodies).toHaveLength(1))
+    expect(saves.bodies[0]).toEqual({ gameId: 'g-kart', body: { gameNotes: notesFromLines(['Kart-Notizen und Uhr']) } })
+    await vi.waitFor(() => expect(textbox()).toBeNull())
+    expect(dialog()!.textContent).toContain('Kart-Notizen und Uhr')
+    expect(dialog()!.textContent).toContain('Event-Kart: Mirror aus')
+    expect(dialog()!.textContent).toContain('Event beendet')
   })
 
   it('names the Event as the sub of the Event block in the dialog of a Spielepool tile and of the wheel\'s card, where both blocks show', async () => {
@@ -451,5 +500,142 @@ describe('the Host writes Event notes in the game dialogs of the Event page (#46
     zuletzt().click()
     await flushPromises()
     expect(dialog()!.textContent).toContain('Freitags-Zocken')
+  })
+})
+
+// The Notes button on the Event page's tiles (#858): the Host's Spielepool and „Zuletzt gezogen“ carry it for a game with Event notes or Game notes; the Round card's tile and a Member's tiles never do.
+// The notes popover is itself `role="dialog"` with its own label, so the game dialog is the one that is not labelled „Notizen zu“.
+describe('the Notes button on the Event page\'s tiles (#858)', () => {
+  const NOTES_BUTTON = '[aria-label^="Notizen zu "]'
+  const labelsIn = (heading: string) => [...sectionOf(heading)!.querySelectorAll(NOTES_BUTTON)].map(button => button.getAttribute('aria-label'))
+  const notesButton = (heading: string, game: string) => sectionOf(heading)!.querySelector<HTMLButtonElement>(`button[aria-label="Notizen zu ${game}"]`)!
+  const popover = () => document.querySelector<HTMLElement>(`[role="dialog"]${NOTES_BUTTON}`)
+  const gameDialog = () => [...document.querySelectorAll<HTMLElement>('[role="dialog"]')].find(el => !el.matches(NOTES_BUTTON))
+  const textboxes = () => [...document.querySelectorAll<HTMLElement>('[role="textbox"]')]
+  const footerButton = (label: string) => [...document.querySelectorAll<HTMLButtonElement>('footer button')].find(button => button.textContent?.trim() === label)!
+  const escape = (within: Element) => within.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+
+  beforeEach(() => {
+    ensureGeometry()
+  })
+
+  describe('for the Host', () => {
+    beforeEach(() => signInAs({ ...kitty, canHost: true }))
+
+    it('has the button on the tiles of the Spielepool and on the wheel\'s result card that have notes, and none on the one without', async () => {
+      const { slug } = serveHost(true)
+      await mount(slug)
+
+      // Halo and Kart have both kinds of notes, Pong has none.
+      expect(labelsIn('So wird gespielt')).toEqual(['Notizen zu Halo', 'Notizen zu Kart'])
+      expect(labelsIn('Zuletzt gezogen')).toEqual(['Notizen zu Kart'])
+      expect(tileButton('So wird gespielt', 'Pong')).toBeDefined()
+    })
+
+    it('has none on the Round cards\' tiles, while their „Notizen“ disclosure shows (Halo has both notes)', async () => {
+      const { slug } = serveHost(true)
+      await mount(slug)
+
+      expect(tileButton('Läuft aktuell', 'Halo')).toBeDefined()
+      expect(tileButton('Läuft aktuell', 'Schach')).toBeDefined()
+      expect(labelsIn('Läuft aktuell')).toEqual([])
+      expect(sectionOf('Läuft aktuell')!.querySelectorAll('button[aria-expanded]')).toHaveLength(2)
+    })
+
+    it('shows the Event notes above the Game notes in the popover of a pool tile, and a click on the button alone opens no game dialog', async () => {
+      const { slug } = serveHost(true)
+      await mount(slug)
+
+      notesButton('So wird gespielt', 'Halo').click()
+      await flushPromises()
+
+      const text = popover()!.textContent!
+      expect(text.indexOf('Event-Halo: nur Bo1')).toBeLessThan(text.indexOf('Hausregel: keine Raketen'))
+      expect(gameDialog()).toBeUndefined()
+      expect(textboxes()).toHaveLength(0)
+    })
+
+    it.each([
+      ['the Spielepool', () => notesButton('So wird gespielt', 'Halo'), 'Halo', 'g-halo'],
+      ['„Zuletzt gezogen“', () => notesButton('Zuletzt gezogen', 'Kart'), 'Kart', 'g-kart'],
+    ])('opens the game dialog of the tile of %s in the edit mode from „Bearbeiten“, with the Event editor focused', async (_place, button, name) => {
+      const { slug } = serveHost(true)
+      await mount(slug)
+
+      button().click()
+      await flushPromises()
+      footerButton('Bearbeiten').click()
+      await vi.waitFor(() => expect(textboxes()).toHaveLength(2))
+      await flushPromises()
+
+      expect(popover()).toBeNull()
+      expect(gameDialog()!.querySelector('h2')?.textContent).toBe(name)
+      expect(textboxes()[0]!.contains(document.activeElement)).toBe(true)
+    })
+
+    it('shows the Game notes a save in the dialog changed in the tile\'s popover, with no reload', async () => {
+      const { slug } = serveHost(true)
+      const mounted = await mount(slug)
+      notesButton('So wird gespielt', 'Halo').click()
+      await flushPromises()
+      footerButton('Bearbeiten').click()
+      await vi.waitFor(() => expect(textboxes()).toHaveLength(2))
+      const [, gameEditor] = mounted.findAllComponents(RichNotesEditor)
+      editorOf(gameEditor!).commands.setContent(notesFromLines(['Hausregel: Raketen erlaubt'])! as never, { emitUpdate: true })
+
+      footerButton('Speichern').click()
+      await vi.waitFor(() => expect(textboxes()).toHaveLength(0))
+      expect(saves.bodies).toEqual([{ gameId: 'g-halo', body: { gameNotes: notesFromLines(['Hausregel: Raketen erlaubt']) } }])
+      escape(gameDialog()!)
+      await vi.waitFor(() => expect(gameDialog()).toBeUndefined())
+      notesButton('So wird gespielt', 'Halo').click()
+      await flushPromises()
+
+      expect(popover()!.textContent).toContain('Hausregel: Raketen erlaubt')
+      expect(popover()!.textContent).not.toContain('Hausregel: keine Raketen')
+      expect(popover()!.textContent).toContain('Event-Halo: nur Bo1')
+    })
+
+    it('keeps the footer in a finished Event, and „Bearbeiten“ opens the game dialog', async () => {
+      const { slug } = serveHost(true, 'finished')
+      await mount(slug, 'So wird gespielt')
+
+      notesButton('So wird gespielt', 'Kart').click()
+      await flushPromises()
+      footerButton('Bearbeiten').click()
+      await flushPromises()
+
+      expect(popover()).toBeNull()
+      expect(gameDialog()!.querySelector('h2')?.textContent).toBe('Kart')
+    })
+
+    it.each([
+      ['one tile', [base], ['Notizen zu Halo']],
+      ['two tiles, one of them without notes', [base, pong], ['Notizen zu Halo']],
+      ['two tiles with notes', [base, kart], ['Notizen zu Halo', 'Notizen zu Kart']],
+      ['a pool of games without notes', [pong], []],
+    ])('has the right buttons in a pool of %s', async (_name, games, labels) => {
+      const { slug } = serveHost(true, 'running', false, games)
+      await mount(slug)
+
+      expect(labelsIn('So wird gespielt')).toEqual(labels)
+    })
+  })
+
+  describe('for a Member', () => {
+    beforeEach(() => signInAs(kitty))
+
+    it.each([
+      ['a read without Event notes', false],
+      ['a read that carries the Host\'s Event notes anyway', true],
+    ])('has none anywhere on the page, with the Spielepool, „Zuletzt gezogen“ and „Läuft aktuell“ all shown: %s', async (_name, leaked) => {
+      const { slug } = serveHost(false, 'running', leaked)
+      await mount(slug)
+
+      expect(tileButton('So wird gespielt', 'Kart')).toBeDefined()
+      expect(tileButton('Läuft aktuell', 'Halo')).toBeDefined()
+      expect(sectionOf('Zuletzt gezogen')).not.toBeNull()
+      expect(document.querySelector(NOTES_BUTTON)).toBeNull()
+    })
   })
 })

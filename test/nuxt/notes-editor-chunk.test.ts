@@ -73,16 +73,16 @@ describe('the notes editor whose chunk fails to load (#822)', () => {
       global: eventNotesContext({ save: async () => true }).global,
     })
     await flushPromises()
-    const add = [...dialog().querySelectorAll('button')].find(button => button.textContent?.trim() === 'Notizen für dieses Event hinzufügen')!
+    // A game with no notes at all has „Notizen hinzufügen“ (#835); its edit mode holds two editors, each with its own placeholder and retry.
+    const add = [...dialog().querySelectorAll('button')].find(button => button.textContent?.trim() === 'Notizen hinzufügen')!
     add.click()
     await vi.waitFor(() => expect(dialog().querySelector('[role="alert"]')).not.toBeNull())
 
     expect(dialog().querySelector('[role="alert"]')!.textContent).toContain('Der Editor lässt sich gerade nicht laden.')
-    expect(dialog().querySelector('[data-notes-editor]')).toBeNull()
 
     chunk.fail = false
-    retryButton(dialog())!.click()
-    await vi.waitFor(() => expect(dialog().querySelector('[data-notes-editor]')).not.toBeNull())
+    for (const retry of [...dialog().querySelectorAll('button')].filter(button => button.textContent?.trim() === 'Nochmal versuchen')) retry.click()
+    await vi.waitFor(() => expect(dialog().querySelectorAll('[data-notes-editor]')).toHaveLength(2))
     expect(dialog().querySelector('[role="alert"]')).toBeNull()
     wrapper.unmount()
   })

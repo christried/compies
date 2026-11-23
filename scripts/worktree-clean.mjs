@@ -17,10 +17,12 @@
 // line per folder.
 import { execFileSync } from 'node:child_process'
 import { existsSync, readdirSync, rmSync } from 'node:fs'
-import { join, resolve } from 'node:path'
+import { dirname, join, resolve } from 'node:path'
 
 const git = (...args) => execFileSync('git', args, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim()
-const root = git('rev-parse', '--show-toplevel')
+// The main checkout, also when the script runs inside a worktree: `--show-toplevel` names that worktree, whose own
+// .claude/worktrees/ is empty, and a run from there printed nothing and removed nothing (0.18, #833).
+const root = dirname(git('rev-parse', '--path-format=absolute', '--git-common-dir'))
 const home = join(root, '.claude', 'worktrees')
 /** Forward slashes, lower case: Windows writes one path several ways. */
 const same = path => resolve(path).replaceAll('\\', '/').toLowerCase()
@@ -95,22 +97,30 @@ for (const tree of worktrees()) {
       continue
     }
     const lockReason = tree.lock
+    let folderStays = ''
     try {
       if (lockReason !== undefined) git('worktree', 'unlock', tree.path)
       git('worktree', 'remove', tree.path)
     }
     catch (error) {
-      // Windows refuses to delete a file a process still holds; what is left is a folder for the next run. A worktree
-      // that stays unlocked and unnamed would stay for ever (#477), so the lock goes back and a dead pid is tried again.
-      if (lockReason !== undefined) {
-        try {
-          git('worktree', 'lock', '--reason', lockReason, tree.path)
+      // Windows refuses to delete a file a process still holds. When git has let go of the worktree all the same, only
+      // the folder is left: its branches go now, and the sweep below deletes the folder once nothing holds it. Until
+      // 0.18 the error ended here and left the branches behind, deleted by hand (#833).
+      const stillListed = worktrees().some(item => same(item.path) === same(tree.path))
+      if (!stillListed) folderStays = String(error.stderr || error.message).trim().split('\n')[0]
+      else {
+        // A worktree that stays unlocked and unnamed would stay for ever (#477), so the lock goes back and a dead pid
+        // is tried again.
+        if (lockReason !== undefined) {
+          try {
+            git('worktree', 'lock', '--reason', lockReason, tree.path)
+          }
+          catch {
+            // Nothing more to do: the failure below says what went wrong.
+          }
         }
-        catch {
-          // Nothing more to do: the failure below says what went wrong.
-        }
+        throw error
       }
-      throw error
     }
     // The harness's own branch and the agent's, once their tips are safe on origin (checked above for the worktree's HEAD).
     const branches = [`worktree-${name}`, tree.branch].filter(branch => branch && git('branch', '--list', branch) !== '')
@@ -118,7 +128,8 @@ for (const tree of worktrees()) {
       if (git('branch', '-r', '--contains', git('rev-parse', branch)) !== '') git('branch', '-D', branch)
     }
     const wasByHand = byHand ? ` (was locked by hand${lockReason ? `: ${lockReason}` : ''})` : ''
-    console.log(`removed ${name}${wasByHand}${branches.length > 0 ? ` and ${[...new Set(branches)].join(', ')}` : ''}`)
+    const stays = folderStays ? ` (its folder stays: ${folderStays})` : ''
+    console.log(`removed ${name}${wasByHand}${branches.length > 0 ? ` and ${[...new Set(branches)].join(', ')}` : ''}${stays}`)
   }
   catch (error) {
     console.log(`failed ${name}: ${String(error.stderr || error.message).trim().split('\n')[0]}`)

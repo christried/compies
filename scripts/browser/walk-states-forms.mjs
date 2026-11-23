@@ -17,6 +17,26 @@ const COPY = JSON.parse(readFileSync(join(dirname(fileURLToPath(import.meta.url)
 const invalid = `!!document.querySelector('[aria-invalid="true"]')`
 const exactly = text => `const same = el => el.textContent.replace(${UNTAG}, '').trim() === ${JSON.stringify(text)}`
 
+/** `POST /api/me/motion` (the switch „Weniger Bewegung“, #680) answers 500; every other request goes on as it is. */
+export const FAKE_MOTION_FAIL = `(() => {
+  const real = window.fetch
+  window.fetch = (input, init) => {
+    const url = new URL(typeof input === 'string' ? input : input.url, location.href)
+    if (url.pathname === '/api/me/motion' && (init?.method ?? input.method ?? 'GET').toUpperCase() === 'POST') return Promise.resolve(new Response('{"statusCode":500}', { status: 500, headers: { 'content-type': 'application/json' } }))
+    return real(input, init)
+  }
+})()`
+
+/** The switch of the settings row whose title is „Weniger Bewegung“ (`SettingsRow` names the switch by the title's id): clicked, true when there is one. */
+const MOTION_SWITCH = `(() => {
+  const title = [...document.querySelectorAll('[id]')].find(el => el.textContent.replace(${UNTAG}, '').trim() === ${JSON.stringify(COPY.settings.motion)})
+  const el = title ? document.querySelector('[role=switch][aria-labelledby~="' + title.id + '"]') : null
+  if (!el) return false
+  el.scrollIntoView({ block: 'center', behavior: 'instant' })
+  el.click()
+  return true
+})()`
+
 /** The page expression for the radio whose text is `text` (a card of a RadioCardGroup, a segment of a SegmentedControl). */
 const radioClicked = (tab, text) => tab.evaluate(`(() => { ${exactly(text)}; const el = [...document.querySelectorAll('[role=radio]')].find(e => e.getBoundingClientRect().width > 0 && [...e.querySelectorAll('*'), e].some(same)); if (!el) return false; el.scrollIntoView({ block: 'center', behavior: 'instant' }); el.click(); return true })()`)
 
@@ -110,6 +130,16 @@ export const STATES = [
       await restoreName(ctx.tab)
     },
   },
+  // F3b (#861): the switch „Weniger Bewegung“ saved with a failure: the switch goes back and the notice of the failed save shows. The save is answered 500 by a
+  // replaced `fetch` (`FAKE_MOTION_FAIL`), so nothing is stored; a reload of the next state's `open` takes the replacement away.
+  page('profil-weniger-bewegung-fehler', 'hub', 'host', () => '/profil', {
+    async after(ctx) {
+      const { tab } = ctx
+      await tab.evaluate(FAKE_MOTION_FAIL)
+      if (!await tab.evaluate(MOTION_SWITCH)) throw new Error('no switch of „Weniger Bewegung“ on Profil')
+      await until(tab, `document.body.textContent.replace(${UNTAG}, '').includes(${JSON.stringify(COPY.settings.motionSaveFailed)})`, 'the notice of the failed save')
+    },
+  }),
   // F4: the game form with wrong input, field by field. Never saved: the sending button refuses.
   page('bibliothek-neu-eingaben', 'library', 'host', () => '/bibliothek/neu', {
     waitFor: 'form',

@@ -11,7 +11,9 @@ import { GAME_NAME_MAX, type GameView, type PoolGame } from '~~/shared/game'
 import { notesFromLines, type NotesDoc } from '~~/shared/notes-doc'
 import { defaultSettings } from '~~/shared/settings'
 import { kitty, signInAs } from './auth'
+import { eventNotesContext } from './helpers/event-notes-context'
 import { FORMATTED_HREF, FORMATTED_NOTES, readFormatted } from './helpers/formatted-notes'
+import { ensureGeometry } from './helpers/notes-editor'
 import { clickButton, clickHostAction, dialog, hostActionElement, regionHeadings, restoreScreen, serve, shownToasts, stubScreen, viewWithSessions, type Mounted, type Wrapper } from './event-page'
 
 // The open Rounds on the stage and „Nächstes Spiel setzen“ (#228, 11-event-seite § EventPage, screen 15): the Round card with
@@ -627,7 +629,7 @@ describe('„Nächstes Spiel setzen“', () => {
   })
 
   it('opens a sheet that lists the games left in the Game pool first, then the library', async () => {
-    registerEndpoint('/api/games', { method: 'GET', handler: () => ({ games: [kart, schach], tagsInUse: [] }) })
+    registerEndpoint('/api/games', { method: 'GET', handler: () => ({ games: [{ ...kart, tags: [] }, schach], tagsInUse: [] }) })
     signInAs({ ...kitty, canHost: true })
     const { slug } = serveHostPick({ rejection: null, spinRejection: 'no_wheel', respin: false, left: [halo.id, pong.id], poolWarning: null })
     const stage = await mount(slug)
@@ -648,7 +650,7 @@ describe('„Nächstes Spiel setzen“', () => {
   })
 
   it('shows the Event notes in the popover of a pool row, for a game without Game notes (#732)', async () => {
-    registerEndpoint('/api/games', { method: 'GET', handler: () => ({ games: [kart, schach], tagsInUse: [] }) })
+    registerEndpoint('/api/games', { method: 'GET', handler: () => ({ games: [{ ...kart, tags: [] }, schach], tagsInUse: [] }) })
     signInAs({ ...kitty, canHost: true })
     stubScreen(true)
     const served = serveRunning({ host: true, setGame: { rejection: null, spinRejection: 'no_wheel', respin: false, left: [halo.id, pong.id], poolWarning: null }, eventNotes: { 'g-pong': notesFromLines(['Heute nur Bo1'])! } })
@@ -660,8 +662,8 @@ describe('„Nächstes Spiel setzen“', () => {
     const poolList = dialog()!.querySelector('ul[aria-label="Spiele, die im Pool noch übrig sind"]')!
     // Halo has Game notes only, Pong Event notes only: both rows have the button.
     const [haloRow, pongRow] = [...poolList.querySelectorAll('li')]
-    expect(haloRow!.querySelector('button[aria-label="Notizen ansehen"]')).not.toBeNull()
-    pongRow!.querySelector<HTMLButtonElement>('button[aria-label="Notizen ansehen"]')!.click()
+    expect(haloRow!.querySelector('button[aria-label^="Notizen zu "]')).not.toBeNull()
+    pongRow!.querySelector<HTMLButtonElement>('button[aria-label^="Notizen zu "]')!.click()
     await flushPromises()
     const popover = document.querySelector<HTMLElement>('[role="dialog"]:not([data-sheet])')!
     expect([...popover.querySelectorAll('h3')].map(heading => heading.textContent)).toEqual(['Notizen für dieses Event'])
@@ -670,7 +672,7 @@ describe('„Nächstes Spiel setzen“', () => {
   })
 
   it('sets the chosen game from the bar and closes once the server took it', async () => {
-    registerEndpoint('/api/games', { method: 'GET', handler: () => ({ games: [kart, schach], tagsInUse: [] }) })
+    registerEndpoint('/api/games', { method: 'GET', handler: () => ({ games: [{ ...kart, tags: [] }, schach], tagsInUse: [] }) })
     signInAs({ ...kitty, canHost: true })
     const { slug } = serveHostPick({ rejection: null, spinRejection: 'no_wheel', respin: false, left: [halo.id, pong.id], poolWarning: null })
     const stage = await mount(slug)
@@ -729,7 +731,7 @@ describe('„Nächstes Spiel setzen“', () => {
   })
 
   it('can pick a game of the library that is not in the pool', async () => {
-    registerEndpoint('/api/games', { method: 'GET', handler: () => ({ games: [kart, schach], tagsInUse: [] }) })
+    registerEndpoint('/api/games', { method: 'GET', handler: () => ({ games: [{ ...kart, tags: [] }, schach], tagsInUse: [] }) })
     signInAs({ ...kitty, canHost: true })
     const { slug } = serveHostPick({ rejection: null, spinRejection: 'no_wheel', respin: false, left: [halo.id], poolWarning: null })
     const stage = await mount(slug)
@@ -1009,5 +1011,83 @@ describe('the game dialog from the Round tiles (#443, #444)', () => {
     // The Round's Host-only parts stay absent for a Member.
     expect(rounds.text()).not.toContain('Zurücklegen')
     expect(rounds.text()).not.toContain('Ergebnis eintragen')
+  })
+})
+
+describe('„Bearbeiten“ at the foot of a Round card’s notes (#836)', () => {
+  // The Round card on its own, with the Event page's context (Event notes and save) and the Host's facts of the games for the dialog.
+  const EVENT_DOC = notesFromLines(['Heute nur Bo1'])!
+  const hostGames = { 'g-halo': { tags: [], notes: halo.notes } }
+  let rounds: Awaited<ReturnType<typeof mountSuspended>> | undefined
+  const save = vi.fn(() => Promise.resolve(true))
+  const edit = () => [...document.querySelectorAll<HTMLButtonElement>('button')].find(button => button.textContent?.trim() === 'Bearbeiten')
+  const textboxes = () => [...document.querySelectorAll<HTMLElement>('[role="textbox"]')]
+
+  async function mountRounds({ host = true, finished = false, withSave = true, rounds: list = [round('r1', halo, halo.notes!)] }: { host?: boolean, finished?: boolean, withSave?: boolean, rounds?: RoundView[] } = {}) {
+    const { global } = eventNotesContext({ notes: { 'g-halo': EVENT_DOC }, finished, save: withSave ? save : null })
+    rounds = await mountSuspended(EventRounds, {
+      props: { rounds: list, isHost: host, putBack: () => Promise.resolve(true), teams: [], pointsTable: null, enterResult: () => Promise.resolve(true), end: null, hostGames },
+      global,
+      attachTo: document.body,
+    })
+    await flushPromises()
+    return rounds
+  }
+
+  beforeEach(() => {
+    ensureGeometry()
+    localStorage.clear()
+    save.mockClear()
+    document.body.innerHTML = ''
+    signInAs({ ...kitty, canHost: true })
+  })
+  afterEach(() => {
+    rounds?.unmount()
+    rounds = undefined
+  })
+
+  it('shows the Host „Bearbeiten“ at the foot of the open notes, below both blocks', async () => {
+    const mounted = await mountRounds()
+
+    const panel = mounted.get('button[aria-expanded="true"]').attributes('aria-controls')
+    expect(panel).toBeTruthy()
+    const body = mounted.get(`[id="${panel}"]`).element
+    expect(body.lastElementChild!.contains(edit()!)).toBe(true)
+    expect(body.textContent).toContain('Heute nur Bo1')
+  })
+
+  it('opens the Round’s game dialog in the edit mode, with both editors and the Event editor focused', async () => {
+    await mountRounds()
+
+    edit()!.click()
+    await vi.waitFor(() => expect(textboxes()).toHaveLength(2))
+    await flushPromises()
+
+    expect(document.querySelector('[role="dialog"] h2')?.textContent).toBe('Halo')
+    expect(textboxes()[0]!.contains(document.activeElement)).toBe(true)
+  })
+
+  it('shows in a finished Event too, and the dialog then edits the Game notes alone', async () => {
+    await mountRounds({ finished: true })
+
+    expect(edit()).toBeDefined()
+    edit()!.click()
+    await vi.waitFor(() => expect(textboxes()).toHaveLength(1))
+    await flushPromises()
+
+    expect(document.querySelector('[role="dialog"]')!.textContent).toContain('Heute nur Bo1')
+    expect(textboxes()[0]!.contains(document.activeElement)).toBe(true)
+  })
+
+  it('has none for a Member, whatever the Round shows', async () => {
+    await mountRounds({ host: false })
+
+    expect(edit()).toBeUndefined()
+  })
+
+  it('has none where the page gives no save to edit with', async () => {
+    await mountRounds({ withSave: false })
+
+    expect(edit()).toBeUndefined()
   })
 })

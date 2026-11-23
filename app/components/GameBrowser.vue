@@ -2,6 +2,7 @@
 import { Search } from '@lucide/vue'
 import type { ComponentPublicInstance } from 'vue'
 import type { RouteLocationRaw } from 'vue-router'
+import type { NotesDoc } from '~~/shared/notes-doc'
 import { NO_FILTERS, SUITABILITIES, filterGames, parsePlayerCount, sortTagsByLabel, type GameFilters, type GameView } from '~~/shared/game'
 import { CHIP_OFF, CHIP_ON, CHIP_SHAPE } from '~/utils/chip-look'
 
@@ -11,14 +12,18 @@ import { CHIP_OFF, CHIP_ON, CHIP_SHAPE } from '~/utils/chip-look'
 // (#369: 40 cards a page over the filtered list, more by a sentinel or „Mehr laden“). What differs is handed in: the
 // filter state (`v-model:filters`, the library binds it to the address, the picker keeps it local), `compact` (only the
 // search, „Alle“ and the Tag; the library page also has „Archiviert“, #467), `to` (the card links to the game), `#card-actions` (the picker's ＋ and ✕) and `#toolbar`
-// („Neues Spiel anlegen“, on the search row), `marksEvents` (#733, the library page's „in 2 Events“ on each card). The filtering is client side (`filterGames`), so it follows every
-// keystroke. The grid from md up and the rows below are CSS (GameCard `responsive`), not `matchMedia`.
+// („Neues Spiel anlegen“, on the search row), `marksEvents` (#733, the library page's „in 2 Events“ on each card), `cardNotes` (#837, #859: the Notes button of each card whose game has notes, in the card's place, with the footer „Bearbeiten“ in the library and without it in the pickers) and `eventNotesOf` (#859, the picker's Event notes by game). The filtering is client side (`filterGames`), so it follows every
+// keystroke. The grid from 600 px up (sm, #707) and the rows below are CSS (GameCard `responsive`), not `matchMedia`.
 const props = defineProps<{
   compact?: boolean
   /** Where a card leads; without it the cards are plain. */
   to?: (game: GameView) => RouteLocationRaw
   /** Each card says in how many live Events its game sits (#733): the library page only, the pickers leave it off. */
   marksEvents?: boolean
+  /** Each card with Game notes carries the Notes button in its place (#837): `edit` adds the footer „Bearbeiten“ to the game's form (the library page), `view` has no footer (the pickers, #859). */
+  cardNotes?: 'edit' | 'view'
+  /** The Host's Event notes by game id (#859): read for the cards with `cardNotes` only, so the picker's cards show them with the Game notes. */
+  eventNotesOf?: (gameId: string) => NotesDoc | null
 }>()
 const filters = defineModel<GameFilters>('filters', { required: true })
 
@@ -75,6 +80,8 @@ const PAGE_SIZE = 40
 const limit = ref(PAGE_SIZE)
 const visible = computed(() => shown.value.slice(0, limit.value))
 const remaining = computed(() => shown.value.length - visible.value.length)
+// Some game of the filtered list has Tags (#711): then every card keeps the room of two Tag lines. The whole list, not the 40 drawn: a game with Tags on page 2 must not change the cards of page 1 when it loads.
+const anyTags = computed(() => shown.value.some(game => game.tags.length > 0))
 // Any change of the filters starts at the first page again (#369): after a search narrowed the list and „Alle“ widened it, 40 cards, not the 120 loaded before.
 // Compared by value, not by identity (#369): „Alle“ replaces the object with `{ ...NO_FILTERS }`, and with nothing chosen that click must keep the loaded cards; a deep watch would reset them.
 watch(() => JSON.stringify(filters.value), () => {
@@ -122,8 +129,8 @@ function set(changes: Partial<GameFilters>) {
   filters.value = { ...filters.value, ...changes }
 }
 
-// The grid wraps as many cards as fit from md up; below it the cards are rows.
-const GRID = 'md:grid md:grid-cols-[repeat(auto-fill,minmax(170px,1fr))] md:items-stretch md:gap-3'
+// The grid wraps as many cards as fit from 600 px up (sm, #707); below it the cards are rows.
+const GRID = 'sm:grid sm:grid-cols-[repeat(auto-fill,minmax(170px,1fr))] sm:items-stretch sm:gap-3'
 const CHIP = `inline-flex ${CHIP_SHAPE} items-center gap-1.5 px-4 text-small`
 </script>
 
@@ -268,6 +275,10 @@ const CHIP = `inline-flex ${CHIP_SHAPE} items-center gap-1.5 px-4 text-small`
           layout="responsive"
           :to="to?.(game)"
           :in-events="marksEvents ? eventCounts[game.id] ?? 0 : 0"
+          :notes="cardNotes ? game.notes : null"
+          :event-notes="cardNotes && eventNotesOf ? eventNotesOf(game.id) : null"
+          :tags-room="anyTags"
+          :notes-edit-to="cardNotes === 'edit' ? `/bibliothek/${game.id}/bearbeiten` : undefined"
           class="h-full"
         >
           <template

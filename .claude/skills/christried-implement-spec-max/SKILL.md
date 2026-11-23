@@ -92,6 +92,6 @@ Who runs on which tier:
 
 - A ticket's **brief drafter, implementer and merge job** run on the ticket's tier. Rate the ticket from its text and the spec before the drafter, and again from the brief: a brief that names a Fable risk raises it. The fix implementer of step 7 is rated by its hardest fix.
 - **`code-review`**: the Spec sub-agent on the tier of the hardest ticket on the branch, Opus at least; the Standards sub-agent on Opus.
-- **Release review**: the Spec reviewer and `christried-thermo-nuclear-code-quality-review` on Fable, the Standards reviewer on Opus, the report merger on Sonnet.
+- **Release review**: the Spec reviewer on Fable, the Standards reviewer on Opus.
 - **Browser check**: Sonnet for layout on one account; Opus for motion or the two-account check.
 - **Exploration**: Sonnet; Opus when its question touches a Fable risk.

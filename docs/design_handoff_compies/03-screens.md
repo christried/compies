@@ -324,6 +324,7 @@ Every screen exists in the design files at desktop 1280 and mobile 390, light an
 - **States:** Neu, mit Vorschau · Duplikat-Hinweis · YouTube-Link kaputt · Bearbeiten
 - **Realtime:** —
 - **Deviation (0.16, #455):** a game is created in the Host's own library, not a platform-wide one (Release 0.16, ADR 0018). Two Hosts having the same game each is intended, so the Duplikat-Hinweis is no longer a check across Hosts.
+- **Deviation (0.19, #689):** the Duplikat-Hinweis compares names only (case, spaces, punctuation, accents), names the match, and „Ist ein anderes Spiel, trotzdem anlegen“ is gone: saving is never blocked.
 
 
 ### 25 Profil & Einstellungen
@@ -335,7 +336,7 @@ Every screen exists in the design files at desktop 1280 and mobile 390, light an
 - **Host vs player:** —
 - **States:** Profil · Bild lädt hoch · Letztes Konto · Einstellungen
 - **Realtime:** —
-- **Deviation (0.11, #398):** ships trimmed: one column at most 640 px wide, with a card „Profil“ (picture, Anzeigename with „Speichern“) and a card „Einstellungen“ (Ton, Darstellung), then „Abmelden“, instead of the Profil / Einstellungen tablist. No Meine Sessions, no Verbundene Konten, no upload states (Hochladen, „Discord-Bild nutzen“), no Push, Sprache or Weniger Bewegung rows. The Anzeigename takes 32 characters, not 24. The reference artboard still shows the full screen.
+- **Deviation (0.11, #398):** ships trimmed: one column at most 640 px wide, with a card „Profil“ (picture, Anzeigename with „Speichern“) and a card „Einstellungen“ (Ton, Weniger Bewegung from 0.19 (#680), Darstellung), then „Abmelden“, instead of the Profil / Einstellungen tablist. No Meine Sessions, no Verbundene Konten, no upload states (Hochladen, „Discord-Bild nutzen“), no Push or Sprache rows. The Anzeigename takes 32 characters, not 24. The reference artboard still shows the full screen.
 
 
 ### 26 Plattform-Admin

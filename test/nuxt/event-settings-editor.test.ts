@@ -37,7 +37,7 @@ registerEndpoint('/api/games', {
   method: 'GET',
   handler: () => {
     listed()
-    return { games: [kart, pong].map(game => ({ ...game, updatedAt: '2026-01-15T10:00:00.000Z', archived: false })), tagsInUse: [] }
+    return { games: [kart, pong].map(game => ({ ...game, updatedAt: '2026-01-15T10:00:00.000Z', tags: [], archived: false })), tagsInUse: [] }
   },
 })
 

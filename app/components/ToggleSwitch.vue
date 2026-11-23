@@ -1,7 +1,7 @@
 <script setup lang="ts">
 // An on/off setting (02-components § ToggleSwitch): „Pseudo-Games“ in the Lucky Wheel's options (#145) and „Pool vorher zeigen“ (#225). The
 // whole row is the switch, so the label is clickable; the optional help is its description. The knob slides with the
-// same ease as the other motion, and not at all with reduced motion. `disabled` (#225) keeps the switch where it is: it
+// same ease as the other motion, and not at all with reduced motion (the device's, or the app's own switch, #680). `disabled` (#225) keeps the switch where it is: it
 // is announced as disabled (aria-disabled, like the other disabled controls, so it stays focusable and its help, which
 // can say why, is still read), looks muted and asks for nothing when it is clicked. Without a label it is the track alone,
 // named and described from outside (SettingsRow on the Profil page, #400).
@@ -45,7 +45,7 @@ const helpId = `${uid}-help`
       aria-hidden="true"
     >
       <span
-        class="absolute top-[3px] left-[3px] size-[19px] rounded-pill transition-transform dur-base ease-snap motion-reduce:transition-none"
+        class="absolute top-[3px] left-[3px] size-[19px] rounded-pill transition-transform dur-base ease-snap motion-reduce:transition-none reduced:transition-none"
         :class="[modelValue ? 'translate-x-[22px]' : '', disabled ? 'bg-ink-3' : modelValue ? 'bg-ink' : 'bg-surface']"
       />
     </span>

@@ -56,19 +56,19 @@ const MONO_WHAT = {
   'app/components/RichNotesToolbar.vue': 'Tastenkürzel im Tipp der Notizen-Werkzeugleiste',
 }
 
-/** The eleven uses of `font-mono` in app/ (`grep -rn "font-mono" app --include=*.vue`) and how each is recorded; the report says where each was seen. */
+/** The eleven uses of `font-mono` in app/ (`grep -rn "font-mono" app --include=*.vue`) and how each is recorded; the report says where each was seen. A site names its file and what it shows, never a line number, which went stale twice (#833). */
 const MONO_USES = [
-  { site: 'ChangelogInline.vue:39 code', component: 'app/components/ChangelogInline.vue', entry: true, element: 'code' },
-  { site: 'ChangelogInline.vue:48 issue chip', component: 'app/components/ChangelogInline.vue', entry: true, notElement: 'code' },
+  { site: 'ChangelogInline.vue code', component: 'app/components/ChangelogInline.vue', entry: true, element: 'code' },
+  { site: 'ChangelogInline.vue issue chip', component: 'app/components/ChangelogInline.vue', entry: true, notElement: 'code' },
   { site: 'ChatPanel.vue common.counter', component: 'app/components/ChatPanel.vue', keys: ['common.counter'] },
-  { site: 'ClipPreview.vue:122 times', component: 'app/components/ClipPreview.vue', entry: true },
-  { site: 'InviteLinkCard.vue:37 input', component: 'app/components/InviteLinkCard.vue', entry: true },
-  { site: 'GameImageField.vue:310 gameEdit.imageRatio', component: 'app/components/GameImageField.vue', keys: ['gameEdit.imageRatio'] },
-  { site: 'NoteEditor.vue:113 common.counter', component: 'app/components/NoteEditor.vue', keys: ['common.counter'] },
-  { site: 'RichNotesToolbar.vue:158 shortcut', component: 'app/components/RichNotesToolbar.vue', entry: true, element: 'span' },
-  { site: 'TeamNameBuilder.vue:222 common.counter', component: 'app/components/TeamNameBuilder.vue', keys: ['common.counter'] },
-  { site: 'TextField.vue:125 common.counter', component: 'app/components/TextField.vue', keys: ['common.counter'] },
-  { site: 'StagingBadge.vue:12 staging.badge', component: 'app/components/StagingBadge.vue', keys: ['staging.badge'], expectedMissing: 'the badge renders on a staged server only (stage.ts), and the dev server is not started staged' },
+  { site: 'ClipPreview.vue times', component: 'app/components/ClipPreview.vue', entry: true },
+  { site: 'InviteLinkCard.vue input', component: 'app/components/InviteLinkCard.vue', entry: true },
+  { site: 'GameImageField.vue gameEdit.imageRatio', component: 'app/components/GameImageField.vue', keys: ['gameEdit.imageRatio'] },
+  { site: 'NoteEditor.vue common.counter', component: 'app/components/NoteEditor.vue', keys: ['common.counter'] },
+  { site: 'RichNotesToolbar.vue shortcut', component: 'app/components/RichNotesToolbar.vue', entry: true, element: 'span' },
+  { site: 'TeamNameBuilder.vue common.counter', component: 'app/components/TeamNameBuilder.vue', keys: ['common.counter'] },
+  { site: 'TextField.vue common.counter', component: 'app/components/TextField.vue', keys: ['common.counter'] },
+  { site: 'StagingBadge.vue staging.badge', component: 'app/components/StagingBadge.vue', keys: ['staging.badge'], expectedMissing: 'the badge renders on a staged server only (stage.ts), and the dev server is not started staged' },
 ]
 
 /**

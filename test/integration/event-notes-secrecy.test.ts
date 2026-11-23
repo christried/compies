@@ -14,11 +14,16 @@ import { setAllowlist } from './sign-in'
 const TRACE = 'Geheimnotiz-731'
 const REPLACED = 'Ersatznotiz-731'
 const trace = notesFromLines([TRACE])!
+// The game's own notes, saved through the same route (#835): a second trace, so a leak names the field it came from.
+const GAME_TRACE = 'Spielnotiz-835'
+const gameTrace = notesFromLines([GAME_TRACE])!
 
 const fan = { provider: 'discord', id: '8', name: 'Zuschauer', email: 'fan@example.com', image: undefined } as const
 const otherHost = { provider: 'discord', id: '9', name: 'Andere', email: 'otherhost@example.com', image: undefined } as const
 
-describe('Event notes are in no read but the Host\'s (#731)', () => {
+// Each case runs whole Events through the API; the sweep of every GET route takes 1.7 s on a free machine and passed the default 5 s once in
+// CI (#833), hence the limit of dev-sign-in.test.ts.
+describe('Event notes are in no read but the Host\'s (#731)', { timeout: 20_000 }, () => {
   const world = hiddenWheelWorld()
   const { request, notifier, clock, rawRead, runningEvent, setUp, expectNone, rig, host, stranger, playerTraces } = world
   // The world's app has no share assets: the sweep of a finished Event asks the same database through an app that renders the Share image.
@@ -203,6 +208,101 @@ describe('Event notes are in no read but the Host\'s (#731)', () => {
     expect(finished.members.find(entry => entry.route === '/api/e/:slug/share-image' && entry.who === HOST)?.status).toBe(200)
     // No Member's body names a library game that was never set (Gamma and Epsilon hold notes the Host wrote).
     expectNone({ ...bodiesOf(finished.members, PLAYER), ...bodiesOf(finished.members, OUTSIDER) }, [c, epsilon], playerTraces)
+  })
+
+  // The Game notes saved through the Event's route (#835, spec #856): the Host reads them in the dialog, the Round card and the popovers; no Member's read, the feed or the room
+  // carries them (CODING_STANDARDS § Secrecy; GLOSSARY: Game notes, Members never read them).
+  describe('the Game notes saved through the route (#835)', () => {
+    const saveGame = async (slug: string, game: Secret, gameNotes: unknown, eventNotes?: unknown) => {
+      const response = await send('PUT', `/api/e/${slug}/games/${game.id}/notes`, world.hostCookie, eventNotes === undefined ? { gameNotes } : { notes: eventNotes, gameNotes })
+      expect(response.status, `saving the Game notes of ${game.name}`).toBe(200)
+    }
+    const hostGamesOf = (raw: string) => (JSON.parse(raw) as EventView).hostGames
+
+    it('control: the Host\'s read holds the text in hostGames, the pool and the Round, and a Member\'s read none of it, with eventNotes and hostGames null', async () => {
+      const running = await runningEvent({ ...LOBBY, gameCount: 1 })
+      const { slug, a, c, secondCookie } = running
+      const others = await bystanders(running)
+      const hostRef = { slug, host: world.hostSigned }
+      await saveGame(slug, a, gameTrace)
+      await saveGame(slug, c, gameTrace, trace)
+      await hostSets(rig(), hostRef, a.id)
+
+      const hostView = JSON.parse(await rawRead(world.hostCookie, slug)) as EventView
+      expect(hostView.hostGames![a.id]!.notes).toEqual(gameTrace)
+      // Gamma is in no pool and no Round: it is no tile, so even the Host's read has no entry for it.
+      expect(hostView.hostGames![c.id]).toBeUndefined()
+      expect(hostView.rounds.map(round => round.notes)).toEqual([gameTrace])
+      expect(hostView.pool!.find(game => game.id === a.id)).toMatchObject({ notes: gameTrace })
+
+      for (const [who, cookie] of Object.entries({ 'Player': world.playerCookie, 'second Player': secondCookie, 'Fan': others.fan })) {
+        const raw = await rawRead(cookie, slug)
+        expect(raw, who).not.toContain(GAME_TRACE)
+        expect(raw, who).not.toContain(TRACE)
+        expect(mapOf(raw), who).toBeNull()
+        expect(hostGamesOf(raw), who).toBeNull()
+        expectNone({ [who]: raw }, [c])
+      }
+      const outsider = await request(`/api/e/${slug}`, { headers: { cookie: others.stranger } })
+      expect(outsider.status).toBe(404)
+      expect(await outsider.text()).not.toContain(GAME_TRACE)
+    })
+
+    it('writes no Activity entry for a save, a replace or a clear, and tells the room only event.changed, to the Host alone, with no text, game id or game name', async () => {
+      const { slug, eventId, a } = await runningEvent()
+      const feedOf = async (cookie: string) => await readFeedText(rig(), cookie, slug, 'limit=100')
+      const before = { host: await feedOf(world.hostCookie), player: await feedOf(world.playerCookie) }
+
+      for (const [step, gameNotes] of [['save', gameTrace], ['replace', notesFromLines([REPLACED])], ['clear', null]] as const) {
+        notifier.clear()
+        await saveGame(slug, a, gameNotes)
+        const messages = notifier.messages(eventId)
+        expect(messages.map(message => message.type), step).toEqual(['event.changed'])
+        expect(notifier.sends(eventId).map(sent => sent.to), step).toEqual([[world.hostSigned.id]])
+        const sent = JSON.stringify(messages)
+        expect(sent, step).not.toContain(GAME_TRACE)
+        expect(sent, step).not.toContain(REPLACED)
+        expect(sent, step).not.toContain(a.id)
+        expect(sent, step).not.toContain(a.name)
+      }
+
+      const after = { host: await feedOf(world.hostCookie), player: await feedOf(world.playerCookie) }
+      expect(after).toEqual(before)
+      for (const feed of Object.values(after)) {
+        expect(feed).not.toContain(GAME_TRACE)
+        expect(feed).not.toContain(REPLACED)
+      }
+    })
+
+    it('has the text in no GET route but the Host\'s Event read and the owner\'s own library routes', async () => {
+      const running = await runningEvent({ ...LOBBY, gameCount: 1 })
+      const { slug, inviteToken, a, b, c, epsilon } = running
+      const others = await bystanders(null)
+      setAllowlist({ hosts: `${host.provider}:${host.id},${otherHost.provider}:${otherHost.id}`, admins: 'discord:99' })
+      const otherHostSigned = await signInAs(rig(), otherHost)
+      const games = [a, b, c, epsilon]
+      await saveGame(slug, a, gameTrace)
+      await saveGame(slug, c, gameTrace)
+      await saveGame(slug, epsilon, gameTrace)
+
+      const viewers = [{ who: PLAYER, cookie: world.playerCookie }, { who: OUTSIDER, cookie: others.stranger }, { who: HOST, cookie: world.hostCookie }]
+      const members = await sweepGets({ viewers, event: { slug, inviteToken }, games })
+      // The other Host reads the same routes as a library owner of their own (no game of this Event) and a non-Member of the Event.
+      const other = await sweepGets({ viewers: [{ who: 'the other Host', cookie: otherHostSigned.cookie }], event: { slug, inviteToken }, games })
+
+      expect(members.length).toBeGreaterThan(20)
+      const hostBodies = bodiesOf(members, HOST)
+      expect(Object.keys(hostBodies), 'the Host\'s sweep reads the Event').toContain('GET /api/e/:slug as the Host')
+      expect(hostBodies['GET /api/e/:slug as the Host']).toContain(GAME_TRACE)
+      // The owner's own library routes (`GET /api/games…`) read the game's own notes: they are the Host's.
+      expect(Object.entries(hostBodies).some(([place, body]) => place.startsWith('GET /api/games') && body.includes(GAME_TRACE)), 'the library reads the Game notes').toBe(true)
+      for (const [place, body] of Object.entries(hostBodies)) {
+        if (place === 'GET /api/e/:slug as the Host' || place.startsWith('GET /api/games')) continue
+        expect(body, place).not.toContain(GAME_TRACE)
+      }
+      for (const who of [PLAYER, OUTSIDER]) for (const [place, body] of Object.entries(bodiesOf(members, who))) expect(body, place).not.toContain(GAME_TRACE)
+      for (const [place, body] of Object.entries(bodiesOf(other))) expect(body, place).not.toContain(GAME_TRACE)
+    })
   })
 
   /** The spin's draw settles at its stop, and a Veto window ends at its end: move the server's clock past both. */

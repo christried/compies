@@ -949,9 +949,6 @@
     "loadMore": "Mehr laden",
     "shownOf": "{shown} von {total} Spielen"
   },
-  "gameNotes": {
-    "open": "Notizen ansehen"
-  },
   "eventNotes": {
     "title": "Notizen für dieses Event",
     "edit": "Notizen für dieses Event bearbeiten",
@@ -989,6 +986,8 @@
   "notes": {
     "from_library": "aus deiner Bibliothek",
     "open_a11y": "Notizen zu {game}",
+    "edit_a11y": "Notizen bearbeiten",
+    "add": "Notizen hinzufügen",
     "link": {
       "new_tab": "(öffnet in neuem Tab)"
     },
@@ -1071,7 +1070,8 @@
     "saveShortcutApple": "⌘ + Enter speichert",
     "duplicate": "Gibt’s vielleicht schon: „{name}“.",
     "useExisting": "Das nehmen",
-    "createAnyway": "Trotzdem anlegen",
+    "duplicateArchived": "Gibt’s vielleicht schon, aber archiviert: „{name}“. Du kannst es zurückholen.",
+    "openArchived": "Zum Spiel",
     "badLink": "Der Link funktioniert so nicht.",
     "save": "Speichern"
   },
@@ -1151,6 +1151,9 @@
   "settings": {
     "title": "Einstellungen",
     "soundHelp": "Clips und Geräusche mit Ton",
+    "motion": "Weniger Bewegung",
+    "motionHelp": "Ruhige Varianten der großen Animationen, nur auf diesem Gerät.",
+    "motionSaveFailed": "Das hat nicht geklappt, „Weniger Bewegung“ ist wieder wie vorher. Versuch’s nochmal.",
     "appearance": "Darstellung",
     "appearanceHelp": "Gilt auf allen deinen Geräten.",
     "light": "Hell",
@@ -1365,7 +1368,7 @@
       },
       "cookies": {
         "heading": "9. Cookies und Speicher im Browser",
-        "text": "Compies setzt ausschließlich technisch notwendige Cookies bzw. speichert Angaben im Browser, die für die von dir ausdrücklich gewünschten Funktionen unbedingt erforderlich sind. Hierfür ist keine Einwilligung nötig (§ 25 Abs. 2 Nr. 2 TDDDG). Im Einzelnen:\n\nSitzungs-Cookies (Better Auth): halten dich angemeldet und sichern den Anmeldevorgang ab. Sie laufen nach höchstens 7 Tagen ohne Nutzung ab und werden beim Abmelden gelöscht.\n\nCookie (compies-appearance): merkt sich auf diesem Gerät deine Darstellung, damit auch die Seiten ohne Anmeldung, etwa die Anmeldeseite, so aussehen, wie du es gewählt hast. Es enthält nur deine Wahl („dark“ oder „system“), keine Kennung und keine Angaben zu dir. Compies setzt es nur, wenn deine Darstellung Dunkel oder System ist: sobald du sie in deinem Profil so wählst und, auf einem anderen Gerät, sobald du dich dort anmeldest. Wählst du Hell, wird es entfernt. Es läuft nach einem Jahr ab. Für diese Einstellung, die du selbst gewählt hast, ist es technisch notwendig; eine Einwilligung ist dafür nicht nötig, deshalb fragen wir sie nicht ab.\n\nLokaler Speicher (compies-sound): merkt sich, ob du die Sounds ein- oder ausgeschaltet hast.\n\nLokaler Speicher (compies-reopen-closed): merkt sich pro Session, welchen aufgehobenen Termin du geschlossen hast, damit der Hinweis nach dem Neuladen nicht wieder erscheint. Der Eintrag bleibt, bis du die Browserdaten löschst.\n\nLokaler Speicher (compies.news.seen): merkt sich, solange du nicht angemeldet bist, welche Version von Compies du unter „Was ist neu“ zuletzt gesehen hast, damit der Hinweis nur einmal erscheint.\n\nService Worker: hält eine Offline-Seite und das App-Symbol auf deinem Gerät vor, damit sich Compies wie eine installierte App verhält; Inhalte deiner Events werden dort nicht zwischengespeichert.\n\nDu kannst Cookies und gespeicherte Website-Daten jederzeit in deinem Browser löschen; danach musst du dich ggf. neu anmelden."
+        "text": "Compies setzt ausschließlich technisch notwendige Cookies bzw. speichert Angaben im Browser, die für die von dir ausdrücklich gewünschten Funktionen unbedingt erforderlich sind. Hierfür ist keine Einwilligung nötig (§ 25 Abs. 2 Nr. 2 TDDDG). Im Einzelnen:\n\nSitzungs-Cookies (Better Auth): halten dich angemeldet und sichern den Anmeldevorgang ab. Sie laufen nach höchstens 7 Tagen ohne Nutzung ab und werden beim Abmelden gelöscht.\n\nCookie (compies-appearance): merkt sich auf diesem Gerät deine Darstellung, damit auch die Seiten ohne Anmeldung, etwa die Anmeldeseite, so aussehen, wie du es gewählt hast. Es enthält nur deine Wahl („dark“ oder „system“), keine Kennung und keine Angaben zu dir. Compies setzt es nur, wenn deine Darstellung Dunkel oder System ist: sobald du sie in deinem Profil so wählst und, auf einem anderen Gerät, sobald du dich dort anmeldest. Wählst du Hell, wird es entfernt. Es läuft nach einem Jahr ab. Für diese Einstellung, die du selbst gewählt hast, ist es technisch notwendig; eine Einwilligung ist dafür nicht nötig, deshalb fragen wir sie nicht ab.\n\nCookie (compies-motion): merkt sich auf diesem Gerät, dass du „Weniger Bewegung“ eingeschaltet hast, damit Compies die ruhigen Animationen schon beim Laden zeigt, auch auf Seiten ohne Anmeldung. Es enthält nur den Wert „reduced“, keine Kennung und keine Angaben zu dir. Compies setzt es, sobald du den Schalter in deinem Profil einschaltest, und entfernt es, wenn du ihn ausschaltest. Es läuft nach einem Jahr ab. Für diese Einstellung, die du selbst gewählt hast, ist es technisch notwendig; eine Einwilligung ist dafür nicht nötig.\n\nLokaler Speicher (compies-sound): merkt sich, ob du die Sounds ein- oder ausgeschaltet hast.\n\nLokaler Speicher (compies-reopen-closed): merkt sich pro Session, welchen aufgehobenen Termin du geschlossen hast, damit der Hinweis nach dem Neuladen nicht wieder erscheint. Der Eintrag bleibt, bis du die Browserdaten löschst.\n\nLokaler Speicher (compies.news.seen): merkt sich, solange du nicht angemeldet bist, welche Version von Compies du unter „Was ist neu“ zuletzt gesehen hast, damit der Hinweis nur einmal erscheint.\n\nLokaler Speicher (compies-round-notes): merkt sich auf diesem Gerät, ob du als Host die Notizen an einem Spiel auf- oder zugeklappt hast, damit sie beim nächsten Spiel wieder so erscheinen. Der Eintrag enthält nur diese Wahl, keine Kennung und keine Angaben zu dir, und bleibt, bis du die Browserdaten löschst.\n\nService Worker: hält eine Offline-Seite und das App-Symbol auf deinem Gerät vor, damit sich Compies wie eine installierte App verhält; Inhalte deiner Events werden dort nicht zwischengespeichert.\n\nDu kannst Cookies und gespeicherte Website-Daten jederzeit in deinem Browser löschen; danach musst du dich ggf. neu anmelden."
       },
       "security": {
         "heading": "10. Sitzungs- und Sicherheitsdaten",
@@ -1417,7 +1420,7 @@
       },
       "changes": {
         "heading": "22. Änderungen und Stand",
-        "text": "Diese Datenschutzerklärung wird angepasst, wenn sich die Anwendung oder die Rechtslage ändert; es gilt die jeweils hier veröffentlichte Fassung. Stand: 20. November 2026."
+        "text": "Diese Datenschutzerklärung wird angepasst, wenn sich die Anwendung oder die Rechtslage ändert; es gilt die jeweils hier veröffentlichte Fassung. Stand: 22. November 2026."
       }
     }
   },
@@ -1869,7 +1872,6 @@
     "uploadTooLarge": "Das Bild ist zu groß (max. {max} MB).",
     "youtubeInvalid": "Das sieht nicht nach einem YouTube-Link aus.",
     "clipTooShort": "Der Clip muss mindestens 10 Sekunden lang sein.",
-    "duplicateGame": "Gibt's vielleicht schon: {name}",
     "pointsOrder": "Ein schlechterer Platz kann nicht mehr Punkte bekommen als ein besserer.",
     "pointsFlat": "Mindestens ein Platz muss weniger Punkte bekommen als Platz 1, sonst zählt die Platzierung nicht.",
     "formatUnavailable": "Dieses Format gibt es noch nicht.",
