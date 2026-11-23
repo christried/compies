@@ -6,6 +6,8 @@ import { Search } from '@lucide/vue'
 defineProps<{
   label: string
   placeholder: string
+  /** Inert: the Archive holds the field's place while its list loads (#984). */
+  disabled?: boolean
 }>()
 const model = defineModel<string>({ required: true })
 </script>
@@ -22,6 +24,7 @@ const model = defineModel<string>({ required: true })
       type="search"
       :aria-label="label"
       :placeholder="placeholder"
+      :disabled="disabled"
       class="h-control-lg w-full rounded-[12px] border-(length:--cp-bw) border-line bg-surface py-0 pr-3.5 pl-[42px] text-[17px] text-ink"
       @input="model = ($event.target as HTMLInputElement).value"
     >

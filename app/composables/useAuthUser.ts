@@ -1,4 +1,5 @@
 import { SIGN_IN_PATH } from '~/utils/auth-guard'
+import { ARCHIVE_KEY } from '~/utils/event-data'
 import { APPEARANCE_COOKIE } from '~~/shared/appearance'
 import type { AuthUser } from '~~/shared/auth'
 
@@ -16,6 +17,7 @@ export function useSignOut() {
     // CookieStore, and only through this call in a browser without one, so the sign-in page keeps the look (#403).
     refreshCookie(APPEARANCE_COOKIE)
     user.value = null
+    clearNuxtData(ARCHIVE_KEY) // the Archive keeps its list for the way back (#984); it is the signed-out User's
     await navigateTo(SIGN_IN_PATH)
   }
 }
