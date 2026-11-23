@@ -136,7 +136,6 @@ const NEVER_ONE: Record<string, string> = {
   'stepper.summary.teams': 'n is the team count, at least TEAM_COUNT_MIN (2)',
   'board.meta.open': 'places is the team count times the team size, at least 2',
   'mvp.home.datesStanding': 'the Home card shows it only for an Event with several Sessions',
-  'archive.meta': 'no caller yet: its two counts need two messages once the archive shows it',
   'share.image.datesMany': 'shown from 4 Termine on (#510)',
   'library.shownOf': 'the status line shows only above one page of 40 cards (#369), so total is at least 41',
 }

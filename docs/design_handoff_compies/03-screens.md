@@ -286,6 +286,7 @@ Every screen exists in the design files at desktop 1280 and mobile 390, light an
 - **Layout:** Filters (Alle, Gewonnen, Als Host) + search + card grid.
 - **Components:** ArchiveList, ArchiveCard, SkeletonCard, EmptyState
 - **Data:** Events where the user played ≥ 1 game (or admin).
+- **Deviation (0.20, #882):** Data: Events the User is a Member of and that are finished, newest Finish first; the empty text is „Events landen hier, sobald sie abgeschlossen sind.“; the search and the chips come with 0.20-4.
 - **Host vs player:** —
 - **States:** Liste · Leer · Suche ohne Treffer · Lädt
 - **Realtime:** —
@@ -297,6 +298,7 @@ Every screen exists in the design files at desktop 1280 and mobile 390, light an
 - **Layout:** Tabs: Endstand + Bild, Alle Spiele, Chat & Aktivität.
 - **Components:** ArchiveDetail, ShareImage, GameHistory, ChatPanel (read-only), ActivityFeed
 - **Data:** Everything stored for the Event.
+- **Deviation (0.20, #882):** not built: the Event's page is the detail.
 - **Host vs player:** Read-only for all.
 - **States:** Endstand + Bild · Alle Spiele · Chat & Aktivität
 - **Realtime:** —

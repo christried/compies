@@ -1183,6 +1183,8 @@ Past Events you played in; read-only detail.
 - **Desktop / mobile:** Desktop 3-col grid; mobile 1-col.
 - **Accessibility:** —
 - **Motion:** skeletons.
+- **Deviation (0.20, #882):** every Member of a finished Event sees it in the list, a Member on the Stands too (not „played at least one game“, not the Platform admin's everything). The Event's own page is the detail: ArchiveDetail is not built, the card is one link to `/e/<slug>`.
+- **Deviation (0.20, #882):** HubNav's `soon` no longer holds „archiv“, so the Archiv tab has no Baustelle marker in the header or in the phone's tabs.
 
 ## Compibert
 **Scope:** [MVP] head + still full · [1.0] all states · **Ref:** CompibertRig, Compibert Rig, compibert-options.js

@@ -8,3 +8,6 @@ export function eventDataKey(slug: string): string {
 // The key of Home's list (`GET /api/e`), shared by Home and the 404 page (#12). The Host's delete drops it, so the Event is gone from
 // the list on arrival (#333).
 export const HOME_EVENTS_KEY = 'home-events'
+
+// The key of the Archive's list (`GET /api/archive`, #882), as Home's: one cache for the page, so a return refetches the same data.
+export const ARCHIVE_KEY = 'archive'
