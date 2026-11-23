@@ -1,7 +1,7 @@
 import { asc, desc, eq } from 'drizzle-orm'
 import { bonusVetoes, coinTosses, draws, eventMembers, eventTeams, games, roundPlaces, rounds, users, vetoes } from '../db/schema'
 import { numberedSessions } from '../domain/session'
-import { countSeats, composeTeamName, moveRejection, placeOf, teamChoiceOpen, type MoveRejection, type Place, type Zone } from '../../shared/board'
+import { countSeats, composeTeamNames, moveRejection, placeOf, teamChoiceOpen, type MoveRejection, type Place, type Zone } from '../../shared/board'
 import { coinRejection } from '../../shared/coin'
 import { windowEnded } from '../../shared/draw-timeline'
 import { finishRejection, lastGameRejection, standingsAndEnd, type FinishRejection, type FinishRequest, type LastGameRejection } from '../../shared/finish'
@@ -460,15 +460,10 @@ export function roundBeingDrawnOf(state: EventState<'rounds'>): boolean {
 
 /**
  * The Team names (#161, #438) of the teams the settings call for: composed from the words of the team's Players in the order they joined it, null for
- * no words (the colour's name). The one composition of a Team name. A stored name (event_teams, read only in an Event finished before 0.12; the
+ * no words (the colour's name). The composition is `composeTeamNames` in shared/board.ts, which the Archive calls too (#883). A stored name (event_teams, read only in an Event finished before 0.12; the
  * previous deployment may still write rows) counts only in a finished Event and only for a team that has a row: null there is the colour's name
  * even when words exist. Parts: members, teams.
  */
 export function teamNamesOf(state: EventState<'members' | 'teams'>): { position: number, name: string | null }[] {
-  const stored = !beforeFinish(state.eventRow.phase)
-  return Array.from({ length: state.settings?.teamCount ?? 0 }, (_, index) => {
-    const position = index + 1
-    const row = stored ? state.teams.find(team => team.position === position) : undefined
-    return { position, name: composeTeamName(state.members, position, row?.frozenName) }
-  })
+  return composeTeamNames({ members: state.members, teamCount: state.settings?.teamCount ?? 0, stored: beforeFinish(state.eventRow.phase) ? null : state.teams })
 }

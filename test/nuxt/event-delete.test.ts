@@ -135,6 +135,19 @@ describe('Event löschen in Mehr', () => {
     expect(counts.reads).toBe(readsBefore)
   })
 
+  it('drops the Archive\'s list as well, so the deleted Event is not among its cards on arrival (#984)', async () => {
+    const { slug } = serveEvent(s => hostView(s, [...BETWEEN], 'finished'))
+    const archive = useNuxtData('archive')
+    archive.data.value = { events: [{ slug, name: 'Freitags-Zocken' }] }
+    const page = await mount(slug)
+    await clickHostAction(page, 'Event löschen')
+
+    await hold(holdButton()!)
+
+    await vi.waitFor(() => expect(useRouter().currentRoute.value.path).toBe('/'))
+    expect(archive.data.value).toBeFalsy()
+  })
+
   it('disables the Mehr item with the reason while a Session runs, and a click toasts the reason and opens no sheet', async () => {
     const { slug, counts } = serveEvent(s => hostView(s, [...RUNNING], 'running', { runningSessionId: `session-${s}-0` }))
     const page = await mount(slug)

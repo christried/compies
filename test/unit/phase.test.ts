@@ -56,10 +56,9 @@ describe('phaseAfterChange', () => {
     expect(phaseAfterChange('date_set', [later, null])).toBe('poll')
   })
 
-  it('keeps running, finished and archived Events as they are, whatever the Dates say', () => {
+  it('keeps running and finished Events as they are, whatever the Dates say', () => {
     expect(phaseAfterChange('running', [null])).toBe('running')
     expect(phaseAfterChange('finished', [later])).toBe('finished')
-    expect(phaseAfterChange('archived', [null])).toBe('archived')
   })
 })
 

@@ -126,6 +126,23 @@ export function composeTeamName(members: readonly TeamMember[], position: number
   return composedTeamName({ frozen, words: teamWords(seats) })
 }
 
+/**
+ * The Team names of the teams the settings call for (#161, #438; the Archive's too, #883): the one composition, so the Event read and the
+ * Archive agree. `stored` are the rows of `event_teams`, read only in a finished Event (`null`: the Event is not finished, so no stored name counts): a
+ * stored name counts only for a team that has a row, and null there is the Team colour's name even when words exist.
+ */
+export function composeTeamNames({ members, teamCount, stored }: {
+  members: readonly TeamMember[]
+  teamCount: number
+  stored: readonly { position: number, frozenName: string | null }[] | null
+}): { position: number, name: string | null }[] {
+  return Array.from({ length: teamCount }, (_, index) => {
+    const position = index + 1
+    const row = stored?.find(team => team.position === position)
+    return { position, name: composeTeamName(members, position, row?.frozenName) }
+  })
+}
+
 /** The team position a request names in its path (N5): a whole number from 1, or null. Its range is the Event's team count, checked by the caller. */
 export function parseTeamPosition(raw: string): number | null {
   if (!/^\d+$/.test(raw)) return null

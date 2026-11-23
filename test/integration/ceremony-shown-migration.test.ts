@@ -1,7 +1,7 @@
 import { rmSync } from 'node:fs'
 import type { PGlite } from '@electric-sql/pglite'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { createTestDbBefore, migrateTo } from './harness'
+import { createTestDbBefore, migrateThrough } from './harness'
 
 // The migration that adds „shown“ to the Award ceremony (#445, spec #425, ADR 0007): `events` gets `ceremony_shown`, boolean NOT NULL DEFAULT false,
 // and every Event finished before 0.12 is marked shown. The code that serves until the switch-over inserts and updates `events` with explicit columns
@@ -34,7 +34,7 @@ describe('migration: the Award ceremony is shown', () => {
     const before = await createTestDbBefore(MIGRATION)
     client = before.client
     folder = before.folder
-    migrate = () => migrateTo(before.db)
+    migrate = () => migrateThrough(before.db, MIGRATION)
     await client.query(`INSERT INTO users (id, name, email) VALUES ($1, 'Host', 'host@example.com')`, [HOST])
     await client.query(
       `INSERT INTO events (id, slug, invite_token, host_id, name, phase) VALUES

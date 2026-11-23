@@ -13,7 +13,8 @@ defineProps<{
       <Compibert variant="head" />
     </div>
     <div class="flex min-w-0 flex-col items-center gap-1.5 md:items-start">
-      <h2 class="m-0 font-display text-[28px] leading-tight font-normal">
+      <!-- A title that carries a typed term (#885: „Nix gefunden zu „…“.“) wraps inside a word too, so a long term never widens the page. -->
+      <h2 class="m-0 font-display text-[28px] leading-tight font-normal [overflow-wrap:anywhere]">
         {{ title }}
       </h2>
       <p

@@ -56,6 +56,19 @@ export default withNuxt(
     rules: { 'no-restricted-syntax': ['error', shownNameCopy, recordCast] },
   },
   {
+    // The domain is pure: a file of server/domain/ imports from shared/ and its own folder, never from server/utils/, which reads and writes (#984).
+    // The Vercel pattern of the block above is repeated, as a later block with the same rule replaces it.
+    files: ['server/domain/**'],
+    rules: {
+      'no-restricted-imports': ['error', {
+        patterns: [
+          { group: ['@vercel/*'], message: 'Vercel-only runtime APIs are not allowed (ADR 0005).' },
+          { group: ['**/utils/*', '**/utils'], message: 'server/domain/ is pure: it imports nothing from server/utils/ (#984).' },
+        ],
+      }],
+    },
+  },
+  {
     // An Event changes through changeEvent: it owns the transaction, the locked load and the step after the commit (#183).
     // A later block with the same rule replaces the one above for these files, so the selectors above are repeated.
     files: ['server/api/e/**'],
