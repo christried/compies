@@ -1890,10 +1890,6 @@
       "title": "Noch kein Event.",
       "text": "Leg los: Name, Termine, Link teilen."
     },
-    "archive": {
-      "title": "Noch nichts im Archiv.",
-      "text": "Spiel mindestens ein Spiel in einem Event, dann taucht es hier auf."
-    },
     "library": {
       "title": "Die Bibliothek ist leer.",
       "text": "Leg das erste Spiel an. Danach holst du es in jedes deiner Events."

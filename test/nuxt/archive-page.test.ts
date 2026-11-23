@@ -318,6 +318,33 @@ describe('archive page', () => {
       await vi.waitFor(() => expect(page.text()).toContain('Neu dazu'))
     })
 
+    it('shows the list it had on the way back, with its filters and no skeleton, and refreshes it behind (#984)', async () => {
+      const page = await mountPage([entry({ slug: 'win', name: 'Sieg-Abend', resultOpen: true, rank: 1 }), entry({ slug: 'zwei', name: 'Zweiter-Abend', resultOpen: true, rank: 2 })], '/archiv?filter=won')
+      page.unmount()
+      mode = 'hang'
+      const before = requests.mock.calls.length
+
+      const back = await mountSuspended(ArchivePage, { route: '/archiv?filter=won' })
+
+      expect(back.find('[aria-busy="true"]').exists()).toBe(false)
+      expect(back.findAll('li a b').map(name => name.text())).toEqual(['Sieg-Abend'])
+      expect(back.findAll('main button[aria-pressed="true"]').map(button => button.text())).toEqual(['Gewonnen'])
+      await vi.waitFor(() => expect(requests.mock.calls.length).toBeGreaterThan(before))
+      expect(back.find('[aria-busy="true"]').exists()).toBe(false)
+    })
+
+    it('shows no kept list after the Archive\'s data was cleared (a deleted Event, a sign-out)', async () => {
+      const page = await mountPage([entry()])
+      page.unmount()
+      await clearNuxtData('archive')
+      mode = 'hang'
+
+      const back = await mountSuspended(ArchivePage)
+
+      expect(back.find('[aria-busy="true"]').exists()).toBe(true)
+      expect(back.findAll('li').length).toBe(0)
+    })
+
     it('refetches the list when the tab becomes visible again, and not while it is hidden', async () => {
       await mountPage([entry()])
       const visibility = vi.spyOn(document, 'visibilityState', 'get')
@@ -604,13 +631,47 @@ describe('archive page', () => {
         expect(main.findAll('[aria-pressed]').length).toBe(0)
       })
 
-      it('shows no field and no chip while loading', async () => {
+      it('holds the places of the field and of „Alle“ and „Gewonnen“ while loading, inert, with „Alle“ pressed and no „Als Host“ (#984)', async () => {
+        mode = 'hang'
+        const page = await mountSuspended(ArchivePage, { route: '/archiv?filter=won&q=sieg' })
+
+        const main = page.get('main')
+        const input = main.get('input[type="search"]')
+        expect(input.attributes('disabled')).toBeDefined()
+        expect((input.element as HTMLInputElement).value).toBe('')
+        const buttons = main.findAll('button')
+        expect(buttons.map(button => button.text())).toEqual(['Alle', 'Gewonnen'])
+        expect(buttons.every(button => button.attributes('disabled') !== undefined)).toBe(true)
+        expect(pressed(page)).toEqual(['Alle'])
+      })
+
+      it('enables the controls when the list arrives and adds „Als Host“ for a hosting User (#984)', async () => {
         mode = 'hang'
         const page = await mountSuspended(ArchivePage, { route: '/archiv' })
 
-        const main = page.get('main')
-        expect(main.findAll('input').length).toBe(0)
-        expect(main.findAll('[aria-pressed]').length).toBe(0)
+        mode = 'ok'
+        entries = [win, hosted]
+        window.dispatchEvent(new Event('focus'))
+        await settle(page)
+
+        expect(page.get('main input[type="search"]').attributes('disabled')).toBeUndefined()
+        expect(page.findAll('main button').map(button => button.text())).toEqual(['Alle', 'Gewonnen', 'Als Host'])
+        expect(page.findAll('main button').every(button => button.attributes('disabled') === undefined)).toBe(true)
+        expect(cards(page)).toEqual(['Sieg-Abend', 'Halo-Abend'])
+      })
+
+      it('shows no field and no chip once an empty Archive arrives after loading (#984)', async () => {
+        mode = 'hang'
+        const page = await mountSuspended(ArchivePage, { route: '/archiv' })
+        expect(page.findAll('main input').length).toBe(1)
+
+        mode = 'ok'
+        entries = []
+        window.dispatchEvent(new Event('focus'))
+        await settle(page)
+
+        expect(page.findAll('main input').length).toBe(0)
+        expect(page.findAll('main [aria-pressed]').length).toBe(0)
       })
 
       it('shows no field and no chip when the list failed', async () => {

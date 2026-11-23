@@ -37,7 +37,7 @@ import { roundGameView } from './library'
 import { readClip } from './clip'
 import { countdownView, readCountdown } from './countdown'
 import { coinView } from './coin'
-import { ceremonyShownOf, ceremonyViewOf } from './ceremony'
+import { ceremonyShownOf, ceremonyViewOf } from '../domain/ceremony'
 import type { DrawRow } from './rounds'
 import { knownVetoRows } from './vetoes'
 

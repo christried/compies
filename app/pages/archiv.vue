@@ -9,15 +9,27 @@ import { CHIP_BUTTON, CHIP_OFF, CHIP_ON } from '~/utils/chip-look'
 // Three chips and a search narrow the list in the browser (#885); they live in the address like the game browser's filters (`useArchiveFilters`), so back from a card keeps them.
 
 const { t } = useI18n()
-const { data, status, error, refresh } = useFetch<ArchiveView>('/api/archive', { key: ARCHIVE_KEY })
+// The list stays in the page's cache after the page is left (a custom `getCachedData` switches Nuxt's purge on unmount off), so the way back from a
+// card shows the list it had and refreshes it behind (#984, #885: „back from an Event to the filtered list“, no skeleton). A first load has none and shows the
+// skeleton. The cache is dropped where the list stops being the viewer's: a deleted Event (EventHostDialogs) and a sign-out (useSignOut, signOutOn401).
+const nuxtApp = useNuxtApp()
+const hydrating = nuxtApp.isHydrating
+const { data, status, error, refresh } = useFetch<ArchiveView>('/api/archive', {
+  key: ARCHIVE_KEY,
+  getCachedData: (key, app, ctx) => (ctx.cause === 'initial' ? app.payload.data[key] : undefined),
+})
+if (data.value && !hydrating) onMounted(() => void refresh())
 
 const pending = computed(() => status.value === 'pending')
 const events = computed(() => data.value?.events ?? [])
 const empty = computed(() => !error.value && !!data.value && events.value.length === 0)
+// While the first list loads, the field and the chips „Alle“ and „Gewonnen“ hold their places, inert, so the cards do not jump when it arrives (#984).
+const loading = computed(() => pending.value && !data.value)
+const controls = computed(() => loading.value || (!!data.value && !error.value && events.value.length > 0))
 
 const filters = useArchiveFilters()
 // „Als Host“ for a User who hosts none reads as „Alle“ (an old address, a refetch), and the chip is not offered then.
-const chip = computed(() => archiveChip(filters.value.chip, events.value))
+const chip = computed(() => loading.value ? 'all' : archiveChip(filters.value.chip, events.value))
 const hosts = computed(() => events.value.some(entry => entry.isHost))
 const shown = computed(() => filterArchive(events.value, filters.value))
 const search = computed(() => filters.value.q.trim())
@@ -53,11 +65,12 @@ useRefreshOnReturn(refresh)
       </header>
 
       <div
-        v-if="data && !error && events.length > 0"
+        v-if="controls"
         class="flex flex-wrap items-center gap-2.5"
       >
         <SearchField
-          :model-value="filters.q"
+          :model-value="loading ? '' : filters.q"
+          :disabled="loading"
           :label="t('archiveList.search')"
           :placeholder="t('archiveList.search')"
           @update:model-value="filters = { ...filters, q: $event }"
@@ -69,6 +82,7 @@ useRefreshOnReturn(refresh)
             ref="chips"
             type="button"
             :data-chip="item.chip"
+            :disabled="loading"
             :aria-pressed="chip === item.chip ? 'true' : 'false'"
             :class="[CHIP_BUTTON, chip === item.chip ? CHIP_ON : CHIP_OFF]"
             @click="filters = { ...filters, chip: item.chip }"
