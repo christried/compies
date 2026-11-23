@@ -1152,7 +1152,7 @@
     "title": "Einstellungen",
     "soundHelp": "Clips und Geräusche mit Ton",
     "motion": "Weniger Bewegung",
-    "motionHelp": "Ruhige Varianten der großen Animationen, nur auf diesem Gerät. Die Einstellung deines Geräts zählt immer mit.",
+    "motionHelp": "Ruhige Varianten der großen Animationen, nur auf diesem Gerät.",
     "motionSaveFailed": "Das hat nicht geklappt, „Weniger Bewegung“ ist wieder wie vorher. Versuch’s nochmal.",
     "appearance": "Darstellung",
     "appearanceHelp": "Gilt auf allen deinen Geräten.",
