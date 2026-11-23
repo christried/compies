@@ -32,10 +32,10 @@ describe('SkeletonCard shapes (#884)', () => {
     const [strip, text, pill] = Array.from(root.children)
 
     expect(root.children).toHaveLength(3)
-    expect(has(strip!, 'h-[46px]', 'rounded-[12px]')).toBe(true)
+    expect(has(strip!, 'h-[48px]', 'rounded-[12px]')).toBe(true)
     const [name, date] = Array.from(text!.children)
     expect(has(name!, 'w-2/3')).toBe(true)
-    expect(has(date!, 'w-1/3')).toBe(true)
+    expect(has(date!, 'w-1/3', 'h-[18px]')).toBe(true)
     expect(has(pill!, 'h-6', 'rounded-pill')).toBe(true)
   })
 

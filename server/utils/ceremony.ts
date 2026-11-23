@@ -1,12 +1,12 @@
 import { eq } from 'drizzle-orm'
 import { events } from '../db/schema'
-import { CEREMONY_LEAD_MS, ceremonyEndsAt, ceremonyRejection, nextGag } from '../../shared/ceremony'
-import { isoInstant } from '../../shared/activity'
+import { CEREMONY_LEAD_MS, ceremonyRejection, nextGag } from '../../shared/ceremony'
 import { leadersOf } from '../../shared/finish'
-import type { CeremonyStarted, CeremonyView } from '../../shared/stage'
+import type { CeremonyStarted } from '../../shared/stage'
 import { settingsFromRow } from '../../shared/settings'
+import { ceremonyViewOf } from '../domain/ceremony'
 import { apiError } from './errors'
-import type { ChangeCore, EventRow } from './event-access'
+import type { ChangeCore } from './event-access'
 import { readEventState } from './event-state'
 import { requireSettings } from './settings'
 
@@ -14,32 +14,6 @@ import { requireSettings } from './settings'
 // server stamps the start with the request's clock plus the lead (ADR 0013, amended 2026-10-31) and the run's end follows from the Party
 // count, the Winner count and the gag (shared/ceremony.ts), so it is never stored. The Winner count is the Parties on rank 1 of the
 // Standings; a finished Event is read-only (no reopening), so it cannot change after the Finish and no column keeps it (#315).
-
-/** The columns `ceremonyViewOf` reads: the settings' (the Party count) and the ceremony's own. The Archive's read selects exactly these (#883). */
-export type CeremonyRow = Parameters<typeof settingsFromRow>[0] & Pick<EventRow, 'ceremonyStartsAt' | 'ceremonyGag'>
-
-/**
- * The ceremony as the Event read sends it (ISO instants): the latest start, its end and its gag, the same for every viewer. Null before the
- * first start, and for an Event without settings (no Party count, no end). `winners` is the Winner count of the Standings (#315); the end is
- * the one of the default layout, never of a viewer's screen.
- */
-export function ceremonyViewOf(row: CeremonyRow, winners: number): CeremonyView | null {
-  const settings = settingsFromRow(row)
-  if (row.ceremonyStartsAt === null || row.ceremonyGag === null || settings === null) return null
-  return {
-    startsAt: isoInstant(row.ceremonyStartsAt),
-    endsAt: isoInstant(new Date(ceremonyEndsAt(row.ceremonyStartsAt, { partyCount: settings.teamCount, winners, gag: row.ceremonyGag }))),
-    gag: row.ceremonyGag,
-  }
-}
-
-/**
- * Whether the Award ceremony has been started at least once (#445): the finished page shows its result only from then on. The stored flag, or a stored start: the previous
- * deployment starts a ceremony by writing the start and the gag only (ADR 0007), and a start is shown by definition. A restart changes nothing.
- */
-export function ceremonyShownOf(row: Pick<EventRow, 'ceremonyShown' | 'ceremonyStartsAt'>): boolean {
-  return row.ceremonyShown || row.ceremonyStartsAt !== null
-}
 
 /**
  * The Host starts the ceremony (#309): refused with the reason of ceremonyRejection, else the start is `now` plus the lead and the gag the

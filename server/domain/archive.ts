@@ -5,8 +5,7 @@ import { leadersOf, standingsAndEnd } from '../../shared/finish'
 import type { Instant } from '../../shared/instant'
 import type { ResultPlace } from '../../shared/results'
 import { settingsFromRow } from '../../shared/settings'
-import { ceremonyShownOf, ceremonyViewOf, type CeremonyRow } from '../utils/ceremony'
-import type { EventRow } from '../utils/event-access'
+import { ceremonyShownOf, ceremonyViewOf, type CeremonyRow } from './ceremony'
 
 // Archive rules (#882, #883, spec #683). Pure functions: the read loads the rows and passes them in, and the clock with them (ADR 0013).
 
@@ -28,7 +27,7 @@ export interface ArchiveResult { winners: ArchiveWinner[], rank: number | null }
  * The columns the result of an entry is derived from: the ceremony's and the settings' (`CeremonyRow`) and the viewer's seat. `gameCount` here is
  * the Game count the settings plan, never the Rounds played (the entry's own `gameCount`).
  */
-export type ArchiveResultRow = CeremonyRow & Pick<EventRow, 'ceremonyShown'> & Pick<ArchiveRow, 'team'>
+export type ArchiveResultRow = CeremonyRow & { ceremonyShown: boolean } & Pick<ArchiveRow, 'team'>
 
 /**
  * One entry of the Archive. `format` is set only when both settings columns are (an Event from before 1.3 has neither); `seated` is a
