@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { composedTeamName, moveRejection, parsePlace, placeOf, teamChoiceOpen, composeTeamName, teamWords, type MoveCheck, type Place } from '../../shared/board'
+import { composedTeamName, moveRejection, parsePlace, placeOf, teamChoiceOpen, composeTeamName, composeTeamNames, teamWords, type MoveCheck, type Place } from '../../shared/board'
 import type { EventSettings } from '../../shared/settings'
 import { defaultSettings } from '../../shared/settings'
 
@@ -222,5 +222,37 @@ describe('composeTeamName', () => {
   it('gives the frozen name when there is one, also null for a reset name', () => {
     expect(composeTeamName(members, 1, 'Alte Hasen')).toBe('Alte Hasen')
     expect(composeTeamName(members, 1, null)).toBeNull()
+  })
+})
+
+describe('composeTeamNames', () => {
+  const member = (team: number | null, teamWord: string | null, joined: number) => ({ team, teamWord, teamJoinedAt: new Date(joined) })
+  const members = [member(1, 'Gurken', 5), member(1, 'Wilde', 1), member(2, 'Hasen', 2), member(null, 'Stray', 0)]
+
+  it('composes one name per team the settings call for, from the words in join order, null where there are none', () => {
+    expect(composeTeamNames({ members, teamCount: 3, stored: null })).toEqual([
+      { position: 1, name: 'Wilde Gurken' },
+      { position: 2, name: 'Hasen' },
+      { position: 3, name: null },
+    ])
+  })
+
+  it('ignores stored rows when they are null (an Event that is not finished)', () => {
+    expect(composeTeamNames({ members, teamCount: 2, stored: null }).map(team => team.name)).toEqual(['Wilde Gurken', 'Hasen'])
+  })
+
+  it('takes a stored name only for a team that has a row', () => {
+    const stored = [{ position: 2, frozenName: 'Alte Hasen' }]
+
+    expect(composeTeamNames({ members, teamCount: 2, stored }).map(team => team.name)).toEqual(['Wilde Gurken', 'Alte Hasen'])
+  })
+
+  it('keeps a null in a stored row null, even when the team has words: the colour name shows', () => {
+    expect(composeTeamNames({ members, teamCount: 2, stored: [{ position: 1, frozenName: null }] }).map(team => team.name)).toEqual([null, 'Hasen'])
+  })
+
+  it('gives an empty list for no teams', () => {
+    expect(composeTeamNames({ members, teamCount: 0, stored: [] })).toEqual([])
+    expect(composeTeamNames({ members: [], teamCount: 0, stored: null })).toEqual([])
   })
 })

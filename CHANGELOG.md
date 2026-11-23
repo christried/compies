@@ -5,6 +5,7 @@
 ### Neu
 
 - Unter „Archiv“ findest du jedes abgeschlossene Event, auch wenn es nicht mehr auf der Startseite steht. ([#882](https://github.com/christried/compies/issues/882))
+- Jedes Event im Archiv zeigt jetzt, wer gewonnen hat, und deinen eigenen Platz, sobald die Siegerehrung gelaufen ist. ([#883](https://github.com/christried/compies/issues/883))
 
 ### Geändert
 
