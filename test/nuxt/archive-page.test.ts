@@ -44,9 +44,9 @@ async function settle(page: VueWrapper) {
   await vi.waitFor(() => expect(page.find('[aria-busy="true"]').exists()).toBe(false))
 }
 
-async function mountPage(list: ArchiveEntry[]) {
+async function mountPage(list: ArchiveEntry[], route = '/archiv', options: { attachTo?: HTMLElement } = {}) {
   entries = list
-  const page = await mountSuspended(ArchivePage)
+  const page = await mountSuspended(ArchivePage, { route, ...options })
   await settle(page)
   return page
 }
@@ -64,6 +64,8 @@ describe('archive page', () => {
     mode = 'ok'
     requests.mockClear()
     await clearNuxtData('archive')
+    // The filters live in the address (#885): each test starts on a plain Archive, and the history of the one before stays behind.
+    await useRouter().push('/archiv')
   })
 
   describe('the title and the count', () => {
@@ -334,6 +336,313 @@ describe('archive page', () => {
       finally {
         visibility.mockRestore()
       }
+    })
+  })
+  describe('the chips, the search and the address (#885)', () => {
+    const chip = (page: VueWrapper, text: string) => page.findAll('main button').find(button => button.text() === text)
+    const pressed = (page: VueWrapper) => page.findAll('main button[aria-pressed="true"]').map(button => button.text())
+    const query = () => useRouter().currentRoute.value.query
+    const cards = (page: VueWrapper) => page.findAll('li a b').map(name => name.text())
+    const field = (page: VueWrapper) => page.get('input[type="search"]')
+    const typeInto = (page: VueWrapper, text: string) => field(page).setValue(text)
+
+    const win = entry({ slug: 'win', name: 'Sieg-Abend', resultOpen: true, rank: 1 })
+    const tie = entry({ slug: 'tie', name: 'Unentschieden-Abend', resultOpen: true, rank: 1, winners: [{ position: 1, name: null }, { position: 2, name: null }] })
+    const second = entry({ slug: 'second', name: 'Zweiter-Abend', resultOpen: true, rank: 2 })
+    const closed = entry({ slug: 'closed', name: 'Offener-Abend', resultOpen: false })
+    const stands = entry({ slug: 'stands', name: 'Tribünen-Abend', resultOpen: true, rank: null, seated: false })
+    const hosted = entry({ slug: 'hosted', name: 'Halo-Abend', isHost: true })
+    const mixed = [win, tie, second, closed, stands, hosted]
+
+    describe('the chips', () => {
+      it('presses „Alle“ on arrival and exactly the clicked chip after a click', async () => {
+        const page = await mountPage(mixed)
+
+        expect(page.findAll('main button').map(button => [button.text(), button.attributes('aria-pressed')])).toEqual([
+          ['Alle', 'true'],
+          ['Gewonnen', 'false'],
+          ['Als Host', 'false'],
+        ])
+
+        await chip(page, 'Gewonnen')!.trigger('click')
+        expect(pressed(page)).toEqual(['Gewonnen'])
+
+        await chip(page, 'Als Host')!.trigger('click')
+        expect(pressed(page)).toEqual(['Als Host'])
+      })
+
+      it('leaves on „Gewonnen“ a win and an „Unentschieden“, and not a rank 2, a closed entry or a Member on the Stands', async () => {
+        const page = await mountPage(mixed)
+
+        await chip(page, 'Gewonnen')!.trigger('click')
+
+        expect(cards(page)).toEqual(['Sieg-Abend', 'Unentschieden-Abend'])
+      })
+
+      it('leaves on „Als Host“ the Events the viewer hosts', async () => {
+        const page = await mountPage(mixed)
+
+        await chip(page, 'Als Host')!.trigger('click')
+
+        expect(cards(page)).toEqual(['Halo-Abend'])
+      })
+
+      it('has „Als Host“ only when the viewer hosts an Event', async () => {
+        const page = await mountPage([win, second])
+        expect(chip(page, 'Als Host')).toBeUndefined()
+        expect(chip(page, 'Gewonnen')).toBeDefined()
+
+        await clearNuxtData('archive')
+        const hosting = await mountPage([win, hosted])
+        expect(chip(hosting, 'Als Host')).toBeDefined()
+      })
+
+      it('reads ?filter=host without a hosted Event as „Alle“ and leaves the address alone', async () => {
+        const page = await mountPage([win, second], '/archiv?filter=host')
+
+        expect(pressed(page)).toEqual(['Alle'])
+        expect(cards(page)).toEqual(['Sieg-Abend', 'Zweiter-Abend'])
+        expect(query().filter).toBe('host')
+      })
+
+      it('reads an unknown ?filter as „Alle“', async () => {
+        const page = await mountPage(mixed, '/archiv?filter=banane')
+
+        expect(pressed(page)).toEqual(['Alle'])
+        expect(cards(page)).toHaveLength(mixed.length)
+      })
+    })
+
+    describe('the search', () => {
+      it('finds a part of the name whatever the case, spaces around the term ignored, and follows each input before the address does', async () => {
+        const page = await mountPage(mixed)
+
+        await typeInto(page, 'halo')
+        expect(cards(page)).toEqual(['Halo-Abend'])
+        expect(query().q).toBeUndefined()
+
+        await typeInto(page, '  HALO  ')
+        expect(cards(page)).toEqual(['Halo-Abend'])
+
+        await typeInto(page, 'halo')
+        await vi.waitFor(() => expect(query().q).toBe('halo'), { timeout: 5000 })
+      })
+
+      it('reads a term of spaces only as no search, and keeps no q in the address', async () => {
+        const page = await mountPage(mixed)
+
+        await typeInto(page, '   ')
+
+        expect(cards(page)).toHaveLength(mixed.length)
+        await new Promise(resolve => setTimeout(resolve, 400))
+        expect(query().q).toBeUndefined()
+      })
+
+      it('works with a chip: „Gewonnen“ and a name', async () => {
+        const page = await mountPage([entry({ slug: 'a', name: 'Kart A', resultOpen: true, rank: 1 }), entry({ slug: 'b', name: 'Kart B', resultOpen: true, rank: 2 }), win])
+
+        await chip(page, 'Gewonnen')!.trigger('click')
+        await typeInto(page, 'kart')
+
+        expect(cards(page)).toEqual(['Kart A'])
+      })
+    })
+
+    describe('the count', () => {
+      it('follows the chip and the search, and reads 0 when a filter leaves nothing', async () => {
+        const page = await mountPage([...many(6), win])
+        expect(titleRow(page).text()).toContain('7 Events')
+
+        await chip(page, 'Gewonnen')!.trigger('click')
+        expect(titleRow(page).text()).toContain('1 Event')
+        expect(titleRow(page).text()).not.toContain('1 Events')
+
+        await typeInto(page, 'zzz')
+        expect(titleRow(page).text()).toContain('0 Events')
+      })
+
+      it('shows no count in the empty Archive', async () => {
+        const page = await mountPage([])
+
+        expect(titleRow(page).text()).toBe('Archiv')
+      })
+    })
+
+    describe('the address', () => {
+      it('adds one history entry and sets ?filter for a chip, and takes it out again for „Alle“', async () => {
+        const page = await mountPage(mixed)
+        const before = window.history.length
+
+        await chip(page, 'Gewonnen')!.trigger('click')
+        await vi.waitFor(() => expect(query().filter).toBe('won'))
+        expect(window.history.length).toBe(before + 1)
+
+        await chip(page, 'Alle')!.trigger('click')
+        await vi.waitFor(() => expect(query().filter).toBeUndefined())
+      })
+
+      it('adds no history entry for typing', async () => {
+        const page = await mountPage(mixed)
+        const before = window.history.length
+
+        await typeInto(page, 'h')
+        await typeInto(page, 'ha')
+        await typeInto(page, 'halo')
+        await vi.waitFor(() => expect(query().q).toBe('halo'), { timeout: 5000 })
+
+        expect(window.history.length).toBe(before)
+      })
+
+      it('shows both from ?filter=won&q=kart in the controls', async () => {
+        const page = await mountPage([entry({ slug: 'a', name: 'Kart A', resultOpen: true, rank: 1 }), win], '/archiv?filter=won&q=kart')
+
+        expect(pressed(page)).toEqual(['Gewonnen'])
+        expect((field(page).element as HTMLInputElement).value).toBe('kart')
+        expect(cards(page)).toEqual(['Kart A'])
+      })
+
+      it('follows the address when it changes under the page', async () => {
+        const page = await mountPage(mixed)
+
+        await useRouter().push('/archiv?filter=host')
+
+        await vi.waitFor(() => expect(pressed(page)).toEqual(['Als Host']))
+        expect(cards(page)).toEqual(['Halo-Abend'])
+      })
+
+      it('returns to „Alle“ on back after a chip', async () => {
+        const page = await mountPage(mixed)
+        await chip(page, 'Gewonnen')!.trigger('click')
+        await vi.waitFor(() => expect(query().filter).toBe('won'))
+
+        useRouter().back()
+
+        await vi.waitFor(() => expect(pressed(page)).toEqual(['Alle']))
+        expect(cards(page)).toHaveLength(mixed.length)
+      })
+
+      it('keeps a foreign parameter of the address through a chip', async () => {
+        const page = await mountPage(mixed, '/archiv?utm=x')
+
+        await chip(page, 'Gewonnen')!.trigger('click')
+
+        await vi.waitFor(() => expect(query()).toEqual({ utm: 'x', filter: 'won' }))
+      })
+    })
+
+    describe('no results', () => {
+      it('says „Nix gefunden zu „Zzz“.“ with its text and no „Alle zeigen“ for a search under „Alle“', async () => {
+        const page = await mountPage(mixed)
+
+        await typeInto(page, 'Zzz')
+
+        expect(page.get('h2').text()).toBe('Nix gefunden zu „Zzz“.')
+        expect(page.text()).toContain('Probier einen anderen Namen oder nimm den Filter raus.')
+        expect(chip(page, 'Alle zeigen')).toBeUndefined()
+        expect(page.find('ul').exists()).toBe(false)
+      })
+
+      it('lets a long term without spaces wrap in the title instead of widening the page', async () => {
+        const page = await mountPage(mixed)
+        const long = 'W'.repeat(60)
+
+        await typeInto(page, long)
+
+        expect(page.get('h2').text()).toBe(`Nix gefunden zu „${long}“.`)
+        expect(page.get('h2').classes()).toContain('[overflow-wrap:anywhere]')
+      })
+
+      it('offers „Alle zeigen“ with „Gewonnen“ and a search', async () => {
+        const page = await mountPage(mixed)
+        await chip(page, 'Gewonnen')!.trigger('click')
+
+        await typeInto(page, 'Zzz')
+
+        expect(page.get('h2').text()).toBe('Nix gefunden zu „Zzz“.')
+        expect(page.text()).toContain('Probier einen anderen Namen oder nimm den Filter raus.')
+        expect(chip(page, 'Alle zeigen')).toBeDefined()
+      })
+
+      it('says „Noch kein Sieg dabei.“ without a text for „Gewonnen“ alone with no win, and offers „Alle zeigen“', async () => {
+        const page = await mountPage([second, closed, stands])
+
+        await chip(page, 'Gewonnen')!.trigger('click')
+
+        expect(page.get('h2').text()).toBe('Noch kein Sieg dabei.')
+        expect(page.find('h2 + p').exists()).toBe(false)
+        expect(chip(page, 'Alle zeigen')).toBeDefined()
+      })
+
+      it('goes back to „Alle“ with „Alle zeigen“, keeps the search in the field and in the address, takes ?filter out and focuses „Alle“', async () => {
+        const host = document.createElement('div')
+        document.body.append(host)
+        try {
+          const page = await mountPage(mixed, '/archiv', { attachTo: host })
+          await chip(page, 'Gewonnen')!.trigger('click')
+          await typeInto(page, 'Zzz')
+          await vi.waitFor(() => expect(query()).toEqual({ filter: 'won', q: 'Zzz' }), { timeout: 5000 })
+
+          await chip(page, 'Alle zeigen')!.trigger('click')
+
+          expect(pressed(page)).toEqual(['Alle'])
+          expect((field(page).element as HTMLInputElement).value).toBe('Zzz')
+          await vi.waitFor(() => expect(query()).toEqual({ q: 'Zzz' }))
+          await vi.waitFor(() => expect(document.activeElement).toBe(chip(page, 'Alle')!.element))
+        }
+        finally {
+          host.remove()
+        }
+      })
+    })
+
+    describe('the states without controls', () => {
+      it('shows no field and no chip for a User without an Event', async () => {
+        const page = await mountPage([])
+
+        const main = page.get('main')
+        expect(main.findAll('input').length).toBe(0)
+        expect(main.findAll('[aria-pressed]').length).toBe(0)
+      })
+
+      it('shows no field and no chip while loading', async () => {
+        mode = 'hang'
+        const page = await mountSuspended(ArchivePage, { route: '/archiv' })
+
+        const main = page.get('main')
+        expect(main.findAll('input').length).toBe(0)
+        expect(main.findAll('[aria-pressed]').length).toBe(0)
+      })
+
+      it('shows no field and no chip when the list failed', async () => {
+        mode = 'fail'
+        const page = await mountSuspended(ArchivePage, { route: '/archiv' })
+        await vi.waitFor(() => expect(page.text()).toContain('Da ist was schiefgelaufen.'))
+
+        const main = page.get('main')
+        expect(main.findAll('input').length).toBe(0)
+        expect(main.findAll('[aria-pressed]').length).toBe(0)
+      })
+
+      it('keeps chip and search through a refetch', async () => {
+        const page = await mountPage(mixed)
+        await chip(page, 'Gewonnen')!.trigger('click')
+        await typeInto(page, 'sieg')
+        const before = requests.mock.calls.length
+
+        window.dispatchEvent(new Event('focus'))
+        await vi.waitFor(() => expect(requests.mock.calls.length).toBeGreaterThan(before))
+
+        expect(pressed(page)).toEqual(['Gewonnen'])
+        expect((field(page).element as HTMLInputElement).value).toBe('sieg')
+        expect(cards(page)).toEqual(['Sieg-Abend'])
+      })
+    })
+
+    it('names the field „Event suchen“ for the eye and for a screen reader', async () => {
+      const page = await mountPage(mixed)
+
+      expect(field(page).attributes('aria-label')).toBe('Event suchen')
+      expect(field(page).attributes('placeholder')).toBe('Event suchen')
     })
   })
 })

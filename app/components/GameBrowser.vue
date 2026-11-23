@@ -1,10 +1,9 @@
 <script setup lang="ts">
-import { Search } from '@lucide/vue'
 import type { ComponentPublicInstance } from 'vue'
 import type { RouteLocationRaw } from 'vue-router'
 import type { NotesDoc } from '~~/shared/notes-doc'
 import { NO_FILTERS, SUITABILITIES, filterGames, parsePlayerCount, sortTagsByLabel, type GameFilters, type GameView } from '~~/shared/game'
-import { CHIP_OFF, CHIP_ON, CHIP_SHAPE } from '~/utils/chip-look'
+import { CHIP_BUTTON, CHIP_OFF, CHIP_ON } from '~/utils/chip-look'
 
 // The one game browser (#173, review B4): the library page and both pool pickers show the Game library through it.
 // It owns the single fetch (`useGameLibrary`), the search field with the magnifying glass, the filters, the five
@@ -131,30 +130,18 @@ function set(changes: Partial<GameFilters>) {
 
 // The grid wraps as many cards as fit from 600 px up (sm, #707); below it the cards are rows.
 const GRID = 'sm:grid sm:grid-cols-[repeat(auto-fill,minmax(170px,1fr))] sm:items-stretch sm:gap-3'
-const CHIP = `inline-flex ${CHIP_SHAPE} items-center gap-1.5 px-4 text-small`
 </script>
 
 <template>
   <div class="flex flex-col gap-4">
     <div class="flex flex-wrap items-center gap-2.5">
-      <div
+      <SearchField
         v-if="state !== 'empty'"
-        class="relative flex min-w-[220px] flex-1 items-center"
-      >
-        <AppIcon
-          :icon="Search"
-          :size="18"
-          class="pointer-events-none absolute left-3.5 text-ink-2"
-        />
-        <input
-          :value="filters.q"
-          type="search"
-          :aria-label="t('library.search')"
-          :placeholder="games ? t('library.searchPlaceholder', { n: covered }) : t('library.search')"
-          class="h-control-lg w-full rounded-[12px] border-(length:--cp-bw) border-line bg-surface py-0 pr-3.5 pl-[42px] text-[17px] text-ink"
-          @input="set({ q: ($event.target as HTMLInputElement).value })"
-        >
-      </div>
+        :model-value="filters.q"
+        :label="t('library.search')"
+        :placeholder="games ? t('library.searchPlaceholder', { n: covered }) : t('library.search')"
+        @update:model-value="set({ q: $event })"
+      />
 
       <slot name="toolbar" />
 
@@ -165,7 +152,7 @@ const CHIP = `inline-flex ${CHIP_SHAPE} items-center gap-1.5 px-4 text-small`
         <button
           type="button"
           :aria-pressed="anyFilter ? 'false' : 'true'"
-          :class="[CHIP, anyFilter ? CHIP_OFF : CHIP_ON]"
+          :class="[CHIP_BUTTON, anyFilter ? CHIP_OFF : CHIP_ON]"
           @click="filters = { ...NO_FILTERS }"
         >
           {{ t('library.all') }}
@@ -198,7 +185,7 @@ const CHIP = `inline-flex ${CHIP_SHAPE} items-center gap-1.5 px-4 text-small`
           v-if="!compact"
           type="button"
           :aria-pressed="filters.archived ? 'true' : 'false'"
-          :class="[CHIP, filters.archived ? CHIP_ON : CHIP_OFF]"
+          :class="[CHIP_BUTTON, filters.archived ? CHIP_ON : CHIP_OFF]"
           @click="set({ archived: !filters.archived })"
         >
           {{ t('library.filterArchived') }}
