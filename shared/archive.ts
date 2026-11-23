@@ -27,3 +27,27 @@ export interface ArchiveEntry {
 }
 
 export interface ArchiveView { events: ArchiveEntry[] }
+
+/** The Archive's chips (#885): „Alle“, „Gewonnen“ (`won`), „Als Host“ (`host`). */
+export type ArchiveChip = 'all' | 'won' | 'host'
+export const ARCHIVE_CHIPS: readonly ArchiveChip[] = ['all', 'won', 'host']
+export interface ArchiveFilters { chip: ArchiveChip, q: string }
+
+/** „Als Host“ for a User who hosts none of the entries reads as „Alle“ (#885): an old address or a refetch never leaves a chip that is not offered. */
+export function archiveChip(chip: ArchiveChip, entries: ArchiveEntry[]): ArchiveChip {
+  return chip === 'host' && !entries.some(entry => entry.isHost) ? 'all' : chip
+}
+
+/**
+ * The entries the chip and the search leave, in the server's order (#885). „Gewonnen“: the result is open and the viewer's rank is the first (an „Unentschieden“
+ * shares it; a closed entry has no `rank`, a Member on the Stands has null). The search is a part of the name, case and outer spaces ignored (`filterGames`' rule).
+ */
+export function filterArchive(entries: ArchiveEntry[], filters: ArchiveFilters): ArchiveEntry[] {
+  const chip = archiveChip(filters.chip, entries)
+  const term = filters.q.trim().toLocaleLowerCase('de')
+  return entries.filter((entry) => {
+    if (chip === 'won' && !(entry.resultOpen && entry.rank === 1)) return false
+    if (chip === 'host' && !entry.isHost) return false
+    return !term || entry.name.toLocaleLowerCase('de').includes(term)
+  })
+}
