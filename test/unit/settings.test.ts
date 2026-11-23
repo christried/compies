@@ -464,23 +464,23 @@ describe('parseSettings', () => {
 
 describe('Phases of the settings (#147)', () => {
   it('locks the settings once the first Session has started', () => {
-    expect((['draft', 'poll', 'date_set', 'running', 'finished', 'archived'] as Phase[]).map(settingsLocked))
-      .toEqual([false, false, false, true, true, true])
+    expect((['draft', 'poll', 'date_set', 'running', 'finished'] as Phase[]).map(settingsLocked))
+      .toEqual([false, false, false, true, true])
   })
 
   it('lets the Host change settings in every Phase before the Event is finished', () => {
-    expect((['draft', 'poll', 'date_set', 'running', 'finished', 'archived'] as Phase[]).map(settingsEditable))
-      .toEqual([true, true, true, true, false, false])
+    expect((['draft', 'poll', 'date_set', 'running', 'finished'] as Phase[]).map(settingsEditable))
+      .toEqual([true, true, true, true, false])
   })
 })
 
 describe('settingsForViewer (#453)', () => {
-  const PHASES: Phase[] = ['draft', 'poll', 'date_set', 'running', 'finished', 'archived']
+  const PHASES: Phase[] = ['draft', 'poll', 'date_set', 'running', 'finished']
   const wheel: EventSettings = { ...defaultSettings(), selectionMode: 'lucky_wheel', vetoAllowance: 3 }
 
   it('hides the Veto allowance from a Member exactly until the first Session starts, and says so', () => {
     expect(PHASES.map(phase => settingsForViewer(wheel, { isHost: false, phase }).vetoAllowanceHidden))
-      .toEqual([true, true, true, false, false, false])
+      .toEqual([true, true, true, false, false])
     for (const phase of PHASES.slice(0, 3)) expect(settingsForViewer(wheel, { isHost: false, phase }).settings).toEqual({ ...wheel, vetoAllowance: null })
     for (const phase of PHASES.slice(3)) expect(settingsForViewer(wheel, { isHost: false, phase }).settings).toEqual(wheel)
   })
@@ -694,8 +694,8 @@ describe('checkSettingsChange', () => {
     })
   })
 
-  it.each(['finished', 'archived'] as Phase[])('refuses everything in the %s Phase', (phase) => {
-    expect(check({ gameCount: 5 }, { phase })).toEqual({ ok: false, error: 'wrong_phase' })
+  it('refuses everything in the finished Phase', () => {
+    expect(check({ gameCount: 5 }, { phase: 'finished' })).toEqual({ ok: false, error: 'wrong_phase' })
   })
 
   it('merges a partial change over the current settings', () => {

@@ -2,6 +2,18 @@
 
 ## [Unreleased]
 
+## [0.20.0] - 2026-11-23 – Archiv
+
+### Neu
+
+- Unter „Archiv“ findest du jedes abgeschlossene Event, auch wenn es nicht mehr auf der Startseite steht. ([#882](https://github.com/christried/compies/issues/882))
+- Jedes Event im Archiv zeigt jetzt, wer gewonnen hat, und deinen eigenen Platz, sobald die Siegerehrung gelaufen ist. ([#883](https://github.com/christried/compies/issues/883))
+- Im Archiv filterst du nach „Gewonnen“ und „Als Host“ und suchst ein Event nach seinem Namen; der Filter bleibt in der Adresse, also auch beim Zurück. ([#885](https://github.com/christried/compies/issues/885))
+
+### Geändert
+
+- Auf der Seite eines beendeten Events markiert die Navigation jetzt „Archiv“ statt „Events“. ([#886](https://github.com/christried/compies/issues/886))
+
 ## [0.19.0] - 2026-11-23 – Bibliothek again
 
 ### Neu

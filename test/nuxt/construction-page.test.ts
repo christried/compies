@@ -22,7 +22,7 @@ describe('construction page route guard', () => {
     homeEvents = [
       { slug: 'freitags-zocken-k7q2', name: 'Freitags-Zocken', phase: 'poll', missingDates: 1, createdAt: '2026-10-20T10:00:00.000Z' },
     ]
-    const page = await visit('/archiv')
+    const page = await visit('/crews')
 
     await vi.waitFor(() => {
       const cta = page.findAll('main a').find(link => link.text().includes('Zur Terminumfrage'))
@@ -37,7 +37,7 @@ describe('construction page route guard', () => {
       { slug: 'abend-c3d4', name: 'Abend', phase: 'date_set', missingDates: 0, createdAt: '2026-10-21T10:00:00.000Z' },
       { slug: 'neu-e5f6', name: 'Neu', phase: 'poll', missingDates: 1, createdAt: '2026-10-20T10:00:00.000Z' },
     ]
-    const page = await visit('/archiv')
+    const page = await visit('/crews')
 
     await vi.waitFor(() => {
       const cta = page.findAll('main a').find(link => link.text().includes('Zur Terminumfrage'))
@@ -51,7 +51,7 @@ describe('construction page route guard', () => {
       { slug: 'lauf-g7h8', name: 'Lauf', phase: 'running', missingDates: 1, createdAt: '2026-10-22T10:00:00.000Z' },
       { slug: 'fertig-i9j0', name: 'Fertig', phase: 'running', missingDates: 0, createdAt: '2026-10-23T10:00:00.000Z' },
     ]
-    const page = await visit('/archiv')
+    const page = await visit('/crews')
 
     await vi.waitFor(() => {
       const cta = page.findAll('main a').find(link => link.text().includes('Zur Terminumfrage'))
@@ -59,10 +59,11 @@ describe('construction page route guard', () => {
     })
   })
 
-  it('renders the Archiv state with its own title in the hub shell', async () => {
-    const page = await visit('/archiv')
+  it('renders the Admin state with its own title in the hub shell, for the Platform admin (#882: Archiv is built)', async () => {
+    signInAs({ ...kitty, canHost: true, isAdmin: true })
+    const page = await visit('/admin')
 
-    expect(page.get('h1').text()).toBe('Das Archiv kommt irgendwann. Bestimmt.')
+    expect(page.get('h1').text()).toBe('Der Admin-Bereich kommt vielleicht noch. Wenn man den überhaupt braucht.')
     expect(page.find('nav[aria-label="Hauptnavigation"]').exists()).toBe(true)
   })
 
@@ -111,14 +112,14 @@ describe('construction page route guard', () => {
   })
 
   it('links the call to action to Home', async () => {
-    const page = await visit('/archiv')
+    const page = await visit('/crews')
     const cta = page.findAll('main a').find(link => link.text().includes('Zur Startseite'))
 
     expect(cta?.attributes('href')).toBe('/')
   })
 
   it('hides the decorative scene from assistive technology', async () => {
-    const page = await visit('/archiv')
+    const page = await visit('/crews')
 
     expect(page.get('main').findAll('[aria-hidden="true"]').length).toBeGreaterThan(0)
     expect(page.get('h1').element.closest('[aria-hidden="true"]')).toBeNull()

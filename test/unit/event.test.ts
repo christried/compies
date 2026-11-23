@@ -172,13 +172,13 @@ describe('datePollOpen', () => {
   })
 
   it('is closed when no Session waits for a Date, in any Phase', () => {
-    for (const phase of ['draft', 'poll', 'date_set', 'running', 'finished', 'archived'] as const) {
+    for (const phase of ['draft', 'poll', 'date_set', 'running', 'finished'] as const) {
       expect(datePollOpen(phase, 0)).toBe(false)
     }
   })
 
   it('is closed outside the poll and a running Event, also with a missing Date', () => {
-    for (const phase of ['draft', 'date_set', 'finished', 'archived'] as const) {
+    for (const phase of ['draft', 'date_set', 'finished'] as const) {
       expect(datePollOpen(phase, 2)).toBe(false)
     }
   })

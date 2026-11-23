@@ -35,6 +35,19 @@ describe('lost login', () => {
     expect(requests).toHaveBeenCalled()
   })
 
+  it('drops the Archive\'s kept list too, so the next User on this device never sees it (#984)', async () => {
+    signInAs(kitty)
+    answer401 = true
+    await mountSuspended(IndexPage, { route: '/archiv' })
+    const archive = useNuxtData('archive')
+    archive.data.value = { events: [{ slug: 'freitags', name: 'Freitags-Zocken' }] }
+
+    await signOutOn401(globalThis.fetch)('/api/e')
+
+    await vi.waitFor(() => expect(useRoute().path).toBe('/anmelden'))
+    expect(archive.data.value).toBeFalsy()
+  })
+
   it('leaves answers other than 401 alone', async () => {
     signInAs(kitty)
     answer401 = false

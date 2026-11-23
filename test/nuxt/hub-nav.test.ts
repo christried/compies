@@ -36,12 +36,12 @@ describe('HubNav', () => {
     expect(link(nav, 'Events').attributes('aria-current')).toBe('page')
   })
 
-  it('flags Archiv as Baustelle, with a tape marker, and leaves Events, Bibliothek and Profil alone (#399)', async () => {
-    const nav = await mountSuspended(HubNav, { props: { layout: 'header', viewer: { canHost: true, isAdmin: false } }, route: '/' })
+  it.each(['header', 'tabs'] as const)('carries no Baustelle marker on Archiv, in the %s layout; Admin keeps it (#882, after #399)', async (layout) => {
+    const nav = await mountSuspended(HubNav, { props: { layout, viewer: { canHost: true, isAdmin: true } }, route: '/' })
 
-    expect(link(nav, 'Archiv').attributes('aria-description')).toBe('Baustelle')
-    expect(link(nav, 'Archiv').find('[title="Baustelle"]').exists()).toBe(true)
-    for (const label of ['Events', 'Bibliothek', 'Profil']) {
+    expect(link(nav, 'Admin').attributes('aria-description')).toBe('Baustelle')
+    expect(link(nav, 'Admin').find('[title="Baustelle"]').exists()).toBe(true)
+    for (const label of ['Events', 'Archiv', 'Bibliothek', 'Profil']) {
       expect(link(nav, label).attributes('aria-description')).toBeUndefined()
       expect(link(nav, label).find('[title="Baustelle"]').exists()).toBe(false)
     }
@@ -147,10 +147,9 @@ describe('HubNav on an Event page', () => {
     ['date_set', 'Termin steht'],
     ['running', 'Läuft'],
     ['finished', 'Beendet'],
-    ['archived', 'Archiv'],
   ] as const)('names the Phase %s as „%s“', async (phase, word) => {
     const nav = await mountSuspended(HubNav, { props: { layout: 'header', context: context({ phase }) }, route: EVENT })
-    const events = nav.findAll('a')[0]!
+    const events = nav.findAll('a')[phase === 'finished' ? 1 : 0]!
 
     expect(describedBy(nav, events).text()).toBe(`Event: Freitags-Zocken, Phase: ${word}`)
     expect(secondLine(events)!.text()).toContain(word)
@@ -212,6 +211,88 @@ describe('HubNav on an Event page', () => {
     expect(nav.text()).not.toContain('Freitags-Zocken')
   })
 
+  // A finished Event's address belongs to Archiv, not Events (#886): the mark, the row and the description move with it.
+  /** A tab by its label: a context tab's text carries the name and the pill after the label, so `link()` does not find it. */
+  const tab = (nav: VueWrapper, label: string) => nav.findAll('a').find(a => a.text().startsWith(label))!
+
+  function expectArchivHoldsTheContext(nav: VueWrapper) {
+    const events = tab(nav, 'Events')
+    const archiv = tab(nav, 'Archiv')
+
+    expect(current(nav)).toHaveLength(1)
+    expect(archiv.attributes('aria-current')).toBe('page')
+    expect(secondLine(archiv)!.text()).toContain('Freitags-Zocken')
+    expect(secondLine(archiv)!.text()).toContain('Beendet')
+    const description = describedBy(nav, archiv)
+    expect(description.text()).toBe('Event: Freitags-Zocken, Phase: Beendet')
+    expect(description.classes()).toContain('sr-only')
+    expect(archiv.element.contains(description.element)).toBe(false)
+    expect(nav.get('nav').element.contains(description.element)).toBe(true)
+    expect(events.attributes('aria-current')).toBeUndefined()
+    expect(events.attributes('aria-describedby')).toBeUndefined()
+    expect(secondLine(events)).toBeUndefined()
+    expect(events.text()).toBe('Events')
+    expect(nav.findAll('.sr-only')).toHaveLength(1)
+  }
+
+  it('marks Archiv, not Events, as current for a finished Event, and hangs the row and the description on it (#886)', async () => {
+    const nav = await mountSuspended(HubNav, { props: { layout: 'header', viewer: HOST, context: context({ phase: 'finished' }) }, route: EVENT })
+
+    expect(nav.findAll('a')[1]!.element).toBe(tab(nav, 'Archiv').element)
+    expectArchivHoldsTheContext(nav)
+  })
+
+  it('does the same for a signed-out viewer, whose list is Events, Archiv, Profil (#886)', async () => {
+    const nav = await mountSuspended(HubNav, { props: { layout: 'header', context: context({ phase: 'finished' }) }, route: EVENT })
+
+    expect(nav.findAll('a')).toHaveLength(3)
+    expectArchivHoldsTheContext(nav)
+  })
+
+  it.each(['draft', 'poll', 'date_set', 'running'] as const)('keeps Events current and holding the row in the Phase %s, and Archiv bare (#886)', async (phase) => {
+    const nav = await mountSuspended(HubNav, { props: { layout: 'header', viewer: HOST, context: context({ phase }) }, route: EVENT })
+    const events = tab(nav, 'Events')
+    const archiv = tab(nav, 'Archiv')
+
+    expect(current(nav)).toHaveLength(1)
+    expect(events.attributes('aria-current')).toBe('page')
+    expect(secondLine(events)).toBeDefined()
+    expect(events.attributes('aria-describedby')).toBeDefined()
+    expect(archiv.attributes('aria-current')).toBeUndefined()
+    expect(archiv.attributes('aria-describedby')).toBeUndefined()
+    expect(secondLine(archiv)).toBeUndefined()
+    expect(nav.findAll('.sr-only')).toHaveLength(1)
+  })
+
+  it('gives the settings page of a finished Event the same mark, whatever the route (#886)', async () => {
+    const nav = await mountSuspended(HubNav, { props: { layout: 'header', viewer: HOST, context: context({ phase: 'finished' }) }, route: `${EVENT}/einstellungen` })
+
+    expectArchivHoldsTheContext(nav)
+  })
+
+  it('moves the mark and the row from Events to Archiv when the Phase turns finished on a mounted navigation (#886)', async () => {
+    const nav = await mountSuspended(HubNav, { props: { layout: 'header', viewer: HOST, context: context({ phase: 'running' }) }, route: EVENT })
+
+    expect(tab(nav, 'Events').attributes('aria-current')).toBe('page')
+    expect(secondLine(tab(nav, 'Events'))).toBeDefined()
+    expect(describedBy(nav, tab(nav, 'Events')).text()).toBe('Event: Freitags-Zocken, Phase: Läuft')
+
+    await nav.setProps({ context: context({ phase: 'finished' }) })
+    await flushPromises()
+
+    expectArchivHoldsTheContext(nav)
+  })
+
+  it('cuts a 60-character name on Archiv the same way, with the full name as its title and the pill whole (#886)', async () => {
+    const name = 'Großer Herbst-Spieleabend bei Sanne mit Pizza, Quiz und Co.!'
+    const nav = await mountSuspended(HubNav, { props: { layout: 'header', context: context({ name, phase: 'finished' }) }, route: EVENT })
+    const archiv = tab(nav, 'Archiv')
+
+    expect(archiv.get(`[title="${name}"]`).classes()).toEqual(expect.arrayContaining(['truncate', 'min-w-0']))
+    const pill = secondLine(archiv)!.findAll('span').filter(span => span.text() === 'Beendet').at(-1)!
+    expect(pill.classes()).toContain('flex-none')
+  })
+
   it('cuts a 60-character name to one line with the full name as its title, and never shortens the pill', async () => {
     const name = 'Großer Herbst-Spieleabend bei Sanne mit Pizza, Quiz und Co.!'
     expect(name).toHaveLength(60)
@@ -241,6 +322,33 @@ describe('HubNav on an Event page', () => {
       const nav = await mountSuspended(HubNav, { props: { layout: 'header', context: context() }, route: EVENT })
 
       expect(nav.findComponent({ name: 'Transition' }).props('appear')).toBe(false)
+    }
+    finally {
+      nuxtApp.isHydrating = was
+    }
+  })
+
+  // A full load fixes `isHydrating` for the header's first render only: the row that arrives under Archiv at the Finish is built after it and plays the enter (#984).
+  it('plays the enter for the row that moves to Archiv at the Finish on a page loaded in full, and none on a page loaded finished (#984)', async () => {
+    const nuxtApp = useNuxtApp()
+    const was = nuxtApp.isHydrating
+    nuxtApp.isHydrating = true
+    try {
+      const nav = await mountSuspended(HubNav, { props: { layout: 'header', context: context() }, route: EVENT })
+      expect(nav.findComponent({ name: 'Transition' }).props('appear')).toBe(false)
+      nuxtApp.isHydrating = false
+
+      await nav.setProps({ context: context({ phase: 'finished' }) })
+
+      const enter = tab(nav, 'Archiv').findAllComponents({ name: 'Transition' })[0]!
+      expect(enter.props('appear')).toBe(true)
+      expect(enter.props('enterActiveClass')).toEqual(expect.stringContaining('dur-base'))
+
+      const finished = await mountSuspended(HubNav, { props: { layout: 'header', context: context({ phase: 'finished' }) }, route: EVENT })
+      nuxtApp.isHydrating = true
+      const loaded = await mountSuspended(HubNav, { props: { layout: 'header', context: context({ phase: 'finished' }) }, route: EVENT })
+      expect(loaded.findAllComponents({ name: 'Transition' })[0]!.props('appear')).toBe(false)
+      expect(finished.findAllComponents({ name: 'Transition' })[0]!.props('appear')).toBe(true)
     }
     finally {
       nuxtApp.isHydrating = was

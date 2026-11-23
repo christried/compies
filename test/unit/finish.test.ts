@@ -50,7 +50,7 @@ describe('leadingTeams', () => {
     expect(leadingTeams(standingsOf([1, 1, 0]), 'finished', true)).toEqual([1, 2])
   })
 
-  it.each(['draft', 'poll', 'date_set', 'archived'] as const)('is empty in the %s Phase, with Results and standings', (phase) => {
+  it.each(['draft', 'poll', 'date_set'] as const)('is empty in the %s Phase, with Results and standings', (phase) => {
     expect(leadingTeams(standingsOf([3, 1, 0]), phase, true)).toEqual([])
   })
 
@@ -197,7 +197,7 @@ describe('finishRejection', () => {
   })
 
   it('refuses the Host in every Phase but running with wrong_phase, even when incomplete', () => {
-    for (const phase of ['draft', 'poll', 'date_set', 'finished', 'archived'] as const) {
+    for (const phase of ['draft', 'poll', 'date_set', 'finished'] as const) {
       expect(ask({ phase, end: incomplete })).toBe('wrong_phase')
       expect(ask({ phase, end: complete })).toBe('wrong_phase')
     }
@@ -277,7 +277,7 @@ describe('lastGameRejection', () => {
   })
 
   it('refuses the Host in every Phase but running with wrong_phase, even when incomplete or with a Tie', () => {
-    for (const phase of ['draft', 'poll', 'date_set', 'finished', 'archived'] as const) {
+    for (const phase of ['draft', 'poll', 'date_set', 'finished'] as const) {
       expect(lastGameRejection({ isHost: true, phase, end: incomplete, gameCount: 2 })).toBe('wrong_phase')
       expect(lastGameRejection({ isHost: true, phase, end: level, gameCount: 2 })).toBe('wrong_phase')
     }

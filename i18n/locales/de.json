@@ -58,8 +58,7 @@
     "noDate": "Kein Termin",
     "draft": "Entwurf",
     "running": "Läuft",
-    "finished": "Beendet",
-    "archived": "Archiv"
+    "finished": "Beendet"
   },
   "dock": {
     "label": "Host-Steuerung",
@@ -726,13 +725,6 @@
       "body": "{session} ist vorbei. Komm zur Siegerehrung."
     }
   },
-  "archive": {
-    "meta": "Archiv, {date}, {games} Spiele, {people} Leute",
-    "winner": "Sieger",
-    "allGames": "Alle Spiele",
-    "share": "Bild teilen",
-    "replay": "Battle-Replay"
-  },
   "admin": {
     "title": "Admin",
     "platform": "Plattform",
@@ -755,9 +747,6 @@
     "back": "Wieder da",
     "invalidLink": "Dieser Link ist abgelaufen.",
     "invalidLinkText": "Der Host hat einen neuen Einladungslink erstellt. Frag nach dem neuen.",
-    "ended": "{session} ist vorbei.",
-    "endedText": "{team} hat gewonnen. Ergebnisse, Chat und Replay liegen im Archiv.",
-    "toArchive": "Zum Archiv",
     "error": "Hoppla, das hat nicht geklappt.",
     "errorText": "Lade die Seite neu. Die Session läuft auf dem Server weiter."
   },
@@ -1144,9 +1133,20 @@
     "all": "Alle",
     "won": "Gewonnen",
     "asHost": "Als Host",
-    "empty": "Noch leer. Events landen hier, sobald du ein Spiel mitgespielt hast.",
+    "search": "Event suchen",
+    "noMatch": "Nix gefunden zu „{q}“.",
+    "noMatchText": "Probier einen anderen Namen oder nimm den Filter raus.",
+    "noWin": "Noch kein Sieg dabei.",
+    "showAll": "Alle zeigen",
     "loading": "Archiv lädt …",
-    "place": "Platz {n}"
+    "place": "Platz {n}",
+    "count": "{n} Event | {n} Events",
+    "meta": "{date}, {games}, {people}",
+    "metaNoDate": "{games}, {people}",
+    "games": "{n} Spiel | {n} Spiele",
+    "people": "{n} Person | {n} Leute",
+    "emptyTitle": "Hier wird’s bald voll.",
+    "emptyText": "Events landen hier, sobald sie abgeschlossen sind."
   },
   "settings": {
     "title": "Einstellungen",
@@ -1521,10 +1521,6 @@
     "site": {
       "toPoll": "Zur Terminumfrage",
       "toHome": "Zur Startseite",
-      "archiv": {
-        "title": "Das Archiv kommt irgendwann. Bestimmt.",
-        "text": "Hier landen später alle Abende mit Tabelle, Chat und Siegerbild. Bis dahin zählt: einen Termin finden."
-      },
       "admin": {
         "title": "Der Admin-Bereich kommt vielleicht noch. Wenn man den überhaupt braucht.",
         "text": "Hostrechte vergeben, Nutzerliste, diesdas."
@@ -1893,10 +1889,6 @@
     "homeHost": {
       "title": "Noch kein Event.",
       "text": "Leg los: Name, Termine, Link teilen."
-    },
-    "archive": {
-      "title": "Noch nichts im Archiv.",
-      "text": "Spiel mindestens ein Spiel in einem Event, dann taucht es hier auf."
     },
     "library": {
       "title": "Die Bibliothek ist leer.",

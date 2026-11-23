@@ -17,7 +17,7 @@ export function phaseOf(startsAt: (Date | null)[]): 'poll' | 'date_set' {
 
 /**
  * The Phase after a change to the Sessions (#55): the Dates decide only while the Event is in the date
- * poll or date set. A running, finished or archived Event keeps its Phase when a Session is added,
+ * poll or date set. A running or finished Event keeps its Phase when a Session is added,
  * removed or reopened.
  */
 export function phaseAfterChange(phase: Phase, startsAt: (Date | null)[]): Phase {

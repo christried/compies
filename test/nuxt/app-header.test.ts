@@ -2,6 +2,7 @@ import { mountSuspended } from '@nuxt/test-utils/runtime'
 import type { DOMWrapper } from '@vue/test-utils'
 import { beforeEach, describe, expect, it } from 'vitest'
 import AppShell from '~/components/AppShell.vue'
+import type { EventContext } from '~/utils/event-page'
 import { kitty, signInAs } from './auth'
 
 // The header's three kinds (#426, 15-header-eventseite § AppHeader). jsdom applies no CSS, so what is visible at a width is asserted on
@@ -9,8 +10,9 @@ import { kitty, signInAs } from './auth'
 
 const NAV = 'nav[aria-label="Hauptnavigation"]'
 const EVENT = { name: 'Freitags-Zocken', phase: 'running', label: undefined } as const
+const FINISHED: EventContext = { name: 'Freitags-Zocken', phase: 'finished', label: undefined }
 
-async function mountHeader(kind: 'hub' | 'event' | 'bare', event?: typeof EVENT, route = '/e/freitags-zocken-k7q2') {
+async function mountHeader(kind: 'hub' | 'event' | 'bare', event?: EventContext, route = '/e/freitags-zocken-k7q2') {
   const page = await mountSuspended(AppShell, {
     props: { kind, event },
     slots: {
@@ -86,6 +88,17 @@ describe('the header of the Event kind', () => {
     expect(events.attributes('aria-current')).toBe('page')
     expect(events.text()).toBe('Events')
     expect(secondLine(events)).toBeUndefined()
+  })
+
+  it('marks Archiv with the Event under it on the settings page of a finished Event (#886)', async () => {
+    const header = await mountHeader('event', FINISHED, '/e/freitags-zocken-k7q2/einstellungen')
+
+    const marked = header.findAll('[aria-current]')
+    expect(marked).toHaveLength(1)
+    expect(marked[0]!.text().startsWith('Archiv')).toBe(true)
+    expect(marked[0]!.text()).toContain('Freitags-Zocken')
+    expect(marked[0]!.text()).toContain('Beendet')
+    expect(header.get(`${NAV} a`).attributes('aria-current')).toBeUndefined()
   })
 })
 

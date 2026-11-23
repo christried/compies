@@ -248,7 +248,7 @@ describe('ceremonyRejection', () => {
     expect(ceremonyRejection({ ...ok, latest: LATEST, now: ENDS - 1 })).toBe('ceremony_running')
   })
 
-  for (const phase of ['draft', 'poll', 'date_set', 'running', 'archived'] as const) {
+  for (const phase of ['draft', 'poll', 'date_set', 'running'] as const) {
     it(`refuses a ${phase} Event as wrong_phase`, () => {
       expect(ceremonyRejection({ ...ok, phase })).toBe('wrong_phase')
     })

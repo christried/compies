@@ -445,6 +445,7 @@ Logo (Compibert head), hub nav or Event title + phase pill, invite button, sound
 - **Desktop / mobile:** Desktop shows wordmark + nav. Mobile: head logo only, Event title + pill wrap to 2 lines max.
 - **Accessibility:** Logo links to Home; pill has text (dot is decorative).
 - **Motion:** Logo Compibert reacts (idle → cheer/confused) via CompibertBus.
+- **Deviation (0.20, #887):** `phase?` is `draft | poll | date_set | running | finished`; there is no `archived`.
 
 ## HubNav
 **Scope:** [MVP] · **Ref:** AppFrame
@@ -458,6 +459,8 @@ Main navigation: Events, (Crews Post-1.0), Archiv, Bibliothek, Profil, (Admin). 
 - **Accessibility:** `<nav aria-label="Hauptnavigation">`, `aria-current="page"`.
 - **Motion:** —
 
+On a finished Event's address the current tab is Archiv, not Events, and the Event context row hangs on it (0.20, #886; see 15-header-eventseite § HubNav).
+
 ## PhasePill
 **Scope:** [MVP] · **Ref:** AppFrame
 
@@ -469,6 +472,7 @@ Event phase chip in the header and on cards.
 - **Desktop / mobile:** —
 - **Accessibility:** Text carries the meaning.
 - **Motion:** —
+- **Deviation (0.20, #887):** five states, no „Archiv“: Entwurf · Terminumfrage · Termin steht · Läuft · Beendet. Beendet is the last Phase; no Event is ever archived (`GLOSSARY.md` § Phase).
 
 ## HostDock
 **Scope:** [1.0] · **Ref:** AppFrame, App Lobby 10
@@ -1183,6 +1187,8 @@ Past Events you played in; read-only detail.
 - **Desktop / mobile:** Desktop 3-col grid; mobile 1-col.
 - **Accessibility:** —
 - **Motion:** skeletons.
+- **Deviation (0.20, #882):** every Member of a finished Event sees it in the list, a Member on the Stands too (not „played at least one game“, not the Platform admin's everything). The Event's own page is the detail: ArchiveDetail is not built, the card is one link to `/e/<slug>`.
+- **Deviation (0.20, #882):** HubNav's `soon` no longer holds „archiv“, so the Archiv tab has no Baustelle marker in the header or in the phone's tabs.
 
 ## Compibert
 **Scope:** [MVP] head + still full · [1.0] all states · **Ref:** CompibertRig, Compibert Rig, compibert-options.js
