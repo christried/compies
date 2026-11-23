@@ -3,7 +3,7 @@ import type { ArchiveView } from '~~/shared/archive'
 import { ARCHIVE_KEY } from '~/utils/event-data'
 
 // The Archive (#882, spec #683): every finished Event the User is a Member of, newest Finish first, as the server sends it. Each card opens the
-// Event's own page. The list shows two skeleton cards while it loads, an empty state for a User with no finished Event, and a generic
+// Event's own page. The list shows six skeleton cards in the Archive shape while it loads (three on phones, #884), an empty state for a User with no finished Event, and a generic
 // error with a retry. It refetches on window focus and when the tab becomes visible again (ADR 0001), not on a timer, and the room is not involved.
 
 const { t } = useI18n()
@@ -43,15 +43,28 @@ useRefreshOnReturn(refresh)
         </template>
       </FullScreenState>
 
-      <section
+      <div
         v-else-if="pending && !data"
-        aria-busy="true"
+        class="flex flex-col gap-3"
       >
-        <div class="grid grid-cols-1 gap-3 min-[600px]:grid-cols-2 min-[1024px]:grid-cols-3">
-          <SkeletonCard />
-          <SkeletonCard />
+        <div
+          aria-busy="true"
+          class="grid grid-cols-1 gap-3 min-[600px]:grid-cols-2 min-[1024px]:grid-cols-3"
+        >
+          <SkeletonCard
+            v-for="n in 6"
+            :key="n"
+            shape="archive"
+            :class="{ 'max-[599px]:hidden': n > 3 }"
+          />
         </div>
-      </section>
+        <p
+          role="status"
+          class="m-0 text-center text-[13px] font-bold text-ink-2"
+        >
+          {{ t('archiveList.loading') }}
+        </p>
+      </div>
 
       <EmptyState
         v-else-if="empty"
