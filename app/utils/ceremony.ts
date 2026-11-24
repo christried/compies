@@ -4,6 +4,7 @@ import { leadersOf } from '~~/shared/finish'
 import { teamNameAt } from './board'
 import { joinNames } from './list'
 import type { Translate } from './settings-summary'
+import { shownPerson } from './shown-person'
 
 // What the Award ceremony's end frame shows (#309, spec #308, AwardCeremony.dc.html): the Winners and their points, the places from last to
 // second, each Winner's Players as avatars and the sentence the live region reads. A Tie (#315, 12-siegerehrung-unentschieden.md) has several
@@ -14,7 +15,7 @@ const CELLS = 6
 
 /** One cell of a Winner's people: a Player, the TeamMark of a Winner without Players, or the „+N“ that counts the rest. */
 export type CeremonyPerson
-  = { kind: 'player', id: string, name: string, image: string | null, team: number }
+  = { kind: 'player', id: string, name: string, image: string | null, deleted?: true, team: number }
     | { kind: 'mark', team: number, name: string }
     | { kind: 'more', n: number }
 
@@ -39,12 +40,16 @@ export interface CeremonyModel {
   live: string
 }
 
-/** The cells of one Winner's people: its Players, or its TeamMark when it has none; 5 and „+N“ above CELLS. */
-function peopleOf(members: EventView['members'], team: number, name: string): CeremonyPerson[] {
+/** The cells of one Winner's people: its Players (a Deleted Player is one), or its TeamMark when it has none; 5 and „+N“ above CELLS. */
+function peopleOf(members: EventView['members'], team: number, name: string, t: Translate): CeremonyPerson[] {
   const players = members.filter(member => member.zone === 'team' && member.team === team)
   const everyone: CeremonyPerson[] = players.length === 0
     ? [{ kind: 'mark', team, name }]
-    : players.map(member => ({ kind: 'player', id: member.id, name: member.name, image: member.image, team }))
+    : players.map((member): CeremonyPerson => {
+      // A Deleted Player is a Player like any other for the cut below; they are shown as „Gelöschtes Konto“ with the neutral picture (#915, ADR 0020).
+      const shown = shownPerson(member, t)
+      return { kind: 'player', id: member.id, name: shown.name, image: shown.image, ...(shown.deleted && { deleted: true as const }), team }
+    })
   return everyone.length > CELLS ? [...everyone.slice(0, CELLS - 1), { kind: 'more', n: everyone.length - (CELLS - 1) }] : everyone
 }
 
@@ -56,7 +61,7 @@ export function ceremonyModel({ standings, members, teams, ceremony }: Pick<Even
   const points = standings.find(row => row.team === first[0])!.points
   const winners = first.map((team): CeremonyWinner => {
     const name = teamNameAt(teams, team, t)
-    return { team, name, points, people: peopleOf(members, team, name) }
+    return { team, name, points, people: peopleOf(members, team, name, t) }
   })
   const rows = standings.filter(row => row.rank >= 2).map(row => ({ team: row.team, name: teamNameAt(teams, row.team, t), rank: row.rank, points: row.points }))
   const names = joinNames(winners.map(winner => winner.name))
