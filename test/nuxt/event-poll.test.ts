@@ -1,6 +1,7 @@
 import { mountSuspended, registerEndpoint } from '@nuxt/test-utils/runtime'
 import { createError, readBody } from 'h3'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { RETURN_DEDUPE_MS } from '~/composables/usePollRefresh'
 import EventPage from '~/pages/e/[slug]/index.vue'
 import { kitty, signInAs } from './auth'
 import { clickButton, closeNotice, openHostMenu, radio, sanneAndLarsi, serve, shownToasts, view, type Wrapper } from './event-page'
@@ -45,8 +46,12 @@ async function mountVanishing(isHost: boolean) {
   return { ...vanishing, page }
 }
 
-/** A return of the User (window focus) refetches the Event; this waits until that later read has answered and the page has settled. */
+/**
+ * A return of the User (window focus) refetches the Event; this waits past the dedupe window (#238) and until that later
+ * read has answered and the page has settled.
+ */
 async function returnAndWait(served: { reads: number }) {
+  await new Promise(resolve => setTimeout(resolve, RETURN_DEDUPE_MS))
   const before = served.reads
   window.dispatchEvent(new Event('focus'))
   await vi.waitFor(() => expect(served.reads).toBe(before + 1))

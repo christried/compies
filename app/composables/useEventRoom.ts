@@ -94,9 +94,17 @@ export function useEventRoom(slug: MaybeRefOrGetter<string>) {
     })
   }
 
+  /** Closes the room for good: no reconnect and no token after this (the Event is gone for the page, #914). */
+  function stop() {
+    disposed = true
+    clearTimeout(retryTimer)
+    socket?.close()
+    state.value = 'closed'
+  }
+
   /** Tries again at once, e.g. from the banner's „Neu verbinden“. */
   function retry() {
-    if (!enabled) return
+    if (!enabled || disposed) return
     state.value = 'connecting'
     if (socket) {
       socket.reconnect()
@@ -110,12 +118,8 @@ export function useEventRoom(slug: MaybeRefOrGetter<string>) {
     onMounted(() => {
       if (enabled) void start()
     })
-    onScopeDispose(() => {
-      disposed = true
-      clearTimeout(retryTimer)
-      socket?.close()
-    })
+    onScopeDispose(stop)
   }
 
-  return { enabled, state: readonly(state), retry, on, onAny, send }
+  return { enabled, state: readonly(state), retry, stop, on, onAny, send }
 }
