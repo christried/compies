@@ -35,6 +35,8 @@ export const users = pgTable('users', {
   tourSeen: integer('tour_seen_version').default(0).notNull(),
   // The User's Appearance (#401, GLOSSARY): light unless they choose otherwise. Better Auth's insert gets the default (ADR 0004).
   appearance: text('appearance', { enum: APPEARANCES }).default('light').notNull(),
+  // The time of the deletion; null for a User who is not deleted (ADR 0020, #915).
+  deletedAt: timestamp('deleted_at', { withTimezone: true }),
 }, table => [
   // The list is written once, in shared/appearance.ts (#603); raw because a CHECK takes no parameters, safe because the values are our own constants.
   check('users_appearance_check', sql`${table.appearance} IN (${sql.join(APPEARANCES.map(value => sql.raw(`'${value}'`)), sql`, `)})`),
