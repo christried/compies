@@ -425,43 +425,36 @@ describe('the Event poll', () => {
     expect(page.get('h1').text()).toBe('Event gelöscht')
   })
 
-  // Step 1 of #914: what a loaded page shows today when a later read fails. Pins the outcome before the change: Nuxt clears
-  // the data of a failed read, so the page already drops the Event for a 404 and for a 500.
-  it('shows „Link ungültig“ and no Event today when a later read of a Member\'s page answers 404', async () => {
-    const { served, page } = await mountVanishing(false)
+  // A later read that answers 404 or 410 shows the full-page state and drops the Event, for the Member's and the Host's read (#914).
+  it.each([
+    { isHost: false, status: 404, title: 'Link ungültig' },
+    { isHost: false, status: 410, title: 'Event gelöscht' },
+    { isHost: true, status: 404, title: 'Link ungültig' },
+    { isHost: true, status: 410, title: 'Event gelöscht' },
+  ])('shows the full-page state $title for a later $status, and no Event (Host read: $isHost, #914)', async ({ isHost, status, title }) => {
+    const { served, page } = await mountVanishing(isHost)
 
-    served.status = 404
+    served.status = status
     await returnAndWait(served)
 
-    expect(page.text()).toContain('Link ungültig')
+    expect(page.get('h1').text()).toBe(title)
     expect(page.text()).not.toContain('Freitags-Zocken')
+    expect(page.find('nav[aria-label="Event"]').exists()).toBe(false)
+    expect(page.find('[role="toolbar"][aria-label="Host-Steuerung"]').exists()).toBe(false)
   })
 
-  it('shows „Link ungültig“ and no Event today when a later read of the Host\'s page answers 404', async () => {
-    const { served, page } = await mountVanishing(true)
-
-    served.status = 404
-    await returnAndWait(served)
-
-    expect(page.text()).toContain('Link ungültig')
-    expect(page.text()).not.toContain('Freitags-Zocken')
-  })
-
-  it('drops the Event today when a later read of a Member\'s page answers 500', async () => {
-    const { served, page } = await mountVanishing(false)
+  // A later read that fails otherwise keeps the Event on screen, and the next good read shows it as it is (#914).
+  it.each([false, true])('keeps the Event on screen when a later read answers 500, for the Host read %s, and shows it again after a good read (#914)', async (isHost) => {
+    const { served, page } = await mountVanishing(isHost)
 
     served.status = 500
     await returnAndWait(served)
 
-    expect(page.text()).not.toContain('Freitags-Zocken')
-  })
+    expect(page.text()).toContain('Freitags-Zocken')
 
-  it('drops the Event today when a later read of the Host\'s page answers 500', async () => {
-    const { served, page } = await mountVanishing(true)
-
-    served.status = 500
+    served.status = null
     await returnAndWait(served)
 
-    expect(page.text()).not.toContain('Freitags-Zocken')
+    expect(page.text()).toContain('Freitags-Zocken')
   })
 })
