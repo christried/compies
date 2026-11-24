@@ -71,7 +71,7 @@ function eventRow(fields: Partial<EventRow> = {}): EventRow {
 
 const running = (fields: Partial<SessionRow> = {}): SessionRow => ({ id: 's1', eventId: 'e1', startsAt: at(-60), previousStartsAt: null, slotId: null, icsSequence: 0, removedAt: null, startedAt: at(-30), endedAt: null, ...fields })
 const waiting = (id: string, startsAt: Date | null): SessionRow => running({ id, startsAt, startedAt: null })
-const member = (id: string, zone: MemberRow['zone'], team: number | null = null, fields: Partial<MemberRow> = {}): MemberRow => ({ id, name: id, displayName: null, image: null, zone, team, teamWord: null, teamJoinedAt: null, ...fields })
+const member = (id: string, zone: MemberRow['zone'], team: number | null = null, fields: Partial<MemberRow> = {}): MemberRow => ({ id, name: id, displayName: null, image: null, deletedAt: null, zone, team, teamWord: null, teamJoinedAt: null, ...fields })
 /** Two teams of two, one Member in the Stands. */
 const seated = (): MemberRow[] => [member('host', 'stands'), member('a', 'team', 1), member('b', 'team', 1), member('c', 'team', 2), member('d', 'team', 2)]
 
