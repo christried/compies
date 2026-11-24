@@ -46,6 +46,16 @@ export function shownName({ name, displayName }: { name: string, displayName?: s
   return displayName ?? name
 }
 
+/**
+ * What a read shows of a User (#915, ADR 0020): the shown name and the picture, or for a Deleted User an empty name, no picture and `deleted: true`, cut
+ * whatever the row still holds. The `deleted` key is there only for a Deleted User, so a User who is not deleted comes as before. The client shows
+ * the mark as „Gelöschtes Konto“ (`shownPerson`).
+ */
+export function readPerson({ name, displayName, image, deletedAt }: { name: string, displayName?: string | null, image?: string | null, deletedAt: Date | null }): { name: string, image: string | null, deleted?: true } {
+  if (deletedAt !== null) return { name: '', image: null, deleted: true }
+  return { name: shownName({ name, displayName }), image: image ?? null }
+}
+
 /** What `GET /api/me` returns: the signed-in User, or null when signed out. */
 export interface MeView {
   user: AuthUser | null
