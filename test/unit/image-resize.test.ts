@@ -221,3 +221,71 @@ describe('zoom (#516)', () => {
     expect(zoomCrop(WIDE, { x: 0.3, y: 0 }, 0).zoom).toBe(1)
   })
 })
+
+// The tile's ratio is an argument (#909): a 1:1 tile (the Profile picture, #678) beside the 16:10 card.
+describe('crop geometry for a 1:1 tile (#909)', () => {
+  const SQUARE = 1
+  const SQUARE_TILE = { width: 120, height: 120 }
+  const WIDE_SHORT = { width: 1000, height: 900 }
+
+  it('cuts a wide picture to a centred square', () => {
+    expect(coverCrop(WIDE.width, WIDE.height, CENTRE_CROP, SQUARE)).toEqual({ x: 500, y: 0, width: 1000, height: 1000 })
+  })
+
+  it('cuts a tall picture to a centred square', () => {
+    expect(coverCrop(TALL.width, TALL.height, CENTRE_CROP, SQUARE)).toEqual({ x: 0, y: 400, width: 800, height: 800 })
+  })
+
+  it('zooms a wide picture to a square at 2, from the centre', () => {
+    expect(coverCrop(WIDE.width, WIDE.height, { x: 0, y: 0, zoom: 2 }, SQUARE)).toEqual({ x: 750, y: 250, width: 500, height: 500 })
+  })
+
+  it('shows a square picture whole at any crop', () => {
+    for (const crop of [CENTRE_CROP, { x: 1, y: -1 }, { x: 0.5, y: 0.5, zoom: 1 }]) {
+      expect(coverCrop(1000, 1000, crop, SQUARE)).toEqual({ x: 0, y: 0, width: 1000, height: 1000 })
+    }
+  })
+
+  it('keeps the 16:10 card as the default ratio', () => {
+    expect(coverCrop(WIDE.width, WIDE.height)).toEqual(coverCrop(WIDE.width, WIDE.height, CENTRE_CROP, 1.6))
+  })
+
+  it('says on which axis a square tile has room', () => {
+    expect(cropRoom(1000, 1000, 1, SQUARE)).toEqual({ x: false, y: false })
+    expect(cropRoom(WIDE.width, WIDE.height, 1, SQUARE)).toEqual({ x: true, y: false })
+    expect(cropRoom(WIDE.width, WIDE.height, 2, SQUARE)).toEqual({ x: true, y: true })
+  })
+
+  it('turns a drag into a share of the square room, and ignores the axis without room', () => {
+    expect(panCrop(WIDE, SQUARE_TILE, CENTRE_CROP, { dx: 30, dy: 0 }, SQUARE).x).toBeCloseTo(0.5, 6)
+    expect(panCrop(WIDE, SQUARE_TILE, CENTRE_CROP, { dx: 500, dy: 0 }, SQUARE).x).toBe(1)
+    expect(panCrop(WIDE, SQUARE_TILE, CENTRE_CROP, { dx: 0, dy: 40 }, SQUARE).y).toBe(0)
+  })
+
+  it('turns a drag at zoom 2 into a share of the zoomed square room', () => {
+    expect(panCrop(WIDE, SQUARE_TILE, { x: 0, y: 0, zoom: 2 }, { dx: 90, dy: 0 }, SQUARE).x).toBeCloseTo(0.5, 6)
+  })
+
+  it('moves one key press by a tenth of the room, and reaches 1 after ten presses', () => {
+    expect(nudgeCrop(WIDE, CENTRE_CROP, 'right', SQUARE)).toEqual({ x: 0.1, y: 0 })
+    let crop = CENTRE_CROP
+    for (let press = 0; press < 10; press++) crop = nudgeCrop(WIDE, crop, 'right', SQUARE)
+    expect(crop.x).toBe(1)
+    expect(nudgeCrop(WIDE, CENTRE_CROP, 'up', SQUARE)).toEqual(CENTRE_CROP)
+  })
+
+  // A 1000 × 900 picture has room on y for the 16:10 card but none for a square: the key must not move it.
+  it('moves no key on an axis the square has no room on', () => {
+    expect(nudgeCrop(WIDE_SHORT, CENTRE_CROP, 'up', SQUARE)).toEqual(CENTRE_CROP)
+    expect(panCrop(WIDE_SHORT, SQUARE_TILE, CENTRE_CROP, { dx: 0, dy: 40 }, SQUARE).y).toBe(0)
+  })
+
+  it('keeps the x offset on a zoom to 1 and zeroes y, which has no room in a square', () => {
+    expect(zoomCrop(WIDE, { x: 0.3, y: 0.5, zoom: 2 }, 1, SQUARE)).toEqual({ x: 0.3, y: 0, zoom: 1 })
+    expect(coverCrop(WIDE.width, WIDE.height, { x: 0, y: 0, zoom: 4 }, SQUARE)).toEqual(coverCrop(WIDE.width, WIDE.height, { x: 0, y: 0, zoom: 3 }, SQUARE))
+  })
+
+  it('places a zoomed picture in the square tile, from the centre', () => {
+    expect(tilePlacement(WIDE.width, WIDE.height, { x: 0, y: 0, zoom: 2 }, SQUARE)).toEqual({ left: -150, top: -50, width: 400, height: 200 })
+  })
+})
