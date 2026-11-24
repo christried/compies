@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Behoben
+
+- Scheitert das Nachladen einer offenen Event-Seite an einem kurzen Serverfehler, bleibt das Event stehen und lädt weiter nach, statt einer Fehlerseite zu weichen. ([#914](https://github.com/christried/compies/issues/914))
+
 ## [0.20.0] - 2026-11-23 – Archiv
 
 ### Neu
