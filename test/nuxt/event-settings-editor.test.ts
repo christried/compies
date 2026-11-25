@@ -28,7 +28,7 @@ const SIX = '00000000-0000-4000-8000-000000000006'
 const seated = (id: string, zone: 'stands' | 'team', team: number | null = null): MemberView => memberView({ id, name: id.slice(-4), zone, team })
 
 function poolGame(n: number, name: string): PoolGame {
-  return { id: `00000000-0000-4000-8000-${String(n).padStart(12, '0')}`, name, imageUrl: null, youtubeId: null, clipStart: 0, clipLength: 30, playersMin: null, playersMax: null, suitabilities: [], notes: null, price: null, archived: false }
+  return { id: `00000000-0000-4000-8000-${String(n).padStart(12, '0')}`, name, imageUrl: null, youtubeId: null, clipStart: 0, clipLength: 30, playersMin: 2, playersMax: 8, suitabilities: ['teams'], notes: null, price: null, archived: false }
 }
 
 // The library the pool steps pick from.
