@@ -577,7 +577,7 @@ describe('the Clip under an Emote (#670)', () => {
     await settle()
   }
 
-  const say =(emote: 'clap' | 'tears' | 'angry' | 'roar') =>
+  const say = (emote: 'clap' | 'tears' | 'angry' | 'roar') =>
     lastSocket().options.onMessage(JSON.stringify(envelope({ type: 'emote.sent', userId: LARSI, emote, sound: true } as RoomMessage, Date.now())))
 
   beforeEach(() => {

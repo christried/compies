@@ -182,6 +182,17 @@ describe('createClipDuck', () => {
     expect(last()).toBe(DUCK_VOLUME)
   })
 
+  it('steps at the pace its config says (the listening page tunes it)', () => {
+    const duck = createClipDuck({ config: { duckVolume: DUCK_VOLUME, downMs: DUCK_DOWN_MS, upMs: DUCK_UP_MS, stepMs: 50 } })
+    const volumes: number[] = []
+    duck.attach(v => volumes.push(v))
+
+    duck.note({ id: 'veto-seal', delayMs: 0 })
+    vi.advanceTimersByTime(50)
+
+    expect(volumes).toEqual([CLIP_VOLUME, 75])
+  })
+
   it('gives a sink that attaches during a duck the lowered volume at once', () => {
     const duck = createClipDuck()
     duck.note({ id: 'veto-seal', delayMs: 0 })

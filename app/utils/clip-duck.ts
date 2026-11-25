@@ -27,9 +27,11 @@ export interface DuckConfig {
   duckVolume: number
   downMs: number
   upMs: number
+  /** The pace of the timer; `DUCK_STEP_MS` when absent. Only `createClipDuck` reads it, so the listening page can tune it. */
+  stepMs?: number
 }
 
-export const DEFAULT_DUCK_CONFIG: DuckConfig = { duckVolume: DUCK_VOLUME, downMs: DUCK_DOWN_MS, upMs: DUCK_UP_MS }
+const DEFAULT_DUCK_CONFIG: DuckConfig = { duckVolume: DUCK_VOLUME, downMs: DUCK_DOWN_MS, upMs: DUCK_UP_MS }
 
 /** A cue's time on the page's clock (`performance.now`), from its start to its end (outside). */
 interface Sounding { startMs: number, endMs: number }
@@ -100,7 +102,7 @@ export function createClipDuck(options: { config?: DuckConfig, now?: () => numbe
       sounds.push({ startMs, endMs: startMs + CUE_LENGTHS[cue.id].ms })
       if (timer !== null) return
       lastTick = now()
-      timer = setInterval(tick, DUCK_STEP_MS)
+      timer = setInterval(tick, config.stepMs ?? DUCK_STEP_MS)
     },
     attach(next) {
       sink = next
