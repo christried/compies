@@ -218,6 +218,16 @@
     "whereTo": "Wohin, {name}?",
     "moveToTeam": "Nach {team}",
     "moveToStands": "Auf die Tribüne",
+    "remove": {
+      "entry": "Aus dem Event entfernen",
+      "title": "{name} aus dem Event entfernen?",
+      "text": "Gelöscht werden der Platz im Team, das Teamwort und die Stimmen in der Terminumfrage. Die Nachrichten im Chat bleiben.",
+      "rotate": "Einladungslink erneuern",
+      "rotateOff": "{name} kann mit dem aktuellen Link wiederkommen.",
+      "hold": "Entfernen",
+      "done": "{name} ist nicht mehr im Event.",
+      "doneRotated": "{name} ist nicht mehr im Event. Der Einladungslink ist neu."
+    },
     "movedTeam": "{name} ist jetzt in {team}.",
     "movedStands": "{name} ist jetzt auf der Tribüne.",
     "dragHint": "Ziehen oder Enter zum Verschieben",

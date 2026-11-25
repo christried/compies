@@ -15,6 +15,8 @@ export interface MoveTarget {
   reason: string | null
   /** An entry that is held for a second instead of clicked (#74); it resolves to whether it worked, and never has a reason. */
   hold?: () => Promise<boolean>
+  /** A destructive entry (#896, „Aus dem Event entfernen“): set apart from the rows above by a rule and in the red text of a surface. */
+  danger?: boolean
 }
 
 defineProps<{
@@ -52,6 +54,7 @@ defineExpose({ focusFirst: () => list.value?.querySelector<HTMLElement>('[role="
       v-for="target in targets"
       :key="target.key"
       role="none"
+      :class="target.danger && 'mt-1.5 border-t-(length:--cp-bw) border-line-soft pt-2'"
     >
       <HoldToConfirmButton
         v-if="target.hold"
@@ -69,7 +72,7 @@ defineExpose({ focusFirst: () => list.value?.querySelector<HTMLElement>('[role="
         type="button"
         role="menuitem"
         class="flex min-h-11 w-full items-center gap-3 rounded-md px-3 py-1.5 text-left text-[15px]"
-        :class="target.reason ? 'cursor-not-allowed text-ink-3' : 'font-semibold text-ink hover:bg-surface-2'"
+        :class="target.reason ? 'cursor-not-allowed text-ink-3' : ['font-semibold hover:bg-surface-2', target.danger ? 'text-error-fg' : 'text-ink']"
         :aria-disabled="target.reason ? 'true' : undefined"
         @click="!target.reason && emit('pick', target.key)"
       >

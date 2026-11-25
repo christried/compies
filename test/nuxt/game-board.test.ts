@@ -56,6 +56,10 @@ interface Options {
   pageKind?: EventPageState['kind']
   /** What the move endpoint answers; it may wait and throw. */
   answer?: (body: { userId: string, to: Place }) => Promise<unknown> | unknown
+  /** What the remove-member endpoint answers (#896); it may throw. */
+  removeAnswer?: (body: { userId: string, rotateInvite: boolean }) => Promise<unknown> | unknown
+  /** Mounts into the document, for a test that reads the focus. */
+  attach?: boolean
 }
 
 /** A board for one test, with a move endpoint that records every body posted to it. */
@@ -69,6 +73,15 @@ async function mountBoard(options: Options = {}) {
       const body = await readBody(event) as { userId: string, to: Place }
       posted.push(body)
       return options.answer ? await options.answer(body) : { userId: body.userId, to: body.to }
+    },
+  })
+  const removed: { userId: string, rotateInvite: boolean }[] = []
+  registerEndpoint(`/api/e/${slug}/remove-member`, {
+    method: 'POST',
+    handler: async (event) => {
+      const body = await readBody(event) as { userId: string, rotateInvite: boolean }
+      removed.push(body)
+      return options.removeAnswer ? await options.removeAnswer(body) : { userId: body.userId, inviteUrl: null }
     },
   })
   const live = fakeRoom()
@@ -85,8 +98,9 @@ async function mountBoard(options: Options = {}) {
       isHost: options.isHost ?? false,
       room: live.room,
     },
+    attachTo: options.attach ? document.body : undefined,
   })
-  return { page, posted, ...live }
+  return { page, posted, removed, ...live }
 }
 
 type Board = Awaited<ReturnType<typeof mountBoard>>['page']
@@ -408,6 +422,154 @@ describe('GameBoard', () => {
       menuItem('Nach Team Rot').click()
 
       await vi.waitFor(() => expect(posted).toEqual([{ userId: LARSI, to: team(1) }]))
+    })
+  })
+
+  describe('removing somebody from the Event (#896)', () => {
+    const REMOVE = 'Aus dem Event entfernen'
+    const items = () => [...menu()!.querySelectorAll<HTMLElement>('[role="menuitem"]')]
+    const entry = () => items().find(item => item.textContent?.includes(REMOVE))
+    const removeDialog = () => [...document.querySelectorAll<HTMLElement>('[role="dialog"]')].find(node => node.textContent?.includes('aus dem Event entfernen?'))
+    const host = { viewerId: SANNE, isHost: true }
+
+    it('ends the Host\'s menu on a Member of the Tribüne with the entry, set apart, in the danger colour and not dimmed', async () => {
+      const { page } = await mountBoard({ ...host, members: [kittyAt(team(1)), larsiAt(), sanneAt()] })
+
+      await person(page, LARSI).trigger('click')
+
+      expect(items().map(item => item.textContent?.trim().split('\n')[0])).toEqual([expect.stringContaining('Team Rot'), expect.stringContaining('Team Orange'), expect.stringContaining('Auf die Tribüne'), REMOVE])
+      expect(items().at(-1)).toBe(entry())
+      expect(entry()!.getAttribute('aria-disabled')).toBeNull()
+      expect(entry()!.className).toContain('text-error-fg')
+      expect(entry()!.className).not.toContain('text-ink ')
+      expect(entry()!.closest('li')!.className).toContain('border-t')
+      expect(items()[2]!.closest('li')!.className).not.toContain('border-t')
+      expect(items().slice(0, 3).every(item => !item.className.includes('text-error-fg'))).toBe(true)
+    })
+
+    it('has it on a Member on a Seat as well, and on the only other Member of the Event', async () => {
+      const seated = await mountBoard({ ...host, members: [kittyAt(team(1)), larsiAt(), sanneAt()] })
+      await person(seated.page, kitty.id).trigger('click')
+      expect(items().at(-1)!.textContent).toContain(REMOVE)
+      document.body.innerHTML = ''
+
+      const alone = await mountBoard({ ...host, members: [larsiAt(team(2)), sanneAt()] })
+      await person(alone.page, LARSI).trigger('click')
+      expect(items().at(-1)!.textContent).toContain(REMOVE)
+    })
+
+    it.each<[string, Partial<Options>]>([
+      ['an Event that was never set up', { settings: null, teamChoiceOpen: false, pageKind: 'setup' }],
+      ['the poll', { teamChoiceOpen: false, pageKind: 'poll' }],
+      ['open Team choice', { pageKind: 'teams' }],
+      ['a running Session', { started: true, pageKind: 'running' }],
+      ['between two Sessions', { started: true, pageKind: 'between' }],
+      ['after the last Session', { started: true, pageKind: 'done' }],
+    ])('has it in %s', async (_name, options) => {
+      const { page } = await mountBoard({ ...host, ...options, members: [kittyAt(), larsiAt(), sanneAt()] })
+
+      await person(page, LARSI).trigger('click')
+
+      expect(items().at(-1)!.textContent).toContain(REMOVE)
+    })
+
+    it('has none on the Host\'s own person', async () => {
+      const { page } = await mountBoard({ ...host })
+
+      await person(page, SANNE).trigger('click')
+
+      expect(menu()).not.toBeNull()
+      expect(menu()!.textContent).not.toContain(REMOVE)
+    })
+
+    it('has none in a Member\'s menu, not on anybody and not on their own person', async () => {
+      const { page } = await mountBoard()
+
+      await person(page, LARSI).trigger('click')
+      expect(menu()!.textContent).not.toContain(REMOVE)
+      document.body.innerHTML = ''
+
+      const own = await mountBoard()
+      await person(own.page, kitty.id).trigger('click')
+      expect(menu()!.textContent).not.toContain(REMOVE)
+    })
+
+    it('has none once the Event is finished', async () => {
+      const { page } = await mountBoard({ ...host, started: true, pageKind: 'finished' })
+
+      await person(page, LARSI).trigger('click')
+
+      expect(menu()!.textContent).not.toContain(REMOVE)
+    })
+
+    it('adds no place to drop on', async () => {
+      const { page } = await mountBoard({ ...host })
+
+      await person(page, LARSI).trigger('click')
+
+      expect(page.findAll('[data-drop-zone]').map(zone => zone.attributes('data-drop-zone'))).toEqual(['team-1', 'team-2', 'stands'])
+    })
+
+    it('closes the menu and opens the sheet about that person, and sends nothing yet', async () => {
+      const { page, posted, removed } = await mountBoard({ ...host })
+
+      await person(page, LARSI).trigger('click')
+      entry()!.click()
+      await settle()
+
+      expect(menu()).toBeNull()
+      expect(removeDialog()?.textContent).toContain('Larsi aus dem Event entfernen?')
+      expect(removed).toEqual([])
+      expect(posted).toEqual([])
+    })
+
+    it('puts the focus back on the person when the sheet closes, though the menu row that opened it is gone', async () => {
+      const { page } = await mountBoard({ ...host, attach: true })
+      await person(page, LARSI).trigger('click')
+      entry()!.click()
+      await settle()
+
+      removeDialog()!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+      await settle()
+
+      expect(document.activeElement).toBe(person(page, LARSI).element)
+    })
+
+    it('closes the menu quietly when its person leaves the Event', async () => {
+      const { page } = await mountBoard({ ...host })
+      await person(page, LARSI).trigger('click')
+
+      await page.setProps({ members: [kittyAt(), sanneAt()] })
+      await settle()
+
+      expect(menu()).toBeNull()
+      expect(shownToasts()).toEqual([])
+    })
+
+    it('closes the sheet quietly when its person leaves the Event, and keeps it when somebody else does', async () => {
+      const { page } = await mountBoard({ ...host })
+      await person(page, LARSI).trigger('click')
+      entry()!.click()
+      await settle()
+
+      await page.setProps({ members: [larsiAt(), sanneAt()] })
+      await settle()
+      expect(removeDialog()).toBeDefined()
+
+      await page.setProps({ members: [sanneAt()] })
+      await settle()
+      expect(removeDialog()).toBeUndefined()
+      expect(shownToasts()).toEqual([])
+    })
+
+    it('drops the person from a Member\'s board when the Members shrink, with no menu and no sheet', async () => {
+      const { page } = await mountBoard()
+      expect(page.find(`[data-user-id="${LARSI}"]`).exists()).toBe(true)
+
+      await page.setProps({ members: [kittyAt(), sanneAt()] })
+
+      expect(page.find(`[data-user-id="${LARSI}"]`).exists()).toBe(false)
+      expect(removeDialog()).toBeUndefined()
     })
   })
 
