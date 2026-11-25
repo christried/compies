@@ -152,6 +152,7 @@ function onUseExisting(game: GameView) {
       v-model:filters="filters"
       compact
       fit-selects
+      marks-played
       card-notes="view"
     >
       <template #notice="{ games: loaded }">

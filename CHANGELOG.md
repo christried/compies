@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Neu
+
+- Jede Spielkarte sagt dir jetzt, wann du das Spiel zuletzt gespielt hast: in deiner Bibliothek und im Schritt „Spiele“ ([#900](https://github.com/christried/compies/issues/900)).
+
 ### Geändert
 
 - Die Datenschutzerklärung sagt, was mit deinen Daten passiert, wenn dich ein Host aus einem Event entfernt ([#899](https://github.com/christried/compies/issues/899)).

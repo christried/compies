@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Gamepad2, Users } from '@lucide/vue'
 import type { RouteLocationRaw } from 'vue-router'
+import { formatShortDayYear } from '~/utils/berlin-time'
 import { describeGame } from '~/utils/describe-game'
 import { gameCover } from '~/utils/game-cover'
 import type { GameView, PoolGameFace } from '~~/shared/game'
@@ -14,7 +15,7 @@ import { colorTags } from '~~/shared/tag-colors'
 // without it the card is a plain element, not a button. #146 and #148 reuse it; a game with no player count and no Suitabilities shows neither. `layout="responsive"` (#173) is a row
 // below 600 px and a card from 600 px up (sm, #707), decided in CSS, so the game browser needs no `matchMedia`. A library game shows as many Tags as fit in two lines (one in a row) and „+N“ for the rest (#335, #711), each in the colour the game's whole Tag order gives it (#427, as on its page) and its Price line under the meta line (#337, #338: a pool and a Round game carry the Price too); only a wheel slice carries neither. „+N“ is a button above the link, and its popover lists every Tag (#614). They are
 // spans, not a list: the tests count the cards as `li`. The picker's rows are these cards too, so they show the Price as well. With `inEvents` (#733) a neutral pill „in 2 Events“
-// sits between the Price line and the Tags; it is a count, no Tag, so it is not a `TagChip`, and no control, so it adds no tab stop. With `archived` (#726) the same pill reads „Archiviert“ right under the name, tile included.
+// sits between the Price line and the Tags; it is a count, no Tag, so it is not a `TagChip`, and no control, so it adds no tab stop. With `lastPlayed` (#900) a second pill „zuletzt am 3. Nov. 2026“ sits beside it in the same wrapper (it wraps under it when they do not fit). With `archived` (#726) the same pill reads „Archiviert“ right under the name, tile included.
 // The `tile` layout (#435) is the cover and the name only, on the Event page: no players, Suitabilities, Tags or Price, and no link. With `opens` (#443) the
 // name is a button that emits `open` (a tile opens the game dialog, #443, #444) and stretches over the tile like the link does; a tile without it stays plain.
 // With `notes` and `eventNotes` (#837, #859: the library page and the pickers) a game with a visible note has the Notes button on its cover: a sibling of the name, above it, so it never follows the link or presses the card (as „+N“).
@@ -27,6 +28,8 @@ const props = withDefaults(defineProps<{
   opens?: boolean
   /** In how many of the Host's live Events the game sits in the pool (#733): „in 2 Events“ in a pill of its own; 0 draws nothing. */
   inEvents?: number
+  /** The instant of the game's latest Result (#900): a second neutral pill „zuletzt am 3. Nov. 2026“ (the Berlin day); null draws nothing. */
+  lastPlayed?: string | null
   /** The Host's pool shows the game as Archived (#726): a pill „Archiviert“ under the name, in every layout. Not read off `game`: the library's cards are GameViews that carry the flag too. */
   archived?: boolean
   /** The game's Game notes (#837): with a visible character the card draws the Notes button, on a tile too (#858). Null or absent: no button, and no wrapper for it. */
@@ -39,7 +42,7 @@ const props = withDefaults(defineProps<{
   tagsRoom?: boolean
   /** The Notes popover's footer „Bearbeiten“ is a button that asks for the game's dialog in edit mode (#858: the Event page's tiles, for the Host); a caller gives this or `notesEditTo`. */
   notesEditable?: boolean
-}>(), { layout: 'card', to: undefined, opens: false, inEvents: 0, archived: false, notes: null, eventNotes: null, notesEditTo: undefined, tagsRoom: false, notesEditable: false })
+}>(), { layout: 'card', to: undefined, opens: false, inEvents: 0, lastPlayed: null, archived: false, notes: null, eventNotes: null, notesEditTo: undefined, tagsRoom: false, notesEditable: false })
 
 const emit = defineEmits<{ open: [], editNotes: [] }>()
 
@@ -47,6 +50,7 @@ const { t } = useI18n()
 const NuxtLink = resolveComponent('NuxtLink')
 const now = new Date()
 const priceText = computed(() => (props.game.price ? priceLine(props.game.price, now, t) : null))
+const lastPlayedText = computed(() => (props.lastPlayed ? t('library.lastPlayed', { day: formatShortDayYear(new Date(props.lastPlayed)) }) : null))
 // The meta lines (players, Suitabilities, Price, Tags) are not part of a tile (#435).
 const showMeta = computed(() => props.layout !== 'tile')
 // The Notes button (#837, #859, #858): in every layout, and only for a document with a visible character (the one rule, notesHasText), Game or Event notes alike.
@@ -213,10 +217,20 @@ const look = computed(() => LAYOUT[props.layout])
         class="text-[12px] font-bold text-ink-2"
         :class="layout === 'card' ? 'line-clamp-2 min-h-[2lh]' : layout === 'row' ? 'truncate' : 'truncate sm:line-clamp-2 sm:min-h-[2lh] sm:whitespace-normal'"
       >{{ priceText }}</span>
-      <span
-        v-if="showMeta && inEvents > 0"
-        :class="PILL"
-      >{{ t('library.inEvents', { n: inEvents }, inEvents) }}</span>
+      <!-- The two neutral pills (#733, #900): one wrapper, so they sit beside each other when they fit and wrap when they do not; `min-w-0` lets each pill's truncation work. -->
+      <div
+        v-if="showMeta && (inEvents > 0 || lastPlayedText)"
+        class="flex min-w-0 flex-wrap gap-1"
+      >
+        <span
+          v-if="inEvents > 0"
+          :class="PILL"
+        >{{ t('library.inEvents', { n: inEvents }, inEvents) }}</span>
+        <span
+          v-if="lastPlayedText"
+          :class="PILL"
+        >{{ lastPlayedText }}</span>
+      </div>
       <div
         v-if="showMeta && allTags.length > 0"
         class="relative flex flex-col justify-end"

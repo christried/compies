@@ -1,4 +1,4 @@
-import { Armchair, CalendarCheck, CalendarClock, CalendarMinus, CalendarPlus, CalendarX, Coins, Dices, Flag, Gamepad2, Medal, Pencil, Play, RotateCcw, ShieldPlus, ShieldX, SlidersHorizontal, Trophy, Undo2, UserPlus, Users } from '@lucide/vue'
+import { Armchair, CalendarCheck, CalendarClock, CalendarMinus, CalendarPlus, CalendarX, Coins, Dices, Flag, Gamepad2, Medal, Pencil, Play, RotateCcw, ShieldPlus, ShieldX, SlidersHorizontal, Trophy, Undo2, UserMinus, UserPlus, Users } from '@lucide/vue'
 import type { Component } from 'vue'
 import { ACTIVITY_TYPES, type ActivityEntry, type TeamNamingType } from '~~/shared/activity'
 import type { BoardTeam } from '~~/shared/event'
@@ -93,6 +93,7 @@ export function activityIcon(entry: ActivityEntry): { icon: Component, tone: 'pr
     case 'result_entered': return { icon: Trophy, tone: 'primary' }
     case 'result_corrected': return { icon: Pencil, tone: 'surface' }
     case 'event_finished': return { icon: Medal, tone: 'primary' }
+    case 'member_removed': return { icon: UserMinus, tone: 'surface' }
   }
 }
 
@@ -178,6 +179,9 @@ function sentence(entry: ActivityEntry, t: Translate, teams: BoardTeam[], winner
       const list = joinNames(winners.map(team))
       return winners.length === 1 ? t('activity.eventFinished', { list, count: 1 }, 1) : t('activity.eventFinishedTie', { list })
     }
+    // The Host removed a Member (#697): the sentence names the removed User and never the Host. The name comes from `people`, a User who deleted their account later reads „Gelöschtes Konto“.
+    case 'member_removed':
+      return t('activity.memberRemoved', { name: entryName(entry, entry.params.userId, entry.people[entry.params.userId] ?? '', t) })
   }
 }
 

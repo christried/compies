@@ -146,6 +146,11 @@ export interface GameList {
    * on the library card). Only games with a count above 0 have a key; a missing key means 0.
    */
   eventCounts: Record<string, number>
+  /**
+   * Game id to the instant of the game's latest Result (UTC ISO string, `rounds.result_at`; #900, „zuletzt am“ on the game card). A Correction does not move it. Only played games have a
+   * key. Only the Host's library read carries it: no read of an Event does, so a Member never gets the date.
+   */
+  lastPlayed: Record<string, string>
 }
 
 /** What the game browser filters by (#142, #171, #173). Empty, null and false mean no filter. */

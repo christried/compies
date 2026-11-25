@@ -1,11 +1,11 @@
-import { and, asc, count, eq, inArray, isNotNull, isNull, sql, type SQLWrapper } from 'drizzle-orm'
+import { and, asc, count, eq, inArray, isNotNull, isNull, max, sql, type SQLWrapper } from 'drizzle-orm'
 import type { H3Event } from 'h3'
 import type { EventView } from '../../shared/event'
 import { canSeeLibrary, type GamePrice, type GamePriceInput, type GameTag, type GameView, type HostGameFacts, type PoolGame, type PoolGameFace, type RoundGame } from '../../shared/game'
 import type { AuthUser } from '../../shared/auth'
 import { IMAGE_PATH } from '../../shared/image'
 import { beforeFinish, PHASES } from '../../shared/phase'
-import { eventPoolGames, events, games } from '../db/schema'
+import { eventPoolGames, events, games, rounds } from '../db/schema'
 import { isUuid } from '../domain/uuid'
 import type { Db } from './db'
 import { apiError, apiNotFound } from './errors'
@@ -31,10 +31,18 @@ export const archivedGame = isNotNull(games.archivedAt)
 /** The phases in which an Event is still live: it has not finished (`beforeFinish`). */
 const LIVE_PHASES = PHASES.filter(beforeFinish)
 
+/** An Event of `hostId` that is not deleted, finished ones included (#900): the Host's Events a game was played in. */
+export function hostedEventOf(hostId: string) {
+  return and(eq(events.hostId, hostId), isNull(events.deletedAt))
+}
+
 /** An Event of `hostId` that is live: not deleted and not finished (#725, #733). The one sentence behind „who is told when a game is archived“ and „in how many Events a game sits“. */
 export function liveEventOf(hostId: string) {
-  return and(eq(events.hostId, hostId), isNull(events.deletedAt), inArray(events.phase, LIVE_PHASES))
+  return and(hostedEventOf(hostId), inArray(events.phase, LIVE_PHASES))
 }
+
+/** A Round that was played: it has a Result and was not put back (#656, #900). The one sentence behind „the plays on a game's page“ and „when a game was last played“. */
+export const playedRound = and(isNotNull(rounds.resultAt), isNull(rounds.putBackAt))
 
 /**
  * The games of an Event's Game pool, the Host's own only (`games.created_by = events.host_id`, #722: a pool row of another Host's game, which the 0.15 code could still write
@@ -196,4 +204,19 @@ export async function liveEventCounts(db: Db, hostId: string): Promise<Record<st
     .where(liveEventOf(hostId))
     .groupBy(eventPoolGames.gameId)
   return Object.fromEntries(rows.map(row => [row.gameId, Number(row.n)]))
+}
+
+/**
+ * When each of the Host's games was last played (#900, „zuletzt am“ on the library card): the instant of the latest Result (`rounds.result_at`, a UTC ISO string) of a Round of any of the
+ * Host's Events that are not deleted, finished ones included. A Correction (#275) keeps `resultAt`, so it does not move the date. The Round names the game, so a game set outside its
+ * pool counts and an archived one too; the Host's own Events only (ADR 0018). One grouped statement, whatever the number of games. Only played games have a key.
+ */
+export async function lastPlayedAt(db: Db, hostId: string): Promise<Record<string, string>> {
+  const rows = await db
+    .select({ gameId: rounds.gameId, at: max(rounds.resultAt) })
+    .from(rounds)
+    .innerJoin(events, eq(events.id, rounds.eventId))
+    .where(and(hostedEventOf(hostId), isNotNull(rounds.gameId), playedRound))
+    .groupBy(rounds.gameId)
+  return Object.fromEntries(rows.flatMap(row => row.gameId && row.at ? [[row.gameId, new Date(row.at).toISOString()]] : []))
 }

@@ -7,6 +7,7 @@ const longDayFormat = new Intl.DateTimeFormat('de-DE', { timeZone: BERLIN_ZONE, 
 const monthFormat = new Intl.DateTimeFormat('de-DE', { timeZone: BERLIN_ZONE, month: 'long', year: 'numeric' })
 const fullDayFormat = new Intl.DateTimeFormat('de-DE', { timeZone: BERLIN_ZONE, day: 'numeric', month: 'long', year: 'numeric' })
 const shortDayFormat = new Intl.DateTimeFormat('de-DE', { timeZone: BERLIN_ZONE, day: 'numeric', month: 'short' })
+const shortDayYearFormat = new Intl.DateTimeFormat('de-DE', { timeZone: BERLIN_ZONE, day: 'numeric', month: 'short', year: 'numeric' })
 const yearFormat = new Intl.DateTimeFormat('de-DE', { timeZone: BERLIN_ZONE, year: 'numeric' })
 
 /** A day in full as `3. November 2026` (Berlin), for the Price form's „Stand: …“ (#337). */
@@ -17,6 +18,11 @@ export function formatFullDay(instant: Date): string {
 /** A day without its year as `3. Nov.` (Berlin), for the Price line (#337). */
 export function formatShortDay(instant: Date): string {
   return shortDayFormat.format(instant)
+}
+
+/** A day with its short month and its year as `3. Nov. 2026` (Berlin), for „zuletzt am“ on the game card (#900): the pill answers „how long ago“, so the year stays. */
+export function formatShortDayYear(instant: Date): string {
+  return shortDayYearFormat.format(instant)
 }
 
 /** The year of an instant as `2026` (Berlin): New Year comes at Berlin midnight, whatever UTC says. */
