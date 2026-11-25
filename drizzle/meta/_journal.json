@@ -302,6 +302,13 @@
       "when": 1795456539635,
       "tag": "0042_drop_phase_archived",
       "breakpoints": true
+    },
+    {
+      "idx": 44,
+      "version": "7",
+      "when": 1795516290272,
+      "tag": "0044_profile_image_key",
+      "breakpoints": true
     }
   ]
 }

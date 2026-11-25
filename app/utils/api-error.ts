@@ -57,6 +57,7 @@ const SHARED: Record<ApiErrorCode, string | null> = {
   invalid_price: 'error.priceInvalid',
   image_too_large: 'error.imageTooLarge',
   image_not_webp: 'error.imageNotWebp',
+  image_unsupported: 'error.imageUnsupported',
   invalid_pools: 'error.poolsInvalid',
   unknown_game: 'error.unknownGame',
   setting_locked: 'error.settingLocked',

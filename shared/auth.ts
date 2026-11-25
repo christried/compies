@@ -1,4 +1,5 @@
 import type { Appearance } from './appearance'
+import { IMAGE_PATH } from './image'
 import { characterCount } from './text'
 
 // Sign-in facts the app and the server share.
@@ -46,6 +47,14 @@ export function shownName({ name, displayName }: { name: string, displayName?: s
   return displayName ?? name
 }
 
+/**
+ * The address of the picture a User is shown with (#678, GLOSSARY: Profile picture): the uploaded one, else the provider's, else null (the
+ * client draws the initial). The one function that turns a User into their picture's address.
+ */
+export function profilePicture({ image, profileImageKey }: { image?: string | null, profileImageKey?: string | null }): string | null {
+  return profileImageKey ? `${IMAGE_PATH}${profileImageKey}` : (image ?? null)
+}
+
 /** What `GET /api/me` returns: the signed-in User, or null when signed out. */
 export interface MeView {
   user: AuthUser | null
@@ -64,6 +73,11 @@ export interface SavedAppearance {
 /** What POST /api/me/motion returns: whether this device's Reduced motion is on after the save (#680). */
 export interface SavedMotion {
   reduced: boolean
+}
+
+/** What PUT /api/me/image returns: the address of the picture shown now, the uploaded one (#678). Never null. */
+export interface SavedProfileImage {
+  image: string
 }
 
 /** What POST /api/me/tour-seen and POST /api/me/tour-reset return: the Tour version stored now (#646). */
