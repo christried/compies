@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { and, eq } from 'drizzle-orm'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
-import { activity, eventMembers, events, messages, pollVotes, vetoes } from '../../server/db/schema'
+import { activity, eventMembers, events, messages, pollVotes, users, vetoes } from '../../server/db/schema'
 import { testClock } from '../../server/utils/clock'
 import { memoryRoomNotifier } from '../../server/utils/room-notifier'
 import type { MessagePage } from '../../shared/chat'
@@ -207,6 +207,21 @@ describe('the Host removes a Member', () => {
       expect(removed).toHaveLength(1)
       expect(removed[0]).toMatchObject({ actor: { id: ev.host.id, name: 'Hostess' }, params: { userId: one.id }, people: { [one.id]: 'Eins' } })
     })
+
+    it('carries a removed User to the Chat read as name and picture alone, no e-mail and no other column of the User (0.21-9, #916)', async () => {
+      const { ev } = await running()
+      const one = ev.players.one
+      await testDb.db.update(users).set({ image: 'https://example.com/eins.png' }).where(eq(users.id, one.id))
+      expect((await remove(ev.slug, ev.host.cookie, { userId: one.id, rotateInvite: false })).status).toBe(200)
+
+      const body = await (await send('GET', `/api/e/${ev.slug}/messages`, ev.host.cookie)).text()
+      const page = JSON.parse(body) as MessagePage
+
+      expect(page.messages).toMatchObject([{ writerId: one.id, text: 'Hallo zusammen' }])
+      expect(Object.keys(page.writers[one.id]!).sort()).toEqual(['image', 'name'])
+      expect(page.writers[one.id]).toEqual({ name: 'Eins', image: 'https://example.com/eins.png' })
+      expect(body).not.toContain('one@example.com')
+    })
   })
 
   describe('rotating the Invite link', () => {
@@ -404,6 +419,20 @@ describe('the Host removes a Member', () => {
       const removed = feed.find(entry => entry.type === 'member_removed')
       expect(joined).toMatchObject({ actor: { id: one.id, name: '' }, deleted: [one.id] })
       expect(removed).toMatchObject({ params: { userId: one.id }, people: { [one.id]: '' }, deleted: [one.id] })
+    })
+
+    it('reads their Messages in the Chat as the deleted line with no text, and the writer as „Gelöschtes Konto“ with no name or picture', async () => {
+      const { ev } = await running()
+      const one = ev.players.one
+      expect((await remove(ev.slug, ev.host.cookie, { userId: one.id, rotateInvite: false })).status).toBe(200)
+
+      expect((await send('DELETE', '/api/me', one.cookie)).status).toBe(200)
+
+      const body = await (await send('GET', `/api/e/${ev.slug}/messages`, ev.host.cookie)).text()
+      const page = JSON.parse(body) as MessagePage
+      expect(page.messages).toMatchObject([{ writerId: one.id, text: null, deletedBy: 'writer' }])
+      expect(page.writers[one.id]).toEqual({ name: '', image: null, deleted: true })
+      for (const secret of ['Hallo zusammen', 'Eins', 'one@example.com']) expect(body, secret).not.toContain(secret)
     })
   })
 })
