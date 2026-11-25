@@ -182,6 +182,7 @@ describe('the Tag filter of the library list (#336)', () => {
     expect([...tagSelect().querySelectorAll('option')].map(option => option.textContent!.trim())).toEqual(['Tag', 'Co-op', 'Retro'])
     expect(dialog()!.querySelector('select[aria-label="Spielerzahl"]')).toBeNull()
     expect(dialog()!.querySelector('select[aria-label="Passt zu"]')).toBeNull()
+    expect(dialog()!.querySelector('select[aria-label="Sortierung"]')).toBeNull()
   })
 
   it('narrows the library cards to the Tag and leaves the pool list alone; „Alle“ resets it', async () => {
