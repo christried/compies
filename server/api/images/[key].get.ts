@@ -12,7 +12,8 @@ import { getUser } from '../../utils/user'
 
 // Serves a Profile picture (#678) or a game's image (#143). A key with the profile prefix is served to anyone, signed in or not, while it is some User's
 // current Profile picture; an older or made-up one answers like a missing route, and such a key never falls through to the games. The cache of a Profile
-// picture is public because it is the same for every viewer (it shows on the signed-out Invite page), the game image's is private (below).
+// picture is private like the game image's (below): Vercel's CDN kept a public one and served a replaced or removed picture for its year, while the origin
+// answered 404 (#995). Browsers keep what they loaded; who may read it does not change.
 //
 // A game's image: only the game's current key counts, so a replaced image's URL is gone.
 // Who may not see it, and an unknown key, get the same answer as a missing route. The cache is private
@@ -29,7 +30,7 @@ export default defineEventHandler(async (event) => {
     const picture = await useImageStore(event).get(key)
     if (!picture) throw libraryNotFound()
     setHeader(event, 'content-type', 'image/webp')
-    setHeader(event, 'cache-control', 'public, max-age=31536000, immutable')
+    setHeader(event, 'cache-control', 'private, max-age=31536000, immutable')
     setHeader(event, 'x-content-type-options', 'nosniff')
     return picture
   }

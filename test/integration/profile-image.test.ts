@@ -292,7 +292,7 @@ describe('the Profile picture (#678)', () => {
         expect(response.status).toBe(200)
         expect(response.headers.get('content-type')).toBe('image/webp')
         expect(response.headers.get('x-content-type-options')).toBe('nosniff')
-        expect(response.headers.get('cache-control')).toBe('public, max-age=31536000, immutable')
+        expect(response.headers.get('cache-control')).toBe('private, max-age=31536000, immutable')
         expect(new Uint8Array(await response.arrayBuffer())).toEqual(lossy())
       }
     })
