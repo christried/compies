@@ -7,7 +7,7 @@ import ToastStack from '~/components/ToastStack.vue'
 import { useToast } from '~/composables/useToast'
 import TeamMark from '~/components/TeamMark.vue'
 import UserAvatar from '~/components/UserAvatar.vue'
-import type { DeletedMessage, LiveMessage, Message, MessagePage } from '~~/shared/chat'
+import type { DeletedMessage, LiveMessage, Message, MessagePage, WriterView } from '~~/shared/chat'
 import type { BoardTeam, MemberView } from '~~/shared/event'
 import { MESSAGE_MAX } from '~~/shared/message-text'
 import { characterCount } from '~~/shared/text'
@@ -39,13 +39,15 @@ type WriteAnswer = 'ok' | 'deleted' | 'server-error' | 'rate-limited'
  * A Chat endpoint for one test: pages by `before`, newest first, `pageSize` Messages; counts its reads and can fail or hold its answer.
  * The write (#667) sits on the same path: one `registerEndpoint` call per method, each `{ method, handler }`, serves both (the registry keeps a list per URL).
  */
-function serveChat(all: Message[], { pageSize = 50, failing = false, viewerId = KITTY }: { pageSize?: number, failing?: boolean, viewerId?: string } = {}) {
+function serveChat(all: Message[], { pageSize = 50, failing = false, viewerId = KITTY, writers = {} }: { pageSize?: number, failing?: boolean, viewerId?: string, writers?: Record<string, WriterView> } = {}) {
   testNumber += 1
   const slug = `chat-${testNumber}`
   const served = {
     reads: 0,
     failing,
     all,
+    /** The writers the read carries (0.21-9): a test may add one, as the page learns a writer. */
+    writers: { ...writers } as Record<string, WriterView>,
     hold: null as Promise<void> | null,
     posts: [] as { id: string, text: string }[],
     answer: 'ok' as WriteAnswer,
@@ -97,7 +99,7 @@ function serveChat(all: Message[], { pageSize = 50, failing = false, viewerId = 
       const start = typeof before === 'string' ? newestFirst.findIndex(item => item.id === before) + 1 : 0
       const messages = newestFirst.slice(start, start + pageSize)
       const next = start + pageSize < newestFirst.length ? messages[messages.length - 1]!.id : null
-      return { messages, next } satisfies MessagePage
+      return { messages, next, writers: { ...served.writers } } satisfies MessagePage
     },
   })
   return { slug, served }
@@ -126,7 +128,7 @@ function fakeRoom() {
 
 const settle = () => new Promise(resolve => setTimeout(resolve))
 
-interface MountOptions { pageSize?: number, failing?: boolean, hold?: boolean, viewerId?: string, active?: boolean, members?: MemberView[], finished?: boolean }
+interface MountOptions { pageSize?: number, failing?: boolean, hold?: boolean, viewerId?: string, active?: boolean, members?: MemberView[], finished?: boolean, writers?: Record<string, WriterView> }
 
 async function mountChat(all: Message[], options: MountOptions = {}) {
   const chat = serveChat(all, options)
@@ -1349,6 +1351,80 @@ describe('ChatPanel', () => {
         await vi.waitFor(() => expect(texts(wrapper)).toEqual(['Vom Host gelöscht']))
         expect(wrapper.find('input').exists()).toBe(false)
       })
+    })
+  })
+
+  describe('the writers who are no Member (0.21-9, #916)', () => {
+    const GONE = 'u-gone'
+    const DREIER = 'u-dreier'
+    const writersBy: Record<string, WriterView> = {
+      [GONE]: { name: '', image: null, deleted: true },
+      [DREIER]: { name: 'Dreier', image: 'https://example.com/dreier.png' },
+    }
+    const labels = (wrapper: Mounted['wrapper']) => wrapper.findAll('button[aria-label^="Nachricht"]').map(control => control.attributes('aria-label'))
+
+    it('shows a marked writer who is no Member as „Gelöschtes Konto“ with the neutral picture', async () => {
+      const { wrapper } = await mountChat([live('a', GONE, 0, 'Boo')], { writers: writersBy })
+
+      expect(texts(wrapper)).toEqual(['Boo'])
+      expect(wrapper.find('b').text()).toBe('Gelöschtes Konto')
+      const avatar = wrapper.findComponent(UserAvatar)
+      expect(avatar.props('deleted')).toBe(true)
+      expect(avatar.find('img').exists()).toBe(false)
+      expect(avatar.find('svg').exists()).toBe(true)
+    })
+
+    it('groups the Messages of a marked writer who is no Member under one name line', async () => {
+      const { wrapper } = await mountChat([live('a', GONE, 0), live('b', GONE, 60)], { writers: writersBy })
+
+      expect(wrapper.findAll('b')).toHaveLength(1)
+      expect(wrapper.findAll('[data-message-id]')).toHaveLength(2)
+    })
+
+    it('shows a writer who is no Member and not marked with the Display name and the picture', async () => {
+      const { wrapper } = await mountChat([live('a', DREIER, 0, 'Noch da')], { writers: writersBy })
+
+      expect(wrapper.find('b').text()).toBe('Dreier')
+      const avatar = wrapper.findComponent(UserAvatar)
+      expect(avatar.props('deleted')).toBe(false)
+      expect(avatar.find('img').attributes('src')).toBe('https://example.com/dreier.png')
+    })
+
+    it('shows a marked Member as „Gelöschtes Konto“ too', async () => {
+      const marked = memberView({ id: 'u-old', name: '', image: null, zone: 'stands', deleted: true })
+      const { wrapper } = await mountChat([live('a', 'u-old', 0, 'Alt')], { members: [...members, marked] })
+
+      expect(wrapper.find('b').text()).toBe('Gelöschtes Konto')
+      expect(wrapper.findComponent(UserAvatar).props('deleted')).toBe(true)
+    })
+
+    it('lets the Host delete a Message of a writer who is no Member, named with the shown name', async () => {
+      const { wrapper } = await mountChat([live('a', GONE, 0, 'Boo'), live('b', DREIER, 300, 'Hallo')], { viewerId: KITTY, writers: writersBy })
+
+      expect(labels(wrapper)).toEqual(['Nachricht von Gelöschtes Konto löschen', 'Nachricht von Dreier löschen'])
+    })
+
+    it('gives a Member no control on a Message of a writer who is no Member', async () => {
+      const { wrapper } = await mountChat([live('a', GONE, 0, 'Boo')], { viewerId: LARSI, writers: writersBy })
+
+      expect(labels(wrapper)).toEqual([])
+    })
+
+    it('shows a live Message of a writer the page does not know with no name, and names them once the next read carries them', async () => {
+      const { wrapper, send, state, served } = await mountChat([], { writers: {} })
+
+      send({ type: 'chat.added', message: live('n', 'u-neu', 5, 'Neu hier') })
+      await settle()
+      expect(texts(wrapper)).toEqual(['Neu hier'])
+      expect(wrapper.find('b').exists()).toBe(false)
+      expect(served.reads).toBe(1)
+
+      served.writers['u-neu'] = { name: 'Neue', image: null }
+      state.value = 'closed'
+      await settle()
+      state.value = 'open'
+      await vi.waitFor(() => expect(served.reads).toBe(2))
+      await vi.waitFor(() => expect(wrapper.find('b').text()).toBe('Neue'))
     })
   })
 })
