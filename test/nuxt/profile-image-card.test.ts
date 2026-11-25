@@ -31,10 +31,29 @@ registerEndpoint('/api/me/image', {
   },
 })
 
+// The removal of the own picture (#911): DELETE answers the address shown now, the provider's, or null.
+const removals = vi.fn()
+let holdRemoval: Promise<void> | null = null
+let removalFailsWith: { statusCode: number, statusMessage: string } | null = null
+let removedTo: string | null = null
+registerEndpoint('/api/me/image', {
+  method: 'DELETE',
+  handler: async () => {
+    removals()
+    if (holdRemoval) await holdRemoval
+    if (removalFailsWith) throw createError(removalFailsWith)
+    return { image: removedTo }
+  },
+})
+
 const mount = () => mountSuspended(ProfilePage, { route: '/profil' })
 const card = (page: VueWrapper) => page.get('section[aria-labelledby="profile-card-title"]')
 const cardPicture = (page: VueWrapper) => page.find('section[aria-labelledby="profile-card-title"] img')
 const uploadButton = (page: VueWrapper) => page.findAll('button').find(button => button.text() === 'Hochladen')!
+const removeLink = (page: VueWrapper) => page.findAll('button').find(button => button.text() === 'Eigenes Bild entfernen')
+const providerHint = 'Kommt von Discord oder Twitch. Ein neues Bild siehst du nach deiner nächsten Anmeldung.'
+const ownHint = 'Dein eigenes Bild. Eine neue Anmeldung ändert es nicht.'
+const ownPicture = { ...withPicture, image: uploaded, hasOwnImage: true }
 
 async function pick(page: VueWrapper, file: File | null = new File(['x'], 'me.png', { type: 'image/png' })) {
   const input = page.get('input[type="file"]')
@@ -48,6 +67,10 @@ describe('uploading a Profile picture on the Profil page (#678)', () => {
     uploads.mockClear()
     holdUpload = null
     uploadFailsWith = null
+    removals.mockClear()
+    holdRemoval = null
+    removalFailsWith = null
+    removedTo = null
     toCardWebp.mockReset()
     toCardWebp.mockResolvedValue({ blob: webp, width: 2000, height: 1000 })
   })
@@ -111,6 +134,7 @@ describe('uploading a Profile picture on the Profil page (#678)', () => {
     await vi.waitFor(() => expect(cardPicture(page).attributes('src')).toBe(uploaded))
 
     expect(useAuthUser().value?.image).toBe(uploaded)
+    expect(useAuthUser().value?.hasOwnImage).toBe(true)
     expect(useAuthUser().value?.displayName).toBe('Kitty')
   })
 
@@ -189,5 +213,97 @@ describe('uploading a Profile picture on the Profil page (#678)', () => {
     await vi.waitFor(() => expect(cardPicture(page).attributes('src')).toBe(uploaded))
 
     expect(card(page).text()).not.toContain('Das Bild hat nicht geklappt.')
+  })
+
+  describe('removing the own picture (#911)', () => {
+    it('shows the link and the own hint only for a User with an uploaded picture', async () => {
+      signInAs(ownPicture)
+      const page = await mount()
+
+      expect(removeLink(page)).toBeDefined()
+      expect(card(page).text()).toContain(ownHint)
+      expect(card(page).text()).not.toContain(providerHint)
+    })
+
+    it('has no link and the provider hint for a User without an upload', async () => {
+      const page = await mount()
+
+      expect(removeLink(page)).toBeUndefined()
+      expect(card(page).text()).toContain(providerHint)
+      expect(card(page).text()).not.toContain(ownHint)
+    })
+
+    it('shows the provider picture at once, with no reload, and drops the link and the own hint', async () => {
+      removedTo = withPicture.image
+      signInAs(ownPicture)
+      const page = await mount()
+      expect(cardPicture(page).attributes('src')).toBe(uploaded)
+
+      await removeLink(page)!.trigger('click')
+      await vi.waitFor(() => expect(cardPicture(page).attributes('src')).toBe(withPicture.image))
+
+      expect(removals).toHaveBeenCalledTimes(1)
+      expect(removeLink(page)).toBeUndefined()
+      expect(card(page).text()).toContain(providerHint)
+      expect(useAuthUser().value).toMatchObject({ image: withPicture.image, hasOwnImage: false })
+    })
+
+    it('shows the initial, not a picture, when the provider has none', async () => {
+      removedTo = null
+      signInAs({ ...ownPicture, image: null })
+      const page = await mount()
+
+      await removeLink(page)!.trigger('click')
+      await vi.waitFor(() => expect(removeLink(page)).toBeUndefined())
+
+      expect(cardPicture(page).exists()).toBe(false)
+    })
+
+    it('ignores a second click while the removal is on its way', async () => {
+      let release!: () => void
+      holdRemoval = new Promise<void>((resolve) => {
+        release = resolve
+      })
+      removedTo = withPicture.image
+      signInAs(ownPicture)
+      const page = await mount()
+
+      await removeLink(page)!.trigger('click')
+      await flushPromises()
+      expect(removeLink(page)!.attributes('aria-disabled')).toBe('true')
+      await removeLink(page)!.trigger('click')
+      release()
+      await vi.waitFor(() => expect(cardPicture(page).attributes('src')).toBe(withPicture.image))
+
+      expect(removals).toHaveBeenCalledTimes(1)
+    })
+
+    it('keeps the picture and the own hint and says so when the removal fails', async () => {
+      removalFailsWith = { statusCode: 500, statusMessage: 'Internal Server Error' }
+      signInAs(ownPicture)
+      const page = await mount()
+
+      await removeLink(page)!.trigger('click')
+      await vi.waitFor(() => expect(card(page).text()).toContain('Das Bild konnte nicht entfernt werden. Dein eigenes Bild bleibt.'))
+
+      expect(cardPicture(page).attributes('src')).toBe(uploaded)
+      expect(card(page).text()).toContain(ownHint)
+      expect(removeLink(page)!.attributes('aria-disabled')).toBeUndefined()
+    })
+
+    it('is disabled while an upload runs', async () => {
+      let release!: () => void
+      holdUpload = new Promise<void>((resolve) => {
+        release = resolve
+      })
+      signInAs(ownPicture)
+      const page = await mount()
+
+      await pick(page)
+      await flushPromises()
+
+      expect(removeLink(page)!.attributes('aria-disabled')).toBe('true')
+      release()
+    })
   })
 })
