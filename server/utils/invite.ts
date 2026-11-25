@@ -1,5 +1,6 @@
 import { and, eq, exists, inArray, ne, sql } from 'drizzle-orm'
 import { eventMembers, events, pollSlots, pollVotes, users } from '../db/schema'
+import { createInviteToken } from '../domain/slug'
 import { parseEventPath } from '../../shared/links'
 import type { Db } from './db'
 import { liveUser } from './live-user'
@@ -41,6 +42,16 @@ export async function writerMembership(tx: Db, eventId: string, userId: string):
     .for('key share', { of: users })
   if (!row) return 'deleted'
   return row.memberId === null ? 'stranger' : 'member'
+}
+
+/**
+ * Rotates the Event's Invite link (#16, ADR 0006): a new token and the same slug, so the old link answers 404 from now on. Returns the new token. The one place a rotation
+ * is made: the Host's `rotate` and the removal of a Member that rotates (#697) both call it, inside the caller's own transaction.
+ */
+export async function rotateInviteToken(tx: Db, eventId: string): Promise<string> {
+  const inviteToken = createInviteToken()
+  await tx.update(events).set({ inviteToken }).where(eq(events.id, eventId))
+  return inviteToken
 }
 
 /**

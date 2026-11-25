@@ -2,7 +2,7 @@ import { and, eq } from 'drizzle-orm'
 import { drizzle } from 'drizzle-orm/pglite'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import * as schema from '../../server/db/schema'
-import { authAccounts, eventPoolGames, events, games } from '../../server/db/schema'
+import { authAccounts, eventPoolGames, events, games, rounds } from '../../server/db/schema'
 import type { Db } from '../../server/utils/db'
 import type { Phase } from '../../shared/phase'
 import type { GameList, GameView } from '../../shared/game'
@@ -79,6 +79,23 @@ describe('the live Event count of the library (#733)', () => {
       deletedAt: extra.deletedAt ?? null,
     }).returning()
     if (pool.length) await counted.insert(eventPoolGames).values(pool.map(game => ({ eventId: row!.id, gameId: game.id })))
+    return row!
+  }
+
+  // A Round inserted directly (#900). Without `resultAt` it is a Round that was set and has no Result; `putBack` makes it one that was put back (no Result: the
+  // `rounds_result_stands_check` forbids a Result and a put back together). With `resultAt` it takes `number` (unique per Event) and may carry a Correction.
+  async function newRound(eventId: string, gameId: string, extra: { resultAt?: Date, number?: number, putBack?: boolean, corrected?: Date } = {}) {
+    const setAt = new Date('2090-01-01T10:00:00.000Z')
+    const [row] = await counted.insert(rounds).values({
+      eventId,
+      gameId,
+      startedAt: setAt,
+      setAt,
+      putBackAt: extra.putBack ? new Date('2090-01-01T10:05:00.000Z') : null,
+      resultAt: extra.resultAt ?? null,
+      number: extra.resultAt ? (extra.number ?? 1) : null,
+      correctedAt: extra.corrected ?? null,
+    }).returning()
     return row!
   }
 
@@ -166,7 +183,137 @@ describe('the live Event count of the library (#733)', () => {
       await newEvent([kart])
       const otherCookie = (await signIn(counted, otherHost)).cookie
 
-      expect(await list(otherCookie)).toEqual({ games: [], tagsInUse: [], eventCounts: {} })
+      expect(await list(otherCookie)).toEqual({ games: [], tagsInUse: [], eventCounts: {}, lastPlayed: {} })
+    })
+  })
+
+  describe('the last played day (#900)', () => {
+    const early = new Date('2090-03-04T17:41:23.456Z')
+    const late = new Date('2090-05-06T08:09:10.111Z')
+
+    it('has no key for a game never played, and {} for an empty library or a game in a pool with no Round', async () => {
+      expect((await list()).lastPlayed).toEqual({})
+      const kart = await newGame('Mario Kart')
+      await newEvent([kart], 'running')
+
+      expect((await list()).lastPlayed).toEqual({})
+    })
+
+    it('gives a played game a key whose value is the Result\'s instant as a UTC ISO string', async () => {
+      const kart = await newGame('Mario Kart')
+      const ev = await newEvent([kart], 'running')
+      await newRound(ev.id, kart.id, { resultAt: early })
+
+      const { lastPlayed } = await list()
+      expect(typeof lastPlayed[kart.id]).toBe('string')
+      expect(lastPlayed).toEqual({ [kart.id]: early.toISOString() })
+    })
+
+    it('takes the latest Result, in two Events and in one Event, in either order of insertion', async () => {
+      const kart = await newGame('Mario Kart')
+      const pong = await newGame('Pong')
+      const first = await newEvent([kart], 'finished')
+      const second = await newEvent([kart], 'running')
+      await newRound(second.id, kart.id, { resultAt: late })
+      await newRound(first.id, kart.id, { resultAt: early })
+      const same = await newEvent([pong], 'running')
+      await newRound(same.id, pong.id, { resultAt: early, number: 1 })
+      await newRound(same.id, pong.id, { resultAt: late, number: 2 })
+      const reversed = await newGame('Tetris')
+      const other = await newEvent([reversed], 'running')
+      await newRound(other.id, reversed.id, { resultAt: late, number: 1 })
+      await newRound(other.id, reversed.id, { resultAt: early, number: 2 })
+
+      expect((await list()).lastPlayed).toEqual({
+        [kart.id]: late.toISOString(),
+        [pong.id]: late.toISOString(),
+        [reversed.id]: late.toISOString(),
+      })
+    })
+
+    it('is not moved by a Correction, which keeps the Result\'s instant', async () => {
+      const kart = await newGame('Mario Kart')
+      const ev = await newEvent([kart], 'running')
+      await newRound(ev.id, kart.id, { resultAt: early, corrected: late })
+
+      expect((await list()).lastPlayed).toEqual({ [kart.id]: early.toISOString() })
+    })
+
+    it('gives no key for a Round without a Result or a Round put back, and keeps an older Result of another Event', async () => {
+      const kart = await newGame('Mario Kart')
+      const pong = await newGame('Pong')
+      const ev = await newEvent([kart, pong], 'running')
+      await newRound(ev.id, kart.id)
+      await newRound(ev.id, pong.id, { putBack: true })
+      expect((await list()).lastPlayed).toEqual({})
+
+      const older = await newEvent([kart], 'finished')
+      await newRound(older.id, kart.id, { resultAt: early })
+      expect((await list()).lastPlayed).toEqual({ [kart.id]: early.toISOString() })
+    })
+
+    it('leaves out the Result of a deleted Event, and falls back to the older one of another Event', async () => {
+      const kart = await newGame('Mario Kart')
+      const gone = await newEvent([kart], 'finished', { deletedAt: new Date() })
+      await newRound(gone.id, kart.id, { resultAt: late })
+      expect((await list()).lastPlayed).toEqual({})
+
+      const kept = await newEvent([kart], 'finished')
+      await newRound(kept.id, kart.id, { resultAt: early })
+      expect((await list()).lastPlayed).toEqual({ [kart.id]: early.toISOString() })
+    })
+
+    it('counts a finished, a running and a draft Event', async () => {
+      const kart = await newGame('Mario Kart')
+      const pong = await newGame('Pong')
+      const tetris = await newGame('Tetris')
+      for (const [phase, game] of [['finished', kart], ['running', pong], ['draft', tetris]] as const) {
+        const ev = await newEvent([game], phase)
+        await newRound(ev.id, game.id, { resultAt: early })
+      }
+
+      expect((await list()).lastPlayed).toEqual({
+        [kart.id]: early.toISOString(),
+        [pong.id]: early.toISOString(),
+        [tetris.id]: early.toISOString(),
+      })
+    })
+
+    it('never counts an Event of another Host that holds the viewer\'s game (a foreign pool row, ADR 0018)', async () => {
+      const kart = await newGame('Mario Kart')
+      const foreign = await newEvent([kart], 'running', { hostId: otherId })
+      await newRound(foreign.id, kart.id, { resultAt: early })
+
+      expect((await list()).lastPlayed).toEqual({})
+    })
+
+    it('shows the other Host nothing of the first Host\'s Results', async () => {
+      const kart = await newGame('Mario Kart')
+      const mine = await newEvent([kart], 'running')
+      await newRound(mine.id, kart.id, { resultAt: late })
+      const otherCookie = (await signIn(counted, otherHost)).cookie
+      expect(await list(otherCookie)).toEqual({ games: [], tagsInUse: [], eventCounts: {}, lastPlayed: {} })
+    })
+
+    it('counts a game played outside the pool and an archived game', async () => {
+      const kart = await newGame('Mario Kart')
+      const old = await newGame('Altes Spiel', hostId, true)
+      const ev = await newEvent([], 'running')
+      await newRound(ev.id, kart.id, { resultAt: early, number: 1 })
+      await newRound(ev.id, old.id, { resultAt: late, number: 2 })
+
+      expect((await list()).lastPlayed).toEqual({ [kart.id]: early.toISOString(), [old.id]: late.toISOString() })
+    })
+
+    it('gives each game its own date: three games, two played', async () => {
+      const kart = await newGame('Mario Kart')
+      const pong = await newGame('Pong')
+      await newGame('Tetris')
+      const ev = await newEvent([kart, pong], 'running')
+      await newRound(ev.id, kart.id, { resultAt: early, number: 1 })
+      await newRound(ev.id, pong.id, { resultAt: late, number: 2 })
+
+      expect((await list()).lastPlayed).toEqual({ [kart.id]: early.toISOString(), [pong.id]: late.toISOString() })
     })
   })
 
@@ -179,7 +326,9 @@ describe('the live Event count of the library (#733)', () => {
       for (const headers of [{ cookie: memberCookie }, {}] as Record<string, string>[]) {
         const response = await request('/api/games', { headers })
         expect(response.status).toBe(404)
-        expect(await response.text()).not.toContain('eventCounts')
+        const body = await response.text()
+        expect(body).not.toContain('eventCounts')
+        expect(body).not.toContain('lastPlayed')
       }
     })
   })
@@ -193,19 +342,23 @@ describe('the live Event count of the library (#733)', () => {
       return log.slice(before)
     }
 
-    it('are the same for 1 game in 1 Event and for 6 games in 3 Events, with one grouped count over the pool rows', async () => {
+    it('are the same for 1 game in 1 Event and for 6 games in 3 Events, with one grouped count over the pool rows and one grouped read over the Rounds (#900)', async () => {
       const first = await newGame('Spiel 0')
-      await newEvent([first])
+      const firstEvent = await newEvent([first])
+      await newRound(firstEvent.id, first.id, { resultAt: new Date('2090-03-04T17:41:23.456Z') })
       const small = await statementsOfList()
 
       const more = await Promise.all([1, 2, 3, 4, 5].map(n => newGame(`Spiel ${n}`)))
-      await newEvent([first, ...more.slice(0, 2)])
-      await newEvent(more.slice(2))
+      const second = await newEvent([first, ...more.slice(0, 2)])
+      const third = await newEvent(more.slice(2))
+      await newRound(second.id, more[0]!.id, { resultAt: new Date('2090-03-05T17:41:23.456Z') })
+      await newRound(third.id, more[3]!.id, { resultAt: new Date('2090-03-06T17:41:23.456Z') })
       const large = await statementsOfList()
 
       expect(large).toHaveLength(small.length)
       for (const statements of [small, large]) {
         expect(statements.filter(sql => sql.includes('"event_pool_games"'))).toHaveLength(1)
+        expect(statements.filter(sql => sql.includes('"rounds"'))).toHaveLength(1)
       }
     })
   })

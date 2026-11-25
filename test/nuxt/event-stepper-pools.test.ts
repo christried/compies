@@ -28,9 +28,10 @@ function game(n: number, name: string, overrides: Partial<GameView> = {}): GameV
     youtubeId: null,
     clipStart: 0,
     clipLength: 30,
-    playersMin: null,
-    playersMax: null,
-    suitabilities: [],
+    // The step presets the browser to the default Event, Teams and 6 players (#690): a game with no count would be hidden.
+    playersMin: 2,
+    playersMax: 8,
+    suitabilities: ['teams'],
     updatedAt: '2026-01-15T10:00:00.000Z',
     notes: null,
     tags: [],
@@ -48,10 +49,11 @@ const fresh = game(99, 'Frisch Angelegt')
 // One endpoint per path and method for the file; each test sets the library and what the game form gets back.
 let library: GameView[] = []
 let libraryEventCounts: Record<string, number> = {}
+let libraryLastPlayed: Record<string, string> = {}
 const postedGame = vi.fn()
 registerEndpoint('/api/games', {
   method: 'GET',
-  handler: () => ({ games: library, tagsInUse: [{ key: 'retro', label: 'Retro' }], eventCounts: libraryEventCounts }),
+  handler: () => ({ games: library, tagsInUse: [{ key: 'retro', label: 'Retro' }], eventCounts: libraryEventCounts, lastPlayed: libraryLastPlayed }),
 })
 // The game form's suggestions come from the Tags in use (#365), the same Tag the list answers.
 registerEndpoint('/api/games/tags', { method: 'GET', handler: () => [{ key: 'retro', label: 'Retro' }] })
@@ -255,7 +257,7 @@ describe('the pool steps', () => {
     })
 
     describe('the hint', () => {
-      const seventeen = Array.from({ length: 17 }, (_, index) => game(100 + index, `Spiel ${String(index + 1).padStart(2, '0')}`))
+      const seventeen = Array.from({ length: 17 }, (_, index) => game(100 + index, `Spiel ${String(index + 1).padStart(2, '0')}`, { playersMax: 24 }))
 
       async function chooseLuckyWheel(page: Page) {
         await page.get('input[type="text"]').setValue('Freitags-Zocken')
@@ -767,7 +769,7 @@ describe('the game browser in the pool steps (#173)', () => {
     useState('game-library').value = null
   })
 
-  it('is the compact browser: the search, „Alle“ and the Tag, without the player count and „Passt zu“ (#336, #724)', async () => {
+  it('is the step\'s browser: the search, „Alle“, „Spielerzahl“, „Passt zu“ and the Tag, without „Archiviert“ (#336, #724, #690)', async () => {
     const page = await mountCreate()
     await toPoolStep(page)
 
@@ -778,8 +780,9 @@ describe('the game browser in the pool steps (#173)', () => {
     expect([...tag.element.querySelectorAll('option')].map(option => option.textContent!.trim())).toEqual(['Tag', 'Retro'])
     const all = [...chips].find(chip => chip.textContent!.trim() === 'Alle')!
     expect(all.compareDocumentPosition(tag.element) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
-    expect(page.find('select[aria-label="Spielerzahl"]').exists()).toBe(false)
-    expect(page.find('select[aria-label="Passt zu"]').exists()).toBe(false)
+    expect(page.find('select[aria-label="Spielerzahl"]').exists()).toBe(true)
+    expect(page.find('select[aria-label="Passt zu"]').exists()).toBe(true)
+    expect(page.findAll('button').map(button => button.text())).not.toContain('Archiviert')
   })
 
   it('shows no „in 2 Events“ on a card: the marker is the library page\'s (#733)', async () => {
@@ -790,6 +793,28 @@ describe('the game browser in the pool steps (#173)', () => {
     expect(picker(page).text()).toContain('Mario Kart')
     expect(page.text()).not.toContain('in 2 Events')
     libraryEventCounts = {}
+  })
+
+  it('shows „zuletzt am“ on the card of a played game, and still not „in 2 Events“ (#900)', async () => {
+    libraryEventCounts = { [kart.id]: 2 }
+    libraryLastPlayed = { [kart.id]: '2026-11-02T23:30:00.000Z' }
+    const page = await mountCreate()
+    await toPoolStep(page)
+
+    const cards = picker(page).findAll('li').map(card => card.text())
+    expect(cards.find(text => text.includes('Mario Kart'))).toContain('zuletzt am 3. Nov. 2026')
+    expect(cards.filter(text => text.includes('zuletzt'))).toHaveLength(1)
+    expect(page.text()).not.toContain('in 2 Events')
+    libraryEventCounts = {}
+    libraryLastPlayed = {}
+  })
+
+  it('shows no „zuletzt am“ on a game that was never played (#900)', async () => {
+    const page = await mountCreate()
+    await toPoolStep(page)
+
+    expect(picker(page).text()).toContain('Mario Kart')
+    expect(page.text()).not.toContain('zuletzt')
   })
 
   it('picks a Tag and shows only the cards of the games carrying it, a ＋ still adds a hidden game, and „Alle“ resets the Tag (#336)', async () => {

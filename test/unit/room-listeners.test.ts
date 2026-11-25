@@ -19,6 +19,7 @@ const ROOM_TYPES: Record<RoomMessageType, true> = {
   'chat.added': true,
   'chat.deleted': true,
   'event.gone': true,
+  'member.removed': true,
 }
 
 const root = resolve(import.meta.dirname, '../..')

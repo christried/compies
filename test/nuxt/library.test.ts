@@ -18,7 +18,7 @@ const withoutClip = game({ id: '00000000-0000-4000-8000-0000000000a3', name: 'Br
 
 // One endpoint per path for the file (a second registration is not replaced); each test sets what it returns.
 // The list is every game; the browser filters it (#173), so the tests look at the rendered cards.
-let list: { games: GameView[], tagsInUse?: GameTag[], eventCounts?: Record<string, number> } = { games: [] }
+let list: { games: GameView[], tagsInUse?: GameTag[], eventCounts?: Record<string, number>, lastPlayed?: Record<string, string> } = { games: [] }
 let listMode: 'ok' | 'hang' = 'ok'
 let detail: GameView | null = withClip
 const patched = vi.fn()
@@ -27,7 +27,7 @@ registerEndpoint('/api/games', {
   method: 'GET',
   handler: () => {
     if (listMode === 'hang') return new Promise(() => {})
-    return { games: list.games, tagsInUse: list.tagsInUse ?? [], eventCounts: list.eventCounts ?? {} }
+    return { games: list.games, tagsInUse: list.tagsInUse ?? [], eventCounts: list.eventCounts ?? {}, lastPlayed: list.lastPlayed ?? {} }
   },
 })
 registerEndpoint(`/api/games/${withClip.id}`, {
@@ -136,6 +136,37 @@ describe('the library page', () => {
       const page = await openLibrary()
 
       expect(page.findAll('main li').map(card => card.text())).toEqual(['Brettspiel', 'Counter-Strike 2in 2 Events'])
+    })
+  })
+
+  describe('the „zuletzt am“ pill (#900)', () => {
+    const PLAYED = '2026-11-02T23:30:00.000Z'
+
+    async function openLibrary() {
+      const page = await mountSuspended(LibraryPage, { route: '/bibliothek' })
+      await settle(page)
+      return page
+    }
+
+    it('shows the Berlin day on the card of a played game, with and without a count', async () => {
+      list = { games: [withClip], lastPlayed: { [withClip.id]: PLAYED } }
+      const alone = await openLibrary()
+      expect(alone.get('main li').text()).toBe('Counter-Strike 2zuletzt am 3. Nov. 2026')
+      alone.unmount()
+
+      list = { games: [withClip], eventCounts: { [withClip.id]: 2 }, lastPlayed: { [withClip.id]: PLAYED } }
+      await clearNuxtData('games')
+      useState('game-library').value = null
+      const both = await openLibrary()
+      expect(both.get('main li').text()).toBe('Counter-Strike 2in 2 Eventszuletzt am 3. Nov. 2026')
+    })
+
+    it('shows neither pill on a game without a key, and marks only the played game', async () => {
+      list = { games: [withoutClip, withClip], lastPlayed: { [withClip.id]: PLAYED } }
+
+      const page = await openLibrary()
+
+      expect(page.findAll('main li').map(card => card.text())).toEqual(['Brettspiel', 'Counter-Strike 2zuletzt am 3. Nov. 2026'])
     })
   })
 

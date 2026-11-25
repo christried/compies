@@ -1,6 +1,7 @@
 import { notesLength, parseNotes, type NotesDoc } from './notes-doc'
 import { asRecord, isRecord } from './record'
 import { characterCount } from './text'
+import { utcToBerlin } from './time'
 import { parseYouTubeId } from './youtube'
 
 // The Game library (#141, spec #138): the rules and shapes the server and the screens share. The input rules
@@ -32,6 +33,13 @@ export const PRICE_CENTS_MAX = 99_999
 /** Suitability (GLOSSARY; UI „Passt zu“): the kinds of play a game works for, any number of them (#171). */
 export const SUITABILITIES = ['teams', 'ffa', 'one_v_one'] as const
 export type Suitability = (typeof SUITABILITIES)[number]
+
+/** What the „Spiele“ step presets the game browser to for an Event (#690): one against one for two teams of one, else Teams; the players are the team count times the Team size. */
+export interface EventPreset { suitability: Suitability, players: number }
+export function eventPreset(teamCount: number, teamSize: number): EventPreset {
+  const players = teamCount * teamSize
+  return teamCount === 2 && teamSize === 1 ? { suitability: 'one_v_one', players } : { suitability: 'teams', players }
+}
 
 /** A clip length in seconds: a whole number from CLIP_LENGTH_MIN to CLIP_LENGTH_MAX (#171). */
 export function isClipLength(seconds: unknown): seconds is number {
@@ -139,6 +147,11 @@ export interface GameList {
    * on the library card). Only games with a count above 0 have a key; a missing key means 0.
    */
   eventCounts: Record<string, number>
+  /**
+   * Game id to the instant of the game's latest Result (UTC ISO string, `rounds.result_at`; #900, „zuletzt am“ on the game card). A Correction does not move it. Only played games have a
+   * key. Only the Host's library read carries it: no read of an Event does, so a Member never gets the date.
+   */
+  lastPlayed: Record<string, string>
 }
 
 /** What the game browser filters by (#142, #171, #173). Empty, null and false mean no filter. */
@@ -177,6 +190,33 @@ export function filterGames(games: GameView[], filters: GameFilters): GameView[]
     if (suitability !== null && !game.suitabilities.includes(suitability)) return false
     return tag === null || game.tags.some(item => item.key === tag)
   })
+}
+
+/** The order of the game browser's list (#901): „Name“ is the list as it comes (by name), `last_played` is „Lange nicht gespielt“. Not a filter: it hides nothing. */
+export type GameSort = 'name' | 'last_played'
+
+/** A sort as the address or a select holds it: `last_played`, else `name` (nothing, an unknown value, a repeated parameter). */
+export function parseGameSort(value: unknown): GameSort {
+  return value === 'last_played' ? 'last_played' : 'name'
+}
+
+/**
+ * `games` in the order of `sort` (#901), as a new array. „Name“ is the list as it comes: the server answers it by name
+ * (`ORDER BY lower(name), id`), and a tie of `last_played` keeps that order, so the function expects a list by name. `last_played` puts
+ * the games never played first, then by the Berlin day (ADR 0003) of their latest Result, oldest first; the hour does not count.
+ * `lastPlayed` is `useGameLibrary`'s: a key only for a played game. The day is read once per game, not per comparison (~1500 games).
+ */
+export function sortGames(games: GameView[], sort: GameSort, lastPlayed: Record<string, string>): GameView[] {
+  if (sort === 'name') return [...games]
+  const keyed = games.map((game) => {
+    const at = lastPlayed[game.id]
+    return { game, day: at ? utcToBerlin(new Date(at)).slice(0, 10) : '' }
+  })
+  keyed.sort((a, b) => {
+    if (a.day === b.day) return 0
+    return a.day < b.day ? -1 : 1
+  })
+  return keyed.map(item => item.game)
 }
 
 /** What is wrong with a game name: empty after trimming, or longer than GAME_NAME_MAX characters (an emoji counts as one). Null when fine. */

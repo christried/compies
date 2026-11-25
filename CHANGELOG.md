@@ -2,6 +2,20 @@
 
 ## [Unreleased]
 
+## [0.22.0] - 2026-11-25 – Host-Werkzeuge
+
+### Neu
+
+- Jede Spielkarte sagt dir jetzt, wann du das Spiel zuletzt gespielt hast: in deiner Bibliothek und im Schritt „Spiele“ ([#900](https://github.com/christried/compies/issues/900)).
+- Der Schritt „Spiele“ startet mit den Spielen, die zu deinem Event passen: „Spielerzahl“ und „Passt zu“ sind nach Teams und Teamgröße eingestellt, und eine Zeile sagt, wie viele Spiele das ausblendet ([#690](https://github.com/christried/compies/issues/690)).
+- Du kannst deine Spiele in der Bibliothek und im Schritt „Spiele“ nach „Lange nicht gespielt“ sortieren: erst die, die du noch nie gespielt hast, dann die, die am längsten zurückliegen ([#901](https://github.com/christried/compies/issues/901)).
+- Wirst du aus einem Event entfernt, während du es offen hast, siehst du es sofort: Die Seite zeigt „Du bist nicht mehr in diesem Event“ und den Weg zur Startseite ([#897](https://github.com/christried/compies/issues/897)).
+- Als Host entfernst du jemanden aus einem Event und erneuerst den Einladungslink im selben Schritt ([#896](https://github.com/christried/compies/issues/896)).
+
+### Geändert
+
+- Die Datenschutzerklärung sagt, was mit deinen Daten passiert, wenn dich ein Host aus einem Event entfernt ([#899](https://github.com/christried/compies/issues/899)).
+
 ## [0.21.0] - 2026-11-25 – Profil und Konto
 
 ### Neu

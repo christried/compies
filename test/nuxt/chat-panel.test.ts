@@ -1390,6 +1390,15 @@ describe('ChatPanel', () => {
       expect(avatar.find('img').attributes('src')).toBe('https://example.com/dreier.png')
     })
 
+    it('groups a removed User\'s Messages under one name line with the Display name and the picture, and the Host controls each (0.22-4, #898)', async () => {
+      const { wrapper } = await mountChat([live('a', DREIER, 0, 'Eins'), live('b', DREIER, 60, 'Zwei')], { viewerId: KITTY, writers: writersBy })
+
+      expect(wrapper.findAll('b').map(name => name.text())).toEqual(['Dreier'])
+      expect(wrapper.findAll('[data-message-id]')).toHaveLength(2)
+      expect(wrapper.findComponent(UserAvatar).find('img').attributes('src')).toBe('https://example.com/dreier.png')
+      expect(labels(wrapper)).toEqual(['Nachricht von Dreier löschen', 'Nachricht von Dreier löschen'])
+    })
+
     it('shows a marked Member as „Gelöschtes Konto“ too', async () => {
       const marked = memberView({ id: 'u-old', name: '', image: null, zone: 'stands', deleted: true })
       const { wrapper } = await mountChat([live('a', 'u-old', 0, 'Alt')], { members: [...members, marked] })
