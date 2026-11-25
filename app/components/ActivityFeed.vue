@@ -26,7 +26,7 @@ const props = withDefaults(defineProps<{
   winnersHidden?: boolean
   /** The feed's tab is the one shown (#761): the side panel opens on the Chat, so the feed loads in a hidden tab, where scrolling to the end does nothing; it scrolls when it turns true. */
   active?: boolean
-  /** The ids of the Event's Members: when one leaves it, the feed reads its first page again, so an entry that names the person reads as the server now marks it (#990). */
+  /** The ids of the Event's Members who are not marked deleted (`livingMemberIds`): when one leaves them or turns deleted (#992), the feed reads its first page again, so an entry that names the person reads as the server now marks it (#990). */
   memberIds?: string[]
 }>(), { sessions: () => [], nextNumber: null, refreshTick: 0, teams: () => [], winnersHidden: false, active: true, memberIds: () => [] })
 

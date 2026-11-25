@@ -15,7 +15,7 @@ defineProps<{
   nextNumber: number | null
   /** The page's count of the instants that passed: the feed reads again with it (#229). */
   refreshTick: number
-  /** The ids of the Event's Members, for the feed's re-read when one leaves (#990). */
+  /** The ids of the Event's Members who are not marked deleted, for the feed's re-read when one leaves or turns deleted (#990, #992). */
   memberIds: string[]
 }>()
 
