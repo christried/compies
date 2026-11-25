@@ -98,6 +98,11 @@ export interface RemovedProfileImage {
   image: string | null
 }
 
+/** What DELETE /api/me returns: the account is deleted (#681). The session cookie is expired with it. */
+export interface AccountDeleted {
+  deleted: true
+}
+
 /** What POST /api/me/tour-seen and POST /api/me/tour-reset return: the Tour version stored now (#646). */
 export interface SavedTourSeen {
   tourSeen: number

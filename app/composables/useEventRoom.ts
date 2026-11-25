@@ -84,7 +84,21 @@ export function useEventRoom(slug: MaybeRefOrGetter<string>) {
       url: first.url,
       room: first.room,
       token: async () => {
-        const ticket = unused ?? await askForTicket()
+        // A stopped room asks for nothing: a socket PartySocket still has in flight finds no ticket.
+        if (disposed) throw new Error('The room is stopped')
+        let ticket = unused
+        if (!ticket) {
+          try {
+            ticket = await askForTicket()
+          }
+          catch (failure) {
+            // A refusal (4xx: not a Member any more, the Event gone) will not change by asking again, and PartySocket would ask for ever (#681): stop for good.
+            // A 5xx or a network failure is thrown on and PartySocket tries again.
+            const status = apiFailure(failure).status ?? 0
+            if (status >= 400 && status < 500) stop()
+            throw failure
+          }
+        }
         unused = null
         return ticket.token
       },

@@ -9,7 +9,7 @@ import { useClock } from './clock'
 import { apiError, eventDeleted, eventNotFound } from './errors'
 import { isMember } from './invite'
 import { useDb, type Db } from './db'
-import { publishAfterResponse } from './room-notifier'
+import { closeAfterResponse, publishAfterResponse } from './room-notifier'
 import { settleDue } from './settle'
 import { requireUser } from './user'
 
@@ -46,6 +46,11 @@ export interface EventChange {
   publish: (...messages: RoomMessage[]) => void
   /** Queues messages for after the commit that only these Users' sockets get (#227, the sealed Vetoes of 0.7). A change that throws drops them too. */
   publishTo: (userIds: readonly string[], ...messages: RoomMessage[]) => void
+  /**
+   * Queues last messages for after the commit: these Users' sockets get them, then are closed (#681, ADR 0013's amendment of 2026-11-20). For a
+   * User the change made no Member of the Event any more. A change that throws drops them too.
+   */
+  publishLast: (userIds: readonly string[], ...messages: RoomMessage[]) => void
 }
 
 /** What a rule function of a change reads: the transaction, the locked Event, the User, the queue and the request's clock (#288). */
@@ -54,6 +59,12 @@ export type ChangeCore = Pick<EventChange, 'tx' | 'eventRow' | 'user' | 'publish
 /** Messages of a change that go to the sockets of named Users only (#227). */
 interface NamedMessages {
   to: readonly string[]
+  messages: RoomMessage[]
+}
+
+/** Last messages of a change for Users whose sockets are closed after them (#681). */
+interface ClosingMessages {
+  users: readonly string[]
   messages: RoomMessage[]
 }
 
@@ -76,6 +87,7 @@ export async function changeEvent<T>(
   const slug = getRouterParam(event, 'slug') ?? ''
   const messages: RoomMessage[] = []
   const named: NamedMessages[] = []
+  const closing: ClosingMessages[] = []
   const { result, eventRow } = await useDb(event).transaction(async (tx) => {
     const eventRow = await loadEvent(tx, slug, user.id, load)
     // The one rule of a finished Event (#277): after the 404, 410 and 403 of loadEvent and before any rule of the change, every write refuses.
@@ -87,10 +99,11 @@ export async function changeEvent<T>(
     if (load.lock === 'update') await settleDue(tx, eventRow, now)
     const publish = (...queued: RoomMessage[]) => void messages.push(...queued)
     const publishTo = (to: readonly string[], ...queued: RoomMessage[]) => void named.push({ to, messages: queued })
-    const result = await change({ tx, eventRow, user, body, now, publish, publishTo })
+    const publishLast = (users: readonly string[], ...queued: RoomMessage[]) => void closing.push({ users, messages: queued })
+    const result = await change({ tx, eventRow, user, body, now, publish, publishTo, publishLast })
     return { result, eventRow }
   })
-  afterCommit(event, eventRow, messages, named, broadcast)
+  afterCommit(event, eventRow, messages, named, broadcast, closing)
   return result
 }
 
@@ -100,12 +113,14 @@ export async function changeEvent<T>(
  * queued, so no endpoint can forget to (unless it opts out with `broadcast: false`, #231). The publish runs after the response (#202): the notifier never throws and a
  * missed message is made up by the client's refetch, so this never fails the request.
  */
-export function afterCommit(event: H3Event, eventRow: EventRow, messages: RoomMessage[], named: NamedMessages[] = [], broadcast = true): void {
+export function afterCommit(event: H3Event, eventRow: Pick<EventRow, 'id'>, messages: RoomMessage[], named: NamedMessages[] = [], broadcast = true, closing: ClosingMessages[] = []): void {
   const now = useClock(event).now().getTime()
   const all: RoomMessage[] = !broadcast || messages.some(message => message.type === 'event.changed') ? messages : [{ type: 'event.changed' }, ...messages]
   publishAfterResponse(event, eventRow.id, all.map(message => envelope(message, now)))
   // A named send never adds `event.changed`: it reaches some Users only, and the broadcast above already says the Event changed (#227).
   for (const group of named) publishAfterResponse(event, eventRow.id, group.messages.map(message => envelope(message, now)), group.to)
+  // Last messages go out after everything else, so a closed User has had the broadcast's order up to their last message (#681).
+  for (const group of closing) closeAfterResponse(event, eventRow.id, group.users, group.messages.map(message => envelope(message, now)))
 }
 
 export interface LoadEventOptions {
