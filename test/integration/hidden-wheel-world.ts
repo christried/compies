@@ -129,6 +129,8 @@ export const EXPECTED_STATUS: Readonly<Record<string, Readonly<Record<string, nu
   '/api/invite/:invite': answers(200, 200, 200),
   // The viewer's own profile.
   '/api/me': answers(200, 200, 200),
+  // The viewer's own two counts (#918), no name of an Event or a game: signed in, every viewer reads its own.
+  '/api/me/hosted': answers(200, 200, 200),
 }
 
 /**

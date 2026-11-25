@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { LogOut } from '@lucide/vue'
 
-// Profil (screen 25, shipped trimmed, #399): one column, the card „Profil“, the card „Einstellungen“ (#400) and „Abmelden“.
+// Profil (screen 25, shipped trimmed, #399): one column, the card „Profil“, the card „Einstellungen“ (#400), „Abmelden“ and the section „Konto löschen“ (#918).
 const { t } = useI18n()
 useHead({ title: () => t('profile.title') })
 const signOut = useSignOut()
@@ -29,6 +29,8 @@ const signOut = useSignOut()
         />
         {{ t('auth.logout') }}
       </button>
+
+      <AccountDeleteSection />
     </div>
   </AppShell>
 </template>

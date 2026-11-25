@@ -301,6 +301,26 @@
     "saved": "Gespeichert.",
     "saveFailed": "Speichern hat nicht geklappt. Versuch’s nochmal."
   },
+  "accountDelete": {
+    "title": "Konto löschen",
+    "text": "Löscht dein Konto sofort und endgültig. Was dabei verschwindet, siehst du vorher.",
+    "open": "Konto löschen",
+    "sheetTitle": "Konto löschen?",
+    "goes": "Das wird gelöscht:",
+    "goesProfile": "Dein Name, deine E-Mail-Adresse, dein Anzeigename und dein Profilbild",
+    "goesLink": "Die Verknüpfung mit Discord oder Twitch",
+    "goesMessages": "Der Text deiner Nachrichten im Chat",
+    "goesVotes": "Deine Stimmen und Anmerkungen",
+    "goesTeamWord": "Dein Teamwort",
+    "hosting": "Du hostest ein Event. Es verschwindet für alle Mitglieder, auch wenn es schon abgeschlossen ist. | Du hostest {n} Events. Sie verschwinden für alle Mitglieder, auch die abgeschlossenen.",
+    "library": "Deine Bibliothek mit allen Spielen verschwindet mit.",
+    "stays": "Was bleibt: ein leerer Eintrag „{name}“ in den Events anderer Hosts.",
+    "final": "Das gilt sofort und lässt sich nicht rückgängig machen.",
+    "hold": "Konto löschen",
+    "counting": "Einen Moment …",
+    "countFailed": "Das Nachsehen hat nicht geklappt. Schließ das Fenster und versuch’s nochmal.",
+    "failed": "Das Löschen hat nicht geklappt. Versuch’s nochmal."
+  },
   "setup": {
     "step": "Event erstellen, Schritt {n} von {total}",
     "mode": {

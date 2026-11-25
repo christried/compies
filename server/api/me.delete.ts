@@ -11,7 +11,7 @@ import type { AccountDeleted } from '../../shared/auth'
 
 // Deletes the signed-in User's account (#681, spec #907, ADR 0020): no body and no User id, so nobody can delete anybody but themselves, and no second
 // sign-in. `deleteUser` does the database in one transaction; this route owns what comes after: the uploaded Profile picture's object, the rooms and the
-// session cookie. The Profil page's button is 0.21-12 (#918).
+// session cookie. The Profil page's „Konto löschen“ sheet calls it (#918).
 // A Host's Events and library go with the account (#917, ADR 0020); each removed Event's room hears `event.gone`. The one refusal is `account_games_held` (a game of
 // the User named by another Host's Event). Any other reason is a 500: a session that passed `requireUser` has a live row, and the deletion's own race (two calls at
 // once) lands there too.
