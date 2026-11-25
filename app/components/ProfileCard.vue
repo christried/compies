@@ -127,7 +127,7 @@ const save = () => saveName(() => {
         <button
           v-if="user?.hasOwnImage"
           type="button"
-          class="inline-flex min-h-11 items-center gap-1.5 self-start px-1 text-[13px] font-bold text-ink underline decoration-2 decoration-line-soft underline-offset-4 hover:decoration-line"
+          class="inline-flex min-h-11 items-center gap-1.5 self-start px-1 text-[13px] font-bold text-ink underline decoration-2 decoration-line-soft underline-offset-4 hover:decoration-line focus-visible:focus-ring"
           :aria-disabled="busy || removing || undefined"
           @click="remove"
         >
