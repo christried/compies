@@ -1,5 +1,6 @@
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
-import { messages } from '../../server/db/schema'
+import { and, eq } from 'drizzle-orm'
+import { eventMembers, messages, users } from '../../server/db/schema'
 import { testClock } from '../../server/utils/clock'
 import { memoryRoomNotifier } from '../../server/utils/room-notifier'
 import type { Message, MessagePage } from '../../shared/chat'
@@ -271,6 +272,134 @@ describe('reading the Chat a page at a time', () => {
       expect(notifier.messages(ev.eventId)).toEqual([])
       expect(notifier.sends(ev.eventId)).toEqual([])
       expect(await testDb.db.select().from(messages)).toHaveLength(1)
+    })
+  })
+
+  describe('the writers who are no Member (0.21-9, #916)', () => {
+    /** A User who is no Member of the Event any more: the membership row goes, and `marked` sets the mark (ADR 0020, #915). */
+    async function leave(eventId: string, userId: string, marked: boolean) {
+      await testDb.db.delete(eventMembers).where(and(eq(eventMembers.eventId, eventId), eq(eventMembers.userId, userId)))
+      if (marked) await testDb.db.update(users).set({ deletedAt: new Date(T0) }).where(eq(users.id, userId))
+    }
+
+    it('carries a marked writer who is no Member as the mark alone, with no name and no picture', async () => {
+      const ev = await runningEvent()
+      await store(ev.eventId, [{ id: uuidOf(1), writerId: ev.players.two.id, at: '2090-10-30T10:00:01.000Z', text: 'Vor dem Austritt' }])
+      await leave(ev.eventId, ev.players.two.id, true)
+
+      const seen = await page(ev.host.cookie, ev.slug)
+
+      expect(seen.messages).toEqual([{ id: uuidOf(1), writerId: ev.players.two.id, text: 'Vor dem Austritt', at: '2090-10-30T10:00:01.000Z' }])
+      expect(seen.writers).toEqual({ [ev.players.two.id]: { name: '', image: null, deleted: true } })
+    })
+
+    it('carries an unmarked writer who is no Member with the Display name and the picture', async () => {
+      const ev = await runningEvent()
+      await testDb.db.update(users).set({ displayName: 'Dreier', image: 'https://example.com/dreier.png' }).where(eq(users.id, ev.players.three.id))
+      await store(ev.eventId, [{ id: uuidOf(1), writerId: ev.players.three.id, at: '2090-10-30T10:00:01.000Z', text: 'Noch da' }])
+      await leave(ev.eventId, ev.players.three.id, false)
+
+      const seen = await page(ev.host.cookie, ev.slug)
+
+      expect(seen.writers).toEqual({ [ev.players.three.id]: { name: 'Dreier', image: 'https://example.com/dreier.png' } })
+    })
+
+    it('carries the provider name of an unmarked writer who is no Member and has no Display name', async () => {
+      const ev = await runningEvent()
+      await store(ev.eventId, [{ id: uuidOf(1), writerId: ev.players.three.id, at: '2090-10-30T10:00:01.000Z', text: 'Noch da' }])
+      await leave(ev.eventId, ev.players.three.id, false)
+
+      const seen = await page(ev.host.cookie, ev.slug)
+
+      expect(seen.writers).toEqual({ [ev.players.three.id]: { name: 'Drei', image: null } })
+    })
+
+    it('does not send a writer who is a current Member, not even a marked one', async () => {
+      const ev = await runningEvent()
+      await store(ev.eventId, [
+        { id: uuidOf(1), writerId: ev.host.id, at: '2090-10-30T10:00:01.000Z' },
+        { id: uuidOf(2), writerId: ev.players.one.id, at: '2090-10-30T10:00:02.000Z' },
+      ])
+      await testDb.db.update(users).set({ deletedAt: new Date(T0) }).where(eq(users.id, ev.players.one.id))
+
+      expect((await page(ev.host.cookie, ev.slug)).writers).toEqual({})
+    })
+
+    it('carries no email and no provider name of a writer with a Display name', async () => {
+      const ev = await runningEvent()
+      await testDb.db.update(users).set({ name: 'Anbieter-Name', displayName: 'Dreier' }).where(eq(users.id, ev.players.three.id))
+      await store(ev.eventId, [{ id: uuidOf(1), writerId: ev.players.three.id, at: '2090-10-30T10:00:01.000Z', text: 'Noch da' }])
+      await leave(ev.eventId, ev.players.three.id, false)
+
+      const body = await (await read(ev.host.cookie, ev.slug)).text()
+
+      expect(body).toContain('Dreier')
+      for (const secret of ['Anbieter-Name', 'three@example.com']) expect(body, secret).not.toContain(secret)
+    })
+
+    it('reads the same writers for the Host and for a Member', async () => {
+      const ev = await runningEvent()
+      await testDb.db.update(users).set({ displayName: 'Dreier' }).where(eq(users.id, ev.players.three.id))
+      await store(ev.eventId, [
+        { id: uuidOf(1), writerId: ev.players.two.id, at: '2090-10-30T10:00:01.000Z', text: 'Gelöscht bald' },
+        { id: uuidOf(2), writerId: ev.players.three.id, at: '2090-10-30T10:00:02.000Z', text: 'Noch da' },
+      ])
+      await leave(ev.eventId, ev.players.two.id, true)
+      await leave(ev.eventId, ev.players.three.id, false)
+
+      const asHost = await page(ev.host.cookie, ev.slug)
+      const asMember = await page(ev.players.one.cookie, ev.slug)
+
+      expect(Object.keys(asHost.writers).sort()).toEqual([ev.players.two.id, ev.players.three.id].sort())
+      expect(asMember.writers).toEqual(asHost.writers)
+    })
+
+    it('answers writers {} and next null for a page with no Messages, and {} for Members only', async () => {
+      const ev = await runningEvent()
+      expect(await page(ev.host.cookie, ev.slug)).toEqual({ messages: [], next: null, writers: {} })
+
+      await store(ev.eventId, [{ id: uuidOf(1), writerId: ev.players.one.id, at: T0, text: 'Mitglied' }])
+      expect((await page(ev.host.cookie, ev.slug)).writers).toEqual({})
+    })
+
+    it('carries the writer of a deleted Message who is no Member, and its line keeps its text-less form', async () => {
+      const ev = await runningEvent()
+      await testDb.db.update(users).set({ image: 'https://example.com/zwei.png' }).where(eq(users.id, ev.players.two.id))
+      await store(ev.eventId, [{ id: uuidOf(1), writerId: ev.players.two.id, at: '2090-10-30T10:00:01.000Z', deletedBy: 'writer' }])
+      await leave(ev.eventId, ev.players.two.id, false)
+
+      const seen = await page(ev.host.cookie, ev.slug)
+
+      expect(seen.messages).toEqual([{ id: uuidOf(1), writerId: ev.players.two.id, text: null, at: '2090-10-30T10:00:01.000Z', deletedBy: 'writer' }])
+      expect(seen.writers).toEqual({ [ev.players.two.id]: { name: 'Zwei', image: 'https://example.com/zwei.png' } })
+    })
+
+    it('lists only the writers of the Messages on this page, not the one the look-ahead row shows', async () => {
+      const ev = await runningEvent()
+      await store(ev.eventId, [
+        { id: uuidOf(1), writerId: ev.players.three.id, at: '2090-10-30T10:00:01.000Z', text: 'Alt' },
+        { id: uuidOf(2), writerId: ev.players.two.id, at: '2090-10-30T10:00:02.000Z', text: 'Neu' },
+      ])
+      await leave(ev.eventId, ev.players.three.id, false)
+      await leave(ev.eventId, ev.players.two.id, true)
+
+      const first = await page(ev.host.cookie, ev.slug, '?limit=1')
+
+      expect(first.messages.map(message => message.id)).toEqual([uuidOf(2)])
+      expect(Object.keys(first.writers)).toEqual([ev.players.two.id])
+      expect((await page(ev.host.cookie, ev.slug, `?limit=1&before=${first.next}`)).writers).toEqual({ [ev.players.three.id]: { name: 'Drei', image: null } })
+    })
+
+    it('keys a writer once on every page that holds one of their Messages', async () => {
+      const ev = await runningEvent()
+      await store(ev.eventId, [1, 2, 3].map(n => ({ id: uuidOf(n), writerId: ev.players.two.id, at: new Date(Date.parse(T0) + n * 1000).toISOString(), text: `Nr ${n}` })))
+      await leave(ev.eventId, ev.players.two.id, true)
+
+      const first = await page(ev.host.cookie, ev.slug, '?limit=2')
+      const last = await page(ev.host.cookie, ev.slug, `?limit=2&before=${first.next}`)
+
+      expect(first.writers).toEqual({ [ev.players.two.id]: { name: '', image: null, deleted: true } })
+      expect(last.writers).toEqual(first.writers)
     })
   })
 })
