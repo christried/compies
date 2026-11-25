@@ -4,6 +4,7 @@ import { PgDialect, getTableConfig } from 'drizzle-orm/pg-core'
 import { APPEARANCE_COOKIE, APPEARANCES, appearanceCookieValue, isAppearance } from '../../shared/appearance'
 import type { AuthUser } from '../../shared/auth'
 import { users } from '../../server/db/schema'
+import { clean, normalise, theme } from './css-tokens'
 import { THEME_COLORS, renderedAppearance, shownLook, themeColorMetas } from '../../app/utils/appearance'
 
 // A User's Appearance (#401, GLOSSARY): Hell, Dunkel or System, light unless they choose otherwise. The page renders the signed-in User's,
@@ -132,6 +133,20 @@ describe('shownLook', () => {
     ['system', true, 'dark'],
   ] as const)('shows %s on a device with dark %s as %s', (appearance, systemDark, look) => {
     expect(shownLook(appearance, systemDark)).toBe(look)
+  })
+})
+
+// The Theme reveal's two rules (#931): jsdom computes no cascade and no View Transition, so the stylesheet is pinned as text. The circle
+// itself is `revealFrames` (test/nuxt/theme-reveal.test.ts); these rules keep the old picture still under it and give the cross-fade its time.
+describe('the Theme reveal in the stylesheet', () => {
+  const css = normalise(clean(theme))
+
+  it('keeps the old and the new picture from animating on their own while the circle spreads', () => {
+    expect(css).toMatch(/html\[data-theme-reveal="spread"\]::view-transition-old\(root\),\s*html\[data-theme-reveal="spread"\]::view-transition-new\(root\) \{[^}]*animation: none;[^}]*mix-blend-mode: normal;/)
+  })
+
+  it('cross-fades the colours of every element over dur-fast on ease-out while the mark says fade', () => {
+    expect(css).toMatch(/html\[data-theme-reveal="fade"\],\s*html\[data-theme-reveal="fade"\] \*,[^{]*\{[^}]*transition-property: [^;]*background-color[^;]*;[^}]*transition-duration: var\(--cp-dur-fast\);[^}]*transition-timing-function: var\(--cp-ease-out\);/)
   })
 })
 
