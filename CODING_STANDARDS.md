@@ -81,6 +81,8 @@ A second page, flow or component that does what an existing one does needs its r
 - An enum belongs to one glossary term. A concept with its own term gets its own enum, even when today's values match (games' Suitability is not the Event's Format).
 - A migration that has run on staging is never edited; the fix is a new migration.
 - Migrations run in the Vercel build while the previous deployment still serves (ADR 0007). A data migration keeps the app correct for the rows the old code writes after it ran: 0013 renumbered the seen versions, and the old code could store `1.4.0` again until the switch-over (#242).
+- One lock order for every write: the Event rows first (in id order when there are several), then the users row. `deleteUser` and `changeEvent` follow it; a deletion that locked the row first deadlocked with a Host writing in their own Event (#991).
+- A write a User makes for themselves checks under a lock that their row is not deleted: `FOR KEY SHARE` with `deleted_at is null` after its Event lock and before its first write (`assertLiveUser`, `writerMembership` in `changeEvent`), or `liveUser(id)` in the `where` of an update of their own row, and 401 when no row is left (#991).
 - A change of an Event takes its instants from `EventChange.now` and never calls `useClock` in a handler; `changeEvent` settles due draws for every `lock: 'update'` change, so a writer that reads round state cannot forget to (#259).
 
 ## Secrecy
