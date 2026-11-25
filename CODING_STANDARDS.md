@@ -13,6 +13,7 @@ Each concern below has one home. New code calls it; a second copy is a finding e
 | A rule both sides enforce (name length, clip, player count, points table, settings) | a pure function in `shared/`, called by the form and by the server parser |
 | Request input | `unknown` until a domain parser has checked it; `asRecord`/`isRecord` from `shared/record.ts`, no casts (lint) |
 | A User's visible name | `shownName` in `shared/auth.ts` (lint); a Deleted User's name and picture come from `readPerson` (`shared/auth.ts`) on the server and `shownPerson` (`app/utils/shown-person.ts`) on the client (#915) |
+| The rule that ends a membership (the row, its Seat and Team word, the Votes with their Notes; not for a finished Event) | `endMembership` in `server/utils/invite.ts` (#681): the deletion of a User calls it, and 0.22's removal of a Member will (#697); the caller owns the transaction and the room's messages |
 | What an Appearance is (the list, the guard, the cookie's name and value rule); the users table's CHECK is built from the list | `shared/appearance.ts` (#603) |
 | Text length | `characterCount` in `shared/text.ts` |
 | Dates and times shown to Users | `app/utils/berlin-time.ts`, `shared/time.ts` |
