@@ -325,7 +325,7 @@ describe('the room when a reconnect\'s ticket is refused (#681)', () => {
     return live
   }
 
-  it.each([404, 401, 403])('stops for good when a reconnect\'s ticket answers %i: the socket closed, the state closed, no retry and no later ticket', async (status) => {
+  it.each([404, 401, 403, 410])('stops for good when a reconnect\'s ticket answers %i: the socket closed, the state closed, no retry and no later ticket', async (status) => {
     const { served } = await mountRoom()
     const socket = lastSocket()
     expect(await socket.options.token()).toBe('token-1')
@@ -359,6 +359,40 @@ describe('the room when a reconnect\'s ticket is refused (#681)', () => {
     room.retry()
     expect(socket.reconnect).toHaveBeenCalledTimes(1)
   })
+
+  it.each([408, 429])('keeps the room on a reconnect\'s ticket answering %i (a timeout, a rate limit): asks again at the next reconnect (#993)', async (status) => {
+    const { served } = await mountRoom()
+    const socket = lastSocket()
+    expect(await socket.options.token()).toBe('token-1')
+    served.ticketStatus = status
+
+    await expect(socket.options.token()).rejects.toMatchObject({ statusCode: status })
+
+    expect(socket.close).not.toHaveBeenCalled()
+    served.ticketStatus = null
+    expect(await socket.options.token()).toBe('token-2')
+    room.retry()
+    expect(socket.reconnect).toHaveBeenCalledTimes(1)
+  })
+
+  it('asks for the first ticket again after a 429, once the retry wait is over (#993)', async () => {
+    const live = serveLive()
+    live.served.ticketStatus = 429
+    let probeRoom!: ReturnType<typeof useEventRoom>
+    const probe = defineComponent({
+      setup() {
+        probeRoom = useEventRoom(live.slug)
+        return () => h('div')
+      },
+    })
+    mounted.push(await mountSuspended(probe))
+    await vi.waitFor(() => expect(probeRoom.state.value).toBe('closed'))
+    expect(live.served.ticketCalls).toBe(1)
+
+    live.served.ticketStatus = null
+    await vi.waitFor(() => expect(sockets.length).toBe(1), { timeout: 8000 })
+    expect(live.served.tickets).toBe(1)
+  }, 10_000)
 
   it('keeps the room on a network failure and asks again at the next reconnect', async () => {
     const { served } = await mountRoom()
