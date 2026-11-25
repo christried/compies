@@ -304,9 +304,16 @@
       "breakpoints": true
     },
     {
+      "idx": 43,
+      "version": "7",
+      "when": 1795515684427,
+      "tag": "0043_user_deleted_at",
+      "breakpoints": true
+    },
+    {
       "idx": 44,
       "version": "7",
-      "when": 1795516290272,
+      "when": 1795589665396,
       "tag": "0044_profile_image_key",
       "breakpoints": true
     }

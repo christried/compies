@@ -55,6 +55,17 @@ export function profilePicture({ image, profileImageKey }: { image?: string | nu
   return profileImageKey ? `${IMAGE_PATH}${profileImageKey}` : (image ?? null)
 }
 
+/**
+ * What a read shows of a User (#915, ADR 0020): the shown name and the picture (`profilePicture`, #678), or for a Deleted User an empty name, no picture and
+ * `deleted: true`, cut whatever the row still holds, the uploaded picture's key included. The `deleted` key is there only for a Deleted User, so a User who is
+ * not deleted comes as before. The client shows the mark as „Gelöschtes Konto“ (`shownPerson`). `profileImageKey` is required, so a read that forgets to
+ * select it fails the typecheck instead of showing the provider's picture.
+ */
+export function readPerson({ name, displayName, image, profileImageKey, deletedAt }: { name: string, displayName?: string | null, image?: string | null, profileImageKey: string | null, deletedAt: Date | null }): { name: string, image: string | null, deleted?: true } {
+  if (deletedAt !== null) return { name: '', image: null, deleted: true }
+  return { name: shownName({ name, displayName }), image: profilePicture({ image, profileImageKey }) }
+}
+
 /** What `GET /api/me` returns: the signed-in User, or null when signed out. */
 export interface MeView {
   user: AuthUser | null

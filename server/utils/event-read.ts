@@ -4,7 +4,7 @@ import { pollSlots, pollVotes } from '../db/schema'
 import { canSeePoolGames, poolFactsOf } from '../domain/pool-preview'
 import { isPast, pollStanding } from '../domain/poll'
 import { missingDates, numberedSessions, openPoll } from '../domain/session'
-import { profilePicture, shownName } from '../../shared/auth'
+import { readPerson } from '../../shared/auth'
 import { placeOf } from '../../shared/board'
 import { runningOf } from '../../shared/session-state'
 import type { EventView, SessionNote, SessionView } from '../../shared/event'
@@ -94,8 +94,7 @@ export function membersSection(state: EventState<'members'>): Pick<EventView, 'm
   return {
     members: state.members.map(row => ({
       id: row.id,
-      name: shownName(row),
-      image: profilePicture(row),
+      ...readPerson(row),
       isHost: row.id === state.eventRow.hostId,
       zone: placeOf(row).zone, // a stored legacy `bench` seat is sent as the Stands (#437)
       team: row.team,

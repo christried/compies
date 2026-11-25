@@ -117,6 +117,31 @@ describe('ceremonyModel', () => {
       expect(shown[5]).toEqual({ kind: 'more', n: 2 })
     })
 
+    it('shows a Deleted Player as „Gelöschtes Konto“ with the neutral picture, in their team (#915, ADR 0020)', () => {
+      const gone = player('gone', 1, { name: '', image: null, deleted: true })
+
+      expect(peopleOf([player('a', 1), gone])).toEqual([
+        { kind: 'player', id: 'a', name: 'Spieler a', image: 'https://example.com/a.png', team: 1 },
+        { kind: 'player', id: 'gone', name: 'Gelöschtes Konto', image: null, deleted: true, team: 1 },
+      ])
+    })
+
+    it('counts a Deleted Player as a Player: 7 people with 2 of them deleted are 5 and „+2“', () => {
+      const members = [player('gone1', 1, { name: '', image: null, deleted: true }), player('gone2', 1, { name: '', image: null, deleted: true }), ...people(5, 1)]
+
+      const shown = peopleOf(members)
+
+      expect(shown).toHaveLength(6)
+      expect(shown[5]).toEqual({ kind: 'more', n: 2 })
+      expect(shown.filter(entry => entry.kind === 'player' && entry.deleted).map(entry => entry.kind === 'player' && entry.id)).toEqual(['gone1', 'gone2'])
+    })
+
+    it('shows two Deleted Players alike', () => {
+      const shown = peopleOf([player('g1', 1, { name: '', image: null, deleted: true }), player('g2', 1, { name: '', image: null, deleted: true })])
+
+      expect(shown.map(entry => entry.kind === 'player' && [entry.name, entry.image, entry.deleted])).toEqual([['Gelöschtes Konto', null, true], ['Gelöschtes Konto', null, true]])
+    })
+
     it('counts 12 Players as 5 and „+7“', () => {
       const shown = peopleOf(people(12, 1))
 
