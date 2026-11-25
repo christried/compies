@@ -1410,6 +1410,35 @@ describe('ChatPanel', () => {
       expect(labels(wrapper)).toEqual([])
     })
 
+    it('reads its newest page again when a Member leaves the Members, and shows their Messages as „Gelöschtes Konto“ with the neutral picture, never „?“ (0.21-18, #990)', async () => {
+      const { wrapper, served } = await mountChat([live('a', SANNE, 0, 'Hallo'), gone('b', SANNE, 30, 'writer')], { viewerId: KITTY })
+      expect(wrapper.find('b').text()).toBe('Sanne')
+
+      served.writers[SANNE] = { name: '', image: null, deleted: true }
+      await wrapper.setProps({ members: members.filter(member => member.id !== SANNE) })
+      await vi.waitFor(() => expect(served.reads).toBe(2))
+      await vi.waitFor(() => expect(wrapper.find('b').text()).toBe('Gelöschtes Konto'))
+
+      const avatar = wrapper.findComponent(UserAvatar)
+      expect(avatar.props('deleted')).toBe(true)
+      expect(avatar.find('svg').exists()).toBe(true)
+      expect(avatar.find('img').exists()).toBe(false)
+      expect(wrapper.text()).not.toContain('?')
+      expect(texts(wrapper)).toEqual(['Hallo', 'Gelöscht'])
+    })
+
+    it('reads nothing when the Members change without losing one', async () => {
+      const { wrapper, served } = await mountChat([live('a', SANNE, 0)])
+
+      const joined = [...members, memberView({ id: 'u-neu', name: 'Neu', zone: 'stands' })]
+      await wrapper.setProps({ members: joined })
+      await settle()
+      await wrapper.setProps({ members: [...joined].reverse() })
+      await settle()
+
+      expect(served.reads).toBe(1)
+    })
+
     it('shows a live Message of a writer the page does not know with no name, and names them once the next read carries them', async () => {
       const { wrapper, send, state, served } = await mountChat([], { writers: {} })
 

@@ -290,6 +290,7 @@ watch(() => tour.shown.value, (isShown) => {
             :refresh-tick="feedTick"
             :teams="data.teams"
             :winners-hidden="waits"
+            :member-ids="data.members.map(member => member.id)"
           />
         </template>
         <!-- The tab scrolls inside the panel (#274): the panel is as tall as the window, a long history is not. -->
@@ -390,6 +391,7 @@ watch(() => tour.shown.value, (isShown) => {
         :refresh-tick="feedTick"
         :teams="data.teams"
         :winners-hidden="waits"
+        :member-ids="data.members.map(member => member.id)"
       />
     </div>
 

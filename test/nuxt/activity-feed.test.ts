@@ -133,6 +133,46 @@ describe('ActivityFeed', () => {
     expect(shown[3]).toContain('Gelöschtes Konto ist jetzt auf der Tribüne')
   })
 
+  describe('an ended membership (0.21-18, #990)', () => {
+    const marked = (id: string, minutesAgo: number) => entry(id, minutesAgo, { actor: { id: 'u-sanne', name: '' }, deleted: ['u-sanne'] })
+
+    async function mountWithMembers(all: ActivityEntry[], memberIds: string[]) {
+      const feed = serveFeed(all)
+      const live = fakeRoom()
+      const wrapper = await mountSuspended(ActivityFeed, { props: { slug: feed.slug, room: live.room, memberIds } })
+      await vi.waitFor(() => expect(feed.served.reads).toBeGreaterThan(0))
+      await settle()
+      return { ...feed, ...live, wrapper }
+    }
+
+    it('reads the first page again when a Member leaves the Members, and the entry the server now marks replaces the held one; a held entry the page lacks stays', async () => {
+      const all = [entry('old', 9, { actor: { id: 'u-larsi', name: 'Larsi' } }), entry('a', 3)]
+      const { wrapper, served } = await mountWithMembers(all, ['u-sanne', 'u-larsi'])
+      expect(lines(wrapper)[1]).toContain('Sanne ist dem Event beigetreten')
+
+      // The server answers a later read with the person marked, and with a page that no longer reaches the oldest entry.
+      all.splice(0, all.length, marked('a', 3))
+      await wrapper.setProps({ memberIds: ['u-larsi'] })
+      await vi.waitFor(() => expect(served.reads).toBe(2))
+      await vi.waitFor(() => expect(lines(wrapper).join('\n')).toContain('Gelöschtes Konto ist dem Event beigetreten'))
+
+      expect(lines(wrapper)).toHaveLength(2)
+      expect(lines(wrapper)[0]).toContain('Larsi ist dem Event beigetreten')
+      expect(wrapper.text()).not.toContain('Sanne')
+    })
+
+    it('reads nothing when the Members change without losing one', async () => {
+      const { wrapper, served } = await mountWithMembers([entry('a', 3)], ['u-sanne'])
+
+      await wrapper.setProps({ memberIds: ['u-sanne', 'u-larsi'] })
+      await settle()
+      await wrapper.setProps({ memberIds: ['u-larsi', 'u-sanne'] })
+      await settle()
+
+      expect(served.reads).toBe(1)
+    })
+  })
+
   it('puts a header over each stretch: before the start, the Session, and before the next one (#164)', async () => {
     const at = (minutesAgo: number) => new Date(Date.now() - minutesAgo * 60_000).toISOString()
     const sessions: FeedSession[] = [{ id: 's1', number: 1, startedAt: at(50), endedAt: at(20) }]

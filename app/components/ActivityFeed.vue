@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { activityIcon, activityParts, groupActivity, readEntry, type ActivityGroup, type FeedSession } from '~/utils/activity'
 import { formatActivityTime } from '~/utils/berlin-time'
+import { membershipEnded } from '~/utils/members'
 import type { ActivityEntry, ActivityPage } from '~~/shared/activity'
 import type { BoardTeam } from '~~/shared/event'
 
@@ -25,7 +26,9 @@ const props = withDefaults(defineProps<{
   winnersHidden?: boolean
   /** The feed's tab is the one shown (#761): the side panel opens on the Chat, so the feed loads in a hidden tab, where scrolling to the end does nothing; it scrolls when it turns true. */
   active?: boolean
-}>(), { sessions: () => [], nextNumber: null, refreshTick: 0, teams: () => [], winnersHidden: false, active: true })
+  /** The ids of the Event's Members: when one leaves it, the feed reads its first page again, so an entry that names the person reads as the server now marks it (#990). */
+  memberIds?: string[]
+}>(), { sessions: () => [], nextNumber: null, refreshTick: 0, teams: () => [], winnersHidden: false, active: true, memberIds: () => [] })
 
 const { t } = useI18n()
 
@@ -38,12 +41,16 @@ const loadingOlder = ref(false)
 const scroller = ref<HTMLElement>()
 const now = new Date()
 
-/** Adds entries the feed does not hold yet and keeps the list in time order (the sort is stable, so equal times keep their order). */
+/**
+ * Adds entries the feed does not hold yet and keeps the list in time order (the sort is stable, so equal times keep their order). An entry it holds takes the incoming one's
+ * values, by id: a re-read after a deleted account brings the entry with the person marked (#915, #990). A held entry the incoming page lacks stays as it is.
+ */
 function merge(incoming: ActivityEntry[]) {
+  const byId = new Map(incoming.map(entry => [entry.id, entry]))
   const known = new Set(entries.value.map(entry => entry.id))
   const added = incoming.filter(entry => !known.has(entry.id))
-  if (added.length === 0) return
-  entries.value = [...entries.value, ...added].sort((a, b) => (a.at < b.at ? -1 : a.at > b.at ? 1 : 0))
+  if (incoming.length === 0) return
+  entries.value = [...entries.value.map(entry => byId.get(entry.id) ?? entry), ...added].sort((a, b) => (a.at < b.at ? -1 : a.at > b.at ? 1 : 0))
 }
 
 /** A page is newest first; the entries it carries are checked once more, since they come over the wire. */
@@ -113,6 +120,9 @@ watch(() => props.active, (active) => {
   if (active) scrollToEnd()
 })
 watch(() => props.refreshTick, () => void loadFirst())
+watch(() => props.memberIds, (ids, before) => {
+  if (membershipEnded(before, ids)) void loadFirst()
+})
 onMounted(() => void loadFirst())
 
 /**
