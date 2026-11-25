@@ -9,6 +9,10 @@
 - Beim Hochladen deines Profilbilds wählst du den Ausschnitt: Du verschiebst und zoomst das Bild in einem Quadrat und siehst in einer runden Vorschau, wie es andere sehen. ([#910](https://github.com/christried/compies/issues/910))
 - Auf der Seite „Profil“ löschst du dein Konto selbst: Name, E-Mail-Adresse, der Text deiner Nachrichten, Stimmen und Anmerkungen gehen dabei weg, als Host auch deine Events und deine Bibliothek; in den Events anderer Hosts bleibt ein leerer Eintrag „Gelöschtes Konto“. ([#918](https://github.com/christried/compies/issues/918))
 
+### Geändert
+
+- Die Datenschutzerklärung sagt, wo dein eigenes Profilbild gespeichert ist und wer es laden kann; eine Anmeldung ersetzt es nicht. ([#912](https://github.com/christried/compies/issues/912))
+
 ### Behoben
 
 - Scheitert das Nachladen einer offenen Event-Seite an einem kurzen Serverfehler, bleibt das Event stehen und lädt weiter nach, statt einer Fehlerseite zu weichen. ([#914](https://github.com/christried/compies/issues/914))
