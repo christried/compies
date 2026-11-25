@@ -152,6 +152,7 @@ describe('publishing to the room', () => {
         published.push(...messages.map(message => message.type))
         await gate
       },
+      async close() {},
     }
     const slowRequest = createTestApp(testDb.db, { roomNotifier: slowWorker })
     // Guards the red run: without the fix the request waits on the gate, and this race settles instead of hanging.

@@ -371,7 +371,7 @@ describe('deleting an account', () => {
   describe('a failure', () => {
     it('leaves everything as it was: the rows, the image, and no message to any room', async () => {
       const w = await world()
-      const picture = await request('/api/me/image', { method: 'PUT', headers: { 'content-type': 'image/webp', cookie: w.cookie }, body: lossy() as BodyInit })
+      const picture = await request('/api/me/image', { method: 'PUT', headers: { 'content-type': 'image/webp', 'cookie': w.cookie }, body: lossy() as BodyInit })
       expect(picture.status).toBe(200)
       // The last statement fails: the placeholder email is taken already, so the unique index on the email refuses the emptied row.
       await testDb.db.insert(users).values({ name: 'Besetzt', email: `${w.id}@deleted.placeholder.invalid` })
