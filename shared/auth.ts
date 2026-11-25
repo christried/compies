@@ -31,6 +31,8 @@ export interface AuthUser {
   id: string
   name: string
   image: string | null
+  /** An uploaded Profile picture is the one shown (#911). */
+  hasOwnImage: boolean
   displayName: string | null
   canHost: boolean
   isAdmin: boolean
@@ -89,6 +91,11 @@ export interface SavedMotion {
 /** What PUT /api/me/image returns: the address of the picture shown now, the uploaded one (#678). Never null. */
 export interface SavedProfileImage {
   image: string
+}
+
+/** What DELETE /api/me/image returns: the address of the picture shown now, the provider's, or null for the initial (#911). */
+export interface RemovedProfileImage {
+  image: string | null
 }
 
 /** What POST /api/me/tour-seen and POST /api/me/tour-reset return: the Tour version stored now (#646). */

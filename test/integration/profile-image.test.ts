@@ -221,6 +221,67 @@ describe('the Profile picture (#678)', () => {
     })
   })
 
+  describe('DELETE /api/me/image (#911)', () => {
+    const remove = (cookie: string | undefined) => request('/api/me/image', { method: 'DELETE', headers: cookie ? { cookie } : {} })
+
+    it('removes the uploaded picture: 200 with the provider\'s address, the key is null, the object is gone and its address answers like a missing route', async () => {
+      const cookie = await cookieOf(withProviderPicture)
+      const id = await userIdOf(withProviderPicture)
+      const { image } = await (await upload(cookie, lossy())).json() as SavedProfileImage
+
+      const response = await remove(cookie)
+
+      expect(response.status).toBe(200)
+      expect(await response.json()).toEqual({ image: 'https://img.example/streamer.png' })
+      expect(await keyOf(id)).toBeNull()
+      expect(store.keys()).toEqual([])
+      const unknown = await readImage('/api/images/nope.webp')
+      const gone = await readImage(image)
+      expect(gone.status).toBe(404)
+      expect(gone.statusText).toBe(unknown.statusText)
+      expect(await gone.text()).toBe(await unknown.clone().text())
+    })
+
+    it('answers the same address for a User without an upload, deletes nothing and changes no row', async () => {
+      const cookie = await cookieOf(withProviderPicture)
+      const id = await userIdOf(withProviderPicture)
+      const errors = vi.spyOn(console, 'error').mockImplementation(() => {})
+      failDelete = true
+
+      const response = await remove(cookie)
+
+      expect(response.status).toBe(200)
+      expect(await response.json()).toEqual({ image: 'https://img.example/streamer.png' })
+      expect(await keyOf(id)).toBeNull()
+      expect(errors).not.toHaveBeenCalled()
+      errors.mockRestore()
+    })
+
+    it('answers { image: null } when the User has neither an upload nor a provider picture, and /api/me then shows no picture', async () => {
+      const cookie = await cookieOf(bare)
+      await upload(cookie, lossy())
+
+      const response = await remove(cookie)
+
+      expect(response.status).toBe(200)
+      expect(await response.json()).toEqual({ image: null })
+      expect(await me(cookie)).toMatchObject({ image: null, hasOwnImage: false })
+    })
+
+    it('answers 401 signed out and removes nothing', async () => {
+      const owner = await cookieOf(plain)
+      const id = await userIdOf(plain)
+      const { image } = await (await upload(owner, lossy())).json() as SavedProfileImage
+      const key = image.slice('/api/images/'.length)
+
+      const response = await remove(undefined)
+
+      expect(response.status).toBe(401)
+      expect(await keyOf(id)).toBe(key)
+      expect(store.keys()).toEqual([key])
+    })
+  })
+
   describe('GET /api/images/:key', () => {
     it('serves a current Profile picture to anyone with the public immutable cache, signed out, signed in and as its owner', async () => {
       const owner = await cookieOf(plain)
@@ -257,6 +318,17 @@ describe('the Profile picture (#678)', () => {
   })
 
   describe('where the picture shows', () => {
+    it('says in GET /api/me that the picture is the User\'s own after an upload, and not after its removal (#911)', async () => {
+      const cookie = await cookieOf(withProviderPicture)
+      expect(await me(cookie)).toMatchObject({ hasOwnImage: false })
+
+      const { image } = await (await upload(cookie, lossy())).json() as SavedProfileImage
+      expect(await me(cookie)).toMatchObject({ image, hasOwnImage: true })
+
+      await request('/api/me/image', { method: 'DELETE', headers: { cookie } })
+      expect(await me(cookie)).toMatchObject({ image: 'https://img.example/streamer.png', hasOwnImage: false })
+    })
+
     it('carries the uploaded address in GET /api/me, and a sign-in with a new provider picture changes users.image and never the upload', async () => {
       const cookie = await cookieOf(withProviderPicture)
       expect((await me(cookie)).image).toBe('https://img.example/streamer.png')

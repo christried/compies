@@ -21,11 +21,14 @@ export const userRowColumns = {
   appearance: users.appearance,
   tourSeen: users.tourSeen,
   profileImageKey: users.profileImageKey,
-} satisfies Record<keyof AuthUser | 'profileImageKey', AnyPgColumn>
+} satisfies Record<Exclude<keyof AuthUser, 'hasOwnImage'> | 'profileImageKey', AnyPgColumn>
 
-/** The AuthUser of a row read with `userRowColumns`: the key is dropped and `image` is the picture shown, the uploaded one else the provider's (#678). */
-export function authUserOf({ profileImageKey, ...row }: AuthUser & { profileImageKey: string | null }): AuthUser {
-  return { ...row, image: profilePicture({ image: row.image, profileImageKey }) }
+/**
+ * The AuthUser of a row read with `userRowColumns`: the key is dropped and `image` is the picture shown, the uploaded one else the provider's (#678).
+ * `hasOwnImage` tells the card whether that picture is the User's own (#911); the key itself stays out of the AuthUser (ADR 0008).
+ */
+export function authUserOf({ profileImageKey, ...row }: Omit<AuthUser, 'hasOwnImage'> & { profileImageKey: string | null }): AuthUser {
+  return { ...row, image: profilePicture({ image: row.image, profileImageKey }), hasOwnImage: profileImageKey !== null }
 }
 
 /**
