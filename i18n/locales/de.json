@@ -30,7 +30,8 @@
     "holdToConfirm": "gedrückt halten",
     "holdFor1s": "1 Sekunde halten",
     "holdBadge": "1 s halten",
-    "counter": "{n}/{max}"
+    "counter": "{n}/{max}",
+    "deletedUser": "Gelöschtes Konto"
   },
   "nav": {
     "main": "Hauptnavigation",

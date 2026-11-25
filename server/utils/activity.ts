@@ -1,6 +1,6 @@
 import { and, desc, eq, inArray, lte, notInArray, or, sql } from 'drizzle-orm'
 import { activity, draws, eventMembers, games, rounds, users } from '../db/schema'
-import { shownName } from '../../shared/auth'
+import { readPerson } from '../../shared/auth'
 import { INSTANT_ACTIVITY_TYPES, activityGames, activityPeople, type ActivityEntry, type ActivityPage, type ActivityParams, type ActivityType, type InstantActivityType, type TeamNames, type TeamNamingType } from '../../shared/activity'
 import { composeTeamName } from '../../shared/board'
 import type { RoomMessage } from '../../shared/realtime'
@@ -132,24 +132,34 @@ export async function activityEntries(db: Db, rows: ActivityRow[], now: Date): P
   const named = await namedGames(db, rows, now)
   const ids = [...new Set(rows.flatMap(row => [...(row.actorId ? [row.actorId] : []), ...paramUserIds(row)]))]
   const people = new Map<string, string>()
+  const deletedIds = new Set<string>()
   if (ids.length > 0) {
-    const found = await db.select({ id: users.id, name: users.name, displayName: users.displayName }).from(users).where(inArray(users.id, ids))
-    for (const user of found) people.set(user.id, shownName(user))
+    const found = await db.select({ id: users.id, name: users.name, displayName: users.displayName, deletedAt: users.deletedAt }).from(users).where(inArray(users.id, ids))
+    for (const user of found) {
+      const person = readPerson(user)
+      people.set(user.id, person.name)
+      if (person.deleted) deletedIds.add(user.id)
+    }
   }
   // The row holds a type and params that were written together (recordActivity types them per type), but the table
   // only knows the unions apart, so the pairing is asserted here, once.
-  return rows.map(row => ({
-    id: row.id,
-    at: row.at.toISOString(),
-    actor: row.actorId ? { id: row.actorId, name: people.get(row.actorId) ?? '' } : null,
-    people: Object.fromEntries(paramUserIds(row).map(id => [id, people.get(id) ?? ''])),
-    games: Object.fromEntries(activityGames(row.type, row.params).flatMap((id) => {
-      const name = named.get(`${row.eventId}:${id}`)
-      return name === undefined ? [] : [[id, name]]
-    })),
-    type: row.type,
-    params: publicParams(row),
-  }) as ActivityEntry)
+  return rows.map((row) => {
+    // The Deleted Users among the actor and the Users in the params (#915); the key is there only when there are some.
+    const deleted = [...new Set([...(row.actorId ? [row.actorId] : []), ...paramUserIds(row)])].filter(id => deletedIds.has(id))
+    return {
+      id: row.id,
+      at: row.at.toISOString(),
+      actor: row.actorId ? { id: row.actorId, name: people.get(row.actorId) ?? '' } : null,
+      people: Object.fromEntries(paramUserIds(row).map(id => [id, people.get(id) ?? ''])),
+      ...(deleted.length > 0 ? { deleted } : {}),
+      games: Object.fromEntries(activityGames(row.type, row.params).flatMap((id) => {
+        const name = named.get(`${row.eventId}:${id}`)
+        return name === undefined ? [] : [[id, name]]
+      })),
+      type: row.type,
+      params: publicParams(row),
+    } as ActivityEntry
+  })
 }
 
 /**
