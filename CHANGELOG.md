@@ -6,6 +6,7 @@
 
 - Auf der Seite „Profil“ lädst du ein eigenes Profilbild hoch. Es ersetzt das von Discord oder Twitch und bleibt, auch wenn du dich neu anmeldest. ([#678](https://github.com/christried/compies/issues/678))
 - Dein eigenes Profilbild entfernst du auf der Seite „Profil“ wieder; dann siehst du das von Discord oder Twitch. ([#911](https://github.com/christried/compies/issues/911))
+- Beim Hochladen deines Profilbilds wählst du den Ausschnitt: Du verschiebst und zoomst das Bild in einem Quadrat und siehst in einer runden Vorschau, wie es andere sehen. ([#910](https://github.com/christried/compies/issues/910))
 
 ### Behoben
 
