@@ -1,6 +1,7 @@
 import { notesLength, parseNotes, type NotesDoc } from './notes-doc'
 import { asRecord, isRecord } from './record'
 import { characterCount } from './text'
+import { utcToBerlin } from './time'
 import { parseYouTubeId } from './youtube'
 
 // The Game library (#141, spec #138): the rules and shapes the server and the screens share. The input rules
@@ -182,6 +183,33 @@ export function filterGames(games: GameView[], filters: GameFilters): GameView[]
     if (suitability !== null && !game.suitabilities.includes(suitability)) return false
     return tag === null || game.tags.some(item => item.key === tag)
   })
+}
+
+/** The order of the game browser's list (#901): „Name“ is the list as it comes (by name), `last_played` is „Lange nicht gespielt“. Not a filter: it hides nothing. */
+export type GameSort = 'name' | 'last_played'
+
+/** A sort as the address or a select holds it: `last_played`, else `name` (nothing, an unknown value, a repeated parameter). */
+export function parseGameSort(value: unknown): GameSort {
+  return value === 'last_played' ? 'last_played' : 'name'
+}
+
+/**
+ * `games` in the order of `sort` (#901), as a new array. „Name“ is the list as it comes: the server answers it by name
+ * (`ORDER BY lower(name), id`), and a tie of `last_played` keeps that order, so the function expects a list by name. `last_played` puts
+ * the games never played first, then by the Berlin day (ADR 0003) of their latest Result, oldest first; the hour does not count.
+ * `lastPlayed` is `useGameLibrary`'s: a key only for a played game. The day is read once per game, not per comparison (~1500 games).
+ */
+export function sortGames(games: GameView[], sort: GameSort, lastPlayed: Record<string, string>): GameView[] {
+  if (sort === 'name') return [...games]
+  const keyed = games.map((game) => {
+    const at = lastPlayed[game.id]
+    return { game, day: at ? utcToBerlin(new Date(at)).slice(0, 10) : '' }
+  })
+  keyed.sort((a, b) => {
+    if (a.day === b.day) return 0
+    return a.day < b.day ? -1 : 1
+  })
+  return keyed.map(item => item.game)
 }
 
 /** What is wrong with a game name: empty after trimming, or longer than GAME_NAME_MAX characters (an emoji counts as one). Null when fine. */
