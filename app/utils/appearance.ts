@@ -21,6 +21,15 @@ export function renderedAppearance({ user, cookie }: AppearanceSources): Appeara
   return cookie === 'dark' || cookie === 'system' ? cookie : 'light'
 }
 
+/**
+ * The look an Appearance puts on screen: Hell and Dunkel are their own, System is the device's (#931). The one rule of whether a
+ * choice changes the picture, so the Theme reveal runs only when it does.
+ */
+export function shownLook(appearance: Appearance, systemDark: boolean): 'light' | 'dark' {
+  if (appearance === 'system') return systemDark ? 'dark' : 'light'
+  return appearance
+}
+
 /** The browser bar's colour per look: the page background (`--cp-paper`) of each token block. test/unit/appearance.test.ts reads the tokens. */
 export const THEME_COLORS = { light: '#fff3df', dark: '#17121d' } as const
 

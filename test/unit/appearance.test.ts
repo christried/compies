@@ -4,7 +4,7 @@ import { PgDialect, getTableConfig } from 'drizzle-orm/pg-core'
 import { APPEARANCE_COOKIE, APPEARANCES, appearanceCookieValue, isAppearance } from '../../shared/appearance'
 import type { AuthUser } from '../../shared/auth'
 import { users } from '../../server/db/schema'
-import { THEME_COLORS, renderedAppearance, themeColorMetas } from '../../app/utils/appearance'
+import { THEME_COLORS, renderedAppearance, shownLook, themeColorMetas } from '../../app/utils/appearance'
 
 // A User's Appearance (#401, GLOSSARY): Hell, Dunkel or System, light unless they choose otherwise. The page renders the signed-in User's,
 // signed out the device's cookie (#403), and the browser bar takes the page background of that look.
@@ -118,6 +118,20 @@ describe('THEME_COLORS', () => {
     const dark = tokens.indexOf('[data-theme="dark"]')
     expect(dark).toBeGreaterThan(-1)
     expect(THEME_COLORS.dark).toBe(paperAfter(dark))
+  })
+})
+
+// The look on screen, the one rule of whether a choice changes the picture (#931): Hell and Dunkel are their own look, System is the device's.
+describe('shownLook', () => {
+  it.each([
+    ['light', false, 'light'],
+    ['light', true, 'light'],
+    ['dark', false, 'dark'],
+    ['dark', true, 'dark'],
+    ['system', false, 'light'],
+    ['system', true, 'dark'],
+  ] as const)('shows %s on a device with dark %s as %s', (appearance, systemDark, look) => {
+    expect(shownLook(appearance, systemDark)).toBe(look)
   })
 })
 
