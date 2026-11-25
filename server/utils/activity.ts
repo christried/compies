@@ -134,7 +134,8 @@ export async function activityEntries(db: Db, rows: ActivityRow[], now: Date): P
   const people = new Map<string, string>()
   const deletedIds = new Set<string>()
   if (ids.length > 0) {
-    const found = await db.select({ id: users.id, name: users.name, displayName: users.displayName, deletedAt: users.deletedAt }).from(users).where(inArray(users.id, ids))
+    // The feed carries no picture (#678); `readPerson` takes the key so that a read cannot forget it.
+    const found = await db.select({ id: users.id, name: users.name, displayName: users.displayName, profileImageKey: users.profileImageKey, deletedAt: users.deletedAt }).from(users).where(inArray(users.id, ids))
     for (const user of found) {
       const person = readPerson(user)
       people.set(user.id, person.name)

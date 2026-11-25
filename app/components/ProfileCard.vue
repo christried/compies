@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { Upload } from '@lucide/vue'
 import { DISPLAY_NAME_MAX, shownName } from '~~/shared/auth'
 
 // The card „Profil“ on the Profil page (screen 25, #399): the provider picture with its hint, and renaming
@@ -11,6 +12,23 @@ const user = useAuthUser()
 // The guard lets only a User with a Display name in, so shownName is their Display name here.
 const saved = computed(() => (user.value ? shownName(user.value) : ''))
 const { displayName, missing, canSave, saving, saveFailed, save: saveName } = useDisplayNameForm({ initial: saved.value, saved })
+
+// The upload of the picture (#678): „Hochladen“ opens the hidden file input, as the game form's cover field does.
+const input = useTemplateRef<HTMLInputElement>('input')
+const { busy, converting, failure, pick } = useProfileImageUpload()
+const status = computed(() => {
+  if (converting.value) return t('profile.imageConverting')
+  return busy.value ? t('profile.imageUploading') : null
+})
+
+async function onPick(event: Event) {
+  const target = event.target as HTMLInputElement
+  const file = target.files?.[0]
+  if (!file) return
+  await pick(file)
+  // The same file chosen again must fire `change` again.
+  target.value = ''
+}
 
 const save = () => saveName(() => {
   // The trimmed name as stored.
@@ -41,8 +59,33 @@ const save = () => saveName(() => {
       <div class="flex min-w-0 flex-1 flex-col gap-1">
         <b class="text-[14px]">{{ t('profile.avatar') }}</b>
         <span class="text-small text-ink-2">{{ t('profile.avatarHelp') }}</span>
+        <AppButton
+          variant="secondary"
+          class="mt-1 self-start"
+          :aria-disabled="busy || undefined"
+          @click="busy || input?.click()"
+        >
+          <template #icon>
+            <AppIcon
+              :icon="Upload"
+              :size="14"
+            />
+          </template>
+          {{ t('profile.upload') }}
+        </AppButton>
+        <span
+          v-if="status"
+          role="status"
+          class="text-small font-bold text-ink-2"
+        >{{ status }}</span>
       </div>
     </div>
+    <NoticeBanner
+      v-if="failure"
+      tone="critical"
+    >
+      {{ failure === 'convert' ? t('profile.imageConvertFailed') : t('profile.imageUploadFailed') }}
+    </NoticeBanner>
 
     <form
       novalidate
@@ -76,5 +119,16 @@ const save = () => saveName(() => {
         {{ t('common.save') }}
       </AppButton>
     </form>
+
+    <!-- After the form, so the form's text field stays the first input of the card. -->
+    <input
+      ref="input"
+      type="file"
+      accept="image/*"
+      class="sr-only"
+      tabindex="-1"
+      aria-hidden="true"
+      @change="onPick"
+    >
   </section>
 </template>
