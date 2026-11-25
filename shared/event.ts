@@ -118,6 +118,9 @@ export interface RemovedSessionView {
 /** What `POST /api/e/:slug/move` returns: the Member and the place they stand in now (#160). */
 export interface MovedMember { userId: string, to: Place }
 
+/** What `POST /api/e/:slug/remove-member` returns (#697): the removed User and, when the request asked to rotate the Invite link, the new link (else null). */
+export interface RemovedMember { userId: string, inviteUrl: string | null }
+
 /** What `POST /api/e/:slug/sessions/start` returns: the Session that started and the Phase, running from the first start on (#164). */
 export interface SessionStarted { sessionId: string, phase: Phase }
 /** What `POST /api/e/:slug/sessions/end` returns: the Session that ended and the Phase, which stays running (#164). */
