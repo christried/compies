@@ -1,4 +1,4 @@
-import { mountSuspended, registerEndpoint } from '@nuxt/test-utils/runtime'
+import { mockNuxtImport, mountSuspended, registerEndpoint } from '@nuxt/test-utils/runtime'
 import { flushPromises, type VueWrapper } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createSSRApp, h, Suspense } from 'vue'
@@ -7,11 +7,32 @@ import ClipOverlay from '~/components/ClipOverlay.vue'
 import HostDock from '~/components/HostDock.vue'
 import VetoBar from '~/components/VetoBar.vue'
 import EventPage from '~/pages/e/[slug]/index.vue'
+import { CLIP_VOLUME, DUCK_VOLUME } from '~/utils/clip-duck'
+import type { RoomSocketOptions } from '~/utils/room-socket'
 import type { ClipView, WheelView } from '~~/shared/stage'
 import type { RoundGame } from '~~/shared/game'
+import { envelope, type RoomMessage } from '~~/shared/realtime'
 import { defaultSettings } from '~~/shared/settings'
 import { kitty, signInAs } from './auth'
-import { serve, viewWithSessions } from './event-page'
+import { filesReady, quiet, serveCueFiles, setUpCuePage, tearDownCuePage } from './cue-harness'
+import { LARSI, restoreScreen, serve, stubScreen, viewWithSessions } from './event-page'
+import { members, SESSION, team } from './event-page-states'
+
+// The room is the fake socket of test/nuxt/event-emote-cues.test.ts: the Emote case below needs an `emote.sent` that reaches the page.
+const { sockets, createRoomSocket } = vi.hoisted(() => {
+  const sockets: { options: RoomSocketOptions, close: ReturnType<typeof vi.fn>, reconnect: ReturnType<typeof vi.fn>, send: ReturnType<typeof vi.fn> }[] = []
+  return {
+    sockets,
+    createRoomSocket: vi.fn((options: RoomSocketOptions) => {
+      const socket = { options, close: vi.fn(), reconnect: vi.fn(), send: vi.fn() }
+      sockets.push(socket)
+      return socket
+    }),
+  }
+})
+mockNuxtImport('createRoomSocket', () => createRoomSocket)
+
+serveCueFiles()
 
 // The synced clip on the Event page (#230): the overlay is mounted when the Event read carries a clip, with the Host's
 // „Clip überspringen“ for the Host only, which POSTs the skip. The overlay's own behaviour is in clip-overlay.test.ts.
@@ -507,5 +528,113 @@ describe('the backdrop behind the clip (#587)', () => {
       await vi.waitFor(() => expect(backdrop()).toBeNull(), { timeout: 3000 })
       expect(covered(header())).toBe(false)
     })
+  })
+})
+
+// The Clip gets quieter under another Member's Emote (#670, spec #927): the page's cue player tells the page's duck, the duck sets the YouTube player's
+// volume. The room is the fake socket above, the audio the fake context of test/fake-audio.ts, the YouTube player a stub that records its volume.
+describe('the Clip under an Emote (#670)', () => {
+  const halo: RoundGame = { ...kart, id: 'g-halo', name: 'Halo', youtubeId: 'aaaaaaaaaaa' }
+  const volumes: number[][] = []
+  let mounted: Awaited<ReturnType<typeof mountSuspended>> | undefined
+  let testNumber = 0
+  let playerOptions: { events: { onReady?: () => void } } | undefined
+  const settle = () => new Promise(resolve => setTimeout(resolve))
+  const lastSocket = () => sockets[sockets.length - 1]!
+
+  /** The page's Event: set up, with Larsi in a team and a Clip with a video running. */
+  async function mountWithClip() {
+    testNumber += 1
+    const slug = `clip-duck-${testNumber}`
+    const clip: ClipView = { ...runningClip(), game: halo }
+    registerEndpoint(`/api/e/${slug}`, {
+      method: 'GET',
+      handler: () => viewWithSessions(slug, [SESSION(1, FIRST, { startedAt: STARTED })], 0, {
+        event: { phase: 'running', isHost: false },
+        settings: defaultSettings(),
+        runningSessionId: `session-${slug}-0`,
+        teams: [team(1), team(2)],
+        members: members({ larsi: { zone: 'team', team: 1 } }),
+        standings: [{ team: 1, rank: 1, points: 0 }, { team: 2, rank: 1, points: 0 }],
+        clip,
+      }),
+    })
+    registerEndpoint(`/api/e/${slug}/activity`, { method: 'GET', handler: () => ({ entries: [], next: null }) })
+    registerEndpoint(`/api/e/${slug}/room`, { method: 'POST', handler: () => ({ url: 'https://rt.test', room: `event-id-${slug}`, token: 'token' }) })
+    mounted = await mountSuspended(EventPage, { route: `/e/${slug}`, attachTo: document.body })
+    await vi.waitFor(() => expect(sockets.length).toBeGreaterThan(0))
+    // The room opens and answers the clock's first probe: the page's clock is ready and the player exists.
+    lastSocket().options.onOpen()
+    await vi.waitFor(() => expect(lastSocket().send.mock.calls.some(([text]) => String(text).includes('clock.ping'))).toBe(true))
+    const ping = lastSocket().send.mock.calls.map(([text]) => JSON.parse(String(text)) as { type: string, t0: number }).find(message => message.type === 'clock.ping')!
+    lastSocket().options.onMessage(JSON.stringify(envelope({ type: 'clock.pong', t0: ping.t0 } as RoomMessage, Date.now())))
+    await settle()
+    // With Ton off no file is asked for.
+    if (localStorage.getItem('compies-sound') !== 'off') await filesReady('emote')
+    // The YouTube player of the Clip is ready.
+    await vi.waitFor(() => expect(playerOptions).toBeDefined())
+    playerOptions!.events.onReady?.()
+    await settle()
+  }
+
+  const say =(emote: 'clap' | 'tears' | 'angry' | 'roar') =>
+    lastSocket().options.onMessage(JSON.stringify(envelope({ type: 'emote.sent', userId: LARSI, emote, sound: true } as RoomMessage, Date.now())))
+
+  beforeEach(() => {
+    setUpCuePage({ staging: true })
+    stubScreen(true)
+    sockets.length = 0
+    volumes.length = 0
+    playerOptions = undefined
+    useRuntimeConfig().public.realtimeUrl = 'https://rt.test'
+    class Player {
+      constructor(_element: HTMLElement, options: NonNullable<typeof playerOptions>) {
+        playerOptions = options
+      }
+
+      setVolume = (volume: number) => void volumes.push([volume])
+      mute = vi.fn()
+      unMute = vi.fn()
+      loadVideoById = vi.fn()
+      seekTo = vi.fn()
+      playVideo = vi.fn()
+      destroy = vi.fn()
+      getCurrentTime = () => 0
+      getPlayerState = () => 2
+    }
+    window.YT = { Player, PlayerState: { PLAYING: 1, PAUSED: 2 } } as unknown as typeof window.YT
+  })
+
+  afterEach(() => {
+    mounted?.unmount()
+    mounted = undefined
+    delete window.YT
+    useRuntimeConfig().public.realtimeUrl = ''
+    restoreScreen()
+    document.body.innerHTML = ''
+    tearDownCuePage()
+  })
+
+  it('lowers the volume of the Clip while another Member\'s Emote sounds, and brings it back', async () => {
+    await mountWithClip()
+    expect(volumes.at(-1)).toEqual([CLIP_VOLUME])
+
+    say('clap')
+
+    await vi.waitFor(() => expect(volumes.at(-1)).toEqual([DUCK_VOLUME]))
+    await vi.waitFor(() => expect(volumes.at(-1)).toEqual([CLIP_VOLUME]), { timeout: 3000 })
+  })
+
+  it('leaves the Clip\'s volume alone while Ton is off', async () => {
+    localStorage.setItem('compies-sound', 'off')
+    await mountWithClip()
+    const before = volumes.length
+
+    say('clap')
+    await settle()
+    await quiet(300)
+
+    expect(volumes).toHaveLength(before)
+    expect(volumes.every(([volume]) => volume === CLIP_VOLUME)).toBe(true)
   })
 })

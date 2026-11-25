@@ -2,6 +2,9 @@ import { mountSuspended } from '@nuxt/test-utils/runtime'
 import { flushPromises } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import ClipOverlay from '~/components/ClipOverlay.vue'
+import { clipDuckKey } from '~/composables/useClipDuck'
+import { CLIP_VOLUME, DUCK_DOWN_MS, DUCK_STEP_MS, DUCK_UP_MS, DUCK_VOLUME, createClipDuck, type ClipDuck } from '~/utils/clip-duck'
+import { CUE_LENGTHS } from '~/utils/cue-lengths'
 import type { ClipView } from '~~/shared/stage'
 import type { RoundGame } from '~~/shared/game'
 import { restoreScreen, stubScreen } from './event-page'
@@ -23,6 +26,7 @@ interface PlayerStub {
   seekTo: ReturnType<typeof vi.fn>
   mute: ReturnType<typeof vi.fn>
   unMute: ReturnType<typeof vi.fn>
+  setVolume: ReturnType<typeof vi.fn>
   playVideo: ReturnType<typeof vi.fn>
   destroy: ReturnType<typeof vi.fn>
   getCurrentTime: ReturnType<typeof vi.fn>
@@ -43,6 +47,7 @@ function stubYouTube() {
     seekTo = vi.fn()
     mute = vi.fn()
     unMute = vi.fn()
+    setVolume = vi.fn()
     playVideo = vi.fn()
     destroy = vi.fn()
     getCurrentTime = vi.fn(() => 0)
@@ -61,9 +66,13 @@ function stubYouTube() {
 
 /** `stubChildren`: the child components keep the tag and classes the overlay writes on them and drop their own output (#546).
  * `vetoBarShown`: a Veto bar shows beside the Clip (#584); the default is the case the sideways layout was made for (#550). */
-async function mount(clip: ClipView, { isHost = false, desktop = true, stubChildren = false, vetoBarShown = true }: { isHost?: boolean, desktop?: boolean, stubChildren?: boolean, vetoBarShown?: boolean } = {}) {
+async function mount(clip: ClipView, { isHost = false, desktop = true, stubChildren = false, vetoBarShown = true, duck }: { isHost?: boolean, desktop?: boolean, stubChildren?: boolean, vetoBarShown?: boolean, duck?: ClipDuck } = {}) {
   stubScreen(desktop)
-  const global = stubChildren ? { stubs: { AppButton: true, IconButton: true, GameCard: true } } : {}
+  // `duck`: the Event page's one duck (#670), provided as the page does; without it the overlay has the no-op one.
+  const global = {
+    ...(stubChildren ? { stubs: { AppButton: true, IconButton: true, GameCard: true } } : {}),
+    ...(duck ? { provide: { [clipDuckKey as symbol]: duck } } : {}),
+  }
   // The page keeps the closed state, keyed by the draw (#956): here the wrapper stands in for it, closing on `close`.
   page = await mountSuspended(ClipOverlay, { props: { clip, isHost, serverNow: () => serverMs, skip, vetoBarShown, closed: false, onClose: () => void page!.setProps({ closed: true }) }, global })
   await flushPromises()
@@ -980,5 +989,134 @@ describe('telling the page that it shows (#587)', () => {
     await mount(clipOf())
 
     expect(shownValues()).toEqual([true])
+  })
+})
+
+// The Clip gets quieter under a cue (#670, spec #927): the Event page's duck sets the player's volume and nothing else. The duck runs on a clock
+// of its own here (the overlay's timers are faked without `performance`), moved in steps of the duck's own pace.
+describe('the Clip under a cue (#670)', () => {
+  let duckNow: number
+  let duck: ClipDuck
+
+  beforeEach(() => {
+    duckNow = 0
+    duck = createClipDuck({ now: () => duckNow })
+  })
+  afterEach(() => {
+    duck.dispose()
+  })
+
+  /** Time passes for the duck's timer, one step at a time. */
+  async function duckTime(ms: number) {
+    for (let passed = 0; passed < ms; passed += DUCK_STEP_MS) {
+      duckNow += DUCK_STEP_MS
+      vi.advanceTimersByTime(DUCK_STEP_MS)
+    }
+    await flushPromises()
+  }
+  /** What a Member hears of the Clip: the last volume the player was given. */
+  const volume = () => players[0]!.setVolume.mock.calls.at(-1)?.[0] as number | undefined
+  const settle = (id: 'emo-clap' | 'emo-roar' | 'veto-seal') => CUE_LENGTHS[id].ms + DUCK_UP_MS + 2 * DUCK_STEP_MS
+
+  it.each([['a Member', false], ['the Host', true]])('lowers the volume while a cue sounds and brings it back after: %s', async (_who, isHost) => {
+    await mount(clipOf(), { isHost, duck })
+    await ready()
+    expect(volume()).toBe(CLIP_VOLUME)
+
+    duck.note({ id: 'emo-clap', delayMs: 0 })
+    await duckTime(DUCK_DOWN_MS + DUCK_STEP_MS)
+    expect(volume()).toBe(DUCK_VOLUME)
+
+    await duckTime(settle('emo-clap'))
+    expect(volume()).toBe(CLIP_VOLUME)
+  })
+
+  it('starts at the normal volume when nothing sounds', async () => {
+    await mount(clipOf(), { duck })
+    await ready()
+
+    expect(players[0]!.setVolume.mock.calls).toEqual([[CLIP_VOLUME]])
+  })
+
+  it('never mutes or unmutes the player: the sound this device chose stays', async () => {
+    await mount(clipOf(), { duck })
+    await ready()
+    const unmuted = players[0]!.unMute.mock.calls.length
+
+    duck.note({ id: 'veto-seal', delayMs: 0 })
+    await duckTime(settle('veto-seal'))
+
+    expect(players[0]!.mute).not.toHaveBeenCalled()
+    expect(players[0]!.unMute).toHaveBeenCalledTimes(unmuted)
+  })
+
+  it('lowers the volume of a muted Clip too, and leaves it muted', async () => {
+    await mount(clipOf(), { duck })
+    await ready()
+    await press('Ton aus')
+    const muted = players[0]!.mute.mock.calls.length
+    const unmuted = players[0]!.unMute.mock.calls.length
+
+    duck.note({ id: 'emo-haha', delayMs: 0 })
+    await duckTime(DUCK_DOWN_MS + DUCK_STEP_MS)
+
+    expect(volume()).toBe(DUCK_VOLUME)
+    expect(players[0]!.mute).toHaveBeenCalledTimes(muted)
+    expect(players[0]!.unMute).toHaveBeenCalledTimes(unmuted)
+  })
+
+  it('lets a phone\'s „Ton aktivieren“ during a duck come in lowered, and the rise goes on', async () => {
+    await mount(clipOf(), { desktop: false, duck })
+    await ready()
+    duck.note({ id: 'emo-roar', delayMs: 0 })
+    await duckTime(DUCK_DOWN_MS + DUCK_STEP_MS)
+    expect(players[0]!.unMute).not.toHaveBeenCalled()
+
+    await press('Ton aktivieren')
+
+    expect(players[0]!.unMute).toHaveBeenCalled()
+    expect(volume()).toBe(DUCK_VOLUME)
+
+    await duckTime(settle('emo-roar'))
+    expect(volume()).toBe(CLIP_VOLUME)
+  })
+
+  it('gives a player made during a duck the lowered volume as soon as it is ready', async () => {
+    duck.note({ id: 'emo-grr', delayMs: 0 })
+    await duckTime(DUCK_DOWN_MS + DUCK_STEP_MS)
+
+    await mount(clipOf(), { duck })
+    await ready()
+
+    expect(players[0]!.setVolume.mock.calls).toEqual([[DUCK_VOLUME]])
+  })
+
+  it('gives a player the Clip closed on this device no more volumes', async () => {
+    await mount(clipOf(), { duck })
+    await ready()
+    duck.note({ id: 'veto-seal', delayMs: 0 })
+    await duckTime(DUCK_STEP_MS)
+
+    await press('Für mich schließen')
+    const before = players[0]!.setVolume.mock.calls.length
+    expect(players[0]!.destroy).toHaveBeenCalled()
+    await duckTime(settle('veto-seal'))
+
+    expect(players[0]!.setVolume).toHaveBeenCalledTimes(before)
+  })
+
+  it('moves a Clip that is not mounted without calling anything', async () => {
+    duck.note({ id: 'veto-seal', delayMs: 0 })
+    await duckTime(DUCK_DOWN_MS + DUCK_STEP_MS)
+
+    expect(duck.level).toBe(DUCK_VOLUME)
+    expect(players).toEqual([])
+  })
+
+  it('mounts without a duck provided: the volume is never set', async () => {
+    await mount(clipOf())
+    await ready()
+
+    expect(players[0]!.setVolume).not.toHaveBeenCalled()
   })
 })
