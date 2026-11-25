@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.21.0] - 2026-11-25 – Profil und Konto
+
 ### Neu
 
 - Auf der Seite „Profil“ lädst du ein eigenes Profilbild hoch. Es ersetzt das von Discord oder Twitch und bleibt, auch wenn du dich neu anmeldest. ([#678](https://github.com/christried/compies/issues/678))
