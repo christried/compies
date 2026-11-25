@@ -32,6 +32,7 @@ export const ACTIVITY_TYPES = [
   'result_entered',
   'result_corrected',
   'event_finished',
+  'member_removed',
 ] as const
 export type ActivityType = (typeof ACTIVITY_TYPES)[number]
 
@@ -121,6 +122,8 @@ export type ActivityParams = CheckedParams<{
   result_entered: { roundId: string, number: number, gameId: string, first: number[], teamNames?: TeamNames }
   result_corrected: { roundId: string, number: number, gameId: string }
   event_finished: { winners: number[], teamNames?: TeamNames }
+  // 0.22 (#697): the Host removed a Member; `userId` is the removed User. No `teamNames`: the sentence names no team.
+  member_removed: { userId: string }
 }>
 
 /**
@@ -143,6 +146,8 @@ export const ACTIVITY_NAMES: { [T in ActivityType]?: { people?: (params: Activit
   result_entered: { games: params => [params.gameId], teams: params => params.first },
   result_corrected: { games: params => [params.gameId] },
   event_finished: { teams: params => params.winners },
+  // The removed User may be no Member any more; the feed's read resolves their name from `users` (#697).
+  member_removed: { people: params => [params.userId] },
 }
 
 /** The User ids an entry's params name (ACTIVITY_NAMES), for one entry of this type. */

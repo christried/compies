@@ -43,6 +43,8 @@ export type RoomMessage
     | { type: 'chat.deleted', id: string, deletedBy: MessageDeleter }
   /** The Event's rows are gone (its Host deleted their account, #917, ADR 0020): the next read would answer 404, so the page shows „Event gelöscht“ (the state of a 410) without reading again. No payload and no `event.changed` with it; it names nothing and goes to every socket of the room, so it is no secrecy surface (CODING_STANDARDS § Secrecy). */
     | { type: 'event.gone' }
+  /** The last message of the room to a User the Host removed (#697): sent by the removal to that User's sockets only, which the room then closes (ADR 0013, amendment of 2026-11-20). It names nobody and carries no data, so it is no secrecy surface beyond that: it goes to one User, who learns only that they are out. */
+    | { type: 'member.removed' }
 
 export type RoomMessageType = RoomMessage['type']
 

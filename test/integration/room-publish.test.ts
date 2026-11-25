@@ -54,7 +54,7 @@ describe('publishing to the room', () => {
     await testDb.db.insert(eventMembers).values({ eventId: eventRow!.id, userId: memberRow!.id })
     const slotIds = (await testDb.db.select().from(pollSlots).where(eq(pollSlots.eventId, eventRow!.id)).orderBy(pollSlots.startsAt)).map(row => row.id)
     notifier.clear()
-    return { slug, eventId: eventRow!.id, slotIds, hostCookie, memberCookie, strangerCookie, invite: new URL(inviteUrl).pathname.slice('/e/'.length) }
+    return { slug, eventId: eventRow!.id, memberId: memberRow!.id, slotIds, hostCookie, memberCookie, strangerCookie, invite: new URL(inviteUrl).pathname.slice('/e/'.length) }
   }
 
   const send = sendVia(() => request)
@@ -62,7 +62,7 @@ describe('publishing to the room', () => {
   const types = (eventId: string) => notifier.messages(eventId).map(message => message.type)
 
   it('publishes exactly one event.changed, stamped with the server time, for every change a Member or the Host makes', async () => {
-    const { slug, eventId, slotIds, hostCookie, memberCookie } = await pollEvent()
+    const { slug, eventId, memberId, slotIds, hostCookie, memberCookie } = await pollEvent()
     const steps: [string, () => Promise<Response>][] = [
       ['a Vote', () => send('PUT', `/api/e/${slug}/slots/${slotIds[0]}/vote`, memberCookie, { value: 'yes' })],
       ['a Vote with a Note', () => send('PUT', `/api/e/${slug}/slots/${slotIds[0]}/vote`, memberCookie, { value: 'maybe', note: 'ab 21 Uhr' })],
@@ -74,10 +74,12 @@ describe('publishing to the room', () => {
       ['changing the settings', () => send('PATCH', `/api/e/${slug}/settings`, hostCookie, { settings: { gameCount: 12 } })],
       ['turning the Pool preview off (#225)', () => send('PATCH', `/api/e/${slug}/settings`, hostCookie, { settings: { poolPreview: false } })],
       ['rotating the Invite link', () => send('POST', `/api/e/${slug}/rotate`, hostCookie)],
+      // The removal of a Member (#697) is last: the Member is out afterwards. The rotation it asks for adds no message.
+      ['removing a Member and rotating the Invite link', () => send('POST', `/api/e/${slug}/remove-member`, hostCookie, { userId: memberId, rotateInvite: true })],
     ]
 
     // The changes the Activity feed logs (#159) publish their entry after `event.changed`.
-    const logged = new Set(['setting a Date', 'adding a Session', 'changing the settings'])
+    const logged = new Set(['setting a Date', 'adding a Session', 'changing the settings', 'removing a Member and rotating the Invite link'])
 
     for (const [name, step] of steps) {
       notifier.clear()
@@ -120,7 +122,7 @@ describe('publishing to the room', () => {
   })
 
   it('publishes nothing for a request that is refused', async () => {
-    const { slug, eventId, slotIds, hostCookie, memberCookie, strangerCookie } = await pollEvent()
+    const { slug, eventId, memberId, slotIds, hostCookie, memberCookie, strangerCookie } = await pollEvent()
     const refusals: [string, number, () => Promise<Response>][] = [
       ['signed out', 401, () => send('PUT', `/api/e/${slug}/slots/${slotIds[0]}/vote`, undefined, { value: 'yes' })],
       ['a stranger voting', 404, () => send('PUT', `/api/e/${slug}/slots/${slotIds[0]}/vote`, strangerCookie, { value: 'yes' })],
@@ -129,6 +131,7 @@ describe('publishing to the room', () => {
       ['a Member setting a Date', 403, () => send('POST', `/api/e/${slug}/confirm`, memberCookie, { slotId: slotIds[0] })],
       ['a Member adding a Session', 403, () => send('POST', `/api/e/${slug}/sessions`, memberCookie, {})],
       ['a Member rotating the link', 403, () => send('POST', `/api/e/${slug}/rotate`, memberCookie)],
+      ['a Member removing a Member', 403, () => send('POST', `/api/e/${slug}/remove-member`, memberCookie, { userId: memberId, rotateInvite: false })],
       ['a Member changing the settings', 403, () => send('PATCH', `/api/e/${slug}/settings`, memberCookie, { settings: { gameCount: 12 } })],
       ['bad settings', 400, () => send('PATCH', `/api/e/${slug}/settings`, hostCookie, { settings: { gameCount: 0 } })],
       ['a Slot in the past', 400, () => send('POST', `/api/e/${slug}/slots`, hostCookie, { startsAt: '2000-01-01T19:00' })],

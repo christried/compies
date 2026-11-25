@@ -408,6 +408,21 @@ describe('activityParts', () => {
   })
 })
 
+describe('a removed Member (#697)', () => {
+  const text = (entry: ActivityEntry) => activityParts(entry, t)?.map(part => part.text).join('') ?? null
+
+  it('reads „<name> wurde aus dem Event entfernt“, the name in bold, and never names the Host', () => {
+    const entry: ActivityEntry = { ...base, actor: { id: 'h', name: 'Hostess' }, people: { u2: 'Sanne' }, type: 'member_removed', params: { userId: 'u2' } }
+
+    expect(text(entry)).toBe('Sanne wurde aus dem Event entfernt')
+    expect(activityParts(entry, t)).toEqual([{ text: 'Sanne', strong: true }, { text: ' wurde aus dem Event entfernt', strong: false }])
+  })
+
+  it('reads „Gelöschtes Konto“ for a removed User who deleted the account later (#915)', () => {
+    expect(text({ ...base, actor: { id: 'h', name: 'Hostess' }, people: { u2: '' }, deleted: ['u2'], type: 'member_removed', params: { userId: 'u2' } })).toBe('Gelöschtes Konto wurde aus dem Event entfernt')
+  })
+})
+
 describe('activityIcon', () => {
   it('gives every entry type an icon, the date set the success tone and a start the primary', () => {
     const types = ACTIVITY_TYPES.map(type => ({ ...base, type, params: type === 'member_moved' ? { userId: 'u1', from: { zone: 'team', team: 1 }, to: { zone: 'stands' } } : {} }) as unknown as ActivityEntry)

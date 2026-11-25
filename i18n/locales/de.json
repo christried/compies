@@ -667,6 +667,7 @@
     "teamNameReset": "{name} hat den Namen von {team} zurückgesetzt",
     "gameHeader": "Spiel {n}, {game}",
     "join": "{name} ist dem Event beigetreten",
+    "memberRemoved": "{name} wurde aus dem Event entfernt",
     "moveTeam": "{name} ist jetzt in {team}",
     "moveStands": "{name} ist jetzt auf der Tribüne",
     "movedTeam": "{actor} hat {name} nach {team} verschoben",
