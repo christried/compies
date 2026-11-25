@@ -7,11 +7,11 @@ import { beforeFinish } from '../../shared/event'
 import { envelope, type RoomMessage } from '../../shared/realtime'
 import { useClock } from './clock'
 import { apiError, eventDeleted, eventNotFound } from './errors'
-import { isMember } from './invite'
+import { isMember, writerMembership } from './invite'
 import { useDb, type Db } from './db'
 import { closeAfterResponse, publishAfterResponse } from './room-notifier'
 import { settleDue } from './settle'
-import { requireUser } from './user'
+import { requireUser, signInRequired } from './user'
 
 export type EventRow = typeof events.$inferSelect
 
@@ -89,7 +89,7 @@ export async function changeEvent<T>(
   const named: NamedMessages[] = []
   const closing: ClosingMessages[] = []
   const { result, eventRow } = await useDb(event).transaction(async (tx) => {
-    const eventRow = await loadEvent(tx, slug, user.id, load)
+    const eventRow = await loadEvent(tx, slug, user.id, { ...load, live: true })
     // The one rule of a finished Event (#277): after the 404, 410 and 403 of loadEvent and before any rule of the change, every write refuses.
     if (!allowFinished && !beforeFinish(eventRow.phase)) throw apiError('wrong_phase')
     // Read after the row lock is taken, so the instants of writes queued on one Event follow the lock order.
@@ -131,6 +131,11 @@ export interface LoadEventOptions {
    * edits); `share` for writes that only need the Event to hold still (Votes).
    */
   lock?: 'update' | 'share'
+  /**
+   * A write the User makes for themselves (#991; `changeEvent` sets it): the membership read also takes `FOR KEY SHARE` on the User's row while it is not deleted
+   * (`writerMembership`), after the Event lock and before the change's first write, and a User deleted since `requireUser` gets 401 before any rule of the Event.
+   */
+  live?: boolean
 }
 
 /**
@@ -141,7 +146,13 @@ export interface LoadEventOptions {
 export async function loadEvent(db: Db, slug: string, userId: string, options: LoadEventOptions = {}): Promise<EventRow> {
   const query = db.select().from(events).where(eq(events.slug, slug))
   const [event] = options.lock ? await query.for(options.lock) : await query
-  const member = event ? await isMember(db, event.id, userId) : false
+  let member = false
+  if (event && options.live) {
+    const membership = await writerMembership(db, event.id, userId)
+    if (membership === 'deleted') throw signInRequired()
+    member = membership === 'member'
+  }
+  else if (event) member = await isMember(db, event.id, userId)
 
   const rejection = eventAccessRejection({ event: event ?? null, isMember: member, userId, hostOnly: options.hostOnly ?? false })
   if (rejection === 'not_found') throw eventNotFound()

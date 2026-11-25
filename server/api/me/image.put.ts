@@ -7,7 +7,8 @@ import { useDb } from '../../utils/db'
 import { apiError } from '../../utils/errors'
 import { useImageStore } from '../../utils/image-store'
 import { createRateLimiter } from '../../utils/rate-limit'
-import { requireUser } from '../../utils/user'
+import { requireUser, signInRequired } from '../../utils/user'
+import { liveUser } from '../../utils/live-user'
 import type { SavedProfileImage } from '../../../shared/auth'
 import { IMAGE_PATH, PROFILE_IMAGE_MAX_BYTES, PROFILE_IMAGE_SIZE } from '../../../shared/image'
 
@@ -34,12 +35,19 @@ export default defineEventHandler(async (event): Promise<SavedProfileImage> => {
   if (!info || info.animated || info.width !== PROFILE_IMAGE_SIZE || info.height !== PROFILE_IMAGE_SIZE) throw apiError('image_unsupported')
 
   const db = useDb(event)
-  const [current] = await db.select({ key: users.profileImageKey }).from(users).where(eq(users.id, user.id))
   const store = useImageStore(event)
   const key = profileImageKey()
   await store.put(key, body, 'image/webp')
+  let oldKey: string | null
   try {
-    await db.update(users).set({ profileImageKey: key }).where(eq(users.id, user.id))
+    // The old key is read under the row lock and the new one set in the same transaction, so two PUTs of one User run one after the other and each deletes
+    // the object the other left; a User deleted since `requireUser` has no live row, and nothing is set (#991).
+    oldKey = await db.transaction(async (tx) => {
+      const [current] = await tx.select({ key: users.profileImageKey }).from(users).where(liveUser(user.id)).for('update')
+      if (!current) throw signInRequired()
+      await tx.update(users).set({ profileImageKey: key }).where(eq(users.id, user.id))
+      return current.key
+    })
   }
   catch (error) {
     // The row still points at the old object, so the new one would be an orphan.
@@ -47,7 +55,6 @@ export default defineEventHandler(async (event): Promise<SavedProfileImage> => {
     throw error
   }
   // A failed delete only leaves an orphan behind; the User's save went through.
-  const oldKey = current?.key
   if (oldKey) await store.delete(oldKey).catch(failure => console.error('Image cleanup failed', oldKey, failure))
 
   return { image: `${IMAGE_PATH}${key}` }

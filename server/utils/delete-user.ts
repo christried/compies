@@ -1,4 +1,4 @@
-import { and, eq, inArray, isNotNull, isNull, ne } from 'drizzle-orm'
+import { and, asc, eq, inArray, isNotNull, isNull, ne } from 'drizzle-orm'
 import { authAccounts, authSessions, draws, eventGameNotes, eventMembers, eventPoolGames, events, games, messages, pollVotes, rounds, users } from '../db/schema'
 import type { Db } from './db'
 import type { ImageStore } from './image-store'
@@ -41,12 +41,21 @@ export interface UserDeletion {
  */
 export async function deleteUser(db: Db, userId: string, now: Date): Promise<UserDeletion> {
   return await db.transaction(async (tx) => {
-    // The row lock first: a second deletion of the same User waits here and then finds the mark.
+    // The one lock order of every write (#991, `CODING_STANDARDS.md` § Database): the Event rows, then the users row. A change of an Event locks the Event and then, by
+    // its foreign keys, the User's row, so a deletion that took the row first would wait for an Event while the change waits for the row. The Events the User hosts
+    // or is a Member of are read without a lock, locked in id order (two deletions that share Events queue up instead of crossing), and only then the row.
+    const hostedFirst = await tx.select({ id: events.id }).from(events).where(eq(events.hostId, userId))
+    const memberOfFirst = await tx.select({ id: eventMembers.eventId }).from(eventMembers).where(eq(eventMembers.userId, userId))
+    const toLock = [...new Set([...hostedFirst, ...memberOfFirst].map(found => found.id))].sort()
+    if (toLock.length > 0) await tx.select({ id: events.id }).from(events).where(inArray(events.id, toLock)).orderBy(asc(events.id)).for('update')
+
+    // A second deletion of the same User waits here and then finds the mark.
     const [row] = await tx.select({ deletedAt: users.deletedAt, profileImageKey: users.profileImageKey }).from(users).where(eq(users.id, userId)).for('update')
     if (!row) throw new UserNotDeletable('unknown_user')
     if (row.deletedAt) throw new UserNotDeletable('already_deleted')
 
-    // The Events the User hosts, any phase, Deleted ones and a Running Session too, locked: a concurrent change of one finds no row afterwards and answers 404
+    // The Events the User hosts, any phase, Deleted ones and a Running Session too, read again under the locks: one that was created since the first read is
+    // locked here, so every Event the deletion changes is locked by it. A concurrent change of one finds no row afterwards and answers 404
     // (`loadEvent`). They go outright (ADR 0020), so they are no membership any more at step 3 and their Messages and Votes go with them.
     const hosted = (await tx.select({ id: events.id }).from(events).where(eq(events.hostId, userId)).for('update')).map(hostedEvent => hostedEvent.id)
     const owned = await tx.select({ id: games.id, imageKey: games.imageKey }).from(games).where(eq(games.createdBy, userId))
@@ -77,12 +86,13 @@ export async function deleteUser(db: Db, userId: string, now: Date): Promise<Use
     if (ownKeys.length > 0) for (const game of await tx.select({ imageKey: games.imageKey }).from(games).where(inArray(games.imageKey, ownKeys))) stillNamed.add(game.imageKey)
     const gameKeys = ownKeys.filter(key => !stillNamed.has(key))
 
-    // Read before anything goes: the memberships decide what the rooms are told and which ones end.
+    // Read before anything goes: the memberships decide what the rooms are told and which ones end. An Event the User joined since the first read is locked here.
     const memberships = await tx
       .select({ eventId: eventMembers.eventId, phase: events.phase, deletedAt: events.deletedAt })
       .from(eventMembers)
       .innerJoin(events, eq(events.id, eventMembers.eventId))
       .where(eq(eventMembers.userId, userId))
+      .for('update', { of: events })
 
     // A Message the Host deleted stays as it is (`deleted_by = 'host'`).
     const lost = await tx

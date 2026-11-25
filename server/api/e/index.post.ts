@@ -11,7 +11,7 @@ import { apiError } from '../../utils/errors'
 import { addMember } from '../../utils/invite'
 import { inviteUrl } from '../../utils/links'
 import { assertNoOldPools, assertPoolGames } from '../../utils/pools'
-import { requireUser } from '../../utils/user'
+import { assertLiveUser, requireUser } from '../../utils/user'
 import type { CreatedEvent } from '../../../shared/event'
 import { asRecord } from '../../../shared/record'
 import { parseSettings } from '../../../shared/settings'
@@ -53,6 +53,8 @@ export default defineEventHandler(async (event): Promise<CreatedEvent> => {
   // load by slug, and no one is in its room to tell (#183).
   // eslint-disable-next-line no-restricted-syntax -- creating an Event has no Event to load and no one to publish to
   await db.transaction(async (tx) => {
+    // A User deleted since `requireUser` creates nothing: the live check is the transaction's first statement (#991).
+    await assertLiveUser(tx, user.id)
     await assertPoolGames(tx, user.id, null, pool)
     const [row] = await tx
       .insert(events)

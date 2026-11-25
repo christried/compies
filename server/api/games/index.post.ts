@@ -6,6 +6,7 @@ import { useDb } from '../../utils/db'
 import { apiError } from '../../utils/errors'
 import { saveTags } from '../../utils/game-tags'
 import { priceColumns, readGameViews, requireLibraryViewer } from '../../utils/library'
+import { assertLiveUser } from '../../utils/user'
 
 // Creates a game in the library (#141). Games are never deleted, so Events that use one keep working. The Tags (#335) are
 // stored with the game in one transaction, and the answer carries them as stored, so a spelling taken over from the library shows.
@@ -20,6 +21,8 @@ export default defineEventHandler(async (event): Promise<GameView> => {
   const { tags, price, priceChecked, ...columns } = parsed.game
   const priceCols = priceColumns({ price, priceChecked }, null, useClock(event).now())
   const view = await useDb(event).transaction(async (tx) => {
+    // A User deleted since `requireLibraryViewer` creates nothing: the live check is the transaction's first statement (#991).
+    await assertLiveUser(tx, viewer.id)
     const [inserted] = await tx.insert(games).values({ ...columns, ...priceCols, createdBy: viewer.id }).returning()
     await saveTags(tx, inserted!.id, tagsWithFreeToPlay(tags ?? [], price ?? null), viewer.id)
     const [built] = await readGameViews(tx, [inserted!])
