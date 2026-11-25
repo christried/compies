@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Armchair, Hand, Hourglass, Lock, Users } from '@lucide/vue'
+import { Armchair, Hand, Hourglass, Lock, UserMinus, Users } from '@lucide/vue'
 import type { MoveTarget } from '~/components/MoveToMenuList.vue'
 import { reasonKey } from '~/utils/api-error'
 import { placeFromKey, placeKey, teamName, teamNameAt } from '~/utils/board'
@@ -8,7 +8,7 @@ import { fade, glide, pop } from '~/utils/motion'
 import { shownPerson } from '~/utils/shown-person'
 import { countSeats, moveRejection, type Place } from '~~/shared/board'
 import type { EmoteId } from '~~/shared/emote'
-import type { BoardTeam, MemberView } from '~~/shared/event'
+import type { BoardTeam, MemberView, RemovedMember } from '~~/shared/event'
 import type { EventSettings } from '~~/shared/settings'
 
 // The Game board (#160, GLOSSARY: Game board, 02-components § GameBoard, 11-event-seite § GameBoard): the teams and the
@@ -44,6 +44,7 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
+const { toast } = useToast()
 const root = useTemplateRef<HTMLElement>('root')
 const slug = toRef(() => props.slug)
 
@@ -221,17 +222,59 @@ function targetFor(place: Place, label: string, extra: Partial<MoveTarget>): Mov
   return { key: placeKey(place), label, reason: rejection ? t(reasonKey(rejection)) : null, ...extra }
 }
 
+// „Aus dem Event entfernen“ (#896): the Host's last row on every Member but the Host, on a Seat and on the Stands, in every Phase before the Finish.
+// It is no place: `placeFromKey` knows nothing of it, so a drop never sees it.
+const REMOVE_KEY = 'remove'
+const removable = computed(() => {
+  const member = props.members.find(item => item.id === menu.value?.userId)
+  return props.isHost && props.pageKind !== 'finished' && member !== undefined && !member.isHost
+})
+
 const targets = computed((): MoveTarget[] => [
   ...props.teams.map(team => targetFor({ zone: 'team', team: team.position }, t('board.moveToTeam', { team: teamName(team, t) }), { team: team.position })),
   targetFor({ zone: 'stands' }, t('board.moveToStands'), { icon: Armchair }),
+  ...(removable.value ? [{ key: REMOVE_KEY, label: t('board.remove.entry'), icon: UserMinus, reason: null, danger: true }] : []),
 ])
 
+// The person the removal sheet is about; not cleared on close, so its title does not blank while the sheet leaves.
+const removing = ref<{ userId: string, name: string } | null>(null)
+const removeOpen = ref(false)
+
 function pick(key: string) {
-  const userId = menu.value?.userId
-  const to = placeFromKey(key)
+  const picked = menu.value
   menu.value = null
-  if (userId && to) void requestMove(userId, to)
+  if (!picked) return
+  if (key === REMOVE_KEY) {
+    // The focus is on the person before the sheet opens: the sheet gives it back to whatever had it, and the menu row that was picked is gone by then.
+    picked.anchor.focus()
+    removing.value = { userId: picked.userId, name: nameOf(picked.userId) }
+    removeOpen.value = true
+    return
+  }
+  const to = placeFromKey(key)
+  if (to) void requestMove(picked.userId, to)
 }
+
+// The removal: the answer's `inviteUrl` says whether the link was renewed, so the toast follows it and not the switch. A refusal toasts in `send`, and the sheet stays open.
+const { send } = useEventMutation(slug, () => refreshEvent(props.slug))
+function removeMember(rotateInvite: boolean) {
+  const removed = removing.value
+  if (!removed) return Promise.resolve(false)
+  return send<RemovedMember>('POST', 'remove-member', {
+    body: { userId: removed.userId, rotateInvite },
+    done: ({ inviteUrl }) => {
+      removeOpen.value = false
+      toast({ tone: 'success', text: t(inviteUrl === null ? 'board.remove.done' : 'board.remove.doneRotated', { name: removed.name }) })
+    },
+  })
+}
+
+// A Member can disappear while the Host looks at them (a removal from a second tab, #896): their menu and their sheet close, quietly.
+watch(() => props.members, (members) => {
+  const present = (userId?: string) => members.some(item => item.id === userId)
+  if (menu.value && !present(menu.value.userId)) menu.value = null
+  if (removeOpen.value && !present(removing.value?.userId)) removeOpen.value = false
+})
 
 // The viewer's own Team word, and the names of the Players who gave one in a team, for the TeamNameBuilder (#161).
 const myWord = computed(() => props.members.find(member => member.id === props.viewerId)?.teamWord ?? null)
@@ -393,6 +436,12 @@ const meta = computed(() => {
       :anchor="menu?.anchor ?? null"
       @close="menu = null"
       @pick="pick"
+    />
+    <MemberRemoveSheet
+      :open="removeOpen"
+      :name="removing?.name ?? ''"
+      :remove="removeMember"
+      @close="removeOpen = false"
     />
   </section>
 </template>
