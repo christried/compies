@@ -12,6 +12,7 @@
 ### Geändert
 
 - Die Datenschutzerklärung sagt, wo dein eigenes Profilbild gespeichert ist und wer es laden kann; eine Anmeldung ersetzt es nicht. ([#912](https://github.com/christried/compies/issues/912))
+- Die Datenschutzerklärung sagt, wie du dein Konto auf der Seite „Profil“ selbst löschst, was dabei gelöscht wird und was bleibt. ([#920](https://github.com/christried/compies/issues/920))
 
 ### Behoben
 
