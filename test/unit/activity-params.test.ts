@@ -38,6 +38,8 @@ const NAMED: Record<ActivityType, { params: unknown, people: string[], games: st
   result_entered: { params: { roundId: 'r', number: 3, gameId: 'g1', first: [1, 2] }, people: [], games: ['g1'], teams: [1, 2] },
   result_corrected: { params: { roundId: 'r', number: 3, gameId: 'g1' }, people: [], games: ['g1'], teams: [] },
   event_finished: { params: { winners: [2] }, people: [], games: [], teams: [2] },
+  // 0.22 (#697): the removal names the removed User and no team (an entry that names none stores no Team name, ADR 0016).
+  member_removed: { params: { userId: 'u1' }, people: ['u1'], games: [], teams: [] },
 }
 
 describe('ACTIVITY_NAMES', () => {

@@ -63,7 +63,7 @@ describe('Compibert', () => {
       expectHead(await mountSuspended(EmptyState, { props: { title: 'Noch keine Events' } }))
     })
 
-    it.each(['notFound', 'noPermission', 'generic', 'invalid', 'deleted'] as const)('FullScreenState %s shows the head', async (kind) => {
+    it.each(['notFound', 'noPermission', 'generic', 'invalid', 'deleted', 'removed'] as const)('FullScreenState %s shows the head', async (kind) => {
       expectHead(await mountSuspended(FullScreenState, { props: { kind } }))
     })
   })

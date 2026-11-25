@@ -40,7 +40,9 @@ describe('Hidden wheel secrecy (#148)', () => {
     type WorkerSent = 'presence.sync' | 'presence.join' | 'presence.leave' | 'clock.pong' | 'emote.sent'
     // Only an account deletion sends `event.gone`, never this flow: test/integration/delete-host.test.ts pins it (#917).
     type SentByAccountDeletion = 'event.gone'
-    const everyTypeListed: Exclude<RoomMessageType, (typeof SERVER_SENT)[number] | WorkerSent | SentByAccountDeletion> extends never ? true : never = true
+    // Only the Host's removal of a Member sends `member.removed`, never this flow: test/integration/remove-member.test.ts pins it (#697).
+    type SentByRemoval = 'member.removed'
+    const everyTypeListed: Exclude<RoomMessageType, (typeof SERVER_SENT)[number] | WorkerSent | SentByAccountDeletion | SentByRemoval> extends never ? true : never = true
 
     const LOBBY_SLOTS = ['2090-10-30T20:30', '2090-10-31T19:00']
     const team = (position: number): Place => ({ zone: 'team', team: position })
@@ -186,7 +188,8 @@ describe('Hidden wheel secrecy (#148)', () => {
       // game_drawn, #229, which the feed shows from the stop on, vetoes_revealed, #231, from the end of the Veto window on, coin_tossed,
       // #235, from the landing on, result_entered, #273, and result_corrected, #275). The rest come with #233 (bonus_veto_granted) and
       // #277 (event_finished): the finish is written only by the case that finishes the flow's Event, below.
-      const written = ACTIVITY_TYPES.filter(type => !['bonus_veto_granted', 'event_finished'].includes(type))
+      // `member_removed` (#697) is written by the Host's removal of a Member, which this flow never does: remove-member.test.ts pins the entry.
+      const written = ACTIVITY_TYPES.filter(type => !['bonus_veto_granted', 'event_finished', 'member_removed'].includes(type))
       clock.advance(WINDOW_MS + 10_000)
       expect(new Set((await activityOf(playerCookie, slug)).entries.map(entry => entry.type))).toEqual(new Set(written))
     })

@@ -4,13 +4,14 @@ import { canSeeLibrary } from '~~/shared/game'
 
 // The Game library (screen 23, `?s=lib`, #141, #142): every game, as cards from md up and as rows below. Only Users
 // with the Host permission and the Platform admin see it; for everyone else the page looks like any missing one.
-// The list, the search and the filters are the game browser's (#173); here its filters live in the address, so reload
-// and back keep them.
+// The list, the search and the filters are the game browser's (#173); here its filters and its sort (#901) live in the
+// address, so reload and back keep them.
 const { t } = useI18n()
 useHead({ title: () => t('nav.library') })
 const user = useAuthUser()
 const viewer = computed(() => canSeeLibrary(user.value))
 const filters = useRouteFilters()
+const sort = useRouteSort()
 </script>
 
 <template>
@@ -46,7 +47,9 @@ const filters = useRouteFilters()
 
       <GameBrowser
         v-model:filters="filters"
+        v-model:sort="sort"
         marks-events
+        marks-played
         card-notes="edit"
         :to="game => `/bibliothek/${game.id}`"
       >

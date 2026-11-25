@@ -2,7 +2,7 @@
 import type { ComponentPublicInstance } from 'vue'
 import type { RouteLocationRaw } from 'vue-router'
 import type { NotesDoc } from '~~/shared/notes-doc'
-import { NO_FILTERS, SUITABILITIES, filterGames, parsePlayerCount, sortTagsByLabel, type GameFilters, type GameView } from '~~/shared/game'
+import { NO_FILTERS, SUITABILITIES, filterGames, parseGameSort, parsePlayerCount, sortGames, sortTagsByLabel, type GameFilters, type GameSort, type GameView } from '~~/shared/game'
 import { CHIP_BUTTON, CHIP_OFF, CHIP_ON } from '~/utils/chip-look'
 
 // The one game browser (#173, review B4): the library page and both pool pickers show the Game library through it.
@@ -10,31 +10,40 @@ import { CHIP_BUTTON, CHIP_OFF, CHIP_ON } from '~/utils/chip-look'
 // states, loading, error, empty library, no match and results, as one state machine, and the paging of the results
 // (#369: 40 cards a page over the filtered list, more by a sentinel or „Mehr laden“). What differs is handed in: the
 // filter state (`v-model:filters`, the library binds it to the address, the picker keeps it local), `compact` (only the
-// search, „Alle“ and the Tag; the library page also has „Archiviert“, #467), `to` (the card links to the game), `#card-actions` (the picker's ＋ and ✕) and `#toolbar`
-// („Neues Spiel anlegen“, on the search row), `marksEvents` (#733, the library page's „in 2 Events“ on each card), `cardNotes` (#837, #859: the Notes button of each card whose game has notes, in the card's place, with the footer „Bearbeiten“ in the library and without it in the pickers) and `eventNotesOf` (#859, the picker's Event notes by game). The filtering is client side (`filterGames`), so it follows every
+// search, „Alle“ and the Tag; the library page also has „Archiviert“, #467; the „Spiele“ step adds „Spielerzahl“ and „Passt zu“ with `fitSelects`, #690), `to` (the card links to the game), `#card-actions` (the picker's ＋ and ✕) and `#toolbar`
+// („Neues Spiel anlegen“, on the search row), `marksEvents` (#733, the library page's „in 2 Events“ on each card), `marksPlayed` (#900, „zuletzt am …“ on each card: the library page and the „Spiele“ step), `cardNotes` (#837, #859: the Notes button of each card whose game has notes, in the card's place, with the footer „Bearbeiten“ in the library and without it in the pickers) and `eventNotesOf` (#859, the picker's Event notes by game). The filtering is client side (`filterGames`), so it follows every
 // keystroke. The grid from 600 px up (sm, #707) and the rows below are CSS (GameCard `responsive`), not `matchMedia`.
 const props = defineProps<{
   compact?: boolean
+  /** The step's browser shows „Spielerzahl“ and „Passt zu“ although `compact`, because it starts from the Event's preset (#690). */
+  fitSelects?: boolean
   /** Where a card leads; without it the cards are plain. */
   to?: (game: GameView) => RouteLocationRaw
   /** Each card says in how many live Events its game sits (#733): the library page only, the pickers leave it off. */
   marksEvents?: boolean
+  /** Each card says when its game was last played (#900): the library page and the „Spiele“ step, not the picker of the next game. The sort „Lange nicht gespielt“ shows with it (#901): a sort by a date no card shows would be unreadable. */
+  marksPlayed?: boolean
   /** Each card with Game notes carries the Notes button in its place (#837): `edit` adds the footer „Bearbeiten“ to the game's form (the library page), `view` has no footer (the pickers, #859). */
   cardNotes?: 'edit' | 'view'
   /** The Host's Event notes by game id (#859): read for the cards with `cardNotes` only, so the picker's cards show them with the Game notes. */
   eventNotesOf?: (gameId: string) => NotesDoc | null
 }>()
 const filters = defineModel<GameFilters>('filters', { required: true })
+// The order of the list (#901): no field of GameFilters, because it hides nothing („Alle“ leaves it, and no preset of the „Spiele“ step ends on it).
+// The library binds it to the address (`useRouteSort`); the step binds nothing, so the sort is local to the browser there.
+const sort = defineModel<GameSort>('sort', { default: 'name' })
 
 defineSlots<{
   'card-actions'?: (props: { game: GameView }) => unknown
   'toolbar'?: () => unknown
+  /** Between the filter row and the states: a line about the list (#690); it gets the browser's own list, `null` while it loads. */
+  'notice'?: (props: { games: GameView[] | null }) => unknown
   /** Beside the empty library and the no-match notice: the way to a new game. */
   'empty-action'?: () => unknown
 }>()
 
 const { t } = useI18n()
-const { games, tagsInUse, eventCounts, error, refresh } = useGameLibrary()
+const { games, tagsInUse, eventCounts, lastPlayed, error, refresh } = useGameLibrary()
 const { setArchived } = useGameArchive()
 
 const PLAYER_CHOICES = Array.from({ length: 24 }, (_, index) => index + 1)
@@ -48,14 +57,28 @@ const strayTag = computed(() => {
 })
 
 // The options of the three filter selects (FilterSelect, #362): the empty option is the „nothing chosen“ value ''.
-const playerOptions = computed(() => PLAYER_CHOICES.map(n => ({ value: String(n), label: t('library.players', { n }) })))
+// An active count above the 24 offered (the step's preset, or an old address) is shown as the value, like a stray Tag, but not offered (#690).
+const strayPlayers = computed(() => {
+  const { players } = filters.value
+  return players !== null && players > PLAYER_CHOICES.length ? players : null
+})
+const playerOptions = computed(() => [
+  ...PLAYER_CHOICES.map(n => ({ value: String(n), label: t('library.players', { n }) })),
+  ...(strayPlayers.value ? [{ value: String(strayPlayers.value), label: t('library.players', { n: strayPlayers.value }) }] : []),
+])
 const suitabilityOptions = computed(() => SUITABILITIES.map(suitability => ({ value: suitability, label: t(`library.suitability.${suitability}`) })))
 const tagChoices = computed(() => [
   ...tagOptions.value.map(tag => ({ value: tag.key, label: tag.label })),
   ...(strayTag.value ? [{ value: strayTag.value, label: strayTag.value }] : []),
 ])
+// The one option of the sort select besides „Name“, which is the empty option (#901).
+const sortOptions = computed(() => [{ value: 'last_played', label: t('library.sortLastPlayed') }])
 
-const shown = computed(() => filterGames(games.value ?? [], filters.value))
+// The sort runs after the search and the filters, and only where the dates show (`marksPlayed`, #901): the picker of the next game never sorts.
+const shown = computed(() => {
+  const found = filterGames(games.value ?? [], filters.value)
+  return props.marksPlayed ? sortGames(found, sort.value, lastPlayed.value) : found
+})
 // Loading means no list yet: a revalidation of a list we already hold shows no skeleton.
 const state = computed(() => {
   if (!games.value) return error.value ? 'error' : 'loading'
@@ -83,7 +106,8 @@ const remaining = computed(() => shown.value.length - visible.value.length)
 const anyTags = computed(() => shown.value.some(game => game.tags.length > 0))
 // Any change of the filters starts at the first page again (#369): after a search narrowed the list and „Alle“ widened it, 40 cards, not the 120 loaded before.
 // Compared by value, not by identity (#369): „Alle“ replaces the object with `{ ...NO_FILTERS }`, and with nothing chosen that click must keep the loaded cards; a deep watch would reset them.
-watch(() => JSON.stringify(filters.value), () => {
+// The sort starts the first page again too (#901), as a filter does.
+watch([() => JSON.stringify(filters.value), sort], () => {
   limit.value = PAGE_SIZE
 })
 
@@ -157,7 +181,7 @@ const GRID = 'sm:grid sm:grid-cols-[repeat(auto-fill,minmax(170px,1fr))] sm:item
         >
           {{ t('library.all') }}
         </button>
-        <template v-if="!compact">
+        <template v-if="!compact || fitSelects">
           <FilterSelect
             :model-value="filters.players === null ? '' : String(filters.players)"
             :options="playerOptions"
@@ -181,6 +205,14 @@ const GRID = 'sm:grid sm:grid-cols-[repeat(auto-fill,minmax(170px,1fr))] sm:item
           :aria-label="t('library.filterTag')"
           @update:model-value="set({ tag: $event || null })"
         />
+        <FilterSelect
+          v-if="marksPlayed"
+          :model-value="sort === 'name' ? '' : sort"
+          :options="sortOptions"
+          :empty-label="t('library.sortName')"
+          :aria-label="t('library.sort')"
+          @update:model-value="sort = parseGameSort($event)"
+        />
         <button
           v-if="!compact"
           type="button"
@@ -192,6 +224,11 @@ const GRID = 'sm:grid sm:grid-cols-[repeat(auto-fill,minmax(170px,1fr))] sm:item
         </button>
       </div>
     </div>
+
+    <slot
+      name="notice"
+      :games="games"
+    />
 
     <NoticeBanner
       v-if="state === 'error'"
@@ -262,6 +299,7 @@ const GRID = 'sm:grid sm:grid-cols-[repeat(auto-fill,minmax(170px,1fr))] sm:item
           layout="responsive"
           :to="to?.(game)"
           :in-events="marksEvents ? eventCounts[game.id] ?? 0 : 0"
+          :last-played="marksPlayed ? lastPlayed[game.id] ?? null : null"
           :notes="cardNotes ? game.notes : null"
           :event-notes="cardNotes && eventNotesOf ? eventNotesOf(game.id) : null"
           :tags-room="anyTags"
