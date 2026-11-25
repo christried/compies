@@ -1,7 +1,8 @@
-import { and, count, desc, eq, inArray, isNotNull, isNull } from 'drizzle-orm'
+import { and, count, desc, eq, inArray, isNull } from 'drizzle-orm'
 import type { GameEventRow, GameEvents } from '../../shared/game-events'
 import { eventGameNotes, eventPoolGames, events, rounds, type games } from '../db/schema'
 import type { Db } from './db'
+import { playedRound } from './library'
 
 /**
  * The Events of a game's User whose pool holds the game (#656, #843: an Event that only played it, outside its pool or before the game
@@ -16,7 +17,7 @@ export async function readGameEvents(db: Db, game: Pick<typeof games.$inferSelec
   const played = await db
     .select({ eventId: rounds.eventId, played: count() })
     .from(rounds)
-    .where(and(eq(rounds.gameId, game.id), inArray(rounds.eventId, ids), isNotNull(rounds.resultAt), isNull(rounds.putBackAt)))
+    .where(and(eq(rounds.gameId, game.id), inArray(rounds.eventId, ids), playedRound))
     .groupBy(rounds.eventId)
   const playedBy = new Map(played.map(row => [row.eventId, row.played]))
 

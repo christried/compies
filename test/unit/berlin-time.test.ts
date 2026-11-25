@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { berlinYear, formatFullDay, formatMonthYear, formatShortDay, formatSlotDay, formatSlotTime, formatSessionWhen, formatSlotWhen } from '../../app/utils/berlin-time'
+import { berlinYear, formatFullDay, formatMonthYear, formatShortDay, formatShortDayYear, formatSlotDay, formatSlotTime, formatSessionWhen, formatSlotWhen } from '../../app/utils/berlin-time'
 
 describe('berlin-time', () => {
   it('formats a day as weekday and day.month in Berlin time', () => {
@@ -18,6 +18,15 @@ describe('berlin-time', () => {
     expect(formatShortDay(new Date('2026-11-02T23:30:00Z'))).toBe('3. Nov.')
     // 23:30 UTC on New Year's Eve is already the new year in Berlin.
     expect(berlinYear(new Date('2025-12-31T23:30:00Z'))).toBe('2026')
+  })
+
+  it('formats a day with its short month and year in Berlin time, for „zuletzt am“ on the game card (#900)', () => {
+    // 23:30 UTC on 2 Nov is already the 3rd in Berlin.
+    expect(formatShortDayYear(new Date('2026-11-02T23:30:00Z'))).toBe('3. Nov. 2026')
+    // 23:30 UTC on New Year's Eve is already 1 Jan of the new year in Berlin: day and year both follow Berlin.
+    expect(formatShortDayYear(new Date('2025-12-31T23:30:00Z'))).toBe('1. Jan. 2026')
+    // de-DE abbreviates some months and not others: July stays whole.
+    expect(formatShortDayYear(new Date('2026-06-30T22:30:00Z'))).toBe('1. Juli 2026')
   })
 
   it('formats a month and year in Berlin time, for the game’s „Zuletzt aktualisiert“ (#805)', () => {
