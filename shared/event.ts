@@ -156,7 +156,7 @@ export interface MemberView {
   /** Empty for a Deleted User (`readPerson`); the client shows `shownPerson`. */
   name: string
   image: string | null
-  /** Present, and true, only for a Deleted User (#915, ADR 0020): their name and picture are cut, their Seat, team and Team word stay as stored. */
+  /** Present, and true, only for a Deleted User (#915, ADR 0020): their name and picture are cut, their Seat and team stay as stored, and their Team word is cleared (a finished Event from before 0.12 keeps its Team names in `event_teams.frozen_name`, #920). */
   deleted?: true
   isHost: boolean
   zone: PlaceZone

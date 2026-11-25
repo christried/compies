@@ -93,7 +93,7 @@ export async function deleteUser(db: Db, userId: string, now: Date): Promise<Use
 
     // Every Event, finished ones too; the Note is a column of the Vote.
     await tx.delete(pollVotes).where(eq(pollVotes.userId, userId))
-    // A finished Event keeps Seat and zone; its Team name was frozen at the Finish and is stored text.
+    // A finished Event keeps Seat and zone, and its Team word goes too. A finished Event from before 0.12 keeps its Team names in `event_teams.frozen_name`, which the deletion does not clear (§ 16 of the Datenschutzerklärung, #920).
     await tx.update(eventMembers).set({ teamWord: null }).where(and(eq(eventMembers.userId, userId), isNotNull(eventMembers.teamWord)))
     for (const membership of memberships) {
       if (membership.phase !== 'finished') await endMembership(tx, membership.eventId, userId)

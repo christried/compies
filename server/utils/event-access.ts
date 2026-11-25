@@ -119,7 +119,7 @@ export function afterCommit(event: H3Event, eventRow: Pick<EventRow, 'id'>, mess
   publishAfterResponse(event, eventRow.id, all.map(message => envelope(message, now)))
   // A named send never adds `event.changed`: it reaches some Users only, and the broadcast above already says the Event changed (#227).
   for (const group of named) publishAfterResponse(event, eventRow.id, group.messages.map(message => envelope(message, now)), group.to)
-  // Last messages go out after everything else, so a closed User has had the broadcast's order up to their last message (#681).
+  // The close of a closed User goes out with the others: the fetches are independent, so no order is kept between them. A closed User's page reads the Event again after `event.changed` either way (#681).
   for (const group of closing) closeAfterResponse(event, eventRow.id, group.users, group.messages.map(message => envelope(message, now)))
 }
 
