@@ -120,7 +120,7 @@ const SHARED: Record<ApiErrorCode, string | null> = {
   wheel_options_without_wheel: null, // only a draft with wheel options in a mode without a wheel: a defensive refusal
   invalid_cursor: null, // the Activity feed's cursor is the id the client was given
   no_live_connection: null, // never copy: useEventRoom takes it as no live connection and polls
-  account_games_held: null, // rare (ADR 0018 rules it out): the Profil page's „Konto löschen“ shows its generic notice (0.21-12, #918)
+  account_games_held: null, // rare (ADR 0018 rules it out): the Profil page's „Konto löschen“ sheet shows its own line, `accountDelete.failed` (#918)
 }
 
 /** Words that differ from SHARED on one screen, as data. Each entry says where it shows. */
