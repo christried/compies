@@ -1,7 +1,8 @@
-import { and, desc, eq, isNull, sql } from 'drizzle-orm'
-import { messages } from '../db/schema'
+import { and, desc, eq, inArray, isNull, notExists, sql } from 'drizzle-orm'
+import { eventMembers, messages, users } from '../db/schema'
 import { isUuid } from '../domain/uuid'
-import type { LiveMessage, Message, MessagePage } from '../../shared/chat'
+import type { LiveMessage, Message, MessagePage, WriterView } from '../../shared/chat'
+import { readPerson } from '../../shared/auth'
 import { parseMessageText } from '../../shared/message-text'
 import { asRecord } from '../../shared/record'
 import type { Db } from './db'
@@ -17,10 +18,38 @@ export function messageOfRow(row: typeof messages.$inferSelect): Message {
   return row.text !== null ? { ...base, text: row.text } : { ...base, text: null, deletedBy: row.deletedBy! }
 }
 
+/** The columns of a User the Chat's read takes (`readPerson`): nothing else of a User leaves the server here. */
+const writerColumns = {
+  id: users.id,
+  name: users.name,
+  displayName: users.displayName,
+  image: users.image,
+  deletedAt: users.deletedAt,
+  // 0.21-2 (#678): add profileImageKey: users.profileImageKey here.
+}
+
+/**
+ * The writers among `writerIds` who are no Member of this Event (#916, spec #907 § „A Message's writer who is no Member“), each through `readPerson`:
+ * a Deleted User is the mark alone, anybody else their shown name and picture. One query for all of them; none for an empty list. A writer who is a
+ * Member is not here: the Event read carries the Members.
+ */
+export async function readWriters(db: Db, eventId: string, writerIds: string[]): Promise<Record<string, WriterView>> {
+  if (writerIds.length === 0) return {}
+  const rows = await db
+    .select(writerColumns)
+    .from(users)
+    .where(and(
+      inArray(users.id, writerIds),
+      notExists(db.select({ userId: eventMembers.userId }).from(eventMembers).where(and(eq(eventMembers.eventId, eventId), eq(eventMembers.userId, users.id)))),
+    ))
+  return Object.fromEntries(rows.map(row => [row.id, readPerson(row)]))
+}
+
 /**
  * One page of an Event's Chat, newest first (keyset by `(written_at, id)`, the index of #757). `before` is the id of the oldest Message the caller
  * already has; the page holds the Messages older than it. `next` is that cursor for the page after, null at the oldest Message. A `before` that is no
  * Message of this Event is a 400, as the feed's is. A deleted Message is its line (messageOfRow). The read asks no clock: nothing in the Chat waits for an instant.
+ * `writers` carries the writers of the page's Messages who are no Member (readWriters), taken from the page itself, not the look-ahead row (#916).
  */
 export async function readMessagePage(db: Db, eventId: string, before: string | undefined, limit: number): Promise<MessagePage> {
   if (before !== undefined) {
@@ -36,7 +65,8 @@ export async function readMessagePage(db: Db, eventId: string, before: string | 
     .orderBy(desc(messages.writtenAt), desc(messages.id))
     .limit(limit + 1)
   const page = rows.slice(0, limit)
-  return { messages: page.map(messageOfRow), next: rows.length > limit ? page[page.length - 1]!.id : null }
+  const writers = await readWriters(db, eventId, [...new Set(page.map(row => row.writerId))])
+  return { messages: page.map(messageOfRow), next: rows.length > limit ? page[page.length - 1]!.id : null, writers }
 }
 
 /**
