@@ -1427,6 +1427,18 @@ describe('ChatPanel', () => {
       expect(texts(wrapper)).toEqual(['Hallo', 'Gelöscht'])
     })
 
+    // A finished Event keeps a Deleted User's Seat (ADR 0013, amendment of 2026-11-20): no id leaves the list, the Member turns `deleted` (0.21-20, #992).
+    it('reads its newest page again when a Member turns deleted and stays in the Members, and shows their Messages as „Gelöschtes Konto“ (0.21-20, #992)', async () => {
+      const { wrapper, served } = await mountChat([live('a', SANNE, 0, 'Hallo'), gone('b', SANNE, 30, 'writer')], { viewerId: KITTY })
+      expect(wrapper.find('b').text()).toBe('Sanne')
+
+      served.writers[SANNE] = { name: '', image: null, deleted: true }
+      await wrapper.setProps({ members: members.map(member => member.id === SANNE ? { ...member, name: '', image: null, deleted: true as const } : member) })
+      await vi.waitFor(() => expect(served.reads).toBe(2))
+      await vi.waitFor(() => expect(wrapper.find('b').text()).toBe('Gelöschtes Konto'))
+      expect(wrapper.text()).not.toContain('Sanne')
+    })
+
     it('reads nothing when the Members change without losing one', async () => {
       const { wrapper, served } = await mountChat([live('a', SANNE, 0)])
 

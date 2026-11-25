@@ -3,8 +3,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import EventPage from '~/pages/e/[slug]/index.vue'
 import type { RoomSocketOptions } from '~/utils/room-socket'
 import { envelope, type RoomMessage } from '~~/shared/realtime'
+import type { MemberView } from '~~/shared/event'
 import { kitty, signInAs } from './auth'
-import { restoreScreen, stubScreen, view } from './event-page'
+import { LARSI, memberView, restoreScreen, SANNE, stubScreen, view } from './event-page'
 
 // Where the Activity feed lives (#166, 11-event-seite § SidePanel and § TabBar): in the side panel from 980 px, as the one
 // tab „Aktivität“ of the tabs pattern, and on a phone as its own view behind the tab bar, which counts what arrived
@@ -28,7 +29,7 @@ let testNumber = 0
 function serveEvent() {
   testNumber += 1
   const slug = `activity-views-${testNumber}`
-  const served = { feedReads: 0, chatReads: 0 }
+  const served = { feedReads: 0, chatReads: 0, members: undefined as MemberView[] | undefined }
   // The Chat's read (#761): the side panel opens on the Chat, and an unregistered read would just fail quietly.
   registerEndpoint(`/api/e/${slug}/messages`, {
     method: 'GET',
@@ -37,7 +38,7 @@ function serveEvent() {
       return { messages: [], next: null }
     },
   })
-  registerEndpoint(`/api/e/${slug}`, { method: 'GET', handler: () => ({ ...view(slug, []), event: { slug, name: 'Freitags-Zocken', phase: 'poll', isHost: false } }) })
+  registerEndpoint(`/api/e/${slug}`, { method: 'GET', handler: () => ({ ...view(slug, [], { members: served.members }), event: { slug, name: 'Freitags-Zocken', phase: 'poll', isHost: false } }) })
   registerEndpoint(`/api/e/${slug}/activity`, {
     method: 'GET',
     handler: () => {
@@ -138,6 +139,43 @@ describe('the Activity feed on the Event page', () => {
       const { page } = await mountEvent()
 
       await vi.waitFor(() => expect(page.findAll('[role="tabpanel"]')[1]!.text()).toContain('Noch nichts passiert. Bald aber bestimmt. Vielleicht.'))
+    })
+  })
+
+  // A finished Event keeps a Deleted User's Seat (ADR 0013, amendment of 2026-11-20): the Member stays in the Members and turns `deleted`, so the feed
+  // reads again for that, and for no other change of the Members (0.21-20, #992; the leaving of a Member is #990's, tested on the component).
+  describe('when a Member turns deleted', () => {
+    beforeEach(() => stubScreen(true))
+
+    const sanne = () => memberView({ id: SANNE, name: 'Sanne', zone: 'stands' })
+    const members = (overrides: Partial<MemberView> = {}) => [memberView({ id: kitty.id, name: 'Kitty' }), memberView({ id: LARSI, name: 'Larsi' }), { ...sanne(), ...overrides }]
+
+    it('reads the first page again when a Member stays in the list and is marked deleted', async () => {
+      const event = serveEvent()
+      event.served.members = members()
+      await mountSuspended(EventPage, { route: `/e/${event.slug}` })
+      await vi.waitFor(() => expect(sockets.length).toBeGreaterThan(0))
+      await vi.waitFor(() => expect(event.served.feedReads).toBe(1))
+
+      event.served.members = members({ name: '', image: null, deleted: true })
+      lastSocket().options.onMessage(JSON.stringify(envelope({ type: 'event.changed' } as RoomMessage, Date.now())))
+
+      await vi.waitFor(() => expect(event.served.feedReads).toBe(2))
+    })
+
+    it('reads nothing again when the Members change without losing or marking one', async () => {
+      const event = serveEvent()
+      event.served.members = members()
+      await mountSuspended(EventPage, { route: `/e/${event.slug}` })
+      await vi.waitFor(() => expect(sockets.length).toBeGreaterThan(0))
+      await vi.waitFor(() => expect(event.served.feedReads).toBe(1))
+
+      event.served.members = [...members(), memberView({ id: 'u-neu', name: 'Neu' })]
+      lastSocket().options.onMessage(JSON.stringify(envelope({ type: 'event.changed' } as RoomMessage, Date.now())))
+      await settle()
+      await settle()
+
+      expect(event.served.feedReads).toBe(1)
     })
   })
 
