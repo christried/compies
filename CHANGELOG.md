@@ -5,6 +5,7 @@
 ### Neu
 
 - Jede Spielkarte sagt dir jetzt, wann du das Spiel zuletzt gespielt hast: in deiner Bibliothek und im Schritt „Spiele“ ([#900](https://github.com/christried/compies/issues/900)).
+- Der Schritt „Spiele“ startet mit den Spielen, die zu deinem Event passen: „Spielerzahl“ und „Passt zu“ sind nach Teams und Teamgröße eingestellt, und eine Zeile sagt, wie viele Spiele das ausblendet ([#690](https://github.com/christried/compies/issues/690)).
 
 ### Geändert
 

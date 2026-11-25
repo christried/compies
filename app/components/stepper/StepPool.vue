@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Plus, X } from '@lucide/vue'
 import { addPoolGame, settingsOf, togglePoolGame, wheelPoolSize, type EventDraft, type StepLocks } from '~/utils/event-draft'
-import { NO_FILTERS, type GameFilters, type GameView, type PoolGame } from '~~/shared/game'
+import { NO_FILTERS, eventPreset, filterGames, type GameFilters, type GameView, type PoolGame } from '~~/shared/game'
 import { hasWheel, poolHint } from '~~/shared/settings'
 
 // The Game pool (#146; the Tiebreaker pool is gone, #279). The Host picks games in the game browser (#173, its filters are
@@ -23,7 +23,26 @@ useStepBlocker(blocker)
 const games = computed(() => draft.value.pool)
 const wheel = computed(() => hasWheel(draft.value.settings.selectionMode))
 const library = computed(() => props.locks?.library !== false)
-const filters = ref<GameFilters>({ ...NO_FILTERS })
+// The browser starts from the Event (#690): „Spielerzahl“ and „Passt zu“ at the team count times Team size and its kind of play.
+// The step is mounted fresh on every entry, so a changed team count reaches it through the draft; `following` holds until the Host
+// changes one of the three filters or clicks „Alle“. The search does not end it: it narrows the preset's list, and the line stays
+// for the way to a game the preset hides.
+const preset = computed(() => eventPreset(draft.value.settings.teamCount, draft.value.settings.teamSize))
+const ENDS_PRESET = ['players', 'suitability', 'tag'] as const
+const own = ref<GameFilters>({ ...NO_FILTERS })
+const following = ref(true)
+const filters = computed<GameFilters>({
+  get: () => (following.value ? { ...own.value, ...preset.value } : own.value),
+  set(next) {
+    if (following.value && ENDS_PRESET.some(field => next[field] !== filters.value[field])) following.value = false
+    own.value = next
+  },
+})
+// What the preset hides, for the line: the normal games it keeps out, never counting the search or the Tag.
+function hiddenCount(games: GameView[]): number {
+  const fitting = filterGames(games, { ...NO_FILTERS, ...preset.value })
+  return games.filter(game => !game.archived).length - fitting.length
+}
 const pooled = computed(() => new Set(games.value.map(game => game.id)))
 // The games that are on the wheel (#726): an Archived game is listed with its mark and kept, but the heading and the hint count the rest.
 const onWheel = computed(() => wheelPoolSize(draft.value))
@@ -132,9 +151,29 @@ function onUseExisting(game: GameView) {
       v-if="library"
       v-model:filters="filters"
       compact
+      fit-selects
       marks-played
       card-notes="view"
     >
+      <template #notice="{ games: loaded }">
+        <NoticeBanner
+          v-if="following && loaded && loaded.length > 0"
+          tone="info"
+        >
+          {{ t('stepper.pool.presetLine', { suitability: t(`library.suitability.${preset.suitability}`), players: t('library.players', { n: preset.players }) }) }}
+          <template v-if="hiddenCount(loaded) > 0">
+            {{ t('stepper.pool.presetHidden', { n: hiddenCount(loaded) }, hiddenCount(loaded)) }}
+          </template>
+          <template #action>
+            <AppButton
+              variant="secondary"
+              @click="filters = { ...NO_FILTERS }"
+            >
+              {{ t('stepper.pool.presetShowAll') }}
+            </AppButton>
+          </template>
+        </NoticeBanner>
+      </template>
       <template #toolbar>
         <AppButton
           variant="secondary"

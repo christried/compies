@@ -28,9 +28,10 @@ function game(n: number, name: string, overrides: Partial<GameView> = {}): GameV
     youtubeId: null,
     clipStart: 0,
     clipLength: 30,
-    playersMin: null,
-    playersMax: null,
-    suitabilities: [],
+    // The step presets the browser to the default Event, Teams and 6 players (#690): a game with no count would be hidden.
+    playersMin: 2,
+    playersMax: 8,
+    suitabilities: ['teams'],
     updatedAt: '2026-01-15T10:00:00.000Z',
     notes: null,
     tags: [],
@@ -256,7 +257,7 @@ describe('the pool steps', () => {
     })
 
     describe('the hint', () => {
-      const seventeen = Array.from({ length: 17 }, (_, index) => game(100 + index, `Spiel ${String(index + 1).padStart(2, '0')}`))
+      const seventeen = Array.from({ length: 17 }, (_, index) => game(100 + index, `Spiel ${String(index + 1).padStart(2, '0')}`, { playersMax: 24 }))
 
       async function chooseLuckyWheel(page: Page) {
         await page.get('input[type="text"]').setValue('Freitags-Zocken')
@@ -768,7 +769,7 @@ describe('the game browser in the pool steps (#173)', () => {
     useState('game-library').value = null
   })
 
-  it('is the compact browser: the search, „Alle“ and the Tag, without the player count and „Passt zu“ (#336, #724)', async () => {
+  it('is the step\'s browser: the search, „Alle“, „Spielerzahl“, „Passt zu“ and the Tag, without „Archiviert“ (#336, #724, #690)', async () => {
     const page = await mountCreate()
     await toPoolStep(page)
 
@@ -779,8 +780,9 @@ describe('the game browser in the pool steps (#173)', () => {
     expect([...tag.element.querySelectorAll('option')].map(option => option.textContent!.trim())).toEqual(['Tag', 'Retro'])
     const all = [...chips].find(chip => chip.textContent!.trim() === 'Alle')!
     expect(all.compareDocumentPosition(tag.element) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
-    expect(page.find('select[aria-label="Spielerzahl"]').exists()).toBe(false)
-    expect(page.find('select[aria-label="Passt zu"]').exists()).toBe(false)
+    expect(page.find('select[aria-label="Spielerzahl"]').exists()).toBe(true)
+    expect(page.find('select[aria-label="Passt zu"]').exists()).toBe(true)
+    expect(page.findAll('button').map(button => button.text())).not.toContain('Archiviert')
   })
 
   it('shows no „in 2 Events“ on a card: the marker is the library page\'s (#733)', async () => {

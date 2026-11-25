@@ -10,11 +10,13 @@ import { CHIP_BUTTON, CHIP_OFF, CHIP_ON } from '~/utils/chip-look'
 // states, loading, error, empty library, no match and results, as one state machine, and the paging of the results
 // (#369: 40 cards a page over the filtered list, more by a sentinel or „Mehr laden“). What differs is handed in: the
 // filter state (`v-model:filters`, the library binds it to the address, the picker keeps it local), `compact` (only the
-// search, „Alle“ and the Tag; the library page also has „Archiviert“, #467), `to` (the card links to the game), `#card-actions` (the picker's ＋ and ✕) and `#toolbar`
+// search, „Alle“ and the Tag; the library page also has „Archiviert“, #467; the „Spiele“ step adds „Spielerzahl“ and „Passt zu“ with `fitSelects`, #690), `to` (the card links to the game), `#card-actions` (the picker's ＋ and ✕) and `#toolbar`
 // („Neues Spiel anlegen“, on the search row), `marksEvents` (#733, the library page's „in 2 Events“ on each card), `marksPlayed` (#900, „zuletzt am …“ on each card: the library page and the „Spiele“ step), `cardNotes` (#837, #859: the Notes button of each card whose game has notes, in the card's place, with the footer „Bearbeiten“ in the library and without it in the pickers) and `eventNotesOf` (#859, the picker's Event notes by game). The filtering is client side (`filterGames`), so it follows every
 // keystroke. The grid from 600 px up (sm, #707) and the rows below are CSS (GameCard `responsive`), not `matchMedia`.
 const props = defineProps<{
   compact?: boolean
+  /** The step's browser shows „Spielerzahl“ and „Passt zu“ although `compact`, because it starts from the Event's preset (#690). */
+  fitSelects?: boolean
   /** Where a card leads; without it the cards are plain. */
   to?: (game: GameView) => RouteLocationRaw
   /** Each card says in how many live Events its game sits (#733): the library page only, the pickers leave it off. */
@@ -31,6 +33,8 @@ const filters = defineModel<GameFilters>('filters', { required: true })
 defineSlots<{
   'card-actions'?: (props: { game: GameView }) => unknown
   'toolbar'?: () => unknown
+  /** Between the filter row and the states: a line about the list (#690); it gets the browser's own list, `null` while it loads. */
+  'notice'?: (props: { games: GameView[] | null }) => unknown
   /** Beside the empty library and the no-match notice: the way to a new game. */
   'empty-action'?: () => unknown
 }>()
@@ -50,7 +54,15 @@ const strayTag = computed(() => {
 })
 
 // The options of the three filter selects (FilterSelect, #362): the empty option is the „nothing chosen“ value ''.
-const playerOptions = computed(() => PLAYER_CHOICES.map(n => ({ value: String(n), label: t('library.players', { n }) })))
+// An active count above the 24 offered (the step's preset, or an old address) is shown as the value, like a stray Tag, but not offered (#690).
+const strayPlayers = computed(() => {
+  const { players } = filters.value
+  return players !== null && players > PLAYER_CHOICES.length ? players : null
+})
+const playerOptions = computed(() => [
+  ...PLAYER_CHOICES.map(n => ({ value: String(n), label: t('library.players', { n }) })),
+  ...(strayPlayers.value ? [{ value: String(strayPlayers.value), label: t('library.players', { n: strayPlayers.value }) }] : []),
+])
 const suitabilityOptions = computed(() => SUITABILITIES.map(suitability => ({ value: suitability, label: t(`library.suitability.${suitability}`) })))
 const tagChoices = computed(() => [
   ...tagOptions.value.map(tag => ({ value: tag.key, label: tag.label })),
@@ -159,7 +171,7 @@ const GRID = 'sm:grid sm:grid-cols-[repeat(auto-fill,minmax(170px,1fr))] sm:item
         >
           {{ t('library.all') }}
         </button>
-        <template v-if="!compact">
+        <template v-if="!compact || fitSelects">
           <FilterSelect
             :model-value="filters.players === null ? '' : String(filters.players)"
             :options="playerOptions"
@@ -194,6 +206,11 @@ const GRID = 'sm:grid sm:grid-cols-[repeat(auto-fill,minmax(170px,1fr))] sm:item
         </button>
       </div>
     </div>
+
+    <slot
+      name="notice"
+      :games="games"
+    />
 
     <NoticeBanner
       v-if="state === 'error'"
