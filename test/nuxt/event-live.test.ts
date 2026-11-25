@@ -30,11 +30,12 @@ let testNumber = 0
 function serveLive() {
   testNumber += 1
   const slug = `live-${testNumber}`
-  const served = { reads: 0, tickets: 0, name: 'Freitags-Zocken' }
+  const served = { reads: 0, tickets: 0, name: 'Freitags-Zocken', status: null as number | null }
   registerEndpoint(`/api/e/${slug}`, {
     method: 'GET',
     handler: () => {
       served.reads += 1
+      if (served.status) throw createError({ statusCode: served.status, statusMessage: 'gone' })
       return { ...view(slug, []), event: { slug, name: served.name, phase: 'poll', isHost: false } }
     },
   })
@@ -171,6 +172,26 @@ describe('the live Event page', () => {
     await settle()
     lastSocket().options.onOpen()
     await vi.waitFor(() => expect(served.reads).toBe(before + 2))
+  })
+
+  // Once the 410 state shows, the room is stopped: no read of the Event, no room ticket, and no reconnect that asks for one (#914).
+  it('stops the room once a Member\'s page shows Event gelöscht: no read, no ticket, the socket closed (#914)', async () => {
+    const { served, page } = await mountLive()
+    served.status = 410
+    sendMessage('event.changed')
+    await vi.waitFor(() => expect(page.get('h1').text()).toBe('Event gelöscht'))
+    await settle()
+    const reads = served.reads
+    const tickets = served.tickets
+
+    window.dispatchEvent(new Event('focus'))
+    lastSocket().options.onClose()
+    await settle()
+    await settle()
+
+    expect(served.reads).toBe(reads)
+    expect(served.tickets).toBe(tickets)
+    expect(lastSocket().close).toHaveBeenCalled()
   })
 
   it('closes the socket when the page goes away', async () => {
