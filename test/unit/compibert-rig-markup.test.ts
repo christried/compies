@@ -58,6 +58,25 @@ describe('rigMarkup', () => {
   })
 })
 
+// The clap's mitts (#928) exist on the head asset only: the full figure (and so the bust) has arms, the head crop has none to clap with.
+describe('the clap\'s mitts', () => {
+  const PARTS = ['cb-hands', 'cb-hand-l', 'cb-hand-r', 'cb-clapfx']
+
+  it.each(PARTS)('the head asset has %s', (part) => {
+    expect(HEAD).toContain(`class="${part}"`)
+  })
+
+  it.each(PARTS)('the full asset has no %s', (part) => {
+    expect(FULL).not.toContain(part)
+  })
+
+  it('starts hidden: the group and the impact lines have opacity 0, and the group sits inside the fx group', () => {
+    expect(HEAD).toMatch(/<g class="cb-hands" style="opacity:0">/)
+    expect(HEAD).toMatch(/<path class="cb-clapfx"[^>]*opacity:0/)
+    expect(HEAD).toMatch(/<g class="cb-fx">.*<g class="cb-hands"/)
+  })
+})
+
 describe('viewWidth', () => {
   it.each([['full', 404], ['head', 192], ['bust', 254]] as const)('is the width of the %s variant\'s viewBox: %i', (variant, width) => {
     const written = rigMarkup(FULL, variant, 'cbA_').match(/viewBox="([^"]*)"/)![1]!

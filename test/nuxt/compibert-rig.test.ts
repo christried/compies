@@ -5,6 +5,7 @@ import { defineComponent, h, nextTick, ref } from 'vue'
 import CompibertRig from '~/components/CompibertRig.vue'
 import { RIG_STATES, type RigState, type RigVariant } from '~/utils/compibert-rig'
 import { loadGsap } from '~/utils/gsap'
+import type { Reaction } from '~/utils/rig-reaction'
 import { stubInView } from './in-view'
 import { motion } from './motion'
 
@@ -25,7 +26,7 @@ type Page = Awaited<ReturnType<typeof mountSuspended<typeof CompibertRig>>>
 
 const pages: Page[] = []
 
-interface Props { state?: RigState, variant?: RigVariant, size?: number, look?: number | null, micro?: boolean, hopsFor?: number, rim?: boolean }
+interface Props { state?: RigState, variant?: RigVariant, size?: number, look?: number | null, micro?: boolean, hopsFor?: number, rim?: boolean, reaction?: Reaction | null }
 
 async function mountRig(props: Props = {}) {
   const page = await mountSuspended(CompibertRig, { props })
@@ -704,5 +705,331 @@ describe('the Tour\'s face: the end\'s hops and the wave (#460)', () => {
 
     await vi.waitFor(() => expect(turn(page, 'head')).toBeCloseTo(-6, 0), { timeout: 3000 })
     expect(shift(page, 'brow-left').y).toBeCloseTo(-6, 0)
+  })
+})
+
+// Four more states (#928, 0.23 „Auftritt“): angry, sad, clap and roar. Each moves under full motion and holds a recognisable pose under reduced motion.
+
+/** An element of the figure by its class (the fx parts have none of the `compibert-` prefix). */
+const part = (page: Pick<Page, 'get'>, name: string) => page.get(`.${name}`)
+/** Transform and style of an fx part, which GSAP writes as attributes: what a viewer sees of it. */
+const looks = (page: Pick<Page, 'get'>, name: string) => `${part(page, name).attributes('transform')}|${part(page, name).attributes('style')}`
+const opacityOf = (page: Pick<Page, 'get'>, name: string) => Number(/opacity:\s*([\d.]+)/.exec(part(page, name).attributes('style') ?? '')?.[1] ?? 'NaN')
+/** The pose of the parts a reduced rig must hold still (the head crop has no arms, so a part that is not there counts as one). */
+const held = (page: Pick<Page, 'find'>) => ['arm-left', 'arm-right', 'head', 'torso', 'root'].map((name) => {
+  const element = page.find(`.compibert-${name}`)
+  return element.exists() ? element.attributes('transform') : 'none'
+}).join('|')
+
+describe.each(['full', 'head', 'bust'] as const)('the new states on the %s variant (#928)', (variant) => {
+  it.each(['angry', 'sad', 'clap', 'roar'] as const)('shows %s without a complaint', async (state) => {
+    stubInView()
+    const errors = vi.spyOn(console, 'error')
+    const warnings = vi.spyOn(console, 'warn')
+    const page = await mountRig({ variant, state })
+
+    await ready(page)
+    await pause(500)
+
+    expect(attribute(page, 'data-state')).toBe(state)
+    expect(errors).not.toHaveBeenCalled()
+    expect(warnings).not.toHaveBeenCalled()
+  })
+})
+
+describe('angry (#928)', () => {
+  it('shows the anger mark and throbs it under full motion', async () => {
+    stubInView()
+    motion('full')
+    const page = await mountRig({ variant: 'head', state: 'angry' })
+    await ready(page)
+
+    await vi.waitFor(() => expect(opacityOf(page, 'cb-anger')).toBeGreaterThan(0), { timeout: 3000 })
+    const marks = await sample(() => looks(page, 'cb-anger'), 1200)
+    expect(marks.size).toBeGreaterThanOrEqual(3)
+    expect(turn(page, 'brow-left')).toBeCloseTo(16, 0)
+  })
+
+  it('holds the pose under reduced motion: the mark stands at full opacity, nothing throbs or roars', async () => {
+    stubInView()
+    motion('reduced')
+    const page = await mountRig({ variant: 'head', state: 'angry' })
+    await ready(page)
+    await pause(1000)
+
+    const first = `${held(page)}|${looks(page, 'cb-anger')}`
+    await pause(500)
+
+    expect(attribute(page, 'data-held')).toBe('true')
+    expect(opacityOf(page, 'cb-anger')).toBe(1)
+    expect(`${held(page)}|${looks(page, 'cb-anger')}`).toBe(first)
+  })
+})
+
+describe('sad (#928)', () => {
+  it('lets a tear fall under full motion', async () => {
+    stubInView()
+    motion('full')
+    const page = await mountRig({ variant: 'head', state: 'sad' })
+    await ready(page)
+
+    const tears = await sample(() => looks(page, 'cb-tear'), 1500)
+    expect(tears.size).toBeGreaterThanOrEqual(3)
+    expect(turn(page, 'brow-left')).toBeCloseTo(-14, 0)
+  })
+
+  it('holds the pose under reduced motion: the head leans, the tear does not fall', async () => {
+    stubInView()
+    motion('reduced')
+    const page = await mountRig({ variant: 'head', state: 'sad' })
+    await ready(page)
+    await pause(1000)
+
+    const first = `${held(page)}|${looks(page, 'cb-tear')}`
+    await pause(500)
+
+    expect(attribute(page, 'data-held')).toBe('true')
+    expect(turn(page, 'head')).toBeCloseTo(12, 0)
+    expect(`${held(page)}|${looks(page, 'cb-tear')}`).toBe(first)
+  })
+})
+
+describe('clap (#928)', () => {
+  it('claps the arms under full motion', async () => {
+    stubInView()
+    motion('full')
+    const page = await mountRig({ state: 'clap' })
+    await ready(page)
+
+    const arms = await sample(() => pose(page, 'arm-left'), 1200)
+    expect(arms.size).toBeGreaterThanOrEqual(3)
+  })
+
+  it('shows the mitts on the head crop and moves them together', async () => {
+    stubInView()
+    motion('full')
+    const page = await mountRig({ variant: 'head', state: 'clap' })
+    await ready(page)
+
+    await vi.waitFor(() => expect(opacityOf(page, 'cb-hands')).toBe(1), { timeout: 3000 })
+    const mitts = await sample(() => looks(page, 'cb-hand-l'), 1200)
+    expect(mitts.size).toBeGreaterThanOrEqual(3)
+  })
+
+  it('holds the pose under reduced motion: the mitts stand shown and still', async () => {
+    stubInView()
+    motion('reduced')
+    const page = await mountRig({ variant: 'head', state: 'clap' })
+    await ready(page)
+    await pause(1000)
+
+    const first = `${held(page)}|${looks(page, 'cb-hands')}|${looks(page, 'cb-hand-l')}|${looks(page, 'cb-hand-r')}`
+    await pause(500)
+
+    expect(attribute(page, 'data-held')).toBe('true')
+    expect(opacityOf(page, 'cb-hands')).toBe(1)
+    expect(`${held(page)}|${looks(page, 'cb-hands')}|${looks(page, 'cb-hand-l')}|${looks(page, 'cb-hand-r')}`).toBe(first)
+  })
+
+  it('hides the mitts again on the next state', async () => {
+    stubInView()
+    motion('full')
+    const page = await mountRig({ variant: 'head', state: 'clap' })
+    await ready(page)
+    await vi.waitFor(() => expect(opacityOf(page, 'cb-hands')).toBe(1), { timeout: 3000 })
+
+    await page.setProps({ state: 'idle' })
+
+    await vi.waitFor(() => expect(opacityOf(page, 'cb-hands')).toBe(0), { timeout: 3000 })
+  })
+
+  it('has no mitts on the full figure, and still claps', async () => {
+    stubInView()
+    const page = await mountRig({ state: 'clap' })
+    await ready(page)
+
+    expect(page.find('.cb-hands').exists()).toBe(false)
+  })
+})
+
+describe('roar (#928)', () => {
+  it('shakes the head under full motion', async () => {
+    stubInView()
+    motion('full')
+    const page = await mountRig({ variant: 'head', state: 'roar' })
+    await ready(page)
+
+    const xs = await sample(() => String(Math.round(shift(page, 'head').x * 10)), 2000)
+    expect(xs.size).toBeGreaterThanOrEqual(3)
+  })
+
+  it('holds the roar peak under reduced motion: the mouth open, the head thrown back, no shake', async () => {
+    stubInView()
+    motion('reduced')
+    const page = await mountRig({ variant: 'head', state: 'roar' })
+    await ready(page)
+    await pause(1000)
+
+    const first = held(page)
+    await pause(500)
+
+    expect(attribute(page, 'data-held')).toBe('true')
+    expect(opacityOf(page, 'cb-m[data-m="roar"]')).toBe(1)
+    expect(turn(page, 'head')).toBeCloseTo(9, 0)
+    expect(held(page)).toBe(first)
+  })
+})
+
+describe('a reaction (#928)', () => {
+  const stateOf = (page: Page) => attribute(page, 'data-state')
+
+  it.each(['full', 'reduced'] as const)('shows over the base state and returns to it after its length, in %s motion', async (setting) => {
+    stubInView()
+    motion(setting)
+    const page = await mountRig({ state: 'idle', variant: 'head' })
+    await ready(page)
+
+    await page.setProps({ reaction: { state: 'clap', seconds: 0.4 } })
+
+    expect(stateOf(page)).toBe('clap')
+    await pause(150)
+    expect(stateOf(page)).toBe('clap')
+    await vi.waitFor(() => expect(stateOf(page)).toBe('idle'), { timeout: 2000 })
+  })
+
+  it('leaves the pose of the base after it: the clap\'s mitts are gone', async () => {
+    stubInView()
+    motion('full')
+    const page = await mountRig({ state: 'idle', variant: 'head' })
+    await ready(page)
+
+    await page.setProps({ reaction: { state: 'clap', seconds: 0.5 } })
+    await vi.waitFor(() => expect(opacityOf(page, 'cb-hands')).toBe(1), { timeout: 3000 })
+    await vi.waitFor(() => expect(stateOf(page)).toBe('idle'), { timeout: 2000 })
+
+    await vi.waitFor(() => expect(opacityOf(page, 'cb-hands')).toBe(0), { timeout: 3000 })
+  })
+
+  it('drops a lower one while a higher runs: the wave over a sad', async () => {
+    stubInView()
+    const page = await mountRig({ state: 'idle', variant: 'head' })
+    await ready(page)
+    await page.setProps({ reaction: { state: 'sad', seconds: 0.6 } })
+
+    await page.setProps({ reaction: { state: 'wave', seconds: 3 } })
+
+    expect(stateOf(page)).toBe('sad')
+    await vi.waitFor(() => expect(stateOf(page)).toBe('idle'), { timeout: 2000 })
+    await pause(300)
+    expect(stateOf(page)).toBe('idle')
+  })
+
+  it('is replaced by an equal one, with its own length: a clap over a laugh', async () => {
+    stubInView()
+    const page = await mountRig({ state: 'idle', variant: 'head' })
+    await ready(page)
+    await page.setProps({ reaction: { state: 'laugh', seconds: 5 } })
+
+    await page.setProps({ reaction: { state: 'clap', seconds: 0.4 } })
+
+    expect(stateOf(page)).toBe('clap')
+    await vi.waitFor(() => expect(stateOf(page)).toBe('idle'), { timeout: 2000 })
+  })
+
+  it('restarts for the same reaction twice, with one timer: the first one\'s end does not cut the second', async () => {
+    stubInView()
+    const page = await mountRig({ state: 'idle', variant: 'head' })
+    await ready(page)
+    await page.setProps({ reaction: { state: 'clap', seconds: 0.5 } })
+    await pause(300)
+
+    await page.setProps({ reaction: { state: 'clap', seconds: 0.5 } })
+    await pause(300)
+
+    expect(stateOf(page)).toBe('clap')
+    await vi.waitFor(() => expect(stateOf(page)).toBe('idle'), { timeout: 2000 })
+  })
+
+  it('is ignored while the base is confused (the errors block)', async () => {
+    stubInView()
+    const page = await mountRig({ state: 'confused', variant: 'head' })
+    await ready(page)
+
+    await page.setProps({ reaction: { state: 'wave', seconds: 0.4 } })
+    await pause(150)
+
+    expect(stateOf(page)).toBe('confused')
+  })
+
+  it('ends at once when the base turns confused', async () => {
+    stubInView()
+    const page = await mountRig({ state: 'idle', variant: 'head' })
+    await ready(page)
+    await page.setProps({ reaction: { state: 'sad', seconds: 5 } })
+    expect(stateOf(page)).toBe('sad')
+
+    await page.setProps({ state: 'confused' })
+
+    expect(stateOf(page)).toBe('confused')
+    await pause(300)
+    expect(stateOf(page)).toBe('confused')
+  })
+
+  it('lets a base change wait for the reaction to end: a dance shows after the clap', async () => {
+    stubInView()
+    const page = await mountRig({ state: 'idle', variant: 'head' })
+    await ready(page)
+    await page.setProps({ reaction: { state: 'clap', seconds: 0.5 } })
+
+    await page.setProps({ state: 'dance' })
+
+    expect(stateOf(page)).toBe('clap')
+    await vi.waitFor(() => expect(stateOf(page)).toBe('dance'), { timeout: 2000 })
+  })
+
+  it('shows a wave on the reconnect: the base from confused to idle and the wave in one tick', async () => {
+    stubInView()
+    const page = await mountRig({ state: 'confused', variant: 'head' })
+    await ready(page)
+
+    await page.setProps({ state: 'idle', reaction: { state: 'wave', seconds: 0.5 } })
+
+    expect(stateOf(page)).toBe('wave')
+    await vi.waitFor(() => expect(stateOf(page)).toBe('idle'), { timeout: 2000 })
+  })
+
+  it('waits for GSAP and then plays with its full length', async () => {
+    stubInView()
+    let release = () => {}
+    chunk.held = new Promise<void>(resolve => (release = resolve))
+    const page = await mountRig({ state: 'idle', variant: 'head', reaction: { state: 'clap', seconds: 0.8 } })
+    await pause(1000)
+    expect(stateOf(page)).toBe('idle')
+
+    release()
+    await ready(page)
+
+    expect(stateOf(page)).toBe('clap')
+    await pause(500)
+    expect(stateOf(page)).toBe('clap')
+    await vi.waitFor(() => expect(stateOf(page)).toBe('idle'), { timeout: 2000 })
+  })
+
+  it('leaves no error and no further movement when the rig leaves during one', async () => {
+    stubInView()
+    const errors = vi.spyOn(console, 'error')
+    const page = await mountRig({ state: 'idle', variant: 'head' })
+    await ready(page)
+    await page.setProps({ reaction: { state: 'clap', seconds: 0.3 } })
+    await pause(100)
+    const svg = page.get('svg').element
+    const poses = () => [...svg.querySelectorAll('g[class^="compibert-"], rect')].map(element => element.getAttribute('transform')).join('|')
+
+    page.unmount()
+    const first = poses()
+    await pause(600)
+
+    expect(errors).not.toHaveBeenCalled()
+    expect(poses()).toBe(first)
   })
 })
