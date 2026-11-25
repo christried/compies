@@ -132,6 +132,7 @@ function onUseExisting(game: GameView) {
       v-if="library"
       v-model:filters="filters"
       compact
+      marks-played
       card-notes="view"
     >
       <template #toolbar>

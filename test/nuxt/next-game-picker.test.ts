@@ -146,9 +146,10 @@ function libraryGame(n: number, name: string, overrides: Partial<GameView> = {})
 let libraryGames: GameView[] = []
 let libraryTags: GameTag[] = []
 let libraryEventCounts: Record<string, number> = {}
+let libraryLastPlayed: Record<string, string> = {}
 registerEndpoint('/api/games', {
   method: 'GET',
-  handler: () => ({ games: libraryGames, tagsInUse: libraryTags, eventCounts: libraryEventCounts }),
+  handler: () => ({ games: libraryGames, tagsInUse: libraryTags, eventCounts: libraryEventCounts, lastPlayed: libraryLastPlayed }),
 })
 
 describe('the Tag filter of the library list (#336)', () => {
@@ -217,6 +218,15 @@ describe('the Tag filter of the library list (#336)', () => {
     expect(dialog()!.textContent).not.toContain('Events')
     expect(dialog()!.textContent).not.toContain('in 2')
     libraryEventCounts = {}
+  })
+
+  it('shows no „zuletzt am“ on a library card: the date is the library page\'s and the „Spiele“ step\'s (#900)', async () => {
+    libraryLastPlayed = { [retroKart.id]: '2026-11-02T23:30:00.000Z' }
+    await mount()
+    await vi.waitFor(() => expect(libraryCards()).toHaveLength(3))
+
+    expect(dialog()!.textContent).not.toContain('zuletzt')
+    libraryLastPlayed = {}
   })
 
   it('marks no pool row and lists no Archived library game: the Host\'s picker has no Archived game to show (#726)', async () => {
