@@ -964,6 +964,7 @@
     "moreTags": "+{n}",
     "moreTagsLabel": "{n} weiterer Tag | {n} weitere Tags",
     "inEvents": "in {n} Event | in {n} Events",
+    "lastPlayed": "zuletzt am {day}",
     "loadMore": "Mehr laden",
     "shownOf": "{shown} von {total} Spielen"
   },

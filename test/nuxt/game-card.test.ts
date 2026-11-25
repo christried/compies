@@ -11,18 +11,19 @@ import { BLANK_NOTES } from './helpers/formatted-notes'
 // The card's structure (#351): the actions sit in the card's last child, and the body grows, so in a stretched grid row the
 // buttons of every card share one bottom edge, whatever the length of the name, the player count, Suitabilities, Price and Tags.
 
-type Props = Partial<Pick<GameView, 'playersMin' | 'playersMax' | 'suitabilities' | 'tags' | 'price' | 'imageUrl' | 'youtubeId'>> & { name: string, inEvents?: number, archived?: boolean, tagsRoom?: boolean }
+type Props = Partial<Pick<GameView, 'playersMin' | 'playersMax' | 'suitabilities' | 'tags' | 'price' | 'imageUrl' | 'youtubeId'>> & { name: string, inEvents?: number, lastPlayed?: string | null, archived?: boolean, tagsRoom?: boolean }
 type Layout = 'card' | 'row' | 'responsive' | 'tile'
 
 let page: VueWrapper | undefined
 
 async function mount(game: Props, layout: Layout, withActions = true, attachTo?: HTMLElement) {
-  const { name, inEvents, archived, tagsRoom, ...rest } = game
+  const { name, inEvents, lastPlayed, archived, tagsRoom, ...rest } = game
   page = await mountSuspended(GameCard, {
     props: {
       game: { id: 'g-1', imageUrl: null, youtubeId: null, playersMin: null, playersMax: null, suitabilities: [], tags: [], price: null, ...rest, name },
       layout,
       inEvents,
+      lastPlayed,
       archived,
       tagsRoom,
     },
@@ -648,8 +649,9 @@ describe('the „in N Events“ marker (#733)', () => {
   it('sits under the Price line and above the Tags', async () => {
     await mount({ name: 'Mario Kart', ...FULL, inEvents: 2 }, 'card')
 
+    // The marker sits in a wrapper that it shares with the „zuletzt am“ pill (#900); the wrapper is the body's child.
     const lines = [...body().children]
-    const at = lines.indexOf(marker()!)
+    const at = lines.indexOf(marker()!.parentElement!)
     expect(lines[at - 1]?.textContent).toContain('€')
     expect(lines[at + 1]?.querySelector('[role="group"]')).not.toBeNull()
   })
@@ -693,6 +695,86 @@ describe('the „in N Events“ marker (#733)', () => {
     expect(marker()!.querySelector('li, a, button')).toBeNull()
     expect(marker()!.closest('li')).toBeNull()
     expect(root().querySelectorAll('a, button, li')).toHaveLength(0)
+  })
+})
+
+// „zuletzt am 3. Nov. 2026“ (#900): a second neutral pill beside „in N Events“, for a game that was played. Text only, the Berlin day of the latest Result.
+describe('the „zuletzt am“ pill (#900)', () => {
+  const PLAYED = '2026-11-02T23:30:00.000Z'
+  const pill = () => [...root().querySelectorAll('span')].find(span => span.textContent!.trim().startsWith('zuletzt am'))
+  const marker = () => [...root().querySelectorAll('span')].find(span => /^in \d+ Events?$/.test(span.textContent!.trim()))
+
+  it('draws nothing for null, for no prop and for a game without a date', async () => {
+    for (const lastPlayed of [null, undefined]) {
+      await mount({ name: 'Mario Kart', ...FULL, lastPlayed }, 'card')
+      expect(pill()).toBeUndefined()
+      expect(root().textContent).not.toContain('zuletzt')
+      page?.unmount()
+    }
+  })
+
+  it('reads the Berlin day of the instant, not the UTC day', async () => {
+    await mount({ name: 'Mario Kart', lastPlayed: PLAYED }, 'card')
+
+    expect(pill()?.textContent?.trim()).toBe('zuletzt am 3. Nov. 2026')
+  })
+
+  it('sits second beside „in 2 Events“, in the same wrapper', async () => {
+    await mount({ name: 'Mario Kart', ...FULL, inEvents: 2, lastPlayed: PLAYED }, 'card')
+
+    expect(marker()?.textContent?.trim()).toBe('in 2 Events')
+    expect(pill()).toBeDefined()
+    expect(pill()!.parentElement).toBe(marker()!.parentElement)
+    expect([...marker()!.parentElement!.children]).toEqual([marker(), pill()])
+    expect(marker()!.parentElement!.className).toContain('flex-wrap')
+    expect(marker()!.parentElement!.className).toContain('min-w-0')
+  })
+
+  it('shows alone without a count, and says nothing of Events', async () => {
+    await mount({ name: 'Mario Kart', lastPlayed: PLAYED }, 'card')
+
+    expect(pill()).toBeDefined()
+    expect(root().textContent).not.toContain('Event')
+  })
+
+  it('is neutral and text only: paper-2 fill, line border, ink-2 text, truncated, no control and no tab stop', async () => {
+    await mount({ name: 'Mario Kart', lastPlayed: PLAYED }, 'card', false)
+
+    for (const token of ['bg-paper-2', 'border-line', 'text-ink-2', 'max-w-full', 'truncate']) expect(pill()!.className).toContain(token)
+    expect(pill()!.querySelector('li, a, button')).toBeNull()
+    expect(root().querySelectorAll('a, button, li')).toHaveLength(0)
+  })
+
+  it('is left out of the tile, and shows on the card, the row and the responsive layouts', async () => {
+    await mount({ name: 'Mario Kart', lastPlayed: PLAYED }, 'tile', false)
+    expect(pill()).toBeUndefined()
+    page?.unmount()
+    for (const layout of ['card', 'row', 'responsive'] as const) {
+      await mount({ name: 'Mario Kart', lastPlayed: PLAYED }, layout)
+      expect(pill()?.textContent?.trim()).toBe('zuletzt am 3. Nov. 2026')
+      page?.unmount()
+    }
+  })
+
+  it('renders with the longest name and both pills, the pill text intact', async () => {
+    for (const layout of ['card', 'row'] as const) {
+      await mount({ name: LONG_NAME, ...FULL, inEvents: 2, lastPlayed: PLAYED }, layout)
+      expect(root().textContent).toContain(LONG_NAME)
+      expect(pill()?.textContent?.trim()).toBe('zuletzt am 3. Nov. 2026')
+      expect(marker()?.textContent?.trim()).toBe('in 2 Events')
+      page?.unmount()
+    }
+  })
+
+  it('keeps the cards of a grid row as high as each other: the Tags room is still the body\'s last child with mt-auto, and the actions the card\'s last', async () => {
+    await mount({ name: 'Pong', tags: [], tagsRoom: true, inEvents: 2, lastPlayed: PLAYED }, 'card')
+
+    const room = [...body().children].at(-1) as HTMLElement
+    expect(room.className).toContain('mt-auto')
+    expect(room.className).toContain('h-[52px]')
+    expect(lastChild().querySelector('button')?.textContent).toBe('Hinzufügen')
+    expect(root().className).toContain('flex-col')
+    expect(body().className).toContain('flex-auto')
   })
 })
 

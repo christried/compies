@@ -28,6 +28,8 @@ export function useGameLibrary() {
     tagsInUse: computed(() => current.value?.tagsInUse ?? []),
     // Game id to the number of live Events that hold it (#733); a missing key means 0, and there is none before the first answer.
     eventCounts: computed(() => current.value?.eventCounts ?? {}),
+    // Game id to the instant of its latest Result (#900); no key for a game never played. `?? {}` also covers the answer of the previous deployment, which has none.
+    lastPlayed: computed(() => current.value?.lastPlayed ?? {}),
     status,
     error,
     refresh,
