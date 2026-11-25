@@ -15,6 +15,13 @@ type MessageOf<T extends RoomMessageType> = Envelope<Extract<RoomMessage, { type
 /** How long to wait before asking for a first token again, when the token endpoint could not be reached. */
 export const TICKET_RETRY_MS = 5000
 
+/**
+ * The answers of the token endpoint that will not change by asking again: not signed in, not a Member any more, the Event gone (#681, #993). Any other
+ * status (a timeout, a rate limit, a 5xx) or a network failure (no status) is asked again.
+ */
+const TICKET_REFUSALS = [401, 403, 404, 410]
+const refusesTicket = (status: number) => TICKET_REFUSALS.includes(status)
+
 export function useEventRoom(slug: MaybeRefOrGetter<string>) {
   const enabled = Boolean(useRuntimeConfig().public.realtimeUrl)
   const state = ref<RoomState>(enabled ? 'connecting' : 'closed')
@@ -71,9 +78,9 @@ export function useEventRoom(slug: MaybeRefOrGetter<string>) {
     catch (failure) {
       if (disposed) return
       state.value = 'closed'
-      // A refusal (not a Member any more, no Worker here) will not change by asking again; a network failure may.
+      // A refusal (not a Member any more, no Worker here) will not change by asking again; a network failure or a 408 or 429 may.
       const status = apiFailure(failure).status ?? 0
-      if (status < 400 || status >= 500) retryTimer = setTimeout(start, TICKET_RETRY_MS)
+      if (!refusesTicket(status)) retryTimer = setTimeout(start, TICKET_RETRY_MS)
       return
     }
     if (disposed) return
@@ -84,7 +91,21 @@ export function useEventRoom(slug: MaybeRefOrGetter<string>) {
       url: first.url,
       room: first.room,
       token: async () => {
-        const ticket = unused ?? await askForTicket()
+        // A stopped room asks for nothing: a socket PartySocket still has in flight finds no ticket.
+        if (disposed) throw new Error('The room is stopped')
+        let ticket = unused
+        if (!ticket) {
+          try {
+            ticket = await askForTicket()
+          }
+          catch (failure) {
+            // A refusal (not a Member any more, the Event gone) will not change by asking again, and PartySocket would ask for ever (#681): stop for good.
+            // Any other failure (a 408, a 429, a 5xx, a network failure) is thrown on and PartySocket tries again (#993).
+            const status = apiFailure(failure).status ?? 0
+            if (refusesTicket(status)) stop()
+            throw failure
+          }
+        }
         unused = null
         return ticket.token
       },
@@ -94,9 +115,17 @@ export function useEventRoom(slug: MaybeRefOrGetter<string>) {
     })
   }
 
+  /** Closes the room for good: no reconnect and no token after this (the Event is gone for the page, #914). */
+  function stop() {
+    disposed = true
+    clearTimeout(retryTimer)
+    socket?.close()
+    state.value = 'closed'
+  }
+
   /** Tries again at once, e.g. from the banner's „Neu verbinden“. */
   function retry() {
-    if (!enabled) return
+    if (!enabled || disposed) return
     state.value = 'connecting'
     if (socket) {
       socket.reconnect()
@@ -110,12 +139,8 @@ export function useEventRoom(slug: MaybeRefOrGetter<string>) {
     onMounted(() => {
       if (enabled) void start()
     })
-    onScopeDispose(() => {
-      disposed = true
-      clearTimeout(retryTimer)
-      socket?.close()
-    })
+    onScopeDispose(stop)
   }
 
-  return { enabled, state: readonly(state), retry, on, onAny, send }
+  return { enabled, state: readonly(state), retry, stop, on, onAny, send }
 }

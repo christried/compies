@@ -3,6 +3,7 @@ import type { H3Event } from 'h3'
 import type { EventView } from '../../shared/event'
 import { canSeeLibrary, type GamePrice, type GamePriceInput, type GameTag, type GameView, type HostGameFacts, type PoolGame, type PoolGameFace, type RoundGame } from '../../shared/game'
 import type { AuthUser } from '../../shared/auth'
+import { IMAGE_PATH } from '../../shared/image'
 import { beforeFinish, PHASES } from '../../shared/phase'
 import { eventPoolGames, events, games } from '../db/schema'
 import { isUuid } from '../domain/uuid'
@@ -79,7 +80,7 @@ export function poolGameFace(row: typeof games.$inferSelect): PoolGameFace {
     id: row.id,
     name: row.name,
     // Served by GET /api/images/:key; a replaced image gets a new key, so its URL never serves stale (#143).
-    imageUrl: row.imageKey ? `/api/images/${row.imageKey}` : null,
+    imageUrl: row.imageKey ? `${IMAGE_PATH}${row.imageKey}` : null,
     youtubeId: row.youtubeId,
     price: priceOf(row),
     playersMin: row.playersMin,

@@ -4,10 +4,12 @@ import { apiErrorKey, apiFailure } from '~/utils/api-error'
 import { teamNameAt } from '~/utils/board'
 import { formatActivityTime } from '~/utils/berlin-time'
 import { groupMessages, markDeleted, mergeMessages, splitMessageText } from '~/utils/chat'
+import { livingMemberIds, membershipEnded } from '~/utils/members'
+import { shownPerson } from '~/utils/shown-person'
 import { chatRise } from '~/utils/motion'
 import { MESSAGE_MAX, normaliseMessageLineBreaks, parseMessageText } from '~~/shared/message-text'
 import { characterCount, cutToCharacters } from '~~/shared/text'
-import type { Message, MessageDeleter, MessagePage } from '~~/shared/chat'
+import type { Message, MessageDeleter, MessagePage, WriterView } from '~~/shared/chat'
 import type { BoardTeam, MemberView } from '~~/shared/event'
 import { NOTES_LINK_REL } from '~~/shared/notes-doc'
 
@@ -15,7 +17,8 @@ import { NOTES_LINK_REL } from '~~/shared/notes-doc'
 // end on load, and the composer at the foot (#667). It follows the Activity feed (`ActivityFeed.vue`): the first page from the Chat's endpoint, what the room sends (`chat.added`) at once, the first page
 // again whenever the connection opens (a message sent while the socket was down is gone; a page that shares no id with what is held replaces it, #848), and „Ältere laden“ for the page before the oldest one shown. A Message
 // the page and the room both bring shows once (by id). A Message stores no name and no place (ADR 0016's opposite, on purpose): the name line of each group
-// takes the writer's current Display name, Team and place from the Event read's Members, so a rename or a move shows in old Messages. An address in a Message is a link (#762).
+// takes the writer's current Display name, Team and place from the Event read's Members, so a rename or a move shows in old Messages; a writer who is no Member takes the name and picture
+// the Chat's read carries (`writers`, #916). An address in a Message is a link (#762).
 // A writer deletes their own Message, and the Host any Message (#764): it is hidden at once, a toast offers „Rückgängig“ and the call goes out when the toast ends (#763); a delete
 // the room announces (`chat.deleted`) turns the Message into its line, also one that is not held yet (#848). The line a Message the page sent shows as until it settles is an `Outgoing`.
 const props = withDefaults(defineProps<{
@@ -38,6 +41,12 @@ const { t } = useI18n()
 const messages = ref<Message[]>([])
 /** The deletes the room announced, id → deleter, kept next to `messages` for Messages the Chat does not hold yet (#848). Not reactive: it only feeds `mergeMessages`. */
 const deleted = new Map<string, MessageDeleter>()
+/** The writers of the pages read so far who are no Member of the Event, by id (#916): a name line takes them from here when the Members do not list them. */
+const writers = ref<Record<string, WriterView>>({})
+/** Each read's writers join the held ones; a writer a later read carries again takes its newer values. */
+const mergeWriters = (page: MessagePage) => {
+  writers.value = { ...writers.value, ...page.writers }
+}
 /** The cursor of the page before the oldest one loaded; null when there is none. */
 const next = ref<string | null>(null)
 const status = ref<'loading' | 'ready' | 'failed'>('loading')
@@ -62,6 +71,7 @@ function topBubble() {
 async function loadFirst() {
   try {
     const page = await $fetch<MessagePage>(`/api/e/${props.slug}/messages`)
+    mergeWriters(page)
     const first = status.value !== 'ready'
     // Read before the list changes, as the `chat.added` handler does: a re-read (the room's connection opened again) follows to the end only for a reader who is there (#881).
     const follow = atEnd()
@@ -89,6 +99,7 @@ async function loadOlder() {
     // correction is the only one: Chrome's anchoring had moved `scrollTop` by the same growth when the log was not at its top, and the log moved twice (#881).
     // The row is kept where it is on the screen, not by the growth of `scrollHeight`: the last page also removes the button above the log, which grows the log upwards (#881).
     const anchor = topBubble()
+    mergeWriters(page)
     messages.value = mergeMessages(messages.value, pageMessages(page), deleted)
     next.value = page.next
     await nextTick()
@@ -286,6 +297,11 @@ watch(props.room.state, (state) => {
 watch(() => props.active, (active) => {
   if (active) scrollToEnd()
 })
+// A Member the Event no longer lists (a deleted account, #916; a removal from 0.22, #697): only the Chat's read knows the writer now, so it reads again, once per such change and not
+// per `event.changed` (#990). The merge takes the writer's newer values, so the name line reads „Gelöschtes Konto“, or the real name of a writer who left without being deleted.
+watch(() => livingMemberIds(props.members), (ids, before) => {
+  if (membershipEnded(before, ids)) void loadFirst()
+})
 onMounted(() => void loadFirst())
 
 const memberById = computed(() => new Map(props.members.map(member => [member.id, member])))
@@ -293,8 +309,11 @@ const memberById = computed(() => new Map(props.members.map(member => [member.id
 const viewerIsHost = computed(() => memberById.value.get(props.viewerId)?.isHost === true)
 /** The writer's own live Message, and for the Host any live Message (#764). A line the page sent and has not seen settle may not exist on the server yet, so it has none. */
 const canDelete = (message: Message) => message.text !== null && !outgoingById.value.has(message.id) && (message.writerId === props.viewerId || viewerIsHost.value)
-/** The control's name: the writer's name; „Du“ for the viewer's own Message of a writer the Event does not list; else no name (`chat.deleteAnyAria`, #764). */
-const deleteLabel = (group: { own: boolean, member?: MemberView }) => group.member || group.own ? t('chat.deleteAria', { name: group.member?.name ?? t('common.you') }) : t('chat.deleteAnyAria')
+/** The control's name: the writer's shown name (a Member's, or a writer the page carries, #916); „Du“ for the viewer's own Message of a writer the page does not name; else no name (`chat.deleteAnyAria`, #764). */
+const deleteLabel = (group: { own: boolean, shownName?: string }) => {
+  const name = group.shownName ?? (group.own ? t('common.you') : undefined)
+  return name !== undefined ? t('chat.deleteAria', { name }) : t('chat.deleteAnyAria')
+}
 
 /** The groups with what their name line shows, all computed from the Members the page holds. */
 const groups = computed(() => groupMessages([
@@ -303,13 +322,18 @@ const groups = computed(() => groupMessages([
   ...outgoing.value.filter(entry => !isHeld(entry.id)).map((entry): Message => ({ id: entry.id, writerId: props.viewerId, text: entry.text, at: entry.at })),
 ]).map((group) => {
   const member = memberById.value.get(group.writerId)
+  // A Member, else a writer the page carries who is no Member (#916); a Deleted User reads „Gelöschtes Konto“ either way (shownPerson, #915).
+  const person = member ?? writers.value[group.writerId]
+  const shown = person ? shownPerson(person, t) : undefined
   const own = group.writerId === props.viewerId
   const first = group.messages[0]!
   return {
     key: first.id,
     own,
     member,
-    name: own ? t('common.you') : member?.name,
+    name: own ? t('common.you') : shown?.name,
+    shownName: shown?.name,
+    shown,
     /** In a team: the team's number and name; on the Stands: no number. Nothing for a writer the Event no longer lists. */
     place: member ? { team: member.zone === 'team' ? member.team : null, text: member.zone === 'team' && member.team !== null ? teamNameAt(props.teams, member.team, t) : t('board.stands') } : undefined,
     messages: group.messages,
@@ -380,9 +404,10 @@ const groups = computed(() => groupMessages([
           <UserAvatar
             v-if="!group.own"
             :size="28"
-            :name="group.member?.name ?? '?'"
-            :image="group.member?.image"
+            :name="group.shown?.name ?? '?'"
+            :image="group.shown?.image"
             :team="group.member?.team"
+            :deleted="group.shown?.deleted"
           />
           <div
             class="flex max-w-[84%] min-w-0 flex-col gap-[3px]"

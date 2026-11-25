@@ -169,6 +169,11 @@ interface EntryBase {
   /** The name of every User id inside `params`, so the client never needs the members list (`shownName`). */
   people: Record<string, string>
   /**
+   * The ids among `actor.id` and the keys of `people` that belong to a Deleted User (#915, ADR 0020): their names above are empty, the client shows
+   * `shownPerson`. Absent when there are none. It lists ids already named, so it adds no Player to an entry that hides them (a Veto names its Party, #355).
+   */
+  deleted?: string[]
+  /**
    * The name of every game id inside `params` that this viewer may know yet (#228): a game that was set, from the moment it
    * was set. An id that is missing here is a game nobody may name yet, and the sentence is left out. Never a game's picture or notes.
    */

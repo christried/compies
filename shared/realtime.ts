@@ -41,6 +41,8 @@ export type RoomMessage
     | { type: 'chat.added', message: LiveMessage }
   /** A Message that was deleted (#760, spec #719 § A): its id and who deleted it, to every socket of the Event; the text is gone and nothing else of the Message travels. The page turns the Message into its line by id. No `event.changed` goes with it (the delete sets `broadcast: false`). */
     | { type: 'chat.deleted', id: string, deletedBy: MessageDeleter }
+  /** The Event's rows are gone (its Host deleted their account, #917, ADR 0020): the next read would answer 404, so the page shows „Event gelöscht“ (the state of a 410) without reading again. No payload and no `event.changed` with it; it names nothing and goes to every socket of the room, so it is no secrecy surface (CODING_STANDARDS § Secrecy). */
+    | { type: 'event.gone' }
 
 export type RoomMessageType = RoomMessage['type']
 
@@ -75,10 +77,16 @@ export const SILENT_AFTER_MS = 75_000
  * sockets of the named Users only. The named send is its own shape, not `messages` + `to`: the Worker that runs in
  * production ignores unknown keys and would broadcast `messages`, so if Nuxt shipped first a sealed Veto would reach
  * every Party. With `direct`, the old Worker answers 400 (no `messages` array) and sends nothing: it fails closed.
+ *
+ * The third shape (#913, ADR 0013 amendment of 2026-11-20) sends `last` to every socket of the Users in `close`, then
+ * closes those sockets: Nuxt cuts a User off who is no Member any more (a Deleted User, a removed Member). It has its
+ * own keys for the same reason: neither `to` nor `messages` is in it, so an older Worker answers 400 and sends and
+ * closes nothing, and a Worker that half understood it could never send the last message to every Member.
  */
 export type RoomPublishBody
   = | { messages: Envelope[] }
     | { to: string[], direct: Envelope[] }
+    | { close: string[], last: Envelope[] }
 
 /** PartyServer's name for the room class: the kebab-case of its binding `EventRoom` (partyserver's routing). */
 export const ROOM_PARTY = 'event-room'

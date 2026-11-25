@@ -21,8 +21,8 @@ describe('apiFailure', () => {
   })
 })
 
-// The nine codes the app deliberately has no words for (each falls back to the caller's line; why: SHARED in app/utils/api-error.ts).
-const UNEXPLAINED: ApiErrorCode[] = ['invalid_name', 'invalid_mode', 'invalid_slots', 'invalid_time', 'invalid_value', 'invalid_settings', 'wheel_options_without_wheel', 'invalid_cursor', 'no_live_connection']
+// The ten codes the app deliberately has no words for (each falls back to the caller's line; why: SHARED in app/utils/api-error.ts).
+const UNEXPLAINED: ApiErrorCode[] = ['invalid_name', 'invalid_mode', 'invalid_slots', 'invalid_time', 'invalid_value', 'invalid_settings', 'wheel_options_without_wheel', 'invalid_cursor', 'no_live_connection', 'account_games_held']
 // Exhaustive: a new screen fails typecheck until it is listed here.
 const SCREENS: Record<ReasonScreen, true> = { lastGame: true, deleteEvent: true, slotEditor: true, directDates: true, eventSettings: true }
 

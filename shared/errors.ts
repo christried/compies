@@ -38,6 +38,8 @@ export const API_ERROR_STATUS = {
   image_too_large: 413,
   /** A game image is not a WebP file (#143). */
   image_not_webp: 415,
+  /** A profile picture that is animated or not 256 × 256 (#678). */
+  image_unsupported: 415,
   /** The pools of a new Event are not lists of unique game ids, or a list is longer than 200 (#146). */
   invalid_pools: 400,
   /** A game in a pool is not in the library (#146). */
@@ -185,6 +187,8 @@ export const API_ERROR_STATUS = {
   wheel_not_hidden: 409,
   /** The Host uncovers a Hidden wheel that is uncovered already (#957): a second press. */
   wheel_uncovered: 409,
+  /** A game of the User is named by another Host's Event, which ADR 0018 rules out since 0.16, so `DELETE /api/me` refuses (#681, #917); the operator's check before the Release counts those games. */
+  account_games_held: 409,
   rate_limited: 429,
   /** This deployment has no realtime Worker (no REALTIME_URL): the client takes it as "no live connection" and polls (#156). */
   no_live_connection: 503,

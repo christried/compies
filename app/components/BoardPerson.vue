@@ -11,6 +11,8 @@ const props = defineProps<{
   userId: string
   name: string
   image: string | null
+  /** A Deleted User (#915): the name is already „Gelöschtes Konto“, the avatar the neutral picture. */
+  deleted: boolean
   isHost: boolean
   /** The viewer's own person: shown as „Du“. */
   you: boolean
@@ -50,6 +52,7 @@ const label = computed(() => t(props.online === undefined ? 'board.personAria' :
       class="max-md:!size-9 md:!size-11"
       :name="name"
       :image="image"
+      :deleted="deleted"
       :size="48"
       :team="team"
       :lifted="lifted"

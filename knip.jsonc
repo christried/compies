@@ -72,7 +72,9 @@
         "scripts/wording/answers.mjs!",
         "scripts/wording/review-keys.mjs!",
         // Run by hand with node by the operator's skill christried-tag-review (#619); nothing imports it.
-        ".claude/skills/christried-tag-review/library-tags.mjs!"
+        ".claude/skills/christried-tag-review/library-tags.mjs!",
+        // Run by hand with node by the operator (#919): deletes one account against the database its environment names; nothing imports it.
+        "scripts/prod/delete-account.mjs!"
       ],
       // Windows' own netstat, which serve.mjs calls to name the PID on a taken port.
       "ignoreBinaries": ["netstat"],

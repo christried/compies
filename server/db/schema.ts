@@ -35,7 +35,14 @@ export const users = pgTable('users', {
   tourSeen: integer('tour_seen_version').default(0).notNull(),
   // The User's Appearance (#401, GLOSSARY): light unless they choose otherwise. Better Auth's insert gets the default (ADR 0004).
   appearance: text('appearance', { enum: APPEARANCES }).default('light').notNull(),
+  // The time of the deletion; null for a User who is not deleted (ADR 0020, #915).
+  deletedAt: timestamp('deleted_at', { withTimezone: true }),
+  // The key of the User's uploaded Profile picture in the image store (#678, GLOSSARY: Profile picture); null = none. Better Auth never writes it (ADR 0004),
+  // so a sign-in overwrites `image` (the provider's) and leaves the upload alone.
+  profileImageKey: text('profile_image_key'),
 }, table => [
+  // The image route looks a User up by the key it is asked for (#678).
+  uniqueIndex('users_profile_image_key_idx').on(table.profileImageKey),
   // The list is written once, in shared/appearance.ts (#603); raw because a CHECK takes no parameters, safe because the values are our own constants.
   check('users_appearance_check', sql`${table.appearance} IN (${sql.join(APPEARANCES.map(value => sql.raw(`'${value}'`)), sql`, `)})`),
 ])

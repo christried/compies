@@ -48,7 +48,7 @@ type UnionToIntersection<U> = (U extends unknown ? (value: U) => void : never) e
 export type StatePart = 'sessions' | 'members' | 'teams' | 'rounds' | 'vetoes' | 'bonus' | 'pool' | 'toss'
 
 /** A Member of the Event with their profile, in the order they joined. */
-export interface MemberRow { id: string, name: string, displayName: string | null, image: string | null, zone: Zone, team: number | null, teamWord: string | null, teamJoinedAt: Date | null }
+export interface MemberRow { id: string, name: string, displayName: string | null, image: string | null, profileImageKey: string | null, deletedAt: Date | null, zone: Zone, team: number | null, teamWord: string | null, teamJoinedAt: Date | null }
 export type GameRow = typeof games.$inferSelect
 type PlaceRow = typeof roundPlaces.$inferSelect
 /** A Round with a Result (#274): its game and its Places by place, then team. */
@@ -213,7 +213,7 @@ export async function withParts<S extends BaseState, P extends StatePart>(db: Db
 /** The Members of the Event with their profile, in the order they joined. */
 function readMembers(db: Db, eventId: string): Promise<MemberRow[]> {
   return db
-    .select({ id: users.id, name: users.name, displayName: users.displayName, image: users.image, zone: eventMembers.zone, team: eventMembers.team, teamWord: eventMembers.teamWord, teamJoinedAt: eventMembers.teamJoinedAt })
+    .select({ id: users.id, name: users.name, displayName: users.displayName, image: users.image, profileImageKey: users.profileImageKey, deletedAt: users.deletedAt, zone: eventMembers.zone, team: eventMembers.team, teamWord: eventMembers.teamWord, teamJoinedAt: eventMembers.teamJoinedAt })
     .from(eventMembers)
     .innerJoin(users, eq(eventMembers.userId, users.id))
     .where(eq(eventMembers.eventId, eventId))

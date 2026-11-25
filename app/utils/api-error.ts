@@ -17,7 +17,7 @@ export function apiFailure(failure: unknown): ApiFailure {
   return { status: error?.statusCode, code: error?.data?.statusMessage ?? error?.statusMessage, data: isRecord(data) ? data : undefined }
 }
 
-/** The shared words of every reason. `null` = no words on purpose: the caller's fallback shows (the nine codes at the end). The Record is total, so a new ApiErrorCode fails typecheck until it is worded or set to null here. */
+/** The shared words of every reason. `null` = no words on purpose: the caller's fallback shows (the ten codes at the end). The Record is total, so a new ApiErrorCode fails typecheck until it is worded or set to null here. */
 const SHARED: Record<ApiErrorCode, string | null> = {
   in_past: 'error.slotPast',
   slot_past: 'error.slotPast',
@@ -57,6 +57,7 @@ const SHARED: Record<ApiErrorCode, string | null> = {
   invalid_price: 'error.priceInvalid',
   image_too_large: 'error.imageTooLarge',
   image_not_webp: 'error.imageNotWebp',
+  image_unsupported: 'error.imageUnsupported',
   invalid_pools: 'error.poolsInvalid',
   unknown_game: 'error.unknownGame',
   setting_locked: 'error.settingLocked',
@@ -109,7 +110,7 @@ const SHARED: Record<ApiErrorCode, string | null> = {
   ceremony_pending: 'error.ceremonyPending',
   round_not_open: 'error.roundNotOpen',
   invalid_result: 'error.resultInvalid',
-  // The nine codes without words, each an intended fallback to the caller's line (#417): none is reached by a normal click.
+  // The ten codes without words, each an intended fallback to the caller's line (#417): none is reached by a normal click.
   invalid_name: null, // create parser; the setup wizard validates the name first
   invalid_mode: null, // create parser; the wizard validates the date mode first
   invalid_slots: null, // create parser; the wizard validates the slots first
@@ -119,6 +120,7 @@ const SHARED: Record<ApiErrorCode, string | null> = {
   wheel_options_without_wheel: null, // only a draft with wheel options in a mode without a wheel: a defensive refusal
   invalid_cursor: null, // the Activity feed's cursor is the id the client was given
   no_live_connection: null, // never copy: useEventRoom takes it as no live connection and polls
+  account_games_held: null, // rare (ADR 0018 rules it out): the Profil page's „Konto löschen“ sheet shows its own line, `accountDelete.failed` (#918)
 }
 
 /** Words that differ from SHARED on one screen, as data. Each entry says where it shows. */
@@ -145,7 +147,7 @@ function words(code: string, screen?: ReasonScreen): string | null | undefined {
   return own[code as ApiErrorCode] ?? SHARED[code as ApiErrorCode] // undefined for a code the contract does not know
 }
 
-/** The i18n key of a rule's reason on a screen. A code without words answers 'error.saveFailed' (the nine nulls of SHARED). */
+/** The i18n key of a rule's reason on a screen. A code without words answers 'error.saveFailed' (the ten nulls of SHARED). */
 export function reasonKey(code: ApiErrorCode, screen?: ReasonScreen): string {
   return words(code, screen) ?? FALLBACK
 }
