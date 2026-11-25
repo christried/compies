@@ -24,25 +24,35 @@ const { sockets, createRoomSocket } = vi.hoisted(() => {
 })
 mockNuxtImport('createRoomSocket', () => createRoomSocket)
 
+// `$fetch` passes through, except while a test sets `offline`: then every call fails like a request that never reached the server, with no status (#681).
+const network = vi.hoisted(() => ({ offline: false }))
+mockNuxtImport('$fetch', (original) => {
+  const fetchOrFail = (...args: unknown[]) => network.offline ? Promise.reject(new TypeError('Failed to fetch')) : (original as (...args: unknown[]) => Promise<unknown>)(...args)
+  return Object.assign(fetchOrFail, original)
+})
+
 let testNumber = 0
 
 /** An Event link for one test: its reads are counted, its room tickets are served and counted. */
-function serveLive() {
+function serveLive(isHost = false) {
   testNumber += 1
   const slug = `live-${testNumber}`
-  const served = { reads: 0, tickets: 0, name: 'Freitags-Zocken', status: null as number | null }
+  // `ticketStatus` makes the room's token endpoint refuse with that status; `ticketCalls` counts every request to it, a refused one included.
+  const served = { reads: 0, tickets: 0, ticketCalls: 0, name: 'Freitags-Zocken', status: null as number | null, ticketStatus: null as number | null }
   registerEndpoint(`/api/e/${slug}`, {
     method: 'GET',
     handler: () => {
       served.reads += 1
       if (served.status) throw createError({ statusCode: served.status, statusMessage: 'gone' })
-      return { ...view(slug, []), event: { slug, name: served.name, phase: 'poll', isHost: false } }
+      return { ...view(slug, [], { event: { isHost } }), event: { slug, name: served.name, phase: 'poll', isHost } }
     },
   })
   registerEndpoint(`/api/e/${slug}/activity`, { method: 'GET', handler: () => ({ entries: [], next: null }) })
   registerEndpoint(`/api/e/${slug}/room`, {
     method: 'POST',
     handler: () => {
+      served.ticketCalls += 1
+      if (served.ticketStatus) throw createError({ statusCode: served.ticketStatus, statusMessage: 'refused' })
       served.tickets += 1
       return { url: 'https://rt.test', room: `event-id-${slug}`, token: `token-${served.tickets}` }
     },
@@ -57,8 +67,8 @@ const sendMessage = (type: 'event.changed') => lastSocket().options.onMessage(JS
 /** Pages mounted by a test. Each keeps listening for returns (window focus, visibility, online) until it unmounts. */
 const mounted: { unmount: () => void }[] = []
 
-async function mountLive() {
-  const live = serveLive()
+async function mountLive(isHost = false) {
+  const live = serveLive(isHost)
   const page = await mountSuspended(EventPage, { route: `/e/${live.slug}` })
   mounted.push(page)
   await vi.waitFor(() => expect(sockets.length).toBeGreaterThan(0))
@@ -211,6 +221,106 @@ describe('the live Event page', () => {
 
     expect(createRoomSocket).not.toHaveBeenCalled()
     expect(live.served.tickets).toBe(0)
+  })
+})
+
+// A reconnect asks for a new token inside the socket's own `query`, and PartySocket retries a failing query for ever. A User who is no Member any more (a
+// Deleted User's other device, a removed Member) would ask the token endpoint for ever, so a refusal (4xx) stops the room; a 5xx or a network failure is
+// retried (#681).
+describe('the room when a reconnect\'s ticket is refused (#681)', () => {
+  beforeEach(() => {
+    signInAs(kitty)
+    sockets.length = 0
+    createRoomSocket.mockClear()
+    useRuntimeConfig().public.realtimeUrl = 'https://rt.test'
+  })
+
+  afterEach(() => {
+    useRuntimeConfig().public.realtimeUrl = ''
+    network.offline = false
+    vi.useRealTimers()
+    document.body.innerHTML = ''
+  })
+
+  let room: ReturnType<typeof useEventRoom>
+  /** The composable on its own, to read its state and call its `retry`. */
+  async function mountRoom() {
+    const live = serveLive()
+    const probe = defineComponent({
+      setup() {
+        room = useEventRoom(live.slug)
+        return () => h('div')
+      },
+    })
+    mounted.push(await mountSuspended(probe))
+    await vi.waitFor(() => expect(sockets.length).toBeGreaterThan(0))
+    return live
+  }
+
+  it.each([404, 401, 403])('stops for good when a reconnect\'s ticket answers %i: the socket closed, the state closed, no retry and no later ticket', async (status) => {
+    const { served } = await mountRoom()
+    const socket = lastSocket()
+    expect(await socket.options.token()).toBe('token-1')
+    served.ticketStatus = status
+
+    await expect(socket.options.token()).rejects.toMatchObject({ statusCode: status })
+
+    expect(socket.close).toHaveBeenCalledTimes(1)
+    expect(room.state.value).toBe('closed')
+    const asked = served.ticketCalls
+    room.retry()
+    served.ticketStatus = null
+    await expect(socket.options.token()).rejects.toThrow()
+    await settle()
+    expect(socket.reconnect).not.toHaveBeenCalled()
+    expect(served.ticketCalls).toBe(asked)
+    expect(createRoomSocket).toHaveBeenCalledTimes(1)
+  })
+
+  it('keeps the room on a 500 and asks again at the next reconnect', async () => {
+    const { served } = await mountRoom()
+    const socket = lastSocket()
+    expect(await socket.options.token()).toBe('token-1')
+    served.ticketStatus = 500
+
+    await expect(socket.options.token()).rejects.toMatchObject({ statusCode: 500 })
+
+    expect(socket.close).not.toHaveBeenCalled()
+    served.ticketStatus = null
+    expect(await socket.options.token()).toBe('token-2')
+    room.retry()
+    expect(socket.reconnect).toHaveBeenCalledTimes(1)
+  })
+
+  it('keeps the room on a network failure and asks again at the next reconnect', async () => {
+    const { served } = await mountRoom()
+    const socket = lastSocket()
+    expect(await socket.options.token()).toBe('token-1')
+    network.offline = true
+
+    await expect(socket.options.token()).rejects.toThrow('Failed to fetch')
+
+    expect(socket.close).not.toHaveBeenCalled()
+    network.offline = false
+    expect(await socket.options.token()).toBe('token-2')
+    expect(served.ticketCalls).toBe(2)
+  })
+
+  it.each([['a Member', false], ['the Host', true]])('stops the same way on %s\'s page', async (_who, isHost) => {
+    const { served, page } = await mountLive(isHost)
+    const socket = lastSocket()
+    expect(await socket.options.token()).toBe('token-1')
+    served.ticketStatus = 404
+
+    await expect(socket.options.token()).rejects.toMatchObject({ statusCode: 404 })
+
+    expect(socket.close).toHaveBeenCalledTimes(1)
+    const asked = served.ticketCalls
+    socket.options.onClose()
+    window.dispatchEvent(new Event('focus'))
+    await settle()
+    expect(served.ticketCalls).toBe(asked)
+    expect(page.exists()).toBe(true)
   })
 })
 
