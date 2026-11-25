@@ -2,9 +2,10 @@ import { existsSync, readFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import {
-  CUE_BRIEF, MOMENT_OF, SHIPPED_NAME, STAMP_LAG_MS, arrivalCues, buildRun, candidatesOf, choicesReport, configFor, emptyChoices, stampCues, testCandidateOf, withTickGap,
+  LISTENING_TEST_VIDEO, clipVideoIdOf, duckConfigOf, CUE_BRIEF, MOMENT_OF, SHIPPED_NAME, STAMP_LAG_MS, arrivalCues, buildRun, candidatesOf, choicesReport, configFor, emptyChoices, stampCues, testCandidateOf, withTickGap,
   type RunConfig,
 } from '../../app/dev/listening-model'
+import { DUCK_DOWN_MS, DUCK_STEP_MS, DUCK_UP_MS, DUCK_VOLUME } from '../../app/utils/clip-duck'
 import { CUE_LENGTHS } from '../../app/utils/cue-lengths'
 import { CUE_CREDITS_URL } from '../../app/utils/sound-credits'
 import { CUE_IDS, TICK_MIN_GAP_MS, cueFileUrl, wheelCuePlan, type CueId } from '../../app/utils/sound-cues'
@@ -307,5 +308,35 @@ describe('testCandidateOf', () => {
     expect(testCandidateOf(byCue, choices, 'wheel-stop').name).toBe('thunk')
     choices['wheel-stop'] = { candidate: null, noneFits: true }
     expect(testCandidateOf(byCue, choices, 'wheel-stop').name).toBe(SHIPPED_NAME)
+  })
+})
+
+describe('the Clip test video and the duck\'s tuning inputs (#670)', () => {
+  it('reads the test video\'s own id, and a pasted link or a bare id of another video', () => {
+    expect(clipVideoIdOf(LISTENING_TEST_VIDEO)).toBe(LISTENING_TEST_VIDEO)
+    expect(clipVideoIdOf(`https://youtu.be/${LISTENING_TEST_VIDEO}`)).toBe(LISTENING_TEST_VIDEO)
+    expect(clipVideoIdOf('https://www.youtube.com/watch?v=aaaaaaaaaaa')).toBe('aaaaaaaaaaa')
+    expect(clipVideoIdOf('  aaaaaaaaaaa ')).toBe('aaaaaaaaaaa')
+  })
+
+  it('reads no id from text that is neither a link nor an id', () => {
+    expect(clipVideoIdOf('')).toBeNull()
+    expect(clipVideoIdOf('kein Link')).toBeNull()
+    expect(clipVideoIdOf('https://example.com/watch?v=aaaaaaaaaaa')).toBeNull()
+  })
+
+  it('takes four numbers as the duck\'s config', () => {
+    expect(duckConfigOf({ duckVolume: 30, downMs: 80, upMs: 600, stepMs: 20 })).toEqual({ duckVolume: 30, downMs: 80, upMs: 600, stepMs: 20 })
+  })
+
+  it('keeps the shipped value for an input that is empty, not a number or out of its range', () => {
+    const shipped = { duckVolume: DUCK_VOLUME, downMs: DUCK_DOWN_MS, upMs: DUCK_UP_MS, stepMs: DUCK_STEP_MS }
+    expect(duckConfigOf({ duckVolume: Number.NaN, downMs: 0, upMs: -5, stepMs: Number.POSITIVE_INFINITY })).toEqual(shipped)
+    expect(duckConfigOf({ duckVolume: 100, downMs: 80, upMs: 600, stepMs: 20 })).toEqual({ ...shipped, downMs: 80, upMs: 600, stepMs: 20 })
+    expect(duckConfigOf({ duckVolume: -1, downMs: 80, upMs: 600, stepMs: 20 }).duckVolume).toBe(DUCK_VOLUME)
+  })
+
+  it('lets a duck volume of 0 through: the Clip may go silent under a cue', () => {
+    expect(duckConfigOf({ duckVolume: 0, downMs: 80, upMs: 600, stepMs: 20 }).duckVolume).toBe(0)
   })
 })

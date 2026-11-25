@@ -30,6 +30,11 @@ export interface CuePlayerOptions {
   onChange?: () => void
   /** Ton (`useSound().enabled`); on unless said otherwise. */
   enabled?: boolean
+  /**
+   * Told once of every cue `playNow` scheduled (#670): its id and delay. The Clip's duck listens (`clip-duck.ts`). Never for a skipped cue, with Ton off or
+   * after `dispose`, and never for a cue of a plan.
+   */
+  onSounding?: (cue: { id: CueId, delayMs: number }) => void
 }
 
 /** What the player did with one cue, for the browser check (`window.__compiesCueLog`, #537). */
@@ -112,7 +117,7 @@ const keyOf = (owner: PlanSource, cue: Cue) => `${owner}|${cue.id}@${cue.at}@${c
 interface Immediate { source: AudioBufferSourceNode, when: number, line: CueLogEntry }
 
 export function createCuePlayer(options: CuePlayerOptions): CuePlayer {
-  const { context, serverNow, loadFile, onChange } = options
+  const { context, serverNow, loadFile, onChange, onSounding } = options
   let enabled = options.enabled ?? true
   let disposed = false
   const plans: Record<PlanSource, readonly Cue[]> = { read: [], ceremony: [] }
@@ -121,7 +126,7 @@ export function createCuePlayer(options: CuePlayerOptions): CuePlayer {
   const buffers = new Map<CueId, BufferSlot>()
   const log: CueLogEntry[] = []
 
-  // One bus: every cue runs source -> its own gain -> bus -> destination. No ducking, no master volume (#504).
+  // One bus: every cue runs source -> its own gain -> bus -> destination. No master volume (#504). The bus stays as it is: the Clip's duck lives in clip-duck.ts and lowers the YouTube player, not the cues (#670).
   const bus = context.createGain()
   bus.gain.value = 1
   bus.connect(context.destination)
@@ -364,6 +369,7 @@ export function createCuePlayer(options: CuePlayerOptions): CuePlayer {
       const held: Immediate = { source, when, line: record(cue, 'scheduled', when, factor) }
       immediates.add(held)
       source.onended = () => immediates.delete(held)
+      onSounding?.({ id, delayMs })
     },
     async resume() {
       if (disposed) return

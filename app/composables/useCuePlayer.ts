@@ -1,4 +1,4 @@
-import { createCuePlayer, exposesCueLog, type CueLogEntry, type CuePlayer } from '~/utils/cue-player'
+import { createCuePlayer, exposesCueLog, type CueLogEntry, type CuePlayer, type CuePlayerOptions } from '~/utils/cue-player'
 import { viewWheelHidden } from '~/utils/event-page'
 import { reducedMotion } from '~/utils/motion'
 import { coinCuePlan, countdownCuePlan, cueFileUrl, cueFilesOf, reachableGroups, vetoArrivalCues, vetoCuePlan, wheelCuePlan, wheelVoicePlan, type Cue, type GroupInput, type VetoArrivalState } from '~/utils/sound-cues'
@@ -98,6 +98,8 @@ export function useCuePlayer(input: {
   moved: () => number
   /** The Award ceremony's plan (#743), from the layer's own run: the synced start or a viewer's replay. Its own source in the player, so a read never replaces it. */
   ceremony?: () => readonly Cue[]
+  /** Told of every cue `playNow` scheduled (#670): the Event page's Clip duck listens. */
+  onSounding?: CuePlayerOptions['onSounding']
 }): { suspended: Readonly<Ref<boolean>>, resume: () => Promise<void>, playNow: CuePlayer['playNow'] } {
   // Order matters: `useSound` registers its read of the stored switch first, so Ton has its stored value when `mounted` turns true.
   const { enabled } = useSound()
@@ -133,6 +135,7 @@ export function useCuePlayer(input: {
           suspended.value = made?.suspended ?? true
         },
         enabled: enabled.value,
+        onSounding: input.onSounding,
       })
     }
     catch {

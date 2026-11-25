@@ -1,3 +1,4 @@
+import { CLIP_VOLUME, DUCK_DOWN_MS, DUCK_STEP_MS, DUCK_UP_MS, DUCK_VOLUME, type DuckConfig } from '~/utils/clip-duck'
 import { STAMP_DELAY_MS } from '~/utils/motion'
 import {
   CUE_IDS, EMOTE_CUE, TICK_MIN_GAP_MS, ceremonyCuePlan, coinCuePlan, cueFileUrl, emoteCue, standingsCues, thinTicks, tourStepCue, vetoArrivalCues, vetoCuePlan, wheelCuePlan, wheelVoicePlan,
@@ -13,6 +14,7 @@ import type { RoundGame } from '~~/shared/game'
 import { isRecord } from '~~/shared/record'
 import type { ClipView, SpinView, VetoCastView, VetoDrawView, WheelView } from '~~/shared/stage'
 import { MEMBER_TOUR } from '~~/shared/tour'
+import { parseYouTubeId } from '~~/shared/youtube'
 
 // The logic of the listening page for the cue sounds (#534, the session of #535): what each cue is meant to sound like, the candidates, a
 // test run built through the REAL cue plan functions, and the choices as the agent reads them back. Pure: no Vue, no DOM, no clock
@@ -492,4 +494,25 @@ export function arrivalCues(button: ArrivalButton, now: number): ArrivalCue[] {
  */
 export function ceremonyRun(now: number, gag: CeremonyGag): Cue[] {
   return ceremonyCuePlan({ startsAt: now + LEAD_MS, shape: { partyCount: 4, winners: 1, gag, grid: false }, reducedMotion: false })
+}
+
+// The Clip's duck (#670) -------------------------------------------------------------------------------------------------------------
+
+/** The video the duck section plays: the one the repo's walk script uses (scripts/browser/walk-states-forms.mjs); the operator can paste another link. */
+export const LISTENING_TEST_VIDEO = 'dQw4w9WgXcQ'
+
+/** The video id of a pasted link or of a bare id; null for anything else. The link rules are the Clip form's (`parseYouTubeId`). */
+export function clipVideoIdOf(text: string): string | null {
+  const trimmed = text.trim()
+  return parseYouTubeId(trimmed) ?? parseYouTubeId(`https://youtu.be/${trimmed}`)
+}
+
+/**
+ * The duck's tuning inputs as the config `createClipDuck` takes: an input that is empty, not a number or out of its range keeps the shipped value, so a half-typed
+ * number never reaches the duck (a zero time would divide by it). The duck volume may be 0 up to just below the normal volume.
+ */
+export function duckConfigOf(inputs: { duckVolume: number, downMs: number, upMs: number, stepMs: number }): Required<DuckConfig> {
+  const positive = (value: number, shipped: number) => (Number.isFinite(value) && value > 0 ? value : shipped)
+  const volume = Number.isFinite(inputs.duckVolume) && inputs.duckVolume >= 0 && inputs.duckVolume < CLIP_VOLUME ? inputs.duckVolume : DUCK_VOLUME
+  return { duckVolume: volume, downMs: positive(inputs.downMs, DUCK_DOWN_MS), upMs: positive(inputs.upMs, DUCK_UP_MS), stepMs: positive(inputs.stepMs, DUCK_STEP_MS) }
 }

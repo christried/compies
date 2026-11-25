@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Neu
+
+- Der Clip wird leiser, solange ein Emote oder das Veto-Siegel deiner Party zu hören ist, und kommt danach wieder zurück ([#670](https://github.com/christried/compies/issues/670)).
+
 ## [0.22.0] - 2026-11-25 – Host-Werkzeuge
 
 ### Neu

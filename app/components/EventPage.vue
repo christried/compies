@@ -3,6 +3,7 @@ import { Link as LinkIcon } from '@lucide/vue'
 import { formatSlotDay, formatSlotTime } from '~/utils/berlin-time'
 import { feedSessions } from '~/utils/activity'
 import { ceremonyAwaitsSound } from '~/utils/ceremony'
+import { createClipDuck } from '~/utils/clip-duck'
 import { stageInstants, stageUnsettled } from '~/utils/event-stage'
 import { dateBlockedKey, eventPageState, headerPill, waitsForCeremony, wearsPartyhat } from '~/utils/event-page'
 import { historyCorrections } from '~/utils/history-corrections'
@@ -29,7 +30,12 @@ const serverClock = useServerClock(room)
 // The wheel is heard (#531): the cue player schedules the read's plan on the audio clock, on the Event page only.
 // The Award ceremony's plan comes from its layer, which knows the run the viewer sees and when they skip or close it (#743).
 const ceremonyCues = shallowRef<readonly Cue[]>([])
+// The Clip gets quieter under an Emote and the own Party's Veto seal (#670): the player says which cue sounds, the Clip overlay below sets the volume.
+const duck = createClipDuck()
+provideClipDuck(duck)
+onScopeDispose(duck.dispose)
 const cues = useCuePlayer({
+  onSounding: duck.note,
   view: () => data.value,
   serverNow: serverClock.now,
   ready: () => serverClock.ready.value,
