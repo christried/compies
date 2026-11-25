@@ -21,6 +21,14 @@ export interface CardTarget { width: number, height: number, maxBytes: number }
 /** The game's card: 512 × 320, at most 200 000 bytes (#143). */
 export const GAME_CARD_TARGET: CardTarget = { width: GAME_IMAGE_WIDTH, height: GAME_IMAGE_HEIGHT, maxBytes: GAME_IMAGE_MAX_BYTES }
 
+/** A Profile picture is a still square of this many pixels a side, and at most this many bytes (#678). */
+export const PROFILE_IMAGE_SIZE = 256
+export const PROFILE_IMAGE_MAX_BYTES = 100_000
+/** The Profile picture's tile: 256 × 256, at most 100 000 bytes (#678). */
+export const PROFILE_IMAGE_TARGET: CardTarget = { width: PROFILE_IMAGE_SIZE, height: PROFILE_IMAGE_SIZE, maxBytes: PROFILE_IMAGE_MAX_BYTES }
+/** The image route's prefix: the address of an object in the image store is this and its key (#678). */
+export const IMAGE_PATH = '/api/images/'
+
 /** One arrow key moves the picture by this share of its room (#457). */
 const CROP_KEY_STEP = 0.1
 

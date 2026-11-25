@@ -38,6 +38,8 @@ export const API_ERROR_STATUS = {
   image_too_large: 413,
   /** A game image is not a WebP file (#143). */
   image_not_webp: 415,
+  /** A profile picture that is animated or not 256 × 256 (#678). */
+  image_unsupported: 415,
   /** The pools of a new Event are not lists of unique game ids, or a list is longer than 200 (#146). */
   invalid_pools: 400,
   /** A game in a pool is not in the library (#146). */
