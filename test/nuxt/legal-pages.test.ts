@@ -119,6 +119,16 @@ describe('legal pages', () => {
     expect(retention!.text()).toContain('bleiben gespeichert, solange das Event besteht.')
   })
 
+  it('name the Member a Host removes in the Activity feed entry of section 11 and what a removal deletes and keeps in section 16, word for word (#899, spec #894)', async () => {
+    const page = await mountSuspended(DatenschutzPage, { route: '/datenschutz' })
+    const sections = page.findAll('section')
+    const events = sections.find(s => s.get('h2').text() === '11. Events, Terminvorschläge und Stimmen')
+    const retention = sections.find(s => s.get('h2').text() === '16. Speicherdauer')
+
+    expect(events!.text()).toContain('Er hält fest, wer wann beigetreten ist, wen der Host aus dem Event entfernt hat, wer den Platz gewechselt hat oder von wem verschoben wurde,')
+    expect(retention!.text()).toContain('Entfernt ein Host einen Terminvorschlag, werden die Stimmen und Anmerkungen dazu mitgelöscht. Entfernt der Host dich aus einem Event, werden deine Mitgliedschaft mit Platz und Teamwort sowie deine Stimmen und Anmerkungen in diesem Event gelöscht. Deine Nachrichten im Chat und die Einträge des Aktivitäts-Feeds, die dich nennen, bleiben gespeichert, solange das Event besteht.')
+  })
+
   it('name the Chat and the Emotes: what is stored, who reads it, how a delete works, what the room keeps and that no Emote is stored (#775, spec #719)', async () => {
     const page = await mountSuspended(DatenschutzPage, { route: '/datenschutz' })
     const sections = page.findAll('section')
@@ -204,7 +214,7 @@ describe('legal pages', () => {
     expect(text.indexOf('Sitzungs-Cookies (Better Auth)')).toBeLessThan(text.indexOf(cookie))
     expect(text.indexOf(cookie)).toBeLessThan(text.indexOf('Lokaler Speicher (compies-sound)'))
     expect(section!.findAll('p')).toHaveLength(10)
-    // The one place the date is pinned: the day of the last change, 25 November 2026 (0.21, §§ 6, 16 and 18 for the account deletion, #920; §§ 5, 6 and 7 for the own Profilbild, #912; before that 0.19, § 9 for the cookie of Reduced motion, #680, and for the Round card's memory, #838; before that 0.18, §4, §10, §11, §16 and §21 for the Chat and the Emotes, #775).
+    // The one place the date is pinned: the day of the last change, 25 November 2026 (0.22, §§ 11 and 16 for the removal of a Member, #899; 0.21, §§ 6, 16 and 18 for the account deletion, #920; §§ 5, 6 and 7 for the own Profilbild, #912; before that 0.19, § 9 for the cookie of Reduced motion, #680, and for the Round card's memory, #838; before that 0.18, §4, §10, §11, §16 and §21 for the Chat and the Emotes, #775).
     expect(page.get('main').text()).toContain('Stand: 25. November 2026.')
   })
 

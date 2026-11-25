@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Geändert
+
+- Die Datenschutzerklärung sagt, was mit deinen Daten passiert, wenn dich ein Host aus einem Event entfernt ([#899](https://github.com/christried/compies/issues/899)).
+
 ## [0.21.0] - 2026-11-25 – Profil und Konto
 
 ### Neu
