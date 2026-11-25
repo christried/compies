@@ -484,6 +484,7 @@ Trigger: Connection „wird wiederhergestellt“ (2 s) or lost (15 s); errors. R
 - `sleep` → `wave` when someone joins, then `idle`. `look` → `idle` on any pointer/key input.
 - Wheel stop sets base back to `idle` while `cheer` plays.
 - **Switching:** kill the previous state timeline, tween all touched parts back to rest over 0.18 s `power2.out`, then start the new timeline. Mouth shapes crossfade 0.1 s.
+- **Deviation (0.23, #928):** the return from a reaction to the base is the component's own timer, not the bus: `CompibertRig` takes a `reaction` prop (`{ state, seconds? }`, a new object per reaction) over its base `state`, shows it for `seconds` (the table's length by default, `reactionSeconds`) and then enters the base as it is at that moment, in reduced motion too. The priority and the errors block are `admitReaction` (`app/utils/rig-reaction.ts`): an equal or higher reaction replaces the running one, a lower one and every reaction over a `confused` base are dropped, and a base turning `confused` ends the running reaction at once. `angry`, `sad`, `clap` and `roar` are built; the clap's mitts exist on the head crop only. Under reduced motion `roar` holds its peak (mouth open, head thrown back), the other three their entry pose.
 
 ### Idle behaviour
 - **Breathing:** `compibert-body` `scaleY 1→1.035, scaleX 1→.99` (pivot = belly bottom), rnd(1.6, 2.1) s per half cycle per instance, `sine.inOut`, yoyo ∞. Not in head/emote crops.

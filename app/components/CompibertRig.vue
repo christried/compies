@@ -6,7 +6,10 @@ import headSvg from '~/assets/compibert/compibert-head.svg?raw'
 // without any script (header, Construction page, empty states), so a page that has no rig loads no GSAP; this one is for the ceremony's end frame.
 // The server and the first paint show the still pose (open eyes, no GSAP); the rig takes over in onMounted.
 const props = withDefaults(defineProps<{
+  /** The base: what he does while no reaction runs. */
   state?: RigState
+  /** A timed reaction over the base (#928): a new object is a new reaction, even with equal content. It returns to `state` by itself after its length; the caller never flips `state` back. */
+  reaction?: Reaction | null
   /** Fixed for the instance's life: change it with `:key`. */
   variant?: RigVariant
   /** Width in px; without it the rig fills its container's width. Full is 404 × 344, the head and the bust (#526) are square. */
@@ -19,7 +22,7 @@ const props = withDefaults(defineProps<{
   hopsFor?: number
   /** The head crop wears the Sticker outline in Dunkel (and System-dark): the cream rim keeps him from vanishing on a dark bubble. Hell has none. */
   rim?: boolean
-}>(), { state: 'idle', variant: 'full', size: undefined, look: null, micro: true, hopsFor: undefined, rim: false })
+}>(), { state: 'idle', reaction: null, variant: 'full', size: undefined, look: null, micro: true, hopsFor: undefined, rim: false })
 
 // Cheap outline on weak devices (hand-off § Performance): the hard shadow's offset in the figure's own units, 7 and 8 of the viewBox's width
 // (`viewWidth`: 404 for the full figure, 254 for the bust's crop of it (#526), 192 for the head (#584)).
@@ -61,14 +64,56 @@ function applyLook(instant: boolean) {
   rig?.lookAt(props.look, instant)
 }
 
+// What shows: the running reaction, else the base.
+const visible = ref<RigState>(props.state)
+let running: RigState | null = null
+let reactionTimer: ReturnType<typeof setTimeout> | undefined
+// A reaction that came before the rig was there (GSAP still loading, or set at mount): it starts, with its full length, once the base has been entered.
+let early: Reaction | null = props.reaction
+
+/** The single place that sets the rig's state. */
 function enter(state: RigState) {
   const reduced = reducedMotion()
+  visible.value = state
   held.value = reduced
   rig?.setState(state, reduced, { hopsFor: props.hopsFor })
   // `restTo` re-centres the face, so the look is told again after each state.
   applyLook(reduced)
 }
-watch(() => props.state, enter)
+
+function dropReaction() {
+  clearTimeout(reactionTimer)
+  reactionTimer = undefined
+  running = null
+  early = null
+}
+
+function react(reaction: Reaction) {
+  if (unmounted) return
+  if (!rig) {
+    early = reaction
+    return
+  }
+  if (!admitReaction(props.state, running, reaction.state)) return
+  running = reaction.state
+  enter(reaction.state)
+  clearTimeout(reactionTimer)
+  reactionTimer = setTimeout(() => {
+    reactionTimer = undefined
+    running = null
+    enter(props.state)
+  }, reactionSeconds(reaction) * 1000)
+}
+
+// The base first, then the reaction: a reconnect is `state` confused → idle and a `wave` in one tick, and the wave must be admitted.
+watch([() => props.state, () => props.reaction], ([state, reaction], [before, previous]) => {
+  if (state !== before) {
+    // A base turning `confused` ends the reaction at once (errors block); any other base waits for the reaction's end.
+    if (state === 'confused') dropReaction()
+    if (state === 'confused' || running === null) enter(state)
+  }
+  if (reaction && reaction !== previous) react(reaction)
+})
 watch(() => props.look, () => applyLook(reducedMotion()))
 
 /** One nod of the head (the Tour's „Zeigt“); nothing under reduced motion. */
@@ -101,10 +146,14 @@ onMounted(async () => {
   // The first look is set, not eased: he arrives looking at it (the reference's `look(first)`).
   applyLook(true)
   rig.setActive(onStage.value && inView.value)
+  const waiting = early
+  early = null
+  if (waiting) react(waiting)
 })
 
 onBeforeUnmount(() => {
   unmounted = true
+  clearTimeout(reactionTimer)
   rig?.destroy()
   rig = undefined
   leaveStage()
@@ -132,7 +181,7 @@ onBeforeUnmount(() => {
       '--cb-dy': `${shadow.y}px`,
     }"
     aria-hidden="true"
-    :data-state="state"
+    :data-state="visible"
     :data-ready="ready ? 'true' : 'false'"
     :data-animating="animating ? 'true' : 'false'"
     :data-held="held ? 'true' : 'false'"

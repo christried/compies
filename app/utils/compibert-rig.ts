@@ -1,6 +1,6 @@
 // Compibert's rig (#311, spec #308 § Compibert's rig, ADR 0015): the animated twin of the still `Compibert`. A port of the seven states of
 // `docs/design_handoff_compies/reference/compibert-options.js` with its numbers (its timings agree with `Compibert Rig.dc.html`); `excited`
-// is the eighth, for the mascot at the wheel (#526), and `wave` the ninth, for the Tour's greeting (#460). The Tour's face also looks at a point
+// is the eighth, for the mascot at the wheel (#526), and `wave` the ninth, for the Tour's greeting (#460); `angry`, `sad`, `clap` and `roar` (#928) are the reactions of the header and the empty states. The Tour's face also looks at a point
 // (`lookAt`), nods (`nod`), idles without micro actions (`micro: false`) and lands its hops after a few seconds (`hopsFor`): the same figure, no new part.
 // Pure TS on purpose: no Nuxt auto-imports, no `~/` aliases, only erasable syntax. Node runs this file directly in `scripts/bake-compibert.mjs`,
 // and it is imported on the server too, so nothing here touches `window` or `navigator` at the top level.
@@ -9,7 +9,7 @@
 /// <reference lib="dom" />
 import type { Gsap } from './gsap'
 
-export const RIG_STATES = ['idle', 'run', 'suspense', 'cheer', 'confused', 'laugh', 'dance', 'excited', 'wave'] as const
+export const RIG_STATES = ['idle', 'run', 'suspense', 'cheer', 'confused', 'laugh', 'dance', 'excited', 'wave', 'angry', 'sad', 'clap', 'roar'] as const
 export type RigState = typeof RIG_STATES[number]
 /** `bust` (#526) is the full asset cropped to a square from the head to the arms: it has the breath and the tail, an outline, and no place on the stage. */
 export type RigVariant = 'full' | 'head' | 'bust'
@@ -80,7 +80,9 @@ export function mountRig(gsap: Gsap, host: HTMLElement, options: { variant: RigV
     jaw: q('compibert-jaw'), neck: q('compibert-neck'), browL: q('compibert-brow-left'), browR: q('compibert-brow-right'), lidL: q('compibert-lid-left'), lidR: q('compibert-lid-right'),
     pupL: q('compibert-pupil-left'), pupR: q('compibert-pupil-right'), ballL: q('cb-ball-left'), ballR: q('cb-ball-right'),
     hapL: q('cb-happy-left'), hapR: q('cb-happy-right'), shadow: q('compibert-shadow'),
-    tear: q('cb-tear'), sweat: q('cb-sweat'), q: q('cb-q'),
+    tear: q('cb-tear'), sweat: q('cb-sweat'), q: q('cb-q'), anger: q('cb-anger'),
+    // The clap's mitts and impact lines (#928): the head asset only, so these are null on the full figure and the bust.
+    hands: q('cb-hands'), handL: q('cb-hand-l'), handR: q('cb-hand-r'), clapfx: q('cb-clapfx'),
   }
   const mouths = [...svg.querySelectorAll('.cb-m')]
   const fx = [...svg.querySelectorAll('.cb-fx > *')]
@@ -303,6 +305,75 @@ export function mountRig(gsap: Gsap, host: HTMLElement, options: { variant: RigV
           .to(p.root, { y: -9, duration: half / 2, yoyo: true, repeat: 1, ease: 'power1.out' }, at)
       }
       tl.add(cycle, 0.08)
+    },
+    angry(tl) {
+      // Brows down, the anger mark throbbing, and every 1.1 s a roar with a shaking head (#928; the reference's `angry`).
+      mouth('frown', 0.1, tl, 0.05)
+      setLids(0.3, 0.15, tl, 0.05)
+      speed(2.6)
+      tl.to(p.browL, { opacity: 1, rotation: 16, y: 5, duration: 0.15 }, 0.05).to(p.torso, { rotation: 6, duration: 0.3 }, 0.05).to(p.head, { rotation: 4, duration: 0.3 }, 0.05)
+        .to(p.armL, { rotation: -48, duration: 0.2 }, 0.05).to(p.armR, { rotation: -56, duration: 0.2 }, 0.05).to(p.anger, { opacity: 1, duration: 0.1 }, 0.1)
+      tl.add(gsap.to(p.anger, { scale: 1.2, duration: 0.22, yoyo: true, repeat: -1, ease: 'sine.inOut' }), 0.1)
+      const roar = gsap.timeline({ repeat: -1, repeatDelay: 1.1 })
+      mouth('roar', 0.05, roar, 0)
+      roar.to(p.head, { rotation: -10, duration: 0.12, ease: 'power2.out' }, 0).to(p.head, { x: 3, duration: 0.04, yoyo: true, repeat: 9, ease: 'none' }, 0.12)
+        .to(p.armL, { rotation: -70, duration: 0.08, yoyo: true, repeat: 3 }, 0.12)
+      mouth('frown', 0.1, roar, 0.52)
+      roar.to(p.head, { rotation: 4, x: 0, duration: 0.3, ease: 'power2.out' }, 0.52)
+      tl.add(roar, 0.5)
+    },
+    sad(tl) {
+      // Lids half shut, brow up at the middle, the head hanging and a tear that falls (#928).
+      mouth('frown', 0.15, tl, 0.05)
+      setLids(0.38, 0.3, tl, 0.05)
+      speed(0.4)
+      tl.to(p.browL, { opacity: 1, rotation: -14, y: -2, duration: 0.3 }, 0.05).to(p.head, { rotation: 12, duration: 0.6, ease: 'sine.inOut' }, 0.05)
+        .to(p.torso, { rotation: 5, duration: 0.6, ease: 'sine.inOut' }, 0.05).to(some(p.armL, p.armR), { rotation: 12, duration: 0.5 }, 0.05)
+      if (p.tear) tl.add(gsap.fromTo(p.tear, { opacity: 1, y: 0, scale: 0.6 }, { y: 46, opacity: 0, scale: 1, duration: 1.3, ease: 'power1.in', repeat: -1, repeatDelay: 0.5 }), 0.4)
+    },
+    clap(tl) {
+      // Both arms meet and part; on the head crop, which has no arms, the mitts do it with an impact mark (#928, the reference's `STATES.clap`).
+      happyEyes(tl)
+      mouth('grin', 0.1, tl, 0.05)
+      speed(1.6)
+      tl.to(p.armL, { rotation: -96, duration: 0.2 }, 0.05).to(p.armR, { rotation: -70, duration: 0.2 }, 0.05).to(p.head, { rotation: -4, duration: 0.3 }, 0.05)
+      const clap = gsap.timeline({ repeat: -1, repeatDelay: 0.04 })
+      clap.to(p.armL, { rotation: -74, duration: 0.09, ease: 'power2.in' }, 0).to(p.armR, { rotation: -92, duration: 0.09, ease: 'power2.in' }, 0).to(p.root, { y: -3, duration: 0.09 }, 0)
+        .to(p.armL, { rotation: -96, duration: 0.11, ease: 'power2.out' }, 0.09).to(p.armR, { rotation: -70, duration: 0.11, ease: 'power2.out' }, 0.09).to(p.root, { y: 0, duration: 0.11 }, 0.09)
+      tl.add(clap, 0.25)
+      if (!p.hands) return
+      // A clap killed in mid-stroke must leave neither a flash nor a mitt out of place.
+      gsap.set(some(p.clapfx), { opacity: 0 })
+      gsap.set(some(p.handL, p.handR), { x: 0, rotation: 0 })
+      tl.to(p.hands, { opacity: 1, duration: 0.12 }, 0.05)
+      const mitts = gsap.timeline({ repeat: -1, repeatDelay: 0.04 })
+      mitts.to(p.handL, { x: 9, rotation: 10, duration: 0.09, ease: 'power2.in' }, 0).to(p.handR, { x: -9, rotation: -10, duration: 0.09, ease: 'power2.in' }, 0)
+        .set(p.clapfx, { opacity: 1 }, 0.09).to(p.clapfx, { opacity: 0, duration: 0.1 }, 0.09)
+        .to(p.handL, { x: 0, rotation: 0, duration: 0.11, ease: 'power2.out' }, 0.09).to(p.handR, { x: 0, rotation: 0, duration: 0.11, ease: 'power2.out' }, 0.09)
+      tl.add(mitts, 0.2)
+    },
+    roar(tl, reduced) {
+      // Wind up (mouth an O, head back), roar (mouth wide, head forward and shaking), settle: every 2.4 s (#928, the reference's `STATES.roar`).
+      speed(2.4)
+      tl.to(p.browL, { opacity: 1, rotation: 16, y: 5, duration: 0.15 }, 0.05)
+      if (reduced) {
+        // The entry is only the brows, which holds a face that does not roar: the held pose is the roar's peak, with no shake.
+        mouth('roar', 0.04, tl, 0.05)
+        tl.to(p.head, { rotation: 9, duration: 0.12, ease: 'power3.out' }, 0.05).to(p.torso, { rotation: 6, duration: 0.12, ease: 'power3.out' }, 0.05)
+          .to(p.armL, { rotation: -70, duration: 0.12 }, 0.05).to(p.armR, { rotation: -78, duration: 0.12 }, 0.05)
+        return
+      }
+      const roar = gsap.timeline({ repeat: -1, repeatDelay: 0.7 })
+      mouth('o', 0.08, roar, 0)
+      roar.to(p.head, { rotation: -14, duration: 0.4, ease: 'power2.out' }, 0).to(p.torso, { rotation: -5, scale: 1.04, duration: 0.4, ease: 'power2.out' }, 0)
+        .to(p.armL, { rotation: -30, duration: 0.4 }, 0).to(p.armR, { rotation: -36, duration: 0.4 }, 0)
+      mouth('roar', 0.04, roar, 0.45)
+      roar.to(p.head, { rotation: 9, duration: 0.12, ease: 'power3.out' }, 0.45).to(p.torso, { rotation: 6, scale: 1, duration: 0.12, ease: 'power3.out' }, 0.45)
+        .to(p.armL, { rotation: -70, duration: 0.12 }, 0.45).to(p.armR, { rotation: -78, duration: 0.12 }, 0.45)
+        .to(p.head, { x: 2.5, duration: 0.03, yoyo: true, repeat: 21, ease: 'none' }, 0.57)
+      mouth('frown', 0.1, roar, 1.3)
+      roar.to(p.head, { rotation: 0, x: 0, duration: 0.3 }, 1.3).to(p.torso, { rotation: 0, duration: 0.3 }, 1.3)
+      tl.add(roar, 0.1)
     },
   }
 
