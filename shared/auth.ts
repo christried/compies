@@ -103,6 +103,12 @@ export interface AccountDeleted {
   deleted: true
 }
 
+/** What GET /api/me/hosted answers: the User's Events and games, the two sets a deletion removes (#918). */
+export interface HostedCounts {
+  events: number
+  games: number
+}
+
 /** What POST /api/me/tour-seen and POST /api/me/tour-reset return: the Tour version stored now (#646). */
 export interface SavedTourSeen {
   tourSeen: number
