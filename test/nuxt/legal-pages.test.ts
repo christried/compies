@@ -157,6 +157,26 @@ describe('legal pages', () => {
     expect(section!.findAll('p')).toHaveLength(7)
   })
 
+  it('name the own Profilbild in sections 5, 6 and 7 word for word: where it is stored, who loads it, that a sign-in keeps it (#912, spec #907)', async () => {
+    const page = await mountSuspended(DatenschutzPage, { route: '/datenschutz' })
+    const paragraphs = (heading: string) => page.findAll('section').find(s => s.get('h2').text() === heading)!.findAll('p').map(p => p.text())
+
+    const storage = paragraphs('5. Spielbilder und Profilbilder (Cloudflare R2)')
+    const kennung = storage.findIndex(p => p.endsWith('und seine Kennung aus Spiel-ID und einer Zufallsfolge.'))
+    expect(kennung).toBeGreaterThanOrEqual(0)
+    expect(storage[kennung + 1]).toBe('Lädst du auf der Seite „Profil“ ein eigenes Profilbild hoch, speichern wir es im selben Speicher: das Bild selbst (256 × 256 Pixel, in deinem Browser zugeschnitten; das Original verlässt dein Gerät nicht) und seine Kennung, eine Zufallsfolge ohne Bezug zu dir. Auch dieses Bild reicht unser Server unter /api/images/ an den Browser weiter. Anders als ein Spielbild kann es jeder abrufen, der seine Adresse kennt, auch ohne Anmeldung; die Adresse lässt sich nicht erraten und erscheint nur dort, wo dein Profilbild gezeigt wird (Abschnitt 7). Lädst du ein neues Bild hoch oder entfernst du dein Bild, löschen wir das bisherige sofort aus dem Speicher.')
+    expect(storage.at(-1)).toContain('Rechtsgrundlage ist Art. 6 Abs. 1 lit. b DSGVO (Bereitstellung der Spiele in der Bibliothek und in den Events sowie des Profilbilds).')
+
+    const signIn = paragraphs('6. Anmeldung über Discord oder Twitch und Anzeigename').join('\n')
+    expect(signIn).toContain('Name und Adresse des Profilbilds werden bei jeder Anmeldung aktualisiert; ein eigenes Profilbild (Abschnitt 7) bleibt davon unberührt.')
+    expect(signIn).not.toContain('Name und Profilbild werden bei jeder Anmeldung aktualisiert.')
+
+    const avatar = paragraphs('7. Profilbild')
+    expect(avatar).toHaveLength(2)
+    expect(avatar[0]).toBe('Neben deinem Anzeigenamen zeigt Compies ein rundes Profilbild: dir selbst, den Mitgliedern der Events, denen du angehörst, und, wenn du Host bist, allen, die einen Einladungslink zu deinem Event öffnen, auch ohne Anmeldung. Es ist das Bild, das du auf der Seite „Profil“ hochgeladen hast, sonst dein Profilbild bei Discord bzw. Twitch, sonst dein Anfangsbuchstabe.')
+    expect(avatar[1]).toMatch(/^Ein eigenes Bild liegt bei uns \(Abschnitt 5\) und wird von unserem Server geladen; Discord und Twitch erfahren davon nichts\. Du kannst es jederzeit ersetzen oder entfernen; dann gilt wieder dein Bild bei Discord bzw\. Twitch\. Ohne eigenes Bild wird das Profilbild direkt von den Servern von Discord bzw\. Twitch geladen\. Dabei erhält der jeweilige Dienst /)
+  })
+
   it('name the compies-appearance cookie in section 9 and move the Stand (#405, spec #398)', async () => {
     const page = await mountSuspended(DatenschutzPage, { route: '/datenschutz' })
     const section = page.findAll('section').find(s => s.get('h2').text() === '9. Cookies und Speicher im Browser')
@@ -169,8 +189,8 @@ describe('legal pages', () => {
     expect(text.indexOf('Sitzungs-Cookies (Better Auth)')).toBeLessThan(text.indexOf(cookie))
     expect(text.indexOf(cookie)).toBeLessThan(text.indexOf('Lokaler Speicher (compies-sound)'))
     expect(section!.findAll('p')).toHaveLength(10)
-    // The one place the date is pinned: the day of the last change, 22 November 2026 (0.19, § 9 for the cookie of Reduced motion, #680, and for the Round card's memory, #838; before that 0.18, §4, §10, §11, §16 and §21 for the Chat and the Emotes, #775).
-    expect(page.get('main').text()).toContain('Stand: 22. November 2026.')
+    // The one place the date is pinned: the day of the last change, 25 November 2026 (0.21, §§ 5, 6 and 7 for the own Profilbild, #912; before that 0.19, § 9 for the cookie of Reduced motion, #680, and for the Round card's memory, #838; before that 0.18, §4, §10, §11, §16 and §21 for the Chat and the Emotes, #775).
+    expect(page.get('main').text()).toContain('Stand: 25. November 2026.')
   })
 
   it('name the compies-round-notes entry in section 9, right after compies.news.seen, word for word (#838, spec #856)', async () => {
