@@ -20,7 +20,7 @@ export function useProfileImageUpload() {
     try {
       const response = await $fetch<SavedProfileImage>('/api/me/image', { method: 'PUT', headers: { 'content-type': 'image/webp' }, body: blob })
       // Only the address is taken: a snapshot of the whole User can carry an older Appearance (#404).
-      if (user.value) user.value = { ...user.value, image: response.image }
+      if (user.value) user.value = { ...user.value, image: response.image, hasOwnImage: true }
       failure.value = null
     }
     catch {

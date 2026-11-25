@@ -16,6 +16,8 @@ const { displayName, missing, canSave, saving, saveFailed, save: saveName } = us
 // The upload of the picture (#678): „Hochladen“ opens the hidden file input, as the game form's cover field does.
 const input = useTemplateRef<HTMLInputElement>('input')
 const { busy, converting, failure, pick } = useProfileImageUpload()
+// The removal of the own picture (#911): the link shows only while an upload is there (`hasOwnImage`).
+const { removing, failed: removeFailed, remove } = useProfileImageRemove(busy)
 const status = computed(() => {
   if (converting.value) return t('profile.imageConverting')
   return busy.value ? t('profile.imageUploading') : null
@@ -58,7 +60,7 @@ const save = () => saveName(() => {
       />
       <div class="flex min-w-0 flex-1 flex-col gap-1">
         <b class="text-[14px]">{{ t('profile.avatar') }}</b>
-        <span class="text-small text-ink-2">{{ t('profile.avatarHelp') }}</span>
+        <span class="text-small text-ink-2">{{ t(user?.hasOwnImage ? 'profile.avatarHelpOwn' : 'profile.avatarHelp') }}</span>
         <AppButton
           variant="secondary"
           class="mt-1 self-start"
@@ -73,6 +75,15 @@ const save = () => saveName(() => {
           </template>
           {{ t('profile.upload') }}
         </AppButton>
+        <button
+          v-if="user?.hasOwnImage"
+          type="button"
+          class="inline-flex min-h-11 items-center gap-1.5 self-start px-1 text-[13px] font-bold text-ink underline decoration-2 decoration-line-soft underline-offset-4 hover:decoration-line"
+          :aria-disabled="busy || removing || undefined"
+          @click="remove"
+        >
+          {{ t('profile.removeImage') }}
+        </button>
         <span
           v-if="status"
           role="status"
@@ -85,6 +96,12 @@ const save = () => saveName(() => {
       tone="critical"
     >
       {{ failure === 'convert' ? t('profile.imageConvertFailed') : t('profile.imageUploadFailed') }}
+    </NoticeBanner>
+    <NoticeBanner
+      v-if="removeFailed"
+      tone="critical"
+    >
+      {{ t('profile.imageRemoveFailed') }}
     </NoticeBanner>
 
     <form
