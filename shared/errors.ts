@@ -187,8 +187,8 @@ export const API_ERROR_STATUS = {
   wheel_not_hidden: 409,
   /** The Host uncovers a Hidden wheel that is uncovered already (#957): a second press. */
   wheel_uncovered: 409,
-  /** The User hosts an Event or has a game in a Game library, so `DELETE /api/me` refuses (#681); 0.21-11 (#917) deletes those with the account and retires this code. */
-  account_hosts: 409,
+  /** A game of the User is named by another Host's Event, which ADR 0018 rules out since 0.16, so `DELETE /api/me` refuses (#681, #917); the operator's check before the Release counts those games. */
+  account_games_held: 409,
   rate_limited: 429,
   /** This deployment has no realtime Worker (no REALTIME_URL): the client takes it as "no live connection" and polls (#156). */
   no_live_connection: 503,

@@ -12,8 +12,9 @@ import type { AccountDeleted } from '../../shared/auth'
 // Deletes the signed-in User's account (#681, spec #907, ADR 0020): no body and no User id, so nobody can delete anybody but themselves, and no second
 // sign-in. `deleteUser` does the database in one transaction; this route owns what comes after: the uploaded Profile picture's object, the rooms and the
 // session cookie. The Profil page's button is 0.21-12 (#918).
-// A Host (an Event or a game of theirs) is refused with `account_hosts` until 0.21-11 (#917) deletes those with the account. Any other reason is a 500: a
-// session that passed `requireUser` has a live row, and the deletion's own race (two calls at once) lands there too.
+// A Host's Events and library go with the account (#917, ADR 0020); each removed Event's room hears `event.gone`. The one refusal is `account_games_held` (a game of
+// the User named by another Host's Event). Any other reason is a 500: a session that passed `requireUser` has a live row, and the deletion's own race (two calls at
+// once) lands there too.
 export default defineEventHandler(async (event): Promise<AccountDeleted> => {
   const user = await requireUser(event)
   let deletion: UserDeletion
@@ -21,7 +22,7 @@ export default defineEventHandler(async (event): Promise<AccountDeleted> => {
     deletion = await deleteUser(useDb(event), user.id, useClock(event).now())
   }
   catch (error) {
-    if (error instanceof UserNotDeletable && (error.reason === 'hosts_events' || error.reason === 'has_games')) throw apiError('account_hosts')
+    if (error instanceof UserNotDeletable && error.reason === 'games_held') throw apiError('account_games_held')
     throw error
   }
 
@@ -40,6 +41,10 @@ export default defineEventHandler(async (event): Promise<AccountDeleted> => {
   for (const { eventId, deletedMessageIds } of deletion.events) {
     afterCommit(event, { id: eventId }, deletedMessageIds.map(id => ({ type: 'chat.deleted', id, deletedBy: 'writer' })), [], true, [{ users: [user.id], messages: [{ type: 'event.changed' }] }])
   }
+
+  // The Events the User hosted are gone: each room learns it, with no `event.changed` (the read would answer 404). The Host's own sockets hear it too; the Members'
+  // are not closed from here (no Member list in the room, ADR 0013): the page closes its own socket (#917).
+  for (const eventId of deletion.goneEvents) afterCommit(event, { id: eventId }, [{ type: 'event.gone' }], [], false)
 
   // The sessions are gone with the rows already; this only expires the cookie.
   try {

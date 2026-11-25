@@ -12,8 +12,8 @@ import type { EventView } from '~~/shared/event'
  * (ADR 0001, while the tab is visible) runs only while the room is not open. Only a loaded Event is refetched: a link
  * that failed keeps its error page.
  *
- * A later read that answers 404 or 410 ends the Event for this page (#914, ADR 0006): `data` is gone, `error` says
- * the status, and the room stops, so nothing reads or connects any more. Any other failed later read keeps the Event
+ * A later read that answers 404 or 410, or the room's `event.gone` (#917), ends the Event for this page (#914, ADR 0006): `data` is gone, `error` says
+ * the status (410 for the message), and the room stops, so nothing reads or connects any more. Any other failed later read keeps the Event
  * on screen: Nuxt clears the data of a failed read, so the Event last loaded is kept here.
  *
  * Like `useFetch` it can be awaited (the page then waits for the first read) and used without awaiting. Everything
@@ -29,7 +29,14 @@ export function useEventView(slug: MaybeRefOrGetter<string>) {
     if (loadedView) lastLoaded.value = loadedView
   }, { immediate: true, flush: 'sync' })
 
+  // The Host deleted their account: the room says the Event's rows are gone (#917, ADR 0020). Sticky, so a read in flight that resolves after the message, with data
+  // or with an error, changes nothing; the room stops below and is never opened again for this page.
+  const goneByRoom = ref(false)
+  room.on('event.gone', () => {
+    goneByRoom.value = true
+  })
   const goneStatus = computed(() => {
+    if (goneByRoom.value) return 410
     const status = apiFailure(fetchedError.value).status
     return status === 404 || status === 410 ? status : null
   })
