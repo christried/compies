@@ -316,6 +316,13 @@
       "when": 1795589665396,
       "tag": "0044_profile_image_key",
       "breakpoints": true
+    },
+    {
+      "idx": 45,
+      "version": "7",
+      "when": 1795622601380,
+      "tag": "0045_member_removed",
+      "breakpoints": true
     }
   ]
 }
