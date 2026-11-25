@@ -24,8 +24,8 @@ const writerColumns = {
   name: users.name,
   displayName: users.displayName,
   image: users.image,
+  profileImageKey: users.profileImageKey,
   deletedAt: users.deletedAt,
-  // 0.21-2 (#678): add profileImageKey: users.profileImageKey here.
 }
 
 /**
