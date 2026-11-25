@@ -11,9 +11,12 @@ import { endMembership } from './invite'
 export type NotDeletable = 'unknown_user' | 'already_deleted' | 'games_held'
 
 /** The User cannot be deleted now. Nothing has changed when it is thrown. */
+// The operator's script (#919) runs this file in plain Node, which strips types but refuses the rest: keep it in erasable syntax (no `enum`, no parameter property, no `namespace`).
 export class UserNotDeletable extends Error {
-  constructor(readonly reason: NotDeletable) {
+  readonly reason: NotDeletable
+  constructor(reason: NotDeletable) {
     super(`User is not deletable: ${reason}`)
+    this.reason = reason
   }
 }
 
