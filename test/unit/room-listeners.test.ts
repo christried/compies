@@ -22,10 +22,6 @@ const ROOM_TYPES: Record<RoomMessageType, true> = {
   'member.removed': true,
 }
 
-// Types no page listens to yet, each with the ticket that builds the listener and deletes its line here. `member.removed` (#697) is sent by the Host's removal of a Member;
-// the removed User's page learns it in #897 (0.22-3).
-const NOT_HEARD_YET: readonly RoomMessageType[] = ['member.removed']
-
 const root = resolve(import.meta.dirname, '../..')
 
 /** Every `.ts` and `.vue` file under a directory, as paths relative to the repo root. */
@@ -45,7 +41,7 @@ describe('the room listeners', () => {
         heard.add(match[1]!)
       }
     }
-    const unheard = Object.keys(ROOM_TYPES).filter(type => !heard.has(type) && !NOT_HEARD_YET.includes(type as RoomMessageType))
+    const unheard = Object.keys(ROOM_TYPES).filter(type => !heard.has(type))
     expect(unheard).toEqual([])
   })
 })

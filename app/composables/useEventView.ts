@@ -14,7 +14,8 @@ import type { EventView } from '~~/shared/event'
  *
  * A later read that answers 404 or 410, or the room's `event.gone` (#917), ends the Event for this page (#914, ADR 0006): `data` is gone, `error` says
  * the status (410 for the message), and the room stops, so nothing reads or connects any more. Any other failed later read keeps the Event
- * on screen: Nuxt clears the data of a failed read, so the Event last loaded is kept here.
+ * on screen: Nuxt clears the data of a failed read, so the Event last loaded is kept here. The room's `member.removed` (#897, the Host removed this User)
+ * ends the Event the same way and outranks all of it: `removed` is true and the page shows the notice instead of a 404 or 410 state.
  *
  * Like `useFetch` it can be awaited (the page then waits for the first read) and used without awaiting. Everything
  * that needs the component is registered before the first await, which would lose it.
@@ -40,14 +41,24 @@ export function useEventView(slug: MaybeRefOrGetter<string>) {
     const status = apiFailure(fetchedError.value).status
     return status === 404 || status === 410 ? status : null
   })
-  const data = computed(() => (goneStatus.value ? undefined : (fetchedData.value ?? lastLoaded.value)))
-  const error = computed(() => (goneStatus.value ? { statusCode: goneStatus.value } : fetchedError.value))
-  watch(goneStatus, (status) => {
-    if (status) room.stop()
+  // The Host removed this User (#897, ADR 0006): the room sends `member.removed` to their sockets only. Sticky and above everything else the page can end on: a read in flight, a 404
+  // (already „Link ungültig“), a 410, an `event.gone` or a failed read change nothing once it came. A removed User's reads answer 404, so `error` says 404 and the page tells why.
+  const removedByRoom = ref(false)
+  room.on('member.removed', () => {
+    removedByRoom.value = true
+  })
+  const ended = computed(() => removedByRoom.value || goneStatus.value !== null)
+  const data = computed(() => (ended.value ? undefined : (fetchedData.value ?? lastLoaded.value)))
+  const error = computed(() => {
+    if (removedByRoom.value) return { statusCode: 404 }
+    return goneStatus.value ? { statusCode: goneStatus.value } : fetchedError.value
+  })
+  watch(ended, (isEnded) => {
+    if (isEnded) room.stop()
   })
 
   const refreshLoaded = () => {
-    if (lastLoaded.value && !goneStatus.value) void refresh()
+    if (lastLoaded.value && !ended.value) void refresh()
   }
   room.on('event.changed', refreshLoaded)
   watch(room.state, (state) => {
@@ -55,7 +66,7 @@ export function useEventView(slug: MaybeRefOrGetter<string>) {
   })
   usePollRefresh(refreshLoaded, POLL_INTERVAL_MS, () => room.state.value !== 'open')
 
-  const view = { data, error, refresh, room }
+  const view = { data, error, refresh, room, removed: readonly(removedByRoom) }
   return Object.assign(fetched.then(() => view), view)
 }
 

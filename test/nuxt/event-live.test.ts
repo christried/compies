@@ -64,7 +64,7 @@ function serveLive(isHost = false) {
 
 const lastSocket = () => sockets[sockets.length - 1]!
 const settle = () => new Promise(resolve => setTimeout(resolve))
-const sendMessage = (type: 'event.changed' | 'event.gone') => lastSocket().options.onMessage(JSON.stringify(envelope({ type }, Date.now())))
+const sendMessage = (type: 'event.changed' | 'event.gone' | 'member.removed') => lastSocket().options.onMessage(JSON.stringify(envelope({ type }, Date.now())))
 
 /** Pages mounted by a test. Each keeps listening for returns (window focus, visibility, online) until it unmounts. */
 const mounted: { unmount: () => void }[] = []
@@ -72,6 +72,15 @@ const mounted: { unmount: () => void }[] = []
 async function mountLive(isHost = false) {
   const live = serveLive(isHost)
   const page = await mountSuspended(EventPage, { route: `/e/${live.slug}` })
+  mounted.push(page)
+  await vi.waitFor(() => expect(sockets.length).toBeGreaterThan(0))
+  return { ...live, page }
+}
+
+/** The page attached to the document, for what the focus can tell (#897). */
+async function mountAttached() {
+  const live = serveLive()
+  const page = await mountSuspended(EventPage, { route: `/e/${live.slug}`, attachTo: document.body })
   mounted.push(page)
   await vi.waitFor(() => expect(sockets.length).toBeGreaterThan(0))
   return { ...live, page }
@@ -270,6 +279,111 @@ describe('the live Event page', () => {
     sendMessage('event.gone')
 
     await vi.waitFor(() => expect(page.get('h1').text()).toBe('Event gelöscht'))
+  })
+
+  // The Host removed this User while they have the Event open (#897, ADR 0006): the room sends `member.removed` to their sockets only, and the page shows the notice at once and
+  // reads nothing more. The endpoint keeps answering the Event here (a real removed User's read answers 404), so only the message can have ended it. The Host's variant
+  // pins only that the page's turn does not depend on the read: the server never sends this message to a Host.
+  describe.each([['a Member\'s', false], ['the Host\'s', true]])('%s page, removed', (_who, isHost) => {
+    it('shows Du bist nicht mehr in diesem Event on member.removed and reads nothing more: no read, no ticket, the socket closed (#897)', async () => {
+      const { served, page } = await mountLive(isHost)
+      const reads = served.reads
+      const tickets = served.tickets
+
+      sendMessage('member.removed')
+
+      await vi.waitFor(() => expect(page.get('h1').text()).toBe('Du bist nicht mehr in diesem Event'))
+      expect(page.text()).toContain('Der Host hat dich aus dem Event entfernt.')
+      const home = page.findAll('a').find(link => link.text().includes('Zur Startseite'))
+      expect(home?.attributes('href')).toBe('/')
+      expect(page.text()).not.toContain(served.name)
+      await settle()
+      window.dispatchEvent(new Event('focus'))
+      lastSocket().options.onClose()
+      await settle()
+      await settle()
+      expect(served.reads).toBe(reads)
+      expect(served.tickets).toBe(tickets)
+      expect(lastSocket().close).toHaveBeenCalled()
+    })
+  })
+
+  it('puts the focus on the notice\'s title after member.removed (#897)', async () => {
+    const { page } = await mountAttached()
+
+    sendMessage('member.removed')
+
+    await vi.waitFor(() => expect(page.get('h1').text()).toBe('Du bist nicht mehr in diesem Event'))
+    expect(document.activeElement).toBe(page.get('h1').element)
+  })
+
+  it('shows the notice on a phone page after member.removed: no TabBar and not the Event\'s name (#897)', async () => {
+    stubScreen(false)
+    const { served, page } = await mountLive()
+    expect(page.find('nav[aria-label="Event"]').exists()).toBe(true)
+
+    sendMessage('member.removed')
+
+    await vi.waitFor(() => expect(page.get('h1').text()).toBe('Du bist nicht mehr in diesem Event'))
+    expect(page.find('nav[aria-label="Event"]').exists()).toBe(false)
+    expect(page.text()).not.toContain(served.name)
+  })
+
+  // The notice outranks everything else the page can end on, in whatever order it arrives (#897): the removed User's reads answer 404 (ADR 0006), but the page says why.
+  it.each([['an Event', 200], ['an error', 404], ['a 410', 410]])('ends on the notice when member.removed comes while a read is in flight and the read then answers %s (%i)', async (_what, status) => {
+    const { served, page } = await mountLive()
+    let release!: () => void
+    served.hold = new Promise<void>((resolve) => {
+      release = resolve
+    })
+    const reads = served.reads
+    sendMessage('event.changed')
+    await vi.waitFor(() => expect(served.reads).toBe(reads + 1))
+
+    sendMessage('member.removed')
+    if (status !== 200) served.status = status
+    release()
+    await settle()
+    await settle()
+
+    await vi.waitFor(() => expect(page.get('h1').text()).toBe('Du bist nicht mehr in diesem Event'))
+    expect(page.text()).not.toContain(served.name)
+  })
+
+  // The fake socket delivers a message after `stop()` closed it; a browser would not. So this is the case where the message was already delivered to the page when the 404
+  // ended the Event (both queued in the same moment): the notice then replaces „Link ungültig“. When the 404 closed the socket first, „Link ungültig“ stays (0.21's rule, #914).
+  it('replaces Link ungültig by the notice when member.removed is delivered after a 404 ended the Event (#897)', async () => {
+    const { served, page } = await mountAttached()
+    served.status = 404
+    sendMessage('event.changed')
+    await vi.waitFor(() => expect(page.get('h1').text()).toBe('Link ungültig'))
+
+    sendMessage('member.removed')
+
+    await vi.waitFor(() => expect(page.get('h1').text()).toBe('Du bist nicht mehr in diesem Event'))
+    expect(document.activeElement).toBe(page.get('h1').element)
+  })
+
+  it('ends on the notice when member.removed comes to a page whose first read failed', async () => {
+    const live = serveLive()
+    live.served.status = 500
+    const page = await mountSuspended(EventPage, { route: `/e/${live.slug}` })
+    mounted.push(page)
+    await vi.waitFor(() => expect(sockets.length).toBeGreaterThan(0))
+
+    sendMessage('member.removed')
+
+    await vi.waitFor(() => expect(page.get('h1').text()).toBe('Du bist nicht mehr in diesem Event'))
+  })
+
+  it.each([['event.gone', 'member.removed'], ['member.removed', 'event.gone']] as const)('ends on the notice, not Event gelöscht, when %s comes and then %s', async (first, second) => {
+    const { page } = await mountLive()
+
+    sendMessage(first)
+    await vi.waitFor(() => expect(page.get('h1').text()).not.toBe('Freitags-Zocken'))
+    sendMessage(second)
+
+    await vi.waitFor(() => expect(page.get('h1').text()).toBe('Du bist nicht mehr in diesem Event'))
   })
 
   it('closes the socket when the page goes away', async () => {
