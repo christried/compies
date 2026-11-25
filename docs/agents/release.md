@@ -26,6 +26,15 @@ Every Release runs these steps in this order. A step finds work → tickets, fix
 
 **Paused: the wording walk and the wording sweep** (the user, 2026-11-25: too long and too token-expensive). No spec or Release gets a „Wording-Walk“ ticket or a `ready-for-human` „Texte von x.y prüfen“ sweep ticket, and no cut or Release PR waits for one; a Release's new texts count as approved without a sweep. The user reworks the walks first; #620, #638 and #661 stay open for that, and `scripts/wording/` stays as it is until then.
 
+**Skipped for the Releases planned on 2026-11-25: browser checks, the walk-through and the user's approval of legal texts** (the user, 2026-11-25, to work through the open issues faster). For 0.22 (#894), 0.23 (#927) and 0.24 (#938):
+
+- No browser check of any kind: no Release browser check (step 1's last bullet; #904, #936 and #945 close as not planned), no slot-2 measurement by an implementer or the orchestrator (`docs/agents/implementer-frame.md` § Checks, `docs/agents/subagents.md` § Supervision), and no check agent or Claude in Chrome on staging. Step 2 verifies each issue by the green CI run on its merge commit and the ready deployment, as it does for a ticket with nothing visible, and the comment that closes the issue says so.
+- No walk-through (step 3; #905, #937 and #946 close as not planned).
+- A legal text a ticket prescribes (the Datenschutzerklärung, the Impressum) counts as approved as the ticket words it, without the user's OK (#899, #942).
+- Still run: TDD in every ticket, the Release review of step 1 and its fixes, and the user's approval of a production migration and of the merge into `main` (`docs/agents/delivery.md`). Claude Design hand-offs (`ready-for-human`) stay the user's.
+
+A Release planned after 2026-11-25 runs every step again unless the user says otherwise.
+
 ## Hotfix Release
 
 A Hotfix Release ships `urgent` issues (bugs seen on production, `docs/agents/issue-tracker.md` § Bugs) that cannot wait for the next planned Release (the user, 2026-11-21, 0.18.1). It is a patch Release named „Hotfixes“ (`## [0.18.1] - 2026-11-21 – Hotfixes`), and it takes a shorter path than § Review, walk-through, retro:
