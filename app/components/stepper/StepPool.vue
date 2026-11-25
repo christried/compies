@@ -161,8 +161,13 @@ function onUseExisting(game: GameView) {
           tone="info"
         >
           {{ t('stepper.pool.presetLine', { suitability: t(`library.suitability.${preset.suitability}`), players: t('library.players', { n: preset.players }) }) }}
-          <template v-if="hiddenCount(loaded) > 0">
-            {{ t('stepper.pool.presetHidden', { n: hiddenCount(loaded) }, hiddenCount(loaded)) }}
+          <template
+            v-for="hidden in [hiddenCount(loaded)]"
+            :key="hidden"
+          >
+            <template v-if="hidden > 0">
+              {{ t('stepper.pool.presetHidden', { n: hidden }, hidden) }}
+            </template>
           </template>
           <template #action>
             <AppButton
