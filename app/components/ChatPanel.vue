@@ -4,6 +4,7 @@ import { apiErrorKey, apiFailure } from '~/utils/api-error'
 import { teamNameAt } from '~/utils/board'
 import { formatActivityTime } from '~/utils/berlin-time'
 import { groupMessages, markDeleted, mergeMessages, splitMessageText } from '~/utils/chat'
+import { membershipEnded } from '~/utils/members'
 import { shownPerson } from '~/utils/shown-person'
 import { chatRise } from '~/utils/motion'
 import { MESSAGE_MAX, normaliseMessageLineBreaks, parseMessageText } from '~~/shared/message-text'
@@ -295,6 +296,11 @@ watch(props.room.state, (state) => {
 })
 watch(() => props.active, (active) => {
   if (active) scrollToEnd()
+})
+// A Member the Event no longer lists (a deleted account, #916; a removal from 0.22, #697): only the Chat's read knows the writer now, so it reads again, once per such change and not
+// per `event.changed` (#990). The merge takes the writer's newer values, so the name line reads „Gelöschtes Konto“, or the real name of a writer who left without being deleted.
+watch(() => props.members.map(member => member.id), (ids, before) => {
+  if (membershipEnded(before, ids)) void loadFirst()
 })
 onMounted(() => void loadFirst())
 

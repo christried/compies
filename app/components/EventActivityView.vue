@@ -15,6 +15,8 @@ defineProps<{
   nextNumber: number | null
   /** The page's count of the instants that passed: the feed reads again with it (#229). */
   refreshTick: number
+  /** The ids of the Event's Members, for the feed's re-read when one leaves (#990). */
+  memberIds: string[]
 }>()
 
 const { t } = useI18n()
@@ -40,6 +42,7 @@ const { t } = useI18n()
         :refresh-tick="refreshTick"
         :teams="teams"
         :winners-hidden="winnersHidden"
+        :member-ids="memberIds"
       />
     </div>
   </section>
