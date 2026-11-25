@@ -2,7 +2,7 @@
 // Full-page system states (screen 31) in the bare shell. Focus goes to the title on mount, and the
 // tab title names the state, over whatever the page around it set.
 const props = defineProps<{
-  kind: 'notFound' | 'noPermission' | 'generic' | 'invalid' | 'deleted'
+  kind: 'notFound' | 'noPermission' | 'generic' | 'invalid' | 'deleted' | 'removed'
 }>()
 
 const { t } = useI18n()

@@ -908,6 +908,10 @@
       "title": "Event gelöscht",
       "text": "Dieses Event wurde vom Host gelöscht. Hier gibt es nichts mehr zu sehen."
     },
+    "removed": {
+      "title": "Du bist nicht mehr in diesem Event",
+      "text": "Der Host hat dich aus dem Event entfernt."
+    },
     "home": "Zur Startseite"
   },
   "price": {

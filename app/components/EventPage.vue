@@ -19,7 +19,7 @@ const props = defineProps<{ slug: string }>()
 
 const { t } = useI18n()
 const slug = toRef(() => props.slug)
-const { data, error, refresh, room } = await useEventView(slug)
+const { data, error, refresh, room, removed } = await useEventView(slug)
 const connection = useConnectionBanner(room.state, room.enabled)
 
 // Who is online (#162) goes to the Game board's dots. The server clock is kept here, on the page's one socket: the blocks that
@@ -399,6 +399,7 @@ watch(() => tour.shown.value, (isShown) => {
     <EventLoadState
       v-else-if="error"
       :error="error"
+      :removed="removed"
     />
 
     <!-- The Award ceremony (#309): mounted always, it opens itself at the start instant of the read's ceremony, for every Member. -->
