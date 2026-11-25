@@ -7,13 +7,13 @@ import { memoryImageStore } from '../../server/utils/image-store'
 import { memoryRoomNotifier } from '../../server/utils/room-notifier'
 import type { AccountDeleted, AuthUser } from '../../shared/auth'
 import { webpOf } from '../webp-fixtures'
-import { createTestApp, errorOf, sendVia, type TestRequest } from './app'
+import { createTestApp, sendVia, type TestRequest } from './app'
 import { createTestDb, resetDatabase } from './harness'
 import { clockToStop, hostEntersResult, hostFinishes, hostSets, hostSpins, playerVetoes, readEvent, setUpEvent, startRunningEvent, type Rig, type Signed } from './scenario'
 import { setAllowlist, signIn, stubAuthEnv } from './sign-in'
 
 // Deleting an account (#681, spec #907, ADR 0020): DELETE /api/me empties the signed-in User's row, takes them out of every Event that has not finished,
-// cuts their typing everywhere and closes their sockets. No Event of theirs and no game of theirs yet (#917): that User is refused.
+// cuts their typing everywhere and closes their sockets. A Host's Events and library go with the account too (#917): test/integration/delete-host.test.ts.
 
 const host = { provider: 'discord', id: '1', name: 'Hostess', email: 'host@example.com', image: undefined } as const
 const doomed = { provider: 'discord', id: '2', name: 'Quokka', email: 'quokka@example.com', image: 'https://example.com/quokka.png' } as const
@@ -324,40 +324,7 @@ describe('deleting an account', () => {
     })
   })
 
-  describe('a User who cannot be deleted yet', () => {
-    it('is refused with account_hosts when they host an Event, and nothing changes', async () => {
-      const w = await world()
-      const before = await snapshot()
-
-      const response = await deleteMe(w.a.host.cookie)
-
-      expect(await errorOf(response)).toEqual({ status: 409, code: 'account_hosts' })
-      expect(await snapshot()).toEqual(before)
-      expect(notifier.closes(w.a.eventId)).toEqual([])
-      expect(notifier.messages(w.a.eventId)).toEqual([])
-    })
-
-    it('is refused with account_hosts when they only own a game, and nothing changes', async () => {
-      const w = await world()
-      await testDb.db.insert(games).values({ name: 'Eigenes Spiel', createdBy: w.id })
-      const before = await snapshot()
-
-      const response = await deleteMe(w.cookie)
-
-      expect(await errorOf(response)).toEqual({ status: 409, code: 'account_hosts' })
-      expect(await snapshot()).toEqual(before)
-      expect(notifier.closes(w.a.eventId)).toEqual([])
-    })
-
-    it('is refused with account_hosts for a Host of a finished Event only', async () => {
-      const w = await world()
-      await testDb.db.update(events).set({ hostId: w.id }).where(eq(events.id, w.b.eventId))
-      const before = await snapshot()
-
-      expect(await errorOf(await deleteMe(w.cookie))).toEqual({ status: 409, code: 'account_hosts' })
-      expect(await snapshot()).toEqual(before)
-    })
-
+  describe('a request that is refused', () => {
     it('answers 401 to a request signed out and changes nothing', async () => {
       const w = await world()
       const before = await snapshot()

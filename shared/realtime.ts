@@ -41,6 +41,8 @@ export type RoomMessage
     | { type: 'chat.added', message: LiveMessage }
   /** A Message that was deleted (#760, spec #719 § A): its id and who deleted it, to every socket of the Event; the text is gone and nothing else of the Message travels. The page turns the Message into its line by id. No `event.changed` goes with it (the delete sets `broadcast: false`). */
     | { type: 'chat.deleted', id: string, deletedBy: MessageDeleter }
+  /** The Event's rows are gone (its Host deleted their account, #917, ADR 0020): the next read would answer 404, so the page shows „Event gelöscht“ (the state of a 410) without reading again. No payload and no `event.changed` with it; it names nothing and goes to every socket of the room, so it is no secrecy surface (CODING_STANDARDS § Secrecy). */
+    | { type: 'event.gone' }
 
 export type RoomMessageType = RoomMessage['type']
 

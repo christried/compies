@@ -38,11 +38,13 @@ function serveLive(isHost = false) {
   testNumber += 1
   const slug = `live-${testNumber}`
   // `ticketStatus` makes the room's token endpoint refuse with that status; `ticketCalls` counts every request to it, a refused one included.
-  const served = { reads: 0, tickets: 0, ticketCalls: 0, name: 'Freitags-Zocken', status: null as number | null, ticketStatus: null as number | null }
+  // `hold` makes a read wait for the test (a read in flight, #917).
+  const served = { reads: 0, tickets: 0, ticketCalls: 0, name: 'Freitags-Zocken', status: null as number | null, ticketStatus: null as number | null, hold: null as Promise<void> | null }
   registerEndpoint(`/api/e/${slug}`, {
     method: 'GET',
-    handler: () => {
+    handler: async () => {
       served.reads += 1
+      if (served.hold) await served.hold
       if (served.status) throw createError({ statusCode: served.status, statusMessage: 'gone' })
       return { ...view(slug, [], { event: { isHost } }), event: { slug, name: served.name, phase: 'poll', isHost } }
     },
@@ -62,7 +64,7 @@ function serveLive(isHost = false) {
 
 const lastSocket = () => sockets[sockets.length - 1]!
 const settle = () => new Promise(resolve => setTimeout(resolve))
-const sendMessage = (type: 'event.changed') => lastSocket().options.onMessage(JSON.stringify(envelope({ type }, Date.now())))
+const sendMessage = (type: 'event.changed' | 'event.gone') => lastSocket().options.onMessage(JSON.stringify(envelope({ type }, Date.now())))
 
 /** Pages mounted by a test. Each keeps listening for returns (window focus, visibility, online) until it unmounts. */
 const mounted: { unmount: () => void }[] = []
@@ -202,6 +204,72 @@ describe('the live Event page', () => {
     expect(served.reads).toBe(reads)
     expect(served.tickets).toBe(tickets)
     expect(lastSocket().close).toHaveBeenCalled()
+  })
+
+  // The Host deleted their account while the Event is open (#917, ADR 0020): the room says `event.gone`, and the page shows the 410 state without reading again. The
+  // endpoint keeps answering the Event, so only the message can have ended it.
+  describe.each([['a Member\'s', false], ['the Host\'s', true]])('%s page', (_who, isHost) => {
+    it('shows Event gelöscht on event.gone and reads nothing more: no read, no ticket, the socket closed (#917)', async () => {
+      const { served, page } = await mountLive(isHost)
+      const reads = served.reads
+      const tickets = served.tickets
+
+      sendMessage('event.gone')
+
+      await vi.waitFor(() => expect(page.get('h1').text()).toBe('Event gelöscht'))
+      await settle()
+      window.dispatchEvent(new Event('focus'))
+      lastSocket().options.onClose()
+      await settle()
+      await settle()
+      expect(served.reads).toBe(reads)
+      expect(served.tickets).toBe(tickets)
+      expect(lastSocket().close).toHaveBeenCalled()
+    })
+  })
+
+  it('shows Event gelöscht on a phone page after event.gone: no TabBar and not the Event\'s name (#917)', async () => {
+    stubScreen(false)
+    const { page } = await mountLive()
+    expect(page.find('nav[aria-label="Event"]').exists()).toBe(true)
+
+    sendMessage('event.gone')
+
+    await vi.waitFor(() => expect(page.get('h1').text()).toBe('Event gelöscht'))
+    expect(page.find('nav[aria-label="Event"]').exists()).toBe(false)
+    expect(page.text()).not.toContain('Freitags-Zocken')
+  })
+
+  it.each([['an Event', 200], ['an error', 404]])('ends on Event gelöscht when event.gone comes while a read is in flight and the read then answers %s (%i)', async (_what, status) => {
+    const { served, page } = await mountLive()
+    let release!: () => void
+    served.hold = new Promise<void>((resolve) => {
+      release = resolve
+    })
+    const reads = served.reads
+    sendMessage('event.changed')
+    await vi.waitFor(() => expect(served.reads).toBe(reads + 1))
+
+    sendMessage('event.gone')
+    if (status !== 200) served.status = status
+    release()
+    await settle()
+    await settle()
+
+    await vi.waitFor(() => expect(page.get('h1').text()).toBe('Event gelöscht'))
+    expect(page.text()).not.toContain('Freitags-Zocken')
+  })
+
+  it('ends on Event gelöscht when event.gone comes to a page whose first read failed', async () => {
+    const live = serveLive()
+    live.served.status = 500
+    const page = await mountSuspended(EventPage, { route: `/e/${live.slug}` })
+    mounted.push(page)
+    await vi.waitFor(() => expect(sockets.length).toBeGreaterThan(0))
+
+    sendMessage('event.gone')
+
+    await vi.waitFor(() => expect(page.get('h1').text()).toBe('Event gelöscht'))
   })
 
   it('closes the socket when the page goes away', async () => {

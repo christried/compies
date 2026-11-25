@@ -1,5 +1,5 @@
-import { and, eq, isNotNull, isNull } from 'drizzle-orm'
-import { authAccounts, authSessions, eventMembers, events, games, messages, pollVotes, users } from '../db/schema'
+import { and, eq, inArray, isNotNull, isNull, ne } from 'drizzle-orm'
+import { authAccounts, authSessions, draws, eventGameNotes, eventMembers, eventPoolGames, events, games, messages, pollVotes, rounds, users } from '../db/schema'
 import type { Db } from './db'
 import type { ImageStore } from './image-store'
 import { endMembership } from './invite'
@@ -8,7 +8,7 @@ import { endMembership } from './invite'
 // operator's script (0.21-13, #919), which runs it against a database and a store with no request. So it imports no `h3` and no Nuxt auto-import: the
 // route owns the clock, the session cookie, the image store and the rooms.
 
-export type NotDeletable = 'unknown_user' | 'already_deleted' | 'hosts_events' | 'has_games'
+export type NotDeletable = 'unknown_user' | 'already_deleted' | 'games_held'
 
 /** The User cannot be deleted now. Nothing has changed when it is thrown. */
 export class UserNotDeletable extends Error {
@@ -18,10 +18,12 @@ export class UserNotDeletable extends Error {
 }
 
 export interface UserDeletion {
-  /** Image-store keys to delete after the commit (0.21-11 adds the games' images). */
+  /** Image-store keys to delete after the commit: the profile picture's, then the key of every removed game that no game row names any more (each key once). */
   imageKeys: string[]
-  /** Every not-deleted Event the User was a Member of, with the Messages that lost their text there. */
+  /** Every not-deleted Event of another Host the User was a Member of, with the Messages that lost their text there. */
   events: { eventId: string, finished: boolean, deletedMessageIds: string[] }[]
+  /** The ids of every Event the User hosted and that was removed, Deleted Events included (#917): the route tells each room `event.gone`. */
+  goneEvents: string[]
 }
 
 /**
@@ -30,8 +32,9 @@ export interface UserDeletion {
  * accounts and the sign-in sessions go, and the row is emptied and marked. The row itself stays: Vetoes, Activity entries and the Seat of a finished Event
  * still point at it. `now` is the caller's clock (ADR 0013); every instant written is `now`.
  *
- * A User who hosts an Event or has a game is refused (`hosts_events`, `has_games`) until 0.21-11 (#917) removes those instead. The row's last statement is the
- * emptying, so a failure anywhere rolls the rest back with it. Throws `UserNotDeletable` for a User that is unknown, deleted already, or refused.
+ * A Host's Events and library go with the account (#917, ADR 0020): every Event they host is removed outright with all that hangs on it (it counts as no membership
+ * below), then their games with the Tags. The one refusal is `games_held`: a game of theirs named by another Host's Event, which ADR 0018 rules out. The row's
+ * last statement is the emptying, so a failure anywhere rolls the rest back with it. Throws `UserNotDeletable` for a User that is unknown, deleted already, or refused.
  */
 export async function deleteUser(db: Db, userId: string, now: Date): Promise<UserDeletion> {
   return await db.transaction(async (tx) => {
@@ -40,11 +43,36 @@ export async function deleteUser(db: Db, userId: string, now: Date): Promise<Use
     if (!row) throw new UserNotDeletable('unknown_user')
     if (row.deletedAt) throw new UserNotDeletable('already_deleted')
 
-    // #917 replaces both refusals with the removal of those Events and games. Nothing has changed yet at this point.
-    const [hosted] = await tx.select({ id: events.id }).from(events).where(eq(events.hostId, userId)).limit(1)
-    if (hosted) throw new UserNotDeletable('hosts_events')
-    const [owned] = await tx.select({ id: games.id }).from(games).where(eq(games.createdBy, userId)).limit(1)
-    if (owned) throw new UserNotDeletable('has_games')
+    // The Events the User hosts, any phase, Deleted ones and a Running Session too, locked: a concurrent change of one finds no row afterwards and answers 404
+    // (`loadEvent`). They go outright (ADR 0020), so they are no membership any more at step 3 and their Messages and Votes go with them.
+    const hosted = (await tx.select({ id: events.id }).from(events).where(eq(events.hostId, userId)).for('update')).map(hostedEvent => hostedEvent.id)
+    const owned = await tx.select({ id: games.id, imageKey: games.imageKey }).from(games).where(eq(games.createdBy, userId))
+    const ownedIds = owned.map(game => game.id)
+
+    // ADR 0018 rules out that another Host's Event holds one of these games; these four tables are every foreign key to `games` without a cascade (the guard test of
+    // test/integration/delete-host.test.ts pins the list). Nothing has been deleted yet, and the thrown error rolls the transaction back anyway.
+    if (ownedIds.length > 0) {
+      const foreign = ne(events.hostId, userId)
+      const pooled = await tx.select({ id: eventPoolGames.gameId }).from(eventPoolGames).innerJoin(events, eq(events.id, eventPoolGames.eventId)).where(and(inArray(eventPoolGames.gameId, ownedIds), foreign)).limit(1)
+      const noted = await tx.select({ id: eventGameNotes.gameId }).from(eventGameNotes).innerJoin(events, eq(events.id, eventGameNotes.eventId)).where(and(inArray(eventGameNotes.gameId, ownedIds), foreign)).limit(1)
+      const played = await tx.select({ id: rounds.id }).from(rounds).innerJoin(events, eq(events.id, rounds.eventId)).where(and(inArray(rounds.gameId, ownedIds), foreign)).limit(1)
+      const drawn = await tx.select({ id: draws.id }).from(draws).innerJoin(rounds, eq(rounds.id, draws.roundId)).innerJoin(events, eq(events.id, rounds.eventId)).where(and(inArray(draws.gameId, ownedIds), foreign)).limit(1)
+      if (pooled.length + noted.length + played.length + drawn.length > 0) throw new UserNotDeletable('games_held')
+    }
+
+    // Step 4: `event_members` is the one table that references `events` without a cascade; everything else of an Event goes with its row. A table added later that
+    // does not cascade is caught by the guard test, which names this place.
+    if (hosted.length > 0) {
+      await tx.delete(eventMembers).where(inArray(eventMembers.eventId, hosted))
+      await tx.delete(events).where(inArray(events.id, hosted))
+    }
+    // The library: the Tags go with their games (`game_tags` cascades) and a Tag with no game left has no row (GLOSSARY: Tag).
+    if (ownedIds.length > 0) await tx.delete(games).where(eq(games.createdBy, userId))
+    // An image goes unless a game of another library still names its key (a copy keeps it, ADR 0018; the rule of `image.put.ts`).
+    const ownKeys = [...new Set(owned.flatMap(game => game.imageKey ? [game.imageKey] : []))]
+    const stillNamed = new Set<string | null>()
+    if (ownKeys.length > 0) for (const game of await tx.select({ imageKey: games.imageKey }).from(games).where(inArray(games.imageKey, ownKeys))) stillNamed.add(game.imageKey)
+    const gameKeys = ownKeys.filter(key => !stillNamed.has(key))
 
     // Read before anything goes: the memberships decide what the rooms are told and which ones end.
     const memberships = await tx
@@ -89,7 +117,8 @@ export async function deleteUser(db: Db, userId: string, now: Date): Promise<Use
     }).where(eq(users.id, userId))
 
     return {
-      imageKeys: row.profileImageKey ? [row.profileImageKey] : [],
+      imageKeys: [...(row.profileImageKey ? [row.profileImageKey] : []), ...gameKeys],
+      goneEvents: hosted,
       events: memberships
         .filter(membership => membership.deletedAt === null)
         .map(membership => ({

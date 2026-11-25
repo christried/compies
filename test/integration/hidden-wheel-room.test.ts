@@ -38,7 +38,9 @@ describe('Hidden wheel secrecy (#148)', () => {
   describe('the room and the Activity feed under a Hidden wheel (#165)', () => {
     const SERVER_SENT = ['event.changed', 'activity.added', 'member.moved', 'veto.cast', 'chat.added', 'chat.deleted'] as const satisfies readonly RoomMessageType[]
     type WorkerSent = 'presence.sync' | 'presence.join' | 'presence.leave' | 'clock.pong' | 'emote.sent'
-    const everyTypeListed: Exclude<RoomMessageType, (typeof SERVER_SENT)[number] | WorkerSent> extends never ? true : never = true
+    // Only an account deletion sends `event.gone`, never this flow: test/integration/delete-host.test.ts pins it (#917).
+    type SentByAccountDeletion = 'event.gone'
+    const everyTypeListed: Exclude<RoomMessageType, (typeof SERVER_SENT)[number] | WorkerSent | SentByAccountDeletion> extends never ? true : never = true
 
     const LOBBY_SLOTS = ['2090-10-30T20:30', '2090-10-31T19:00']
     const team = (position: number): Place => ({ zone: 'team', team: position })
