@@ -5,6 +5,7 @@ import { reasonKey } from '~/utils/api-error'
 import { placeFromKey, placeKey, teamName, teamNameAt } from '~/utils/board'
 import { startedIn, unevenNoticeIn, type EventPageState } from '~/utils/event-page'
 import { fade, glide, pop } from '~/utils/motion'
+import { shownPerson } from '~/utils/shown-person'
 import { countSeats, moveRejection, type Place } from '~~/shared/board'
 import type { EmoteId } from '~~/shared/emote'
 import type { BoardTeam, MemberView } from '~~/shared/event'
@@ -52,11 +53,15 @@ const phase = computed<'setup' | 'poll' | 'open' | 'running'>(() => (props.setti
 
 // A team's name as it is shown: its Team name, else its colour's name (teamName).
 const nameOfTeam = (position: number) => teamNameAt(props.teams, position, t)
-const nameOf = (userId: string) => props.members.find(member => member.id === userId)?.name ?? ''
+// The names the board shows are the shown ones: a Deleted User reads „Gelöschtes Konto“ (#915, shownPerson).
+const nameOf = (userId: string) => {
+  const member = props.members.find(item => item.id === userId)
+  return member ? shownPerson(member, t).name : ''
+}
 // Where everybody is drawn (useBoardPlaces): the server's place, under the moves other people made and the moves this viewer is making.
 const places = useBoardPlaces({ slug, members: () => props.members, room: props.room, refresh: () => refreshEvent(props.slug), people: { nameOf, teamName: nameOfTeam } })
 
-const people = computed(() => props.members.map(member => ({ ...member, place: places.placeOf(member.id) })))
+const people = computed(() => props.members.map(member => ({ ...member, ...shownPerson(member, t), place: places.placeOf(member.id) })))
 const seats = computed(() => countSeats(people.value.map(person => person.place)))
 const currentPlace = (userId: string): Place => places.placeOf(userId)
 const inPlace = (place: Place) => people.value.filter(person => placeKey(person.place) === placeKey(place))
@@ -187,6 +192,7 @@ function personBindings(person: (typeof people.value)[number]) {
     userId: person.id,
     name: person.name,
     image: person.image,
+    deleted: person.deleted,
     isHost: person.isHost,
     you: person.id === props.viewerId,
     team: person.place.zone === 'team' ? person.place.team : null,

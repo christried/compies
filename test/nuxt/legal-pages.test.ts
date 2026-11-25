@@ -138,7 +138,7 @@ describe('legal pages', () => {
     const retention = sectionText('16.')
     expect(retention).toContain('Die Nachrichten des Chats bleiben ebenfalls gespeichert, solange das Event besteht. Löschst du eine Nachricht oder löscht der Host sie, wird ihr Text sofort in der Datenbank überschrieben und ist in Compies nirgends mehr gespeichert;')
     expect(retention).toContain('Auf einem Gerät, das die Löschung nicht sofort erreicht, bleibt der Text bis zum nächsten Laden der Seite sichtbar.')
-    expect(retention.endsWith('Wir entfernen dann auch deine Nachrichten im Chat.')).toBe(true)
+    expect(retention).toContain('der Text deiner Nachrichten im Chat; deine Stimmen und Anmerkungen;')
 
     const live = sectionText('21.')
     expect(live).toContain('Auch die Nachrichten des Chats gehen so an die Mitglieder: neue mit ihrem Text und der Person, die sie geschrieben hat, gelöschte nur als Hinweis, dass sie gelöscht wurden.')
@@ -157,6 +157,41 @@ describe('legal pages', () => {
     expect(section!.findAll('p')).toHaveLength(7)
   })
 
+  it('name the own Profilbild in sections 5, 6 and 7 word for word: where it is stored, who loads it, that a sign-in keeps it (#912, spec #907)', async () => {
+    const page = await mountSuspended(DatenschutzPage, { route: '/datenschutz' })
+    const paragraphs = (heading: string) => page.findAll('section').find(s => s.get('h2').text() === heading)!.findAll('p').map(p => p.text())
+
+    const storage = paragraphs('5. Spielbilder und Profilbilder (Cloudflare R2)')
+    const kennung = storage.findIndex(p => p.endsWith('und seine Kennung aus Spiel-ID und einer Zufallsfolge.'))
+    expect(kennung).toBeGreaterThanOrEqual(0)
+    expect(storage[kennung + 1]).toBe('Lädst du auf der Seite „Profil“ ein eigenes Profilbild hoch, speichern wir es im selben Speicher: das Bild selbst (256 × 256 Pixel, in deinem Browser zugeschnitten; das Original verlässt dein Gerät nicht) und seine Kennung, eine Zufallsfolge ohne Bezug zu dir. Auch dieses Bild reicht unser Server unter /api/images/ an den Browser weiter. Anders als ein Spielbild kann es jeder abrufen, der seine Adresse kennt, auch ohne Anmeldung; die Adresse lässt sich nicht erraten und erscheint nur dort, wo dein Profilbild gezeigt wird (Abschnitt 7). Lädst du ein neues Bild hoch oder entfernst du dein Bild, löschen wir das bisherige sofort aus dem Speicher.')
+    expect(storage.at(-1)).toContain('Rechtsgrundlage ist Art. 6 Abs. 1 lit. b DSGVO (Bereitstellung der Spiele in der Bibliothek und in den Events sowie des Profilbilds).')
+
+    const signIn = paragraphs('6. Anmeldung über Discord oder Twitch und Anzeigename').join('\n')
+    expect(signIn).toContain('Name und Adresse des Profilbilds werden bei jeder Anmeldung aktualisiert; ein eigenes Profilbild (Abschnitt 7) bleibt davon unberührt.')
+    expect(signIn).not.toContain('Name und Profilbild werden bei jeder Anmeldung aktualisiert.')
+
+    const avatar = paragraphs('7. Profilbild')
+    expect(avatar).toHaveLength(2)
+    expect(avatar[0]).toBe('Neben deinem Anzeigenamen zeigt Compies ein rundes Profilbild: dir selbst, den Mitgliedern der Events, denen du angehörst, und, wenn du Host bist, allen, die einen Einladungslink zu deinem Event öffnen, auch ohne Anmeldung. Es ist das Bild, das du auf der Seite „Profil“ hochgeladen hast, sonst dein Profilbild bei Discord bzw. Twitch, sonst dein Anfangsbuchstabe.')
+    expect(avatar[1]).toMatch(/^Ein eigenes Bild liegt bei uns \(Abschnitt 5\) und wird von unserem Server geladen; Discord und Twitch erfahren davon nichts\. Du kannst es jederzeit ersetzen oder entfernen; dann gilt wieder dein Bild bei Discord bzw\. Twitch\. Ohne eigenes Bild wird das Profilbild direkt von den Servern von Discord bzw\. Twitch geladen\. Dabei erhält der jeweilige Dienst /)
+  })
+
+  it('say in sections 6, 16 and 18 how a User deletes the account on the Profil page, what goes and what stays, word for word (#920, spec #907)', async () => {
+    const page = await mountSuspended(DatenschutzPage, { route: '/datenschutz' })
+    const paragraphs = (heading: string) => page.findAll('section').find(s => s.get('h2').text() === heading)!.findAll('p').map(p => p.text())
+
+    const signIn = paragraphs('6. Anmeldung über Discord oder Twitch und Anzeigename')
+    expect(signIn.at(-1)).toBe('Welche Konten Events anlegen dürfen (Host-Berechtigung), ist als Liste von Discord- und Twitch-Benutzerkennungen fest hinterlegt. Bei jeder Anmeldung wird deine Benutzerkennung mit dieser Liste abgeglichen und die Berechtigung in deinem Nutzerkonto vermerkt. Diese Liste ändert Compies nicht selbst: Löschst du dein Nutzerkonto, bleibt deine Benutzerkennung darin, bis du uns bittest, sie zu entfernen (Abschnitt 16). Rechtsgrundlage ist Art. 6 Abs. 1 lit. f DSGVO (berechtigtes Interesse daran, dass nur bekannte Personen Events anlegen).')
+
+    const retention = paragraphs('16. Speicherdauer').at(-1)!
+    expect(retention.endsWith('Dein Nutzerkonto löschst du selbst auf der Seite „Profil“ („Konto löschen“); kannst du dich nicht mehr anmelden, genügt eine Nachricht an die unter Abschnitt 1 genannte Adresse. Die Löschung gilt sofort und lässt sich nicht rückgängig machen. Gelöscht werden: dein Name, deine E-Mail-Adresse, dein Anzeigename, dein Profilbild, deine Verknüpfung mit Discord bzw. Twitch und deine Anmeldesitzungen; alle Events, die du als Host angelegt hast, mit allem, was dazugehört, auch für die anderen Mitglieder und auch die abgeschlossenen; deine Bibliothek mit ihren Spielen, Notizen und Bildern (ein Bild erst, wenn keine Kopie eines anderen Hosts es mehr nutzt, Abschnitt 5); der Text deiner Nachrichten im Chat; deine Stimmen und Anmerkungen; dein Teamwort im aktuellen Teamnamen. Es bleibt ein leerer Eintrag ohne Namen, der nur festhält, wann das Konto gelöscht wurde. An ihm hängt, was in Events anderer Hosts nicht dir allein gehört: dein Platz in einem abgeschlossenen Event, die Vetos deines Teams und die Einträge des Aktivitäts-Feeds über dich; statt deines Namens steht dort „Gelöschtes Konto“. Die Einträge des Aktivitäts-Feeds behalten den Teamnamen von damals und damit auch dein Teamwort darin (Abschnitt 11). Aus Events anderer Hosts, die noch nicht abgeschlossen sind, scheidest du aus. Meldest du dich danach wieder an, entsteht ein neues Nutzerkonto ohne Verbindung zum alten. In den Wiederherstellungsdaten unseres Datenbankanbieters (Abschnitt 4) bleiben gelöschte Daten noch bis zu 6 Stunden enthalten.')).toBe(true)
+    expect(retention).not.toContain('Wir entfernen dann auch deine Nachrichten im Chat.')
+
+    const rights = paragraphs('18. Deine Rechte')
+    expect(rights[0]).toBe('Du hast das Recht auf Auskunft (Art. 15), Berichtigung (Art. 16), Löschung (Art. 17), Einschränkung der Verarbeitung (Art. 18) und Datenübertragbarkeit (Art. 20 DSGVO). Eine erteilte Einwilligung kannst du jederzeit mit Wirkung für die Zukunft widerrufen (Art. 7 Abs. 3 DSGVO); die Rechtmäßigkeit der bis dahin erfolgten Verarbeitung bleibt unberührt. Zur Ausübung genügt eine Nachricht an die unter Abschnitt 1 genannte Adresse. Dein Nutzerkonto kannst du außerdem selbst auf der Seite „Profil“ löschen (Abschnitt 16).')
+  })
+
   it('name the compies-appearance cookie in section 9 and move the Stand (#405, spec #398)', async () => {
     const page = await mountSuspended(DatenschutzPage, { route: '/datenschutz' })
     const section = page.findAll('section').find(s => s.get('h2').text() === '9. Cookies und Speicher im Browser')
@@ -169,8 +204,8 @@ describe('legal pages', () => {
     expect(text.indexOf('Sitzungs-Cookies (Better Auth)')).toBeLessThan(text.indexOf(cookie))
     expect(text.indexOf(cookie)).toBeLessThan(text.indexOf('Lokaler Speicher (compies-sound)'))
     expect(section!.findAll('p')).toHaveLength(10)
-    // The one place the date is pinned: the day of the last change, 22 November 2026 (0.19, § 9 for the cookie of Reduced motion, #680, and for the Round card's memory, #838; before that 0.18, §4, §10, §11, §16 and §21 for the Chat and the Emotes, #775).
-    expect(page.get('main').text()).toContain('Stand: 22. November 2026.')
+    // The one place the date is pinned: the day of the last change, 25 November 2026 (0.21, §§ 6, 16 and 18 for the account deletion, #920; §§ 5, 6 and 7 for the own Profilbild, #912; before that 0.19, § 9 for the cookie of Reduced motion, #680, and for the Round card's memory, #838; before that 0.18, §4, §10, §11, §16 and §21 for the Chat and the Emotes, #775).
+    expect(page.get('main').text()).toContain('Stand: 25. November 2026.')
   })
 
   it('name the compies-round-notes entry in section 9, right after compies.news.seen, word for word (#838, spec #856)', async () => {

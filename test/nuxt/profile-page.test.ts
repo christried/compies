@@ -275,7 +275,7 @@ describe('the Profil page', () => {
     it('sits between the card „Profil“ and „Abmelden“, titled „Einstellungen“', async () => {
       const page = await mount()
 
-      expect(page.findAll('main h2').map(h => h.text())).toEqual(['Profil', 'Einstellungen'])
+      expect(page.findAll('main h2').map(h => h.text())).toEqual(['Profil', 'Einstellungen', 'Konto löschen'])
       const section = page.get('section[aria-labelledby="settings-card-title"]')
       const abmelden = page.findAll('main button').find(b => b.text() === 'Abmelden')!
       expect(section.element.compareDocumentPosition(abmelden.element) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
@@ -379,7 +379,7 @@ describe('the Profil page', () => {
       const described = group(page).attributes('aria-describedby')
       expect(page.get(`[id="${described}"]`).text()).toBe('Gilt auf allen deinen Geräten.')
       expect(checked(page)).toEqual(['System'])
-      expect(page.findAll('main h2').map(h => h.text())).toEqual(['Profil', 'Einstellungen'])
+      expect(page.findAll('main h2').map(h => h.text())).toEqual(['Profil', 'Einstellungen', 'Konto löschen'])
 
       signInAs(kitty)
       expect(checked(await mount())).toEqual(['Hell'])

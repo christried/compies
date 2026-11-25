@@ -8,6 +8,7 @@ import type { CeremonyPerson } from '~/utils/ceremony'
 // stack has none of the three and a 2 px circle at 0.4. Tests use people with a picture, as every account has one (CODING_STANDARDS § Tests).
 
 const player: CeremonyPerson = { kind: 'player', id: 'anna', name: 'Anna', image: 'https://example.com/anna.png', team: 2 }
+const gone: CeremonyPerson = { kind: 'player', id: 'weg', name: 'Gelöschtes Konto', image: null, deleted: true, team: 2 }
 const mark: CeremonyPerson = { kind: 'mark', team: 2, name: 'Die Füchse' }
 const more: CeremonyPerson = { kind: 'more', n: 2 }
 
@@ -77,5 +78,33 @@ describe('a stack of a grid card', () => {
     const circle = page.findAll('span').find(span => span.text() === '+2')!
 
     expect(circle.attributes('style')).toContain('font-size: 10px')
+  })
+})
+
+// A Deleted Player (#915, ADR 0020): the neutral picture and the name „Gelöschtes Konto“ in a cell; the stack of a grid card has the picture alone.
+describe('a Deleted Player', () => {
+  it('shows the icon and no picture in a cell, with the Team ring and the name', async () => {
+    const page = await mountCell(gone, 56)
+
+    expect(page.find('img').exists()).toBe(false)
+    expect(page.find('.bg-paper-2 svg').exists()).toBe(true)
+    expect(page.text()).toBe('Gelöschtes Konto')
+    expect(ringed(page)[0]!.attributes('style')).toContain('var(--cp-team-2)')
+  })
+
+  it('shows the icon without a name and a ring in the stack of a grid card', async () => {
+    const page = await mountCell(gone, 28, { stack: true })
+
+    expect(page.find('img').exists()).toBe(false)
+    expect(page.find('.bg-paper-2 svg').exists()).toBe(true)
+    expect(page.text()).toBe('')
+    expect(ringed(page)).toHaveLength(0)
+  })
+
+  it('leaves a Player with a picture as it was', async () => {
+    const page = await mountCell(player, 56)
+
+    expect(page.find('img').attributes('src')).toBe('https://example.com/anna.png')
+    expect(page.find('.bg-paper-2 svg').exists()).toBe(false)
   })
 })

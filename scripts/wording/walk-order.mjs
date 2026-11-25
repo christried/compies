@@ -16,8 +16,13 @@ export const SECTIONS = [
   { id: 'stepper', groups: ['stepper'] },
   // 0.12's states were appended at the end of dark-states-event.mjs: the groups, not the file order, put them where the Event shows them.
   // 0.18's Emotes and Chat (#773) sit after the live states, the order a Member meets them, and before the finished page; the finished Chat state is in `event-finished`.
-  { id: 'event', groups: ['event-tour', 'event-poll', 'event-board', 'event-live', 'event-emote', 'event-chat', 'event-finished'] },
-  { id: 'profil', names: ['profil', 'profil-fehler', 'profil-gespeichert', 'profil-rundgang', 'profil-weniger-bewegung-fehler', 'baustelle-admin', 'baustelle-allgemein', 'baustelle-event'] },
+  // 0.21's Deleted User and the Event that is gone (#921) come last: a Deleted User shows in a finished Event, and an Event that goes is the end of a page.
+  { id: 'event', groups: ['event-tour', 'event-poll', 'event-board', 'event-live', 'event-emote', 'event-chat', 'event-finished', 'event-konto'] },
+  { id: 'profil', names: ['profil', 'profil-fehler', 'profil-gespeichert', 'profil-rundgang', 'profil-weniger-bewegung-fehler',
+    // 0.21 (#921): the picture of the card „Profil“, then the section „Konto löschen“ at the foot of the page.
+    'profil-bild-zuschneiden', 'profil-bild-umwandeln', 'profil-bild-umwandeln-fehler', 'profil-bild-laedt-hoch', 'profil-bild-hochladen-fehler', 'profil-bild-eigenes', 'profil-bild-entfernen-fehler',
+    'konto-loeschen-ohne-events', 'konto-loeschen-ein-event', 'konto-loeschen-mehrere', 'konto-loeschen-zaehlt', 'konto-loeschen-zaehlen-fehler', 'konto-loeschen-fehler',
+    'baustelle-admin', 'baustelle-allgemein', 'baustelle-event'] },
 ]
 
 /**

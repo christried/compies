@@ -7,6 +7,7 @@ import { isRecord } from '~~/shared/record'
 import { formatSlotWhen } from './berlin-time'
 import { teamName, teamNameAt } from './board'
 import { joinNames } from './list'
+import { shownPerson } from './shown-person'
 import type { Translate } from './settings-summary'
 
 // The Activity feed's pure parts (#159, GLOSSARY: Activity feed): what an entry says, which group it sits in, and
@@ -96,7 +97,7 @@ export function activityIcon(entry: ActivityEntry): { icon: Component, tone: 'pr
 }
 
 function sentence(entry: ActivityEntry, t: Translate, teams: BoardTeam[], winnersHidden: boolean): string | null {
-  const name = entry.actor?.name ?? ''
+  const name = actorName(entry, t)
   /** One team of the entry as a marked piece, by the name the entry stored. */
   const team = (position: number) => teamPiece(position, teamNameOf(entry as Extract<ActivityEntry, { type: TeamNamingType }>, position, t, teams))
   switch (entry.type) {
@@ -180,10 +181,23 @@ function sentence(entry: ActivityEntry, t: Translate, teams: BoardTeam[], winner
   }
 }
 
+/**
+ * The name an entry shows for a User id: the name the server sent, or „Gelöschtes Konto“ when the entry lists the id as a Deleted User (#915, ADR 0020).
+ * The one place the feed's sentences get a person's name from; the Team names of the entry's moment are not touched (teamNameOf, ADR 0016).
+ */
+function entryName(entry: ActivityEntry, id: string | undefined, name: string, t: Translate): string {
+  return shownPerson({ name, deleted: id !== undefined && entry.deleted?.includes(id) }, t).name
+}
+
+/** The shown name of the entry's actor, empty without one. */
+function actorName(entry: ActivityEntry, t: Translate): string {
+  return entryName(entry, entry.actor?.id, entry.actor?.name ?? '', t)
+}
+
 /** The sentence of an entry about one game (`params.gameId`): the actor and the game's name, or null while the viewer may not name the game. */
 function gameSentence(entry: Extract<ActivityEntry, { type: 'game_set' | 'game_put_back' }>, key: string, t: Translate): string | null {
   const game = entry.games[entry.params.gameId]
-  return game === undefined ? null : t(key, { name: entry.actor?.name ?? '', game })
+  return game === undefined ? null : t(key, { name: actorName(entry, t), game })
 }
 
 /**
@@ -194,9 +208,9 @@ function gameSentence(entry: Extract<ActivityEntry, { type: 'game_set' | 'game_p
  */
 function movedText(entry: Extract<ActivityEntry, { type: 'member_moved' }>, t: Translate, teamOf: (position: number) => string): string {
   const { userId, to } = entry.params
-  const name = entry.people[userId] ?? ''
+  const name = entryName(entry, userId, entry.people[userId] ?? '', t)
   const own = entry.actor?.id === userId
-  const actor = entry.actor?.name ?? ''
+  const actor = actorName(entry, t)
   if (to.zone === 'team') {
     const team = teamOf(to.team)
     return own ? t('activity.moveTeam', { name, team }) : t('activity.movedTeam', { actor, name, team })

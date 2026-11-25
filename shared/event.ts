@@ -153,8 +153,11 @@ export interface BoardTeam { position: number, name: string | null }
 /** A Member as the Event read lists them. `team` is set exactly when `zone` is `team` (#160). */
 export interface MemberView {
   id: string
+  /** Empty for a Deleted User (`readPerson`); the client shows `shownPerson`. */
   name: string
   image: string | null
+  /** Present, and true, only for a Deleted User (#915, ADR 0020): their name and picture are cut, their Seat and team stay as stored, and their Team word is cleared (a finished Event from before 0.12 keeps its Team names in `event_teams.frozen_name`, #920). */
+  deleted?: true
   isHost: boolean
   zone: PlaceZone
   team: number | null

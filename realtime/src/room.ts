@@ -16,7 +16,7 @@ export interface RoomConnectionState {
   host: boolean
   /** When the socket opened (ms since the epoch): the last sign of life of a socket that never sent a heartbeat. */
   connectedAt: number
-  /** The sweep closed this socket for its silence and has already told the others; it no longer counts as online. */
+  /** The room closed this socket, for its silence (the sweep) or on Nuxt's call to cut off its User (#913), and has already told the others; it no longer counts as online. */
   dropped?: boolean
 }
 
@@ -29,7 +29,9 @@ export interface RoomConnectionState {
  * holds (one Emote per Member every two seconds, at most three a second that carry a sound), whose counters live in
  * its memory only. The room still keeps no Event state and no schedule, so a hibernation or a deploy loses only those
  * counters; anything else a client sends is ignored. Nuxt's publish reaches every socket, or only the sockets of named
- * Users (#227, sealed Vetoes), and the room keeps no Event state either way.
+ * Users (#227, sealed Vetoes), and the room keeps no Event state either way. On Nuxt's signed call it can also send
+ * last messages to the sockets of named Users and close them (#913, ADR 0013, amendment of 2026-11-20): Nuxt decides
+ * who is no Member any more; the room keeps no list of Members and only does what the call says.
  */
 export class EventRoom extends Server {
   static options = { hibernate: true }
@@ -160,7 +162,8 @@ export class EventRoom extends Server {
 
   /**
    * The signed publish call, already verified by the Worker: send each message to every socket of this Event, or, with
-   * `to` (#227), to the sockets of the named Users only. A body that is neither shape is refused with nothing sent.
+   * `to` (#227), to the sockets of the named Users only; or, with `close` and `last` (#913), send `last` to the sockets
+   * of the named Users and close them. A body that is none of the three shapes is refused with nothing sent or closed.
    */
   async onRequest(request: Request): Promise<Response> {
     if (request.method !== 'POST') return new Response('Method not allowed', { status: 405 })
@@ -173,6 +176,10 @@ export class EventRoom extends Server {
     }
     const call = publishCall(body)
     if (!call || !call.messages.every(isEnvelope)) return new Response('Bad request', { status: 400 })
+    if (call.kind === 'close') {
+      this.#closeUsers(call.users, call.messages)
+      return new Response(null, { status: 204 })
+    }
     if (call.to === null) {
       for (const message of call.messages) this.broadcast(JSON.stringify(message))
       return new Response(null, { status: 204 })
@@ -184,6 +191,30 @@ export class EventRoom extends Server {
     }
     return new Response(null, { status: 204 })
   }
+
+  /**
+   * Nuxt's call to cut off named Users (#913): each of their sockets gets the last messages and is closed, and the
+   * others hear one leave per User. The sockets are marked `dropped` first, as the sweep does, so the User is offline
+   * at once, `onClose` says nothing a second time and the Emote of a closing socket is refused. Everything comes from
+   * the sockets, so it holds after a hibernation. The room does not look inside the messages (CODING_STANDARDS § Secrecy).
+   */
+  #closeUsers(users: string[], messages: unknown[]) {
+    const doomed: Connection<RoomConnectionState>[] = []
+    for (const connection of this.getConnections<RoomConnectionState>()) {
+      const state = connection.state
+      if (state && !state.dropped && state.sub && users.includes(state.sub)) doomed.push(connection)
+    }
+    for (const connection of doomed) connection.setState(state => ({ ...state!, dropped: true }))
+    for (const connection of doomed) {
+      for (const message of messages) connection.send(JSON.stringify(message))
+    }
+    const online = this.#online()
+    const doomedIds = doomed.map(connection => connection.id)
+    for (const sub of new Set(doomed.map(connection => connection.state?.sub))) {
+      if (sub && !online.has(sub)) this.#broadcast({ type: 'presence.leave', userId: sub }, doomedIds)
+    }
+    for (const connection of doomed) connection.close(1008, 'Not a Member')
+  }
 }
 
 /** A message is an envelope of this protocol version with a type. */
@@ -191,13 +222,26 @@ function isEnvelope(message: unknown): boolean {
   return isRecord(message) && message.v === ROOM_PROTOCOL_VERSION && typeof message.type === 'string'
 }
 
-/** The messages of a publish call and, for a send to named Users, who gets them (`null`: everyone). Null for any other body. */
-function publishCall(body: unknown): { to: string[] | null, messages: unknown[] } | null {
+/**
+ * The shape of a publish call: a send (to every socket, or with `to` to the named Users) or, from #913, the sockets of
+ * the Users in `users` closed after `messages`. Exactly one of the three groups of keys (`messages`; `to` and `direct`;
+ * `close` and `last`) may be present: a body that mixes them is null, so no key can turn one shape into another.
+ */
+type PublishCall = { kind: 'send', to: string[] | null, messages: unknown[] } | { kind: 'close', users: string[], messages: unknown[] }
+
+function publishCall(body: unknown): PublishCall | null {
   if (!isRecord(body)) return null
+  const groups = [['messages'], ['to', 'direct'], ['close', 'last']].filter(keys => keys.some(key => key in body))
+  if (groups.length !== 1) return null
   if ('messages' in body) {
-    return 'to' in body || 'direct' in body || !Array.isArray(body.messages) ? null : { to: null, messages: body.messages }
+    return 'to' in body || 'direct' in body || !Array.isArray(body.messages) ? null : { kind: 'send', to: null, messages: body.messages }
+  }
+  if ('close' in body || 'last' in body) {
+    const { close, last } = body
+    if (!Array.isArray(close) || !close.every(id => typeof id === 'string') || !Array.isArray(last)) return null
+    return { kind: 'close', users: close, messages: last }
   }
   const { to, direct } = body
   if (!Array.isArray(to) || !to.every(id => typeof id === 'string') || !Array.isArray(direct)) return null
-  return { to, messages: direct }
+  return { kind: 'send', to, messages: direct }
 }

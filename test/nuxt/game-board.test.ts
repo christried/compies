@@ -991,4 +991,48 @@ describe('GameBoard', () => {
       expect(none.page.text()).not.toContain('Die Session startet erst')
     })
   })
+
+  // A Deleted User (#915, ADR 0020): a Player of a finished Event stays on the board as „Gelöschtes Konto“ with the neutral picture, in their team.
+  describe('a Deleted User', () => {
+    const gone = (id: string, place: Place) => memberView({ id, name: '', image: null, deleted: true, zone: place.zone, team: place.zone === 'team' ? place.team : null })
+    const finished = (members: MemberView[]) => mountBoard({ members, started: true, pageKind: 'finished' })
+    /** The avatar's disc: the round element of a person that carries the Team ring. */
+    const disc = (page: Board, userId: string) => person(page, userId).get('.bg-paper-2')
+
+    it('shows a Deleted Player in a team and one on the Tribüne as „Gelöschtes Konto“ with the icon, no picture and no letter', async () => {
+      const { page } = await finished([kittyAt(team(1)), larsiAt(team(2)), gone('gone-1', team(1)), gone('gone-2', STANDS)])
+
+      for (const id of ['gone-1', 'gone-2']) {
+        expect(person(page, id).text()).toBe('Gelöschtes Konto')
+        expect(person(page, id).find('img').exists()).toBe(false)
+        expect(disc(page, id).find('svg').exists()).toBe(true)
+        expect(disc(page, id).text()).toBe('')
+      }
+      expect(person(page, 'gone-1').attributes('aria-label')).toBe('Gelöschtes Konto, Team Rot')
+      expect(person(page, 'gone-2').attributes('aria-label')).toBe('Gelöschtes Konto, Tribüne')
+    })
+
+    it('keeps the Team ring of the Deleted Player in a team, and the Players who are not deleted keep their picture and their name', async () => {
+      const { page } = await finished([kittyAt(team(1)), larsiAt(team(2)), gone('gone-1', team(1)), gone('gone-2', STANDS)])
+
+      expect(disc(page, 'gone-1').attributes('style')).toContain('var(--cp-team-1)')
+      expect(disc(page, 'gone-2').attributes('style') ?? '').not.toContain('--cp-team')
+      expect(page.get('[data-drop-zone="team-1"]').find('[data-user-id="gone-1"]').exists()).toBe(true)
+      for (const [id, name] of [[kitty.id, 'Kitty'], [LARSI, 'Larsi']] as const) {
+        expect(person(page, id).find('img').attributes('src')).toBe(`https://example.com/${name}.png`)
+        expect(person(page, id).text()).toContain(id === kitty.id ? 'Du' : name)
+      }
+    })
+
+    it('reads the same for two Deleted Players, and as before for none', async () => {
+      const two = await finished([kittyAt(team(1)), gone('gone-1', team(1)), gone('gone-2', team(2))])
+      expect(person(two.page, 'gone-1').text()).toBe(person(two.page, 'gone-2').text())
+      expect(two.page.findAll('[data-user-id] img')).toHaveLength(1)
+      expect(two.page.text()).toContain('Gelöschtes Konto')
+
+      const none = await finished([kittyAt(team(1)), larsiAt(team(2))])
+      expect(none.page.findAll('[data-user-id] img')).toHaveLength(2)
+      expect(none.page.text()).not.toContain('Gelöschtes Konto')
+    })
+  })
 })

@@ -396,7 +396,7 @@ catch (error) {
 finally {
   for (const cleanup of cleanups) {
     try {
-      await cleanup({ tabs, data })
+      await cleanup({ tabs, data, log })
     }
     catch (error) {
       log.note(`cleanup failed: ${String(error.message).slice(0, 150)}`)

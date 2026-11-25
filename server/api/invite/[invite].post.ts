@@ -5,7 +5,7 @@ import { useDb } from '../../utils/db'
 import { eventDeleted, eventNotFound } from '../../utils/errors'
 import { afterCommit } from '../../utils/event-access'
 import { addMember, isMember, eventForInvite } from '../../utils/invite'
-import { requireUser } from '../../utils/user'
+import { assertLiveUser, requireUser } from '../../utils/user'
 import type { JoinedEvent } from '../../../shared/event'
 import type { RoomMessage } from '../../../shared/realtime'
 
@@ -27,6 +27,8 @@ export default defineEventHandler(async (event): Promise<JoinedEvent> => {
   // The Member and the entry that says so are written together; only a join that added the Member writes one (#159).
   const messages: RoomMessage[] = []
   const joined = await db.transaction(async (tx) => {
+    // A User deleted since `requireUser` cannot join: the live check is the transaction's first statement (#991).
+    await assertLiveUser(tx, user.id)
     const added = await addMember(tx, eventRow.id, user.id)
     if (added) {
       await recordActivity(tx, (...queued) => void messages.push(...queued), eventRow.id, { type: 'member_joined', actorId: user.id, params: {}, now: useClock(event).now() })

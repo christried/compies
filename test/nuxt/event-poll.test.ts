@@ -1,12 +1,63 @@
 import { mountSuspended, registerEndpoint } from '@nuxt/test-utils/runtime'
 import { createError, readBody } from 'h3'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { RETURN_DEDUPE_MS } from '~/composables/usePollRefresh'
 import EventPage from '~/pages/e/[slug]/index.vue'
 import { kitty, signInAs } from './auth'
 import { clickButton, closeNotice, openHostMenu, radio, sanneAndLarsi, serve, shownToasts, view, type Wrapper } from './event-page'
 
 // The vote mark of the matrix cell whose screen-reader text is `text` (the cells have no title, #125).
 const matrixCell = (page: Awaited<ReturnType<typeof mountSuspended>>, text: string) => page.findAll('table td').find((cell: Wrapper) => cell.text() === text)!.get('span')
+
+let vanishedNumber = 0
+
+/**
+ * An Event whose reads can start to fail after the page has loaded it (#914): the first read serves the Event, and once
+ * `served.status` is set every later read throws that status. Each test gets its own slug: registerEndpoint keeps the
+ * first handler for a path.
+ */
+function serveVanishing(isHost: boolean) {
+  vanishedNumber += 1
+  const slug = `verschwunden-${vanishedNumber}`
+  const served = { status: null as number | null, reads: 0 }
+  registerEndpoint(`/api/e/${slug}`, {
+    method: 'GET',
+    handler: () => {
+      served.reads += 1
+      if (served.status) throw createError({ statusCode: served.status, statusMessage: 'gone' })
+      return view(slug, sanneAndLarsi, { event: { isHost } })
+    },
+  })
+  return { slug, served }
+}
+
+/** The pages mounted by the Event-vanishes tests; unmounted after each, so a return of one test does not refetch in the next (#198). */
+const mounted: { unmount: () => void }[] = []
+afterEach(() => {
+  for (const page of mounted.splice(0)) page.unmount()
+})
+
+/** Mounts the Event page on a served Event and lets its first read land. */
+async function mountVanishing(isHost: boolean) {
+  const vanishing = serveVanishing(isHost)
+  const page = await mountSuspended(EventPage, { route: `/e/${vanishing.slug}` })
+  mounted.push(page)
+  expect(page.text()).toContain('Freitags-Zocken')
+  return { ...vanishing, page }
+}
+
+/**
+ * A return of the User (window focus) refetches the Event; this waits past the dedupe window (#238) and until that later
+ * read has answered and the page has settled.
+ */
+async function returnAndWait(served: { reads: number }) {
+  await new Promise(resolve => setTimeout(resolve, RETURN_DEDUPE_MS))
+  const before = served.reads
+  window.dispatchEvent(new Event('focus'))
+  await vi.waitFor(() => expect(served.reads).toBe(before + 1))
+  await new Promise(resolve => setTimeout(resolve))
+  await new Promise(resolve => setTimeout(resolve))
+}
 
 describe('the Event poll', () => {
   beforeEach(() => {
@@ -377,5 +428,38 @@ describe('the Event poll', () => {
     const page = await mountSuspended(EventPage, { route: '/e/geloescht-k7q2' })
 
     expect(page.get('h1').text()).toBe('Event gelöscht')
+  })
+
+  // A later read that answers 404 or 410 shows the full-page state and drops the Event, for the Member's and the Host's read (#914).
+  it.each([
+    { isHost: false, status: 404, title: 'Link ungültig' },
+    { isHost: false, status: 410, title: 'Event gelöscht' },
+    { isHost: true, status: 404, title: 'Link ungültig' },
+    { isHost: true, status: 410, title: 'Event gelöscht' },
+  ])('shows the full-page state $title for a later $status, and no Event (Host read: $isHost, #914)', async ({ isHost, status, title }) => {
+    const { served, page } = await mountVanishing(isHost)
+
+    served.status = status
+    await returnAndWait(served)
+
+    expect(page.get('h1').text()).toBe(title)
+    expect(page.text()).not.toContain('Freitags-Zocken')
+    expect(page.find('nav[aria-label="Event"]').exists()).toBe(false)
+    expect(page.find('[role="toolbar"][aria-label="Host-Steuerung"]').exists()).toBe(false)
+  })
+
+  // A later read that fails otherwise keeps the Event on screen, and the next good read shows it as it is (#914).
+  it.each([false, true])('keeps the Event on screen when a later read answers 500, for the Host read %s, and shows it again after a good read (#914)', async (isHost) => {
+    const { served, page } = await mountVanishing(isHost)
+
+    served.status = 500
+    await returnAndWait(served)
+
+    expect(page.text()).toContain('Freitags-Zocken')
+
+    served.status = null
+    await returnAndWait(served)
+
+    expect(page.text()).toContain('Freitags-Zocken')
   })
 })

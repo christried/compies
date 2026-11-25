@@ -2,6 +2,22 @@
 
 ## [Unreleased]
 
+### Neu
+
+- Auf der Seite „Profil“ lädst du ein eigenes Profilbild hoch. Es ersetzt das von Discord oder Twitch und bleibt, auch wenn du dich neu anmeldest. ([#678](https://github.com/christried/compies/issues/678))
+- Dein eigenes Profilbild entfernst du auf der Seite „Profil“ wieder; dann siehst du das von Discord oder Twitch. ([#911](https://github.com/christried/compies/issues/911))
+- Beim Hochladen deines Profilbilds wählst du den Ausschnitt: Du verschiebst und zoomst das Bild in einem Quadrat und siehst in einer runden Vorschau, wie es andere sehen. ([#910](https://github.com/christried/compies/issues/910))
+- Auf der Seite „Profil“ löschst du dein Konto selbst: Name, E-Mail-Adresse, der Text deiner Nachrichten, Stimmen und Anmerkungen gehen dabei weg, als Host auch deine Events und deine Bibliothek; in den Events anderer Hosts bleibt ein leerer Eintrag „Gelöschtes Konto“. ([#918](https://github.com/christried/compies/issues/918))
+
+### Geändert
+
+- Die Datenschutzerklärung sagt, wo dein eigenes Profilbild gespeichert ist und wer es laden kann; eine Anmeldung ersetzt es nicht. ([#912](https://github.com/christried/compies/issues/912))
+- Die Datenschutzerklärung sagt, wie du dein Konto auf der Seite „Profil“ selbst löschst, was dabei gelöscht wird und was bleibt. ([#920](https://github.com/christried/compies/issues/920))
+
+### Behoben
+
+- Scheitert das Nachladen einer offenen Event-Seite an einem kurzen Serverfehler, bleibt das Event stehen und lädt weiter nach, statt einer Fehlerseite zu weichen. ([#914](https://github.com/christried/compies/issues/914))
+
 ## [0.20.0] - 2026-11-23 – Archiv
 
 ### Neu

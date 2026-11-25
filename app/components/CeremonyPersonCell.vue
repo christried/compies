@@ -29,6 +29,7 @@ const more = computed(() => (props.stack ? { border: 'border-2', factor: 0.4 } :
     v-if="person.kind === 'player'"
     :name="person.name"
     :image="person.image"
+    :deleted="person.deleted"
     :team="stack ? null : person.team"
     :size="size"
   />

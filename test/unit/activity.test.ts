@@ -429,6 +429,44 @@ describe('formatActivityTime', () => {
   })
 })
 
+// A Deleted User (#915, ADR 0020): the entry lists the ids that are deleted in `deleted` and sends their names empty, and the sentence reads „Gelöschtes Konto“ in their place.
+describe('a Deleted User in a sentence (#915)', () => {
+  const text = (entry: ActivityEntry, teams?: BoardTeam[]) => activityParts(entry, t, teams)?.map(part => part.text).join('') ?? null
+  const gone = { actor: { id: 'u1', name: '' }, deleted: ['u1'] }
+
+  it('reads „Gelöschtes Konto“ for a joiner who is deleted', () => {
+    expect(text({ ...base, ...gone, type: 'member_joined', params: {} })).toBe('Gelöschtes Konto ist dem Event beigetreten')
+  })
+
+  it('reads it for the actor of other entries, and leaves an entry without the mark as it was', () => {
+    expect(text({ ...base, ...gone, type: 'session_added', params: { sessionId: 's', startsAt: null } })).toBe('Gelöschtes Konto hat eine Session hinzugefügt')
+    expect(text({ ...base, ...gone, games: { g1: 'Halo' }, type: 'game_set', params: { roundId: 'r', gameId: 'g1' } })).toBe('Gelöschtes Konto hat Halo gesetzt')
+    expect(text({ ...base, type: 'session_added', params: { sessionId: 's', startsAt: null } })).toBe('Sanne hat eine Session hinzugefügt')
+  })
+
+  it('reads it for a Member who moved themselves, for the moved person and for the Host who moved them', () => {
+    const own = { ...base, ...gone, people: { u1: '' } }
+    const byHost = { ...base, actor: { id: 'h', name: 'Hostess' }, people: { u1: '' }, deleted: ['u1'] }
+    const byDeletedHost = { ...base, actor: { id: 'h', name: '' }, people: { u1: 'Sanne' }, deleted: ['h'] }
+
+    expect(text({ ...own, type: 'member_moved', params: { userId: 'u1', from: { zone: 'stands' }, to: { zone: 'team', team: 1 } } })).toBe('Gelöschtes Konto ist jetzt in Team Rot')
+    expect(text({ ...byHost, type: 'member_moved', params: { userId: 'u1', from: { zone: 'stands' }, to: { zone: 'team', team: 2 } } })).toBe('Hostess hat Gelöschtes Konto nach Team Orange verschoben')
+    expect(text({ ...byDeletedHost, type: 'member_moved', params: { userId: 'u1', from: { zone: 'team', team: 2 }, to: { zone: 'stands' } } })).toBe('Gelöschtes Konto hat Sanne auf die Tribüne verschoben')
+  })
+
+  it('reads it twice when the actor and the moved person are two Deleted Users', () => {
+    const both = { ...base, actor: { id: 'h', name: '' }, people: { u1: '' }, deleted: ['h', 'u1'] }
+
+    expect(text({ ...both, type: 'member_moved', params: { userId: 'u1', from: { zone: 'stands' }, to: { zone: 'stands' } } })).toBe('Gelöschtes Konto hat Gelöschtes Konto auf die Tribüne verschoben')
+  })
+
+  it('keeps the Team name of the entry\'s moment while its actor is deleted (ADR 0016)', () => {
+    const entry: ActivityEntry = { ...base, actor: { id: 'h', name: '' }, people: { u1: 'Sanne' }, deleted: ['h'], type: 'member_moved', params: { userId: 'u1', from: { zone: 'stands' }, to: { zone: 'team', team: 1 }, teamNames: { 1: 'Wilde Gurken' } } }
+
+    expect(text(entry, [{ position: 1, name: 'Heute Anders' }])).toBe('Gelöschtes Konto hat Sanne nach Wilde Gurken verschoben')
+  })
+})
+
 // The Team names an entry stores (#440, ADR 0016): the six kinds that name a team show the name they stored, with the team's position on its piece
 // for the TeamMark; an entry without a stored name reads as its kind did before 0.12.
 describe('the Team names of an entry (#440)', () => {

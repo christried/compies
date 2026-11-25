@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { User } from '@lucide/vue'
 import { teamVar } from '~/utils/team-style'
 
 // A person (DS People, Avatar.dc.html): the provider image, or the initial when there is none. With a `team` the
@@ -8,7 +9,7 @@ import { teamVar } from '~/utils/team-style'
 // (DS People); undefined means nobody knows yet and shows neither. Decorative: the name next to it carries the
 // meaning, and the team and presence are named in text beside it too. The initial is sized by its container (cqw), so a caller can
 // resize the avatar with CSS (the board does, 44 px on a desktop and 36 px on a phone). The picture is never dragged as an image,
-// so a press on it stays the Game board's drag (#207). The picture takes no pointer events either, so a press always lands on
+// so a press on it stays the Game board's drag (#207). A Deleted User (#915, ADR 0020) has the neutral picture: the same disc with an icon instead of the picture and the initial; the ring and the presence dot stay. The picture takes no pointer events either, so a press always lands on
 // the person's button on the Game board, which also cancels any other native drag, and iOS Safari's own image preview stays off.
 const props = withDefaults(defineProps<{
   name: string
@@ -21,7 +22,9 @@ const props = withDefaults(defineProps<{
   lifted?: boolean
   /** Has a socket open in the Event's room. Undefined: presence is not known, no dot and no grey. */
   online?: boolean
-}>(), { image: null, size: 40, team: null, lifted: false, online: undefined })
+  /** A Deleted User: the neutral picture, no picture and no initial. */
+  deleted?: boolean
+}>(), { image: null, size: 40, team: null, lifted: false, online: undefined, deleted: false })
 
 const failed = ref(false)
 watch(() => props.image, () => failed.value = false)
@@ -59,8 +62,13 @@ const dot = computed(() => {
       :class="[size >= 40 ? 'border-[2.5px]' : 'border-2', lifted ? 'scale-[1.06]' : '', online === false ? 'grayscale' : '']"
       :style="{ fontSize: '44cqw', boxShadow: shadow }"
     >
+      <AppIcon
+        v-if="deleted"
+        :icon="User"
+        :size="Math.round(size / 2)"
+      />
       <img
-        v-if="image && !failed"
+        v-else-if="image && !failed"
         :src="image"
         alt=""
         draggable="false"

@@ -6,6 +6,7 @@ import { ceremonyAwaitsSound } from '~/utils/ceremony'
 import { stageInstants, stageUnsettled } from '~/utils/event-stage'
 import { dateBlockedKey, eventPageState, headerPill, waitsForCeremony, wearsPartyhat } from '~/utils/event-page'
 import { historyCorrections } from '~/utils/history-corrections'
+import { livingMemberIds } from '~/utils/members'
 import { emoteCue, type Cue } from '~/utils/sound-cues'
 import type { EmoteId } from '~~/shared/emote'
 import type { TourStep } from '~~/shared/tour'
@@ -290,6 +291,7 @@ watch(() => tour.shown.value, (isShown) => {
             :refresh-tick="feedTick"
             :teams="data.teams"
             :winners-hidden="waits"
+            :member-ids="livingMemberIds(data.members)"
           />
         </template>
         <!-- The tab scrolls inside the panel (#274): the panel is as tall as the window, a long history is not. -->
@@ -390,6 +392,7 @@ watch(() => tour.shown.value, (isShown) => {
         :refresh-tick="feedTick"
         :teams="data.teams"
         :winners-hidden="waits"
+        :member-ids="livingMemberIds(data.members)"
       />
     </div>
 
