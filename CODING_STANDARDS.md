@@ -12,7 +12,7 @@ Each concern below has one home. New code calls it; a second copy is a finding e
 | The facts a rule runs on (Sessions, seats, Rounds with draws and Places, Vetoes, Bonus Vetoes, Game pool, latest Coin flip) and each rule's reason for a User at `now` | `readEventState` and the `…Reason` functions in `server/utils/event-state.ts` (#416): the Event read and every write route under `changeEvent` take their facts from it, in the parts their rules need; `test/integration/lock-statements.test.ts` holds the statement budget under the lock |
 | A rule both sides enforce (name length, clip, player count, points table, settings) | a pure function in `shared/`, called by the form and by the server parser |
 | Request input | `unknown` until a domain parser has checked it; `asRecord`/`isRecord` from `shared/record.ts`, no casts (lint) |
-| A User's visible name | `shownName` in `shared/auth.ts` (lint) |
+| A User's visible name | `shownName` in `shared/auth.ts` (lint); a Deleted User's name and picture come from `readPerson` (`shared/auth.ts`) on the server and `shownPerson` (`app/utils/shown-person.ts`) on the client (#915) |
 | What an Appearance is (the list, the guard, the cookie's name and value rule); the users table's CHECK is built from the list | `shared/appearance.ts` (#603) |
 | Text length | `characterCount` in `shared/text.ts` |
 | Dates and times shown to Users | `app/utils/berlin-time.ts`, `shared/time.ts` |

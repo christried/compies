@@ -118,6 +118,21 @@ describe('ActivityFeed', () => {
     expect(wrapper.text()).not.toContain('Bench')
   })
 
+  it('reads „Gelöschtes Konto“ for a Deleted User as the actor and among the people, and keeps the Team name an entry stored (#915)', async () => {
+    const { wrapper } = await mountFeed([
+      entry('a', 4, { actor: { id: 'u-gone', name: '' }, deleted: ['u-gone'] }),
+      entry('b', 3, { actor: { id: 'u-gone', name: '' }, people: { 'u-larsi': 'Larsi' }, deleted: ['u-gone'], type: 'member_moved', params: { userId: 'u-larsi', from: { zone: 'stands' }, to: { zone: 'team', team: 1 }, teamNames: { 1: 'Wilde Gurken' } } }),
+      entry('c', 2, { people: { 'u-gone': '' }, deleted: ['u-gone'], type: 'member_moved', params: { userId: 'u-gone', from: { zone: 'stands' }, to: { zone: 'team', team: 2 } } }),
+      entry('d', 1, { actor: { id: 'u-gone-2', name: '' }, people: { 'u-gone-2': '' }, deleted: ['u-gone-2'], type: 'member_moved', params: { userId: 'u-gone-2', from: { zone: 'team', team: 1 }, to: { zone: 'stands' } } }),
+    ])
+
+    const shown = lines(wrapper)
+    expect(shown[0]).toContain('Gelöschtes Konto ist dem Event beigetreten')
+    expect(shown[1]).toContain('Gelöschtes Konto hat Larsi nach Wilde Gurken verschoben')
+    expect(shown[2]).toContain('Sanne hat Gelöschtes Konto nach Team Orange verschoben')
+    expect(shown[3]).toContain('Gelöschtes Konto ist jetzt auf der Tribüne')
+  })
+
   it('puts a header over each stretch: before the start, the Session, and before the next one (#164)', async () => {
     const at = (minutesAgo: number) => new Date(Date.now() - minutesAgo * 60_000).toISOString()
     const sessions: FeedSession[] = [{ id: 's1', number: 1, startedAt: at(50), endedAt: at(20) }]

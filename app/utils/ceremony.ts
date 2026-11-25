@@ -40,16 +40,16 @@ export interface CeremonyModel {
   live: string
 }
 
+/** A Player's cell. A Deleted Player is shown as „Gelöschtes Konto“ with the neutral picture (#915, ADR 0020), and still counts for the cut below. */
+function playerCell(member: EventView['members'][number], team: number, t: Translate): CeremonyPerson {
+  const shown = shownPerson(member, t)
+  return { kind: 'player', id: member.id, name: shown.name, image: shown.image, ...(shown.deleted && { deleted: true as const }), team }
+}
+
 /** The cells of one Winner's people: its Players (a Deleted Player is one), or its TeamMark when it has none; 5 and „+N“ above CELLS. */
 function peopleOf(members: EventView['members'], team: number, name: string, t: Translate): CeremonyPerson[] {
   const players = members.filter(member => member.zone === 'team' && member.team === team)
-  const everyone: CeremonyPerson[] = players.length === 0
-    ? [{ kind: 'mark', team, name }]
-    : players.map((member): CeremonyPerson => {
-      // A Deleted Player is a Player like any other for the cut below; they are shown as „Gelöschtes Konto“ with the neutral picture (#915, ADR 0020).
-      const shown = shownPerson(member, t)
-      return { kind: 'player', id: member.id, name: shown.name, image: shown.image, ...(shown.deleted && { deleted: true as const }), team }
-    })
+  const everyone: CeremonyPerson[] = players.length === 0 ? [{ kind: 'mark', team, name }] : players.map(member => playerCell(member, team, t))
   return everyone.length > CELLS ? [...everyone.slice(0, CELLS - 1), { kind: 'more', n: everyone.length - (CELLS - 1) }] : everyone
 }
 
