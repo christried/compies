@@ -33,6 +33,13 @@ export const PRICE_CENTS_MAX = 99_999
 export const SUITABILITIES = ['teams', 'ffa', 'one_v_one'] as const
 export type Suitability = (typeof SUITABILITIES)[number]
 
+/** What the „Spiele“ step presets the game browser to for an Event (#690): one against one for two teams of one, else Teams; the players are the team count times the Team size. */
+export interface EventPreset { suitability: Suitability, players: number }
+export function eventPreset(teamCount: number, teamSize: number): EventPreset {
+  const players = teamCount * teamSize
+  return teamCount === 2 && teamSize === 1 ? { suitability: 'one_v_one', players } : { suitability: 'teams', players }
+}
+
 /** A clip length in seconds: a whole number from CLIP_LENGTH_MIN to CLIP_LENGTH_MAX (#171). */
 export function isClipLength(seconds: unknown): seconds is number {
   return typeof seconds === 'number' && Number.isInteger(seconds) && seconds >= CLIP_LENGTH_MIN && seconds <= CLIP_LENGTH_MAX
