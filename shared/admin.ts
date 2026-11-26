@@ -62,3 +62,16 @@ export function filterAdminUsers(users: readonly AdminUser[], query: string): Ad
 export interface SavedHostPermission {
   canHost: boolean
 }
+
+/**
+ * What `GET /api/admin/users/:id/deletion` answers (#941, spec #938): the counts the deletion of the User's account would remove or end, the ones the operator's
+ * script prints in its dry run (`scripts/prod/delete-account-core.mjs`). Counts only: no Event id, no name. `hostedEvents` counts finished and Deleted Events too;
+ * `membershipsEnding` the Memberships of other Hosts' Events that have not finished, `membershipsStaying` those of finished ones (their Seat stays).
+ */
+export interface AdminUserDeletion {
+  hostedEvents: number
+  games: number
+  membershipsEnding: number
+  membershipsStaying: number
+  imageObjects: number
+}

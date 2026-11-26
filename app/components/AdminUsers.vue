@@ -9,11 +9,15 @@ import { apiErrorKey } from '~/utils/api-error'
 // server has. A failed write says so in a toast. Nothing is published (ADR 0013).
 // The row menu's „Profilbild entfernen“ (#940) asks first, naming the User, then sends `DELETE /api/admin/users/:id/image`; `changed` follows it too, so the row shows
 // the provider's picture and no menu item, without a reload.
+// The row menu's „Konto löschen“ (#941) opens the sheet of the Profil page's deletion (`AccountDeleteSheet`, its third-person variant) with the counts of the server's dry run;
+// the hold sends `DELETE /api/admin/users/:id` and, once the server took it, the sheet closes and `changed` asks the page to read the list again: the row is gone and the
+// count of Deleted Users is up, without a reload. A refusal keeps the sheet open (`useAdminUserDelete`).
 const props = defineProps<{ users: AdminUser[], deletedUsers: number }>()
 const emit = defineEmits<{ changed: [] }>()
 
 const { t } = useI18n()
 const { toast } = useToast()
+const account = useAdminUserDelete()
 
 const query = ref('')
 const shown = computed(() => filterAdminUsers(props.users, query.value))
@@ -71,6 +75,25 @@ async function confirmRemoveImage() {
 }
 
 const unpickName = computed(() => unpicking.value?.displayName ?? t('admin.image.unnamed'))
+
+/** The User whose account the sheet is about, while it is open. */
+const deleting = ref<AdminUser | null>(null)
+
+function askDelete(user: AdminUser) {
+  deleting.value = user
+  void account.load(user.id)
+}
+
+async function deleteAccount(): Promise<boolean> {
+  const user = deleting.value
+  if (!user) return false
+  const taken = await account.remove(user.id)
+  if (taken) {
+    deleting.value = null
+    emit('changed')
+  }
+  return taken
+}
 </script>
 
 <template>
@@ -112,6 +135,7 @@ const unpickName = computed(() => unpicking.value?.displayName ?? t('admin.image
         :user="user"
         @toggle="toggle(user, $event)"
         @remove-image="unpicking = user"
+        @remove-account="askDelete(user)"
       />
     </ul>
 
@@ -151,5 +175,13 @@ const unpickName = computed(() => unpicking.value?.displayName ?? t('admin.image
         {{ t('admin.image.text') }}
       </p>
     </ConfirmModal>
+
+    <AccountDeleteSheet
+      :open="deleting !== null"
+      :failed="account.failed.value"
+      :remove="deleteAccount"
+      :person="{ name: deleting?.displayName ?? null, counts: account.counts.value, countsFailed: account.countsFailed.value, held: account.held.value }"
+      @close="deleting = null"
+    />
   </section>
 </template>
