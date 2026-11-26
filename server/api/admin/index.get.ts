@@ -1,10 +1,10 @@
-import { and, count, eq, inArray, isNotNull, isNull } from 'drizzle-orm'
+import { count, eq, isNotNull, isNull } from 'drizzle-orm'
 import { defineEventHandler } from 'h3'
 import { authAccounts, eventMembers, events, sessions, users } from '../../db/schema'
 import { adminEvents, adminUsers } from '../../domain/admin'
 import { requirePlatformAdmin } from '../../utils/admin'
 import { useDb } from '../../utils/db'
-import { LIVE_PHASES } from '../../utils/library'
+import { liveEvent } from '../../utils/library'
 import { sessionNotRemoved } from '../../utils/sessions'
 import type { AdminView } from '../../../shared/admin'
 
@@ -37,7 +37,7 @@ export default defineEventHandler(async (event): Promise<AdminView> => {
   const hosted = await db
     .select({ hostId: events.hostId, n: count() })
     .from(events)
-    .where(and(isNull(events.deletedAt), inArray(events.phase, LIVE_PHASES)))
+    .where(liveEvent)
     .groupBy(events.hostId)
 
   // Every Event, Deleted Events included (#876). The Events of a Deleted User are gone with the deletion (ADR 0020), so there is nothing to leave out here. The Host's
