@@ -92,7 +92,8 @@ export function useAppearance(options?: { toast?: boolean }) {
     const dark = systemDark()
     const changes = shownLook(next, dark) !== shownLook(current, dark)
     shared.newest = next
-    void revealTheme(origin ?? null, changes, applyNewest)
+    // The look the circle spreads to carries its edge (#933).
+    void revealTheme(origin ?? null, changes, applyNewest, shownLook(next, dark))
     if (shared.sending) return
     shared.sending = true
     try {

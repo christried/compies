@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="./tokens/compies-tokens.css">
+<style>@keyframes cpSmokeFloorA{from{transform:translate3d(0,0,0) scale(1);opacity:.8}to{transform:translate3d(6%,-3%,0) scale(1.06);opacity:1}}@keyframes cpSmokeFloorB{from{transform:translate3d(0,0,0) scale(1);opacity:.8}to{transform:translate3d(-6%,-2%,0) scale(1.04);opacity:1}}@keyframes cpSmokeRiseA{from{transform:translate3d(0,0,0) scale(1);opacity:.8}to{transform:translate3d(3%,-6%,0) scale(1.08);opacity:1}}@keyframes cpSmokeRiseB{from{transform:translate3d(0,0,0) scale(1);opacity:.8}to{transform:translate3d(-3%,-6%,0) scale(1.06);opacity:1}}@keyframes cpSmokeWingA{from{transform:translate3d(0,0,0) scale(1);opacity:.8}to{transform:translate3d(0,-6%,0) scale(1.04);opacity:1}}@keyframes cpSmokeWingB{from{transform:translate3d(0,0,0) scale(1);opacity:.8}to{transform:translate3d(0,6%,0) scale(1.04);opacity:1}}</style>
+</helmet>
+<div data-theme="{{ theme }}" data-motion="{{ motion }}" lang="de" style="position:relative;width:{{ W }};height:{{ H }};box-sizing:border-box;overflow:hidden;border:var(--cp-bw) solid var(--cp-line);border-radius:{{ R }};background-color:var(--cp-paper);background-image:var(--cp-tex-image);background-size:var(--cp-tex-size);color:var(--cp-ink);font-family:var(--cp-font-sans);font-weight:500;font-size:15px;line-height:1.45;display:flex;flex-direction:column">
+
+  <sc-if value="{{ desk }}" hint-placeholder-val="{{ true }}">
+    <header style="flex:none;height:64px;box-sizing:border-box;display:flex;align-items:center;gap:14px;padding:0 20px;border-bottom:var(--cp-bw) solid var(--cp-line);background:var(--cp-surface);position:relative;z-index:10">
+      <div style="display:flex;align-items:center;gap:8px"><dc-import name="CompibertRig" variant="head" size="{{ 34 }}" hint-size="34px,34px"></dc-import><span style="font-family:var(--cp-font-display);font-size:22px;text-transform:uppercase;line-height:1">Compies</span></div>
+      <nav aria-label="Hauptnavigation" style="display:flex;gap:4px;margin-left:18px;height:64px">
+        <span aria-current="page" style="display:flex;flex-direction:column;justify-content:center;gap:2px;padding:0 12px;box-sizing:border-box;border-bottom:3px solid var(--cp-hot)"><span style="display:flex;align-items:center;gap:6px;font-weight:800;font-size:14px;line-height:1"><dc-import name="Icon" icon="calendar" size="{{ 15 }}" hint-size="15px,15px"></dc-import>Events</span><span style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700;line-height:1"><span style="color:var(--cp-ink-2)">Freitags-Zocken</span><span style="display:inline-flex;align-items:center;gap:5px;height:20px;padding:0 7px;border-radius:999px;border:2px solid var(--cp-line);background:{{ pillBg }};color:{{ pillFg }};font-size:11px;font-weight:800"><span style="width:6px;height:6px;border-radius:50%;background:{{ pillDot }};border:1.5px solid var(--cp-line)"></span>{{ pill }}</span></span></span>
+        <span style="display:flex;align-items:center;gap:6px;padding:0 12px;color:var(--cp-ink-2);font-weight:600;font-size:14px"><dc-import name="Icon" icon="archive" size="{{ 15 }}" hint-size="15px,15px"></dc-import>Archiv</span>
+        <span style="display:flex;align-items:center;gap:6px;padding:0 12px;color:var(--cp-ink-2);font-weight:600;font-size:14px"><dc-import name="Icon" icon="gamepad-2" size="{{ 15 }}" hint-size="15px,15px"></dc-import>Bibliothek</span>
+      </nav>
+      <span style="flex:1"></span>
+      <span style="display:inline-flex;align-items:center;gap:6px;height:40px;padding:0 14px;border-radius:999px;border:var(--cp-bw) solid var(--cp-line);background:var(--cp-surface);box-shadow:var(--cp-shadow-sm);font-weight:700;font-size:13px"><dc-import name="Icon" icon="link" size="{{ 16 }}" hint-size="16px,16px"></dc-import>Einladen</span>
+      <span aria-label="Ton" style="display:grid;place-items:center;width:40px;height:40px;border-radius:999px;border:2px solid var(--cp-line)"><dc-import name="Icon" icon="volume-2" size="{{ 18 }}" hint-size="18px,18px"></dc-import></span>
+      <dc-import name="Avatar" who="Sanne" size="{{ 32 }}" host="{{ true }}" hint-size="32px,32px"></dc-import>
+    </header>
+  </sc-if>
+  <sc-if value="{{ mob }}" hint-placeholder-val="{{ false }}">
+    <header style="flex:none;height:56px;box-sizing:border-box;display:flex;align-items:center;gap:10px;padding:0 14px;border-bottom:var(--cp-bw) solid var(--cp-line);background:var(--cp-surface);position:relative;z-index:10">
+      <dc-import name="CompibertRig" variant="head" size="{{ 30 }}" hint-size="30px,30px"></dc-import>
+      <div style="flex:1;min-width:0;display:flex;align-items:center;gap:8px"><b style="font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Freitags-Zocken</b><span style="flex:none;display:inline-flex;align-items:center;gap:5px;height:22px;padding:0 8px;border-radius:999px;border:2px solid var(--cp-line);background:{{ pillBg }};color:{{ pillFg }};font-size:11px;font-weight:800"><span style="width:6px;height:6px;border-radius:50%;background:{{ pillDot }};border:1.5px solid var(--cp-line)"></span>{{ pill }}</span></div>
+      <dc-import name="Avatar" who="Sanne" size="{{ 32 }}" host="{{ true }}" hint-size="32px,32px"></dc-import>
+    </header>
+  </sc-if>
+
+  <div style="flex:1;min-height:0;display:flex">
+    <div style="position:relative;flex:1;min-width:0;overflow:hidden">
+      {{ smoke }}
+      <div style="position:relative;z-index:2;height:100%;box-sizing:border-box;padding:{{ pad }};overflow:hidden">
+        <div style="max-width:1052px;margin:0 auto;display:flex;flex-direction:column;gap:{{ gap }}">
+          <div style="display:flex;flex-direction:column;gap:4px">
+            <span style="font-size:13px;font-weight:700;color:var(--cp-ink-2)">{{ kicker }}</span>
+            <h1 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:{{ h1 }};line-height:1">{{ title }}</h1>
+          </div>
+
+          <sc-if value="{{ vLobby }}" hint-placeholder-val="{{ true }}">
+            <section aria-label="Spielbrett" style="display:flex;flex-direction:column;gap:14px;padding:{{ cardPad }};border:var(--cp-bw) solid var(--cp-line);border-radius:16px;background:var(--cp-surface);box-shadow:var(--cp-shadow-card)">
+              <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px"><h2 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:26px;line-height:1">Spielbrett</h2><span style="font-size:13px;font-weight:700;color:var(--cp-ink-2)">7 von 9 sitzen</span></div>
+              <div style="display:grid;grid-template-columns:{{ teamCols }};gap:12px">
+                <sc-for list="{{ teams }}" as="t" hint-placeholder-count="4">
+                  <div role="group" aria-label="{{ t.aria }}" style="border:var(--cp-bw) solid var(--cp-line);border-radius:14px;background:var(--cp-surface);overflow:hidden">
+                    <div style="display:flex;align-items:center;gap:8px;padding:7px 10px;background-color:var(--cp-team-{{ t.n }});background-image:var(--cp-team-{{ t.n }}-pattern);border-bottom:2px solid var(--cp-line)"><dc-import name="TeamMark" team="{{ t.n }}" size="{{ 24 }}" hint-size="24px,24px"></dc-import><span style="min-width:0;padding:1px 7px;border-radius:6px;background:var(--cp-team-{{ t.n }});color:var(--cp-team-{{ t.n }}-ink);font-family:var(--cp-font-display);font-size:17px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ t.name }}</span></div>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:10px">
+                      <sc-for list="{{ t.ppl }}" as="p" hint-placeholder-count="2"><div style="display:flex;flex-direction:column;align-items:center;gap:4px"><dc-import name="Avatar" who="{{ p.n }}" size="{{ avS }}" team="{{ t.n }}" hint-size="44px,44px"></dc-import><span style="font-size:12px;font-weight:600">{{ p.n }}</span></div></sc-for>
+                      <sc-for list="{{ t.free }}" as="f" hint-placeholder-count="0"><div style="display:flex;flex-direction:column;align-items:center;gap:4px"><span style="width:{{ avPx }};height:{{ avPx }};border-radius:50%;border:2.5px dashed var(--cp-ink-2);box-sizing:border-box;display:grid;place-items:center;color:var(--cp-ink-2)"><dc-import name="Icon" icon="plus" size="{{ 16 }}" hint-size="16px,16px"></dc-import></span><span style="font-size:12px;color:var(--cp-ink-2)">Frei</span></div></sc-for>
+                    </div>
+                  </div>
+                </sc-for>
+              </div>
+              <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px">
+                <div style="display:flex;align-items:center;gap:8px;padding:10px 12px;border:2px solid var(--cp-line);border-radius:12px;background:var(--cp-paper-2)"><dc-import name="Icon" icon="armchair" size="{{ 16 }}" hint-size="16px,16px"></dc-import><b style="font-size:14px">Bench</b><span style="display:flex;gap:4px;margin-left:auto"><dc-import name="Avatar" who="Mia" size="{{ 28 }}" hint-size="28px,28px"></dc-import><dc-import name="Avatar" who="Bea" size="{{ 28 }}" hint-size="28px,28px"></dc-import></span></div>
+                <div style="display:flex;align-items:center;gap:8px;padding:10px 12px;border:2px solid var(--cp-line);border-radius:12px;background:var(--cp-paper-2)"><dc-import name="Icon" icon="eye" size="{{ 16 }}" hint-size="16px,16px"></dc-import><b style="font-size:14px">Tribüne</b><span style="display:flex;gap:4px;margin-left:auto"><dc-import name="Avatar" who="Chris" size="{{ 28 }}" hint-size="28px,28px"></dc-import></span></div>
+              </div>
+            </section>
+            <div style="display:grid;grid-template-columns:{{ twoCols }};gap:16px">
+              <section aria-label="Sessions" style="display:flex;flex-direction:column;gap:10px;padding:16px;border:var(--cp-bw) solid var(--cp-line);border-radius:16px;background:var(--cp-surface)">
+                <h2 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:22px;line-height:1">Sessions</h2>
+                <sc-for list="{{ sessions }}" as="s" hint-placeholder-count="2"><div style="display:flex;align-items:center;gap:10px"><span style="flex:none;display:grid;place-items:center;width:36px;height:36px;border-radius:50%;border:2.5px solid var(--cp-line);background:{{ s.disc }};color:{{ s.discFg }};font-family:var(--cp-font-num);font-size:15px">{{ s.no }}</span><div style="flex:1;min-width:0;display:flex;flex-direction:column;line-height:1.3"><b style="font-size:15px">{{ s.t }}</b><span style="font-size:13px;font-weight:600;color:var(--cp-ink-2)">{{ s.d }}</span></div><span style="flex:none;height:24px;display:inline-flex;align-items:center;padding:0 9px;border-radius:999px;border:2px solid var(--cp-line);font-size:11px;font-weight:800">{{ s.p }}</span></div></sc-for>
+              </section>
+              <section aria-label="So spielen wir" style="display:flex;flex-direction:column;gap:10px;padding:16px;border:var(--cp-bw) solid var(--cp-line);border-radius:16px;background:var(--cp-surface)">
+                <h2 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:22px;line-height:1">So spielen wir</h2>
+                <dl style="margin:0;display:grid;grid-template-columns:auto 1fr;gap:6px 16px;font-size:14px"><dt style="font-weight:700;color:var(--cp-ink-2)">Format</dt><dd style="margin:0">Teams à 2</dd><dt style="font-weight:700;color:var(--cp-ink-2)">Spiele</dt><dd style="margin:0">6 pro Session</dd><dt style="font-weight:700;color:var(--cp-ink-2)">Auswahl</dt><dd style="margin:0">Lucky Wheel</dd><dt style="font-weight:700;color:var(--cp-ink-2)">Punkte</dt><dd style="margin:0">3 · 2 · 1 · 0</dd></dl>
+              </section>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ vWheel }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;align-items:center;gap:12px;padding:10px 14px;border:var(--cp-bw) solid var(--cp-line);border-radius:14px;background:var(--cp-surface)"><span style="flex:none;display:grid;place-items:center;width:32px;height:32px;border-radius:50%;border:2px solid var(--cp-line);background:var(--cp-primary);color:var(--cp-on-primary)"><dc-import name="Icon" icon="ferris-wheel" size="{{ 16 }}" hint-size="16px,16px"></dc-import></span><span style="font-family:var(--cp-font-display);font-size:20px;line-height:1.15">Sanne dreht das Glücksrad.</span></div>
+            <div style="display:flex;justify-content:center"><dc-import name="GameWheel" skin="show" size="{{ wheelS }}" freeze="spin" controls="{{ false }}" can-spin="{{ false }}" muted="{{ true }}" motion="{{ motion }}" cb-dir="{{ cbDir }}" hint-size="{{ wheelHint }}"></dc-import></div>
+          </sc-if>
+
+          <sc-if value="{{ vClip }}" hint-placeholder-val="{{ false }}">
+            <div style="display:grid;grid-template-columns:{{ clipCols }};gap:14px;align-items:start">
+              <div style="position:relative;z-index:44;aspect-ratio:16/9;border:var(--cp-bw) solid var(--cp-line);border-radius:14px;overflow:hidden;background:repeating-linear-gradient(135deg,var(--cp-paper-2) 0 14px,var(--cp-surface) 14px 28px);box-shadow:var(--cp-shadow-card)">
+                <span style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);padding:6px 10px;border-radius:8px;background:var(--cp-surface);border:2px solid var(--cp-line);font-family:var(--cp-font-mono);font-size:12px;font-weight:700;white-space:nowrap">YouTube-Clip: Mario Kart 8, 30 s</span>
+                <span style="position:absolute;left:10px;top:10px;display:flex;align-items:center;gap:6px;height:30px;padding:0 10px;border-radius:999px;border:2px solid var(--cp-line);background:var(--cp-surface);font-size:12px;font-weight:800"><span style="width:8px;height:8px;border-radius:50%;background:var(--cp-hot)"></span>Clip läuft für alle</span>
+                <span aria-label="Für mich schließen" style="position:absolute;right:10px;top:10px;display:grid;place-items:center;width:40px;height:40px;border-radius:50%;border:2px solid var(--cp-line);background:var(--cp-surface)"><dc-import name="Icon" icon="x" size="{{ 16 }}" hint-size="16px,16px"></dc-import></span>
+                <span style="position:absolute;left:10px;right:10px;bottom:10px;height:10px;border-radius:999px;border:2px solid var(--cp-line);background:var(--cp-surface);overflow:hidden"><span style="display:block;width:38%;height:100%;background:var(--cp-hot)"></span></span>
+              </div>
+              <div style="position:relative;z-index:46;display:flex;flex-direction:column;gap:8px">
+                <div style="display:flex;align-items:baseline;justify-content:space-between;gap:8px"><b style="font-size:14px">Vetos, versiegelt bis zum Ende</b><span style="font-family:var(--cp-font-timer);font-size:28px;line-height:1">0:38</span></div>
+                <div style="display:grid;grid-template-columns:{{ partyCols }};gap:8px">
+                  <sc-for list="{{ parties }}" as="p" hint-placeholder-count="4"><div style="display:flex;align-items:center;gap:8px;min-height:52px;padding:6px 10px;border:2px solid var(--cp-line);border-radius:12px;background:var(--cp-surface)"><dc-import name="TeamMark" team="{{ p.t }}" size="{{ 24 }}" hint-size="24px,24px"></dc-import><div style="flex:1;min-width:0;display:flex;flex-direction:column;line-height:1.25"><b style="font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ p.n }}</b><span style="font-size:12px;color:var(--cp-ink-2)">{{ p.s }}</span></div></div></sc-for>
+                </div>
+                <div style="display:flex;align-items:center;gap:10px;height:56px;padding:0 20px;border-radius:999px;box-sizing:border-box;border:var(--cp-bw) solid var(--cp-line);background:var(--cp-hot);color:var(--cp-on-hot);box-shadow:var(--cp-shadow-btn);font-weight:800;font-size:16px"><dc-import name="Icon" icon="ban" size="{{ 20 }}" hint-size="20px,20px"></dc-import>Veto einlegen<span style="margin-left:auto;font-size:12px;font-weight:700">gedrückt halten</span></div>
+              </div>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ vStand }}" hint-placeholder-val="{{ false }}">
+            <section aria-label="Tabelle" style="width:100%;max-width:640px;box-sizing:border-box;display:flex;flex-direction:column;gap:8px;padding:16px;border:var(--cp-bw) solid var(--cp-line);border-radius:16px;background:var(--cp-surface);box-shadow:var(--cp-shadow-card)">
+              <div style="display:flex;flex-direction:column;line-height:1.15;margin-bottom:4px"><span style="font-size:13px;font-weight:700;color:var(--cp-ink-2)">Nach Spiel 2 von 6</span><span style="font-family:var(--cp-font-display);font-size:26px">Tabelle</span></div>
+              <sc-for list="{{ rows }}" as="l" hint-placeholder-count="4"><div style="display:flex;align-items:center;gap:10px;min-height:56px;padding:6px 12px 6px 6px;border-radius:12px;border:{{ l.bd }};box-shadow:{{ l.sh }}"><span style="flex:none;display:grid;place-items:center;width:38px;height:38px;border-radius:10px;border:2.5px solid var(--cp-line);background:{{ l.rbg }};color:{{ l.rfg }};font-family:var(--cp-font-display);font-size:19px">{{ l.rank }}</span><dc-import name="TeamMark" team="{{ l.t }}" size="{{ 28 }}" hint-size="28px,28px"></dc-import><b style="flex:1;min-width:0;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ l.name }}</b><span style="font-family:var(--cp-font-num);font-size:26px;line-height:1">{{ l.pts }}</span></div></sc-for>
+            </section>
+          </sc-if>
+        </div>
+      </div>
+
+      <sc-if value="{{ guides }}" hint-placeholder-val="{{ false }}">
+        <div aria-hidden="true" style="position:absolute;inset:0;z-index:3;pointer-events:none;overflow:hidden">
+          <sc-for list="{{ guideList }}" as="g" hint-placeholder-count="4"><div style="position:absolute;left:{{ g.l }};top:{{ g.t }};width:{{ g.w }};height:{{ g.h }};box-sizing:border-box;border:2px dashed var(--cp-ink);border-radius:50%;display:grid;place-items:center"><span style="padding:2px 8px;border-radius:6px;border:2px solid var(--cp-line);background:var(--cp-surface);font-family:var(--cp-font-mono);font-size:11px;font-weight:700;white-space:nowrap">{{ g.label }}</span></div></sc-for>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ desk }}" hint-placeholder-val="{{ true }}">
+        <div role="toolbar" aria-label="Host-Steuerung" style="position:absolute;left:50%;bottom:24px;transform:translateX(-50%);z-index:30;display:flex;align-items:center;gap:8px;padding:8px;border:var(--cp-bw) solid var(--cp-line);border-radius:999px;background:var(--cp-surface);box-shadow:var(--cp-shadow-card);white-space:nowrap">
+          <span style="display:grid;place-items:center;width:44px;height:44px;border-radius:50%;border:2px solid var(--cp-line);background:var(--cp-primary);color:var(--cp-on-primary)"><dc-import name="Icon" icon="crown" size="{{ 20 }}" hint-size="20px,20px"></dc-import></span>
+          <sc-for list="{{ dock }}" as="b" hint-placeholder-count="2"><span style="display:inline-flex;align-items:center;gap:7px;height:44px;padding:0 14px;border-radius:999px;border:var(--cp-bw) {{ b.bs }} {{ b.bc }};background:{{ b.bg }};color:{{ b.fg }};box-shadow:{{ b.sh }};font-weight:700;font-size:14px"><dc-import name="Icon" icon="{{ b.icon }}" size="{{ 16 }}" hint-size="16px,16px"></dc-import>{{ b.n }}</span></sc-for>
+          <span aria-label="Mehr" style="display:grid;place-items:center;width:44px;height:44px;border-radius:50%"><dc-import name="Icon" icon="ellipsis" size="{{ 20 }}" hint-size="20px,20px"></dc-import></span>
+        </div>
+      </sc-if>
+    </div>
+
+    <sc-if value="{{ desk }}" hint-placeholder-val="{{ true }}">
+      <aside aria-label="Seitenleiste" style="flex:none;width:340px;box-sizing:border-box;border-left:var(--cp-bw) solid var(--cp-line);background:var(--cp-surface);display:flex;flex-direction:column;position:relative;z-index:2">
+        <div role="tablist" style="flex:none;display:grid;grid-template-columns:1fr 1fr;border-bottom:2px solid var(--cp-line-soft)">
+          <span role="tab" aria-selected="false" style="position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;height:58px;color:var(--cp-ink-2);font-weight:600;font-size:12px"><dc-import name="Icon" icon="message-square" size="{{ 18 }}" hint-size="18px,18px"></dc-import>Chat<span style="position:absolute;top:6px;left:50%;margin-left:10px;display:grid;place-items:center;min-width:18px;height:18px;padding:0 5px;box-sizing:border-box;border-radius:999px;background:var(--cp-ink);color:var(--cp-paper);font-size:10px;font-weight:800">3</span></span>
+          <span role="tab" aria-selected="true" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;height:58px;border-bottom:3px solid var(--cp-hot);margin-bottom:-2px;font-weight:800;font-size:12px"><dc-import name="Icon" icon="history" size="{{ 18 }}" offset="var(--cp-hot)" hint-size="18px,18px"></dc-import>Aktivität</span>
+        </div>
+        <div role="log" style="flex:1;min-height:0;overflow:hidden;padding:12px;display:flex;flex-direction:column;justify-content:flex-end;gap:10px">
+          <span style="font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--cp-ink-2)">Session 1</span>
+          <sc-for list="{{ feed }}" as="r" hint-placeholder-count="6"><div style="display:flex;align-items:flex-start;gap:10px;padding:4px 2px"><span style="flex:none;display:grid;place-items:center;width:28px;height:28px;border-radius:50%;border:2px solid var(--cp-line);background:{{ r.bg }};color:{{ r.fg }}"><dc-import name="Icon" icon="{{ r.icon }}" size="{{ 14 }}" hint-size="14px,14px"></dc-import></span><div style="flex:1;min-width:0;display:flex;flex-direction:column;line-height:1.35"><b style="font-size:13px">{{ r.a }}</b><span style="font-size:13px;color:var(--cp-ink-2);text-wrap:pretty">{{ r.b }}</span></div><span style="flex:none;font-size:11px;color:var(--cp-ink-2);padding-top:2px">{{ r.r }}</span></div></sc-for>
+        </div>
+      </aside>
+    </sc-if>
+  </div>
+
+  <sc-if value="{{ mob }}" hint-placeholder-val="{{ false }}">
+    <span aria-label="Host-Steuerung" style="position:absolute;right:14px;bottom:96px;z-index:30;display:grid;place-items:center;width:56px;height:56px;border-radius:50%;border:var(--cp-bw) solid var(--cp-line);background:var(--cp-primary);color:var(--cp-on-primary);box-shadow:var(--cp-shadow-btn)"><dc-import name="Icon" icon="crown" size="{{ 24 }}" hint-size="24px,24px"></dc-import></span>
+    <nav aria-label="Event" style="flex:none;position:relative;z-index:35;display:grid;grid-template-columns:1fr 1fr;padding:0 4px 18px;border-top:var(--cp-bw) solid var(--cp-line);background:var(--cp-surface)">
+      <span aria-current="page" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;height:58px;border-top:3px solid var(--cp-ink);margin-top:-2px;font-size:11px;font-weight:800"><dc-import name="Icon" icon="layout-grid" size="{{ 22 }}" offset="var(--cp-hot)" hint-size="22px,22px"></dc-import>Event</span>
+      <span style="position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;height:58px;color:var(--cp-ink-2);font-size:11px;font-weight:600"><dc-import name="Icon" icon="history" size="{{ 22 }}" hint-size="22px,22px"></dc-import>Aktivität<span style="position:absolute;top:6px;left:50%;margin-left:6px;display:grid;place-items:center;min-width:18px;height:18px;padding:0 5px;box-sizing:border-box;border-radius:999px;border:1.5px solid var(--cp-surface);background:var(--cp-ink);color:var(--cp-paper);font-size:10px;font-weight:800">3</span></span>
+    </nav>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1440,&quot;height&quot;:900},&quot;opt&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;A&quot;,&quot;B&quot;,&quot;C&quot;],&quot;default&quot;:&quot;A&quot;,&quot;tsType&quot;:&quot;'A'|'B'|'C'&quot;},&quot;w&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[1440,390],&quot;default&quot;:1440,&quot;tsType&quot;:&quot;1440|390&quot;},&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;light&quot;,&quot;dark&quot;],&quot;default&quot;:&quot;light&quot;,&quot;tsType&quot;:&quot;'light'|'dark'&quot;},&quot;view&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;lobby&quot;,&quot;wheel&quot;,&quot;clip&quot;,&quot;standings&quot;],&quot;default&quot;:&quot;lobby&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;motion&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;reduced&quot;],&quot;default&quot;:&quot;full&quot;,&quot;tsType&quot;:&quot;'full'|'reduced'&quot;},&quot;speed&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;echt&quot;,&quot;vorschau&quot;],&quot;default&quot;:&quot;echt&quot;,&quot;tsType&quot;:&quot;'echt'|'vorschau'&quot;},&quot;guides&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;}}">
+const SH={
+ A:{d:[[-14,62,60,52,0,'FloorA',36],[26,68,56,46,1,'FloorB',44],[58,60,58,54,2,'FloorA',52],[4,80,92,34,0,'FloorB',60]],
+    m:[[-40,66,120,36,0,'FloorA',36],[10,72,120,32,1,'FloorB',44],[-10,58,110,30,2,'FloorA',52],[-30,82,160,26,0,'FloorB',60]]},
+ B:{d:[[4,-16,46,60,0,'RiseA',36],[36,-22,42,58,1,'RiseB',44],[58,0,46,62,2,'RiseA',52],[20,30,48,56,1,'RiseB',60],[-6,48,40,50,2,'RiseA',68]],m:[[-34,-14,110,46,0,'RiseA',36],[22,0,110,44,1,'RiseB',44],[-22,26,120,44,2,'RiseA',52],[12,48,110,40,1,'RiseB',60],[-40,66,120,38,0,'RiseA',68]]},
+ C:{d:[[-22,-8,36,56,0,'WingA',36],[-26,30,38,52,1,'WingB',44],[-20,64,36,50,2,'WingA',52],[86,-6,36,54,2,'WingB',40],[88,32,38,52,0,'WingA',48],[84,66,36,50,1,'WingB',56]],
+    m:[[-50,-4,90,40,0,'WingA',36],[-56,46,90,44,1,'WingB',44],[66,14,90,40,2,'WingB',52],[62,60,90,44,0,'WingA',60]]}};
+const PAL={A:{light:['pop','mint','primary'],dark:['hot','pop','cobalt']},B:{light:['pop','mint','primary'],dark:['hot','cobalt','hot']},C:{light:['pop','mint','primary'],dark:['hot','pop','cobalt']}};
+const PK={A:{light:.24,dark:.16},B:{light:.24,dark:.12},C:{light:.24,dark:.16}};
+const TEAMS=[[1,'Wilde Gurken',['Kitty','Larsi']],[2,'Team Orange',['Tom','Jo']],[4,'Käse Turbo',['Ben','Ida']],[8,'Nacht Eulen',['Olli']]];
+const btn=(n,icon,kind)=>({n,icon,bs:kind==='dis'?'dashed':'solid',bc:kind==='dis'?'var(--cp-ink-3)':'var(--cp-line)',bg:kind==='p'?'var(--cp-primary)':kind==='dis'?'var(--cp-paper-2)':'var(--cp-surface)',fg:kind==='p'?'var(--cp-on-primary)':kind==='dis'?'var(--cp-ink-2)':'var(--cp-ink)',sh:kind==='p'?'var(--cp-shadow-btn)':'none'});
+const DOCK={lobby:[btn('Session 1 starten','play','p'),btn('Einladen','link')],wheel:[btn('Rad dreht …','ferris-wheel','dis'),btn('Einladen','link')],clip:[btn('Für alle überspringen','skip-forward'),btn('Einladen','link')],standings:[btn('Rad drehen','ferris-wheel','p'),btn('Einladen','link')]};
+const HEAD={lobby:['Session 1: Sa 25.10. · Teamwahl offen','Rein in die Teams'],wheel:['Session 1 von 2 läuft seit 20:34','Spiel 3 von 6'],clip:['Session 1 von 2 läuft seit 20:34','Spiel 3 von 6: Mario Kart 8'],standings:['Session 1 von 2 läuft seit 20:34','Nach Spiel 2']};
+const FEED=[['ferris-wheel','primary','Glücksrad: Rocket League','Spiel 1','20:36'],['trophy','primary','Wilde Gurken gewinnt','Spiel 1','20:58'],['ban','hot','Veto von Larsi und Olli','Trackmania fliegt vom Rad','21:01'],['trophy','primary','Nacht Eulen gewinnt','Spiel 2','21:19'],['user-plus','surface','Chris kommt dazu','Tribüne','21:20'],['ferris-wheel','primary','Sanne dreht das Rad','Spiel 3','21:24']];
+class Component extends DCLogic {
+  layerRef=React.createRef();
+  moment(){ const v=this.props.view||'lobby'; return v==='wheel'||v==='clip'; }
+  applyRate(){ const el=this.layerRef.current; if(!el||!el.getAnimations) return; const r=this.moment()?.5:1; el.getAnimations({subtree:true}).forEach(a=>{ if(a.playbackRate!==r) a.updatePlaybackRate(r); }); }
+  retry(n){ clearTimeout(this._t); const el=this.layerRef.current; const k=el&&el.getAnimations?el.getAnimations({subtree:true}).length:0; this.applyRate(); if(this.props.motion!=='reduced'&&k===0&&n>0) this._t=setTimeout(()=>this.retry(n-1),250); }
+  componentDidMount(){ this.retry(40); }
+  componentDidUpdate(){ this.retry(40); }
+  componentWillUnmount(){ clearTimeout(this._t); }
+  renderVals(){
+    const P=this.props, opt=SH[P.opt]?P.opt:'A', desk=Number(P.w)!==390, theme=P.theme==='dark'?'dark':'light', view=HEAD[P.view]?P.view:'lobby';
+    const reduced=P.motion==='reduced', speed=P.speed==='vorschau'?10:1, cols=PAL[opt][theme], shapes=SH[opt][desk?'d':'m'];
+    const kids=shapes.map(([x,y,w,h,c,kf,loop],i)=>React.createElement('div',{key:opt+i,style:{position:'absolute',left:x+'%',top:y+'%',width:w+'%',height:h+'%',borderRadius:'50%',background:`radial-gradient(closest-side, var(--cp-${cols[c]}), transparent)`,opacity:.8,willChange:reduced?'auto':'transform, opacity',animation:reduced?'none':`cpSmoke${kf} ${loop/2/speed}s var(--cp-ease-io) ${-(i*9)/speed}s infinite alternate`}}));
+    const smoke=React.createElement('div',{ref:this.layerRef,onAnimationStart:()=>this.applyRate(),'aria-hidden':'true','data-layer':'stage-smoke',style:{position:'absolute',inset:0,zIndex:1,overflow:'hidden',pointerEvents:'none',contain:'strict',opacity:view==='clip'?.5:1,transition:'opacity var(--cp-dur-slower) var(--cp-ease-out)'}},React.createElement('div',{style:{position:'absolute',inset:0,opacity:PK[opt][theme]}},kids));
+    const guideList=shapes.map(([x,y,w,h,c,kf,loop],i)=>({l:x+'%',t:y+'%',w:w+'%',h:h+'%',label:`${opt.toLowerCase()}${i+1} · ${cols[c]} · ${loop} s`}));
+    const running=view!=='lobby';
+    const teams=TEAMS.map(([n,name,ppl])=>({n,name,aria:`${name}, ${ppl.length} von 2`,ppl:ppl.map(p=>({n:p})),free:Array.from({length:2-ppl.length},()=>({}))}));
+    const rows=[[1,'1.',5],[8,'1.',5],[2,'3.',2],[4,'4.',1]].map(([t,rank,pts])=>({t,rank,pts:String(pts),name:TEAMS.find(x=>x[0]===t)[1],rbg:rank==='1.'?'var(--cp-primary)':'var(--cp-surface)',rfg:rank==='1.'?'var(--cp-on-primary)':'var(--cp-ink)',bd:rank==='1.'?'3px solid var(--cp-line)':'var(--cp-bw) solid var(--cp-line)',sh:rank==='1.'?'var(--cp-shadow-sm)':'none'}));
+    const parties=[[1,'Wilde Gurken','Versiegelt'],[2,'Team Orange','Überlegt noch'],[4,'Käse Turbo','Versiegelt'],[8,'Nacht Eulen','Überlegt noch']].map(([t,n,s])=>({t,n,s}));
+    const feed=FEED.map(([icon,c,a,b,r])=>({icon,a,b,r,bg:`var(--cp-${c})`,fg:c==='surface'?'var(--cp-ink)':`var(--cp-on-${c})`}));
+    const sessions=[['1','Session 1','Sa 25.10., 20:30','Termin steht','var(--cp-surface)','var(--cp-ink)'],['2','Session 2','5 von 9 haben abgestimmt','Terminumfrage','var(--cp-surface)','var(--cp-ink)']].map(([no,t,d,p,disc,discFg])=>({no,t,d,p,disc,discFg}));
+    return {theme,motion:reduced?'reduced':'full',desk,mob:!desk,guides:!!P.guides,guideList,smoke,
+      W:desk?'1440px':'390px',H:desk?'900px':'844px',R:desk?'18px':'32px',pad:desk?'24px 24px 40px':'16px 14px 28px',gap:desk?'22px':'18px',h1:desk?'44px':'34px',cardPad:desk?'16px':'12px',
+      kicker:HEAD[view][0],title:HEAD[view][1],vLobby:view==='lobby',vWheel:view==='wheel',vClip:view==='clip',vStand:view==='standings',
+      pill:running?'Läuft':'Teamwahl offen',pillBg:running?'var(--cp-primary)':'var(--cp-surface)',pillFg:running?'var(--cp-on-primary)':'var(--cp-ink)',pillDot:running?'var(--cp-hot)':'var(--cp-success)',
+      teams,teamCols:desk?'repeat(4,minmax(0,1fr))':'repeat(2,minmax(0,1fr))',avS:desk?44:40,avPx:desk?'44px':'40px',twoCols:desk?'repeat(2,minmax(0,1fr))':'minmax(0,1fr)',sessions,
+      wheelS:desk?440:300,wheelHint:desk?'440px,520px':'300px,380px',cbDir:theme==='dark'?'m3b':'m3a',
+      clipCols:desk?'minmax(0,1.5fr) minmax(0,1fr)':'minmax(0,1fr)',partyCols:desk?'minmax(0,1fr)':'repeat(2,minmax(0,1fr))',parties,rows,dock:DOCK[view],feed};
+  }
+}
+</script>
+</body>
+</html>
