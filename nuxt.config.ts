@@ -52,13 +52,14 @@ export default defineNuxtConfig({
     // GSAP loads through `loadGsap()` on the lead before a run only (ADR 0015), and the notes editor through a lazy component where a note is edited
     // (#454). Vite's manifest marks the chunk of every dynamic import `prefetch`, and vue-bundle-renderer then writes `<link rel="prefetch">` for it on
     // every page that reaches the `import()`: the Event page does for both (ceremony layer; the stepper's create sheet holds the game form), so a
-    // finished Event fetched 70 kB of GSAP although no run plays, and every Event page would fetch Tiptap. Only these chunks lose the flag; other
+    // finished Event fetched 70 kB of GSAP although no run plays, and every Event page would fetch Tiptap. The installed app's splash (#674) is a lazy
+    // component of app.vue, so every page reaches it, and only the first launch of a day shows it. Only these chunks lose the flag; other
     // prefetches stay. test/build/gsap-lazy.test.ts and test/build/notes-editor-lazy.test.ts check the hints the build renders.
     defineNuxtModule({
       meta: { name: 'lazy-chunks-no-prefetch' },
       setup(_options, nuxt) {
         // `src` is relative to the app folder for the app's own files (`components/RichNotesEditor.vue`) and to the project for a package.
-        const lazy = /(?:^|[\\/])(?:node_modules[\\/](?:gsap|@tiptap|prosemirror-[^\\/]+|linkifyjs|orderedmap|rope-sequence|w3c-keyname|crelt)[\\/]|components[\\/]RichNotes(?:Editor|Toolbar|LinkControl)\.vue$|utils[\\/]notes-extensions\.ts$|RichNotesEditor\.[^.\\/]+\.css$)/
+        const lazy = /(?:^|[\\/])(?:node_modules[\\/](?:gsap|@tiptap|prosemirror-[^\\/]+|linkifyjs|orderedmap|rope-sequence|w3c-keyname|crelt)[\\/]|components[\\/](?:RichNotes(?:Editor|Toolbar|LinkControl)|BootSplash)\.vue$|utils[\\/]notes-extensions\.ts$|RichNotesEditor\.[^.\\/]+\.css$)/
         nuxt.hook('build:manifest', (manifest) => {
           for (const chunk of Object.values(manifest)) {
             // The editor's stylesheet is an entry of its own, with no `src`: it is named by its file.
@@ -108,6 +109,8 @@ export default defineNuxtConfig({
     public: {
       // Read by <StagingBadge /> (#178).
       staging,
+      // The icon directory of the build (stage.ts): the install banner shows the icon the phone would install (#676).
+      iconDir: brand.iconDir,
       // The realtime Worker the Event page connects to (#156). Empty: no live connection, the page polls. Vercel sets
       // either REALTIME_URL (read here at build time) or NUXT_PUBLIC_REALTIME_URL (Nuxt reads it at runtime).
       realtimeUrl: process.env.REALTIME_URL ?? '',

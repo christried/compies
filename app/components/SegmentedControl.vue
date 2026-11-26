@@ -16,13 +16,15 @@ const props = defineProps<{
   arrows?: 'all' | 'horizontal'
 }>()
 
-const emit = defineEmits<{ 'update:modelValue': [value: T] }>()
+// The second argument is the tapped option's element, for a caller that reveals from it (the Theme reveal, #931); a key selects
+// with `null`, since only a tap spreads the circle (#1008). `v-model` and a one-argument handler ignore it.
+const emit = defineEmits<{ 'update:modelValue': [value: T, origin: HTMLElement | null] }>()
 
 const group = useTemplateRef('group')
 
-function select(value: T) {
+function select(value: T, origin: HTMLElement | null) {
   if (props.disabled) return
-  emit('update:modelValue', value)
+  emit('update:modelValue', value, origin)
 }
 
 // Without a matching value the first option is the one tab stop, so the group stays reachable.
@@ -38,8 +40,8 @@ function onKeydown(event: KeyboardEvent, index: number) {
   if (props.arrows === 'horizontal' && (event.key === 'ArrowDown' || event.key === 'ArrowUp')) return
   event.preventDefault()
   const next = (index + step + props.options.length) % props.options.length
-  select(props.options[next]!.value)
-  nextTick(() => (group.value?.querySelectorAll<HTMLElement>('[role="radio"]')[next])?.focus())
+  select(props.options[next]!.value, null)
+  nextTick(() => group.value?.querySelectorAll<HTMLElement>('[role="radio"]')[next]?.focus())
 }
 </script>
 
@@ -67,7 +69,7 @@ function onKeydown(event: KeyboardEvent, index: number) {
         index === options.length - 1 ? 'rounded-r-pill' : '',
         index > 0 ? 'border-l-(length:--cp-bw) border-line' : '',
       ]"
-      @click="select(option.value)"
+      @click="select(option.value, $event.currentTarget as HTMLElement)"
       @keydown="onKeydown($event, index)"
     >
       <AppIcon

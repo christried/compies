@@ -11,12 +11,12 @@ const NOW = 1_000_000
 /** The fake's `currentTime` at the start of every test (seconds). */
 const CLOCK = 10
 
-function setup(options: { enabled?: boolean, loadFile?: (id: CueId) => Promise<ArrayBuffer> } = {}) {
+function setup(options: { enabled?: boolean, loadFile?: (id: CueId) => Promise<ArrayBuffer>, onSounding?: (cue: { id: CueId, delayMs: number }) => void } = {}) {
   const context = new FakeAudioContext()
   let now = NOW
   const loadFile = vi.fn(options.loadFile ?? ((id: CueId) => Promise.resolve(bytesOf(id))))
   const onChange = vi.fn()
-  const player = createCuePlayer({ context: context.asContext, serverNow: () => now, loadFile, onChange, enabled: options.enabled })
+  const player = createCuePlayer({ context: context.asContext, serverNow: () => now, loadFile, onChange, enabled: options.enabled, onSounding: options.onSounding })
   /** Time passes on both clocks. */
   const advance = (ms: number) => {
     now += ms
@@ -913,5 +913,69 @@ describe('playNow', () => {
     const emote = context.started().find(source => source.id === 'emo-clap')!
     expect(emote.stopCalls).toBe(0)
     expect(context.started()).toHaveLength(3)
+  })
+
+  describe('onSounding (#670)', () => {
+    it('is told the id and the delay of a cue that was scheduled', async () => {
+      const onSounding = vi.fn()
+      const { player } = setup({ onSounding })
+      player.preload(['emo-clap', 'veto-seal'])
+      await settle()
+
+      player.playNow('emo-clap', 0, 0.6)
+      player.playNow('veto-seal', 80)
+
+      expect(onSounding.mock.calls).toEqual([[{ id: 'emo-clap', delayMs: 0 }], [{ id: 'veto-seal', delayMs: 80 }]])
+    })
+
+    it('is not told of a cue that was skipped: the file is not decoded, or the context does not run', async () => {
+      const onSounding = vi.fn()
+      const { context, player } = setup({ onSounding })
+      player.playNow('veto-seal')
+      player.preload(['emo-clap'])
+      await settle()
+      context.state = 'suspended'
+
+      player.playNow('emo-clap')
+
+      expect(onSounding).not.toHaveBeenCalled()
+    })
+
+    it('is not told of anything while Ton is off', async () => {
+      const onSounding = vi.fn()
+      const { player } = setup({ enabled: false, onSounding })
+      player.preload(['veto-seal'])
+      await settle()
+
+      player.playNow('veto-seal')
+      player.setEnabled(false)
+      player.playNow('veto-seal')
+
+      expect(onSounding).not.toHaveBeenCalled()
+    })
+
+    it('is not told of anything after dispose', async () => {
+      const onSounding = vi.fn()
+      const { player } = setup({ onSounding })
+      player.preload(['veto-seal'])
+      await settle()
+
+      player.dispose()
+      player.playNow('veto-seal')
+
+      expect(onSounding).not.toHaveBeenCalled()
+    })
+
+    it('is not told of a cue of a plan', async () => {
+      const onSounding = vi.fn()
+      const { context, player } = setup({ onSounding })
+
+      player.setPlan([cue('wheel-stop', 500), cue('veto-seal', 900)])
+      player.setPlan([cue('wheel-tick', 500)], 'ceremony')
+      await settle()
+
+      expect(context.started()).not.toEqual([])
+      expect(onSounding).not.toHaveBeenCalled()
+    })
   })
 })

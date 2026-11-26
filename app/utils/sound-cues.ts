@@ -2,6 +2,7 @@ import type { ClipView, CountdownView, SpinView, StandingView, VetoDrawView } fr
 import { ceremonyTimeline, type RunShape } from '~~/shared/ceremony'
 import { COIN_DURATION_MS, COIN_LAND_AT, COIN_SPIN_AT, type CoinToss } from '~~/shared/coin'
 import type { EmoteId } from '~~/shared/emote'
+import type { EventView } from '~~/shared/event'
 import { msOf } from '~~/shared/instant'
 import { countTicks } from './count-up'
 import { pointsDelta, rankMoves } from './standings-news'
@@ -343,6 +344,20 @@ export interface VetoArrivalState {
   revealedCount: number | null
 }
 
+/**
+ * What the arrival rules read of one Event read: the window, the viewer's own Party's cast (`own` is the viewer's only) and how many Vetoes were
+ * revealed. The one copy: the cue player and the header's reaction both take their baseline from it (#1008).
+ */
+export function arrivalOf(view: EventView): VetoArrivalState {
+  const vetoes = view.wheel?.vetoes
+  const draw = vetoes?.draw
+  return {
+    draw: draw ? { drawId: draw.drawId, kind: draw.kind, stopAt: draw.stopAt, vetoEndsAt: draw.vetoEndsAt } : null,
+    ownCast: vetoes?.own?.cast ?? false,
+    revealedCount: vetoes?.revealed?.length ?? null,
+  }
+}
+
 /** A cue to play `delayMs` from now. */
 export interface ArrivalCue { id: CueId, delayMs: number }
 
@@ -350,6 +365,18 @@ export interface ArrivalCue { id: CueId, delayMs: number }
 export const STAMP_GAP_MS = 80
 /** An arrival cue whose moment is further past than this is skipped, not played late (a page that slept through it). */
 export const ARRIVAL_LATE_MS = 2000
+
+/**
+ * How many Vetoes arrived revealed with this read (0: none), the one rule of the reveal (#673): the same draw, the reveal not in the previous read,
+ * in the new one, the window's end known and no more than `ARRIVAL_LATE_MS` past. The stamps (`vetoArrivalCues`) and the header's reaction
+ * (`vetoReaction`) both read it, so they cannot disagree. Reads `revealedCount` and the draw's fields only.
+ */
+export function revealedOnArrival(previous: VetoArrivalState | null, next: VetoArrivalState, now: number): number {
+  if (previous === null || next.draw === null) return 0
+  if (previous.draw?.drawId !== next.draw.drawId || previous.revealedCount !== null || next.revealedCount === null) return 0
+  if (next.draw.vetoEndsAt === null || now - msOf(next.draw.vetoEndsAt) > ARRIVAL_LATE_MS) return 0
+  return next.revealedCount
+}
 
 /**
  * The cues that the arrival of a read causes (#532, spec #504): the own Party's cast (`veto-seal`), the stamps of the reveal (one `veto-seal`
@@ -365,10 +392,8 @@ export function vetoArrivalCues(previous: VetoArrivalState | null, next: VetoArr
 
   if (next.draw.kind === 'set' && !sameDraw && now - msOf(next.draw.stopAt) <= ARRIVAL_LATE_MS) cues.push({ id: 'veto-open', delayMs: 0 })
   if (sameDraw && !previous.ownCast && next.ownCast) cues.push({ id: 'veto-seal', delayMs: 0 })
-  if (sameDraw && previous.revealedCount === null && next.revealedCount !== null
-    && next.draw.vetoEndsAt !== null && now - msOf(next.draw.vetoEndsAt) <= ARRIVAL_LATE_MS) {
-    for (let index = 0; index < next.revealedCount; index++) cues.push({ id: 'veto-seal', delayMs: index * STAMP_GAP_MS })
-  }
+  const stamps = revealedOnArrival(previous, next, now)
+  for (let index = 0; index < stamps; index++) cues.push({ id: 'veto-seal', delayMs: index * STAMP_GAP_MS })
   return cues
 }
 
@@ -377,15 +402,24 @@ export const EMOTE_CUE: Record<EmoteId, CueId> = { clap: 'emo-clap', tears: 'emo
 /** An Emote of another Member plays at this share of its cue's volume; the own one at the full volume (#770). */
 export const OTHERS_EMOTE_VOLUME = 0.6
 
+/** Whether an `emote.sent` is the viewer's own: the Member, not the socket, so a second device of the same Member counts too. The one rule of it (#1008). */
+export function isOwnEmote(message: { userId: string }, viewerId: string | undefined): boolean {
+  return message.userId === viewerId
+}
+
+/** Whether an Emote is too old to react to (a page that slept through it): more than `ARRIVAL_LATE_MS`, in the server's ms. The one rule of it (#1008). */
+export function emoteIsLate(serverTime: number, now: number): boolean {
+  return now - serverTime > ARRIVAL_LATE_MS
+}
+
 /**
  * The cue an `emote.sent` causes on this device (#770, spec #719 § C), mirroring `vetoArrivalCues`: none when the room marked the Emote as
- * carrying no sound (`sound` governs the own Emote too, the fourth in a second is silent for everyone) or when it is more than `ARRIVAL_LATE_MS`
- * old (a page that slept through it); else its cue at the full volume for the viewer's own Emote and at `OTHERS_EMOTE_VOLUME` for another's.
+ * carrying no sound (`sound` governs the own Emote too, the fourth in a second is silent for everyone) or when it is late (`emoteIsLate`); else its cue at the full volume for the viewer's own Emote and at `OTHERS_EMOTE_VOLUME` for another's.
  * Whether the board is in view is no input: the reaction is heard with the draw covered or the tab hidden. Ton is the player's gate, not this rule's.
  * `now` and `serverTime` are the server's, in ms.
  */
 export function emoteCue(input: { emote: EmoteId, sound: boolean, own: boolean, serverTime: number, now: number }): { id: CueId, volume: number } | null {
-  if (!input.sound || input.now - input.serverTime > ARRIVAL_LATE_MS) return null
+  if (!input.sound || emoteIsLate(input.serverTime, input.now)) return null
   return { id: EMOTE_CUE[input.emote], volume: input.own ? 1 : OTHERS_EMOTE_VOLUME }
 }
 

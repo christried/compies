@@ -1,6 +1,6 @@
 import { mountSuspended, registerEndpoint } from '@nuxt/test-utils/runtime'
 import { createError } from 'h3'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import IndexPage from '~/pages/index.vue'
 import type { HomeEvent } from '~~/shared/event'
 import { kitty, signInAs } from './auth'
@@ -9,6 +9,7 @@ import { kitty, signInAs } from './auth'
 // what it returns, whether it fails and whether it hangs.
 const host = { name: 'Hostess' }
 let homeEvents: HomeEvent[] = []
+let hasPlayed = false
 let mode: 'ok' | 'fail' | 'hang' = 'ok'
 const requests = vi.fn()
 
@@ -18,7 +19,7 @@ registerEndpoint('/api/e', {
     requests()
     if (mode === 'fail') throw createError({ statusCode: 500, statusMessage: 'boom' })
     if (mode === 'hang') return new Promise(() => {})
-    return { events: homeEvents }
+    return { events: homeEvents, hasPlayed }
   },
 })
 
@@ -50,6 +51,7 @@ describe('home page', () => {
   beforeEach(async () => {
     signInAs(kitty)
     homeEvents = []
+    hasPlayed = false
     mode = 'ok'
     requests.mockClear()
     await clearNuxtData('home-events')
@@ -317,5 +319,76 @@ describe('home page', () => {
     finally {
       visibility.mockRestore()
     }
+  })
+})
+
+// The install banner (#676, spec #927): Home shows it between the header and the list, to a User who has played, on a phone whose browser holds its
+// install prompt. The real plugin holds the event a test dispatches; the phone is a coarse pointer.
+describe('home page: the install banner', () => {
+  const TITLE = 'Compies als App installieren'
+
+  function onAndroid() {
+    vi.spyOn(window, 'matchMedia').mockImplementation((query: string) => ({
+      matches: query === '(pointer: coarse)',
+      media: query,
+      addEventListener() {},
+      removeEventListener() {},
+    }) as unknown as MediaQueryList)
+    const prompt = new Event('beforeinstallprompt', { cancelable: true })
+    window.dispatchEvent(Object.assign(prompt, { prompt: async () => {}, userChoice: new Promise(() => {}) }))
+  }
+
+  beforeEach(async () => {
+    signInAs(kitty)
+    homeEvents = []
+    hasPlayed = false
+    mode = 'ok'
+    localStorage.clear()
+    await clearNuxtData('home-events')
+    onAndroid()
+  })
+
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  it('sits above the list of Events, below the header, for a User who has played', async () => {
+    hasPlayed = true
+    homeEvents = [card({ name: 'Freitags-Zocken' })]
+    const page = await mountSuspended(IndexPage)
+    await settle(page)
+
+    await vi.waitFor(() => expect(page.text()).toContain(TITLE))
+    const html = page.html()
+    expect(html.indexOf('</header>')).toBeLessThan(html.indexOf(TITLE))
+    expect(html.indexOf(TITLE)).toBeLessThan(html.indexOf('Deine Events'))
+  })
+
+  it('shows with no Events on Home too: the User played an Event that has left Home', async () => {
+    hasPlayed = true
+    const page = await mountSuspended(IndexPage)
+    await settle(page)
+
+    await vi.waitFor(() => expect(page.text()).toContain(TITLE))
+    expect(page.text()).toContain('Noch keine Einladung.')
+  })
+
+  it('stays away for a User who has not played', async () => {
+    homeEvents = [card({ name: 'Freitags-Zocken' })]
+    const page = await mountSuspended(IndexPage)
+    await settle(page)
+    await new Promise(resolve => setTimeout(resolve, 20))
+
+    expect(page.text()).not.toContain(TITLE)
+  })
+
+  it('stays away in the error state', async () => {
+    hasPlayed = true
+    mode = 'fail'
+    const page = await mountSuspended(IndexPage)
+    await settle(page)
+    await new Promise(resolve => setTimeout(resolve, 20))
+
+    expect(page.text()).not.toContain(TITLE)
   })
 })

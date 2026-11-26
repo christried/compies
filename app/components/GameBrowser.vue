@@ -272,6 +272,7 @@ const GRID = 'sm:grid sm:grid-cols-[repeat(auto-fill,minmax(170px,1fr))] sm:item
 
     <EmptyState
       v-else-if="state === 'noMatch'"
+      mood="confused"
       :title="filters.q.trim() ? t('library.noMatch', { q: filters.q.trim() }) : t('empty.search.title')"
       :text="t('empty.search.text')"
     >

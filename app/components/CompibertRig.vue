@@ -1,12 +1,16 @@
 <script setup lang="ts">
 import fullSvg from '~/assets/compibert/compibert-full.svg?raw'
 import headSvg from '~/assets/compibert/compibert-head.svg?raw'
+import { PARTY_HAT } from '~/utils/compibert-hat'
 
 // The animated Compibert (#311, ADR 0015): the same SVG assets as `Compibert.vue`, mounted and moved by GSAP. `Compibert.vue` stays plain markup
 // without any script (header, Construction page, empty states), so a page that has no rig loads no GSAP; this one is for the ceremony's end frame.
 // The server and the first paint show the still pose (open eyes, no GSAP); the rig takes over in onMounted.
 const props = withDefaults(defineProps<{
+  /** The base: what he does while no reaction runs. */
   state?: RigState
+  /** A timed reaction over the base (#928): a new object is a new reaction, even with equal content. It returns to `state` by itself after its length; the caller never flips `state` back. */
+  reaction?: Reaction | null
   /** Fixed for the instance's life: change it with `:key`. */
   variant?: RigVariant
   /** Width in px; without it the rig fills its container's width. Full is 404 × 344, the head and the bust (#526) are square. */
@@ -19,7 +23,14 @@ const props = withDefaults(defineProps<{
   hopsFor?: number
   /** The head crop wears the Sticker outline in Dunkel (and System-dark): the cream rim keeps him from vanishing on a dark bubble. Hell has none. */
   rim?: boolean
-}>(), { state: 'idle', variant: 'full', size: undefined, look: null, micro: true, hopsFor: undefined, rim: false })
+  /** The party hat of the header's head (#673): drawn at the svg's root, as the still head does, so it does not follow the head's motion. Fixed for the instance's life: change it with `:key`. */
+  accessory?: 'partyhat'
+}>(), { state: 'idle', reaction: null, variant: 'full', size: undefined, look: null, micro: true, hopsFor: undefined, rim: false, accessory: undefined })
+
+const emit = defineEmits<{
+  /** Once, when GSAP has loaded, the rig is mounted and the base is entered: the boot splash (#674) starts its run-in on it. Never after a failed load. */
+  ready: []
+}>()
 
 // Cheap outline on weak devices (hand-off § Performance): the hard shadow's offset in the figure's own units, 7 and 8 of the viewBox's width
 // (`viewWidth`: 404 for the full figure, 254 for the bust's crop of it (#526), 192 for the head (#584)).
@@ -30,8 +41,11 @@ const WEAK_CORES = 4
 const root = useTemplateRef<HTMLElement>('root')
 const uid = useId()
 const prefix = `cb${uid.replace(/\W/g, '')}_`
-// Depends on the variant and the prefix only, never on `size` or `state`: Vue must never replace the DOM that GSAP is animating.
-const svg = computed(() => rigMarkup(props.variant === 'head' ? headSvg : fullSvg, props.variant, prefix))
+// Depends on the variant, the prefix and the accessory only, never on `size` or `state`: Vue must never replace the DOM that GSAP is animating (a new accessory is a new instance, by `:key`).
+const svg = computed(() => {
+  const markup = rigMarkup(props.variant === 'head' ? headSvg : fullSvg, props.variant, prefix)
+  return props.accessory === 'partyhat' ? markup.replace(/<\/svg>$/, `${PARTY_HAT}</svg>`) : markup
+})
 
 const ready = ref(false)
 const onStage = ref(true)
@@ -61,14 +75,56 @@ function applyLook(instant: boolean) {
   rig?.lookAt(props.look, instant)
 }
 
+// What shows: the running reaction, else the base.
+const visible = ref<RigState>(props.state)
+let running: RigState | null = null
+let reactionTimer: ReturnType<typeof setTimeout> | undefined
+// A reaction that came before the rig was there (GSAP still loading, or set at mount): it starts, with its full length, once the base has been entered.
+let early: Reaction | null = props.reaction
+
+/** The single place that sets the rig's state. */
 function enter(state: RigState) {
   const reduced = reducedMotion()
+  visible.value = state
   held.value = reduced
   rig?.setState(state, reduced, { hopsFor: props.hopsFor })
   // `restTo` re-centres the face, so the look is told again after each state.
   applyLook(reduced)
 }
-watch(() => props.state, enter)
+
+function dropReaction() {
+  clearTimeout(reactionTimer)
+  reactionTimer = undefined
+  running = null
+  early = null
+}
+
+function react(reaction: Reaction) {
+  if (unmounted) return
+  if (!rig) {
+    early = reaction
+    return
+  }
+  if (!admitReaction(props.state, running, reaction.state)) return
+  running = reaction.state
+  enter(reaction.state)
+  clearTimeout(reactionTimer)
+  reactionTimer = setTimeout(() => {
+    reactionTimer = undefined
+    running = null
+    enter(props.state)
+  }, reactionSeconds(reaction) * 1000)
+}
+
+// The base first, then the reaction: a reconnect is `state` confused → idle and a `wave` in one tick, and the wave must be admitted.
+watch([() => props.state, () => props.reaction], ([state, reaction], [before, previous]) => {
+  if (state !== before) {
+    // A base turning `confused` ends the reaction at once (errors block); any other base waits for the reaction's end.
+    if (state === 'confused') dropReaction()
+    if (state === 'confused' || running === null) enter(state)
+  }
+  if (reaction && reaction !== previous) react(reaction)
+})
 watch(() => props.look, () => applyLook(reducedMotion()))
 
 /** One nod of the head (the Tour's „Zeigt“); nothing under reduced motion. */
@@ -101,10 +157,15 @@ onMounted(async () => {
   // The first look is set, not eased: he arrives looking at it (the reference's `look(first)`).
   applyLook(true)
   rig.setActive(onStage.value && inView.value)
+  const waiting = early
+  early = null
+  if (waiting) react(waiting)
+  emit('ready')
 })
 
 onBeforeUnmount(() => {
   unmounted = true
+  clearTimeout(reactionTimer)
   rig?.destroy()
   rig = undefined
   leaveStage()
@@ -132,7 +193,7 @@ onBeforeUnmount(() => {
       '--cb-dy': `${shadow.y}px`,
     }"
     aria-hidden="true"
-    :data-state="state"
+    :data-state="visible"
     :data-ready="ready ? 'true' : 'false'"
     :data-animating="animating ? 'true' : 'false'"
     :data-held="held ? 'true' : 'false'"
