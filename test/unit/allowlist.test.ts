@@ -27,34 +27,27 @@ describe('parseAllowlist', () => {
 })
 
 describe('permissionsFor', () => {
-  const allowlist = {
-    hosts: parseAllowlist('discord:host,twitch:streamer'),
-    admins: parseAllowlist('discord:operator'),
-  }
+  const admins = parseAllowlist('discord:operator,twitch:operator_tv')
   const discord = (accountId: string) => ({ providerId: 'discord', accountId })
   const twitch = (accountId: string) => ({ providerId: 'twitch', accountId })
 
-  it('grants nothing to an account on neither list', () => {
-    expect(permissionsFor([discord('someone')], allowlist)).toEqual({ canHost: false, isAdmin: false })
+  it('sets nothing for an account that is not on the admin list: the Host permission is stored, not computed (ADR 0002)', () => {
+    expect(permissionsFor([discord('someone')], admins)).toEqual({ isAdmin: false })
   })
 
-  it('grants the Host permission to a listed Host', () => {
-    expect(permissionsFor([twitch('streamer')], allowlist)).toEqual({ canHost: true, isAdmin: false })
-  })
-
-  it('makes the operator Platform admin and Host', () => {
-    expect(permissionsFor([discord('operator')], allowlist)).toEqual({ canHost: true, isAdmin: true })
+  it('makes the operator Platform admin and sets the Host permission with it', () => {
+    expect(permissionsFor([discord('operator')], admins)).toEqual({ isAdmin: true, canHost: true })
   })
 
   it('matches provider and id together', () => {
-    expect(permissionsFor([twitch('host')], allowlist)).toEqual({ canHost: false, isAdmin: false })
+    expect(permissionsFor([twitch('operator')], admins)).toEqual({ isAdmin: false })
   })
 
-  it('grants a right when any linked account is listed', () => {
-    expect(permissionsFor([twitch('nobody'), discord('host')], allowlist)).toEqual({ canHost: true, isAdmin: false })
+  it('makes a Platform admin when any linked account is listed', () => {
+    expect(permissionsFor([twitch('nobody'), twitch('operator_tv')], admins)).toEqual({ isAdmin: true, canHost: true })
   })
 
-  it('grants nothing without accounts', () => {
-    expect(permissionsFor([], allowlist)).toEqual({ canHost: false, isAdmin: false })
+  it('sets nothing without accounts', () => {
+    expect(permissionsFor([], admins)).toEqual({ isAdmin: false })
   })
 })

@@ -1,6 +1,7 @@
 import { and, eq } from 'drizzle-orm'
 import { vi } from 'vitest'
-import { authAccounts } from '../../server/db/schema'
+import { parseAllowlist } from '../../server/domain/allowlist'
+import { authAccounts, users } from '../../server/db/schema'
 import { createAuth } from '../../server/utils/auth'
 import type { Db } from '../../server/utils/db'
 import { createTestApp } from './app'
@@ -26,9 +27,23 @@ export function stubAuthEnv(allowlist: { hosts?: string, admins?: string } = {})
   setAllowlist(allowlist)
 }
 
+/**
+ * The Host accounts of the test, `provider:id` as in the admin list (a list of Hosts is not read by the app any more, #939): the helpers
+ * here set `users.canHost` in the database for them right after they sign in, as the Admin page's switch does (#682). Reset by every call.
+ */
+let hostAccounts = new Set<string>()
+
+/** `admins` is the app's `ADMIN_PROVIDER_IDS`; `hosts` are the accounts that hold the Host permission once they have signed in. */
 export function setAllowlist({ hosts = '', admins = '' }: { hosts?: string, admins?: string }) {
-  vi.stubEnv('HOST_PROVIDER_IDS', hosts)
+  hostAccounts = parseAllowlist(hosts)
   vi.stubEnv('ADMIN_PROVIDER_IDS', admins)
+}
+
+async function grantHosts(db: Db, profile: ProviderProfile) {
+  if (!hostAccounts.has(`${profile.provider}:${profile.id}`)) return
+  const [account] = await db.select({ userId: authAccounts.userId }).from(authAccounts)
+    .where(and(eq(authAccounts.providerId, profile.provider), eq(authAccounts.accountId, profile.id)))
+  if (account) await db.update(users).set({ canHost: true }).where(eq(users.id, account.userId))
 }
 
 /** Twitch identifies the User through an ID token; Better Auth only decodes it. */
@@ -92,6 +107,7 @@ async function oauthRoundTrip(db: Db, profile: ProviderProfile, start: () => Pro
       headers: { cookie: joinCookies(cookie, startCookie) },
       redirect: 'manual',
     })
+    await grantHosts(db, profile)
     return { cookie: cookiesFrom(callback), location: callback.headers.get('location') }
   }
   finally {

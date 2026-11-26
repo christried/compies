@@ -11,3 +11,6 @@ export const HOME_EVENTS_KEY = 'home-events'
 
 // The key of the Archive's list (`GET /api/archive`, #882), as Home's: one cache for the page, so a return refetches the same data.
 export const ARCHIVE_KEY = 'archive'
+
+// The key of the Admin page's read (`GET /api/admin`, #682): one cache for the page and for the refetch after each write.
+export const ADMIN_KEY = 'admin'

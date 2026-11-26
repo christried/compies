@@ -36,9 +36,12 @@ export function hostedEventOf(hostId: string) {
   return and(eq(events.hostId, hostId), isNull(events.deletedAt))
 }
 
+/** An Event that is live, of any Host: not deleted and not finished (#725, #733). Hostless, so the Admin read can count per Host (#682). */
+export const liveEvent = and(isNull(events.deletedAt), inArray(events.phase, LIVE_PHASES))
+
 /** An Event of `hostId` that is live: not deleted and not finished (#725, #733). The one sentence behind „who is told when a game is archived“ and „in how many Events a game sits“. */
 export function liveEventOf(hostId: string) {
-  return and(hostedEventOf(hostId), inArray(events.phase, LIVE_PHASES))
+  return and(eq(events.hostId, hostId), liveEvent)
 }
 
 /** A Round that was played: it has a Result and was not put back (#656, #900). The one sentence behind „the plays on a game's page“ and „when a game was last played“. */

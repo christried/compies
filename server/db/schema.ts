@@ -16,8 +16,9 @@ const createdAt = () => timestamp('created_at', { withTimezone: true }).defaultN
 const updatedAt = () => timestamp('updated_at', { withTimezone: true }).defaultNow().$onUpdate(() => new Date()).notNull()
 
 // Better Auth's core user model, renamed to `users` (ADR 0004). `name` and `image` mirror the
-// provider; `displayName` is ours and NULL until profile setup is done. `canHost` and `isAdmin`
-// come from the env allowlist at every sign-in (ADR 0002).
+// provider; `displayName` is ours and NULL until profile setup is done. `isAdmin` comes from the env
+// admin list at every sign-in, which also switches `canHost` on; `canHost` is otherwise granted and
+// taken in the app and stays as stored (ADR 0002, amendment of 2026-11-20).
 export const users = pgTable('users', {
   id: uuid('id').defaultRandom().primaryKey(),
   name: text('name').notNull(),

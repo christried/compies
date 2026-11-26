@@ -10,7 +10,7 @@ import { webpOf } from '../webp-fixtures'
 import { createTestApp, sendVia, type TestRequest } from './app'
 import { createTestDb, resetDatabase } from './harness'
 import { clockToStop, hostEntersResult, hostFinishes, hostSets, hostSpins, playerVetoes, readEvent, setUpEvent, startRunningEvent, type Rig, type Signed } from './scenario'
-import { setAllowlist, signIn, stubAuthEnv } from './sign-in'
+import { signIn, stubAuthEnv } from './sign-in'
 
 // Deleting an account (#681, spec #907, ADR 0020): DELETE /api/me empties the signed-in User's row, takes them out of every Event that has not finished,
 // cuts their typing everywhere and closes their sockets. A Host's Events and library go with the account too (#917): test/integration/delete-host.test.ts.
@@ -257,15 +257,15 @@ describe('deleting an account', () => {
       expect((await send('GET', `/api/e/${w.a.slug}`, w.cookie)).status).toBe(401)
     })
 
-    it('lets the same provider account sign in as a new User with nothing of the old one, and with the Host permission when its id is on the list (ADR 0002)', async () => {
+    it('lets the same provider account sign in as a new User with nothing of the old one, and without the Host permission the old one held (ADR 0002, ADR 0020)', async () => {
       const w = await world()
+      expect((await me(w.cookie))?.canHost).toBe(true)
       await deleteMe(w.cookie)
-      setAllowlist({ hosts: 'discord:1,discord:2' })
 
       const { cookie } = await signIn(testDb.db, doomed)
 
       const fresh = await me(cookie)
-      expect(fresh).toMatchObject({ name: 'Quokka', displayName: null, canHost: true, isAdmin: false })
+      expect(fresh).toMatchObject({ name: 'Quokka', displayName: null, canHost: false, isAdmin: false })
       expect(fresh!.id).not.toBe(w.id)
       expect(await votesOf(fresh!.id)).toEqual([])
       expect(await messageRows(fresh!.id)).toEqual([])
