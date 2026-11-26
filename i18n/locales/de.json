@@ -774,16 +774,14 @@
     "hostLocked": "Eine Plattform-Admin hostet immer. Das lässt sich nicht ändern.",
     "platformAdmin": "Plattform-Admin",
     "notSetUp": "Noch nicht eingerichtet",
-    "providers": "Verknüpft mit {providers}",
-    "loadFailed": "Die Nutzerliste lässt sich gerade nicht laden.",
-    "saveFailed": "Das hat nicht geklappt. Versuch’s nochmal.",
-    "noMatch": "Niemand heißt so.",
-    "noMatchText": "Kein Nutzer mit „{q}“ im Namen.",
-    "deletedUsers": "{n} gelöschtes Konto | {n} gelöschte Konten",
+    "noMatch": "Niemand gefunden zu „{q}“.",
+    "noMatchText": "Probier einen anderen Namen.",
+    "deletedUsers": "Dazu kommt {n} gelöschtes Konto. | Dazu kommen {n} gelöschte Konten.",
     "revoke": {
       "title": "{name} das Host-Recht entziehen?",
-      "text": "{name} kann keine neuen Events mehr erstellen und verliert die Bibliothek. Die {n} Events von {name}, die noch nicht abgeschlossen sind, bleiben bestehen und können weiter gehostet werden. | Das 1 Event von {name}, das noch nicht abgeschlossen ist, bleibt bestehen und kann weiter gehostet werden.",
-      "textNone": "{name} kann keine neuen Events mehr erstellen und verliert die Bibliothek. Abgeschlossene Events und die Bibliothek-Spiele bleiben gespeichert.",
+      "unnamed": "Diesem Konto",
+      "text": "Das Konto kann keine neuen Events mehr erstellen und sieht die Bibliothek nicht mehr. Die Spiele bleiben gespeichert und kommen mit dem Recht zurück.",
+      "stays": "{n} Event, das noch nicht abgeschlossen ist, bleibt bestehen und kann weiter gehostet werden. | {n} Events, die noch nicht abgeschlossen sind, bleiben bestehen und können weiter gehostet werden.",
       "confirm": "Entziehen"
     }
   },
@@ -1581,10 +1579,6 @@
     "site": {
       "toPoll": "Zur Terminumfrage",
       "toHome": "Zur Startseite",
-      "admin": {
-        "title": "Der Admin-Bereich kommt vielleicht noch. Wenn man den überhaupt braucht.",
-        "text": "Hostrechte vergeben, Nutzerliste, diesdas."
-      },
       "generic": {
         "title": "Hier wird noch gebaut.",
         "text": "Diese Ecke von Compies ist noch Rohbau. Die Terminumfrage funktioniert schon."

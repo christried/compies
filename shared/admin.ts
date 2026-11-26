@@ -26,6 +26,12 @@ export interface AdminView {
   deletedUsers: number
 }
 
+/** The Users whose Display name holds the search, in the server's order: a part of the name, case and outer spaces ignored (`filterArchive`'s rule). A User with no Display name is found by no search. */
+export function filterAdminUsers(users: readonly AdminUser[], query: string): AdminUser[] {
+  const term = query.trim().toLocaleLowerCase('de')
+  return users.filter(user => !term || (user.displayName?.toLocaleLowerCase('de').includes(term) ?? false))
+}
+
 /** What `PUT /api/admin/users/:id/host` answers: the Host permission the User has now. */
 export interface SavedHostPermission {
   canHost: boolean

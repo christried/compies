@@ -2,7 +2,7 @@
 import { Archive, Gamepad2, House, Shield, User } from '@lucide/vue'
 import type { Component } from 'vue'
 import { canSeeLibrary } from '~~/shared/game'
-import { canSeeAdmin, HUB_SITES, type Viewer } from '~/utils/construction'
+import { canSeeAdmin, type Viewer } from '~/utils/construction'
 import { phaseWord, type EventContext } from '~/utils/event-page'
 
 // Main navigation: the header nav on desktop, the bottom tab bar (TabBar) below md.
@@ -36,7 +36,6 @@ const current = computed(() => {
   const area = first === 'e' ? eventTab.value : first
   return items.value.find(item => item.key === area)?.key ?? (first ? undefined : 'events')
 })
-const soon = (key: string) => (HUB_SITES as readonly string[]).includes(key)
 
 // The context hangs on the current Events tab of the header (Archiv for a finished Event, #886), and nowhere else (15-header-eventseite § HubNav).
 const withContext = (key: string) => props.layout === 'header' && !!props.context && key === eventTab.value && key === current.value
@@ -96,15 +95,8 @@ const FADE = `transition-opacity dur-fast ease-out ${OFF}`
   <TabBar
     v-if="layout === 'tabs'"
     :label="t('nav.main')"
-    :items="items.map(item => ({ ...item, current: item.key === current, description: soon(item.key) ? t('mvp.zone.navMarker') : undefined }))"
-  >
-    <template #marker="{ item }">
-      <NavSoonMarker
-        v-if="soon(item.key)"
-        class="absolute top-2 left-1/2 ml-1.5"
-      />
-    </template>
-  </TabBar>
+    :items="items.map(item => ({ ...item, current: item.key === current }))"
+  />
 
   <nav
     v-else
@@ -118,7 +110,6 @@ const FADE = `transition-opacity dur-fast ease-out ${OFF}`
       <NuxtLink
         :to="item.to"
         :aria-current="item.key === current ? 'page' : undefined"
-        :aria-description="soon(item.key) ? t('mvp.zone.navMarker') : undefined"
         :aria-describedby="withContext(item.key) ? descId : undefined"
         :style="withContext(item.key) && floor ? { minWidth: `${floor}px` } : undefined"
         class="relative flex h-[61px] border-b-3 px-[11px] text-[14px] no-underline hover:tint"
@@ -191,7 +182,6 @@ const FADE = `transition-opacity dur-fast ease-out ${OFF}`
             :offset="item.key === current ? 'var(--cp-hot)' : undefined"
           />
           {{ item.label }}
-          <NavSoonMarker v-if="soon(item.key)" />
         </template>
       </NuxtLink>
       <span

@@ -1,53 +1,44 @@
 import { describe, expect, it } from 'vitest'
-import { constructionSite } from '../../app/utils/construction'
-
-const visitor = { canHost: false, isAdmin: false }
-const host = { canHost: true, isAdmin: false }
-const admin = { canHost: true, isAdmin: true }
+import { canSeeAdmin, constructionSite } from '../../app/utils/construction'
 
 describe('constructionSite', () => {
-  it('maps each unbuilt hub area to its own Construction page in the hub shell for those who may see it', () => {
-    expect(constructionSite('/admin', admin)).toEqual({ area: 'admin', shell: 'hub' })
-  })
-
   it('`/archiv` is no unbuilt area, it has its own page (#882)', () => {
-    expect(constructionSite('/archiv', visitor)).toEqual({ area: 'generic', shell: 'hub' })
-    expect(constructionSite('/archiv/', visitor)).toEqual({ area: 'generic', shell: 'hub' })
-    expect(constructionSite('/archiv', null)).toEqual({ area: 'generic', shell: 'hub' })
+    expect(constructionSite('/archiv')).toEqual({ area: 'generic', shell: 'hub' })
+    expect(constructionSite('/archiv/')).toEqual({ area: 'generic', shell: 'hub' })
   })
 
   it('no longer treats Profil as an unbuilt area, it has its own page (#399)', () => {
-    expect(constructionSite('/profil', visitor)).toEqual({ area: 'generic', shell: 'hub' })
-    expect(constructionSite('/profil/', visitor)).toEqual({ area: 'generic', shell: 'hub' })
-  })
-
-  it('keeps the area for deeper paths and trailing slashes', () => {
-    expect(constructionSite('/admin/users', admin)).toEqual({ area: 'admin', shell: 'hub' })
+    expect(constructionSite('/profil')).toEqual({ area: 'generic', shell: 'hub' })
+    expect(constructionSite('/profil/')).toEqual({ area: 'generic', shell: 'hub' })
   })
 
   it('no longer treats Bibliothek as an unbuilt area, it has its own pages (#141)', () => {
-    expect(constructionSite('/bibliothek', visitor)).toEqual({ area: 'generic', shell: 'hub' })
-    expect(constructionSite('/bibliothek/', host)).toEqual({ area: 'generic', shell: 'hub' })
+    expect(constructionSite('/bibliothek')).toEqual({ area: 'generic', shell: 'hub' })
+    expect(constructionSite('/bibliothek/')).toEqual({ area: 'generic', shell: 'hub' })
   })
 
-  it('shows the generic state for Admin to everyone but the Platform admin', () => {
-    expect(constructionSite('/admin', visitor)).toEqual({ area: 'generic', shell: 'hub' })
-    expect(constructionSite('/admin', host)).toEqual({ area: 'generic', shell: 'hub' })
-    expect(constructionSite('/admin/users', host)).toEqual({ area: 'generic', shell: 'hub' })
-  })
-
-  it('treats a signed-out visitor like a User without rights', () => {
-    expect(constructionSite('/admin', null)).toEqual({ area: 'generic', shell: 'hub' })
+  it('has no Admin state any more: the page has its own address (#682), and a path below it gets the generic state for everyone, so it reveals nothing', () => {
+    expect(constructionSite('/admin')).toEqual({ area: 'generic', shell: 'hub' })
+    expect(constructionSite('/admin/users')).toEqual({ area: 'generic', shell: 'hub' })
   })
 
   it('shows the generic state for any other Event sub-route', () => {
-    expect(constructionSite('/e/freitags-zocken-k7q2/brett', visitor)).toEqual({ area: 'generic', shell: 'event' })
-    expect(constructionSite('/e/freitags-zocken-k7q2/tabelle', visitor)).toEqual({ area: 'generic', shell: 'event' })
-    expect(constructionSite('/e/freitags-zocken-k7q2/chat/old', visitor)).toEqual({ area: 'generic', shell: 'event' })
+    expect(constructionSite('/e/freitags-zocken-k7q2/brett')).toEqual({ area: 'generic', shell: 'event' })
+    expect(constructionSite('/e/freitags-zocken-k7q2/tabelle')).toEqual({ area: 'generic', shell: 'event' })
+    expect(constructionSite('/e/freitags-zocken-k7q2/chat/old')).toEqual({ area: 'generic', shell: 'event' })
   })
 
   it('shows the generic state in the hub shell for unknown areas', () => {
-    expect(constructionSite('/crews', visitor)).toEqual({ area: 'generic', shell: 'hub' })
-    expect(constructionSite('/archivxyz', visitor)).toEqual({ area: 'generic', shell: 'hub' })
+    expect(constructionSite('/crews')).toEqual({ area: 'generic', shell: 'hub' })
+    expect(constructionSite('/archivxyz')).toEqual({ area: 'generic', shell: 'hub' })
+  })
+})
+
+describe('canSeeAdmin', () => {
+  it('is for the Platform admin only, and for nobody signed out', () => {
+    expect(canSeeAdmin({ canHost: true, isAdmin: true })).toBe(true)
+    expect(canSeeAdmin({ canHost: true, isAdmin: false })).toBe(false)
+    expect(canSeeAdmin({ canHost: false, isAdmin: false })).toBe(false)
+    expect(canSeeAdmin(null)).toBe(false)
   })
 })

@@ -5,8 +5,7 @@ import { HOME_EVENTS_KEY } from '~/utils/event-data'
 
 // MVP route guard: every path without a page of its own lands here (see utils/construction.ts).
 const route = useRoute()
-const user = useAuthUser()
-const site = computed(() => constructionSite(route.path, user.value))
+const site = computed(() => constructionSite(route.path))
 
 // Shares the Home list (same key), so the CTA can point at the User's latest open poll (#12): the
 // most recently created one, whatever its place in Home order. ISO strings sort as their times.
