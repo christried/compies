@@ -37,4 +37,19 @@ describe('EventLoadState', () => {
 
     expect(page.get('h1').text()).toBe(title)
   })
+
+  // The head's mood (#819). The load states do not depend on the role: a Host and a Member get this component with the same props for the same
+  // status, so one case per status stands for both reads.
+  it.each([[404, 'confused'], [410, 'sad'], [500, 'confused']])('shows the %i head with the mood %s', async (statusCode, mood) => {
+    const page = await mount({ error: { statusCode }, removed: false })
+
+    expect(page.get('.compibert').attributes('data-mood')).toBe(mood)
+  })
+
+  it('keeps the head of a removed User without a mood (#897)', async () => {
+    const page = await mount({ error: { statusCode: 404 }, removed: true })
+
+    expect(page.find('.compibert').exists()).toBe(true)
+    expect(page.find('[data-mood]').exists()).toBe(false)
+  })
 })

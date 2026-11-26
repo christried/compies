@@ -8,6 +8,10 @@
 - Wählst du eine neue Darstellung, breitet sie sich als Kreis von der Stelle aus, an der du getippt hast. Mit „Weniger Bewegung“ oder in einem Browser ohne diese Funktion blendet sie sanft über. ([#931](https://github.com/christried/compies/issues/931))
 - Auf der Event-Seite reagiert die App-Figur im Kopf der Seite: auf deine eigenen Emotes, auf aufgedeckte Vetos und auf eine verlorene Verbindung ([#673](https://github.com/christried/compies/issues/673)).
 
+### Geändert
+
+- Eine Fehlerseite, ein ungültiger Link und eine Suche ohne Treffer in der Bibliothek zeigen die App-Figur verwirrt, ein gelöschtes Event zeigt sie traurig ([#819](https://github.com/christried/compies/issues/819)).
+
 ## [0.22.0] - 2026-11-25 – Host-Werkzeuge
 
 ### Neu

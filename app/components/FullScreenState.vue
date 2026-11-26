@@ -12,13 +12,20 @@ onMounted(() => heading.value?.focus())
 
 const copy = computed(() => `errorPage.${props.kind}`)
 
+// The head's baked mood (#819): a page that is not there or a link that does not work is confused, a deleted Event sad; the others keep the plain head.
+const MOODS = { notFound: 'confused', generic: 'confused', invalid: 'confused', deleted: 'sad' } as const
+const mood = computed(() => (props.kind in MOODS ? MOODS[props.kind as keyof typeof MOODS] : undefined))
+
 useHead({ title: () => t(`${copy.value}.title`) })
 </script>
 
 <template>
   <div class="mx-auto flex max-w-[560px] flex-1 flex-col items-center justify-center gap-3.5 py-10 text-center">
     <div class="w-[140px]">
-      <Compibert variant="head" />
+      <Compibert
+        variant="head"
+        :mood="mood"
+      />
     </div>
     <h1
       ref="heading"
