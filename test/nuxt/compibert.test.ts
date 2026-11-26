@@ -1,5 +1,5 @@
 import { mountSuspended } from '@nuxt/test-utils/runtime'
-import { nextTick } from 'vue'
+import { defineComponent, h, nextTick } from 'vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import Compibert from '~/components/Compibert.vue'
 import CompibertRig from '~/components/CompibertRig.vue'
@@ -65,6 +65,63 @@ describe('Compibert', () => {
 
     it.each(['notFound', 'noPermission', 'generic', 'invalid', 'deleted', 'removed'] as const)('FullScreenState %s shows the head', async (kind) => {
       expectHead(await mountSuspended(FullScreenState, { props: { kind } }))
+    })
+
+    // The moods (#819): baked stills of the rig's `confused` and `sad`, never the rig (ADR 0015).
+    it.each([
+      ['confused', undefined],
+      ['sad', '#3a86ff'],
+    ] as const)('Compibert with the mood %s is the baked head', async (mood, tear) => {
+      const page = await mountSuspended(Compibert, { props: { variant: 'head', mood } })
+      const html = page.get('.compibert').html()
+
+      expect(page.get('.compibert').attributes('data-mood')).toBe(mood)
+      expectHead(page)
+      expect(html).not.toContain('class="compibert-')
+      expect(html.includes('#3a86ff')).toBe(tear !== undefined)
+      expect(html).not.toContain('#5e1631')
+    })
+
+    it('prefixes the clip path ids of a mood head with the instance, so two never share one', async () => {
+      // Both in one app: `useId` repeats between two apps.
+      const Two = defineComponent({ render: () => h('div', [h(Compibert, { variant: 'head', mood: 'sad' }), h(Compibert, { variant: 'head', mood: 'sad' })]) })
+      const page = await mountSuspended(Two)
+      const [first, second] = page.findAll('.compibert')
+      const ids = (face: typeof first) => [...face!.html().matchAll(/ id="([^"]+)"/g)].map(match => match[1]!)
+
+      expect(ids(first).length).toBeGreaterThan(0)
+      for (const id of ids(first)) expect(id).toMatch(/^cb.+_c\d+$/)
+      expect(ids(first).filter(id => ids(second).includes(id))).toEqual([])
+      for (const id of ids(first)) expect(first!.html()).toContain(`url(#${id})`)
+    })
+
+    it('Compibert without a mood has no data-mood and the head asset as before', async () => {
+      const page = await mountSuspended(Compibert, { props: { variant: 'head' } })
+
+      expect(page.get('.compibert').attributes('data-mood')).toBeUndefined()
+      expect(page.html()).toContain('class="compibert-head"')
+    })
+
+    it('EmptyState shows the mood it is given, and none without', async () => {
+      const moody = await mountSuspended(EmptyState, { props: { title: 'Nix gefunden', mood: 'confused' } })
+      const plain = await mountSuspended(EmptyState, { props: { title: 'Noch keine Events' } })
+
+      expectHead(moody)
+      expect(moody.get('.compibert').attributes('data-mood')).toBe('confused')
+      expect(plain.find('[data-mood]').exists()).toBe(false)
+    })
+
+    it.each([
+      ['notFound', 'confused'],
+      ['generic', 'confused'],
+      ['invalid', 'confused'],
+      ['deleted', 'sad'],
+      ['noPermission', undefined],
+      ['removed', undefined],
+    ] as const)('FullScreenState %s shows the mood %s', async (kind, mood) => {
+      const page = await mountSuspended(FullScreenState, { props: { kind } })
+
+      expect(page.get('.compibert').attributes('data-mood')).toBe(mood)
     })
   })
 

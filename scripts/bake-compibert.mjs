@@ -1,8 +1,9 @@
-// Bakes the two static Compibert poses the Share image renders (#311, spec #308 § Compibert's rig): the full body "dance" and the head
-// "idle", as self-contained SVG without CSS vars, filters, classes or ids (Satori and `<img>` safe). #313 reads them on the server through `SHARE_SVGS` in `server/utils/share-assets.ts`:
-// `useStorage('assets:server').getItemRaw(key)`, the bytes decoded as text (not `getItem`, which may parse or normalise them).
+// Bakes the static Compibert poses (#311, spec #308 § Compibert's rig): the full body "dance" and the head "idle" the Share image renders, and the
+// head "confused" and "sad" moods of the empty and full-page states (#819), as self-contained SVG without CSS vars, filters, classes or ids (Satori and `<img>` safe). #313 reads
+// the first two on the server through `SHARE_SVGS` in `server/utils/share-assets.ts`: `useStorage('assets:server').getItemRaw(key)`, the bytes decoded as text (not `getItem`, which may parse or normalise them).
+// `Compibert.vue` imports the two moods as `?raw` strings.
 //
-//   node scripts/bake-compibert.mjs            writes server/assets/compibert/compibert-dance.svg and compibert-head-idle.svg
+//   node scripts/bake-compibert.mjs            writes server/assets/compibert/compibert-dance.svg, compibert-head-idle.svg, compibert-head-confused.svg and compibert-head-sad.svg
 //   node scripts/bake-compibert.mjs --check    bakes in memory, exits 1 if a committed file differs (run it after changing the rig)
 //   node scripts/bake-compibert.mjs --pose-t=0.7   dance frame at another time, written next to the outputs' folder given by --out=DIR
 //
@@ -21,7 +22,11 @@ const flag = name => args.find(arg => arg.startsWith(`--${name}=`))?.slice(name.
 // have settled (left up at about -150, right low at about -40), torso and head lean opposite ways, the right leg is lifted and the root is
 // near the top of its hop; 0.55 s still has the arms on their way and 1.05 s is the second beat's peak (compared by eye, #311). Head idle:
 // the 0.25 s rest tween is over, lids open, smile.
-const POSE_T = { 'dance': Number(flag('pose-t') ?? 0.7), 'head-idle': 0.5 }
+// Head moods (#819, the empty and full-page states), each chosen by looking at the rasterised frame. Confused at 1.1 s is the far end of the yoyo
+// (the head at +8 degrees, held 0.8 s there): the "?" is fully inside the crop, where at the first tilt (0.6 s, the head at -12) the head's swing
+// lifts it over the crop's top edge and only its dot and stem show, like an "!". Sad at 1.0 s has the lids settled (0.35 s), the head hanging at
+// 12 degrees (0.65 s) and the tear a little below the eye (it starts at 0.4 s and falls over 1.3 s), still at opacity .79; at 1.2 s and after it fades.
+const POSE_T = { 'dance': Number(flag('pose-t') ?? 0.7), 'head-idle': 0.5, 'head-confused': Number(flag('confused-t') ?? 1.1), 'head-sad': Number(flag('sad-t') ?? 1.0) }
 const STEP = 1 / 120
 
 // mulberry32, so the breath durations and the like are the same on every run.
@@ -54,7 +59,9 @@ const read = file => readFileSync(resolve(ROOT, 'app/assets/compibert', file), '
 function pose(variant, state, seconds) {
   const host = document.createElement('div')
   document.body.append(host)
-  host.innerHTML = rigMarkup(read(`compibert-${variant}.svg`), variant, 'cbbake_')
+  // The tear has no pivot of its own: in a browser GSAP scales it about its box's centre, which happy-dom cannot measure (it would scale about 0 0 and
+  // fling the drop out of the picture), so the centre of its path is given here (#819).
+  host.innerHTML = rigMarkup(read(`compibert-${variant}.svg`), variant, 'cbbake_').replace('class="cb-tear"', 'class="cb-tear" data-pivot="296 170.5"')
   const start = gsap.globalTimeline.time()
   const rig = mountRig(gsap, host, { variant, reduced: false })
   rig.stopAmbient()
@@ -138,6 +145,8 @@ function serialise(svg, viewBox) {
 const outputs = {
   'compibert-dance.svg': serialise(pose('full', 'dance', POSE_T.dance), '0 36 404 344'),
   'compibert-head-idle.svg': serialise(pose('head', 'idle', POSE_T['head-idle']), '212 40 192 192'),
+  'compibert-head-confused.svg': serialise(pose('head', 'confused', POSE_T['head-confused']), '212 40 192 192'),
+  'compibert-head-sad.svg': serialise(pose('head', 'sad', POSE_T['head-sad']), '212 40 192 192'),
 }
 await window.happyDOM.close()
 
@@ -154,7 +163,7 @@ if (args.includes('--check')) {
     console.error(`Out of date: ${stale.join(', ')}. Run node scripts/bake-compibert.mjs and commit the result.`)
     process.exit(1)
   }
-  console.log('Both baked Compibert SVGs match the rig.')
+  console.log('All four baked Compibert SVGs match the rig.')
 }
 else {
   const dir = flag('out') ? resolve(flag('out')) : OUT

@@ -10,6 +10,9 @@ const read = (file: string) => readFileSync(resolve(DIR, file), 'utf8')
 const FILES = [
   { file: 'compibert-dance.svg', viewBox: '0 36 404 344' },
   { file: 'compibert-head-idle.svg', viewBox: '212 40 192 192' },
+  // The head moods of the empty and full-page states (#819): stills of the rig's `confused` and `sad`, the head's crop.
+  { file: 'compibert-head-confused.svg', viewBox: '212 40 192 192' },
+  { file: 'compibert-head-sad.svg', viewBox: '212 40 192 192' },
 ]
 
 describe.each(FILES)('baked $file', ({ file, viewBox }) => {
@@ -43,5 +46,29 @@ describe('baked pose', () => {
     // The grin's inside and the "o" mouth share one fill colour; the smile has none, and its fang is white.
     expect(read('compibert-dance.svg').match(/#5e1631/g)).toHaveLength(1)
     expect(read('compibert-head-idle.svg')).not.toContain('#5e1631')
+  })
+})
+
+describe('baked moods (#819)', () => {
+  const confused = () => read('compibert-head-confused.svg')
+  const sad = () => read('compibert-head-sad.svg')
+
+  it('each differs from the idle head and from the other', () => {
+    expect(confused()).not.toBe(read('compibert-head-idle.svg'))
+    expect(sad()).not.toBe(read('compibert-head-idle.svg'))
+    expect(confused()).not.toBe(sad())
+  })
+
+  it('the sad head has its tear, the confused head neither the tear nor the anger mark', () => {
+    expect(sad()).toContain('#3a86ff')
+    expect(confused()).not.toContain('#3a86ff')
+    expect(confused()).not.toContain('#ff4f4f')
+  })
+
+  it('has no clap mitts (the hidden hands are left out) and not the grin', () => {
+    for (const svg of [confused(), sad()]) {
+      expect(svg).not.toContain('<ellipse cx="284"')
+      expect(svg).not.toContain('#5e1631')
+    }
   })
 })
