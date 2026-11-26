@@ -134,8 +134,8 @@ describe('the Admin page', () => {
 
     expect(toggle.attributes('aria-checked')).toBe('true')
     expect(toggle.attributes('aria-disabled')).toBe('true')
-    expect(rowOf(page, 'Sanne').text()).toContain('Eine Plattform-Admin hostet immer. Das lässt sich nicht ändern.')
-    expect(document.getElementById(toggle.attributes('aria-describedby')!)?.textContent).toContain('hostet immer')
+    expect(rowOf(page, 'Sanne').text()).toContain('Plattform-Admins hosten immer. Das lässt sich nicht ändern.')
+    expect(document.getElementById(toggle.attributes('aria-describedby')!)?.textContent).toContain('hosten immer')
     await toggle.trigger('click')
     await flushAll()
     expect(writes).not.toHaveBeenCalled()
