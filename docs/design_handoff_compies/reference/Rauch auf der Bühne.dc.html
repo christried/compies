@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<template id="__bundler_thumbnail"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="#fff3df"></rect><circle cx="38" cy="44" r="20" fill="#ff70c3" opacity=".5"></circle><circle cx="60" cy="38" r="18" fill="#2ec4b6" opacity=".5"></circle><circle cx="52" cy="60" r="17" fill="#ffd23f" opacity=".6"></circle></svg></template>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&amp;family=Lilita+One&amp;family=Bungee&amp;family=JetBrains+Mono:wght@500;700&amp;display=swap">
+<link rel="stylesheet" href="./tokens/compies-tokens.css">
+<script src="./tokens/lucide-subset.js"></script>
+<style>body{margin:0;background:#fff3df}a{color:var(--cp-ink)}a:hover{color:var(--cp-focus)}:focus-visible{outline:3px solid var(--cp-focus);outline-offset:3px}</style>
+</helmet>
+<div lang="de" data-theme="light" style="display:inline-flex;flex-direction:column;gap:120px;padding:96px;background-color:var(--cp-paper);background-image:var(--cp-tex-image);background-size:var(--cp-tex-size);color:var(--cp-ink);font-family:var(--cp-font-sans);font-weight:500;font-size:15px;line-height:1.45">
+
+  <header style="display:flex;flex-direction:column;gap:16px;max-width:1320px">
+    <span style="font-size:14px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--cp-ink-2)">COMPIES · Event page · decor layer</span>
+    <h1 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:88px;line-height:.95">Rauch auf der Bühne</h1>
+    <p style="margin:0;max-width:66ch;font-size:22px;font-weight:600;line-height:1.4;color:var(--cp-ink-2);text-wrap:pretty">Where Foundations’ „Smoke drift“ finally lands: on the Event page only, behind the stage, under every card. Three placements, one worked out. Pure CSS, a handful of soft shapes, transform and opacity only. No new tokens. Hand-off: <code style="font-family:var(--cp-font-mono);font-size:.8em;font-weight:700">design_handoff_compies/19-rauch-auf-der-buehne.md</code></p>
+    <nav style="display:flex;flex-wrap:wrap;gap:10px;margin-top:8px">
+      <a href="#s1" style="display:inline-flex;align-items:center;gap:8px;height:40px;padding:0 14px;border-radius:999px;border:var(--cp-bw) solid var(--cp-line);background:var(--cp-surface);box-shadow:var(--cp-shadow-sm);font-weight:700;font-size:14px;text-decoration:none"><b style="font-family:var(--cp-font-mono);font-size:12px">01</b>Options · 1440</a>
+      <a href="#s2" style="display:inline-flex;align-items:center;gap:8px;height:40px;padding:0 14px;border-radius:999px;border:var(--cp-bw) solid var(--cp-line);background:var(--cp-surface);box-shadow:var(--cp-shadow-sm);font-weight:700;font-size:14px;text-decoration:none"><b style="font-family:var(--cp-font-mono);font-size:12px">02</b>Options · 390</a>
+      <a href="#s3" style="display:inline-flex;align-items:center;gap:8px;height:40px;padding:0 14px;border-radius:999px;border:var(--cp-bw) solid var(--cp-line);background:var(--cp-surface);box-shadow:var(--cp-shadow-sm);font-weight:700;font-size:14px;text-decoration:none"><b style="font-family:var(--cp-font-mono);font-size:12px">03</b>Recommended</a>
+      <a href="#s4" style="display:inline-flex;align-items:center;gap:8px;height:40px;padding:0 14px;border-radius:999px;border:var(--cp-bw) solid var(--cp-line);background:var(--cp-surface);box-shadow:var(--cp-shadow-sm);font-weight:700;font-size:14px;text-decoration:none"><b style="font-family:var(--cp-font-mono);font-size:12px">04</b>Reduced motion</a>
+      <a href="#s5" style="display:inline-flex;align-items:center;gap:8px;height:40px;padding:0 14px;border-radius:999px;border:var(--cp-bw) solid var(--cp-line);background:var(--cp-surface);box-shadow:var(--cp-shadow-sm);font-weight:700;font-size:14px;text-decoration:none"><b style="font-family:var(--cp-font-mono);font-size:12px">05</b>Hand-off</a>
+    </nav>
+  </header>
+
+  <section id="s1" data-screen-label="01 Options 1440" style="display:flex;flex-direction:column;gap:32px">
+    <div style="display:flex;align-items:baseline;gap:18px;max-width:1440px">
+      <span style="flex:none;display:inline-grid;place-items:center;min-width:48px;height:48px;padding:0 10px;box-sizing:border-box;border-radius:999px;border:var(--cp-bw) solid var(--cp-line);background:var(--cp-primary);font-family:var(--cp-font-mono);font-weight:700;font-size:16px">01</span>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <h2 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:44px;line-height:1">Three places · 1440 px · Lobby · Hell</h2>
+        <p style="margin:0;max-width:80ch;font-size:17px;font-weight:600;color:var(--cp-ink-2);text-wrap:pretty">Same shapes recipe, same tokens, same drift; only the place changes. The layer always covers the stage column (viewport minus the 340 px side panel and the 64 px header) and sits under every card.</p>
+      </div>
+    </div>
+    <div style="display:flex;gap:56px;align-items:flex-start">
+      <sc-for list="{{ opts }}" as="o" hint-placeholder-count="3">
+        <div id="{{ o.id }}" style="display:flex;flex-direction:column;gap:18px;width:1440px">
+          <div style="display:flex;align-items:flex-start;gap:16px">
+            <a href="{{ o.href }}" style="flex:none;display:inline-grid;place-items:center;min-width:56px;height:40px;padding:0 10px;box-sizing:border-box;border-radius:10px;border:var(--cp-bw) solid var(--cp-line);background:{{ o.badge }};font-family:var(--cp-font-mono);font-weight:700;font-size:16px;text-decoration:none">{{ o.id }}</a>
+            <div style="display:flex;flex-direction:column;gap:6px;max-width:980px">
+              <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap"><b style="font-family:var(--cp-font-display);font-weight:400;font-size:32px;line-height:1">{{ o.name }}</b><span style="font-size:15px;font-weight:700;color:var(--cp-ink-2)">{{ o.sub }}</span><sc-if value="{{ o.rec }}" hint-placeholder-val="{{ false }}"><span style="display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 10px;border-radius:999px;border:2px solid var(--cp-line);background:var(--cp-primary);color:var(--cp-on-primary);font-size:12px;font-weight:800"><dc-import name="Icon" icon="sparkles" size="{{ 13 }}" hint-size="13px,13px"></dc-import>Recommended</span></sc-if></div>
+              <p style="margin:0;font-size:16px;line-height:1.5;text-wrap:pretty">{{ o.d }}</p>
+              <div style="display:flex;gap:8px;flex-wrap:wrap"><sc-for list="{{ o.facts }}" as="f" hint-placeholder-count="3"><span style="display:inline-flex;align-items:center;height:28px;padding:0 10px;border-radius:999px;border:2px solid var(--cp-line);background:var(--cp-surface);font-family:var(--cp-font-mono);font-size:12px;font-weight:700">{{ f }}</span></sc-for></div>
+              <p style="margin:0;font-size:14px;color:var(--cp-ink-2);text-wrap:pretty"><b style="color:var(--cp-ink)">Catch:</b> {{ o.con }}</p>
+            </div>
+          </div>
+          <dc-import name="BuehnenRauch" opt="{{ o.k }}" w="{{ 1440 }}" theme="light" view="lobby" speed="{{ speed }}" guides="{{ guides }}" hint-size="1440px,900px"></dc-import>
+        </div>
+      </sc-for>
+    </div>
+  </section>
+
+  <section id="s2" data-screen-label="02 Options 390" style="display:flex;flex-direction:column;gap:32px">
+    <div style="display:flex;align-items:baseline;gap:18px;max-width:1440px">
+      <span style="flex:none;display:inline-grid;place-items:center;min-width:48px;height:48px;padding:0 10px;box-sizing:border-box;border-radius:999px;border:var(--cp-bw) solid var(--cp-line);background:var(--cp-primary);font-family:var(--cp-font-mono);font-weight:700;font-size:16px">02</span>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <h2 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:44px;line-height:1">Three places · 390 px · Lobby · Hell</h2>
+        <p style="margin:0;max-width:80ch;font-size:17px;font-weight:600;color:var(--cp-ink-2);text-wrap:pretty">Full-width stage between the 56 px header and the TabBar. Shapes get their own mobile geometry (wider than the screen), not a scaled-down desktop.</p>
+      </div>
+    </div>
+    <div style="display:flex;gap:64px;align-items:flex-start">
+      <sc-for list="{{ opts }}" as="o" hint-placeholder-count="3">
+        <div style="display:flex;flex-direction:column;gap:14px;width:390px">
+          <div style="display:flex;align-items:center;gap:12px"><a href="{{ o.href }}" style="flex:none;display:inline-grid;place-items:center;min-width:56px;height:40px;padding:0 10px;box-sizing:border-box;border-radius:10px;border:var(--cp-bw) solid var(--cp-line);background:{{ o.badge }};font-family:var(--cp-font-mono);font-weight:700;font-size:16px;text-decoration:none">{{ o.id }}</a><b style="font-family:var(--cp-font-display);font-weight:400;font-size:26px;line-height:1">{{ o.name }}</b></div>
+          <p style="margin:0;font-size:14px;line-height:1.45;color:var(--cp-ink-2);text-wrap:pretty">{{ o.mob }}</p>
+          <dc-import name="BuehnenRauch" opt="{{ o.k }}" w="{{ 390 }}" theme="light" view="lobby" speed="{{ speed }}" guides="{{ guides }}" hint-size="390px,844px"></dc-import>
+        </div>
+      </sc-for>
+    </div>
+  </section>
+
+  <section id="s3" data-screen-label="03 Recommended" style="display:flex;flex-direction:column;gap:40px">
+    <div style="display:flex;align-items:baseline;gap:18px;max-width:1440px">
+      <span style="flex:none;display:inline-grid;place-items:center;min-width:48px;height:48px;padding:0 10px;box-sizing:border-box;border-radius:999px;border:var(--cp-bw) solid var(--cp-line);background:var(--cp-primary);font-family:var(--cp-font-mono);font-weight:700;font-size:16px">03</span>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <h2 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:44px;line-height:1">{{ recTitle }}</h2>
+        <p style="margin:0;max-width:86ch;font-size:17px;font-weight:600;color:var(--cp-ink-2);text-wrap:pretty">{{ recWhy }}</p>
+      </div>
+    </div>
+    <sc-for list="{{ recRows }}" as="r" hint-placeholder-count="4">
+      <div style="display:flex;flex-direction:column;gap:18px">
+        <div style="display:flex;align-items:center;gap:12px"><span style="display:inline-flex;align-items:center;height:32px;padding:0 12px;border-radius:999px;border:2px solid var(--cp-line);background:{{ r.chipBg }};color:{{ r.chipFg }};font-weight:800;font-size:14px">{{ r.label }}</span><span style="font-size:14px;font-weight:600;color:var(--cp-ink-2)">{{ r.note }}</span></div>
+        <div style="display:flex;gap:{{ r.gap }};align-items:flex-start">
+          <sc-for list="{{ r.items }}" as="a" hint-placeholder-count="4">
+            <div style="display:flex;flex-direction:column;gap:10px">
+              <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><b style="font-size:18px">{{ a.view }}</b><span style="display:inline-flex;align-items:center;gap:6px;height:26px;padding:0 10px;border-radius:999px;border:2px solid var(--cp-line);background:{{ a.rateBg }};color:{{ a.rateFg }};font-family:var(--cp-font-mono);font-size:12px;font-weight:700">{{ a.rate }}</span></div>
+              <dc-import name="BuehnenRauch" opt="{{ rec }}" w="{{ a.w }}" theme="{{ a.theme }}" view="{{ a.v }}" speed="{{ speed }}" guides="{{ guides }}" hint-size="{{ a.hint }}"></dc-import>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </sc-for>
+  </section>
+
+  <section id="s4" data-screen-label="04 Reduced motion" style="display:flex;flex-direction:column;gap:32px">
+    <div style="display:flex;align-items:baseline;gap:18px;max-width:1440px">
+      <span style="flex:none;display:inline-grid;place-items:center;min-width:48px;height:48px;padding:0 10px;box-sizing:border-box;border-radius:999px;border:var(--cp-bw) solid var(--cp-line);background:var(--cp-primary);font-family:var(--cp-font-mono);font-weight:700;font-size:16px">04</span>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <h2 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:44px;line-height:1">Reduced motion · still</h2>
+        <p style="margin:0;max-width:86ch;font-size:17px;font-weight:600;color:var(--cp-ink-2);text-wrap:pretty">animation: none. Every shape stays on its first keyframe: home position, scale 1, 80 % of the peak opacity. That is the quietest frame of the loop and the one the contrast numbers below are lowest-risk for. Same shapes, same colours, so the stage still reads as the stage. Moments change nothing; the Clip dim is a state, so it still applies, instantly.</p>
+      </div>
+    </div>
+    <div style="display:flex;gap:56px;align-items:flex-start">
+      <sc-for list="{{ redItems }}" as="a" hint-placeholder-count="4">
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <div style="display:flex;align-items:center;gap:10px"><b style="font-size:18px">{{ a.label }}</b><span style="display:inline-flex;align-items:center;height:26px;padding:0 10px;border-radius:999px;border:2px solid var(--cp-line);background:var(--cp-surface);font-family:var(--cp-font-mono);font-size:12px;font-weight:700">still · keyframe from</span></div>
+          <dc-import name="BuehnenRauch" opt="{{ rec }}" w="{{ a.w }}" theme="{{ a.theme }}" view="lobby" motion="reduced" guides="{{ guides }}" hint-size="{{ a.hint }}"></dc-import>
+        </div>
+      </sc-for>
+    </div>
+  </section>
+
+  <section id="s5" data-screen-label="05 Hand-off" style="display:flex;flex-direction:column;gap:36px;max-width:1920px">
+    <div style="display:flex;align-items:baseline;gap:18px;max-width:1440px">
+      <span style="flex:none;display:inline-grid;place-items:center;min-width:48px;height:48px;padding:0 10px;box-sizing:border-box;border-radius:999px;border:var(--cp-bw) solid var(--cp-line);background:var(--cp-primary);font-family:var(--cp-font-mono);font-weight:700;font-size:16px">05</span>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <h2 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:44px;line-height:1">Hand-off · {{ recName }}</h2>
+        <p style="margin:0;max-width:86ch;font-size:17px;font-weight:600;color:var(--cp-ink-2);text-wrap:pretty">Shape bounds drawn dashed (the visible smoke is the soft centre of each ellipse; the gradient reaches 0 at the dashed line).</p>
+      </div>
+    </div>
+    <div style="display:flex;gap:56px;align-items:flex-start">
+      <dc-import name="BuehnenRauch" opt="{{ rec }}" w="{{ 1440 }}" theme="light" view="lobby" motion="reduced" guides="{{ true }}" hint-size="1440px,900px"></dc-import>
+      <dc-import name="BuehnenRauch" opt="{{ rec }}" w="{{ 390 }}" theme="dark" view="lobby" motion="reduced" guides="{{ true }}" hint-size="390px,844px"></dc-import>
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:24px;align-items:start">
+
+      <div style="display:flex;flex-direction:column;gap:12px;padding:22px;border:var(--cp-bw) solid var(--cp-line);border-radius:16px;background:var(--cp-surface);box-shadow:var(--cp-shadow-card)">
+        <h3 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:26px;line-height:1">1 · The layer’s place</h3>
+        <ul style="margin:0;padding-left:18px;display:flex;flex-direction:column;gap:6px;font-size:15px;text-wrap:pretty">
+          <li><b>Event page only.</b> Every other page keeps the dot grid (Hell) and the stage fog gradients (Dunkel) and nothing else.</li>
+          <li>One <code style="font-family:var(--cp-font-mono);font-size:13px">div.stage-smoke</code>, first child of the stage column, a sibling of the stage scroller. <code style="font-family:var(--cp-font-mono);font-size:13px">position:absolute; inset:0; overflow:hidden; pointer-events:none; contain:strict; aria-hidden="true"</code>.</li>
+          <li><b>Layer:</b> <code style="font-family:var(--cp-font-mono);font-size:13px">--cp-z-decor</code> (1). Stage content stays on <code style="font-family:var(--cp-font-mono);font-size:13px">--cp-z-content</code> (2); header, dock, sheets, clip, veto, toasts above as before.</li>
+          <li><b>Bounds:</b> desktop ≥ 980: stage column only (viewport − <code style="font-family:var(--cp-font-mono);font-size:13px">--cp-panel-w</code>) × (viewport − <code style="font-family:var(--cp-font-mono);font-size:13px">--cp-header-h</code>). Never under the SidePanel or the header. Mobile: full width, between header (56) and TabBar.</li>
+          <li><b>Anchored to the visible stage,</b> not to the content: it does not scroll. Its top edge is the stage’s top edge, right under the header.</li>
+          <li><b>Ground order:</b> paper → dot grid (Hell) or stage fog <code style="font-family:var(--cp-font-mono);font-size:13px">--cp-tex-image</code> (Dunkel) → smoke → cards. The dots show through the smoke; it tints them, never covers them.</li>
+          <li>Cards are opaque <code style="font-family:var(--cp-font-mono);font-size:13px">--cp-surface</code>, so smoke is never behind card text. The only text on the ground is the Head (kicker, h1) and inline notes; in {{ recLetter }} they stand in the smoke, so section 5 checks them.</li>
+        </ul>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:12px;padding:22px;border:var(--cp-bw) solid var(--cp-line);border-radius:16px;background:var(--cp-surface);box-shadow:var(--cp-shadow-card)">
+        <h3 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:26px;line-height:1">2 · Shapes and tokens</h3>
+        <p style="margin:0;font-size:14px;color:var(--cp-ink-2);text-wrap:pretty">Ellipses, <code style="font-family:var(--cp-font-mono);font-size:12px">border-radius:50%</code>, filled with <code style="font-family:var(--cp-font-mono);font-size:12px">radial-gradient(closest-side, var(--c), transparent)</code>. The soft edge is the blur: no <code style="font-family:var(--cp-font-mono);font-size:12px">filter: blur()</code>, which is the expensive part on a phone. Position and size in % of the layer.</p>
+        <div style="display:grid;grid-template-columns:auto minmax(0,1fr) minmax(0,1fr) auto auto;gap:0;border:2px solid var(--cp-line);border-radius:12px;overflow:hidden;font-size:13px">
+          <span style="padding:7px 9px;background:var(--cp-paper-2);font-weight:800">#</span><span style="padding:7px 9px;background:var(--cp-paper-2);font-weight:800">1440: x y w h</span><span style="padding:7px 9px;background:var(--cp-paper-2);font-weight:800">390: x y w h</span><span style="padding:7px 9px;background:var(--cp-paper-2);font-weight:800">Hell</span><span style="padding:7px 9px;background:var(--cp-paper-2);font-weight:800">Dunkel</span>
+          <sc-for list="{{ shapeRows }}" as="s" hint-placeholder-count="4"><span style="padding:7px 9px;border-top:1.5px solid var(--cp-line-soft);font-family:var(--cp-font-mono);font-weight:700">{{ s.id }}</span><span style="padding:7px 9px;border-top:1.5px solid var(--cp-line-soft);font-family:var(--cp-font-mono)">{{ s.d }}</span><span style="padding:7px 9px;border-top:1.5px solid var(--cp-line-soft);font-family:var(--cp-font-mono)">{{ s.m }}</span><span style="padding:7px 9px;border-top:1.5px solid var(--cp-line-soft);font-family:var(--cp-font-mono)">{{ s.h }}</span><span style="padding:7px 9px;border-top:1.5px solid var(--cp-line-soft);font-family:var(--cp-font-mono)">{{ s.k }}</span></sc-for>
+        </div>
+        <ul style="margin:0;padding-left:18px;display:flex;flex-direction:column;gap:6px;font-size:14px;text-wrap:pretty">
+          <li><b>Group opacity (peak):</b> Hell {{ peakL }}, Dunkel {{ peakD }}, set on the shapes’ wrapper. Each shape breathes 0.8 → 1 of that, which is Foundations’ „± 20 %“.</li>
+          <li><b>Hell</b> uses the decor tokens <code style="font-family:var(--cp-font-mono);font-size:12px">--cp-pop</code>, <code style="font-family:var(--cp-font-mono);font-size:12px">--cp-mint</code> and <code style="font-family:var(--cp-font-mono);font-size:12px">--cp-primary</code>. No cobalt: cobalt over pop drops ink-2 under 4.5.</li>
+          <li><b>Dunkel</b> uses <code style="font-family:var(--cp-font-mono);font-size:12px">{{ darkTok }}</code> on top of the fog. No yellow: the fog’s spotlight is already amber. No pop where the smoke reaches the spotlight: two pop shapes overlapping there drop ink-2 under 4.5:1 (see 5).</li>
+        </ul>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:12px;padding:22px;border:var(--cp-bw) solid var(--cp-line);border-radius:16px;background:var(--cp-surface);box-shadow:var(--cp-shadow-card)">
+        <h3 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:26px;line-height:1">3 · Drift</h3>
+        <ul style="margin:0;padding-left:18px;display:flex;flex-direction:column;gap:6px;font-size:14px;text-wrap:pretty">
+          <li><b>Loop:</b> Foundations’ lengths, <code style="font-family:var(--cp-font-mono);font-size:12px">36 + i·8 s</code>: {{ loopList }}. Played as two legs with <code style="font-family:var(--cp-font-mono);font-size:12px">alternate</code>, so each leg is half the loop.</li>
+          <li><b>Desync:</b> delay <code style="font-family:var(--cp-font-mono);font-size:12px">−i·9 s</code>, so the shapes never peak together and the page doesn’t open on frame 0.</li>
+          <li><b>Easing:</b> <code style="font-family:var(--cp-font-mono);font-size:12px">--cp-ease-io</code> per leg: a slow turn at both ends, no visible restart.</li>
+          <li><b>Path:</b> {{ pathText }}</li>
+          <li><b>Properties:</b> <code style="font-family:var(--cp-font-mono);font-size:12px">transform</code> (translate3d + scale) and <code style="font-family:var(--cp-font-mono);font-size:12px">opacity</code> only, so it stays on the compositor. <code style="font-family:var(--cp-font-mono);font-size:12px">will-change</code> only while moving.</li>
+          <li><b>About „6 s“:</b> that is the Foundations demo, which plays one cycle at 10×. The spec row says 36–76 s, and that is what ships. The „Tempo“ tweak on this page plays the 10× preview.</li>
+        </ul>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:12px;padding:22px;border:var(--cp-bw) solid var(--cp-line);border-radius:16px;background:var(--cp-surface);box-shadow:var(--cp-shadow-card)">
+        <h3 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:26px;line-height:1">4 · Moments that slow it</h3>
+        <p style="margin:0;font-size:14px;color:var(--cp-ink-2);text-wrap:pretty">Foundations: „One hero at a time … smoke slows to 50 %“. Done with <code style="font-family:var(--cp-font-mono);font-size:12px">animation.updatePlaybackRate()</code>: it keeps the position, so nothing jumps. The switch is instant; at these speeds a shape moves under 1 px per frame, so the step can’t be seen.</p>
+        <div style="display:flex;flex-direction:column;border:2px solid var(--cp-line);border-radius:12px;overflow:hidden;font-size:13px">
+          <sc-for list="{{ moments }}" as="m" hint-placeholder-count="6"><div style="display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1.4fr) auto;gap:10px;align-items:baseline;padding:8px 10px;border-top:{{ m.bt }};background:{{ m.bg }}"><b>{{ m.n }}</b><span style="color:var(--cp-ink-2);text-wrap:pretty">{{ m.when }}</span><span style="font-family:var(--cp-font-mono);font-weight:700;white-space:nowrap">{{ m.how }}</span></div></sc-for>
+        </div>
+        <p style="margin:0;font-size:14px;text-wrap:pretty"><b>Recommendation:</b> 0.5× for every moment Foundations names, with one extra for the Clip: the layer also fades to 50 % (<code style="font-family:var(--cp-font-mono);font-size:12px">--cp-dur-slower</code> <code style="font-family:var(--cp-font-mono);font-size:12px">--cp-ease-out</code> in, <code style="font-family:var(--cp-font-mono);font-size:12px">--cp-dur-slow</code> <code style="font-family:var(--cp-font-mono);font-size:12px">--cp-ease-in</code> out), because colour moving next to a video competes with the video for 30 s. Decor isn’t a synced moment, so no server time is needed: it follows the local moment events.</p>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:12px;padding:22px;border:var(--cp-bw) solid var(--cp-line);border-radius:16px;background:var(--cp-surface);box-shadow:var(--cp-shadow-card)">
+        <h3 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:26px;line-height:1">5 · Contrast over the smoke</h3>
+        <p style="margin:0;font-size:14px;color:var(--cp-ink-2);text-wrap:pretty">Worst case: text on the ground where two shapes overlap at peak opacity. Text on cards is never over smoke. Computed from the token hex values. Dunkel is checked inside the amber spotlight, because smoke that reaches the top meets it there. The red row shows why pop is left out of Dunkel.</p>
+        <div style="display:grid;grid-template-columns:minmax(0,1.6fr) auto auto;border:2px solid var(--cp-line);border-radius:12px;overflow:hidden;font-size:13px">
+          <span style="padding:7px 10px;background:var(--cp-paper-2);font-weight:800">Ground</span><span style="padding:7px 10px;background:var(--cp-paper-2);font-weight:800">ink</span><span style="padding:7px 10px;background:var(--cp-paper-2);font-weight:800">ink-2</span>
+          <sc-for list="{{ contrast }}" as="c" hint-placeholder-count="6"><span style="padding:7px 10px;border-top:1.5px solid var(--cp-line-soft)">{{ c.n }}</span><span style="padding:7px 10px;border-top:1.5px solid var(--cp-line-soft);font-family:var(--cp-font-mono);font-weight:700">{{ c.a }}</span><span style="padding:7px 10px;border-top:1.5px solid var(--cp-line-soft);font-family:var(--cp-font-mono);font-weight:700;color:{{ c.bc }}">{{ c.b }}</span></sc-for>
+        </div>
+        <p style="margin:0;font-size:14px;text-wrap:pretty"><b>Rule for later edits:</b> peak group opacity stays ≤ {{ peakL }} (Hell) and ≤ {{ peakD }} (Dunkel). Don’t add Sonne or pop to Dunkel or cobalt to Hell without re-checking; those are the cases that fail.</p>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:12px;padding:22px;border:var(--cp-bw) solid var(--cp-line);border-radius:16px;background:var(--cp-surface);box-shadow:var(--cp-shadow-card)">
+        <h3 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:26px;line-height:1">6 · Reduced, and what it costs</h3>
+        <ul style="margin:0;padding-left:18px;display:flex;flex-direction:column;gap:6px;font-size:14px;text-wrap:pretty">
+          <li><b>Reduced:</b> under <code style="font-family:var(--cp-font-mono);font-size:12px">prefers-reduced-motion</code> or <code style="font-family:var(--cp-font-mono);font-size:12px">[data-motion="reduced"]</code>: <code style="font-family:var(--cp-font-mono);font-size:12px">animation:none</code>. Still frame = the <code style="font-family:var(--cp-font-mono);font-size:12px">from</code> keyframe (home, scale 1, 0.8 × peak). The moments’ rate change has no effect; the Clip dim applies instantly.</li>
+          <li><b>Confirmed: no canvas, no video, no image file.</b> {{ costLine }}</li>
+          <li>No per-frame JS, no <code style="font-family:var(--cp-font-mono);font-size:12px">requestAnimationFrame</code>, no <code style="font-family:var(--cp-font-mono);font-size:12px">filter</code>, no <code style="font-family:var(--cp-font-mono);font-size:12px">mix-blend-mode</code>, no backdrop-filter. JS only touches it at moment start and end (one <code style="font-family:var(--cp-font-mono);font-size:12px">updatePlaybackRate</code> call per shape).</li>
+          <li><b>New tokens: none.</b> Uses colour, motion (<code style="font-family:var(--cp-font-mono);font-size:12px">ease-io</code>, <code style="font-family:var(--cp-font-mono);font-size:12px">ease-out</code>, <code style="font-family:var(--cp-font-mono);font-size:12px">ease-in</code>, <code style="font-family:var(--cp-font-mono);font-size:12px">dur-slower</code>, <code style="font-family:var(--cp-font-mono);font-size:12px">dur-slow</code>), layer (<code style="font-family:var(--cp-font-mono);font-size:12px">z-decor</code>) and layout tokens. The loop lengths are Foundations’ literal spec values, same as today.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:10px;max-width:1200px">
+      <b style="font-size:16px">CSS (whole layer)</b>
+      <pre style="margin:0;padding:18px 20px;border:var(--cp-bw) solid var(--cp-line);border-radius:14px;background:var(--cp-paper-2);font-family:var(--cp-font-mono);font-size:13px;line-height:1.55;white-space:pre-wrap">{{ css }}</pre>
+    </div>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;rec&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;A&quot;,&quot;B&quot;,&quot;C&quot;],&quot;default&quot;:&quot;B&quot;,&quot;tsType&quot;:&quot;'A'|'B'|'C'&quot;,&quot;section&quot;:&quot;Ansicht&quot;},&quot;speed&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;echt&quot;,&quot;vorschau&quot;],&quot;default&quot;:&quot;echt&quot;,&quot;tsType&quot;:&quot;'echt'|'vorschau'&quot;,&quot;section&quot;:&quot;Ansicht&quot;},&quot;guides&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Ansicht&quot;}}">
+const OPTS=[
+ {k:'A',name:'Bodennebel',sub:'low along the stage floor',d:'Four wide, flat shapes lie on the floor of the visible stage and drift sideways. The Head and the top of the Game board stay on clean paper; the smoke gathers around the host dock and under the lower cards, like fog on a stage floor.',facts:['4 shapes','36–60 s','sideways ± 6 %'],con:'on a tall desktop window with little content, the floor can sit far below the last card. It still reads as the stage’s floor, just emptier.',mob:'Pools above the TabBar, where the screen is emptiest. The host crown sits in it.'},
+ {k:'B',name:'Aufsteigend',sub:'rising behind the Game board, up to the top of the stage',d:'Five round shapes rise slowly behind the Game board and up to the top edge of the stage, so the Head (kicker and title) stands in the smoke. Lower down, the opaque board covers their centres and they read as a halo around its edges; around the wheel they look great.',facts:['5 shapes','36–68 s','up 6 %, scale 1.08'],con:'reaching the top means the smoke meets Dunkel’s amber spotlight. To keep ink-2 at AA there, Dunkel uses only hot + cobalt at a lower peak (0.12).',mob:'Starts under the header, behind the Head, and fades out behind the stacked cards.'},
+ {k:'C',name:'Kulisse',sub:'framing the stage’s edges',d:'Six tall shapes in the stage’s wings, three per side, breathing up and down like side curtains. The centre stays clean for the board and the wheel.',facts:['6 shapes','36–56 s','up / down ± 6 %'],con:'the stage has only 24 px of margin at 1440, so the wings mostly sit behind card edges; at 390 they almost vanish. Most shapes, least smoke.',mob:'Only 14 px of margin: the wings show in the corners and between cards, barely.'}];
+const SH={A:{d:[[-14,62,60,52,0,'FloorA',36],[26,68,56,46,1,'FloorB',44],[58,60,58,54,2,'FloorA',52],[4,80,92,34,0,'FloorB',60]],m:[[-40,66,120,36,0,'FloorA',36],[10,72,120,32,1,'FloorB',44],[-10,58,110,30,2,'FloorA',52],[-30,82,160,26,0,'FloorB',60]]},
+ B:{d:[[4,-16,46,60,0,'RiseA',36],[36,-22,42,58,1,'RiseB',44],[58,0,46,62,2,'RiseA',52],[20,30,48,56,1,'RiseB',60],[-6,48,40,50,2,'RiseA',68]],m:[[-34,-14,110,46,0,'RiseA',36],[22,0,110,44,1,'RiseB',44],[-22,26,120,44,2,'RiseA',52],[12,48,110,40,1,'RiseB',60],[-40,66,120,38,0,'RiseA',68]]},
+ C:{d:[[-22,-8,36,56,0,'WingA',36],[-26,30,38,52,1,'WingB',44],[-20,64,36,50,2,'WingA',52],[86,-6,36,54,2,'WingB',40],[88,32,38,52,0,'WingA',48],[84,66,36,50,1,'WingB',56]],m:[[-50,-4,90,40,0,'WingA',36],[-56,46,90,44,1,'WingB',44],[66,14,90,40,2,'WingB',52],[62,60,90,44,0,'WingA',60]]}};
+const PAL={A:{light:['pop','mint','primary'],dark:['hot','pop','cobalt']},B:{light:['pop','mint','primary'],dark:['hot','cobalt','hot']},C:{light:['pop','mint','primary'],dark:['hot','pop','cobalt']}};
+const PK={A:{light:.24,dark:.16},B:{light:.24,dark:.12},C:{light:.24,dark:.16}};
+const KF={FloorA:'translate3d(6%,-3%,0) scale(1.06)',FloorB:'translate3d(-6%,-2%,0) scale(1.04)',RiseA:'translate3d(3%,-6%,0) scale(1.08)',RiseB:'translate3d(-3%,-6%,0) scale(1.06)',WingA:'translate3d(0,-6%,0) scale(1.04)',WingB:'translate3d(0,6%,0) scale(1.04)'};
+const PATH={A:'FloorA drifts right and up (+6 %, −3 %, scale 1.06); FloorB drifts left (−6 %, −2 %, scale 1.04). Shapes alternate A/B, so neighbours move against each other.',B:'RiseA rises right (+3 %, −6 %, scale 1.08); RiseB rises left (−3 %, −6 %, scale 1.06).',C:'WingA rises (0, −6 %), WingB sinks (0, +6 %), both scale 1.04; neighbours on one side move against each other.'};
+const HX={light:{paper:'#fff3df',ink:'#151515',ink2:'#5d5650',pop:'#ff70c3',mint:'#2ec4b6',primary:'#ffd23f',cobalt:'#3a86ff'},dark:{paper:'#17121d',ink:'#f7efe1',ink2:'#b9ad9f',hot:'#ff5a36',pop:'#ff7fc0',cobalt:'#6b93ff',primary:'#ffd23f',spot:'#ffb020'}};
+const hex=h=>[1,3,5].map(i=>parseInt(h.slice(i,i+2),16));
+const lin=c=>{c/=255;return c<=.03928?c/12.92:Math.pow((c+.055)/1.055,2.4)};
+const Lum=c=>.2126*lin(c[0])+.7152*lin(c[1])+.0722*lin(c[2]);
+const mix=(b,c,a)=>b.map((v,i)=>v*(1-a)+c[i]*a);
+const CR=(a,b)=>{const x=Lum(a),y=Lum(b);return (Math.max(x,y)+.05)/(Math.min(x,y)+.05)};
+const f2=n=>n.toFixed(1).replace('.',',')+':1';
+class Component extends DCLogic {
+  renderVals(){
+    const P=this.props, rec=SH[P.rec]?P.rec:'B', COLS=PAL[rec], PEAK=PK[rec], speed=P.speed==='vorschau'?'vorschau':'echt', guides=!!P.guides;
+    const ids={A:'1a',B:'1b',C:'1c'};
+    const opts=OPTS.map(o=>({...o,id:ids[o.k],href:'#'+ids[o.k],rec:o.k===rec,badge:o.k===rec?'var(--cp-primary)':'var(--cp-surface)'}));
+    const R=OPTS.find(o=>o.k===rec);
+    const VIEWS=[['lobby','Lobby','1×'],['wheel','Lucky Wheel spinning','0,5×'],['clip','Clip overlay','0,5× · Ebene 50 %'],['standings','Standings','1×']];
+    const recRows=[[1440,'light','1440 · Hell','dot grid under the smoke'],[1440,'dark','1440 · Dunkel','stage fog under the smoke'],[390,'light','390 · Hell','dot grid under the smoke'],[390,'dark','390 · Dunkel','stage fog under the smoke']].map(([w,theme,label,note])=>({label,note,gap:w===1440?'56px':'48px',chipBg:theme==='dark'?'var(--cp-ink)':'var(--cp-surface)',chipFg:theme==='dark'?'var(--cp-paper)':'var(--cp-ink)',
+      items:VIEWS.map(([v,view,rate])=>({v,view,rate:'Rauch '+rate,w,theme,hint:w===1440?'1440px,900px':'390px,844px',rateBg:rate==='1×'?'var(--cp-surface)':'var(--cp-primary)',rateFg:rate==='1×'?'var(--cp-ink)':'var(--cp-on-primary)'}))}));
+    const redItems=[[1440,'light','1440 · Hell'],[1440,'dark','1440 · Dunkel'],[390,'light','390 · Hell'],[390,'dark','390 · Dunkel']].map(([w,theme,label])=>({w,theme,label,hint:w===1440?'1440px,900px':'390px,844px'}));
+    const sd=SH[rec].d, sm=SH[rec].m;
+    const shapeRows=sd.map((s,i)=>{ const m=sm[i]; return {id:rec.toLowerCase()+(i+1),d:s.slice(0,4).join(' '),m:m?m.slice(0,4).join(' '):'–',h:'--cp-'+COLS.light[s[4]],k:'--cp-'+COLS.dark[s[4]]}; });
+    if(sm.length>sd.length) sm.slice(sd.length).forEach((m,j)=>shapeRows.push({id:rec.toLowerCase()+(sd.length+j+1),d:'–',m:m.slice(0,4).join(' '),h:'--cp-'+COLS.light[m[4]],k:'--cp-'+COLS.dark[m[4]]}));
+    const loops=sd.map(s=>s[6]);
+    const loopList=loops.map((l,i)=>`${rec.toLowerCase()}${i+1} ${l} s (leg ${l/2} s, delay −${i*9} s)`).join(' · ');
+    // contrast
+    const worst=(T,cols,peak,base)=>{ let w={v:99}; cols.forEach(a=>cols.forEach(b=>{ const g=mix(mix(base,hex(T[a]),peak),hex(T[b]),peak); const v=CR(hex(T.ink2),g); if(v<w.v) w={v,g,a,b}; })); return w; };
+    const H=HX.light, D=HX.dark;
+    const hBase=hex(H.paper), dBase=hex(D.paper), dSpot=mix(dBase,hex(D.spot),.14);
+    const one=(T,cols,peak,base)=>cols.reduce((m,c)=>{ const g=mix(base,hex(T[c]),peak); const v=CR(hex(T.ink2),g); return v<m.v?{v,g}:m; },{v:99});
+    const rowsC=[];
+    const add=(n,T,g)=>{ const b=CR(hex(T.ink2),g); rowsC.push({n,a:f2(CR(hex(T.ink),g)),b:f2(b),bc:b>=4.5?'var(--cp-success-fg)':'var(--cp-error-fg)'}); };
+    add('Hell · paper + dots',H,hBase);
+    const pl=PEAK.light, pd=PEAK.dark, fp=n=>String(n).replace('.',',');
+    add(`Hell · one shape at peak ${fp(pl)}`,H,one(H,COLS.light,pl,hBase).g);
+    const wh=worst(H,COLS.light,pl,hBase); add(`Hell · two at peak (${wh.a} + ${wh.b})`,H,wh.g);
+    add('Dunkel · paper',D,dBase);
+    add('Dunkel · spotlight alone',D,dSpot);
+    add(`Dunkel · spotlight + one shape at peak ${fp(pd)}`,D,one(D,COLS.dark,pd,dSpot).g);
+    const wd=worst(D,COLS.dark,pd,dSpot); add(`Dunkel · spotlight + two at peak (${wd.a} + ${wd.b})`,D,wd.g);
+    const bad=worst(D,['hot','pop','cobalt'],.16,dSpot); rowsC.push({n:'Not used · Dunkel with pop at 0,16 in the spotlight',a:'–',b:f2(bad.v),bc:'var(--cp-error-fg)'});
+    const moments=[['Lucky Wheel spin','spin start → stop + 2.2 s (reveal done)','0.5×'],['Clip overlay','clip.startAt → close (30 s)','0.5× + layer 50 %'],['Veto reveal','vetoEndsAt → + 1.2 s (tiles and stamps in)','0.5×'],['Award ceremony','ceremony start → share card','0.5×'],['Coin flip (Pick & Ban)','toss → result banner','0.5×'],['Not a moment','Lobby, veto countdown, Standings reorder, Pick & Ban turns','1×']].map(([n,when,how],i)=>({n,when,how,bt:i?'1.5px solid var(--cp-line-soft)':'0',bg:i===5?'var(--cp-paper-2)':'transparent'}));
+    const kfs=[...new Set(sd.map(s=>s[5]))];
+    const css=[
+`.stage-smoke{position:absolute;inset:0;z-index:var(--cp-z-decor);overflow:hidden;pointer-events:none;contain:strict;
+  transition:opacity var(--cp-dur-slow) var(--cp-ease-in)}
+.stage-smoke[data-moment="clip"]{opacity:.5;transition:opacity var(--cp-dur-slower) var(--cp-ease-out)}
+.stage-smoke__group{position:absolute;inset:0;opacity:${PEAK.light}}
+[data-theme="dark"] .stage-smoke__group{opacity:${PEAK.dark}}
+.stage-smoke__shape{position:absolute;border-radius:50%;opacity:.8;will-change:transform,opacity;
+  background:radial-gradient(closest-side,var(--c),transparent);
+  animation:var(--kf) var(--leg) var(--cp-ease-io) var(--delay) infinite alternate}`,
+...kfs.map(k=>`@keyframes cpSmoke${k}{to{transform:${KF[k]};opacity:1}}`),
+...sd.map((s,i)=>`.s${i+1}{left:${s[0]}%;top:${s[1]}%;width:${s[2]}%;height:${s[3]}%;--c:var(--cp-${COLS.light[s[4]]});--kf:cpSmoke${s[5]};--leg:${s[6]/2}s;--delay:-${i*9}s}`),
+`[data-theme="dark"]{${sd.map((s,i)=>`.s${i+1}{--c:var(--cp-${COLS.dark[s[4]]})}`).join('')}}  /* nest or flatten */`,
+`@media (max-width:979px){${sm.map((m,i)=>`.s${i+1}{left:${m[0]}%;top:${m[1]}%;width:${m[2]}%;height:${m[3]}%}`).join('')}}`,
+`@media (prefers-reduced-motion:reduce){.stage-smoke__shape{animation:none;will-change:auto}}
+[data-motion="reduced"] .stage-smoke__shape{animation:none;will-change:auto}`,
+`/* moments (JS, once per start/end) */
+const rate=r=>smoke.getAnimations({subtree:true}).forEach(a=>a.updatePlaybackRate(r))
+onMomentStart(()=>rate(.5)); onMomentEnd(()=>rate(1))`].join('\n');
+    const n=sd.length;
+    return {opts,speed,guides,rec,recLetter:ids[rec],recName:`${ids[rec]} ${R.name}`,
+      recTitle:`Recommended: ${ids[rec]} ${R.name}`,
+      peakL:String(PEAK.light).replace('.',','),peakD:String(PEAK.dark).replace('.',','),darkTok:[...new Set(COLS.dark)].map(c=>'--cp-'+c).join(', '),
+      recWhy:rec==='B'?'Your pick. The smoke rises from behind the Game board up to the top edge of the stage, so the whole stage, Head included, stands in it. The board and the wheel get a halo; the moments read as the hero rising out of smoke. Because the top half meets Dunkel’s amber spotlight, Dunkel drops pop and runs hot + cobalt at a peak of 0,12, which keeps ink-2 at AA there. The header and the side panel stay opaque, per the brief.':rec==='A'?'It keeps the top of the stage (Head, kicker, the only text on the ground) on clean paper, so contrast is never at risk. It reads as fog on a stage floor and continues Dunkel’s darker floor. On a phone it pools above the TabBar, where the screen is emptiest, and it is the cheapest: four shapes, the fewest of the three.':`${R.name}: ${R.d}`,
+      recRows,redItems,shapeRows,loopList,pathText:PATH[rec],moments,contrast:rowsC,css,
+      costLine:`${n} divs inside one wrapper inside the layer, CSS gradients and @keyframes. Nothing is fetched; it adds no bytes beyond the CSS above.`};
+  }
+}
+</script>
+</body>
+</html>
