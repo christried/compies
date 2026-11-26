@@ -29,7 +29,7 @@ export const notArchived = isNull(games.archivedAt)
 export const archivedGame = isNotNull(games.archivedAt)
 
 /** The phases in which an Event is still live: it has not finished (`beforeFinish`). */
-const LIVE_PHASES = PHASES.filter(beforeFinish)
+export const LIVE_PHASES = PHASES.filter(beforeFinish)
 
 /** An Event of `hostId` that is not deleted, finished ones included (#900): the Host's Events a game was played in. */
 export function hostedEventOf(hostId: string) {

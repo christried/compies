@@ -103,6 +103,8 @@ const answers = (player: number, nonMember: number, host: number, otherParty = p
  * against its handler, so a cell that a run answers differently is a finding, not a row to change.
  */
 export const EXPECTED_STATUS: Readonly<Record<string, Readonly<Record<string, number>>>> = {
+  // The Admin page's read (#682): only the Platform admin, none of the viewers is one, so the missing-route answer.
+  '/api/admin': answers(404, 404, 404),
   // The Archive lists the viewer's own finished Events (#882): empty for a non-Member, and the sweep's Event is not finished.
   '/api/archive': answers(200, 200, 200),
   // Home lists the viewer's own Events, empty for a non-Member.

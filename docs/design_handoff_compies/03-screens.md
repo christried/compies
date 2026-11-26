@@ -351,6 +351,7 @@ Every screen exists in the design files at desktop 1280 and mobile 390, light an
 - **Host vs player:** Platform admin only.
 - **States:** Nutzer · Suche · Host-Recht entziehen · Bibliothek verwalten
 - **Realtime:** —
+- **Deviation (0.24, #682, spec #938):** no „Bibliothek verwalten“ state and no tab list: the Platform admin has no rights over another User's Game library (ADR 0018), so the page is one column with two sections, „Nutzer“ and „Events“ (every Event, in the look of the Archive card, no action on a row). The switch „Darf hosten“ of a Platform admin is on and locked, with a hint, and the row carries a mark „Plattform-Admin“; the artboard's „Plattform“ pill by the title is not built. Each row has a menu with „Profilbild entfernen“ (only where the User has an uploaded picture) and „Konto löschen“ (not on a Platform admin's row). The text of „Host-Recht entziehen“ speaks of Events, not Sessions, and gives the number of the User's Events that have not finished. The rows stack at 390 px, and the page shows the count of Deleted Users below the list. The reference artboard still shows the library state.
 
 
 ### 27 Verbindung

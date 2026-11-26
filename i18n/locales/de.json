@@ -767,16 +767,23 @@
   },
   "admin": {
     "title": "Admin",
-    "platform": "Plattform",
     "users": "Nutzer",
-    "library": "Bibliothek",
     "searchUsers": "Nutzer suchen",
-    "searchGames": "Spiel suchen",
     "since": "seit {date}",
     "canHost": "Darf hosten",
-    "by": "von {name}",
-    "edit": "Bearbeiten",
-    "duplicate": "Mögliches Duplikat: „{a}“ von {name} sieht aus wie „{b}“. Zusammenführen oder behalten?"
+    "hostLocked": "Eine Plattform-Admin hostet immer. Das lässt sich nicht ändern.",
+    "platformAdmin": "Plattform-Admin",
+    "notSetUp": "Noch nicht eingerichtet",
+    "noMatch": "Niemand gefunden zu „{q}“.",
+    "noMatchText": "Probier einen anderen Namen.",
+    "deletedUsers": "Dazu kommt {n} gelöschtes Konto. | Dazu kommen {n} gelöschte Konten.",
+    "revoke": {
+      "title": "{name} das Host-Recht entziehen?",
+      "unnamed": "Diesem Konto",
+      "text": "Das Konto kann keine neuen Events mehr erstellen und sieht die Bibliothek nicht mehr. Die Spiele bleiben gespeichert und kommen mit dem Recht zurück.",
+      "stays": "{n} Event, das noch nicht abgeschlossen ist, bleibt bestehen und kann weiter gehostet werden. | {n} Events, die noch nicht abgeschlossen sind, bleiben bestehen und können weiter gehostet werden.",
+      "confirm": "Entziehen"
+    }
   },
   "connection": {
     "reconnecting": "Verbindung wird wiederhergestellt …",
@@ -1572,10 +1579,6 @@
     "site": {
       "toPoll": "Zur Terminumfrage",
       "toHome": "Zur Startseite",
-      "admin": {
-        "title": "Der Admin-Bereich kommt vielleicht noch. Wenn man den überhaupt braucht.",
-        "text": "Hostrechte vergeben, Nutzerliste, diesdas."
-      },
       "generic": {
         "title": "Hier wird noch gebaut.",
         "text": "Diese Ecke von Compies ist noch Rohbau. Die Terminumfrage funktioniert schon."
