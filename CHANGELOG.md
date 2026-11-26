@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.23.1] - 2026-11-26 – Bühnenrauch
+
 ### Neu
 
 - Auf der Event-Seite zieht jetzt Rauch hinter der Bühne auf: Er treibt ruhig hinter allem, was passiert, wird bei Glücksrad, Clip, Veto-Aufdeckung, Münzwurf und Siegerehrung langsamer und steht mit „Weniger Bewegung“ still ([#675](https://github.com/christried/compies/issues/675)).
