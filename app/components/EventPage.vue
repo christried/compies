@@ -27,6 +27,7 @@ const connection = useConnectionBanner(room.state, room.enabled)
 // run toward an instant (the wheel #229, the Countdown #236, and the other timers of 0.7) get its `now` as `server-now`.
 const presence = usePresence(room)
 const serverClock = useServerClock(room)
+provideHeaderReaction({ room, view: () => data.value, serverNow: serverClock.now, ready: () => serverClock.ready.value, banner: connection })
 // The wheel is heard (#531): the cue player schedules the read's plan on the audio clock, on the Event page only.
 // The Award ceremony's plan comes from its layer, which knows the run the viewer sees and when they skip or close it (#743).
 const ceremonyCues = shallowRef<readonly Cue[]>([])
@@ -102,7 +103,7 @@ const feed = computed(() => feedSessions(data.value?.sessions ?? []))
 // The cast reaches the casting Party's Users only (a named send, no `event.changed`): their pages read again to show the seal.
 room.on('veto.cast', () => void refresh())
 // An Emote that arrives (#668) rises above its sender's avatar, wherever the room says it came from (the sender's own too: the room passes it back). It is drawn at once: no
-// `serverTime`, no instant ahead (spec § C). An Emote never reaches Nuxt: it writes no Activity entry and no read changes. Compibert does not react (#673).
+// `serverTime`, no instant ahead (spec § C). An Emote never reaches Nuxt: it writes no Activity entry and no read changes. The header's Compibert reacts to the own Emote (`useHeaderReaction`, #673).
 const { rising, rise, done: riseDone } = useRisingEmotes({ covered: () => covered.value })
 room.on('emote.sent', (message) => {
   playEmoteCue(message)
