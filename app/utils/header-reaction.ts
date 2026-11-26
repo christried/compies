@@ -2,7 +2,7 @@ import type { EmoteId } from '~~/shared/emote'
 import type { RigState } from './compibert-rig'
 import type { BannerState } from './connection-banner'
 import type { Reaction } from './rig-reaction'
-import { ARRIVAL_LATE_MS, revealedOnArrival, type VetoArrivalState } from './sound-cues'
+import { emoteIsLate, revealedOnArrival, type VetoArrivalState } from './sound-cues'
 
 // What the header's Compibert does on the Event page (#673, spec #927, 04-motion § Compibert): a pure plan beside the cue plans. The Event page
 // decides (`useHeaderReaction`), the header shows; the rig owns the timer and the priorities (rig-reaction.ts). Nothing here plays a sound, and
@@ -19,12 +19,11 @@ export function baseFor(banner: BannerState): HeaderBase {
 }
 
 /**
- * The reaction of the viewer's own Emote: none for another Member's, none for one more than `ARRIVAL_LATE_MS` old (a page that slept through it,
- * the rule of `emoteCue`). The room's `sound` flag is no input: the sound is dropped for the fourth Emote in a second, the reaction is not.
+ * The reaction of the viewer's own Emote: none for another Member's, none for a late one (`emoteIsLate`, the rule of `emoteCue`). The room's `sound` flag is no input: the sound is dropped for the fourth Emote in a second, the reaction is not.
  * `serverTime` and `now` are the server's, in ms. A new object every time: the rig reads a new object as a new reaction.
  */
 export function emoteReaction(input: { emote: EmoteId, own: boolean, serverTime: number, now: number }): Reaction | null {
-  if (!input.own || input.now - input.serverTime > ARRIVAL_LATE_MS) return null
+  if (!input.own || emoteIsLate(input.serverTime, input.now)) return null
   return { state: EMOTE_STATE[input.emote] }
 }
 

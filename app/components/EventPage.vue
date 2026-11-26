@@ -8,7 +8,7 @@ import { stageInstants, stageUnsettled } from '~/utils/event-stage'
 import { dateBlockedKey, eventPageState, headerPill, waitsForCeremony, wearsPartyhat } from '~/utils/event-page'
 import { historyCorrections } from '~/utils/history-corrections'
 import { livingMemberIds } from '~/utils/members'
-import { emoteCue, type Cue } from '~/utils/sound-cues'
+import { emoteCue, isOwnEmote, type Cue } from '~/utils/sound-cues'
 import type { EmoteId } from '~~/shared/emote'
 import type { TourStep } from '~~/shared/tour'
 import { datePollOpen, sessionsEditable } from '~~/shared/event'
@@ -49,7 +49,7 @@ provideImmediateCue(cues.playNow)
 // apply. The handler calls it first, before anything that may keep the rise from being drawn (#769): the reaction is heard with the board covered, the
 // avatar scrolled away or the tab hidden.
 const playEmoteCue = (message: { userId: string, emote: EmoteId, sound: boolean, serverTime: number }) => {
-  const heard = emoteCue({ emote: message.emote, sound: message.sound, own: message.userId === data.value?.viewerId, serverTime: message.serverTime, now: serverClock.now() })
+  const heard = emoteCue({ emote: message.emote, sound: message.sound, own: isOwnEmote(message, data.value?.viewerId), serverTime: message.serverTime, now: serverClock.now() })
   if (heard) cues.playNow(heard.id, 0, heard.volume)
 }
 const onlineState = (userId: string) => (presence.known.value ? presence.isOnline(userId) : undefined)

@@ -5,6 +5,7 @@ import headSvg from '~/assets/compibert/compibert-head.svg?raw'
 import confusedSvg from '~~/server/assets/compibert/compibert-head-confused.svg?raw'
 import sadSvg from '~~/server/assets/compibert/compibert-head-sad.svg?raw'
 import { PARTY_HAT } from '~/utils/compibert-hat'
+import type { CompibertMood } from '~/utils/compibert-mood'
 import { hatPop } from '~/utils/motion'
 
 // The bust is a framed upper-body pose: its round sticker frame is part of the pose, so every use gets it.
@@ -16,7 +17,7 @@ const props = withDefaults(defineProps<{
   size?: number
   accessory?: 'hardhat' | 'partyhat'
   /** A baked mood for the head crop on the empty and full-page states (#819): a still, never the rig. Ignored by the other variants and with an accessory. */
-  mood?: 'confused' | 'sad'
+  mood?: CompibertMood
 }>(), { variant: 'head', size: undefined, accessory: undefined, mood: undefined })
 
 const VIEW_BOX = { full: '0 36 404 344', bust: '150 36 254 254', head: '212 40 192 192' }
@@ -34,12 +35,12 @@ const uid = useId()
 const outlined = computed(() => props.variant !== 'head' && (props.size ?? Infinity) >= 40)
 
 // The mood the head wears, if any: only the plain head crop (a hat sits on the rig's head, not on a baked one).
-const mood = computed(() => (props.variant === 'head' && !props.accessory ? props.mood : undefined))
+const shownMood = computed(() => (props.variant === 'head' && !props.accessory ? props.mood : undefined))
 
 const markup = computed(() => {
   // Each instance needs its own ids for filters and clip paths; element ids would repeat, so they go.
   const prefix = `cb${uid.replace(/\W/g, '')}_`
-  let svg = (mood.value ? { confused: confusedSvg, sad: sadSvg }[mood.value] : props.variant === 'head' ? headSvg : fullSvg)
+  let svg = (shownMood.value ? { confused: confusedSvg, sad: sadSvg }[shownMood.value] : props.variant === 'head' ? headSvg : fullSvg)
     .replace(/ id="compibert[^"]*"/g, '')
     .replace(/id="cb_/g, `id="${prefix}`)
     .replace(/url\(#cb_/g, `url(#${prefix}`)
@@ -79,7 +80,7 @@ watch(() => props.accessory, (now, before) => {
       '--cb-hard': `url(#${markup.prefix}hrd)`,
       '--cb-sticker': `url(#${markup.prefix}stk)`,
     }"
-    :data-mood="mood"
+    :data-mood="shownMood"
     aria-hidden="true"
     v-html="markup.svg"
   />

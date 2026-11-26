@@ -51,7 +51,7 @@ async function onInstall() {
         state="cheer"
         :hops-for="1.15"
       />
-      <span class="font-bold text-pretty">{{ t('pwa.done', { where: 'Home-Bildschirm' }) }}</span>
+      <span class="font-bold text-pretty">{{ t('pwa.done', { where: t('pwa.homeScreen') }) }}</span>
     </div>
 
     <section

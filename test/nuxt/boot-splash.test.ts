@@ -78,7 +78,7 @@ async function mountSplash(rig: ReturnType<typeof rigStub> | null) {
 
 const layer = () => document.querySelector<HTMLElement>('[data-part="boot-splash"]')
 const figure = () => layer()?.querySelector('[data-part="boot-wrap"] > div > *')?.getAttribute('data-state')
-const tap = () => layer()!.dispatchEvent(new Event('pointerdown', { bubbles: true }))
+const tap = () => layer()!.dispatchEvent(new Event('click', { bubbles: true }))
 const press = (key = 'a') => document.body.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true }))
 const running = () => vi.waitFor(() => expect(figure()).toBe('run'), { timeout: 3000 })
 
@@ -143,13 +143,41 @@ describe('shown as the installed app', () => {
     const { page, dones } = await mountSplash(rigStub(null))
     const surface = layer()!
 
-    surface.dispatchEvent(new Event('pointerdown', { bubbles: true }))
-    surface.dispatchEvent(new Event('pointerdown', { bubbles: true }))
+    surface.dispatchEvent(new Event('click', { bubbles: true }))
+    surface.dispatchEvent(new Event('click', { bubbles: true }))
     await nextTick()
 
     expect(dones.value).toBe(1)
     expect(layer()).toBeNull()
     expect(written).toEqual([bootCookie(false)])
+    page.unmount()
+  })
+
+  it('does not end on the press alone: the layer stays until the tap\'s click, so that the click has the layer as its target (#1008)', async () => {
+    const { page, dones } = await mountSplash(rigStub(null))
+
+    layer()!.dispatchEvent(new Event('pointerdown', { bubbles: true }))
+    layer()!.dispatchEvent(new Event('pointerup', { bubbles: true }))
+    await nextTick()
+
+    expect(dones.value).toBe(0)
+    expect(layer()).not.toBeNull()
+    page.unmount()
+  })
+
+  it('lets the tap through to nothing: the click goes to the layer and not to what lies under it (#1008)', async () => {
+    const reached = vi.fn()
+    const home = document.createElement('button')
+    home.addEventListener('click', reached)
+    document.body.append(home)
+    const { page, dones } = await mountSplash(rigStub(null))
+
+    tap()
+    await nextTick()
+
+    expect(dones.value).toBe(1)
+    expect(reached).not.toHaveBeenCalled()
+    home.remove()
     page.unmount()
   })
 

@@ -2,7 +2,7 @@
 import type { RigState } from '~/utils/compibert-rig'
 import type { Gsap } from '~/utils/gsap'
 import { bootCookie } from '~~/shared/boot'
-import { bootRun, bootTimeline } from '~/utils/boot-motion'
+import { GIVE_UP_MS, HOLD_MS, bootRun, bootTimeline } from '~/utils/boot-motion'
 
 // The installed app's splash „Reinsprinten“ (#674, spec #927, screen 01, 04-motion § Boot): the layer is in the first byte of Home for a signed-in User
 // without the cookie `compies-boot` (`useBootSplash`), and only the stylesheet shows it, under `display-mode: standalone`, so a browser tab never sees
@@ -35,11 +35,6 @@ const scaled = (value: number) => `calc(var(--boot-k) * ${value}px)`
 const LINES = [{ left: -80, top: 44, width: 76 }, { left: -104, top: 66, width: 96 }, { left: -66, top: 88, width: 56 }]
 const DUST = [{ size: 22, left: 52, top: 112 }, { size: 18, left: 40, top: 116 }, { size: 14, left: 30, top: 118 }, { size: 10, left: 22, top: 120 }]
 
-/** The calm splash holds its still frame this long, counted from the mount, before it fades away. */
-const HOLD_MS = 600
-/** The run-in starts only if GSAP and the rig are ready this soon after the mount: a slow phone gets no run, and no retry. */
-const GIVE_UP_MS = 400
-
 let ended = false
 let timeline: ReturnType<typeof bootTimeline> | undefined
 let fade: Animation | undefined
@@ -54,7 +49,7 @@ function later(ms: number, callback: () => void) {
 }
 
 function stopListening() {
-  root.value?.removeEventListener('pointerdown', skip)
+  root.value?.removeEventListener('click', skip)
   window.removeEventListener('keydown', onKey, true)
 }
 
@@ -66,7 +61,7 @@ function finish() {
   emit('done')
 }
 
-/** A tap or a key: the run-in jumps to its end (the last tween is the fade to nothing, which then says `done`); any other path ends at once. */
+/** A tap (its click, whose target is the layer, so that the tap goes through to nothing, #1008) or a key: the run-in jumps to its end (the last tween is the fade to nothing, which then says `done`); any other path ends at once. */
 function skip() {
   if (ended) return
   if (timeline) timeline.progress(1)
@@ -131,7 +126,7 @@ onMounted(async () => {
   // Written once, when the layer has shown. Secure where the page is served over https, as the session cookie is (`BETTER_AUTH_URL` is that origin).
   document.cookie = bootCookie(location.protocol === 'https:')
   announcement.value = t('bootSplash.announce')
-  layer.addEventListener('pointerdown', skip)
+  layer.addEventListener('click', skip)
   window.addEventListener('keydown', onKey, true)
 
   if (reducedMotion()) {

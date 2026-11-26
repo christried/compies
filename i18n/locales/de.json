@@ -888,6 +888,7 @@
     "iosStep1": "Tippe unten auf „Teilen“",
     "iosStep2": "Wähle „Zum Home-Bildschirm“",
     "iosStep3": "Tippe auf „Hinzufügen“",
+    "homeScreen": "Home-Bildschirm",
     "done": "Installiert. Ab jetzt hast du Compies auf deinem {where}."
   },
   "sound": {

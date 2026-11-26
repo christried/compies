@@ -7,6 +7,10 @@ import { motionMs } from './motion'
 
 /** The run's length, in seconds: the reference's T. */
 export const BOOT_RUN_S = 0.9
+/** The calm splash holds its still frame this long, counted from the mount, before it fades away. */
+export const HOLD_MS = 600
+/** The run-in starts only if GSAP and the rig are ready this soon after the mount: a slow phone gets no run, and no retry. */
+export const GIVE_UP_MS = 400
 /** The reference starts him 620 px left for a 160 px figure; the splash starts him at least that far, and outside the viewport on a wide one. */
 const MIN_DISTANCE = 620
 /** His snout is at 0.9 of his width. */

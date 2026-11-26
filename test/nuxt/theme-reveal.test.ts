@@ -390,7 +390,7 @@ describe('the Appearance controls reveal', () => {
     await save.settled()
   })
 
-  it('from the Profil card\'s radio, and from the one a key selects', async () => {
+  it('from the Profil card\'s radio', async () => {
     viewTransitions()
     const animate = recordAnimate()
     const save = endpoint()
@@ -399,13 +399,27 @@ describe('the Appearance controls reveal', () => {
     placeAt(radios[1]!.element)
 
     await radios[1]!.trigger('click')
+
     await vi.waitFor(() => expect(animate).toHaveBeenCalledWith(...SPREAD))
     await save.settled()
+  })
 
-    animate.mockClear()
-    placeAt(radios[2]!.element)
-    await radios[1]!.trigger('keydown', { key: 'ArrowRight' })
-    await vi.waitFor(() => expect(animate).toHaveBeenCalledWith(...SPREAD))
+  it('not from the radio a key selects: only a tap spreads the circle, a key cross-fades (#1008)', async () => {
+    const vt = viewTransitions()
+    const animate = recordAnimate()
+    const save = endpoint()
+    const card = await mountCard()
+    const radios = card.findAll('[role="radio"]')
+    placeAt(radios[1]!.element)
+    const watch = watchHtml()
+
+    await radios[0]!.trigger('keydown', { key: 'ArrowRight' })
+
+    await vi.waitFor(() => expect(watch.log).toContain('reveal:-'))
+    expect(watch.log[0]).toBe('reveal:fade')
+    expect(vt.start).not.toHaveBeenCalled()
+    expect(animate).not.toHaveBeenCalled()
+    watch.stop()
     await save.settled()
   })
 
