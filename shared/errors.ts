@@ -191,6 +191,8 @@ export const API_ERROR_STATUS = {
   account_games_held: 409,
   /** The Admin page takes the Host permission from a Platform admin, who always hosts (#682, ADR 0002): refused whoever asks, the page's locked switch included. */
   platform_admin_hosts: 409,
+  /** The Admin page deletes the account of a Platform admin, the admin's own included (#941): refused whoever asks, the row menu shows no such item. */
+  platform_admin_not_deletable: 409,
   rate_limited: 429,
   /** This deployment has no realtime Worker (no REALTIME_URL): the client takes it as "no live connection" and polls (#156). */
   no_live_connection: 503,

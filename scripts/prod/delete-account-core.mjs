@@ -6,7 +6,16 @@ import { and, count, eq, isNull } from 'drizzle-orm'
 export const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 /** A reason the deletion does not run, in a line the command prints as it is: it names no User, no URL and no driver message. */
-export class Stopped extends Error {}
+export class Stopped extends Error {
+  /**
+   * @param {string} message
+   * @param {string} [reason] the module's reason (`UserNotDeletable.reason`), for the Admin page's route (#941), which answers by it; the command prints the message only
+   */
+  constructor(message, reason) {
+    super(message)
+    this.reason = reason
+  }
+}
 
 /** Thrown at the end of a dry run, so the transaction that holds the whole deletion rolls back. It never leaves `deleteAccount`. */
 class DryRun extends Error {}
@@ -72,7 +81,7 @@ export async function deleteAccount({ db, schema, userId, apply, now, deletion, 
   }
   catch (error) {
     if (!(error instanceof DryRun)) {
-      if (error instanceof deletion.UserNotDeletable) throw new Stopped(NOT_DELETABLE[/** @type {keyof typeof NOT_DELETABLE} */ (error.reason)] ?? 'this User cannot be deleted; nothing was changed.')
+      if (error instanceof deletion.UserNotDeletable) throw new Stopped(NOT_DELETABLE[/** @type {keyof typeof NOT_DELETABLE} */ (error.reason)] ?? 'this User cannot be deleted; nothing was changed.', error.reason)
       throw error
     }
   }
