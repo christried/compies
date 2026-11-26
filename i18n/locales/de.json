@@ -771,7 +771,15 @@
     "searchUsers": "Nutzer suchen",
     "since": "seit {date}",
     "canHost": "Darf hosten",
-    "hostLocked": "Eine Plattform-Admin hostet immer. Das lässt sich nicht ändern.",
+    "hostLocked": "Plattform-Admins hosten immer. Das lässt sich nicht ändern.",
+    "menu": "Aktionen für {name}",
+    "image": {
+      "remove": "Profilbild entfernen",
+      "title": "Profilbild von {name} entfernen?",
+      "unnamed": "diesem Konto",
+      "text": "Das Bild wird sofort gelöscht. Danach gilt wieder das Bild von Discord bzw. Twitch, sonst der Anfangsbuchstabe. Das Konto erfährt davon nichts.",
+      "confirm": "Entfernen"
+    },
     "platformAdmin": "Plattform-Admin",
     "notSetUp": "Noch nicht eingerichtet",
     "noMatch": "Niemand gefunden zu „{q}“.",

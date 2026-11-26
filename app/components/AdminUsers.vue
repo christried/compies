@@ -1,11 +1,14 @@
 <script setup lang="ts">
 import { filterAdminUsers, type AdminUser, type SavedHostPermission } from '~~/shared/admin'
+import type { RemovedProfileImage } from '~~/shared/auth'
 import { apiErrorKey } from '~/utils/api-error'
 
 // The section „Nutzer“ of the Admin page (#682, spec #938): the search field over the Display name, the rows, the count of Deleted Users below the list and the
 // confirmation before the Host permission is taken. Granting is one click; taking asks first and says how many of the User's Events that have not finished stay
 // theirs (`openEvents`). A write is `PUT /api/admin/users/:id/host`; `changed` asks the page to read the list again, after a failed write too, so the switch shows what the
 // server has. A failed write says so in a toast. Nothing is published (ADR 0013).
+// The row menu's „Profilbild entfernen“ (#940) asks first, naming the User, then sends `DELETE /api/admin/users/:id/image`; `changed` follows it too, so the row shows
+// the provider's picture and no menu item, without a reload.
 const props = defineProps<{ users: AdminUser[], deletedUsers: number }>()
 const emit = defineEmits<{ changed: [] }>()
 
@@ -48,6 +51,26 @@ async function confirmRevoke() {
 }
 
 const revokeName = computed(() => revoking.value?.displayName ?? t('admin.revoke.unnamed'))
+
+/** The User whose uploaded picture the confirmation is about, while it is open. */
+const unpicking = ref<AdminUser | null>(null)
+
+async function confirmRemoveImage() {
+  const user = unpicking.value
+  unpicking.value = null
+  if (!user) return
+  try {
+    await $fetch<RemovedProfileImage>(`/api/admin/users/${user.id}/image`, { method: 'DELETE' })
+  }
+  catch (failure) {
+    toast({ tone: 'error', text: t(apiErrorKey(failure)) })
+  }
+  finally {
+    emit('changed')
+  }
+}
+
+const unpickName = computed(() => unpicking.value?.displayName ?? t('admin.image.unnamed'))
 </script>
 
 <template>
@@ -88,6 +111,7 @@ const revokeName = computed(() => revoking.value?.displayName ?? t('admin.revoke
         :key="user.id"
         :user="user"
         @toggle="toggle(user, $event)"
+        @remove-image="unpicking = user"
       />
     </ul>
 
@@ -113,6 +137,18 @@ const revokeName = computed(() => revoking.value?.displayName ?? t('admin.revoke
         class="mt-2 mb-0"
       >
         {{ t('admin.revoke.stays', { n: revoking.openEvents }, revoking.openEvents) }}
+      </p>
+    </ConfirmModal>
+
+    <ConfirmModal
+      :open="unpicking !== null"
+      :title="t('admin.image.title', { name: unpickName })"
+      :confirm-label="t('admin.image.confirm')"
+      @confirm="confirmRemoveImage"
+      @cancel="unpicking = null"
+    >
+      <p class="m-0">
+        {{ t('admin.image.text') }}
       </p>
     </ConfirmModal>
   </section>

@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { Shield } from '@lucide/vue'
+import { Ellipsis, Shield } from '@lucide/vue'
+import type { MoveTarget } from '~/components/MoveToMenuList.vue'
 import { formatMonthYear } from '~/utils/berlin-time'
 import type { AdminUser } from '~~/shared/admin'
 
@@ -7,8 +8,10 @@ import type { AdminUser } from '~~/shared/admin'
 // the services they linked, the month of their first sign-in, a mark for a Platform admin and the switch „Darf hosten“. A Platform admin's switch is on and locked, with a
 // hint, because a Platform admin always hosts (the server refuses the same, `platform_admin_hosts`). The switch only says what was pressed (`toggle`, the value wanted);
 // the list decides what follows. The row stacks at 390 px: the person above, the switch below. The name and the label name the switch together, so a screen reader hears whose it is.
+// The row's menu (#940, spec #938) holds „Profilbild entfernen“ and shows only for a User with an uploaded picture; #941 adds „Konto löschen“ to it. A pick closes the
+// menu and emits `removeImage`; the list asks first. The menu is the MoveToMenu the Sessions' „Mehr“ menu uses.
 const props = defineProps<{ user: AdminUser }>()
-const emit = defineEmits<{ toggle: [canHost: boolean] }>()
+const emit = defineEmits<{ toggle: [canHost: boolean], removeImage: [] }>()
 
 const { t } = useI18n()
 const nameId = useId()
@@ -20,6 +23,21 @@ const named = computed(() => props.user.displayName !== null)
 const shownName = computed(() => props.user.displayName === null ? t('admin.notSetUp') : props.user.displayName)
 const providers = computed(() => props.user.providers.map(provider => t(`auth.provider.${provider}`)).join(', '))
 const since = computed(() => t('admin.since', { date: formatMonthYear(new Date(props.user.firstSignInAt)) }))
+
+/** The button that opened the row's menu; the menu is open while it is set. */
+const menu = ref<HTMLElement | null>(null)
+const menuTitle = computed(() => t('admin.menu', { name: shownName.value }))
+const targets = computed<MoveTarget[]>(() => [{ key: 'removeImage', label: t('admin.image.remove'), reason: null }])
+
+function openMenu(event: MouseEvent) {
+  menu.value = event.currentTarget as HTMLElement
+}
+
+/** A plain entry: the menu closes first, so the focus is not left on a closed menu when the confirmation opens (as EventSessions' pick). */
+function pick(key: string) {
+  menu.value = null
+  if (key === 'removeImage') emit('removeImage')
+}
 </script>
 
 <template>
@@ -63,6 +81,24 @@ const since = computed(() => t('admin.since', { date: formatMonthYear(new Date(p
         class="text-[13px] font-bold"
       >{{ t('admin.canHost') }}</span>
     </div>
+    <template v-if="user.hasOwnImage">
+      <IconButton
+        :icon="Ellipsis"
+        :label="menuTitle"
+        :size="40"
+        aria-haspopup="menu"
+        :aria-expanded="menu !== null"
+        @click="openMenu"
+      />
+      <MoveToMenu
+        :open="menu !== null"
+        :title="menuTitle"
+        :targets="targets"
+        :anchor="menu"
+        @close="menu = null"
+        @pick="pick"
+      />
+    </template>
     <span
       v-if="user.isAdmin"
       :id="hintId"
