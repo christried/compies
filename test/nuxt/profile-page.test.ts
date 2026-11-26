@@ -438,10 +438,11 @@ describe('the Profil page', () => {
       await option(page, 'System').trigger('click')
 
       await vi.waitFor(() => expect(theme()).toBe('system'))
-      expect(themeColors()).toEqual([
+      // The Theme reveal writes `data-theme` itself when its callback ends (#931), a moment before unhead writes the metas.
+      await vi.waitFor(() => expect(themeColors()).toEqual([
         { content: '#fff3df', media: '(prefers-color-scheme: light)' },
         { content: '#17121d', media: '(prefers-color-scheme: dark)' },
-      ])
+      ]))
       expect(received).toEqual(['system'])
     })
 
