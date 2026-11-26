@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<template id="__bundler_thumbnail"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="#fff3df"></rect><circle cx="58" cy="58" r="30" fill="#17121d" stroke="#f7efe1" stroke-width="3"></circle></svg></template>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&amp;family=Lilita+One&amp;family=Bungee&amp;family=JetBrains+Mono:wght@500;700&amp;display=swap">
+<link rel="stylesheet" href="./tokens/compies-tokens.css">
+<script src="./tokens/lucide-subset.js"></script>
+<style>body{margin:0;background:#fff3df}a{color:var(--cp-ink)}a:hover{color:var(--cp-focus)}:focus-visible{outline:3px solid var(--cp-focus);outline-offset:3px}</style>
+</helmet>
+<div lang="de" data-theme="light" style="display:inline-flex;flex-direction:column;gap:120px;padding:96px;background-color:var(--cp-paper);background-image:var(--cp-tex-image);background-size:var(--cp-tex-size);color:var(--cp-ink);font-family:var(--cp-font-sans);font-weight:500;font-size:15px;line-height:1.45">
+
+  <header style="display:flex;flex-direction:column;gap:16px;max-width:1320px">
+    <span style="font-size:14px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--cp-ink-2)">COMPIES · Darstellung · Hell / Dunkel / System</span>
+    <h1 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:88px;line-height:.95">Darstellungswechsel</h1>
+    <p style="margin:0;max-width:68ch;font-size:22px;font-weight:600;line-height:1.4;color:var(--cp-ink-2);text-wrap:pretty">The edge of the circle that spreads the new look. Decided: View Transition, new picture clipped to a circle from the tapped option to the farthest corner, 600 ms (dur-slower), ease-io; reduced motion and no-VT browsers cross-fade in 140 ms. Here: three edges against the clean cut, one worked out. Pure CSS on top of the clip, no new tokens. Hand-off: <code style="font-family:var(--cp-font-mono);font-size:.8em;font-weight:700">design_handoff_compies/20-darstellungswechsel.md</code></p>
+    <nav style="display:flex;flex-wrap:wrap;gap:10px;margin-top:8px">
+      <a href="#s1" style="display:inline-flex;align-items:center;gap:8px;height:40px;padding:0 14px;border-radius:999px;border:var(--cp-bw) solid var(--cp-line);background:var(--cp-surface);box-shadow:var(--cp-shadow-sm);font-weight:700;font-size:14px;text-decoration:none"><b style="font-family:var(--cp-font-mono);font-size:12px">01</b>Options · 1440 · Hell → Dunkel</a>
+      <a href="#s2" style="display:inline-flex;align-items:center;gap:8px;height:40px;padding:0 14px;border-radius:999px;border:var(--cp-bw) solid var(--cp-line);background:var(--cp-surface);box-shadow:var(--cp-shadow-sm);font-weight:700;font-size:14px;text-decoration:none"><b style="font-family:var(--cp-font-mono);font-size:12px">02</b>Options · 390 · Dunkel → Hell</a>
+      <a href="#s3" style="display:inline-flex;align-items:center;gap:8px;height:40px;padding:0 14px;border-radius:999px;border:var(--cp-bw) solid var(--cp-line);background:var(--cp-surface);box-shadow:var(--cp-shadow-sm);font-weight:700;font-size:14px;text-decoration:none"><b style="font-family:var(--cp-font-mono);font-size:12px">03</b>Chosen: 1b · try it</a>
+      <a href="#s4" style="display:inline-flex;align-items:center;gap:8px;height:40px;padding:0 14px;border-radius:999px;border:var(--cp-bw) solid var(--cp-line);background:var(--cp-surface);box-shadow:var(--cp-shadow-sm);font-weight:700;font-size:14px;text-decoration:none"><b style="font-family:var(--cp-font-mono);font-size:12px">04</b>Frames · 3 controls × 2 directions</a>
+      <a href="#s5" style="display:inline-flex;align-items:center;gap:8px;height:40px;padding:0 14px;border-radius:999px;border:var(--cp-bw) solid var(--cp-line);background:var(--cp-surface);box-shadow:var(--cp-shadow-sm);font-weight:700;font-size:14px;text-decoration:none"><b style="font-family:var(--cp-font-mono);font-size:12px">05</b>Hand-off</a>
+    </nav>
+  </header>
+
+  <section id="s1" data-screen-label="01 Options 1440" style="display:flex;flex-direction:column;gap:32px">
+    <div style="display:flex;align-items:baseline;gap:18px;max-width:1440px">
+      <span style="flex:none;display:inline-grid;place-items:center;min-width:48px;height:48px;padding:0 10px;box-sizing:border-box;border-radius:999px;border:var(--cp-bw) solid var(--cp-line);background:var(--cp-primary);font-family:var(--cp-font-mono);font-weight:700;font-size:16px">01</span>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <h2 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:44px;line-height:1">Three edges · 1440 px · Profil › Einstellungen · Hell → Dunkel · 40 %</h2>
+        <p style="margin:0;max-width:86ch;font-size:17px;font-weight:600;color:var(--cp-ink-2);text-wrap:pretty">Tapped: „Dunkel“ in the Darstellung control. 240 ms of 600; with ease-io the circle is at 30 % of its final radius. Same clip, same geometry in every frame; only the edge changes. The clean cut on the right is the baseline.</p>
+      </div>
+    </div>
+    <div style="display:flex;gap:56px;align-items:flex-start">
+      <sc-for list="{{ opts }}" as="o" hint-placeholder-count="4">
+        <div id="{{ o.id }}" style="display:flex;flex-direction:column;gap:18px;width:1446px">
+          <div style="display:flex;align-items:flex-start;gap:16px">
+            <a href="{{ o.href }}" style="flex:none;display:inline-grid;place-items:center;min-width:56px;height:40px;padding:0 10px;box-sizing:border-box;border-radius:10px;border:var(--cp-bw) solid var(--cp-line);background:{{ o.badge }};font-family:var(--cp-font-mono);font-weight:700;font-size:16px;text-decoration:none">{{ o.tag }}</a>
+            <div style="display:flex;flex-direction:column;gap:6px;max-width:1000px">
+              <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap"><b style="font-family:var(--cp-font-display);font-weight:400;font-size:32px;line-height:1">{{ o.name }}</b><span style="font-size:15px;font-weight:700;color:var(--cp-ink-2)">{{ o.sub }}</span><sc-if value="{{ o.rec }}" hint-placeholder-val="{{ false }}"><span style="display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 10px;border-radius:999px;border:2px solid var(--cp-line);background:var(--cp-primary);color:var(--cp-on-primary);font-size:12px;font-weight:800"><dc-import name="Icon" icon="sparkles" size="{{ 13 }}" hint-size="13px,13px"></dc-import>Chosen</span></sc-if></div>
+              <p style="margin:0;font-size:16px;line-height:1.5;text-wrap:pretty">{{ o.d }}</p>
+              <div style="display:flex;gap:8px;flex-wrap:wrap"><sc-for list="{{ o.facts }}" as="f" hint-placeholder-count="3"><span style="display:inline-flex;align-items:center;height:28px;padding:0 10px;border-radius:999px;border:2px solid var(--cp-line);background:var(--cp-surface);font-family:var(--cp-font-mono);font-size:12px;font-weight:700">{{ f }}</span></sc-for></div>
+              <p style="margin:0;font-size:14px;text-wrap:pretty"><b>Per direction:</b> {{ o.dir }}</p>
+              <p style="margin:0;font-size:14px;color:var(--cp-ink-2);text-wrap:pretty"><b style="color:var(--cp-ink)">{{ o.conL }}</b> {{ o.con }}</p>
+            </div>
+          </div>
+          <dc-import name="ThemeSweep" guides="{{ guides }}" opt="{{ o.k }}" w="{{ 1440 }}" base="light" ctrl="seg" t="{{ 0.4 }}" hint-size="1446px,906px"></dc-import>
+        </div>
+      </sc-for>
+    </div>
+  </section>
+
+  <section id="s2" data-screen-label="02 Options 390" style="display:flex;flex-direction:column;gap:32px">
+    <div style="display:flex;align-items:baseline;gap:18px;max-width:1440px">
+      <span style="flex:none;display:inline-grid;place-items:center;min-width:48px;height:48px;padding:0 10px;box-sizing:border-box;border-radius:999px;border:var(--cp-bw) solid var(--cp-line);background:var(--cp-primary);font-family:var(--cp-font-mono);font-weight:700;font-size:16px">02</span>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <h2 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:44px;line-height:1">The same · 390 px · Dunkel → Hell · 40 %</h2>
+        <p style="margin:0;max-width:86ch;font-size:17px;font-weight:600;color:var(--cp-ink-2);text-wrap:pretty">Tapped: „Hell“ in the control, which wraps to full width on a phone (44 px segments). The farthest corner is bottom right, so the circle is still small: this is where an edge has to read at the scale of a thumb.</p>
+      </div>
+    </div>
+    <div style="display:flex;gap:64px;align-items:flex-start">
+      <sc-for list="{{ opts }}" as="o" hint-placeholder-count="4">
+        <div style="display:flex;flex-direction:column;gap:14px;width:396px">
+          <div style="display:flex;align-items:center;gap:12px"><a href="{{ o.href }}" style="flex:none;display:inline-grid;place-items:center;min-width:56px;height:40px;padding:0 10px;box-sizing:border-box;border-radius:10px;border:var(--cp-bw) solid var(--cp-line);background:{{ o.badge }};font-family:var(--cp-font-mono);font-weight:700;font-size:16px;text-decoration:none">{{ o.tag }}</a><b style="font-family:var(--cp-font-display);font-weight:400;font-size:26px;line-height:1">{{ o.name }}</b></div>
+          <p style="margin:0;font-size:14px;line-height:1.45;color:var(--cp-ink-2);text-wrap:pretty">{{ o.mob }}</p>
+          <dc-import name="ThemeSweep" guides="{{ guides }}" opt="{{ o.k }}" w="{{ 390 }}" base="dark" ctrl="seg" t="{{ 0.4 }}" hint-size="396px,850px"></dc-import>
+        </div>
+      </sc-for>
+    </div>
+  </section>
+
+  <section id="s3" data-screen-label="03 Chosen" style="display:flex;flex-direction:column;gap:32px">
+    <div style="display:flex;align-items:baseline;gap:18px;max-width:1440px">
+      <span style="flex:none;display:inline-grid;place-items:center;min-width:48px;height:48px;padding:0 10px;box-sizing:border-box;border-radius:999px;border:var(--cp-bw) solid var(--cp-line);background:var(--cp-primary);font-family:var(--cp-font-mono);font-weight:700;font-size:16px">03</span>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <h2 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:44px;line-height:1">{{ recTitle }}</h2>
+        <p style="margin:0;max-width:90ch;font-size:17px;font-weight:600;color:var(--cp-ink-2);text-wrap:pretty">{{ recWhy }}</p>
+        <p style="margin:0;max-width:90ch;font-size:15px;text-wrap:pretty"><b>Try it.</b> Both frames are live: tap Hell, Dunkel or System in the card, open the menu behind the sun/moon button or the avatar. Tweaks: „slow“ plays it 5× slower, „reduced“ shows the 140 ms cross-fade, „rec“ switches the worked-out option.</p>
+      </div>
+    </div>
+    <div style="display:flex;gap:56px;align-items:flex-start">
+      <div style="display:flex;flex-direction:column;gap:10px"><b style="font-size:18px">1440 · live</b><dc-import name="ThemeSweep" opt="{{ rec }}" w="{{ 1440 }}" base="light" live="{{ true }}" slow="{{ slow }}" reduced="{{ reduced }}" hint-size="1446px,906px"></dc-import></div>
+      <div style="display:flex;flex-direction:column;gap:10px"><b style="font-size:18px">390 · live</b><dc-import name="ThemeSweep" opt="{{ rec }}" w="{{ 390 }}" base="dark" live="{{ true }}" slow="{{ slow }}" reduced="{{ reduced }}" hint-size="396px,850px"></dc-import></div>
+    </div>
+  </section>
+
+  <section id="s4" data-screen-label="04 Frames" style="display:flex;flex-direction:column;gap:56px">
+    <div style="display:flex;align-items:baseline;gap:18px;max-width:1440px">
+      <span style="flex:none;display:inline-grid;place-items:center;min-width:48px;height:48px;padding:0 10px;box-sizing:border-box;border-radius:999px;border:var(--cp-bw) solid var(--cp-line);background:var(--cp-primary);font-family:var(--cp-font-mono);font-weight:700;font-size:16px">04</span>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <h2 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:44px;line-height:1">{{ framesTitle }}</h2>
+        <p style="margin:0;max-width:90ch;font-size:17px;font-weight:600;color:var(--cp-ink-2);text-wrap:pretty">One control at a time (tabs below). 15 %, 50 % and 85 % of the 600 ms (90, 300, 510 ms). Radius in % of the final radius, after ease-io. In the menus the option closes its menu in the same update, so the old picture still shows the open menu and the new one doesn’t: the menu disappears under the circle.</p>
+      </div>
+    </div>
+    <div role="tablist" aria-label="Steuerelement" style="display:flex;gap:10px;flex-wrap:wrap">
+      <sc-for list="{{ tabs }}" as="b" hint-placeholder-count="3"><button type="button" role="tab" aria-selected="{{ b.on }}" onClick="{{ b.pick }}" style="display:inline-flex;align-items:center;gap:8px;height:52px;padding:0 20px;border-radius:999px;border:var(--cp-bw) solid var(--cp-line);background:{{ b.bg }};color:var(--cp-ink);box-shadow:{{ b.sh }};font-family:inherit;font-weight:800;font-size:17px;cursor:pointer">{{ b.n }}<span style="font-family:var(--cp-font-mono);font-size:12px;font-weight:700;color:var(--cp-ink-2)">{{ b.c }}</span></button></sc-for>
+    </div>
+    <sc-for list="{{ groups }}" as="g" hint-placeholder-count="1">
+      <div style="display:flex;flex-direction:column;gap:28px">
+        <div style="display:flex;align-items:baseline;gap:14px;flex-wrap:wrap"><b style="font-family:var(--cp-font-display);font-weight:400;font-size:34px;line-height:1">{{ g.title }}</b><span style="font-size:15px;font-weight:600;color:var(--cp-ink-2);max-width:90ch;text-wrap:pretty">{{ g.note }}</span></div>
+        <sc-for list="{{ g.rows }}" as="r" hint-placeholder-count="4">
+          <div style="display:flex;flex-direction:column;gap:14px">
+            <div style="display:flex;align-items:center;gap:12px"><span style="display:inline-flex;align-items:center;height:32px;padding:0 12px;border-radius:999px;border:2px solid var(--cp-line);background:{{ r.chipBg }};color:{{ r.chipFg }};font-weight:800;font-size:14px">{{ r.label }}</span><span style="font-size:14px;font-weight:600;color:var(--cp-ink-2)">{{ r.note }}</span></div>
+            <sc-if value="{{ r.na }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex;align-items:center;gap:14px;max-width:760px;padding:18px 20px;border:var(--cp-bw) dashed var(--cp-line);border-radius:14px;background:var(--cp-paper-2)"><dc-import name="Icon" icon="info" size="{{ 20 }}" hint-size="20px,20px"></dc-import><span style="font-size:15px;text-wrap:pretty">{{ r.naText }}</span></div>
+            </sc-if>
+            <div style="display:flex;gap:{{ r.gap }};align-items:flex-start">
+              <sc-for list="{{ r.frames }}" as="f" hint-placeholder-count="3">
+                <div style="display:flex;flex-direction:column;gap:10px">
+                  <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><b style="font-family:var(--cp-font-mono);font-size:15px">{{ f.pct }}</b><span style="display:inline-flex;align-items:center;height:26px;padding:0 10px;border-radius:999px;border:2px solid var(--cp-line);background:var(--cp-surface);font-family:var(--cp-font-mono);font-size:12px;font-weight:700">{{ f.rad }}</span><span style="display:inline-flex;align-items:center;height:26px;padding:0 10px;border-radius:999px;border:2px solid var(--cp-line);background:var(--cp-surface);font-family:var(--cp-font-mono);font-size:12px;font-weight:700">{{ f.par }}</span></div>
+                  <dc-import name="ThemeSweep" guides="{{ guides }}" opt="{{ rec }}" w="{{ f.w }}" base="{{ f.from }}" ctrl="{{ f.ctrl }}" t="{{ f.t }}" hint-size="{{ f.hint }}"></dc-import>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+    </sc-for>
+  </section>
+
+  <section id="s5" data-screen-label="05 Hand-off" style="display:flex;flex-direction:column;gap:36px;max-width:1920px">
+    <div style="display:flex;align-items:baseline;gap:18px;max-width:1440px">
+      <span style="flex:none;display:inline-grid;place-items:center;min-width:48px;height:48px;padding:0 10px;box-sizing:border-box;border-radius:999px;border:var(--cp-bw) solid var(--cp-line);background:var(--cp-primary);font-family:var(--cp-font-mono);font-weight:700;font-size:16px">05</span>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <h2 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:44px;line-height:1">Hand-off · {{ recName }}</h2>
+        <p style="margin:0;max-width:86ch;font-size:17px;font-weight:600;color:var(--cp-ink-2);text-wrap:pretty">Geometry: switch on the „guides“ tweak to draw the clip circle (dashed blue, same radius as the edge element) and the tapped option’s centre (blue dot) on every frame.</p>
+      </div>
+    </div>
+    
+
+    <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:24px;align-items:start">
+      <div style="display:flex;flex-direction:column;gap:12px;padding:22px;border:var(--cp-bw) solid var(--cp-line);border-radius:16px;background:var(--cp-surface);box-shadow:var(--cp-shadow-card)">
+        <h3 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:26px;line-height:1">1 · The edge in tokens, per direction</h3>
+        <p style="margin:0;font-size:14px;color:var(--cp-ink-2);text-wrap:pretty">Each part of the edge is a child element with its own <code style="font-family:var(--cp-font-mono);font-size:12px">data-theme</code>, so the tokens resolve to that theme’s values whatever the page is switching to. No literals, no new tokens.</p>
+        <div style="display:grid;grid-template-columns:minmax(0,.8fr) minmax(0,1.2fr) minmax(0,1.2fr);border:2px solid var(--cp-line);border-radius:12px;overflow:hidden;font-size:13px">
+          <span style="padding:7px 9px;background:var(--cp-paper-2);font-weight:800">Part</span><span style="padding:7px 9px;background:var(--cp-paper-2);font-weight:800">Hell → Dunkel</span><span style="padding:7px 9px;background:var(--cp-paper-2);font-weight:800">Dunkel → Hell</span>
+          <sc-for list="{{ tokRows }}" as="x" hint-placeholder-count="3"><b style="padding:8px 9px;border-top:1.5px solid var(--cp-line-soft)">{{ x.p }}</b><span style="padding:8px 9px;border-top:1.5px solid var(--cp-line-soft);text-wrap:pretty">{{ x.a }}</span><span style="padding:8px 9px;border-top:1.5px solid var(--cp-line-soft);text-wrap:pretty">{{ x.b }}</span></sc-for>
+        </div>
+        <p style="margin:0;font-size:14px;text-wrap:pretty"><b>Does it differ?</b> {{ dirAnswer }}</p>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:12px;padding:22px;border:var(--cp-bw) solid var(--cp-line);border-radius:16px;background:var(--cp-surface);box-shadow:var(--cp-shadow-card)">
+        <h3 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:26px;line-height:1">2 · Over the 600 ms</h3>
+        <p style="margin:0;font-size:14px;color:var(--cp-ink-2);text-wrap:pretty">{{ timeIntro }}</p>
+        <div style="display:grid;grid-template-columns:auto auto minmax(0,1fr) minmax(0,1.2fr);border:2px solid var(--cp-line);border-radius:12px;overflow:hidden;font-size:13px">
+          <span style="padding:7px 9px;background:var(--cp-paper-2);font-weight:800">t</span><span style="padding:7px 9px;background:var(--cp-paper-2);font-weight:800">ms</span><span style="padding:7px 9px;background:var(--cp-paper-2);font-weight:800">radius (ease-io)</span><span style="padding:7px 9px;background:var(--cp-paper-2);font-weight:800">{{ timeCol }}</span>
+          <sc-for list="{{ timeRows }}" as="x" hint-placeholder-count="6"><span style="padding:7px 9px;border-top:1.5px solid var(--cp-line-soft);font-family:var(--cp-font-mono);font-weight:700">{{ x.t }}</span><span style="padding:7px 9px;border-top:1.5px solid var(--cp-line-soft);font-family:var(--cp-font-mono)">{{ x.ms }}</span><span style="padding:7px 9px;border-top:1.5px solid var(--cp-line-soft);font-family:var(--cp-font-mono)">{{ x.r }}</span><span style="padding:7px 9px;border-top:1.5px solid var(--cp-line-soft);font-family:var(--cp-font-mono)">{{ x.p }}</span></sc-for>
+        </div>
+        <p style="margin:0;font-size:14px;text-wrap:pretty">{{ timeOutro }}</p>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:12px;padding:22px;border:var(--cp-bw) solid var(--cp-line);border-radius:16px;background:var(--cp-surface);box-shadow:var(--cp-shadow-card)">
+        <h3 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:26px;line-height:1">3 · How it is drawn on top of the clip</h3>
+        <ol style="margin:0;padding-left:20px;display:flex;flex-direction:column;gap:7px;font-size:14px;text-wrap:pretty">
+          <li><b>Origin and radius</b> from the tapped element: centre of its <code style="font-family:var(--cp-font-mono);font-size:12px">getBoundingClientRect()</code>; R = distance to the farthest viewport corner. Written to <code style="font-family:var(--cp-font-mono);font-size:12px">--vt-x --vt-y --vt-r</code> on <code style="font-family:var(--cp-font-mono);font-size:12px">html</code> (runtime values, not tokens).</li>
+          <li><b>The clip:</b> <code style="font-family:var(--cp-font-mono);font-size:12px">::view-transition-new(root)</code> animates <code style="font-family:var(--cp-font-mono);font-size:12px">clip-path: circle()</code> from 0 to R. Both root pictures get <code style="font-family:var(--cp-font-mono);font-size:12px">animation:none; mix-blend-mode:normal</code>, so the old one stays still and there is no default cross-fade.</li>
+          <li><b>The edge</b> is one real element, <code style="font-family:var(--cp-font-mono);font-size:12px">.theme-edge</code>, fixed and full-viewport, inserted inside the update callback. It has its own <code style="font-family:var(--cp-font-mono);font-size:12px">view-transition-name: theme-edge</code>: that takes it out of the root pictures and paints it as its own group above them. Its new-view is live, so its CSS animation plays through the transition.</li>
+          <li>Inside: a disc centred on the origin, growing <code style="font-family:var(--cp-font-mono);font-size:12px">0 → 2R</code> with the clip’s duration and easing, so its border box is always exactly the clip circle. The edge parts are <code style="font-family:var(--cp-font-mono);font-size:12px">box-shadow</code>s on its children: outer shadows draw only outside the circle (on the old picture), <code style="font-family:var(--cp-font-mono);font-size:12px">inset</code> only inside (on the new one).</li>
+          <li><b>Sync:</b> the edge’s animations are paused until <code style="font-family:var(--cp-font-mono);font-size:12px">transition.ready</code>, then start in the same frame as the clip. Removed on <code style="font-family:var(--cp-font-mono);font-size:12px">transition.finished</code>.</li>
+          <li><b>Cost:</b> one element, three boxes, no canvas, no image, no filter. During a View Transition the page under it is a snapshot anyway.</li>
+        </ol>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:12px;padding:22px;border:var(--cp-bw) solid var(--cp-line);border-radius:16px;background:var(--cp-surface);box-shadow:var(--cp-shadow-card)">
+        <h3 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:26px;line-height:1">4 · The three places</h3>
+        <ul style="margin:0;padding-left:18px;display:flex;flex-direction:column;gap:7px;font-size:14px;text-wrap:pretty">
+          <li><b>Header (≥ 980 px):</b> 40 px round button, left of Ton; icon = current look (<code style="font-family:var(--cp-font-mono);font-size:12px">sun</code> / <code style="font-family:var(--cp-font-mono);font-size:12px">moon</code>). Opens a 240 px menu, <code style="font-family:var(--cp-font-mono);font-size:12px">role="menu"</code>, three <code style="font-family:var(--cp-font-mono);font-size:12px">menuitemradio</code> rows of 44 px with a check on the current one. Origin: the centre of the row.</li>
+          <li><b>Avatar menu:</b> a row „Darstellung“ with three icon segments (40 × 36, <code style="font-family:var(--cp-font-mono);font-size:12px">aria-label</code> Hell / Dunkel / System). On a phone it is the bottom sheet, the segments go full width with labels, 44 px tall. Origin: the centre of the segment.</li>
+          <li><b>Profil › Einstellungen:</b> the existing SegmentedControl, with icons. Below 600 px it wraps under the label, full width, 44 px. Origin: the centre of the segment.</li>
+          <li><b>Menus close in the same update</b> as the theme change (inside the transition callback); focus goes back to the trigger. The segmented control keeps focus on the tapped radio.</li>
+        </ul>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:12px;padding:22px;border:var(--cp-bw) solid var(--cp-line);border-radius:16px;background:var(--cp-surface);box-shadow:var(--cp-shadow-card)">
+        <h3 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:26px;line-height:1">5 · Edge cases</h3>
+        <ul style="margin:0;padding-left:18px;display:flex;flex-direction:column;gap:7px;font-size:14px;text-wrap:pretty">
+          <li><b>No visible change, no circle.</b> „System“ while the OS gives the same look, or tapping the current option: only the selection moves, instantly.</li>
+          <li><b>System changes later</b> (OS switches at sunset while the app is open): cross-fade 140 ms. No tap, so no origin.</li>
+          <li><b>Tap during a transition:</b> <code style="font-family:var(--cp-font-mono);font-size:12px">skipTransition()</code> on the running one, then start the new one from the new tap.</li>
+          <li><b>Reduced motion</b> (<code style="font-family:var(--cp-font-mono);font-size:12px">--cp-motion: reduced</code>) with View Transitions: the default cross-fade at <code style="font-family:var(--cp-font-mono);font-size:12px">--cp-dur-fast</code>, no edge element. <b>No View Transitions:</b> a 140 ms colour transition class on <code style="font-family:var(--cp-font-mono);font-size:12px">html</code>, removed after.</li>
+          <li><b>SSR:</b> cookie keeps first paint right; nothing animates on load.</li>
+          <li><b>No sound.</b></li>
+        </ul>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:12px;padding:22px;border:var(--cp-bw) solid var(--cp-line);border-radius:16px;background:var(--cp-surface);box-shadow:var(--cp-shadow-card)">
+        <h3 style="margin:0;font-family:var(--cp-font-display);font-weight:400;font-size:26px;line-height:1">6 · Tokens used</h3>
+        <ul style="margin:0;padding-left:18px;display:flex;flex-direction:column;gap:7px;font-size:14px;text-wrap:pretty">
+          <li><b>Motion:</b> <code style="font-family:var(--cp-font-mono);font-size:12px">--cp-dur-slower</code>, <code style="font-family:var(--cp-font-mono);font-size:12px">--cp-ease-io</code> (circle, disc), <code style="font-family:var(--cp-font-mono);font-size:12px">--cp-ease-linear</code> (edge change), <code style="font-family:var(--cp-font-mono);font-size:12px">--cp-dur-fast</code> (fallback).</li>
+          <li><b>Edge:</b> {{ tokList }}</li>
+          <li><b>New tokens: none.</b> <code style="font-family:var(--cp-font-mono);font-size:12px">--vt-x / --vt-y / --vt-r</code> are per-transition runtime values set by JS, like the clip coordinates.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:24px;align-items:start">
+      <div style="display:flex;flex-direction:column;gap:10px"><b style="font-size:16px">CSS</b><pre style="margin:0;padding:18px 20px;border:var(--cp-bw) solid var(--cp-line);border-radius:14px;background:var(--cp-paper-2);font-family:var(--cp-font-mono);font-size:13px;line-height:1.55;white-space:pre-wrap">{{ css }}</pre></div>
+      <div style="display:flex;flex-direction:column;gap:10px"><b style="font-size:16px">JS (composable, called by all three controls)</b><pre style="margin:0;padding:18px 20px;border:var(--cp-bw) solid var(--cp-line);border-radius:14px;background:var(--cp-paper-2);font-family:var(--cp-font-mono);font-size:13px;line-height:1.55;white-space:pre-wrap">{{ js }}</pre></div>
+    </div>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;rec&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;A&quot;,&quot;B&quot;,&quot;C&quot;],&quot;default&quot;:&quot;B&quot;,&quot;tsType&quot;:&quot;'A'|'B'|'C'&quot;,&quot;section&quot;:&quot;Ansicht&quot;},&quot;slow&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Live-Demo&quot;},&quot;reduced&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Live-Demo&quot;},&quot;guides&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Ansicht&quot;}}">
+const bz=(t,a,b)=>3*a*t*(1-t)*(1-t)+3*b*t*t*(1-t)+t*t*t;
+const EIO=t=>{ if(t<=0)return 0; if(t>=1)return 1; let lo=0,hi=1,m=t; for(let i=0;i<40;i++){ m=(lo+hi)/2; if(bz(m,.65,.35)<t) lo=m; else hi=m; } return bz(m,0,1); };
+const dz=n=>String(n).replace('.',',');
+const OPTS=[
+ {k:'A',tag:'1a',name:'Tintenrand',sub:'each picture keeps its own outline',d:'Two lines meet at the edge, like two stickers butting up against each other: on the new picture its own Memphis line, on the old picture its own. Ink against Hell, cream against Dunkel, so the edge reads on both sides whichever way you switch.',facts:['2 × --cp-bw','--cp-line of both themes','constant'],dir:'inner line = new theme’s --cp-line, outer = old theme’s. Hell → Dunkel: cream inside, ink outside. Dunkel → Hell: the other way round.',conL:'Catch:',con:'quiet. 5.5 px of line on a page-sized circle reads as one more card outline; it beats the clean cut but has the least character.',mob:'Clean and crisp at thumb scale, but on a phone it is a thin line around a dark disc.'},
+ {k:'B',tag:'1b',name:'Kartenkante',sub:'the new look lands like a card',d:'The circle has a cream line and a hard offset shadow, the way every COMPIES card does. The shadow always falls on the light side, lower right, in ink. It starts at the modal offset (10/10) at the tapped option, as if just picked up, and settles to the small offset (3/3) by the time it reaches the far corner.',facts:['--cp-line + --cp-shadow-*','shadow-modal → shadow-sm','falls on the light side'],dir:'Hell → Dunkel: line inside the circle, shadow outside (on the old Hell picture). Dunkel → Hell: line outside, shadow inset (on the new Hell picture). Both read dark | cream line | ink shadow | light.',conL:'Catch:',con:'two variants in CSS (outer vs inset shadow), one attribute picks them. In Dunkel → Hell the shadow sits upper left inside the circle; that keeps the light direction, but it is the less expected half.',mob:'The 10 px shadow is big next to a 44 px segment: at 390 the edge is mostly shadow in the first 100 ms, which is the „pick-up“.'},
+ {k:'C',tag:'1c',name:'Sonnenband',sub:'a yellow front sweeps ahead',d:'A band in --cp-primary runs ahead of the circle, on the old picture, with an ink line between the yellow and the light side. It is 16 px when it leaves the option and thins to nothing by the corner, so the end is calm.',facts:['--cp-primary band','16 → 0 px','ink on the light side'],dir:'band always outside the circle. Hell → Dunkel: ink line on the outer edge of the band. Dunkel → Hell: ink line inside the circle, band on Dunkel.',conL:'Catch:',con:'yellow is the colour of „the one primary action“; a yellow ring sweeping through the page makes everything it crosses look primary for 600 ms. On Hell it relies on the ink line (yellow on paper is 1.3:1).',mob:'Loudest at 390: the band is as wide as a quarter of a segment at the start.'},
+ {k:'0',tag:'Basis',name:'Glatter Schnitt',sub:'baseline, no edge',d:'Clip only. Correct and fast, but it reads as a browser effect, not COMPIES: no line, no shadow, nothing of the sticker look. On Dunkel → Hell the light disc has no edge at all against the dark.',facts:['nothing drawn'],dir:'none.',conL:'Why not:',con:'every other surface in COMPIES has an outline. The one moment the whole page changes would be the only one without.',mob:'At 390 the cut is clean but anonymous.'}];
+const TOK={
+ A:{rows:[['Inner line (on the new picture)','--cp-line · --cp-bw of Dunkel: #f7efe1, 2.5 px','--cp-line · --cp-bw of Hell: #151515, 3 px'],['Outer line (on the old picture)','--cp-line · --cp-bw of Hell: #151515, 3 px','--cp-line · --cp-bw of Dunkel: #f7efe1, 2.5 px'],['Scope','i.new[data-theme=dark], i.old[data-theme=light]','i.new[data-theme=light], i.old[data-theme=dark]']],
+   ans:'Yes, by rule: inner line = new theme, outer line = old theme. The two lines swap places, so ink always touches Hell and cream always touches Dunkel.',list:'--cp-line, --cp-bw (each from its own theme).'},
+ B:{rows:[['Line','--cp-line · --cp-bw from Dunkel (#f7efe1, 2.5 px), inset: inside the circle, on the new Dunkel picture','same tokens, outer spread: outside the circle, on the old Dunkel picture'],['Shadow','--cp-shadow-modal → --cp-shadow-sm from Hell (ink #151515, 10/10 → 3/3), outer: lower right, on the old Hell picture','inset + same tokens: upper left inside the circle, on the new Hell picture'],['Scope','i.line[data-theme=dark], i.shadow[data-theme=light], in both directions','same']],
+   ans:'The CSS differs (outer vs inset), the picture doesn’t: from the dark side to the light side it is always cream line, then ink shadow, light from the top left. Dunkel is the card on top, Hell is what it lies on.',list:'--cp-line, --cp-bw from Dunkel; --cp-shadow-modal, --cp-shadow-sm from Hell.'},
+ C:{rows:[['Band','--cp-primary (#ffd23f, same in both), outside the circle, on the old Hell picture','same, outside the circle, on the old Dunkel picture'],['Ink line','--cp-line · --cp-bw from Hell (#151515, 3 px), outside the band','inset: inside the circle, on the new Hell picture'],['Band width','calc(var(--cp-space) * 4) → 0','same']],
+   ans:'Yes: the band always leads, on the old picture; the ink line moves to whichever side is Hell.',list:'--cp-primary; --cp-line, --cp-bw from Hell; --cp-space.'}};
+const PAR={A:t=>'3 + 2.5 px',B:t=>'shadow '+dz((10-7*t).toFixed(1))+' px',C:t=>'band '+dz((16*(1-t)).toFixed(1))+' px'};
+const COMMON=`/* the circle: clip the new picture, keep the old one still */
+html[data-vt="circle"]::view-transition-old(root),
+html[data-vt="circle"]::view-transition-new(root){animation:none;mix-blend-mode:normal}
+html[data-vt="circle"]::view-transition-new(root){
+  animation:cp-vt-reveal var(--cp-dur-slower) var(--cp-ease-io) both}
+@keyframes cp-vt-reveal{
+  from{clip-path:circle(0 at var(--vt-x) var(--vt-y))}
+  to{clip-path:circle(var(--vt-r) at var(--vt-x) var(--vt-y))}}
+
+/* the edge: own transition name → painted above both pictures, live */
+.theme-edge{position:fixed;inset:0;pointer-events:none;contain:strict;
+  view-transition-name:theme-edge}
+::view-transition-group(theme-edge),::view-transition-new(theme-edge){animation:none}
+.theme-edge__disc{position:absolute;left:var(--vt-x);top:var(--vt-y);
+  translate:-50% -50%;border-radius:50%;
+  animation:cp-vt-disc var(--cp-dur-slower) var(--cp-ease-io) both}
+.theme-edge__disc>i{position:absolute;inset:0;border-radius:inherit}
+.theme-edge:not(.is-running) *{animation-play-state:paused}
+@keyframes cp-vt-disc{from{width:0;height:0}
+  to{width:calc(2*var(--vt-r));height:calc(2*var(--vt-r))}}
+
+/* fallback: reduced motion with VT = default cross-fade, short */
+html[data-vt="fade"]::view-transition-old(root),
+html[data-vt="fade"]::view-transition-new(root){animation-duration:var(--cp-dur-fast)}
+/* fallback: no VT */
+html.theme-fade,html.theme-fade *{transition:background-color var(--cp-dur-fast),
+  color var(--cp-dur-fast),border-color var(--cp-dur-fast),box-shadow var(--cp-dur-fast)}`;
+const SPEC={
+ A:`/* A · Tintenrand: <i class="new" data-theme="{to}"> <i class="old" data-theme="{from}"> */
+.theme-edge .new{box-shadow:inset 0 0 0 var(--cp-bw) var(--cp-line)}
+.theme-edge .old{box-shadow:0 0 0 var(--cp-bw) var(--cp-line)}`,
+ B:`/* B · Kartenkante: <i class="line" data-theme="dark"> <i class="shadow" data-theme="light"> */
+.theme-edge[data-to="dark"]  .line{box-shadow:inset 0 0 0 var(--cp-bw) var(--cp-line)}
+.theme-edge[data-to="light"] .line{box-shadow:0 0 0 var(--cp-bw) var(--cp-line)}
+.theme-edge[data-to="dark"]  .shadow{animation:cp-vt-shadow var(--cp-dur-slower) var(--cp-ease-linear) both}
+.theme-edge[data-to="light"] .shadow{animation:cp-vt-shadow-in var(--cp-dur-slower) var(--cp-ease-linear) both}
+@keyframes cp-vt-shadow{from{box-shadow:var(--cp-shadow-modal)}to{box-shadow:var(--cp-shadow-sm)}}
+@keyframes cp-vt-shadow-in{from{box-shadow:inset var(--cp-shadow-modal)}to{box-shadow:inset var(--cp-shadow-sm)}}`,
+ C:`/* C · Sonnenband: <i class="band" data-theme="light"> */
+@property --vt-band{syntax:'<length>';inherits:false;initial-value:0px}
+.theme-edge .band{animation:cp-vt-band var(--cp-dur-slower) var(--cp-ease-linear) both}
+.theme-edge[data-to="dark"] .band{box-shadow:0 0 0 var(--vt-band) var(--cp-primary),
+  0 0 0 calc(var(--vt-band) + var(--cp-bw)) var(--cp-line)}
+.theme-edge[data-to="light"] .band{box-shadow:0 0 0 var(--vt-band) var(--cp-primary),
+  inset 0 0 0 var(--cp-bw) var(--cp-line)}
+@keyframes cp-vt-band{from{--vt-band:calc(var(--cp-space) * 4)}to{--vt-band:0px}}`};
+const PARTS={A:(f,t)=>`<i class="new" data-theme="${t}"></i><i class="old" data-theme="${f}"></i>`,B:()=>`<i class="line" data-theme="dark"></i><i class="shadow" data-theme="light"></i>`,C:()=>`<i class="band" data-theme="light"></i>`};
+const JS=k=>`// useAppearance().set(pref, event.currentTarget)
+let running
+export async function setAppearance(pref, el) {
+  const html = document.documentElement, colorMode = useColorMode()
+  const from = html.dataset.theme
+  const to = pref === 'system'
+    ? (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : pref
+  if (to === from) { colorMode.preference = pref; return }   // no visible change: no circle
+  running?.skipTransition()
+  const apply = async () => { colorMode.preference = pref; closeMenus(); await nextTick() }
+
+  if (!document.startViewTransition) {                       // fallback: 140 ms colours
+    html.classList.add('theme-fade'); await apply()
+    return setTimeout(() => html.classList.remove('theme-fade'), 140)
+  }
+  const reduced = getComputedStyle(html).getPropertyValue('--cp-motion').trim() === 'reduced'
+  const b = el.getBoundingClientRect(), x = b.left + b.width / 2, y = b.top + b.height / 2
+  const r = Math.hypot(Math.max(x, innerWidth - x), Math.max(y, innerHeight - y))
+  html.style.setProperty('--vt-x', x + 'px'); html.style.setProperty('--vt-y', y + 'px')
+  html.style.setProperty('--vt-r', r + 'px'); html.dataset.vt = reduced ? 'fade' : 'circle'
+
+  let edge = null
+  if (!reduced) {
+    edge = document.createElement('div')
+    edge.className = 'theme-edge'; edge.dataset.to = to; edge.setAttribute('aria-hidden', 'true')
+    edge.innerHTML = \`<div class="theme-edge__disc">${PARTS[k]('${from}','${to}')}</div>\`
+  }
+  running = document.startViewTransition(async () => { await apply(); if (edge) document.body.append(edge) })
+  running.ready.then(() => edge?.classList.add('is-running'))
+  running.finished.finally(() => { edge?.remove(); delete html.dataset.vt; running = null })
+}`;
+const TIMES=[0,.15,.4,.5,.85,1];
+class Component extends DCLogic {
+  state={tab:'header'};
+  renderVals(){
+    const P=this.props, rec=['A','B','C'].includes(P.rec)?P.rec:'B', R=OPTS.find(o=>o.k===rec);
+    const opts=OPTS.map(o=>({...o,href:'#'+(o.k==='0'?'1a':o.tag),id:o.k==='0'?'1base':o.tag,rec:o.k===rec,badge:o.k===rec?'var(--cp-primary)':o.k==='0'?'var(--cp-paper-2)':'var(--cp-surface)'}));
+    const fr=(w,from,ctrl)=>[.15,.5,.85].map(t=>({t,w,from,ctrl,pct:Math.round(t*100)+' % · '+Math.round(t*600)+' ms',rad:'r '+Math.round(EIO(t)*100)+' %',par:PAR[rec](t),hint:w===1440?'1446px,906px':'396px,850px'}));
+    const row=(w,from,ctrl,note)=>({label:(w===1440?'1440':'390')+' · '+(from==='light'?'Hell → Dunkel':'Dunkel → Hell'),note,gap:w===1440?'56px':'48px',chipBg:from==='dark'?'var(--cp-ink)':'var(--cp-surface)',chipFg:from==='dark'?'var(--cp-paper)':'var(--cp-ink)',frames:fr(w,from,ctrl),na:false});
+    const na=(from,text)=>({label:'390 · '+(from==='light'?'Hell → Dunkel':'Dunkel → Hell'),note:'',chipBg:from==='dark'?'var(--cp-ink)':'var(--cp-surface)',chipFg:from==='dark'?'var(--cp-paper)':'var(--cp-ink)',frames:[],gap:'0',na:true,naText:text});
+    const NA='The header button exists from 980 px (md). Below that the header has no room for it: on a phone you switch in the avatar sheet or in Profil › Einstellungen (rows below).';
+    const groups=[
+      {title:'Header-Menü',note:'Desktop only. Tapped: the menu row. The origin is high and right, so the far corner is bottom left and the circle crosses the whole page.',rows:[row(1440,'light','header','tapped „Dunkel“'),row(1440,'dark','header','tapped „Hell“'),na('light',NA),na('dark',NA)]},
+      {title:'Avatar-Menü',note:'Desktop popover, phone bottom sheet. Tapped: the icon segment in the row „Darstellung“.',rows:[row(1440,'light','avatar','tapped the moon'),row(1440,'dark','avatar','tapped the sun'),row(390,'light','avatar','sheet, tapped „Dunkel“'),row(390,'dark','avatar','sheet, tapped „Hell“')]},
+      {title:'Profil › Einstellungen',note:'The SegmentedControl in the card. It stays on screen in both pictures; only its selection flips inside the circle.',rows:[row(1440,'light','seg','tapped „Dunkel“'),row(1440,'dark','seg','tapped „Hell“'),row(390,'light','seg','tapped „Dunkel“'),row(390,'dark','seg','tapped „Hell“')]}];
+    const S=this.state, CT=[['header','Header-Menü','6 frames · 1440'],['avatar','Avatar-Menü','12 frames'],['seg','Profil › Einstellungen','12 frames']];
+    const tabs=CT.map(([k,n,c])=>({n,c,on:S.tab===k,pick:()=>this.setState({tab:k}),bg:S.tab===k?'var(--cp-primary)':'var(--cp-surface)',sh:S.tab===k?'var(--cp-shadow-btn)':'none'}));
+    const T=TOK[rec];
+    const timeRows=TIMES.map(t=>({t:Math.round(t*100)+' %',ms:String(Math.round(t*600)),r:Math.round(EIO(t)*100)+' %',p:PAR[rec](t)}));
+    const why={B:'Decided. The hard offset shadow is the one thing every COMPIES card, button and sheet shares, so the edge borrows it: the new look arrives like a card being laid onto the page. The shadow always falls on the light side, so it reads in both directions and on both themes, and it settles from shadow-modal to shadow-sm as the circle grows, which gives the 600 ms a shape: picked up at the option, laid down at the corner. A is safer but quiet; C is louder but spends the primary yellow on decoration.',
+      A:'Your pick. The most restrained COMPIES edge: each picture keeps its own Memphis outline, so ink always touches Hell and cream always touches Dunkel. Constant over the 600 ms; it simply leaves the screen at the far corner.',
+      C:'Your pick. The loudest edge: a yellow front runs ahead of the circle and thins out, so the end is calm. Keep it if the switch should feel like a moment; note the cost on the primary colour.'}[rec];
+    const timeIntro={A:'The lines don’t change. Only the circle grows; at 100 % the edge is outside the farthest corner, so it is gone without a fade.',B:'The shadow offset runs linearly (--cp-ease-linear) from --cp-shadow-modal (10/10) to --cp-shadow-sm (3/3) while the radius follows ease-io. The line stays 2.5 px.',C:'The band width runs linearly from 16 px (calc(var(--cp-space) * 4)) to 0, while the radius follows ease-io. The ink line stays 3 px.'}[rec];
+    const timeOutro={A:'Nothing to time beyond the disc.',B:'Why linear: ease-io is slow at both ends, so the circle spends its first 100 ms small, near the finger, while the shadow is still at its biggest: the pick-up is visible exactly where you look. At the end the edge is crawling into the corner at 3/3, so nothing big is left on screen while it slows down. At 100 % it is outside the viewport.',C:'At the end the band is 0 and only the 3 px ink line reaches the corner, so the slow ease-io tail stays calm.'}[rec];
+    return {opts,rec,slow:!!P.slow,reduced:!!P.reduced,recName:R.tag+' '+R.name,recTitle:(rec==='B'?'Chosen: ':'Alternative: ')+R.tag+' '+R.name,recWhy:why,
+      framesTitle:R.tag+' '+R.name+' · three frames per control, both directions',groups:groups.filter((g,i)=>CT[i][0]===S.tab),tabs,guides:!!P.guides,
+      tokRows:T.rows.map(([p,a,b])=>({p,a,b})),dirAnswer:T.ans,tokList:T.list,
+      timeRows,timeIntro,timeOutro,timeCol:{A:'edge',B:'shadow offset',C:'band'}[rec],
+      css:COMMON+'\n\n'+SPEC[rec],js:JS(rec)};
+  }
+}
+</script>
+</body>
+</html>
