@@ -8,11 +8,51 @@ import type { EventContext } from '~/utils/event-page'
 // `accessory` is the head's party hat on the Event page (#38); the hub and the other pages pass none.
 // `event` is the Event the nav's current tab names (kind `event` only).
 // `data-tour-edge` (#460) marks sticky chrome the Tour never scrolls: the header's bottom edge is the top of the usable area.
-defineProps<{ kind: 'hub' | 'event' | 'bare', flush?: boolean, accessory?: 'partyhat', event?: EventContext }>()
+// On the Event page the head is the still `Compibert` until the page gives it something to do (#673: the own Emote, a reveal with a Veto, a lost
+// connection, `useHeaderReaction`); then the rig (`CompibertRig`, same box and viewBox, so nothing jumps) takes its place for good. The header loads
+// GSAP itself before it mounts the rig, so a chunk that fails to load never replaces the still head by the rig's still pose; every other page provides
+// no reaction and keeps the still head with no code of its own.
+const props = defineProps<{ kind: 'hub' | 'event' | 'bare', flush?: boolean, accessory?: 'partyhat', event?: EventContext }>()
 
 const { t } = useI18n()
 const sound = useSound()
 const user = useAuthUser()
+
+const look = useHeaderReaction()
+const rigShown = ref(false)
+/** A reaction the rig must not play: one that is over when the chunk arrives, or one a remount for the hat would play again. */
+const stale = shallowRef<Reaction | null>(null)
+const startReaction = computed(() => {
+  const reaction = look?.reaction.value ?? null
+  return reaction === stale.value ? null : reaction
+})
+let arrivedAt = 0
+let waking = false
+
+async function wake() {
+  if (waking || rigShown.value) return
+  waking = true
+  try {
+    await loadGsap()
+  }
+  catch {
+    return // the still head stays; the next reaction, or a change of base, tries again (`loadGsap` forgot the failure)
+  }
+  finally {
+    waking = false
+  }
+  const reaction = look?.reaction.value
+  if (reaction && Date.now() - arrivedAt >= reactionSeconds(reaction) * 1000) stale.value = reaction
+  rigShown.value = true
+}
+
+watch([() => look?.reaction.value, () => look?.base.value], ([reaction, base], [before]) => {
+  const arrived = !!reaction && reaction !== before
+  if (arrived) arrivedAt = Date.now()
+  if (!rigShown.value && (arrived || base === 'confused')) void wake()
+})
+// A new hat is a new rig (`:key`): the reaction in flight is lost, not played again from its start.
+watch(() => props.accessory, () => (stale.value = look?.reaction.value ?? null))
 </script>
 
 <template>
@@ -31,7 +71,16 @@ const user = useAuthUser()
         :class="kind === 'event' && 'flex-none'"
       >
         <span class="w-[30px] md:w-[34px]">
+          <CompibertRig
+            v-if="look && rigShown"
+            :key="accessory ?? 'none'"
+            variant="head"
+            :state="look.base.value"
+            :reaction="startReaction"
+            :accessory="accessory"
+          />
           <Compibert
+            v-else
             variant="head"
             :accessory="accessory"
           />

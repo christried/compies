@@ -1,4 +1,4 @@
-import { eq } from 'drizzle-orm'
+import { and, eq } from 'drizzle-orm'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { games, pollSlots, eventMembers, events, rounds, sessions, users } from '../../server/db/schema'
 import { createTestApp, type TestRequest } from './app'
@@ -135,7 +135,7 @@ describe('GET /api/e (Home)', () => {
     const response = await list(newcomer.cookie)
 
     expect(response.status).toBe(200)
-    expect(await response.json()).toEqual({ events: [] })
+    expect(await response.json()).toEqual({ events: [], hasPlayed: false })
   })
 
   it('lists only the Events the User is a Member of, not deleted ones', async () => {
@@ -429,5 +429,88 @@ describe('GET /api/e (Home)', () => {
     const { events: listed } = await (await list(memberUser.cookie)).json()
 
     expect(listed.map((row: { name: string }) => row.name)).toEqual(['Gerade beendet'])
+  })
+
+  describe('hasPlayed (#676)', () => {
+    /** Seats a Member in team 1: a Player (the table's checks pair zone, team and join time). */
+    async function seat(eventId: string, userId: string) {
+      await testDb.db.update(eventMembers).set({ zone: 'team', team: 1, teamJoinedAt: new Date() }).where(and(eq(eventMembers.eventId, eventId), eq(eventMembers.userId, userId)))
+    }
+
+    async function playedOf(cookie: string) {
+      return (await (await list(cookie)).json()) as { events: unknown[], hasPlayed: boolean }
+    }
+
+    it('is false for a Member in the Stands of an Event whose Session ended', async () => {
+      const hostUser = await signInAs(host, { hostPermission: true })
+      const memberUser = await signInAs(member)
+      const event = await createDate(hostUser.cookie, 'Zuschauen', '2090-11-01T20:00')
+      await addMember(event.eventId, memberUser.id)
+      await startSessions(event.eventId, 3, 2)
+
+      expect((await playedOf(memberUser.cookie)).hasPlayed).toBe(false)
+    })
+
+    it('is false for a Player of an Event whose Session has started and not ended, true once it ended', async () => {
+      const hostUser = await signInAs(host, { hostPermission: true })
+      const memberUser = await signInAs(member)
+      const event = await createDate(hostUser.cookie, 'Läuft', '2090-11-01T20:00')
+      await addMember(event.eventId, memberUser.id)
+      await seat(event.eventId, memberUser.id)
+      await startSessions(event.eventId, 1)
+
+      expect((await playedOf(memberUser.cookie)).hasPlayed).toBe(false)
+
+      await startSessions(event.eventId, 3, 2)
+
+      expect((await playedOf(memberUser.cookie)).hasPlayed).toBe(true)
+    })
+
+    it('is true for a Player of a finished Event', async () => {
+      const hostUser = await signInAs(host, { hostPermission: true })
+      const memberUser = await signInAs(member)
+      const event = await createDate(hostUser.cookie, 'Beendet', '2090-11-01T20:00')
+      await addMember(event.eventId, memberUser.id)
+      await seat(event.eventId, memberUser.id)
+      await startSessions(event.eventId, 3, 2)
+      await setFinished(event.eventId, new Date(Date.now() - 60_000))
+
+      expect((await playedOf(memberUser.cookie)).hasPlayed).toBe(true)
+    })
+
+    it('stays true for a Player of an Event that left Home, which then lists nothing', async () => {
+      const hostUser = await signInAs(host, { hostPermission: true })
+      const memberUser = await signInAs(member)
+      const event = await createDate(hostUser.cookie, 'Lange her', '2090-11-01T20:00')
+      await addMember(event.eventId, memberUser.id)
+      await seat(event.eventId, memberUser.id)
+      await startSessions(event.eventId, 31, 30)
+
+      expect(await playedOf(memberUser.cookie)).toEqual({ events: [], hasPlayed: true })
+    })
+
+    it('does not count a removed Session that had ended', async () => {
+      const hostUser = await signInAs(host, { hostPermission: true })
+      const memberUser = await signInAs(member)
+      const event = await createDate(hostUser.cookie, 'Entfernt', '2090-11-01T20:00')
+      await addMember(event.eventId, memberUser.id)
+      await seat(event.eventId, memberUser.id)
+      await startSessions(event.eventId, 3, 2)
+      await testDb.db.update(sessions).set({ removedAt: new Date() }).where(eq(sessions.eventId, event.eventId))
+
+      expect((await playedOf(memberUser.cookie)).hasPlayed).toBe(false)
+    })
+
+    it('does not count a Deleted Event', async () => {
+      const hostUser = await signInAs(host, { hostPermission: true })
+      const memberUser = await signInAs(member)
+      const event = await createDate(hostUser.cookie, 'Gelöscht', '2090-11-01T20:00')
+      await addMember(event.eventId, memberUser.id)
+      await seat(event.eventId, memberUser.id)
+      await startSessions(event.eventId, 3, 2)
+      await testDb.db.update(events).set({ deletedAt: new Date() }).where(eq(events.id, event.eventId))
+
+      expect(await playedOf(memberUser.cookie)).toEqual({ events: [], hasPlayed: false })
+    })
   })
 })

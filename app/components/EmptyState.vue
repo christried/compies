@@ -1,16 +1,23 @@
 <script setup lang="ts">
 // Nothing to show yet (02-components § EmptyState). Compibert sits left on desktop and stacks above
 // the copy, centred, on phones. The heading is h2: the page title above it is the h1.
+import type { CompibertMood } from '~/utils/compibert-mood'
+
 defineProps<{
   title: string
   text?: string
+  /** The head's baked mood (#819): a search without a hit is confused; the other empty states keep the plain head. */
+  mood?: CompibertMood
 }>()
 </script>
 
 <template>
   <div class="flex flex-col items-center gap-4 rounded-[18px] border-2 border-dashed border-line bg-paper-2 px-6 py-8 text-center md:flex-row md:text-left">
     <div class="w-[120px] flex-none">
-      <Compibert variant="head" />
+      <Compibert
+        variant="head"
+        :mood="mood"
+      />
     </div>
     <div class="flex min-w-0 flex-col items-center gap-1.5 md:items-start">
       <!-- A title that carries a typed term (#885: „Nix gefunden zu „…“.“) wraps inside a word too, so a long term never widens the page. -->

@@ -3,11 +3,12 @@ import { Link as LinkIcon } from '@lucide/vue'
 import { formatSlotDay, formatSlotTime } from '~/utils/berlin-time'
 import { feedSessions } from '~/utils/activity'
 import { ceremonyAwaitsSound } from '~/utils/ceremony'
+import { createClipDuck } from '~/utils/clip-duck'
 import { stageInstants, stageUnsettled } from '~/utils/event-stage'
 import { dateBlockedKey, eventPageState, headerPill, waitsForCeremony, wearsPartyhat } from '~/utils/event-page'
 import { historyCorrections } from '~/utils/history-corrections'
 import { livingMemberIds } from '~/utils/members'
-import { emoteCue, type Cue } from '~/utils/sound-cues'
+import { emoteCue, isOwnEmote, type Cue } from '~/utils/sound-cues'
 import type { EmoteId } from '~~/shared/emote'
 import type { TourStep } from '~~/shared/tour'
 import { datePollOpen, sessionsEditable } from '~~/shared/event'
@@ -26,10 +27,16 @@ const connection = useConnectionBanner(room.state, room.enabled)
 // run toward an instant (the wheel #229, the Countdown #236, and the other timers of 0.7) get its `now` as `server-now`.
 const presence = usePresence(room)
 const serverClock = useServerClock(room)
+provideHeaderReaction({ room, view: () => data.value, serverNow: serverClock.now, ready: () => serverClock.ready.value, banner: connection })
 // The wheel is heard (#531): the cue player schedules the read's plan on the audio clock, on the Event page only.
 // The Award ceremony's plan comes from its layer, which knows the run the viewer sees and when they skip or close it (#743).
 const ceremonyCues = shallowRef<readonly Cue[]>([])
+// The Clip gets quieter under an Emote and the own Party's Veto seal (#670): the player says which cue sounds, the Clip overlay below sets the volume.
+const duck = createClipDuck()
+provideClipDuck(duck)
+onScopeDispose(duck.dispose)
 const cues = useCuePlayer({
+  onSounding: duck.note,
   view: () => data.value,
   serverNow: serverClock.now,
   ready: () => serverClock.ready.value,
@@ -42,7 +49,7 @@ provideImmediateCue(cues.playNow)
 // apply. The handler calls it first, before anything that may keep the rise from being drawn (#769): the reaction is heard with the board covered, the
 // avatar scrolled away or the tab hidden.
 const playEmoteCue = (message: { userId: string, emote: EmoteId, sound: boolean, serverTime: number }) => {
-  const heard = emoteCue({ emote: message.emote, sound: message.sound, own: message.userId === data.value?.viewerId, serverTime: message.serverTime, now: serverClock.now() })
+  const heard = emoteCue({ emote: message.emote, sound: message.sound, own: isOwnEmote(message, data.value?.viewerId), serverTime: message.serverTime, now: serverClock.now() })
   if (heard) cues.playNow(heard.id, 0, heard.volume)
 }
 const onlineState = (userId: string) => (presence.known.value ? presence.isOnline(userId) : undefined)
@@ -96,7 +103,7 @@ const feed = computed(() => feedSessions(data.value?.sessions ?? []))
 // The cast reaches the casting Party's Users only (a named send, no `event.changed`): their pages read again to show the seal.
 room.on('veto.cast', () => void refresh())
 // An Emote that arrives (#668) rises above its sender's avatar, wherever the room says it came from (the sender's own too: the room passes it back). It is drawn at once: no
-// `serverTime`, no instant ahead (spec § C). An Emote never reaches Nuxt: it writes no Activity entry and no read changes. Compibert does not react (#673).
+// `serverTime`, no instant ahead (spec § C). An Emote never reaches Nuxt: it writes no Activity entry and no read changes. The header's Compibert reacts to the own Emote (`useHeaderReaction`, #673).
 const { rising, rise, done: riseDone } = useRisingEmotes({ covered: () => covered.value })
 room.on('emote.sent', (message) => {
   playEmoteCue(message)

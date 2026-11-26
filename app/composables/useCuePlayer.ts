@@ -1,7 +1,7 @@
-import { createCuePlayer, exposesCueLog, type CueLogEntry, type CuePlayer } from '~/utils/cue-player'
+import { createCuePlayer, exposesCueLog, type CueLogEntry, type CuePlayer, type CuePlayerOptions } from '~/utils/cue-player'
 import { viewWheelHidden } from '~/utils/event-page'
 import { reducedMotion } from '~/utils/motion'
-import { coinCuePlan, countdownCuePlan, cueFileUrl, cueFilesOf, reachableGroups, vetoArrivalCues, vetoCuePlan, wheelCuePlan, wheelVoicePlan, type Cue, type GroupInput, type VetoArrivalState } from '~/utils/sound-cues'
+import { arrivalOf, coinCuePlan, countdownCuePlan, cueFileUrl, cueFilesOf, reachableGroups, vetoArrivalCues, vetoCuePlan, wheelCuePlan, wheelVoicePlan, type Cue, type GroupInput, type VetoArrivalState } from '~/utils/sound-cues'
 import type { EventView } from '~~/shared/event'
 import { TOUR_CALM_MS, tourMayStart, tourStartInputOf } from '~~/shared/tour'
 
@@ -78,17 +78,6 @@ function planOf(view: EventView): Cue[] {
   ]
 }
 
-/** What the arrival cues read of a read: the window, the viewer's own Party's cast (`own` is the viewer's only) and how many Vetoes were revealed. */
-function arrivalOf(view: EventView): VetoArrivalState {
-  const vetoes = view.wheel?.vetoes
-  const draw = vetoes?.draw
-  return {
-    draw: draw ? { drawId: draw.drawId, kind: draw.kind, stopAt: draw.stopAt, vetoEndsAt: draw.vetoEndsAt } : null,
-    ownCast: vetoes?.own?.cast ?? false,
-    revealedCount: vetoes?.revealed?.length ?? null,
-  }
-}
-
 export function useCuePlayer(input: {
   view: () => EventView | null | undefined
   serverNow: () => number
@@ -98,6 +87,8 @@ export function useCuePlayer(input: {
   moved: () => number
   /** The Award ceremony's plan (#743), from the layer's own run: the synced start or a viewer's replay. Its own source in the player, so a read never replaces it. */
   ceremony?: () => readonly Cue[]
+  /** Told of every cue `playNow` scheduled (#670): the Event page's Clip duck listens. */
+  onSounding?: CuePlayerOptions['onSounding']
 }): { suspended: Readonly<Ref<boolean>>, resume: () => Promise<void>, playNow: CuePlayer['playNow'] } {
   // Order matters: `useSound` registers its read of the stored switch first, so Ton has its stored value when `mounted` turns true.
   const { enabled } = useSound()
@@ -133,6 +124,7 @@ export function useCuePlayer(input: {
           suspended.value = made?.suspended ?? true
         },
         enabled: enabled.value,
+        onSounding: input.onSounding,
       })
     }
     catch {

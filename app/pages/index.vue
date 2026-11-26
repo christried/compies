@@ -44,6 +44,12 @@ useRefreshOnReturn(refresh)
         </AppButton>
       </header>
 
+      <!-- Outside the state chain: a User who played an Event that has left Home sees it in the empty state too (#676). Not while loading, not on an error. -->
+      <PwaInstallHint
+        v-if="data && !error"
+        :has-played="data.hasPlayed"
+      />
+
       <FullScreenState
         v-if="error"
         kind="generic"

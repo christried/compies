@@ -76,6 +76,7 @@ Each entry: trigger · targets · timeline · reduced twin. Durations in seconds
   - T−0.05: speedlines out 0.15. T: → `idle`; skid `x 0→16` 0.16 `power2.out`, then `x→0` 0.3 `back.out(3)`; dust `opacity 1→0, scale .3→1.7, x −18−i·16, y −4−i·5`, 0.65, stagger 0.04.
   - T+0.5: → `wave`; T+2.8: → `idle`. Labels: `run`, `skid`, `wave`.
 - Reduced: logo + Compibert fade in 0.2.
+- **Deviation (0.23, #674):** the numbers above are built as `bootTimeline` (`app/utils/boot-motion.ts`) with these differences. The run-in starts only if GSAP and the rig are ready 400 ms after the mount (`Promise.race`, no retry): a slow phone gets the still frame, which fades away over `--cp-dur-base`, and the run never plays even if the rig becomes ready later. The splash does not wait for `T+2.8`: the layer fades out (`opacity 1→0`, `--cp-dur-base`, `none`) from `T+0.5+0.3` = 1.7 s, so it ends at about 1.92 s with Compibert still in `wave`; the label `fade` is new. The wrap's start is `x −D` with `D = max(620, wrapper's left + width)` in px, so he always starts outside the viewport (620 only fits a 160 px figure on a phone). A letter springs when his snout (at 0.9 of his width) passes its centre, clamped to `0…T` (the upper clamp is new: he stands at the word's right end, the Lab's word lay left of him). Four puffs, as this entry says; the Lab has three, the fourth continues the series. The word stands above him and he at its right end, not on its row. Reduced (the device's setting or `compies-motion`): no GSAP and no rig work; the still frame (the whole layer, not only logo and Compibert) fades in 0.2, holds about 0.6 s counted from the mount, then fades away over `--cp-dur-base`. No sound: `boot-steps` and `boot-skid` stay unbuilt (05-assets).
 
 ### Avatar drag, drop, bounce-back [1.0]
 - Lift (pointerdown + 0/300 ms long-press on touch): avatar `scale 1→1.08`, shadow → `shadow-lift`, 0.14 `EASE.out`; sound `drag-pick`.
@@ -97,6 +98,7 @@ Each entry: trigger · targets · timeline · reduced twin. Durations in seconds
 - Toast: `y 20→0, opacity`, 0.22; out 0.14.
 - Reduced: opacity only, 0.14.
 - **Deviation (0.12, #425, #439):** the Team name in the TeamNameBuilder (02-components § TeamNameBuilder) folds and unfolds with the field in `dur-fast` on `ease-out` (opacity); a new or changed word pops in `dur-slow` on `ease-pop`. Reduced: no motion.
+- **Deviation (0.23, #931):** the Theme reveal. A new Appearance (Hell, Dunkel, System) spreads as a circle from the centre of the tapped option over the old picture, `dur-slower` on `ease-io` (a View Transition, `app/utils/theme-reveal.ts`). Under Reduced motion, without View Transitions or with no tapped option (the switch back after a failed save) the colours cross-fade in `dur-fast` on `ease-out`. Nothing moves when the look shown does not change (System on a device that already shows that look), nor for a device's own switch under System or another device's change. No sound.
 
 ### Hold to confirm [MVP]
 - Fill `scaleX 0→1` (origin left), 1.0 `none`. Release early: `scaleX → 0`, 0.2 `power2.out`. Confirm: button `scale 1→.96→1`, 0.18; icon swap.
@@ -484,6 +486,7 @@ Trigger: Connection „wird wiederhergestellt“ (2 s) or lost (15 s); errors. R
 - `sleep` → `wave` when someone joins, then `idle`. `look` → `idle` on any pointer/key input.
 - Wheel stop sets base back to `idle` while `cheer` plays.
 - **Switching:** kill the previous state timeline, tween all touched parts back to rest over 0.18 s `power2.out`, then start the new timeline. Mouth shapes crossfade 0.1 s.
+- **Deviation (0.23, #928):** the return from a reaction to the base is the component's own timer, not the bus: `CompibertRig` takes a `reaction` prop (`{ state, seconds? }`, a new object per reaction) over its base `state`, shows it for `seconds` (the table's length by default, `reactionSeconds`) and then enters the base as it is at that moment, in reduced motion too. The priority and the errors block are `admitReaction` (`app/utils/rig-reaction.ts`): an equal or higher reaction replaces the running one, a lower one and every reaction over a `confused` base are dropped, and a base turning `confused` ends the running reaction at once. `angry`, `sad`, `clap` and `roar` are built; the clap's mitts exist on the head crop only. Under reduced motion `roar` holds its peak (mouth open, head thrown back), the other three their entry pose.
 
 ### Idle behaviour
 - **Breathing:** `compibert-body` `scaleY 1→1.035, scaleX 1→.99` (pivot = belly bottom), rnd(1.6, 2.1) s per half cycle per instance, `sine.inOut`, yoyo ∞. Not in head/emote crops.

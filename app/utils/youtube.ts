@@ -9,6 +9,8 @@ export interface YouTubePlayer {
   seekTo: (seconds: number, allowSeekAhead: boolean) => void
   mute: () => void
   unMute: () => void
+  /** The player's volume, a whole number from 0 to 100; separate from the mute state (#670). */
+  setVolume: (volume: number) => void
   playVideo: () => void
   stopVideo: () => void
   destroy: () => void

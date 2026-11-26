@@ -300,6 +300,11 @@ export interface HomeEvent {
 /** What `GET /api/e` returns, already in Home order (open polls to vote on, other open polls, Dates upcoming first). */
 export interface HomeView {
   events: HomeEvent[]
+  /**
+   * True when the User is a Player of an Event in which a Session has ended, its Finish included (#676). Independent of what Home
+   * lists: an Event that left Home still counts. The install hint shows only to a User who has played.
+   */
+  hasPlayed: boolean
 }
 
 /** What `POST /api/e` returns: the new Event's link and its Invite link (#1, #16). */
