@@ -174,6 +174,8 @@ const pill = computed(() => headerPill(pageState.value, data.value?.event.phase,
 const { wide, panelTab, activeView, tabs, panelTabs, selectView } = useEventTabs(room, () => data.value?.viewerId)
 /** The phone shows the Chat view: the Host's crown would cover its send button, so the dock is not shown there (#765). */
 const chatOnPhone = computed(() => wide.value === false && activeView.value === 'chat')
+/** Where the stage is, for the stage and the smoke behind it (#675): not on a phone's other views, nor in the load and error states. Null elsewhere. */
+const stageShown = computed(() => (data.value && pageState.value && (wide.value !== false || activeView.value === 'event') ? { view: data.value, state: pageState.value } : null))
 
 // What is new on the Standings (#276): a Result the page has not seen. One owner for the stage block and the panel's tab, which are mounted
 // together, and for the live region below.
@@ -255,7 +257,7 @@ watch(() => tour.shown.value, (isShown) => {
     >
       <!-- Under the Clip's backdrop and the Tour too (#587, #647): AppShell cannot wrap a slot, so the wrapper takes the `inert` itself. -->
       <div
-        class="px-3.5 pt-3 empty:hidden md:px-6"
+        class="relative layer-content px-3.5 pt-3 empty:hidden md:px-6"
         :inert="covered || undefined"
       >
         <ConnectionBanner
@@ -340,11 +342,23 @@ watch(() => tour.shown.value, (isShown) => {
       {{ news?.announcement }}
     </p>
 
+    <!-- The smoke behind the stage (#675): where the stage is, so not on a phone's other views nor in the load and error states. -->
+    <template
+      v-if="stageShown"
+      #decor
+    >
+      <StageSmoke
+        :view="stageShown.view"
+        :server-now="serverClock.now"
+        :clip-shown="clipShown"
+      />
+    </template>
+
     <EventStage
-      v-if="data && pageState && (wide !== false || activeView === 'event')"
+      v-if="stageShown"
       :slug="slug"
-      :view="data"
-      :page-state="pageState"
+      :view="stageShown.view"
+      :page-state="stageShown.state"
       :counted="counted"
       :news="news"
       :standings-held="standingsHeld"

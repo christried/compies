@@ -24,7 +24,7 @@ export const IO_EASE = [0.65, 0, 0.35, 1] as const
 export const POP_EASE = [0.34, 1.56, 0.64, 1] as const
 
 /** The drawn slice leaves this long after the stop, a Hidden wheel a little later: its reveal comes first (04-motion). */
-const REMOVE_AFTER_MS = 2200
+export const REMOVE_AFTER_MS = 2200
 const REMOVE_AFTER_HIDDEN_MS = 2800
 /** The other slices close the gap in this long, and a put back or a refill redistributes the slices in as long. */
 export const REDISTRIBUTE_MS = 600

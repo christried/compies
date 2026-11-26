@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&amp;family=Lilita+One&amp;display=swap">
+<link rel="stylesheet" href="./tokens/compies-tokens.css">
+<script src="./tokens/lucide-subset.js"></script>
+</helmet>
+<div style="display:inline-block;vertical-align:top;contain:layout paint;border:var(--cp-bw) solid var(--cp-line);border-radius:{{ fr }};box-shadow:var(--cp-shadow-card);overflow:hidden;line-height:0;background:var(--cp-paper)">
+  <div ref="{{ innerRef }}" style="position:relative;width:{{ w }}px;height:{{ h }}px;overflow:hidden;isolation:isolate;contain:strict;line-height:1.45">
+    <sc-for list="{{ layers }}" as="L" hint-placeholder-count="1">
+      <div style="position:absolute;left:{{ L.wx }}px;top:{{ L.wy }}px;width:{{ L.ww }}px;height:{{ L.wh }}px;border-radius:{{ L.wr }};overflow:hidden;opacity:{{ L.op }}">
+      <div data-theme="{{ L.theme }}" style="position:absolute;left:{{ L.ix }}px;top:{{ L.iy }}px;width:{{ w }}px;height:{{ h }}px;display:flex;flex-direction:column;background-color:var(--cp-paper);background-image:var(--cp-tex-image);background-size:var(--cp-tex-size);color:var(--cp-ink);font-family:var(--cp-font-sans);font-weight:500;font-size:15px;line-height:1.45;text-align:left">
+        <header style="flex:none;height:{{ hh }}px;box-sizing:border-box;display:flex;align-items:center;gap:12px;padding:0 {{ gut }}px;border-bottom:var(--cp-bw) solid var(--cp-line);background:var(--cp-surface)">
+          <div style="display:flex;align-items:center;gap:8px"><img src="./assets/compibert/compibert-head.svg" alt="" width="{{ logo }}" height="{{ logo }}" style="display:block"></img><span style="font-family:var(--cp-font-display);font-size:22px;text-transform:uppercase;line-height:1">Compies</span></div>
+          <sc-if value="{{ desk }}" hint-placeholder-val="{{ true }}"><nav aria-label="Hauptnavigation" style="display:flex;gap:2px;margin-left:14px;align-self:stretch"><sc-for list="{{ nav }}" as="t" hint-placeholder-count="4"><span aria-current="{{ t.cur }}" style="display:flex;align-items:center;gap:6px;padding:0 11px;border-bottom:3px solid {{ t.bar }};color:{{ t.c }};font-weight:{{ t.fw }};font-size:14px"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false" style="display:block;flex:none;overflow:visible;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="{{ t.ic16 }}"></path></svg>{{ t.n }}</span></sc-for></nav></sc-if>
+          <span style="flex:1"></span>
+          <sc-if value="{{ desk }}" hint-placeholder-val="{{ true }}"><button type="button" aria-label="Darstellung" aria-haspopup="menu" aria-expanded="{{ L.hOpen }}" onClick="{{ L.onHBtn }}" style="flex:none;display:grid;place-items:center;width:40px;height:40px;padding:0;box-sizing:border-box;border-radius:999px;border:{{ L.hBtnBw }} solid var(--cp-line);background:{{ L.hBtnBg }};color:var(--cp-ink);cursor:{{ cur }}"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false" style="display:block;flex:none;overflow:visible;fill:none;stroke:currentColor;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round"><path d="{{ L.themeIc }}"></path></svg></button></sc-if>
+          <span aria-label="Ton" style="flex:none;display:grid;place-items:center;width:40px;height:40px;box-sizing:border-box;border-radius:999px;border:2px solid var(--cp-line)"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false" style="display:block;flex:none;overflow:visible;fill:none;stroke:currentColor;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round"><path d="{{ I.vol18 }}"></path></svg></span>
+          <button type="button" aria-label="Konto" aria-haspopup="menu" aria-expanded="{{ L.aOpen }}" onClick="{{ L.onAv }}" style="flex:none;display:grid;padding:0;border:0;border-radius:50%;background:none;box-shadow:{{ L.avRing }};cursor:{{ cur }}"><span style="flex:none;display:grid;place-items:center;width:32px;height:32px;box-sizing:border-box;border-radius:50%;border:2px solid var(--cp-line);background:#f6e3a8;color:#151515;font-weight:800;font-size:14px;line-height:1">K</span></button>
+        </header>
+
+        <main style="flex:1;min-height:0;overflow:hidden;padding:{{ mainPad }}">
+          <div style="max-width:{{ colW }}px;margin:0 auto;display:flex;flex-direction:column;gap:16px">
+            <span style="font-family:var(--cp-font-display);font-size:{{ h1 }}px;line-height:1">Profil</span>
+            <div role="tablist" style="display:flex;gap:2px;border-bottom:2px solid var(--cp-line-soft)">
+              <span role="tab" aria-selected="false" style="display:flex;align-items:center;gap:6px;height:46px;padding:0 12px;border-bottom:3px solid transparent;margin-bottom:-2px;color:var(--cp-ink-2);font-weight:600"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false" style="display:block;flex:none;overflow:visible;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="{{ I.user16 }}"></path></svg>Profil</span>
+              <span role="tab" aria-selected="true" style="display:flex;align-items:center;gap:6px;height:46px;padding:0 12px;border-bottom:3px solid var(--cp-hot);margin-bottom:-2px;color:var(--cp-ink);font-weight:800"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false" style="display:block;flex:none;overflow:visible;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="{{ I.settings16 }}"></path></svg>Einstellungen</span>
+            </div>
+            <div style="display:flex;flex-direction:column;border:var(--cp-bw) solid var(--cp-line);border-radius:16px;background:var(--cp-surface);max-width:640px;overflow:hidden">
+              <sc-for list="{{ sw }}" as="x" hint-placeholder-count="3"><div style="display:flex;align-items:center;gap:14px;min-height:72px;padding:10px 16px;box-sizing:border-box;border-bottom:1.5px solid var(--cp-line-soft)"><span style="flex:none;display:grid;place-items:center;width:40px;height:40px;box-sizing:border-box;border-radius:12px;border:2px solid var(--cp-line);background:var(--cp-paper-2)"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false" style="display:block;flex:none;overflow:visible;fill:none;stroke:currentColor;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round"><path d="{{ x.ic }}"></path></svg></span><div style="flex:1;min-width:0;display:flex;flex-direction:column;line-height:1.3"><b>{{ x.n }}</b><span style="font-size:12px;color:var(--cp-ink-2);text-wrap:pretty">{{ x.d }}</span></div><span role="switch" aria-checked="{{ x.on }}" style="flex:none;position:relative;width:52px;height:30px;border-radius:999px;border:2.5px solid var(--cp-line);background:{{ x.tr }};box-sizing:border-box"><span style="position:absolute;top:3px;left:3px;width:19px;height:19px;border-radius:50%;background:{{ x.kn }};border:2px solid var(--cp-line);box-sizing:border-box;transform:{{ x.tx }}"></span></span></div></sc-for>
+              <div style="display:flex;flex-wrap:{{ dWrap }};align-items:center;gap:14px;row-gap:12px;min-height:72px;padding:12px 16px;box-sizing:border-box;border-bottom:1.5px solid var(--cp-line-soft)">
+                <span style="flex:none;display:grid;place-items:center;width:40px;height:40px;box-sizing:border-box;border-radius:12px;border:2px solid var(--cp-line);background:var(--cp-paper-2)"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false" style="display:block;flex:none;overflow:visible;fill:none;stroke:currentColor;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round"><path d="{{ I.sun18 }}"></path></svg></span>
+                <div style="flex:1;min-width:0;display:flex;flex-direction:column;line-height:1.3"><b>Darstellung</b><span style="font-size:12px;color:var(--cp-ink-2)">System folgt deinem Gerät.</span></div>
+                <div role="radiogroup" aria-label="Darstellung" style="flex:{{ segFlex }};display:flex;border:2px solid var(--cp-line);border-radius:999px;overflow:hidden">
+                  <sc-for list="{{ L.segs }}" as="o" hint-placeholder-count="3"><button type="button" role="radio" aria-checked="{{ o.on }}" ref="{{ o.ref }}" onClick="{{ o.pick }}" style="flex:{{ segItem }};display:flex;align-items:center;justify-content:center;gap:6px;height:{{ segH }}px;padding:0 12px;border:0;border-left:{{ o.bl }};background:{{ o.bg }};color:{{ o.fg }};font-family:inherit;font-size:13px;font-weight:700;cursor:{{ cur }}"><svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true" focusable="false" style="display:block;flex:none;overflow:visible;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="{{ o.ic14 }}"></path></svg>{{ o.n }}</button></sc-for>
+                </div>
+              </div>
+              <div style="display:flex;align-items:center;gap:14px;min-height:72px;padding:10px 16px;box-sizing:border-box"><span style="flex:none;display:grid;place-items:center;width:40px;height:40px;box-sizing:border-box;border-radius:12px;border:2px solid var(--cp-line);background:var(--cp-paper-2)"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false" style="display:block;flex:none;overflow:visible;fill:none;stroke:currentColor;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round"><path d="{{ I.globe18 }}"></path></svg></span><div style="flex:1;min-width:0;display:flex;flex-direction:column;line-height:1.3"><b>Sprache</b><span style="font-size:12px;color:var(--cp-ink-2)">Deutsch. Englisch kommt nach 1.0.</span></div><span style="flex:none;display:grid;place-items:center;height:36px;padding:0 12px;border:2px solid var(--cp-line);border-radius:999px;background:var(--cp-ink);color:var(--cp-paper);font-size:13px;font-weight:700">Deutsch</span></div>
+            </div>
+          </div>
+        </main>
+
+        <sc-if value="{{ mob }}" hint-placeholder-val="{{ false }}"><nav aria-label="Hauptnavigation" style="flex:none;display:flex;height:72px;padding-bottom:14px;box-sizing:border-box;border-top:var(--cp-bw) solid var(--cp-line);background:var(--cp-surface)"><sc-for list="{{ nav }}" as="t" hint-placeholder-count="4"><span aria-current="{{ t.cur }}" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;border-top:3px solid {{ t.mbar }};color:{{ t.c }};font-weight:{{ t.fw }};font-size:12px"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false" style="display:block;flex:none;overflow:visible;fill:none;stroke:currentColor;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round"><path d="{{ t.ic20 }}"></path></svg>{{ t.n }}</span></sc-for></nav></sc-if>
+
+        <sc-if value="{{ L.hOpen }}" hint-placeholder-val="{{ false }}">
+          <div role="menu" aria-label="Darstellung" style="position:absolute;top:72px;right:120px;width:240px;box-sizing:border-box;padding:6px;display:flex;flex-direction:column;gap:2px;border:var(--cp-bw) solid var(--cp-line);border-radius:14px;background:var(--cp-surface);box-shadow:var(--cp-shadow-card)">
+            <span style="padding:8px 10px 6px;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--cp-ink-2)">Darstellung</span>
+            <sc-for list="{{ L.hItems }}" as="o" hint-placeholder-count="3"><button type="button" role="menuitemradio" aria-checked="{{ o.on }}" ref="{{ o.ref }}" onClick="{{ o.pick }}" style="display:flex;align-items:center;gap:10px;height:44px;padding:0 10px;border:0;border-radius:10px;background:{{ o.hov }};color:var(--cp-ink);font-family:inherit;font-size:15px;font-weight:700;text-align:left;cursor:{{ cur }}"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false" style="display:block;flex:none;overflow:visible;fill:none;stroke:currentColor;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round"><path d="{{ o.ic18 }}"></path></svg><span style="flex:1">{{ o.n }}</span><sc-if value="{{ o.on }}" hint-placeholder-val="{{ false }}"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false" style="display:block;flex:none;overflow:visible;fill:none;stroke:currentColor;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round"><path d="{{ I.check18 }}"></path></svg></sc-if></button></sc-for>
+            <span style="padding:6px 10px 6px;font-size:12px;color:var(--cp-ink-2)">System folgt deinem Gerät.</span>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ L.aDesk }}" hint-placeholder-val="{{ false }}">
+          <div role="menu" aria-label="Konto" style="position:absolute;top:72px;right:{{ gut }}px;width:296px;box-sizing:border-box;padding:6px;display:flex;flex-direction:column;gap:2px;border:var(--cp-bw) solid var(--cp-line);border-radius:14px;background:var(--cp-surface);box-shadow:var(--cp-shadow-card)">
+            <div style="display:flex;align-items:center;gap:10px;padding:8px 10px 10px"><span style="flex:none;display:grid;place-items:center;width:40px;height:40px;box-sizing:border-box;border-radius:50%;border:2.5px solid var(--cp-line);background:#f6e3a8;color:#151515;font-weight:800;font-size:18px;line-height:1">K</span><div style="display:flex;flex-direction:column;line-height:1.25"><b>Kitty</b><span style="font-size:12px;color:var(--cp-ink-2)">über Discord angemeldet</span></div></div>
+            <span style="height:1.5px;margin:0 6px;background:var(--cp-line-soft)"></span>
+            <span style="display:flex;align-items:center;gap:10px;height:44px;padding:0 10px;font-weight:700"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false" style="display:block;flex:none;overflow:visible;fill:none;stroke:currentColor;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round"><path d="{{ I.user18 }}"></path></svg>Profil</span>
+            <span style="display:flex;align-items:center;gap:10px;height:44px;padding:0 10px;font-weight:700"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false" style="display:block;flex:none;overflow:visible;fill:none;stroke:currentColor;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round"><path d="{{ I.settings18 }}"></path></svg>Einstellungen</span>
+            <span style="height:1.5px;margin:0 6px;background:var(--cp-line-soft)"></span>
+            <div style="display:flex;align-items:center;gap:10px;min-height:52px;padding:0 4px 0 10px"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false" style="display:block;flex:none;overflow:visible;fill:none;stroke:currentColor;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round"><path d="{{ L.themeIc }}"></path></svg><b style="flex:1">Darstellung</b>
+              <div role="radiogroup" aria-label="Darstellung" style="display:flex;border:2px solid var(--cp-line);border-radius:999px;overflow:hidden"><sc-for list="{{ L.aSegs }}" as="o" hint-placeholder-count="3"><button type="button" role="radio" aria-label="{{ o.n }}" title="{{ o.n }}" aria-checked="{{ o.on }}" ref="{{ o.ref }}" onClick="{{ o.pick }}" style="display:grid;place-items:center;width:40px;height:36px;padding:0;border:0;border-left:{{ o.bl }};background:{{ o.bg }};color:{{ o.fg }};cursor:{{ cur }}"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false" style="display:block;flex:none;overflow:visible;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="{{ o.ic16 }}"></path></svg></button></sc-for></div>
+            </div>
+            <span style="height:1.5px;margin:0 6px;background:var(--cp-line-soft)"></span>
+            <span style="display:flex;align-items:center;gap:10px;height:44px;padding:0 10px;font-weight:700"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false" style="display:block;flex:none;overflow:visible;fill:none;stroke:currentColor;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round"><path d="{{ I.out18 }}"></path></svg>Abmelden</span>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ L.aMob }}" hint-placeholder-val="{{ false }}">
+          <div onClick="{{ L.close }}" style="position:absolute;inset:0;background:var(--cp-overlay)"></div>
+          <div role="dialog" aria-label="Konto" style="position:absolute;left:0;right:0;bottom:0;padding:10px 16px 30px;display:flex;flex-direction:column;gap:4px;border:var(--cp-bw) solid var(--cp-line);border-bottom:0;border-radius:20px 20px 0 0;background:var(--cp-surface)">
+            <span style="align-self:center;width:40px;height:5px;border-radius:999px;background:var(--cp-line-soft);margin-bottom:6px"></span>
+            <div style="display:flex;align-items:center;gap:12px;padding:4px 4px 10px"><span style="flex:none;display:grid;place-items:center;width:44px;height:44px;box-sizing:border-box;border-radius:50%;border:2.5px solid var(--cp-line);background:#f6e3a8;color:#151515;font-weight:800;font-size:19px;line-height:1">K</span><div style="display:flex;flex-direction:column;line-height:1.25"><b style="font-size:17px">Kitty</b><span style="font-size:13px;color:var(--cp-ink-2)">über Discord angemeldet</span></div></div>
+            <span style="display:flex;align-items:center;gap:12px;height:48px;padding:0 4px;font-weight:700"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false" style="display:block;flex:none;overflow:visible;fill:none;stroke:currentColor;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round"><path d="{{ I.user20 }}"></path></svg>Profil</span>
+            <span style="display:flex;align-items:center;gap:12px;height:48px;padding:0 4px;font-weight:700"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false" style="display:block;flex:none;overflow:visible;fill:none;stroke:currentColor;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round"><path d="{{ I.settings20 }}"></path></svg>Einstellungen</span>
+            <div style="display:flex;flex-direction:column;gap:8px;padding:8px 4px 10px">
+              <b>Darstellung</b>
+              <div role="radiogroup" aria-label="Darstellung" style="display:flex;border:2px solid var(--cp-line);border-radius:999px;overflow:hidden"><sc-for list="{{ L.aSegs }}" as="o" hint-placeholder-count="3"><button type="button" role="radio" aria-checked="{{ o.on }}" ref="{{ o.ref }}" onClick="{{ o.pick }}" style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;height:44px;padding:0 8px;border:0;border-left:{{ o.bl }};background:{{ o.bg }};color:{{ o.fg }};font-family:inherit;font-size:14px;font-weight:700;cursor:{{ cur }}"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false" style="display:block;flex:none;overflow:visible;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="{{ o.ic16 }}"></path></svg>{{ o.n }}</button></sc-for></div>
+            </div>
+            <span style="height:1.5px;background:var(--cp-line-soft)"></span>
+            <span style="display:flex;align-items:center;gap:12px;height:48px;padding:0 4px;font-weight:700"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false" style="display:block;flex:none;overflow:visible;fill:none;stroke:currentColor;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round"><path d="{{ I.out20 }}"></path></svg>Abmelden</span>
+          </div>
+        </sc-if>
+      </div>
+      </div>
+    </sc-for>
+
+    <sc-if value="{{ hasEdge }}" hint-placeholder-val="{{ false }}">
+      <div aria-hidden="true" style="position:absolute;left:{{ ex }}px;top:{{ ey }}px;width:{{ ed }}px;height:{{ ed }}px;border-radius:50%;pointer-events:none">
+        <sc-for list="{{ rings }}" as="g" hint-placeholder-count="0"><div data-theme="{{ g.theme }}" style="position:absolute;inset:0;border-radius:50%;box-shadow:{{ g.sh }}"></div></sc-for>
+      </div>
+    </sc-if>
+    <sc-if value="{{ guides }}" hint-placeholder-val="{{ false }}">
+      <div aria-hidden="true" style="position:absolute;left:{{ ex }}px;top:{{ ey }}px;width:{{ ed }}px;height:{{ ed }}px;box-sizing:border-box;border-radius:50%;border:2px dashed var(--cp-focus);pointer-events:none"></div>
+      <div aria-hidden="true" style="position:absolute;left:{{ dotX }}px;top:{{ dotY }}px;width:14px;height:14px;box-sizing:border-box;border-radius:50%;border:3px solid var(--cp-focus);background:var(--cp-surface);pointer-events:none"></div>
+    </sc-if>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1446,&quot;height&quot;:906},&quot;opt&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;0&quot;,&quot;A&quot;,&quot;B&quot;,&quot;C&quot;],&quot;default&quot;:&quot;B&quot;,&quot;tsType&quot;:&quot;'0'|'A'|'B'|'C'&quot;},&quot;w&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[1440,390],&quot;default&quot;:1440,&quot;tsType&quot;:&quot;1440|390&quot;},&quot;base&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;light&quot;,&quot;dark&quot;],&quot;default&quot;:&quot;light&quot;,&quot;tsType&quot;:&quot;'light'|'dark'&quot;},&quot;ctrl&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;seg&quot;,&quot;header&quot;,&quot;avatar&quot;],&quot;default&quot;:&quot;seg&quot;,&quot;tsType&quot;:&quot;'seg'|'header'|'avatar'&quot;},&quot;t&quot;:{&quot;editor&quot;:&quot;range&quot;,&quot;min&quot;:0,&quot;max&quot;:1,&quot;step&quot;:0.01,&quot;default&quot;:0.4,&quot;tsType&quot;:&quot;number&quot;},&quot;guides&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;},&quot;live&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;},&quot;slow&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;},&quot;reduced&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;}}">
+const OPT3=[['light','Hell','sun'],['dark','Dunkel','moon'],['system','System','smartphone']];
+const NAV=[['Sessions','house'],['Archiv','archive'],['Bibliothek','gamepad-2'],['Profil','user',1]];
+const SW=[['volume-2','Ton','Rad-Ticken, Fanfare, Emotes. Wird auf diesem Gerät gemerkt.',true],['bell','Push-Benachrichtigungen','Termin, Erinnerung, Start, Ergebnis.',true],['zap','Weniger Bewegung','Ruhige Varianten aller großen Animationen.',false]];
+const bz=(t,a,b)=>3*a*t*(1-t)*(1-t)+3*b*t*t*(1-t)+t*t*t;
+const EIO=t=>{ if(t<=0)return 0; if(t>=1)return 1; let lo=0,hi=1,m=t; for(let i=0;i<40;i++){ m=(lo+hi)/2; if(bz(m,.65,.35)<t) lo=m; else hi=m; } return bz(m,0,1); };
+const noop=()=>{};
+const ICP={};
+const n2=v=>+v;
+const toD=([tag,a])=>{ if(tag==='path'){ const d=String(a.d).trim(), m=/^m\s*(-?[\d.]+)[\s,]*(-?[\d.]+)\s*,?\s*/.exec(d); if(!m) return d; const rest=d.slice(m[0].length); return 'M'+m[1]+' '+m[2]+(rest&&!/^[a-zA-Z]/.test(rest)?'l'+rest:rest); }
+  if(tag==='circle'){ const cx=n2(a.cx),cy=n2(a.cy),r=n2(a.r); return `M${cx-r} ${cy}a${r} ${r} 0 1 0 ${2*r} 0a${r} ${r} 0 1 0 ${-2*r} 0`; }
+  if(tag==='ellipse'){ const cx=n2(a.cx),cy=n2(a.cy),rx=n2(a.rx),ry=n2(a.ry); return `M${cx-rx} ${cy}a${rx} ${ry} 0 1 0 ${2*rx} 0a${rx} ${ry} 0 1 0 ${-2*rx} 0`; }
+  if(tag==='rect'){ const x=n2(a.x||0),y=n2(a.y||0),w=n2(a.width),h=n2(a.height),r=Math.min(n2(a.rx||a.ry||0),w/2,h/2);
+    return r?`M${x+r} ${y}h${w-2*r}a${r} ${r} 0 0 1 ${r} ${r}v${h-2*r}a${r} ${r} 0 0 1 ${-r} ${r}h${-(w-2*r)}a${r} ${r} 0 0 1 ${-r} ${-r}v${-(h-2*r)}a${r} ${r} 0 0 1 ${r} ${-r}z`:`M${x} ${y}h${w}v${h}h${-w}z`; }
+  if(tag==='line') return `M${a.x1} ${a.y1}L${a.x2} ${a.y2}`;
+  if(tag==='polyline'||tag==='polygon'){ const p=String(a.points).trim().split(/[\s,]+/); let d=''; for(let i=0;i<p.length;i+=2) d+=(i?'L':'M')+p[i]+' '+p[i+1]; return d+(tag==='polygon'?'z':''); }
+  return ''; };
+const ic=name=>{ if(ICP[name]) return ICP[name]; const raw=(window.CP_ICONS||{})[name]; if(!raw) return ''; return ICP[name]=raw.map(toD).join(''); };
+function edgeRings(opt,to,t){
+  const toDark=to==='dark';
+  if(opt==='A') return [{theme:to,sh:'inset 0 0 0 var(--cp-bw) var(--cp-line)'},{theme:toDark?'light':'dark',sh:'0 0 0 var(--cp-bw) var(--cp-line)'}];
+  if(opt==='B'){ const o=(10-7*t).toFixed(1); return [{theme:'dark',sh:toDark?'inset 0 0 0 var(--cp-bw) var(--cp-line)':'0 0 0 var(--cp-bw) var(--cp-line)'},{theme:'light',sh:(toDark?'':'inset ')+o+'px '+o+'px 0 var(--cp-shadow-ink)'}]; }
+  if(opt==='C'){ const b=(16*(1-t)).toFixed(1); return [{theme:'light',sh:toDark?`0 0 0 ${b}px var(--cp-primary), 0 0 0 calc(${b}px + var(--cp-bw)) var(--cp-line)`:`0 0 0 ${b}px var(--cp-primary), inset 0 0 0 var(--cp-bw) var(--cp-line)`}]; }
+  return [];
+}
+class Component extends DCLogic {
+  state={ox:null,oy:null,cur:null,pref:null,menu:'none',anim:null};
+  innerRef=el=>{ this.inner=el; };
+  tapRef=el=>{ this.tapEl=el; };
+  shouldComponentUpdate(np,ns){ if(ns!==this.state) return true; const p=this.props; return ['opt','w','base','ctrl','t','guides','live','slow','reduced'].some(k=>p[k]!==np[k]); }
+  key(){ const P=this.props; return [P.w,P.ctrl||'seg',P.base].join('|'); }
+  componentDidMount(){ if(!window.CP_ICONS){ this._h=()=>this.forceUpdate(); window.addEventListener('cp-icons',this._h); }
+    this.raf2=requestAnimationFrame(()=>this.measure());
+    if(document.fonts&&document.fonts.ready) document.fonts.ready.then(()=>{ this.tm=setTimeout(()=>this.measure(true),300+Math.random()*400); }); }
+  componentDidUpdate(p){ const q=this.props; if(p.w!==q.w||p.ctrl!==q.ctrl||p.base!==q.base) this.measure(); }
+  componentWillUnmount(){ this._h&&window.removeEventListener('cp-icons',this._h); cancelAnimationFrame(this.raf); cancelAnimationFrame(this.raf2); clearTimeout(this.tm); }
+  off(el){ let x=el.offsetWidth/2,y=el.offsetHeight/2,n=el; while(n&&n!==this.inner){ x+=n.offsetLeft; y+=n.offsetTop; n=n.offsetParent; if(n&&n!==this.inner){ x+=n.clientLeft; y+=n.clientTop; } } return {x:Math.round(x),y:Math.round(y)}; }
+  measure(fresh){ if(this.props.live||!this.tapEl||!this.inner) return; const C=window.__tsOrigin||(window.__tsOrigin={}), k=this.key();
+    let o=C[k]; if(!o||(fresh&&!o.fresh)){ o={...this.off(this.tapEl),fresh:!!fresh}; C[k]=o; }
+    if(o.x!==this.state.ox||o.y!==this.state.oy) this.setState({ox:o.x,oy:o.y}); }
+  pick(pref,e){
+    if(this.state.anim) return;
+    const P=this.props, curT=this.state.cur??(P.base==='dark'?'dark':'light'), curP=this.state.pref??curT;
+    const os=window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';
+    const to=pref==='system'?os:pref;
+    if(to===curT){ this.setState({pref,menu:'none'}); return; }
+    const {x,y}=this.off(e.currentTarget);
+    const dur=P.reduced?140:600*(P.slow?5:1), start=performance.now();
+    this.setState({anim:{from:curT,to,fromP:curP,toP:pref,menu:this.state.menu,ox:x,oy:y,t:0}});
+    const step=now=>{ const t=Math.min(1,(now-start)/dur); if(t<1){ this.setState(s=>({anim:{...s.anim,t}})); this.raf=requestAnimationFrame(step); } else this.setState({anim:null,cur:to,pref,menu:'none'}); };
+    this.raf=requestAnimationFrame(step);
+  }
+  renderVals(){
+        const P=this.props, S=this.state, w=P.w===390?390:1440, desk=w!==390, h=desk?900:844, live=!!P.live, opt=P.opt||'B';
+    let L0, L1=null, t=0, ox=w/2, oy=h/2, to='dark', reduced=false;
+    if(live){
+      const curT=S.cur??(P.base==='dark'?'dark':'light'), curP=S.pref??curT;
+      if(S.anim){ const A=S.anim; t=A.t; ox=A.ox; oy=A.oy; to=A.to; reduced=!!P.reduced; L0={theme:A.from,pref:A.fromP,menu:A.menu}; L1={theme:A.to,pref:A.toP,menu:'none'}; }
+      else L0={theme:curT,pref:curP,menu:S.menu};
+    } else {
+      const from=P.base==='dark'?'dark':'light'; to=from==='dark'?'light':'dark'; t=Math.max(0,Math.min(1,P.t??.4));
+      const ctrl=(P.ctrl==='header'&&!desk)?'seg':(P.ctrl||'seg');
+      L0={theme:from,pref:from,menu:ctrl==='seg'?'none':ctrl,tap:ctrl,tapPref:to}; L1={theme:to,pref:to,menu:'none'};
+      ox=S.ox??Math.round(w*.55); oy=S.oy??Math.round(h*.6);
+    }
+    const R=Math.hypot(Math.max(ox,w-ox),Math.max(oy,h-oy)), r=R*EIO(t);
+    const mk=(L,circ,op)=>{
+      const hOpen=desk&&L.menu==='header', aOpen=L.menu==='avatar';
+      const it=kind=>OPT3.map(([k,n,icon],i)=>{ const on=L.pref===k, tap=L.tap===kind&&L.tapPref===k;
+        return {n,icon,ic14:ic(icon,14),ic16:ic(icon,16),ic18:ic(icon,18),on,ref:tap?this.tapRef:noop,pick:live?(e=>this.pick(k,e)):noop,bl:i?'2px solid var(--cp-line)':'0',
+          bg:on?'var(--cp-ink)':(tap?'var(--cp-surface-2)':'transparent'),fg:on?'var(--cp-paper)':'var(--cp-ink)',hov:tap?'var(--cp-surface-2)':'transparent'}; });
+      const g=circ?{wx:+(ox-r).toFixed(1),wy:+(oy-r).toFixed(1),ww:+(2*r).toFixed(1),wh:+(2*r).toFixed(1),wr:'50%'}:{wx:0,wy:0,ww:w,wh:h,wr:'0'};
+      return {theme:L.theme,...g,ix:-g.wx,iy:-g.wy,op,hOpen,aOpen,aDesk:desk&&aOpen,aMob:!desk&&aOpen,themeIc:ic(L.theme==='dark'?'moon':'sun',18),
+        hBtnBg:hOpen?'var(--cp-paper-2)':'var(--cp-surface)',hBtnBw:hOpen?'var(--cp-bw)':'2px',avRing:aOpen&&desk?'0 0 0 3px var(--cp-surface), 0 0 0 5.5px var(--cp-line)':'none',
+        segs:it('seg'),hItems:it('header'),aSegs:it('avatar'),
+        onHBtn:live?()=>{ if(!this.state.anim) this.setState(s=>({menu:s.menu==='header'?'none':'header'})); }:noop,
+        onAv:live?()=>{ if(!this.state.anim) this.setState(s=>({menu:s.menu==='avatar'?'none':'avatar'})); }:noop,
+        close:live?()=>{ if(!this.state.anim) this.setState({menu:'none'}); }:noop};
+    };
+    const layers=[mk(L0,false,1)];
+    if(L1) layers.push(mk(L1,!reduced,reduced?Math.min(1,t):1));
+    const hasEdge=!!L1&&!reduced&&t>0&&t<1&&opt!=='0';
+    const nav=NAV.map(([n,icon,cur])=>({n,ic16:ic(icon,16),ic20:ic(icon,20),cur:cur?'page':undefined,bar:cur?'var(--cp-hot)':'transparent',mbar:cur?'var(--cp-ink)':'transparent',c:cur?'var(--cp-ink)':'var(--cp-ink-2)',fw:cur?800:600}));
+    const sw=SW.map(([icon,n,d,on])=>({ic:ic(icon,18),n,d,on,tr:on?'var(--cp-primary)':'var(--cp-paper-2)',kn:on?'var(--cp-ink)':'var(--cp-surface)',tx:on?'translateX(22px)':'none'}));
+    return {w,h,desk,mob:!desk,fr:desk?'14px':'30px',hh:desk?64:56,gut:desk?24:16,logo:desk?34:30,mainPad:desk?'40px 24px':'20px 16px',colW:desk?880:640,h1:desk?46:32,
+      dWrap:desk?'nowrap':'wrap',segFlex:desk?'none':'1 1 100%',segItem:desk?'none':'1',segH:desk?36:44,cur:live?'pointer':'default',
+      innerRef:this.innerRef,I:{vol18:ic('volume-2',18),user16:ic('user',16),settings16:ic('settings',16),sun18:ic('sun',18),globe18:ic('globe',18),check18:ic('check',18),user18:ic('user',18),settings18:ic('settings',18),out18:ic('log-out',18),user20:ic('user',20),settings20:ic('settings',20),out20:ic('log-out',20)},layers,nav,sw,hasEdge,rings:hasEdge?edgeRings(opt,to,t):[],
+      ex:+(ox-r).toFixed(1),ey:+(oy-r).toFixed(1),ed:+(2*r).toFixed(1),guides:!!P.guides&&!!L1,dotX:ox-7,dotY:oy-7};
+  }
+}
+</script>
+</body>
+</html>

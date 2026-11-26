@@ -137,7 +137,8 @@ describe('shownLook', () => {
 })
 
 // The Theme reveal's two rules (#931): jsdom computes no cascade and no View Transition, so the stylesheet is pinned as text. The circle
-// itself is `revealFrames` (test/nuxt/theme-reveal.test.ts); these rules keep the old picture still under it and give the cross-fade its time.
+// itself is `revealFrames` (test/nuxt/theme-reveal.test.ts) and its edge is `themeEdge` with the `.theme-edge` rules (#933,
+// test/unit/theme-edge-css.test.ts); these rules keep the old picture still under it and give the cross-fade its time.
 describe('the Theme reveal in the stylesheet', () => {
   const css = normalise(clean(theme))
 

@@ -26,17 +26,25 @@ interface FakeTransition {
   run: () => Promise<void>
   /** Lets `finished` resolve, as the browser does when the animation is over. */
   end: () => void
+  /** Lets `ready` resolve (with `holdReady`), as the browser does once both pictures are taken. */
+  markReady: () => void
   /** `<html data-theme>` the moment the callback was done, undefined before. */
   themeWhenDone: string | null | undefined
+  /** The `.theme-edge`s in the document the moment the callback was done, undefined before. */
+  edgesWhenDone?: HTMLElement[]
 }
 
 /**
  * A `document.startViewTransition` that runs the callback a task later, as the browser takes the old picture first. With `holdCallback`
- * the callback waits for `run()`, with `holdFinish` the transition waits for `end()`.
+ * the callback waits for `run()`, with `holdFinish` the transition waits for `end()`, with `holdReady` `ready` waits for `markReady()`,
+ * with `skip` the transition is skipped once its callback ran: `ready` and `finished` reject, as a browser's do.
+ * `edgesAtStart` is the number of `.theme-edge`s in the document each time a transition starts.
  */
-function viewTransitions({ holdCallback = false, holdFinish = false } = {}) {
+function viewTransitions({ holdCallback = false, holdFinish = false, holdReady = false, skip = false } = {}) {
   const transitions: FakeTransition[] = []
+  const edgesAtStart: number[] = []
   const start = vi.fn((callback: () => void | Promise<void>) => {
+    edgesAtStart.push(document.querySelectorAll('.theme-edge').length)
     let run!: () => Promise<void>
     const ran = new Promise<void>((resolve) => {
       run = () => {
@@ -50,17 +58,52 @@ function viewTransitions({ holdCallback = false, holdFinish = false } = {}) {
           end = resolve
         })
       : Promise.resolve()
-    const transition: FakeTransition = { run, end: () => end(), themeWhenDone: undefined }
-    // What the new picture is taken of: `<html data-theme>` the moment the callback is done.
+    let markReady!: () => void
+    const readied = new Promise<void>((resolve) => {
+      markReady = resolve
+    })
+    const skipped = () => Promise.reject(new DOMException('Skipped', 'AbortError'))
+    const ready = skip ? ran.then(skipped) : holdReady ? readied : ran
+    const finished = skip ? ran.then(skipped) : ran.then(() => ended)
+    // Handled here too: a skipped transition's promises reject before the page takes them.
+    ready.catch(() => {})
+    finished.catch(() => {})
+    const transition: FakeTransition = { run, end: () => end(), markReady: () => markReady(), themeWhenDone: undefined }
+    // What the new picture is taken of: `<html data-theme>` and the edge the moment the callback is done.
     void ran.then(() => {
       transition.themeWhenDone = html.getAttribute('data-theme')
+      transition.edgesWhenDone = [...document.querySelectorAll<HTMLElement>('.theme-edge')]
     })
     transitions.push(transition)
     if (!holdCallback) setTimeout(() => void run(), 0)
-    return { ready: ran, finished: ran.then(() => ended) }
+    return { ready, finished }
   })
   Object.defineProperty(document, 'startViewTransition', { value: start, configurable: true, writable: true })
-  return { start, transitions }
+  return { start, transitions, edgesAtStart }
+}
+
+/** The `.theme-edge` in the document, if any. */
+const edgeOf = () => document.querySelector('.theme-edge')
+
+/** Every `.theme-edge` ever added to the page, however soon it leaves: the observer's records, read after a task. */
+function watchEdges() {
+  const added: Element[] = []
+  const take = (records: MutationRecord[]) => {
+    for (const record of records) {
+      for (const node of record.addedNodes) if (node instanceof Element && node.matches('.theme-edge')) added.push(node)
+    }
+  }
+  const observer = new MutationObserver(take)
+  observer.observe(document.body, { childList: true, subtree: true })
+  return {
+    added,
+    stop: async () => {
+      await new Promise(resolve => setTimeout(resolve, 0))
+      take(observer.takeRecords())
+      observer.disconnect()
+      return added.length
+    },
+  }
 }
 
 const realAnimate = Object.getOwnPropertyDescriptor(html, 'animate')
@@ -255,6 +298,142 @@ describe('revealTheme', () => {
   })
 })
 
+// The edge of the circle (#933, note 20 „Kartenkante“): a card's cream line and ink shadow on the growing circle, in the new picture only.
+describe('the edge of the circle', () => {
+  it('a spread to Dunkel draws one edge after the new look, in the new picture only, at the circle\'s centre and radius', async () => {
+    const vt = viewTransitions()
+    recordAnimate()
+    const apply = vi.fn()
+
+    await revealTheme(tapped(), true, apply, 'dark')
+
+    expect(apply).toHaveBeenCalledOnce()
+    expect(vt.edgesAtStart).toEqual([0])
+    expect(vt.transitions[0]!.edgesWhenDone).toHaveLength(1)
+    const edge = vt.transitions[0]!.edgesWhenDone![0]!
+    expect(edge.getAttribute('aria-hidden')).toBe('true')
+    expect(edge.getAttribute('data-to')).toBe('dark')
+    expect(edge.style.getPropertyValue('--vt-x')).toBe('100px')
+    expect(edge.style.getPropertyValue('--vt-y')).toBe('200px')
+    expect(edge.style.getPropertyValue('--vt-r')).toBe('500px')
+    const disc = edge.querySelector(':scope > .theme-edge__disc')!
+    expect(disc.querySelector(':scope > .theme-edge__line[data-theme="dark"]')).not.toBeNull()
+    expect(disc.querySelector(':scope > .theme-edge__shadow[data-theme="light"]')).not.toBeNull()
+  })
+
+  it('a spread to Hell draws a light edge with the same children', async () => {
+    const vt = viewTransitions()
+    recordAnimate()
+
+    await revealTheme(tapped(), true, () => {}, 'light')
+
+    const edge = vt.transitions[0]!.edgesWhenDone![0]!
+    expect(edge.getAttribute('data-to')).toBe('light')
+    const disc = edge.querySelector(':scope > .theme-edge__disc')!
+    expect(disc.querySelector(':scope > .theme-edge__line[data-theme="dark"]')).not.toBeNull()
+    expect(disc.querySelector(':scope > .theme-edge__shadow[data-theme="light"]')).not.toBeNull()
+  })
+
+  it('runs with the circle: it is marked is-running when the transition is ready, and gone when it finishes', async () => {
+    const vt = viewTransitions({ holdReady: true, holdFinish: true })
+    recordAnimate()
+
+    const done = revealTheme(tapped(), true, () => {}, 'dark')
+    await vi.waitFor(() => expect(vt.transitions[0]!.edgesWhenDone).toHaveLength(1))
+    const edge = vt.transitions[0]!.edgesWhenDone![0]!
+    expect(edge.classList.contains('is-running')).toBe(false)
+
+    vt.transitions[0]!.markReady()
+    await vi.waitFor(() => expect(edge.classList.contains('is-running')).toBe(true))
+    expect(edgeOf()).toBe(edge)
+
+    vt.transitions[0]!.end()
+    await done
+    expect(edgeOf()).toBeNull()
+  })
+
+  it('is gone when the transition is skipped', async () => {
+    const vt = viewTransitions({ skip: true })
+    recordAnimate()
+
+    await revealTheme(tapped(), true, () => {}, 'dark')
+
+    expect(vt.transitions[0]!.edgesWhenDone).toHaveLength(1)
+    expect(edgeOf()).toBeNull()
+  })
+
+  it('a second spread removes the first\'s edge before it starts: at no time two edges, and the second\'s stays until it finishes', async () => {
+    const vt = viewTransitions({ holdCallback: true, holdFinish: true })
+    recordAnimate()
+
+    const first = revealTheme(tapped(), true, () => {}, 'dark')
+    await vt.transitions[0]!.run()
+    const firstEdge = edgeOf()
+    const second = revealTheme(tapped(), true, () => {}, 'light')
+    await vt.transitions[1]!.run()
+
+    expect(firstEdge).not.toBeNull()
+    expect(vt.edgesAtStart).toEqual([0, 0])
+    expect(vt.transitions[1]!.edgesWhenDone).toHaveLength(1)
+    const secondEdge = vt.transitions[1]!.edgesWhenDone![0]!
+    expect(secondEdge).not.toBe(firstEdge)
+    expect(secondEdge.getAttribute('data-to')).toBe('light')
+
+    vt.transitions[0]!.end()
+    await first
+    expect(edgeOf()).toBe(secondEdge)
+    vt.transitions[1]!.end()
+    await second
+    expect(edgeOf()).toBeNull()
+  })
+
+  it('two taps within one frame: the first\'s callback runs after the second tap and adds no edge, so at no time are there two and the second\'s is the one drawn', async () => {
+    const vt = viewTransitions({ holdCallback: true, holdFinish: true })
+    recordAnimate()
+    const seen = watchEdges()
+
+    const first = revealTheme(tapped(), true, () => {}, 'dark')
+    // The second tap comes before the browser called the first's callback: a browser skips the first transition, but still runs it.
+    const second = revealTheme(tapped(), true, () => {}, 'light')
+    await vt.transitions[0]!.run()
+    expect(document.querySelectorAll('.theme-edge')).toHaveLength(0)
+    await vt.transitions[1]!.run()
+
+    expect(document.querySelectorAll('.theme-edge')).toHaveLength(1)
+    const secondEdge = vt.transitions[1]!.edgesWhenDone![0]!
+    expect(secondEdge.getAttribute('data-to')).toBe('light')
+    expect(edgeOf()).toBe(secondEdge)
+
+    vt.transitions[0]!.end()
+    await first
+    expect(edgeOf()).toBe(secondEdge)
+    vt.transitions[1]!.end()
+    await second
+    expect(edgeOf()).toBeNull()
+    expect(await seen.stop()).toBe(1)
+  })
+
+  it.each<[string, { reduced?: boolean, transitions?: boolean, origin?: boolean, changes?: boolean, to?: 'dark' | 'light' }]>([
+    ['under Reduced motion', { reduced: true, to: 'dark' }],
+    ['in a browser without View Transitions', { transitions: false, to: 'dark' }],
+    ['with no tapped option', { origin: false, to: 'dark' }],
+    ['for a choice that changes nothing', { changes: false, to: 'dark' }],
+    ['for a spread without a look to draw it to', {}],
+  ])('is drawn only with the circle, never %s', async (_name, options) => {
+    if (options.reduced) motion('reduced')
+    if (options.transitions !== false) viewTransitions()
+    recordAnimate()
+    const seen = watchEdges()
+    const apply = vi.fn()
+
+    await revealTheme(options.origin === false ? null : tapped(), options.changes ?? true, apply, options.to)
+
+    expect(apply).toHaveBeenCalledOnce()
+    expect(await seen.stop()).toBe(0)
+    expect(edgeOf()).toBeNull()
+  })
+})
+
 // ---- through the controls (the header's menu, the avatar menu's row, the Profil card) ----
 
 const BUTTON = 'button[aria-label="Darstellung"]'
@@ -437,6 +616,56 @@ describe('the Appearance controls reveal', () => {
     vt.transitions[0]!.end()
     await vi.waitFor(() => expect(reveal()).toBeUndefined())
     expect(theme()).toBe('dark')
+    await save.settled()
+  })
+
+  it('the edge goes to Dunkel on a tap from Hell', async () => {
+    signInAs({ ...kitty, appearance: 'light' })
+    const vt = viewTransitions()
+    recordAnimate()
+    const save = endpoint()
+    const card = await mountCard()
+    const radios = card.findAll('[role="radio"]')
+    placeAt(radios[1]!.element)
+
+    await radios[1]!.trigger('click')
+
+    await vi.waitFor(() => expect(vt.transitions[0]?.edgesWhenDone).toHaveLength(1))
+    expect(vt.transitions[0]!.edgesWhenDone![0]!.getAttribute('data-to')).toBe('dark')
+    await save.settled()
+  })
+
+  it('the edge goes to Hell on a tap from Dunkel', async () => {
+    signInAs({ ...kitty, appearance: 'dark' })
+    html.setAttribute('data-theme', 'dark')
+    const vt = viewTransitions()
+    recordAnimate()
+    const save = endpoint()
+    const card = await mountCard()
+    const radios = card.findAll('[role="radio"]')
+    placeAt(radios[0]!.element)
+
+    await radios[0]!.trigger('click')
+
+    await vi.waitFor(() => expect(vt.transitions[0]?.edgesWhenDone).toHaveLength(1))
+    expect(vt.transitions[0]!.edgesWhenDone![0]!.getAttribute('data-to')).toBe('light')
+    await save.settled()
+  })
+
+  it('the edge goes to Dunkel on a tap on System from Hell, on a dark device', async () => {
+    signInAs({ ...kitty, appearance: 'light' })
+    device(true)
+    const vt = viewTransitions()
+    recordAnimate()
+    const save = endpoint()
+    const card = await mountCard()
+    const system = card.findAll('[role="radio"]').find(r => r.text() === 'System')!
+    placeAt(system.element)
+
+    await system.trigger('click')
+
+    await vi.waitFor(() => expect(vt.transitions[0]?.edgesWhenDone).toHaveLength(1))
+    expect(vt.transitions[0]!.edgesWhenDone![0]!.getAttribute('data-to')).toBe('dark')
     await save.settled()
   })
 
