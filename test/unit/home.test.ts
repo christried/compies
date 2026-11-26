@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { arrangeHome, eventStaysOnHome, homeAction, homeSession, needsVote, staysOnHome, type HomeSessionTimes } from '../../server/domain/home'
+import { arrangeHome, eventStaysOnHome, hasPlayed, homeAction, homeSession, needsVote, staysOnHome, type HomeSessionTimes } from '../../server/domain/home'
 import type { Phase } from '../../shared/event'
 
 // Thursday 22 Oct 2026, 12:00 in Berlin (CEST). An Event leaves Home a day after its last Session has ended.
@@ -247,5 +247,34 @@ describe('arrangeHome', () => {
     ], now)
 
     expect(arranged.map(row => row.name)).toEqual(['passed', 'running-with-result'])
+  })
+})
+
+describe('hasPlayed (#676)', () => {
+  const player = (phase: Phase, endedAts: (Date | null)[]) => ({ zone: 'team' as const, phase, sessions: endedAts.map(endedAt => ({ endedAt })) })
+
+  it('is false without an Event', () => {
+    expect(hasPlayed([])).toBe(false)
+  })
+
+  it('is true for a Player of an Event with an ended Session', () => {
+    expect(hasPlayed([player('running', [hoursAgo(30)])])).toBe(true)
+  })
+
+  it('is false for a Player whose Sessions have not ended', () => {
+    expect(hasPlayed([player('running', [null]), player('running', [])])).toBe(false)
+  })
+
+  it('is false for a Member in the Stands, and for the legacy Bench, which is the Stands', () => {
+    expect(hasPlayed([{ zone: 'stands', phase: 'running', sessions: [{ endedAt: hoursAgo(1) }] }])).toBe(false)
+    expect(hasPlayed([{ zone: 'bench', phase: 'finished', sessions: [{ endedAt: hoursAgo(1) }] }])).toBe(false)
+  })
+
+  it('counts a finished Event of a Player even without a closed Session row', () => {
+    expect(hasPlayed([player('finished', [])])).toBe(true)
+  })
+
+  it('is true when one of several entries qualifies', () => {
+    expect(hasPlayed([player('running', [null]), { zone: 'stands', phase: 'running', sessions: [] }, player('running', [null, hoursAgo(2)])])).toBe(true)
   })
 })

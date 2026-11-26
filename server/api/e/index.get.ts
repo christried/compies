@@ -1,7 +1,7 @@
 import { and, eq, inArray, isNotNull, isNull } from 'drizzle-orm'
 import { defineEventHandler } from 'h3'
 import { pollSlots, pollVotes, eventMembers, events, rounds, sessions, users } from '../../db/schema'
-import { arrangeHome, homeAction, homeSession, needsVote } from '../../domain/home'
+import { arrangeHome, hasPlayed, homeAction, homeSession, needsVote } from '../../domain/home'
 import { pollStanding } from '../../domain/poll'
 import { missingDates, numberedSessions, openPoll } from '../../domain/session'
 import { useClock } from '../../utils/clock'
@@ -32,6 +32,7 @@ export default defineEventHandler(async (event): Promise<HomeView> => {
       finishedAt: events.finishedAt,
       createdAt: events.createdAt,
       hostId: events.hostId,
+      zone: eventMembers.zone,
       hostName: users.name,
       hostDisplayName: users.displayName,
     })
@@ -40,7 +41,7 @@ export default defineEventHandler(async (event): Promise<HomeView> => {
     .innerJoin(users, eq(events.hostId, users.id))
     .where(and(eq(eventMembers.userId, user.id), isNull(events.deletedAt)))
 
-  if (rows.length === 0) return { events: [] }
+  if (rows.length === 0) return { events: [], hasPlayed: false }
   const eventIds = rows.map(row => row.id)
 
   // The Events with a Result (#282): a running one with a Result stays on Home until the Host finishes it.
@@ -76,6 +77,9 @@ export default defineEventHandler(async (event): Promise<HomeView> => {
   const slotsOf = Map.groupBy(slots, slot => slot.eventId)
   const votesOf = Map.groupBy(votes, vote => vote.eventId)
   const membersOf = Map.groupBy(members, member => member.eventId)
+
+  // Whether the User has played (#676), from every Event they are in, before `arrangeHome` drops the ones that left Home.
+  const played = hasPlayed(rows.map(row => ({ zone: row.zone, phase: row.phase, sessions: sessionsOf.get(row.id) ?? [] })))
 
   const cards = rows.map((row) => {
     const eventSessionRows = sessionsOf.get(row.id) ?? []
@@ -123,5 +127,5 @@ export default defineEventHandler(async (event): Promise<HomeView> => {
     }
   })
 
-  return { events: arrangeHome(cards, now).map(entry => entry.card) }
+  return { events: arrangeHome(cards, now).map(entry => entry.card), hasPlayed: played }
 })

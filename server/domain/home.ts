@@ -1,3 +1,4 @@
+import type { Zone } from '../../shared/board'
 import { datePollOpen, type HomeAction, type Phase } from '../../shared/event'
 import { hasVoted, isPast, type PollVote } from './poll'
 import { isDated, missingDates } from './session'
@@ -45,6 +46,18 @@ export function eventStaysOnHome(event: HomeStay, now: Date): boolean {
   if (event.finishedAt) return event.finishedAt.getTime() >= now.getTime() - HOME_END_GRACE_MS
   if (event.phase === 'running' && event.hasResult) return true
   return staysOnHome(event.sessions, now)
+}
+
+/**
+ * Whether the User has played (#676): a Player (a Member in a Party, GLOSSARY; the legacy Bench is the Stands, `placeOf`) of an Event in
+ * which a Session has ended. A finished Event counts too: the Finish ends the Running Session, so an Event row without a closed Session row
+ * can only come from a hand edit. Read before `arrangeHome` drops the Events that left Home: it is about what the User has played, not
+ * about what Home lists.
+ */
+export function hasPlayed(entries: readonly { zone: Zone, phase: Phase, sessions: readonly { endedAt: Date | null }[] }[]): boolean {
+  return entries.some(entry =>
+    entry.zone === 'team' && (entry.phase === 'finished' || entry.sessions.some(session => session.endedAt !== null)),
+  )
 }
 
 /**
