@@ -92,6 +92,29 @@ describe('mounting', () => {
     expect(attribute(page, 'data-state')).toBe(state)
   })
 
+  it('tells its parent once that it is mounted and in its state (#674)', async () => {
+    stubInView()
+    const page = await mountRig({ state: 'wave' })
+    await ready(page)
+
+    // The emit comes with `data-ready`, after the base has been entered: the splash waits for it before it starts the run-in.
+    expect(page.emitted('ready')).toHaveLength(1)
+    expect(attribute(page, 'data-state')).toBe('wave')
+  })
+
+  it('does not tell it before GSAP has arrived (#674)', async () => {
+    stubInView()
+    let arrive = () => {}
+    chunk.held = new Promise<void>(resolve => (arrive = resolve))
+    const page = await mountRig()
+    await pause(50)
+
+    expect(page.emitted('ready')).toBeUndefined()
+    arrive()
+    await ready(page)
+    expect(page.emitted('ready')).toHaveLength(1)
+  })
+
   it('moves the figure when the state is cheer', async () => {
     stubInView()
     const page = await mountRig({ state: 'cheer' })

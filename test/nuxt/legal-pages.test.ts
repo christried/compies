@@ -213,9 +213,9 @@ describe('legal pages', () => {
     expect(text.indexOf('Sitzungs-Cookies (Better Auth)')).toBeGreaterThanOrEqual(0)
     expect(text.indexOf('Sitzungs-Cookies (Better Auth)')).toBeLessThan(text.indexOf(cookie))
     expect(text.indexOf(cookie)).toBeLessThan(text.indexOf('Lokaler Speicher (compies-sound)'))
-    expect(section!.findAll('p')).toHaveLength(10)
-    // The one place the date is pinned: the day of the last change, 25 November 2026 (0.22, §§ 11 and 16 for the removal of a Member, #899; 0.21, §§ 6, 16 and 18 for the account deletion, #920; §§ 5, 6 and 7 for the own Profilbild, #912; before that 0.19, § 9 for the cookie of Reduced motion, #680, and for the Round card's memory, #838; before that 0.18, §4, §10, §11, §16 and §21 for the Chat and the Emotes, #775).
-    expect(page.get('main').text()).toContain('Stand: 25. November 2026.')
+    expect(section!.findAll('p')).toHaveLength(11)
+    // The one place the date is pinned: the day of the last change, 26 November 2026 (0.23, § 9 for the splash's cookie, #674; on 25 November 2026 0.22, §§ 11 and 16 for the removal of a Member, #899; 0.21, §§ 6, 16 and 18 for the account deletion, #920; §§ 5, 6 and 7 for the own Profilbild, #912; before that 0.19, § 9 for the cookie of Reduced motion, #680, and for the Round card's memory, #838; before that 0.18, §4, §10, §11, §16 and §21 for the Chat and the Emotes, #775).
+    expect(page.get('main').text()).toContain('Stand: 26. November 2026.')
   })
 
   it('name the compies-round-notes entry in section 9, right after compies.news.seen, word for word (#838, spec #856)', async () => {
@@ -238,6 +238,17 @@ describe('legal pages', () => {
     const appearance = paragraphs.findIndex(p => p.startsWith('Cookie (compies-appearance)'))
     expect(appearance).toBeGreaterThan(0)
     expect(paragraphs[appearance + 1]).toBe(entry)
+  })
+
+  it('name the compies-boot cookie in section 9, right after compies-motion, word for word (#674, spec #927)', async () => {
+    const page = await mountSuspended(DatenschutzPage, { route: '/datenschutz' })
+    const section = page.findAll('section').find(s => s.get('h2').text() === '9. Cookies und Speicher im Browser')
+
+    const paragraphs = section!.findAll('p').map(p => p.text())
+    const entry = 'Cookie (compies-boot): merkt sich auf diesem Gerät, dass die Startanimation der installierten App gelaufen ist, damit sie höchstens einmal in 24 Stunden erscheint. Es enthält nur den Wert „seen“, keine Kennung und keine Angaben zu dir. Compies setzt es, nachdem die Animation gelaufen ist, und es läuft nach 24 Stunden ab.'
+    const motion = paragraphs.findIndex(p => p.startsWith('Cookie (compies-motion)'))
+    expect(motion).toBeGreaterThan(0)
+    expect(paragraphs[motion + 1]).toBe(entry)
   })
 
   it('keep the Datenschutzerklärung\'s sections in order: the unnumbered intro, then 1 to 22 (#405)', async () => {

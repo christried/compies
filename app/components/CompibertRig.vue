@@ -27,6 +27,11 @@ const props = withDefaults(defineProps<{
   accessory?: 'partyhat'
 }>(), { state: 'idle', reaction: null, variant: 'full', size: undefined, look: null, micro: true, hopsFor: undefined, rim: false, accessory: undefined })
 
+const emit = defineEmits<{
+  /** Once, when GSAP has loaded, the rig is mounted and the base is entered: the boot splash (#674) starts its run-in on it. Never after a failed load. */
+  ready: []
+}>()
+
 // Cheap outline on weak devices (hand-off § Performance): the hard shadow's offset in the figure's own units, 7 and 8 of the viewBox's width
 // (`viewWidth`: 404 for the full figure, 254 for the bust's crop of it (#526), 192 for the head (#584)).
 const SHADOW_X = 7
@@ -155,6 +160,7 @@ onMounted(async () => {
   const waiting = early
   early = null
   if (waiting) react(waiting)
+  emit('ready')
 })
 
 onBeforeUnmount(() => {

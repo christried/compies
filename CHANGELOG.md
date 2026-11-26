@@ -7,6 +7,7 @@
 - Der Clip wird leiser, solange ein Emote oder das Veto-Siegel deiner Party zu hören ist, und kommt danach wieder zurück ([#670](https://github.com/christried/compies/issues/670)).
 - Wählst du eine neue Darstellung, breitet sie sich als Kreis von der Stelle aus, an der du getippt hast. Mit „Weniger Bewegung“ oder in einem Browser ohne diese Funktion blendet sie sanft über. ([#931](https://github.com/christried/compies/issues/931))
 - Auf der Event-Seite reagiert die App-Figur im Kopf der Seite: auf deine eigenen Emotes, auf aufgedeckte Vetos und auf eine verlorene Verbindung ([#673](https://github.com/christried/compies/issues/673)).
+- Die installierte App begrüßt dich höchstens einmal am Tag mit einer kurzen Startanimation, in der die Buchstaben von COMPIES hochspringen; ein Tippen überspringt sie ([#674](https://github.com/christried/compies/issues/674)).
 
 ### Geändert
 
