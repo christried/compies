@@ -108,6 +108,8 @@ const SHARED: Record<ApiErrorCode, string | null> = {
   coin_in_air: 'error.coinInAir',
   ceremony_running: 'error.ceremonyRunning',
   ceremony_pending: 'error.ceremonyPending',
+  platform_admin_hosts: 'admin.hostLocked',
+  platform_admin_not_deletable: 'admin.delete.adminKept',
   round_not_open: 'error.roundNotOpen',
   invalid_result: 'error.resultInvalid',
   // The ten codes without words, each an intended fallback to the caller's line (#417): none is reached by a normal click.

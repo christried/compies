@@ -184,22 +184,49 @@ describe('legal pages', () => {
     const avatar = paragraphs('7. Profilbild')
     expect(avatar).toHaveLength(2)
     expect(avatar[0]).toBe('Neben deinem Anzeigenamen zeigt Compies ein rundes Profilbild: dir selbst, den Mitgliedern der Events, denen du angehörst, und, wenn du Host bist, allen, die einen Einladungslink zu deinem Event öffnen, auch ohne Anmeldung. Es ist das Bild, das du auf der Seite „Profil“ hochgeladen hast, sonst dein Profilbild bei Discord bzw. Twitch, sonst dein Anfangsbuchstabe.')
-    expect(avatar[1]).toMatch(/^Ein eigenes Bild liegt bei uns \(Abschnitt 5\) und wird von unserem Server geladen; Discord und Twitch erfahren davon nichts\. Du kannst es jederzeit ersetzen oder entfernen; dann gilt wieder dein Bild bei Discord bzw\. Twitch\. Ohne eigenes Bild wird das Profilbild direkt von den Servern von Discord bzw\. Twitch geladen\. Dabei erhält der jeweilige Dienst /)
+    expect(avatar[1]).toMatch(/^Ein eigenes Bild liegt bei uns \(Abschnitt 5\) und wird von unserem Server geladen; Discord und Twitch erfahren davon nichts\. Du kannst es jederzeit ersetzen oder entfernen; dann gilt wieder dein Bild bei Discord bzw\. Twitch\. Wird uns ein eigenes Profilbild gemeldet, können wir es entfernen; wir löschen es dann sofort aus dem Speicher \(Abschnitt 5\), und es gilt ebenfalls wieder dein Bild bei Discord bzw\. Twitch\. Eine Benachrichtigung bekommst du darüber nicht\. Ohne eigenes Bild wird das Profilbild direkt von den Servern von Discord bzw\. Twitch geladen\. Dabei erhält der jeweilige Dienst /)
   })
 
-  it('say in sections 6, 16 and 18 how a User deletes the account on the Profil page, what goes and what stays, word for word (#920, spec #907)', async () => {
+  it('say in sections 16 and 18 how a User deletes the account on the Profil page, what goes and what stays, word for word (#920, spec #907)', async () => {
     const page = await mountSuspended(DatenschutzPage, { route: '/datenschutz' })
     const paragraphs = (heading: string) => page.findAll('section').find(s => s.get('h2').text() === heading)!.findAll('p').map(p => p.text())
 
-    const signIn = paragraphs('6. Anmeldung über Discord oder Twitch und Anzeigename')
-    expect(signIn.at(-1)).toBe('Welche Konten Events anlegen dürfen (Host-Berechtigung), ist als Liste von Discord- und Twitch-Benutzerkennungen fest hinterlegt. Bei jeder Anmeldung wird deine Benutzerkennung mit dieser Liste abgeglichen und die Berechtigung in deinem Nutzerkonto vermerkt. Diese Liste ändert Compies nicht selbst: Löschst du dein Nutzerkonto, bleibt deine Benutzerkennung darin, bis du uns bittest, sie zu entfernen (Abschnitt 16). Rechtsgrundlage ist Art. 6 Abs. 1 lit. f DSGVO (berechtigtes Interesse daran, dass nur bekannte Personen Events anlegen).')
-
     const retention = paragraphs('16. Speicherdauer').at(-1)!
-    expect(retention.endsWith('Dein Nutzerkonto löschst du selbst auf der Seite „Profil“ („Konto löschen“); kannst du dich nicht mehr anmelden, genügt eine Nachricht an die unter Abschnitt 1 genannte Adresse. Die Löschung gilt sofort und lässt sich nicht rückgängig machen. Gelöscht werden: dein Name, deine E-Mail-Adresse, dein Anzeigename, dein Profilbild, deine Verknüpfung mit Discord bzw. Twitch und deine Anmeldesitzungen; alle Events, die du als Host angelegt hast, mit allem, was dazugehört, auch für die anderen Mitglieder und auch die abgeschlossenen; deine Bibliothek mit ihren Spielen, Notizen und Bildern (ein Bild erst, wenn keine Kopie eines anderen Hosts es mehr nutzt, Abschnitt 5); der Text deiner Nachrichten im Chat; deine Stimmen und Anmerkungen; dein Teamwort im aktuellen Teamnamen. Es bleibt ein leerer Eintrag ohne Namen, der nur festhält, wann das Konto gelöscht wurde. An ihm hängt, was in Events anderer Hosts nicht dir allein gehört: dein Platz in einem abgeschlossenen Event, die Vetos deines Teams und die Einträge des Aktivitäts-Feeds über dich; statt deines Namens steht dort „Gelöschtes Konto“. Die Einträge des Aktivitäts-Feeds behalten den Teamnamen von damals und damit auch dein Teamwort darin (Abschnitt 11). Aus Events anderer Hosts, die noch nicht abgeschlossen sind, scheidest du aus. Meldest du dich danach wieder an, entsteht ein neues Nutzerkonto ohne Verbindung zum alten. In den Wiederherstellungsdaten unseres Datenbankanbieters (Abschnitt 4) bleiben gelöschte Daten noch bis zu 6 Stunden enthalten.')).toBe(true)
+    expect(retention.endsWith('Dein Nutzerkonto löschst du selbst auf der Seite „Profil“ („Konto löschen“); kannst du dich nicht mehr anmelden, genügt eine Nachricht an die unter Abschnitt 1 genannte Adresse. Wir löschen dein Nutzerkonto dann für dich, mit derselben Wirkung. Die Löschung gilt sofort und lässt sich nicht rückgängig machen. Gelöscht werden: dein Name, deine E-Mail-Adresse, dein Anzeigename, dein Profilbild, deine Verknüpfung mit Discord bzw. Twitch und deine Anmeldesitzungen; alle Events, die du als Host angelegt hast, mit allem, was dazugehört, auch für die anderen Mitglieder und auch die abgeschlossenen; deine Bibliothek mit ihren Spielen, Notizen und Bildern (ein Bild erst, wenn keine Kopie eines anderen Hosts es mehr nutzt, Abschnitt 5); der Text deiner Nachrichten im Chat; deine Stimmen und Anmerkungen; dein Teamwort im aktuellen Teamnamen. Es bleibt ein leerer Eintrag ohne Namen, der nur festhält, wann das Konto gelöscht wurde. An ihm hängt, was in Events anderer Hosts nicht dir allein gehört: dein Platz in einem abgeschlossenen Event, die Vetos deines Teams und die Einträge des Aktivitäts-Feeds über dich; statt deines Namens steht dort „Gelöschtes Konto“. Die Einträge des Aktivitäts-Feeds behalten den Teamnamen von damals und damit auch dein Teamwort darin (Abschnitt 11). Aus Events anderer Hosts, die noch nicht abgeschlossen sind, scheidest du aus. Meldest du dich danach wieder an, entsteht ein neues Nutzerkonto ohne Verbindung zum alten. In den Wiederherstellungsdaten unseres Datenbankanbieters (Abschnitt 4) bleiben gelöschte Daten noch bis zu 6 Stunden enthalten.')).toBe(true)
     expect(retention).not.toContain('Wir entfernen dann auch deine Nachrichten im Chat.')
 
     const rights = paragraphs('18. Deine Rechte')
     expect(rights[0]).toBe('Du hast das Recht auf Auskunft (Art. 15), Berichtigung (Art. 16), Löschung (Art. 17), Einschränkung der Verarbeitung (Art. 18) und Datenübertragbarkeit (Art. 20 DSGVO). Eine erteilte Einwilligung kannst du jederzeit mit Wirkung für die Zukunft widerrufen (Art. 7 Abs. 3 DSGVO); die Rechtmäßigkeit der bis dahin erfolgten Verarbeitung bleibt unberührt. Zur Ausübung genügt eine Nachricht an die unter Abschnitt 1 genannte Adresse. Dein Nutzerkonto kannst du außerdem selbst auf der Seite „Profil“ löschen (Abschnitt 16).')
+  })
+
+  it('name the Admin page in sections 6, 7, 11 and 16 word for word, and drop the 0.21 sentence on the Host list (#942, spec #938)', async () => {
+    const page = await mountSuspended(DatenschutzPage, { route: '/datenschutz' })
+    const paragraphs = (heading: string) => page.findAll('section').find(s => s.get('h2').text() === heading)!.findAll('p').map(p => p.text())
+
+    expect(page.get('main').text()).not.toContain('Diese Liste ändert Compies nicht selbst')
+
+    const signIn = paragraphs('6. Anmeldung über Discord oder Twitch und Anzeigename')
+    expect(signIn.at(-1)).toBe('Welche Nutzerkonten Events anlegen dürfen (Host-Berechtigung), legen wir in Compies fest: Wir vergeben und entziehen die Berechtigung auf einer Admin-Seite, die nur wir sehen, und vermerken sie in deinem Nutzerkonto. Löschst du dein Nutzerkonto und meldest dich wieder an, hat das neue Nutzerkonto keine Host-Berechtigung. Auf der Admin-Seite sehen wir alle Nutzerkonten mit Anzeigename, Profilbild, den verknüpften Diensten (Discord, Twitch), dem Datum der ersten Anmeldung und der Host-Berechtigung; deinen Namen bei Discord bzw. Twitch und deine E-Mail-Adresse zeigt sie nicht. Rechtsgrundlage ist Art. 6 Abs. 1 lit. f DSGVO (berechtigtes Interesse daran, dass nur bekannte Personen Events anlegen, und an einem Überblick über den Betrieb).')
+
+    const avatar = paragraphs('7. Profilbild')
+    expect(avatar[1]).toContain('Du kannst es jederzeit ersetzen oder entfernen; dann gilt wieder dein Bild bei Discord bzw. Twitch. Wird uns ein eigenes Profilbild gemeldet, können wir es entfernen; wir löschen es dann sofort aus dem Speicher (Abschnitt 5), und es gilt ebenfalls wieder dein Bild bei Discord bzw. Twitch. Eine Benachrichtigung bekommst du darüber nicht. Ohne eigenes Bild wird das Profilbild direkt')
+
+    const events = paragraphs('11. Events, Terminvorschläge und Stimmen')
+    expect(events.at(-1)).toBe('Auf der Admin-Seite (Abschnitt 6) sehen wir eine Liste aller Events, auch der gelöschten: zu jedem Event seinen Namen, den Anzeigenamen des Hosts, seine Phase, die Zahl der Mitglieder und der Sessions und wann es angelegt und wann es abgeschlossen oder gelöscht wurde. Wer Mitglied ist, die Teamnamen, den Chat, die Stimmen, Anmerkungen und Notizen und die Spiele eines Events zeigt sie nicht; öffnen können wir ein Event nur, wenn wir selbst Mitglied sind. Rechtsgrundlage dafür ist Art. 6 Abs. 1 lit. f DSGVO (berechtigtes Interesse an einem Überblick über den Betrieb, etwa um gelöschte Events auf Anfrage endgültig zu entfernen).')
+    expect(events.at(-2)).toBe('Rechtsgrundlage ist Art. 6 Abs. 1 lit. b DSGVO.')
+
+    const retention = paragraphs('16. Speicherdauer').at(-1)!
+    expect(retention).toContain('genannte Adresse. Wir löschen dein Nutzerkonto dann für dich, mit derselben Wirkung. Die Löschung gilt sofort')
+  })
+
+  it('end section 17 at the Art. 22 DSGVO sentence and drop the Host-list half-sentence, since the Host permission is granted by hand on the Admin page (#1019, spec #938)', async () => {
+    const page = await mountSuspended(DatenschutzPage, { route: '/datenschutz' })
+    const paragraphs = (heading: string) => page.findAll('section').find(s => s.get('h2').text() === heading)!.findAll('p').map(p => p.text())
+
+    expect(page.get('main').text()).not.toContain('Host-Liste')
+
+    const obligation = paragraphs('17. Pflicht zur Bereitstellung und automatisierte Entscheidungen').at(-1)!
+    expect(obligation.endsWith('im Sinne von Art. 22 DSGVO findet nicht statt.')).toBe(true)
   })
 
   it('name the compies-appearance cookie in section 9 and move the Stand (#405, spec #398)', async () => {
@@ -214,7 +241,7 @@ describe('legal pages', () => {
     expect(text.indexOf('Sitzungs-Cookies (Better Auth)')).toBeLessThan(text.indexOf(cookie))
     expect(text.indexOf(cookie)).toBeLessThan(text.indexOf('Lokaler Speicher (compies-sound)'))
     expect(section!.findAll('p')).toHaveLength(12)
-    // The one place the date is pinned: the day of the last change, 26 November 2026 (0.23, § 9 for the splash's cookie, #674, and for the install hint's entry, #676; on 25 November 2026 0.22, §§ 11 and 16 for the removal of a Member, #899; 0.21, §§ 6, 16 and 18 for the account deletion, #920; §§ 5, 6 and 7 for the own Profilbild, #912; before that 0.19, § 9 for the cookie of Reduced motion, #680, and for the Round card's memory, #838; before that 0.18, §4, §10, §11, §16 and §21 for the Chat and the Emotes, #775).
+    // The one place the date is pinned: the day of the last change, 26 November 2026 (0.24, §§ 6, 7, 11 and 16 for the Admin page, #942; 0.23, § 9 for the splash's cookie, #674, and for the install hint's entry, #676; on 25 November 2026 0.22, §§ 11 and 16 for the removal of a Member, #899; 0.21, §§ 6, 16 and 18 for the account deletion, #920; §§ 5, 6 and 7 for the own Profilbild, #912; before that 0.19, § 9 for the cookie of Reduced motion, #680, and for the Round card's memory, #838; before that 0.18, §4, §10, §11, §16 and §21 for the Chat and the Emotes, #775).
     expect(page.get('main').text()).toContain('Stand: 26. November 2026.')
   })
 

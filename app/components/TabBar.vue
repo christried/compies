@@ -16,7 +16,6 @@ export interface TabBarItem {
   badge?: number
   /** The accessible name when the visible label is not all of it. */
   ariaLabel?: string
-  description?: string
   /** The `data-tour` value the Tour points at (#648): the Event page's Activity item. */
   tour?: string
 }
@@ -44,7 +43,6 @@ const NuxtLink = resolveComponent('NuxtLink')
       :type="item.to ? undefined : 'button'"
       :aria-current="item.current ? 'page' : undefined"
       :aria-label="item.ariaLabel"
-      :aria-description="item.description"
       :data-tour="item.tour"
       class="relative -mt-0.5 flex h-[58px] cursor-pointer flex-col items-center justify-center gap-[3px] border-t-3 bg-transparent text-[11px] text-inherit no-underline hover:tint"
       :class="item.current ? 'border-ink font-extrabold text-ink' : 'border-transparent font-semibold text-ink-2'"
@@ -61,10 +59,6 @@ const NuxtLink = resolveComponent('NuxtLink')
         class="absolute top-1.5 left-1/2 ml-1.5 grid h-[18px] min-w-[18px] place-items-center rounded-pill border-[1.5px] border-surface bg-ink px-[5px] text-[10px] font-extrabold text-paper"
         aria-hidden="true"
       >{{ item.badge }}</span>
-      <slot
-        name="marker"
-        :item="item"
-      />
     </component>
   </nav>
 </template>

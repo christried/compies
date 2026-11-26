@@ -36,12 +36,10 @@ describe('HubNav', () => {
     expect(link(nav, 'Events').attributes('aria-current')).toBe('page')
   })
 
-  it.each(['header', 'tabs'] as const)('carries no Baustelle marker on Archiv, in the %s layout; Admin keeps it (#882, after #399)', async (layout) => {
+  it.each(['header', 'tabs'] as const)('carries no Baustelle marker on any item, Admin included, in the %s layout (#682, after #882 and #399)', async (layout) => {
     const nav = await mountSuspended(HubNav, { props: { layout, viewer: { canHost: true, isAdmin: true } }, route: '/' })
 
-    expect(link(nav, 'Admin').attributes('aria-description')).toBe('Baustelle')
-    expect(link(nav, 'Admin').find('[title="Baustelle"]').exists()).toBe(true)
-    for (const label of ['Events', 'Archiv', 'Bibliothek', 'Profil']) {
+    for (const label of ['Events', 'Archiv', 'Bibliothek', 'Profil', 'Admin']) {
       expect(link(nav, label).attributes('aria-description')).toBeUndefined()
       expect(link(nav, label).find('[title="Baustelle"]').exists()).toBe(false)
     }

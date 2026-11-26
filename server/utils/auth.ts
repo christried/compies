@@ -17,20 +17,20 @@ declare module 'h3' {
 
 /**
  * Better Auth on the given database. Built per request, because the database is (ADR 0005).
- * The allowlist is read at each sign-in, so a change takes effect at the User's next sign-in.
+ * The admin list is read at each sign-in, so a change takes effect at the User's next sign-in.
  */
 export function createAuth(db: Db) {
   const env = process.env
 
-  // Recomputed from all linked accounts, so signing in with one provider never drops a right
-  // that another linked provider grants (ADR 0002).
+  // The admin role is recomputed from all linked accounts, so signing in with one provider never drops it
+  // while another linked provider grants it. The Host permission is stored (granted in the app); only the
+  // role switches it on, and losing the role leaves it (ADR 0002, amendment of 2026-11-20, #939).
   async function syncPermissions(userId: string) {
     const accounts = await db
       .select({ providerId: schema.authAccounts.providerId, accountId: schema.authAccounts.accountId })
       .from(schema.authAccounts)
       .where(eq(schema.authAccounts.userId, userId))
-    const allowlist = { hosts: parseAllowlist(env.HOST_PROVIDER_IDS), admins: parseAllowlist(env.ADMIN_PROVIDER_IDS) }
-    await db.update(schema.users).set(permissionsFor(accounts, allowlist)).where(eq(schema.users.id, userId))
+    await db.update(schema.users).set(permissionsFor(accounts, parseAllowlist(env.ADMIN_PROVIDER_IDS))).where(eq(schema.users.id, userId))
   }
   const sync = { after: async (account: { userId: string }) => syncPermissions(account.userId) }
 

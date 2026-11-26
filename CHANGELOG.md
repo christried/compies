@@ -2,6 +2,13 @@
 
 ## [Unreleased]
 
+## [0.24.0] - 2026-11-26 – Admin-Seite
+
+### Geändert
+
+- Die Datenschutzerklärung sagt jetzt, dass wir die Host-Berechtigung in Compies vergeben und was wir auf unserer Admin-Seite sehen ([#942](https://github.com/christried/compies/issues/942))
+- Wer Events anlegen darf, legen wir jetzt in Compies fest: Eine neue Freigabe wirkt sofort, ohne dass du dich neu anmelden musst ([#682](https://github.com/christried/compies/issues/682))
+
 ## [0.23.1] - 2026-11-26 – Bühnenrauch
 
 ### Neu

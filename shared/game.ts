@@ -74,7 +74,7 @@ export const GAME_IMAGE_MAX_BYTES = 200_000
 export const GAME_IMAGE_WIDTH = 512
 export const GAME_IMAGE_HEIGHT = 320
 
-/** Library viewers: the Host permission alone (#455, ADR 0018). The Platform admin holds it through the allowlist, so they have a library of their own and no right over another User's. Shared so the server uses the same rule as the navigation. */
+/** Library viewers: the Host permission alone (#455, ADR 0018). The Platform admin holds it through the admin list, so they have a library of their own and no right over another User's. Shared so the server uses the same rule as the navigation. */
 export function canSeeLibrary(viewer: { canHost: boolean } | null): boolean {
   return Boolean(viewer?.canHost)
 }

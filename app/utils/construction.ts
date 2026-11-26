@@ -1,13 +1,10 @@
 // MVP route guard: every route without its own page renders the Construction page.
-// Remove an area from these lists as its ticket lands (and give it a real page).
+// Add an area to a list here, with its own state, when a hub area is announced before it is built; none is under construction now
+// (Archiv left in #882, Admin in #682).
 
 import type { AuthUser } from '~~/shared/auth'
 
-/** Hub areas still under construction; HubNav marks them with the tape chip. Archiv left it when its page came (#882). */
-export const HUB_SITES = ['admin'] as const
-
-export type HubSite = typeof HUB_SITES[number]
-export type ConstructionArea = HubSite | 'generic'
+export type ConstructionArea = 'generic'
 export type ShellKind = 'hub' | 'event'
 
 export interface ConstructionSite {
@@ -23,15 +20,8 @@ export function canSeeAdmin(viewer: Viewer) {
   return Boolean(viewer?.isAdmin)
 }
 
-/**
- * Which Construction page state and shell a path that has no page of its own gets. An area the viewer
- * may not see gets the generic state, so its address does not reveal the area.
- */
-export function constructionSite(path: string, viewer: Viewer): ConstructionSite {
+/** Which Construction page state and shell a path that has no page of its own gets: the generic state, in the Event shell below an Event's address. */
+export function constructionSite(path: string): ConstructionSite {
   const [first, slug] = path.split('/').filter(Boolean)
-
-  if (first === 'e' && slug) return { area: 'generic', shell: 'event' }
-  const hubSite = HUB_SITES.find(site => site === first)
-  if (hubSite === 'admin' && !canSeeAdmin(viewer)) return { area: 'generic', shell: 'hub' }
-  return { area: hubSite ?? 'generic', shell: 'hub' }
+  return { area: 'generic', shell: first === 'e' && slug ? 'event' : 'hub' }
 }

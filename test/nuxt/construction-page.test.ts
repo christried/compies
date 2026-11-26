@@ -59,14 +59,6 @@ describe('construction page route guard', () => {
     })
   })
 
-  it('renders the Admin state with its own title in the hub shell, for the Platform admin (#882: Archiv is built)', async () => {
-    signInAs({ ...kitty, canHost: true, isAdmin: true })
-    const page = await visit('/admin')
-
-    expect(page.get('h1').text()).toBe('Der Admin-Bereich kommt vielleicht noch. Wenn man den überhaupt braucht.')
-    expect(page.find('nav[aria-label="Hauptnavigation"]').exists()).toBe(true)
-  })
-
   it('keeps Bibliothek out of the nav for a User without the Host permission', async () => {
     const page = await visit('/crews')
 
@@ -74,18 +66,12 @@ describe('construction page route guard', () => {
     expect(page.findAll('nav[aria-label="Hauptnavigation"] a').some(a => a.text() === 'Bibliothek')).toBe(false)
   })
 
-  it('renders the generic state for Admin to anyone but the Platform admin', async () => {
-    expect((await visit('/admin')).get('h1').text()).toBe('Hier wird noch gebaut.')
+  it('has no Admin state of its own any more (#682): an address below /admin shows the generic state to everyone, the Platform admin too', async () => {
+    expect((await visit('/admin/unbekannt')).get('h1').text()).toBe('Hier wird noch gebaut.')
 
-    signInAs({ ...kitty, canHost: true })
-    expect((await visit('/admin')).get('h1').text()).toBe('Hier wird noch gebaut.')
-  })
-
-  it('renders the Admin state for the Platform admin, with the Bibliothek nav item', async () => {
     signInAs({ ...kitty, canHost: true, isAdmin: true })
-    const page = await visit('/admin')
-
-    expect(page.get('h1').text()).toBe('Der Admin-Bereich kommt vielleicht noch. Wenn man den überhaupt braucht.')
+    const page = await visit('/admin/unbekannt')
+    expect(page.get('h1').text()).toBe('Hier wird noch gebaut.')
     expect(page.findAll('nav[aria-label="Hauptnavigation"] a').some(a => a.text() === 'Bibliothek')).toBe(true)
   })
 
