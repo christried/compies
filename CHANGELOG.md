@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.23.0] - 2026-11-26 – Auftritt
+
 ### Neu
 
 - Der Clip wird leiser, solange ein Emote oder das Veto-Siegel deiner Party zu hören ist, und kommt danach wieder zurück ([#670](https://github.com/christried/compies/issues/670)).
