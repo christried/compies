@@ -387,6 +387,32 @@ describe('the edge of the circle', () => {
     expect(edgeOf()).toBeNull()
   })
 
+  it('two taps within one frame: the first\'s callback runs after the second tap and adds no edge, so at no time are there two and the second\'s is the one drawn', async () => {
+    const vt = viewTransitions({ holdCallback: true, holdFinish: true })
+    recordAnimate()
+    const seen = watchEdges()
+
+    const first = revealTheme(tapped(), true, () => {}, 'dark')
+    // The second tap comes before the browser called the first's callback: a browser skips the first transition, but still runs it.
+    const second = revealTheme(tapped(), true, () => {}, 'light')
+    await vt.transitions[0]!.run()
+    expect(document.querySelectorAll('.theme-edge')).toHaveLength(0)
+    await vt.transitions[1]!.run()
+
+    expect(document.querySelectorAll('.theme-edge')).toHaveLength(1)
+    const secondEdge = vt.transitions[1]!.edgesWhenDone![0]!
+    expect(secondEdge.getAttribute('data-to')).toBe('light')
+    expect(edgeOf()).toBe(secondEdge)
+
+    vt.transitions[0]!.end()
+    await first
+    expect(edgeOf()).toBe(secondEdge)
+    vt.transitions[1]!.end()
+    await second
+    expect(edgeOf()).toBeNull()
+    expect(await seen.stop()).toBe(1)
+  })
+
   it.each<[string, { reduced?: boolean, transitions?: boolean, origin?: boolean, changes?: boolean, to?: 'dark' | 'light' }]>([
     ['under Reduced motion', { reduced: true, to: 'dark' }],
     ['in a browser without View Transitions', { transitions: false, to: 'dark' }],

@@ -89,13 +89,12 @@ describe('the stage smoke layer', () => {
     const shapes = page.get('[data-layer="stage-smoke"] > div').findAll(':scope > div')
 
     expect(shapes.map(s => s.attributes('style'))).toEqual([
-      expect.stringContaining('cp-smoke-rise-a 18s'),
-      expect.stringContaining('cp-smoke-rise-b 22s'),
-      expect.stringContaining('cp-smoke-rise-a 26s'),
-      expect.stringContaining('cp-smoke-rise-b 30s'),
-      expect.stringContaining('cp-smoke-rise-a 34s'),
+      expect.stringContaining('cp-smoke-rise-a 18s var(--cp-ease-io) 0s infinite alternate'),
+      expect.stringContaining('cp-smoke-rise-b 22s var(--cp-ease-io) -9s infinite alternate'),
+      expect.stringContaining('cp-smoke-rise-a 26s var(--cp-ease-io) -18s infinite alternate'),
+      expect.stringContaining('cp-smoke-rise-b 30s var(--cp-ease-io) -27s infinite alternate'),
+      expect.stringContaining('cp-smoke-rise-a 34s var(--cp-ease-io) -36s infinite alternate'),
     ])
-    expect(shapes[1]!.attributes('style')).toContain('-9s infinite alternate')
   })
 
   it('dims to half while a Clip shows on this device, and back to full when it is closed', async () => {
@@ -104,11 +103,12 @@ describe('the stage smoke layer', () => {
     expect(layer().classes()).toContain('opacity-100')
 
     await page.setProps({ clipShown: true })
-    expect(layer().classes()).toContain('opacity-50')
+    expect(layer().classes()).toEqual(expect.arrayContaining(['opacity-50', 'dur-slower', 'ease-out']))
     expect(layer().classes()).not.toContain('opacity-100')
 
     await page.setProps({ clipShown: false })
-    expect(layer().classes()).toContain('opacity-100')
+    expect(layer().classes()).toEqual(expect.arrayContaining(['opacity-100', 'dur-slow', 'ease-in']))
+    expect(layer().classes()).not.toContain('dur-slower')
   })
 
   describe('runs at half speed', () => {
