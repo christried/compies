@@ -18,6 +18,7 @@ import type { ClipView } from '~~/shared/stage'
 // unmuted start (the player says so, or is not PLAYING after a second) the clip plays muted and „Ton aktivieren“ asks for the
 // tap that unlocks sound. The mounted overlay is keyed by the draw, and so is the page's closed state:
 // the next draw's clip shows again after a close, and „Zum Video“ opens this one again while it runs (#956), with the sound this device chose.
+// Under an Emote or the own Party's Veto seal the page's duck lowers the player's volume and brings it back (#670, useClipDuck): it sets the volume only and never mutes or unmutes.
 const props = defineProps<{
   clip: ClipView
   /** The server's time in epoch ms (useServerClock). */
@@ -45,6 +46,7 @@ const END_MARGIN_MS = 1000
 
 const { t } = useI18n()
 const sound = useSound()
+const duck = useClipDuck()
 const gestured = useSoundGesture()
 const wide = useMediaQuery(MD_QUERY)
 const stage = useTemplateRef<HTMLElement>('stage')
@@ -88,6 +90,8 @@ let resumeTimer: ReturnType<typeof setTimeout> | undefined
 let resumedAt = Number.NEGATIVE_INFINITY
 /** `PlayerState.PAUSED`, set in createPlayer from the API. */
 let pausedState = YOUTUBE_PAUSED
+/** Lets the page's duck go of this player's volume (#670). */
+let detachDuck: () => void = () => {}
 
 /** The second of the video that every device is at now; the start second when this device's estimate is a hair early. */
 const secondNow = () => clipPosition(props.clip, props.serverNow()) ?? props.clip.game.clipStart
@@ -159,6 +163,8 @@ async function createPlayer() {
       onReady: () => {
         if (muted.value) player?.mute()
         else player?.unMute()
+        // The Clip's volume is the duck's (#670): a lowered one when a cue sounds, the normal one at rest, set whether or not the player is muted.
+        detachDuck = duck.attach(volume => player?.setVolume(volume))
         load(secondNow())
         // A browser that blocks the unmuted start may say nothing: not PLAYING in time is the same answer.
         if (!muted.value) autoplayTimer = setTimeout(fallBackToMuted, AUTOPLAY_WAIT_MS)
@@ -179,6 +185,8 @@ function destroyPlayer() {
   clearTimeout(driftTimer)
   clearTimeout(autoplayTimer)
   clearTimeout(resumeTimer)
+  detachDuck()
+  detachDuck = () => {}
   player?.destroy()
   player = null
   // A Clip opened again (#956) starts like a new one: its own first PLAYING, its own drift check. `muted` stays: the sound this device chose.

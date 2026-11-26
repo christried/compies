@@ -2,10 +2,12 @@
 import LuckyWheel from '~/components/LuckyWheel.vue'
 import VetoWindow from '~/components/VetoWindow.vue'
 import {
-  CANDIDATE_BASE, CUE_BRIEF, MOMENT_LABEL, MOMENT_OF, MOMENT_SETUP, arrivalCues, buildCoinRun, buildRun, candidatesOf, ceremonyRun, choicesReport, configFor, emoteRunCues, emptyChoices, stampCues, standingsChangeCues, dragRunCues, testCandidateOf, tourVoiceCues,
+  CANDIDATE_BASE, CUE_BRIEF, LISTENING_TEST_VIDEO, MOMENT_LABEL, MOMENT_OF, MOMENT_SETUP, arrivalCues, buildCoinRun, buildRun, candidatesOf, ceremonyRun, choicesReport, clipVideoIdOf, configFor, duckConfigOf, emoteRunCues, emptyChoices, stampCues, standingsChangeCues, dragRunCues, testCandidateOf, tourVoiceCues,
   type ArrivalButton, type Candidate, type Choices, type Controls, type EmoteListen, type Moment, type Run,
 } from '~/dev/listening-model'
+import { CLIP_VOLUME, DUCK_DOWN_MS, DUCK_STEP_MS, DUCK_UP_MS, DUCK_VOLUME, createClipDuck, type ClipDuck } from '~/utils/clip-duck'
 import { createCuePlayer, type CuePlayer } from '~/utils/cue-player'
+import { YOUTUBE_HOST, loadYouTubeApi, type YouTubeApi, type YouTubePlayer } from '~/utils/youtube'
 import { CUE_LENGTHS } from '~/utils/cue-lengths'
 import { countDurationMs } from '~/utils/motion'
 import { CUE_CREDITS_URL } from '~/utils/sound-credits'
@@ -80,7 +82,7 @@ function armPlayer() {
   armed?.dispose()
   armed = null
   if (!context) return
-  armed = createCuePlayer({ context, serverNow, loadFile: id => bytesOf(testCandidateOf(byCue.value, choices.value, id).url) })
+  armed = createCuePlayer({ context, serverNow, loadFile: id => bytesOf(testCandidateOf(byCue.value, choices.value, id).url), onSounding: cue => duck.note(cue) })
   armed.preload(CUE_IDS)
 }
 
@@ -105,7 +107,7 @@ async function playAlone(id: CueId, candidate: Candidate) {
   const key = `${id}/${candidate.name}`
   let player = alone.get(key)
   if (!player) {
-    player = createCuePlayer({ context: audio, serverNow, loadFile: () => bytesOf(candidate.url) })
+    player = createCuePlayer({ context: audio, serverNow, loadFile: () => bytesOf(candidate.url), onSounding: cue => duck.note(cue) })
     alone.set(key, player)
     player.preload([id])
   }
@@ -120,6 +122,78 @@ async function playAlone(id: CueId, candidate: Candidate) {
     await sleep(RETRY_MS)
   }
   failed.value = { ...failed.value, [key]: true }
+}
+
+// The Clip under the cues (#670): a YouTube test video the page's duck lowers under every cue that ducks on the Event page, so the tuning is heard here. The page's
+// two cue players (runs and single plays) tell the same duck, as the Event page's player does; a change of an input makes a new duck.
+const videoText = ref(LISTENING_TEST_VIDEO)
+const videoMuted = ref(false)
+const videoNote = ref('')
+const duckInputs = reactive({ duckVolume: DUCK_VOLUME, downMs: DUCK_DOWN_MS, upMs: DUCK_UP_MS, stepMs: DUCK_STEP_MS })
+/** What the duck last gave the test video, the float: the readout moves while a cue sounds. */
+const duckLevel = ref<number>(CLIP_VOLUME)
+const videoStage = useTemplateRef<HTMLElement>('videoStage')
+let testPlayer: YouTubePlayer | null = null
+
+function makeDuck(): ClipDuck {
+  const made = createClipDuck({ config: duckConfigOf(duckInputs) })
+  made.attach((volume) => {
+    duckLevel.value = made.level
+    testPlayer?.setVolume(volume)
+  })
+  return made
+}
+let duck = makeDuck()
+watch(duckInputs, () => {
+  duck.dispose()
+  duck = makeDuck()
+  duckLevel.value = duck.level
+})
+
+/** A click, so the browser lets the video's sound play: a new player for the pasted link or id. */
+async function startVideo() {
+  const id = clipVideoIdOf(videoText.value)
+  videoNote.value = ''
+  if (!id) {
+    videoNote.value = 'Kein YouTube-Link und keine Video-ID.'
+    return
+  }
+  let api: YouTubeApi
+  try {
+    api = await loadYouTubeApi()
+  }
+  catch {
+    videoNote.value = 'Die YouTube-API lädt nicht.'
+    return
+  }
+  if (!videoStage.value) return
+  testPlayer?.destroy()
+  testPlayer = null
+  const host = document.createElement('div')
+  videoStage.value.replaceChildren(host)
+  const made: YouTubePlayer = new api.Player(host, {
+    videoId: id,
+    host: YOUTUBE_HOST,
+    playerVars: { controls: 0, disablekb: 1, fs: 0, rel: 0, playsinline: 1 },
+    events: {
+      onReady: () => {
+        if (videoMuted.value) made.mute()
+        else made.unMute()
+        // The player may hold a volume from before: it starts at the duck's, as the Clip does.
+        made.setVolume(Math.round(duck.level))
+        made.playVideo()
+      },
+      onError: () => {
+        videoNote.value = 'Das Video lässt sich nicht abspielen.'
+      },
+    },
+  })
+  testPlayer = made
+}
+
+function setVideoMuted() {
+  if (videoMuted.value) testPlayer?.mute()
+  else testPlayer?.unMute()
 }
 
 function setMotion(reduced: boolean) {
@@ -302,6 +376,9 @@ onMounted(() => {
 onBeforeUnmount(() => {
   clearTimeout(timer)
   clearInterval(logTimer)
+  duck.dispose()
+  testPlayer?.destroy()
+  testPlayer = null
   armed?.dispose()
   disposeAlone()
   try {
@@ -502,6 +579,95 @@ const FIELD = 'rounded border border-line bg-surface px-1.5 py-0.5 text-ink'
         :server-now="serverNow"
       />
     </div>
+
+    <section
+      class="flex flex-col gap-3 rounded border border-line bg-surface p-3"
+      aria-label="Clip unter Cues (Duck)"
+      data-testid="listening-duck"
+    >
+      <h2 class="m-0 text-[16px] font-extrabold">
+        Clip unter Cues (Duck)
+      </h2>
+      <p class="m-0 text-ink-2">
+        Ein YouTube-Video als Test-Clip. Es wird leiser unter dem Veto-Siegel und den vier Emotes, so wie auf der Eventseite: jeder Knopf dieser Seite, der einen von ihnen spielt („Eigenes Veto“, die Emotes, die Läufe), senkt es. Die Zahlen unten sind die Werte aus <code>clip-duck.ts</code>; was hier gut klingt, wird dort eingetragen.
+      </p>
+      <div class="flex flex-wrap items-center gap-x-4 gap-y-2">
+        <label>Link oder ID
+          <input
+            v-model="videoText"
+            type="text"
+            :class="FIELD"
+            class="w-[18rem]"
+          >
+        </label>
+        <button
+          type="button"
+          :class="BUTTON"
+          @click="startVideo()"
+        >
+          Video starten
+        </button>
+        <label>
+          <input
+            v-model="videoMuted"
+            type="checkbox"
+            @change="setVideoMuted()"
+          > stumm
+        </label>
+      </div>
+      <p
+        v-if="videoNote"
+        class="m-0 font-semibold text-error"
+      >
+        {{ videoNote }}
+      </p>
+      <div
+        ref="videoStage"
+        class="aspect-video w-[320px] max-w-full bg-ink-2"
+      />
+      <div class="flex flex-wrap items-center gap-x-4 gap-y-2">
+        <label>Lautstärke unten (0 bis 99)
+          <input
+            v-model.number="duckInputs.duckVolume"
+            type="number"
+            min="0"
+            max="99"
+            :class="FIELD"
+            class="w-20"
+          >
+        </label>
+        <label>Runter (ms)
+          <input
+            v-model.number="duckInputs.downMs"
+            type="number"
+            min="1"
+            :class="FIELD"
+            class="w-20"
+          >
+        </label>
+        <label>Hoch (ms)
+          <input
+            v-model.number="duckInputs.upMs"
+            type="number"
+            min="1"
+            :class="FIELD"
+            class="w-20"
+          >
+        </label>
+        <label>Schritt (ms)
+          <input
+            v-model.number="duckInputs.stepMs"
+            type="number"
+            min="1"
+            :class="FIELD"
+            class="w-20"
+          >
+        </label>
+        <span>
+          Lautstärke jetzt: <strong data-testid="listening-duck-level">{{ duckLevel.toFixed(1) }}</strong>
+        </span>
+      </div>
+    </section>
 
     <section
       v-for="id in CUE_IDS"
