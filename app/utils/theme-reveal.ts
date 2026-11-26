@@ -6,24 +6,56 @@ import { motionMs, motionToken, reducedMotion } from './motion'
 // cross-fade over `dur-fast` (compies-theme.css `data-theme-reveal="fade"`). A port of malkochen's reveal onto COMPIES's tokens. The showing is
 // `apply`: with a View Transition the browser takes the old picture first and calls it a frame later, so what shows the new look must
 // not run before (useAppearance defers it for that reason). A choice that shows the same look does not reveal at all.
+// The circle's clip is `revealFrames` (the script animates it on the new picture). Its edge (#933, note 20 „Kartenkante“) is a card's
+// cream line and ink shadow: `themeEdge`, the one place of its markup, and the `.theme-edge` rules of compies-theme.css. It is drawn
+// only with the circle, in the new picture only.
 
 /** The latest reveal, so an older one ending does not end a newer one's. */
 let latestReveal: object | null = null
+/** The edge of the latest spread that is in the document, so a newer spread can take it out before it starts (#933). */
+let edgeInDocument: HTMLElement | null = null
 
 /**
- * The growing circle's frames: THE one place of its edge (a plain circle). The centre and the radius are the caller's, and so are the
- * timing and the state handling, so a designed edge (#933) replaces only the inside of this function and the `spread` rule of compies-theme.css.
+ * The growing circle's clip frames: a plain circle from its centre. The centre and the radius are the caller's, and so are the timing
+ * and the state handling. The circle's edge is not here: it is `themeEdge` and the `.theme-edge` rules of compies-theme.css (#933).
  */
 export function revealFrames(x: number, y: number, radius: number): PropertyIndexedKeyframes {
   return { clipPath: [`circle(0px at ${x}px ${y}px)`, `circle(${radius}px at ${x}px ${y}px)`] }
 }
 
 /**
- * Runs `apply`, the showing of the new Appearance, inside the reveal. `origin` is the tapped option (null: none to spread from);
- * `changes` is whether the look on screen differs, and when it does not `apply` runs at once and nothing else happens. Resolves when
- * the reveal is over; `apply` may return a promise, which the View Transition waits for before it takes the new picture.
+ * The edge of the growing circle (#933): a cream line on the rim and an ink shadow outside it, the new look arriving like a card. The
+ * line always takes Dunkel's tokens and the shadow Hell's, whatever the page shows (each `<i>` has its own `data-theme`), so only the
+ * `.theme-edge` rules decide how they draw; `to` is the look the circle spreads to. Aria-hidden: it is decoration.
  */
-export async function revealTheme(origin: HTMLElement | null, changes: boolean, apply: () => void | Promise<void>): Promise<void> {
+function themeEdge(circle: { x: number, y: number, radius: number }, to: 'light' | 'dark'): HTMLElement {
+  const edge = document.createElement('div')
+  edge.className = 'theme-edge'
+  edge.dataset.to = to
+  edge.setAttribute('aria-hidden', 'true')
+  edge.style.setProperty('--vt-x', `${circle.x}px`)
+  edge.style.setProperty('--vt-y', `${circle.y}px`)
+  edge.style.setProperty('--vt-r', `${circle.radius}px`)
+  const disc = document.createElement('div')
+  disc.className = 'theme-edge__disc'
+  const line = document.createElement('i')
+  line.className = 'theme-edge__line'
+  line.dataset.theme = 'dark'
+  const shadow = document.createElement('i')
+  shadow.className = 'theme-edge__shadow'
+  shadow.dataset.theme = 'light'
+  disc.append(line, shadow)
+  edge.append(disc)
+  return edge
+}
+
+/**
+ * Runs `apply`, the showing of the new Appearance, inside the reveal. `origin` is the tapped option (null: none to spread from);
+ * `changes` is whether the look on screen differs, and when it does not `apply` runs at once and nothing else happens. `to` is the look
+ * the spread goes to: with it the circle has its edge (#933), without it the circle has none. Resolves when the reveal is over; `apply`
+ * may return a promise, which the View Transition waits for before it takes the new picture.
+ */
+export async function revealTheme(origin: HTMLElement | null, changes: boolean, apply: () => void | Promise<void>, to?: 'light' | 'dark'): Promise<void> {
   if (!changes) {
     await apply()
     return
@@ -43,12 +75,32 @@ export async function revealTheme(origin: HTMLElement | null, changes: boolean, 
   }
   else {
     html.dataset.themeReveal = 'spread'
-    const transition = document.startViewTransition(apply)
-    await transition.ready.then(() => html.animate(
-      revealFrames(circle.x, circle.y, circle.radius),
-      { duration: motionMs('--cp-dur-slower', '600ms'), easing: motionToken('--cp-ease-io', 'cubic-bezier(.65,0,.35,1)'), pseudoElement: '::view-transition-new(root)' },
-    ).finished).catch(() => {})
+    // A newer spread's edge leaves before this one starts, so two edges never meet under one view-transition name (#933).
+    edgeInDocument?.remove()
+    edgeInDocument = null
+    const edge = to ? themeEdge(circle, to) : null
+    const transition = document.startViewTransition(async () => {
+      await apply()
+      // The edge joins the new picture only: after `apply`, so it is not in the old one and its group sits above the root's.
+      if (edge) {
+        document.body.append(edge)
+        edgeInDocument = edge
+      }
+    })
+    await transition.ready.then(() => {
+      // The edge's animations were paused until now: the disc and the shadow start in the frame the circle's clip does.
+      edge?.classList.add('is-running')
+      return html.animate(
+        revealFrames(circle.x, circle.y, circle.radius),
+        { duration: motionMs('--cp-dur-slower', '600ms'), easing: motionToken('--cp-ease-io', 'cubic-bezier(.65,0,.35,1)'), pseudoElement: '::view-transition-new(root)' },
+      ).finished
+    }).catch(() => {})
     await transition.finished.catch(() => {})
+    // Also when the transition was skipped: the edge goes with the reveal that drew it.
+    if (edge) {
+      edge.remove()
+      if (edgeInDocument === edge) edgeInDocument = null
+    }
   }
   if (latestReveal === reveal) {
     latestReveal = null
