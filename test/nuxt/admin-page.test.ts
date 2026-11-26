@@ -9,7 +9,7 @@ import { shownToasts } from './event-page'
 
 // The Admin page (#682, spec #938): the section „Nutzer“ with the Host switch. One endpoint per path for the file (a second registration on the same path is
 // not replaced); each test sets what the read returns and whether a write fails. Users are invented.
-let view: AdminView = { users: [], deletedUsers: 0 }
+let view: AdminView = { users: [], deletedUsers: 0, events: [] }
 let failWrites = false
 const reads = vi.fn()
 const writes = vi.fn()
@@ -39,7 +39,7 @@ const larsi = person({ id: 'u-larsi', displayName: 'Larsi', providers: ['twitch'
 const neu = person({ id: 'u-neu', displayName: null, image: 'https://example.com/neu.png', firstSignInAt: '2026-04-01T10:00:00.000Z' })
 
 async function mountPage(next: Partial<AdminView> = {}) {
-  view = { users: [neu, larsi, kittyUser, sanne], deletedUsers: 0, ...next }
+  view = { users: [neu, larsi, kittyUser, sanne], deletedUsers: 0, events: [], ...next }
   const page = await mountSuspended(AdminPage, { route: '/admin', attachTo: document.body })
   await settle(page)
   return page

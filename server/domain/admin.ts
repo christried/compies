@@ -1,5 +1,7 @@
-import type { AdminUser } from '../../shared/admin'
+import type { AdminEvent, AdminUser } from '../../shared/admin'
 import { profilePicture, SIGN_IN_PROVIDERS, type SignInProvider } from '../../shared/auth'
+import type { Phase } from '../../shared/event'
+import { eventPath } from '../../shared/links'
 
 // The Admin page's rules (#682, spec #938). Pure functions: the read loads the rows and passes them in, as Home's and the Archive's reads do.
 
@@ -41,4 +43,42 @@ export function adminUsers({ rows, accounts, openEvents }: {
         openEvents: openEvents.get(row.id) ?? 0,
       }
     })
+}
+
+/** What the list needs of an Event's row (#876): `id` and `slug` stay on this side, they never reach an entry. */
+export interface AdminEventRow {
+  id: string
+  slug: string
+  name: string
+  hostDisplayName: string | null
+  phase: Phase
+  createdAt: Date
+  finishedAt: Date | null
+  deletedAt: Date | null
+}
+
+/**
+ * The Events of the Admin page's list, newest first by creation (a tie by id, so the order is the same on every read). `members` and `sessions` are the counts
+ * per Event (an Event with none has no entry) and `memberOf` the Events the Platform admin is a Member of. The address (`eventPath`) is given only for an Event in
+ * `memberOf` that is not deleted; any other entry has no `path` key at all, so nothing in it addresses the Event (ADR 0006, spec #938).
+ */
+export function adminEvents({ rows, members, sessions, memberOf }: {
+  rows: readonly AdminEventRow[]
+  members: ReadonlyMap<string, number>
+  sessions: ReadonlyMap<string, number>
+  memberOf: ReadonlySet<string>
+}): AdminEvent[] {
+  return [...rows]
+    .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime() || (a.id < b.id ? -1 : 1))
+    .map(row => ({
+      name: row.name,
+      hostName: row.hostDisplayName,
+      phase: row.phase,
+      memberCount: members.get(row.id) ?? 0,
+      sessionCount: sessions.get(row.id) ?? 0,
+      createdAt: row.createdAt.toISOString(),
+      finishedAt: row.finishedAt?.toISOString() ?? null,
+      deletedAt: row.deletedAt?.toISOString() ?? null,
+      ...(memberOf.has(row.id) && row.deletedAt === null ? { path: eventPath(row.slug) } : {}),
+    }))
 }

@@ -5,7 +5,7 @@ import { ADMIN_KEY } from '~/utils/event-data'
 
 // The Admin page (#682, spec #938, screen 26 „Plattform-Admin“): the Platform admin's page, in the hub shell. It reads once on load and again when the Platform
 // admin returns to the tab, as Home does (ADR 0001), so a User who just signed in shows up without a reload and the page polls nothing. The sections are components:
-// „Nutzer“ (`AdminUsers`). For everyone else the address shows the generic Construction page, as before the page existed, and asks the server for nothing: the
+// „Nutzer“ (`AdminUsers`) and „Events“ (`AdminEvents`, #876). For everyone else the address shows the generic Construction page, as before the page existed, and asks the server for nothing: the
 // page's existence is not revealed (spec #938, story 2), and the read answers like a missing route to them anyway.
 const { t } = useI18n()
 const user = useAuthUser()
@@ -63,6 +63,11 @@ useRefreshOnReturn(() => viewer.value && refresh())
         :users="data.users"
         :deleted-users="data.deletedUsers"
         @changed="refresh()"
+      />
+
+      <AdminEvents
+        v-if="data"
+        :events="data.events"
       />
     </div>
   </AppShell>
