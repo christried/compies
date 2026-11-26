@@ -1,6 +1,5 @@
-import { defineEventHandler, getRouterParam } from 'h3'
-import { isUuid } from '../../../../domain/uuid'
-import { requirePlatformAdmin } from '../../../../utils/admin'
+import { defineEventHandler } from 'h3'
+import { adminUserIdParam, requirePlatformAdmin } from '../../../../utils/admin'
 import { apiNotFound } from '../../../../utils/errors'
 import { removeProfileImage } from '../../../../utils/profile-image'
 import type { RemovedProfileImage } from '../../../../../shared/auth'
@@ -11,8 +10,7 @@ import type { RemovedProfileImage } from '../../../../../shared/auth'
 // The log line holds the action and the two User ids, never a name.
 export default defineEventHandler(async (event): Promise<RemovedProfileImage> => {
   const admin = await requirePlatformAdmin(event)
-  const id = getRouterParam(event, 'id')
-  if (!isUuid(id)) throw apiNotFound()
+  const id = adminUserIdParam(event)
   const removed = await removeProfileImage(event, id)
   if (!removed?.key) throw apiNotFound()
   console.info('admin.image.remove', admin.id, id)

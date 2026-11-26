@@ -1,8 +1,7 @@
 import { eq } from 'drizzle-orm'
-import { defineEventHandler, getRouterParam, readBody } from 'h3'
+import { defineEventHandler, readBody } from 'h3'
 import { users } from '../../../../db/schema'
-import { isUuid } from '../../../../domain/uuid'
-import { requirePlatformAdmin } from '../../../../utils/admin'
+import { adminUserIdParam, requirePlatformAdmin } from '../../../../utils/admin'
 import { useDb } from '../../../../utils/db'
 import { apiError, apiNotFound } from '../../../../utils/errors'
 import { liveUser } from '../../../../utils/live-user'
@@ -16,8 +15,7 @@ import type { SavedHostPermission } from '../../../../../shared/admin'
 // Nothing is published: the User sees the change at their next load (ADR 0013). The log line holds the action and the two User ids, never a name.
 export default defineEventHandler(async (event): Promise<SavedHostPermission> => {
   const admin = await requirePlatformAdmin(event)
-  const id = getRouterParam(event, 'id')
-  if (!isUuid(id)) throw apiNotFound()
+  const id = adminUserIdParam(event)
   const canHost = asRecord(await readBody(event)).canHost
   if (typeof canHost !== 'boolean') throw apiError('invalid_value')
 
