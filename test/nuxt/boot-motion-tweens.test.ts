@@ -34,7 +34,7 @@ async function build(onDone = () => {}, states: RigState[] = []) {
   return { gsap, shown, timeline: bootTimeline(gsap, shown, { distance: DISTANCE, times: TIMES, setState: state => states.push(state), onDone }), states }
 }
 
-const tweensOf = (timeline: { getChildren: (...flags: boolean[]) => unknown[] }) => (timeline.getChildren(false, true, false) as Tween[])
+const tweensOf = (timeline: { getChildren: (nested?: boolean, tweens?: boolean, timelines?: boolean) => unknown[] }) => (timeline.getChildren(false, true, false) as Tween[])
   .filter(tween => tween.targets().length > 0 && tween.targets().every(target => target instanceof HTMLElement))
   .map(tween => ({
     part: (tween.targets()[0] as HTMLElement).dataset.part!,

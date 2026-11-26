@@ -43,7 +43,9 @@ let timeline: ReturnType<typeof bootTimeline> | undefined
 let fade: Animation | undefined
 const timers: ReturnType<typeof setTimeout>[] = []
 let rigIsReady = () => {}
-const rigReady = new Promise<void>((resolve) => { rigIsReady = resolve })
+const rigReady = new Promise<void>((resolve) => {
+  rigIsReady = resolve
+})
 
 function later(ms: number, callback: () => void) {
   timers.push(setTimeout(callback, ms))

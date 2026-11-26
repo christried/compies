@@ -64,7 +64,11 @@ async function mountSplash(rig: ReturnType<typeof rigStub> | null) {
   const Host = defineComponent({
     setup() {
       const due = ref(true)
-      return () => (due.value ? h(BootSplash, { onDone: () => { due.value = false; dones.value++ } }) : h('p', { 'data-part': 'home' }, 'Home'))
+      const done = () => {
+        due.value = false
+        dones.value++
+      }
+      return () => (due.value ? h(BootSplash, { onDone: done }) : h('p', { 'data-part': 'home' }, 'Home'))
     },
   })
   const page = await mountSuspended(Host, { attachTo: document.body, global: rig ? { stubs: { CompibertRig: rig } } : {} })
@@ -83,7 +87,7 @@ beforeEach(() => {
   document.body.innerHTML = ''
   stubAnimate()
   stubInView()
-  vi.spyOn(document, 'cookie', 'set').mockImplementation((line: string) => { written.push(line) })
+  vi.spyOn(document, 'cookie', 'set').mockImplementation((line: string) => void written.push(line))
 })
 
 afterEach(async () => {
