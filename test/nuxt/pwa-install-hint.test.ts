@@ -112,13 +112,115 @@ describe('the install banner', () => {
     expect(page.text()).not.toContain(TITLE)
     expect(page.find('[role="status"]').exists()).toBe(false)
   })
+})
 
-  it('shows nothing for an iPhone until the sheet exists (#929)', async () => {
-    device({ coarse: true, standalone: false, ua: 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X)', touchPoints: 5 })
+// The iPhone and iPad (#929): Safari never offers an install, so the banner needs no prompt, and „Installieren“ opens the three steps in a sheet.
+const IPHONE_UA = 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1'
+const IPAD_AS_MAC_UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Safari/605.1.15'
+const SHEET_TITLE = 'Auf den Home-Bildschirm'
+const STEPS = ['Tippe unten auf „Teilen“', 'Wähle „Zum Home-Bildschirm“', 'Tippe auf „Hinzufügen“']
+const sheet = () => document.querySelector<HTMLElement>('[role="dialog"]')
+
+describe('the iPhone and iPad (#929)', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    prompt.held = ref(false)
+  })
+
+  it('invites an iPhone User who has played, in any browser and with no install prompt', async () => {
+    device({ coarse: true, standalone: false, ua: IPHONE_UA, touchPoints: 5 })
 
     const page = await mountHint()
 
+    expect(page.text()).toContain(TITLE)
+    expect(button(page, 'Später')).toBeDefined()
+    expect(button(page, 'Installieren')).toBeDefined()
+  })
+
+  it('invites an iPad that reports itself as a Mac', async () => {
+    device({ coarse: false, standalone: false, ua: IPAD_AS_MAC_UA, touchPoints: 5 })
+
+    const page = await mountHint()
+
+    expect(page.text()).toContain(TITLE)
+  })
+
+  it('shows nothing on an iPhone before the User has played', async () => {
+    device({ coarse: true, standalone: false, ua: IPHONE_UA, touchPoints: 5 })
+
+    const page = await mountHint(false)
+
     expect(page.text()).not.toContain(TITLE)
+  })
+
+  it('opens a sheet with the title and the three steps in order, when „Installieren“ is tapped', async () => {
+    device({ coarse: true, standalone: false, ua: IPHONE_UA, touchPoints: 5 })
+    const page = await mountHint()
+
+    await button(page, 'Installieren')!.trigger('click')
+
+    await vi.waitFor(() => expect(sheet()).not.toBeNull())
+    const dialog = sheet()!
+    const heading = document.getElementById(dialog.getAttribute('aria-labelledby')!)
+    expect(heading?.textContent?.trim()).toBe(SHEET_TITLE)
+    const steps = [...dialog.querySelectorAll('li')].map(item => item.textContent ?? '')
+    expect(steps).toHaveLength(3)
+    STEPS.forEach((text, index) => expect(steps[index]).toContain(text))
+    expect(prompt.held!.value).toBe(false)
+  })
+
+  it('closing the sheet with its close button stores done: the banner is gone and does not come back', async () => {
+    device({ coarse: true, standalone: false, ua: IPHONE_UA, touchPoints: 5 })
+    const page = await mountHint()
+    await button(page, 'Installieren')!.trigger('click')
+    await vi.waitFor(() => expect(sheet()).not.toBeNull())
+
+    sheet()!.querySelector<HTMLButtonElement>('button[aria-label="Schließen"]')!.click()
+
+    expect(localStorage.getItem(PWA_STORAGE_KEY)).toBe('done')
+    await vi.waitFor(() => expect(page.text()).not.toContain(TITLE))
+    expect((await mountHint()).text()).not.toContain(TITLE)
+  })
+
+  it('closing the sheet with Esc stores done too', async () => {
+    device({ coarse: true, standalone: false, ua: IPHONE_UA, touchPoints: 5 })
+    const page = await mountHint()
+    await button(page, 'Installieren')!.trigger('click')
+    await vi.waitFor(() => expect(sheet()).not.toBeNull())
+
+    sheet()!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+
+    expect(localStorage.getItem(PWA_STORAGE_KEY)).toBe('done')
+    await vi.waitFor(() => expect(page.text()).not.toContain(TITLE))
+  })
+
+  it('„Später“ on an iPhone stores today\'s Berlin day and hides the banner, as on Android', async () => {
+    device({ coarse: true, standalone: false, ua: IPHONE_UA, touchPoints: 5 })
+    const page = await mountHint()
+
+    await button(page, 'Später')!.trigger('click')
+
+    expect(localStorage.getItem(PWA_STORAGE_KEY)).toBe('later:2026-11-26')
+    expect(page.text()).not.toContain(TITLE)
+  })
+
+  it('closing the sheet on blocked storage throws nothing and hides the banner for this page view', async () => {
+    device({ coarse: true, standalone: false, ua: IPHONE_UA, touchPoints: 5 })
+    const page = await mountHint()
+    await button(page, 'Installieren')!.trigger('click')
+    await vi.waitFor(() => expect(sheet()).not.toBeNull())
+    const blocked = () => {
+      throw new DOMException('blocked', 'SecurityError')
+    }
+    vi.stubGlobal('localStorage', { getItem: blocked, setItem: blocked, removeItem: blocked, clear: blocked })
+
+    try {
+      expect(() => sheet()!.querySelector<HTMLButtonElement>('button[aria-label="Schließen"]')!.click()).not.toThrow()
+      await vi.waitFor(() => expect(page.text()).not.toContain(TITLE))
+    }
+    finally {
+      vi.unstubAllGlobals()
+    }
   })
 })
 
