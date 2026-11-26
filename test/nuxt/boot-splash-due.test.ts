@@ -42,7 +42,8 @@ describe('the splash is due', () => {
     expect(await dueAt('/')).toBe('false')
   })
 
-  it('not on another page', async () => {
+  it('not on another page', { timeout: 20_000 }, async () => {
+    // The first visit to the Event page loads its chunk, which is slow on a cold run.
     signInAs(kitty)
 
     expect(await dueAt('/e/x-abc')).toBe('false')
@@ -55,7 +56,11 @@ describe('the splash is due', () => {
   })
 
   it('reads the User the auth middleware has loaded, not one that is still to come', async () => {
-    // The middleware loads the User before the page's setup: the first request of a page load has none yet.
+    // The middleware loads the User before the page's setup: the first request of a page load has none yet. The router starts on '/', and a
+    // navigation to the route it is on runs no middleware, so go to another page first.
+    signInAs(kitty)
+    await dueAt('/impressum')
+    clearNuxtState('boot-splash-due')
     useAuthUser().value = null
     useState('auth-user-loaded').value = false
     registerEndpoint('/api/me', () => ({ user: kitty }))
