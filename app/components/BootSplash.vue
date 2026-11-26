@@ -15,6 +15,8 @@ const calm = useReducedMotion()
 const root = useTemplateRef<HTMLElement>('root')
 const wrap = useTemplateRef<HTMLElement>('wrap')
 const state = ref<RigState>('idle')
+// The rig replaces the still figure only on the run path, once GSAP has loaded.
+const rigShown = ref(false)
 // Empty in the first byte: a live region announces a change, not its first render.
 const announcement = ref('')
 
@@ -85,11 +87,17 @@ function fadeAway(layer: HTMLElement) {
   fade.finished.then(finish, () => {})
 }
 
-/** GSAP and the rig, or nothing when the 400 ms come first (or GSAP does not load). */
+/**
+ * GSAP, then the rig, then its `ready`, all inside the 400 ms: or nothing when they come first (or GSAP does not load). The rig is mounted only here, after
+ * the splash's own load of GSAP, so a browser tab and the calm splash never fetch it for a layer they do not show (as `AppHeader.vue` does, #673).
+ */
 async function loadInTime(): Promise<Gsap | null> {
-  const both = Promise.all([loadGsap(), rigReady]).then(([gsap]) => gsap, () => null)
   const give = new Promise<null>(resolve => later(GIVE_UP_MS, () => resolve(null)))
-  return Promise.race([both, give])
+  const gsap = await Promise.race([loadGsap().catch(() => null), give])
+  if (!gsap || ended) return null
+  rigShown.value = true
+  const ready = await Promise.race([rigReady.then(() => true), give])
+  return ready ? gsap : null
 }
 
 /** Measured before the start poses are set: the wrapper's place and the letters' centres, in the layer's coordinates. */
@@ -197,12 +205,18 @@ onBeforeUnmount(() => {
           data-part="boot-dust"
           :style="{ left: scaled(puff.left), top: scaled(puff.top), width: scaled(puff.size), height: scaled(puff.size) }"
         />
+        <!-- The still `Compibert` is the first byte's figure; the rig has the same box (404 × 344, full width), so the swap moves nothing. -->
         <div class="relative">
           <CompibertRig
+            v-if="rigShown"
             variant="full"
             :state="state"
             :micro="false"
             @ready="rigIsReady"
+          />
+          <Compibert
+            v-else
+            variant="full"
           />
         </div>
       </div>

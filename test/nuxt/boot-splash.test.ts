@@ -12,12 +12,13 @@ import { motion } from './motion'
 // fades, and ends by itself or on a tap or a key. `matchMedia` says standalone or not; `Element.animate`, which happy-dom lacks, is a stub that ends
 // each animation after its duration; the rig is a stand-in that says `ready` after some milliseconds or never, except in the test with the real one.
 
-// Counts the loads of GSAP that the splash asks for, and calls through.
-const loaded = vi.hoisted(() => ({ calls: 0 }))
+// Counts the loads of GSAP that the splash asks for, and calls through; a test can hold the chunk back.
+const loaded = vi.hoisted(() => ({ calls: 0, held: null as Promise<void> | null }))
 mockNuxtImport('loadGsap', async () => {
   const { loadGsap: real } = await vi.importActual<typeof import('~/utils/gsap')>('~/utils/gsap')
-  return () => {
+  return async () => {
     loaded.calls++
+    await loaded.held
     return real()
   }
 })
@@ -83,6 +84,7 @@ const running = () => vi.waitFor(() => expect(figure()).toBe('run'), { timeout: 
 
 beforeEach(() => {
   loaded.calls = 0
+  loaded.held = null
   written = []
   document.body.innerHTML = ''
   stubAnimate()
@@ -117,7 +119,23 @@ describe('shown as the installed app', () => {
     expect([...layer()!.querySelectorAll('[data-part="boot-letter"]')].map(letter => letter.textContent)).toEqual([...'COMPIES'])
     expect(layer()!.querySelectorAll('[data-part="boot-line"]')).toHaveLength(3)
     expect(layer()!.querySelectorAll('[data-part="boot-dust"]')).toHaveLength(4)
-    expect(figure()).toBe('idle')
+    expect(layer()!.querySelector('[data-part="boot-wrap"] .compibert')).not.toBeNull()
+    page.unmount()
+  })
+
+  it('shows the still Compibert in the first frame, and the rig takes its place in the same box once GSAP has arrived', async () => {
+    let arrive = () => {}
+    loaded.held = new Promise<void>(resolve => (arrive = resolve))
+    const { page } = await mountSplash(rigStub(null))
+    const box = () => layer()!.querySelector('[data-part="boot-wrap"] > div')!
+    expect(box().querySelector('.compibert')).not.toBeNull()
+    expect(box().querySelector('[data-part="rig"]')).toBeNull()
+
+    arrive()
+    await vi.waitFor(() => expect(box().querySelector('[data-part="rig"]')).not.toBeNull())
+
+    expect(box().querySelector('.compibert')).toBeNull()
+    expect(box().children).toHaveLength(1)
     page.unmount()
   })
 
@@ -164,7 +182,7 @@ describe('shown as the installed app', () => {
     const { page, dones } = await mountSplash(rigStub(null))
     await pause(250)
     expect(dones.value).toBe(0)
-    expect(figure()).toBe('idle')
+    expect(figure()).not.toBe('run')
 
     await vi.waitFor(() => expect(dones.value).toBe(1), { timeout: 2000 })
 
@@ -240,12 +258,13 @@ describe('calm', () => {
     await cookieStore.set('compies-motion', 'reduced')
   })
 
-  it('is the calm variant: no GSAP, a hold, then a fade and done; the figure never runs', async () => {
-    const { page, dones } = await mountSplash(rigStub(10))
+  it('is the calm variant: no GSAP and no rig, a hold, then a fade and done', async () => {
+    const { page, dones } = await mountSplash(null)
     expect(layer()!.getAttribute('data-variant')).toBe('calm')
     await pause(300)
     expect(dones.value).toBe(0)
-    expect(figure()).toBe('idle')
+    expect(layer()!.querySelector('.compibert')).not.toBeNull()
+    expect(layer()!.querySelector('.compibert-rig')).toBeNull()
 
     await vi.waitFor(() => expect(dones.value).toBe(1), { timeout: 3000 })
 
@@ -271,11 +290,12 @@ describe('calm', () => {
 describe('in a browser tab', () => {
   beforeEach(() => display(false))
 
-  it('ends at once without writing the cookie or running anything', async () => {
-    const { page, dones } = await mountSplash(rigStub(10))
+  it('ends at once without writing the cookie, loading GSAP or mounting the rig', async () => {
+    const { page, dones } = await mountSplash(null)
     await pause(200)
 
     expect(dones.value).toBe(1)
+    expect(document.querySelector('.compibert-rig')).toBeNull()
     expect(written).toEqual([])
     expect(layer()).toBeNull()
     expect(loaded.calls).toBe(0)
