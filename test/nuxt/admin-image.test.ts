@@ -77,22 +77,22 @@ describe('the Admin page\'s Profile picture removal', () => {
     removals.mockClear()
   })
 
-  it('shows the row menu only on a row whose User has an uploaded picture', async () => {
+  it('offers „Profilbild entfernen“ only on a row whose User has an uploaded picture, and no menu on a Platform admin\'s row without one', async () => {
     const page = await mountPage()
 
-    expect(menuButtonOf(page, 'Larsi').exists()).toBe(true)
-    expect(menuButtonOf(page, 'Kitty').exists()).toBe(false)
-    expect(menuButtonOf(page, 'Noch nicht eingerichtet').exists()).toBe(false)
+    await menuButtonOf(page, 'Larsi').trigger('click')
+    await vi.waitFor(() => expect(menuItems().length).toBeGreaterThan(0))
+    expect(menuItems().map(item => item.textContent?.trim())).toContain('Profilbild entfernen')
     expect(menuButtonOf(page, 'Sanne').exists()).toBe(false)
   })
 
-  it('offers „Profilbild entfernen“ as the first entry of that menu, and nothing else', async () => {
+  it('offers „Profilbild entfernen“ as the first entry of that menu, before „Konto löschen“ (#941)', async () => {
     const page = await mountPage()
 
     await menuButtonOf(page, 'Larsi').trigger('click')
 
-    await vi.waitFor(() => expect(menuItems()).toHaveLength(1))
-    expect(menuItems()[0]!.textContent?.trim()).toBe('Profilbild entfernen')
+    await vi.waitFor(() => expect(menuItems()).toHaveLength(2))
+    expect(menuItems().map(item => item.textContent?.trim())).toEqual(['Profilbild entfernen', 'Konto löschen'])
   })
 
   it('asks before the picture goes: the title names the User, and „Abbrechen“ sends nothing and changes nothing', async () => {
@@ -129,8 +129,10 @@ describe('the Admin page\'s Profile picture removal', () => {
     await vi.waitFor(() => expect(removals).toHaveBeenCalledWith('u-larsi'))
     await vi.waitFor(() => expect(reads).toHaveBeenCalledTimes(2))
     await vi.waitFor(() => expect(rowOf(page, 'Larsi').find('img').attributes('src')).toBe('https://example.com/provider.png'))
-    expect(menuButtonOf(page, 'Larsi').exists()).toBe(false)
     expect(dialog()).toBeNull()
+    await menuButtonOf(page, 'Larsi').trigger('click')
+    await vi.waitFor(() => expect(menuItems().length).toBeGreaterThan(0))
+    expect(menuItems().map(item => item.textContent?.trim())).toEqual(['Konto löschen'])
   })
 
   it('says so in a toast when the removal fails, keeps the picture on the page and closes the dialog', async () => {

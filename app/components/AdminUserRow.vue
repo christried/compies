@@ -8,10 +8,11 @@ import type { AdminUser } from '~~/shared/admin'
 // the services they linked, the month of their first sign-in, a mark for a Platform admin and the switch „Darf hosten“. A Platform admin's switch is on and locked, with a
 // hint, because a Platform admin always hosts (the server refuses the same, `platform_admin_hosts`). The switch only says what was pressed (`toggle`, the value wanted);
 // the list decides what follows. The row stacks at 390 px: the person above, the switch below. The name and the label name the switch together, so a screen reader hears whose it is.
-// The row's menu (#940, spec #938) holds „Profilbild entfernen“ and shows only for a User with an uploaded picture; #941 adds „Konto löschen“ to it. A pick closes the
-// menu and emits `removeImage`; the list asks first. The menu is the MoveToMenu the Sessions' „Mehr“ menu uses.
+// The row's menu (#940, #941, spec #938) holds „Profilbild entfernen“, for a User with an uploaded picture, and „Konto löschen“, for everyone who is no Platform admin
+// (a Platform admin's account cannot be deleted here, the admin's own included), so a Platform admin's row has a menu only with a picture. A pick closes the menu and
+// emits `removeImage` or `removeAccount`; the list asks first. The menu is the MoveToMenu the Sessions' „Mehr“ menu uses.
 const props = defineProps<{ user: AdminUser }>()
-const emit = defineEmits<{ toggle: [canHost: boolean], removeImage: [] }>()
+const emit = defineEmits<{ toggle: [canHost: boolean], removeImage: [], removeAccount: [] }>()
 
 const { t } = useI18n()
 const nameId = useId()
@@ -26,8 +27,12 @@ const since = computed(() => t('admin.since', { date: formatMonthYear(new Date(p
 
 /** The button that opened the row's menu; the menu is open while it is set. */
 const menu = ref<HTMLElement | null>(null)
-const menuTitle = computed(() => t('admin.menu', { name: shownName.value }))
-const targets = computed<MoveTarget[]>(() => [{ key: 'removeImage', label: t('admin.image.remove'), reason: null }])
+// A User with no Display name has no name to put there: „Aktionen für Noch nicht eingerichtet“ would read as a name (#941, from #940's review).
+const menuTitle = computed(() => named.value ? t('admin.menu', { name: shownName.value }) : t('admin.menuUnnamed'))
+const targets = computed<MoveTarget[]>(() => [
+  ...(props.user.hasOwnImage ? [{ key: 'removeImage', label: t('admin.image.remove'), reason: null }] : []),
+  ...(props.user.isAdmin ? [] : [{ key: 'removeAccount', label: t('admin.delete.remove'), reason: null }]),
+])
 
 function openMenu(event: MouseEvent) {
   menu.value = event.currentTarget as HTMLElement
@@ -37,6 +42,7 @@ function openMenu(event: MouseEvent) {
 function pick(key: string) {
   menu.value = null
   if (key === 'removeImage') emit('removeImage')
+  if (key === 'removeAccount') emit('removeAccount')
 }
 </script>
 
@@ -81,7 +87,7 @@ function pick(key: string) {
         class="text-[13px] font-bold"
       >{{ t('admin.canHost') }}</span>
     </div>
-    <template v-if="user.hasOwnImage">
+    <template v-if="targets.length > 0">
       <IconButton
         :icon="Ellipsis"
         :label="menuTitle"
