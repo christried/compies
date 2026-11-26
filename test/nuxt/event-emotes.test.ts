@@ -361,7 +361,7 @@ describe.each([{ host: false }, { host: true }])('Emotes on the Game board, Host
     expect(served).toEqual({ event: before.event, activity: before.activity, room: before.room })
   })
 
-  it('does not move Compibert: every figure of him keeps its markup', async () => {
+  it('does not move Compibert for another Member\'s Emote: every figure of him keeps its markup (the own Emote moves the header\'s, #673)', async () => {
     const page = await mountLive({ host })
     open()
     // The page has no animated rig outside the Tour, the wheel and the ceremony: the header's Compibert is the figure on it, and his markup is his state.
@@ -369,7 +369,6 @@ describe.each([{ host: false }, { host: true }])('Emotes on the Game board, Host
     const before = states()
     expect(before.length).toBeGreaterThan(0)
 
-    emoteSent(kitty.id)
     emoteSent(LARSI)
     await settle()
 

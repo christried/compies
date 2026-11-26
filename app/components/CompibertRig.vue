@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import fullSvg from '~/assets/compibert/compibert-full.svg?raw'
 import headSvg from '~/assets/compibert/compibert-head.svg?raw'
+import { PARTY_HAT } from '~/utils/compibert-hat'
 
 // The animated Compibert (#311, ADR 0015): the same SVG assets as `Compibert.vue`, mounted and moved by GSAP. `Compibert.vue` stays plain markup
 // without any script (header, Construction page, empty states), so a page that has no rig loads no GSAP; this one is for the ceremony's end frame.
@@ -22,7 +23,9 @@ const props = withDefaults(defineProps<{
   hopsFor?: number
   /** The head crop wears the Sticker outline in Dunkel (and System-dark): the cream rim keeps him from vanishing on a dark bubble. Hell has none. */
   rim?: boolean
-}>(), { state: 'idle', reaction: null, variant: 'full', size: undefined, look: null, micro: true, hopsFor: undefined, rim: false })
+  /** The party hat of the header's head (#673): drawn at the svg's root, as the still head does, so it does not follow the head's motion. Fixed for the instance's life: change it with `:key`. */
+  accessory?: 'partyhat'
+}>(), { state: 'idle', reaction: null, variant: 'full', size: undefined, look: null, micro: true, hopsFor: undefined, rim: false, accessory: undefined })
 
 // Cheap outline on weak devices (hand-off § Performance): the hard shadow's offset in the figure's own units, 7 and 8 of the viewBox's width
 // (`viewWidth`: 404 for the full figure, 254 for the bust's crop of it (#526), 192 for the head (#584)).
@@ -33,8 +36,11 @@ const WEAK_CORES = 4
 const root = useTemplateRef<HTMLElement>('root')
 const uid = useId()
 const prefix = `cb${uid.replace(/\W/g, '')}_`
-// Depends on the variant and the prefix only, never on `size` or `state`: Vue must never replace the DOM that GSAP is animating.
-const svg = computed(() => rigMarkup(props.variant === 'head' ? headSvg : fullSvg, props.variant, prefix))
+// Depends on the variant, the prefix and the accessory only, never on `size` or `state`: Vue must never replace the DOM that GSAP is animating (a new accessory is a new instance, by `:key`).
+const svg = computed(() => {
+  const markup = rigMarkup(props.variant === 'head' ? headSvg : fullSvg, props.variant, prefix)
+  return props.accessory === 'partyhat' ? markup.replace(/<\/svg>$/, `${PARTY_HAT}</svg>`) : markup
+})
 
 const ready = ref(false)
 const onStage = ref(true)
