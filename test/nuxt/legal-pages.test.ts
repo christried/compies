@@ -219,6 +219,16 @@ describe('legal pages', () => {
     expect(retention).toContain('genannte Adresse. Wir löschen dein Nutzerkonto dann für dich, mit derselben Wirkung. Die Löschung gilt sofort')
   })
 
+  it('end section 17 at the Art. 22 DSGVO sentence and drop the Host-list half-sentence, since the Host permission is granted by hand on the Admin page (#1019, spec #938)', async () => {
+    const page = await mountSuspended(DatenschutzPage, { route: '/datenschutz' })
+    const paragraphs = (heading: string) => page.findAll('section').find(s => s.get('h2').text() === heading)!.findAll('p').map(p => p.text())
+
+    expect(page.get('main').text()).not.toContain('Host-Liste')
+
+    const obligation = paragraphs('17. Pflicht zur Bereitstellung und automatisierte Entscheidungen').at(-1)!
+    expect(obligation.endsWith('im Sinne von Art. 22 DSGVO findet nicht statt.')).toBe(true)
+  })
+
   it('name the compies-appearance cookie in section 9 and move the Stand (#405, spec #398)', async () => {
     const page = await mountSuspended(DatenschutzPage, { route: '/datenschutz' })
     const section = page.findAll('section').find(s => s.get('h2').text() === '9. Cookies und Speicher im Browser')
