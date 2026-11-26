@@ -187,6 +187,11 @@
 [data-motion=reduced] .animate-clip-in, [data-motion=reduced] .animate-backdrop-in, [data-motion=reduced] .animate-veto-in, [data-motion=reduced] .animate-sheet-in, [data-motion=reduced] .animate-bounce-back { animation: cp-fade-in var(--cp-dur-fast) linear both; }
 [data-motion=reduced] .animate-tick, [data-motion=reduced] .animate-wiggle, [data-motion=reduced] .animate-live { animation: none; }
 
+/* The stage smoke (#675, note 19): each shape drifts up and to one side and swells a little, there and back (`alternate`). Transform and
+   opacity only; StageSmoke.vue names them in its inline `animation`, the still frame under reduced motion is `animation: none`. */
+@keyframes cp-smoke-rise-a { from { transform: translate3d(0,0,0) scale(1); opacity: .8; } to { transform: translate3d(3%,-6%,0) scale(1.08); opacity: 1; } }
+@keyframes cp-smoke-rise-b { from { transform: translate3d(0,0,0) scale(1); opacity: .8; } to { transform: translate3d(-3%,-6%,0) scale(1.06); opacity: 1; } }
+
 /* Aura on „Neue Terminumfrage“ (#33): a comet of light runs around the border. Own styling on the
    tokens, no daisyUI. The angle is registered so the gradient turns without the shape moving. */
 @property --cp-aura-angle { syntax: "<angle>"; inherits: false; initial-value: 0deg; }

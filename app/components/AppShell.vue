@@ -57,7 +57,13 @@ const user = useAuthUser()
       class="flex flex-1 items-stretch"
       :inert="covered || undefined"
     >
-      <div class="flex min-w-0 flex-1 flex-col">
+      <!-- `decor` (#675): a fixed layer behind the page, the stage smoke. The column that holds the page then takes the content layer, so the page paints over it; a page without the slot keeps its classes. -->
+      <slot name="decor" />
+
+      <div
+        class="flex min-w-0 flex-1 flex-col"
+        :class="$slots.decor && 'relative layer-content'"
+      >
         <main
           id="stage"
           tabindex="-1"
