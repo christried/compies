@@ -1,4 +1,5 @@
 import type { SignInProvider } from './auth'
+import type { Phase } from './event'
 
 // What the Admin page reads and writes (#682, spec #938). The Platform admin's alone: every route answers like a missing route to anyone else.
 
@@ -20,10 +21,35 @@ export interface AdminUser {
   openEvents: number
 }
 
-/** What `GET /api/admin` answers: the Users who are not deleted, newest first, and how many Deleted Users there are. 0.24-3 (#876) adds the Events here. */
+/**
+ * One Event of the list (#876, spec #938): what the Platform admin may see of it and nothing else, so no Members, no Team names, no Chat, no Votes, no Notes, no
+ * games and no Invite link, and no id or slug. `hostName` is the Host's Display name, null until they picked one (never the provider's name, ADR 0008).
+ * `finishedAt` is the Finish and `deletedAt` the deletion of a Deleted Event. `path` is the Event's address (the one the Archive card links to) and the key is
+ * left out where the Platform admin is no Member or the Event is deleted: such an entry carries nothing that addresses the Event (ADR 0006).
+ */
+export interface AdminEvent {
+  name: string
+  hostName: string | null
+  phase: Phase
+  memberCount: number
+  sessionCount: number
+  createdAt: string
+  finishedAt: string | null
+  deletedAt: string | null
+  path?: string
+}
+
+/** What `GET /api/admin` answers: the Users who are not deleted, newest first, how many Deleted Users there are, and every Event, Deleted Events included, newest first by creation (#876). */
 export interface AdminView {
   users: AdminUser[]
   deletedUsers: number
+  events: AdminEvent[]
+}
+
+/** The Events whose name holds the search, in the server's order: a part of the name, case and outer spaces ignored (`filterAdminUsers`' rule). */
+export function filterAdminEvents(events: readonly AdminEvent[], query: string): AdminEvent[] {
+  const term = query.trim().toLocaleLowerCase('de')
+  return events.filter(entry => !term || entry.name.toLocaleLowerCase('de').includes(term))
 }
 
 /** The Users whose Display name holds the search, in the server's order: a part of the name, case and outer spaces ignored (`filterArchive`'s rule). A User with no Display name is found by no search. */
