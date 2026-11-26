@@ -4,8 +4,6 @@ import type { RigState } from './compibert-rig'
 
 export interface Reaction {
   state: RigState
-  /** Overrides the table's length (a `cheer` after a wheel stop lasts 1.6 s, not 4). */
-  seconds?: number
 }
 
 /** 04-motion § State table: the priority (1 low … 3 high; `confused` at 4 is a base here and blocks them all) and the length in seconds. */
@@ -19,9 +17,9 @@ export const RIG_REACTIONS: Partial<Record<RigState, { priority: number, seconds
   cheer: { priority: 3, seconds: 4 },
 }
 
-/** How long `reaction` shows: its own `seconds`, else the table's. */
+/** How long `reaction` shows: the table's length for its state. */
 export function reactionSeconds(reaction: Reaction): number {
-  return reaction.seconds ?? RIG_REACTIONS[reaction.state]?.seconds ?? 0
+  return RIG_REACTIONS[reaction.state]?.seconds ?? 0
 }
 
 /**

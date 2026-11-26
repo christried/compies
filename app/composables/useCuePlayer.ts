@@ -1,7 +1,7 @@
 import { createCuePlayer, exposesCueLog, type CueLogEntry, type CuePlayer, type CuePlayerOptions } from '~/utils/cue-player'
 import { viewWheelHidden } from '~/utils/event-page'
 import { reducedMotion } from '~/utils/motion'
-import { coinCuePlan, countdownCuePlan, cueFileUrl, cueFilesOf, reachableGroups, vetoArrivalCues, vetoCuePlan, wheelCuePlan, wheelVoicePlan, type Cue, type GroupInput, type VetoArrivalState } from '~/utils/sound-cues'
+import { arrivalOf, coinCuePlan, countdownCuePlan, cueFileUrl, cueFilesOf, reachableGroups, vetoArrivalCues, vetoCuePlan, wheelCuePlan, wheelVoicePlan, type Cue, type GroupInput, type VetoArrivalState } from '~/utils/sound-cues'
 import type { EventView } from '~~/shared/event'
 import { TOUR_CALM_MS, tourMayStart, tourStartInputOf } from '~~/shared/tour'
 
@@ -76,17 +76,6 @@ function planOf(view: EventView): Cue[] {
     // The Countdown's zero (#958): its start and the time left only.
     ...countdownCuePlan({ countdown: view.countdown ? { startedAt: view.countdown.startedAt, remainingMs: view.countdown.remainingMs } : null, reducedMotion: reduced }),
   ]
-}
-
-/** What the arrival cues read of a read: the window, the viewer's own Party's cast (`own` is the viewer's only) and how many Vetoes were revealed. */
-function arrivalOf(view: EventView): VetoArrivalState {
-  const vetoes = view.wheel?.vetoes
-  const draw = vetoes?.draw
-  return {
-    draw: draw ? { drawId: draw.drawId, kind: draw.kind, stopAt: draw.stopAt, vetoEndsAt: draw.vetoEndsAt } : null,
-    ownCast: vetoes?.own?.cast ?? false,
-    revealedCount: vetoes?.revealed?.length ?? null,
-  }
 }
 
 export function useCuePlayer(input: {

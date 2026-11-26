@@ -40,8 +40,4 @@ describe('reactionSeconds', () => {
   it.each([['wave', 2.2], ['laugh', 2.4], ['angry', 2.6], ['clap', 2], ['roar', 2.4], ['sad', 4], ['cheer', 4]] as const)('is the table\'s length for %s: %s s', (state, seconds) => {
     expect(reactionSeconds({ state })).toBe(seconds)
   })
-
-  it('takes the caller\'s seconds over the table (cheer after a wheel stop: 1.6 s)', () => {
-    expect(reactionSeconds({ state: 'cheer', seconds: 1.6 })).toBe(1.6)
-  })
 })

@@ -22,6 +22,14 @@ mockNuxtImport('loadGsap', async () => {
   }
 })
 
+// The table's lengths are seconds long, and a `Reaction` carries no length of its own (#1008): a test that needs a short one makes it with `brief`,
+// and the rig's timer reads its seconds here instead of the table's.
+const brief = (state: RigState, seconds: number) => ({ state, seconds }) as Reaction
+mockNuxtImport('reactionSeconds', async () => {
+  const { reactionSeconds: real } = await vi.importActual<typeof import('~/utils/rig-reaction')>('~/utils/rig-reaction')
+  return (reaction: Reaction) => (reaction as Reaction & { seconds?: number }).seconds ?? real(reaction)
+})
+
 type Page = Awaited<ReturnType<typeof mountSuspended<typeof CompibertRig>>>
 
 const pages: Page[] = []
@@ -924,7 +932,7 @@ describe('a reaction (#928)', () => {
     const page = await mountRig({ state: 'idle', variant: 'head' })
     await ready(page)
 
-    await page.setProps({ reaction: { state: 'clap', seconds: 0.4 } })
+    await page.setProps({ reaction: brief('clap', 0.4) })
 
     expect(stateOf(page)).toBe('clap')
     await pause(150)
@@ -938,7 +946,7 @@ describe('a reaction (#928)', () => {
     const page = await mountRig({ state: 'idle', variant: 'head' })
     await ready(page)
 
-    await page.setProps({ reaction: { state: 'clap', seconds: 0.5 } })
+    await page.setProps({ reaction: brief('clap', 0.5) })
     await vi.waitFor(() => expect(opacityOf(page, 'cb-hands')).toBe(1), { timeout: 3000 })
     await vi.waitFor(() => expect(stateOf(page)).toBe('idle'), { timeout: 2000 })
 
@@ -949,9 +957,9 @@ describe('a reaction (#928)', () => {
     stubInView()
     const page = await mountRig({ state: 'idle', variant: 'head' })
     await ready(page)
-    await page.setProps({ reaction: { state: 'sad', seconds: 0.6 } })
+    await page.setProps({ reaction: brief('sad', 0.6) })
 
-    await page.setProps({ reaction: { state: 'wave', seconds: 3 } })
+    await page.setProps({ reaction: brief('wave', 3) })
 
     expect(stateOf(page)).toBe('sad')
     await vi.waitFor(() => expect(stateOf(page)).toBe('idle'), { timeout: 2000 })
@@ -963,9 +971,9 @@ describe('a reaction (#928)', () => {
     stubInView()
     const page = await mountRig({ state: 'idle', variant: 'head' })
     await ready(page)
-    await page.setProps({ reaction: { state: 'laugh', seconds: 5 } })
+    await page.setProps({ reaction: brief('laugh', 5) })
 
-    await page.setProps({ reaction: { state: 'clap', seconds: 0.4 } })
+    await page.setProps({ reaction: brief('clap', 0.4) })
 
     expect(stateOf(page)).toBe('clap')
     await vi.waitFor(() => expect(stateOf(page)).toBe('idle'), { timeout: 2000 })
@@ -975,10 +983,10 @@ describe('a reaction (#928)', () => {
     stubInView()
     const page = await mountRig({ state: 'idle', variant: 'head' })
     await ready(page)
-    await page.setProps({ reaction: { state: 'clap', seconds: 0.5 } })
+    await page.setProps({ reaction: brief('clap', 0.5) })
     await pause(300)
 
-    await page.setProps({ reaction: { state: 'clap', seconds: 0.5 } })
+    await page.setProps({ reaction: brief('clap', 0.5) })
     await pause(300)
 
     expect(stateOf(page)).toBe('clap')
@@ -990,7 +998,7 @@ describe('a reaction (#928)', () => {
     const page = await mountRig({ state: 'confused', variant: 'head' })
     await ready(page)
 
-    await page.setProps({ reaction: { state: 'wave', seconds: 0.4 } })
+    await page.setProps({ reaction: brief('wave', 0.4) })
     await pause(150)
 
     expect(stateOf(page)).toBe('confused')
@@ -1000,7 +1008,7 @@ describe('a reaction (#928)', () => {
     stubInView()
     const page = await mountRig({ state: 'idle', variant: 'head' })
     await ready(page)
-    await page.setProps({ reaction: { state: 'sad', seconds: 5 } })
+    await page.setProps({ reaction: brief('sad', 5) })
     expect(stateOf(page)).toBe('sad')
 
     await page.setProps({ state: 'confused' })
@@ -1014,7 +1022,7 @@ describe('a reaction (#928)', () => {
     stubInView()
     const page = await mountRig({ state: 'idle', variant: 'head' })
     await ready(page)
-    await page.setProps({ reaction: { state: 'clap', seconds: 0.5 } })
+    await page.setProps({ reaction: brief('clap', 0.5) })
 
     await page.setProps({ state: 'dance' })
 
@@ -1027,7 +1035,7 @@ describe('a reaction (#928)', () => {
     const page = await mountRig({ state: 'confused', variant: 'head' })
     await ready(page)
 
-    await page.setProps({ state: 'idle', reaction: { state: 'wave', seconds: 0.5 } })
+    await page.setProps({ state: 'idle', reaction: brief('wave', 0.5) })
 
     expect(stateOf(page)).toBe('wave')
     await vi.waitFor(() => expect(stateOf(page)).toBe('idle'), { timeout: 2000 })
@@ -1037,7 +1045,7 @@ describe('a reaction (#928)', () => {
     stubInView()
     let release = () => {}
     chunk.held = new Promise<void>(resolve => (release = resolve))
-    const page = await mountRig({ state: 'idle', variant: 'head', reaction: { state: 'clap', seconds: 0.8 } })
+    const page = await mountRig({ state: 'idle', variant: 'head', reaction: brief('clap', 0.8) })
     await pause(1000)
     expect(stateOf(page)).toBe('idle')
 
@@ -1055,7 +1063,7 @@ describe('a reaction (#928)', () => {
     const errors = vi.spyOn(console, 'error')
     const page = await mountRig({ state: 'idle', variant: 'head' })
     await ready(page)
-    await page.setProps({ reaction: { state: 'clap', seconds: 0.3 } })
+    await page.setProps({ reaction: brief('clap', 0.3) })
     await pause(100)
     const svg = page.get('svg').element
     const poses = () => [...svg.querySelectorAll('g[class^="compibert-"], rect')].map(element => element.getAttribute('transform')).join('|')

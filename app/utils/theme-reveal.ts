@@ -3,7 +3,7 @@ import { motionMs, motionToken, reducedMotion } from './motion'
 // The Theme reveal (#931, 04-motion § UI enters, GLOSSARY: Appearance): a new Appearance does not snap in, it spreads as a circle from
 // the option the User tapped over the old picture (a View Transition whose new picture is clipped by the growing circle), or, under
 // Reduced motion, without View Transitions or with no tapped option to spread from (a switch back after a failed save), the colours
-// cross-fade over `dur-fast` (main.css `data-theme-reveal="fade"`). A port of malkochen's reveal onto COMPIES's tokens. The showing is
+// cross-fade over `dur-fast` (compies-theme.css `data-theme-reveal="fade"`). A port of malkochen's reveal onto COMPIES's tokens. The showing is
 // `apply`: with a View Transition the browser takes the old picture first and calls it a frame later, so what shows the new look must
 // not run before (useAppearance defers it for that reason). A choice that shows the same look does not reveal at all.
 
@@ -12,7 +12,7 @@ let latestReveal: object | null = null
 
 /**
  * The growing circle's frames: THE one place of its edge (a plain circle). The centre and the radius are the caller's, and so are the
- * timing and the state handling, so a designed edge (#933) replaces only the inside of this function and the `spread` rule of main.css.
+ * timing and the state handling, so a designed edge (#933) replaces only the inside of this function and the `spread` rule of compies-theme.css.
  */
 export function revealFrames(x: number, y: number, radius: number): PropertyIndexedKeyframes {
   return { clipPath: [`circle(0px at ${x}px ${y}px)`, `circle(${radius}px at ${x}px ${y}px)`] }

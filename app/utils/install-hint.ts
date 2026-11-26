@@ -1,4 +1,4 @@
-import { splitBerlinLocal, utcToBerlin } from '../../shared/time'
+import { splitBerlinLocal, utcToBerlin } from '~~/shared/time'
 
 // What the install hint on Home shows (#676, spec #927 § The install hint). Pure: the device facts, the stored entry and `now`
 // come in, so the rule is tested without a browser. `useInstallHint` reads the facts; `PwaInstallHint.vue` draws the result.

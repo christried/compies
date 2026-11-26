@@ -1,11 +1,13 @@
 <script setup lang="ts">
 // Nothing to show yet (02-components § EmptyState). Compibert sits left on desktop and stacks above
 // the copy, centred, on phones. The heading is h2: the page title above it is the h1.
+import type { CompibertMood } from '~/utils/compibert-mood'
+
 defineProps<{
   title: string
   text?: string
   /** The head's baked mood (#819): a search without a hit is confused; the other empty states keep the plain head. */
-  mood?: 'confused' | 'sad'
+  mood?: CompibertMood
 }>()
 </script>
 
