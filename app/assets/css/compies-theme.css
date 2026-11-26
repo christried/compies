@@ -223,12 +223,13 @@ html[data-theme-reveal="spread"]::view-transition-new(root) {
 .theme-edge__disc { position: absolute; left: var(--vt-x); top: var(--vt-y); translate: -50% -50%; border-radius: 50%;
   animation: cp-vt-disc var(--cp-dur-slower) var(--cp-ease-io) both; }
 .theme-edge__disc > i { position: absolute; inset: 0; border-radius: inherit; }
-.theme-edge:not(.is-running) * { animation-play-state: paused; }
 @keyframes cp-vt-disc { from { width: 0; height: 0; } to { width: calc(2 * var(--vt-r)); height: calc(2 * var(--vt-r)); } }
 .theme-edge[data-to="dark"] .theme-edge__line { box-shadow: inset 0 0 0 var(--cp-bw) var(--cp-line); }
 .theme-edge[data-to="light"] .theme-edge__line { box-shadow: 0 0 0 var(--cp-bw) var(--cp-line); }
 .theme-edge[data-to="dark"] .theme-edge__shadow { animation: cp-vt-shadow var(--cp-dur-slower) var(--cp-ease-linear) both; }
 .theme-edge[data-to="light"] .theme-edge__shadow { animation: cp-vt-shadow-in var(--cp-dur-slower) var(--cp-ease-linear) both; }
+/* After the shadow rules and as specific as they are: their `animation` shorthand would otherwise reset the pause to running. */
+.theme-edge[data-to]:not(.is-running) * { animation-play-state: paused; }
 @keyframes cp-vt-shadow { from { box-shadow: var(--cp-shadow-modal); } to { box-shadow: var(--cp-shadow-sm); } }
 @keyframes cp-vt-shadow-in { from { box-shadow: inset var(--cp-shadow-modal); } to { box-shadow: inset var(--cp-shadow-sm); } }
 

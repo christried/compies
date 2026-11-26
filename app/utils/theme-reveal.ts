@@ -81,8 +81,10 @@ export async function revealTheme(origin: HTMLElement | null, changes: boolean, 
     const edge = to ? themeEdge(circle, to) : null
     const transition = document.startViewTransition(async () => {
       await apply()
-      // The edge joins the new picture only: after `apply`, so it is not in the old one and its group sits above the root's.
-      if (edge) {
+      // The edge joins the new picture only: after `apply`, so it is not in the old one and its group sits above the root's. Only while
+      // this reveal is the latest: a tap within one frame skips this transition, but its callback still runs, and a second edge would
+      // meet the newer one under the same view-transition name.
+      if (edge && latestReveal === reveal) {
         document.body.append(edge)
         edgeInDocument = edge
       }

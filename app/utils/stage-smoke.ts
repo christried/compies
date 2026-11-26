@@ -1,5 +1,6 @@
 import type { EventView } from '~~/shared/event'
 import { msOf } from '~~/shared/instant'
+import { REMOVE_AFTER_MS } from './wheel'
 
 // The stage smoke's plan (#675, note 19-rauch-auf-der-buehne): how fast it drifts, and the five shapes it is made of. Like the sound cues
 // (`sound-cues.ts`) it is a pure function of the viewer's own Event read: no clock in here, so a late joiner or a reload lands in the same
@@ -8,8 +9,6 @@ import { msOf } from '~~/shared/instant'
 /** One stretch of server time (epoch ms) in which the smoke runs at half speed; the start is in, the end is out. */
 export interface SmokeWindow { from: number, to: number }
 
-/** After the wheel's stop the Veto window opens; the spin's moment ends with its last bulb (REVEAL), 2.2 s later (note 19 § Moments). */
-const SPIN_TAIL_MS = 2200
 /** The Veto reveal runs 1.2 s from the end of the window (note 19 § Moments). */
 const VETO_REVEAL_MS = 1200
 
@@ -17,7 +16,8 @@ const VETO_REVEAL_MS = 1200
 export function smokeWindows(view: Pick<EventView, 'wheel' | 'coin' | 'ceremony'>): SmokeWindow[] {
   const windows: SmokeWindow[] = []
   const { wheel, coin, ceremony } = view
-  if (wheel?.spin) windows.push({ from: msOf(wheel.spin.spinStartAt), to: msOf(wheel.spin.stopAt) + SPIN_TAIL_MS })
+  // After the stop the Veto window opens; the spin's moment ends with its last bulb, the wheel's own 2.2 s later (note 19 § Moments).
+  if (wheel?.spin) windows.push({ from: msOf(wheel.spin.spinStartAt), to: msOf(wheel.spin.stopAt) + REMOVE_AFTER_MS })
   const vetoEndsAt = wheel?.vetoes.draw?.vetoEndsAt
   if (vetoEndsAt) windows.push({ from: msOf(vetoEndsAt), to: msOf(vetoEndsAt) + VETO_REVEAL_MS })
   if (coin) windows.push({ from: msOf(coin.startedAt), to: msOf(coin.landsAt) })
