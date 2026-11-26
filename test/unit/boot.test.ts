@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { bootSplashDue } from '~/utils/boot-splash'
 import { bootCookie } from '~~/shared/boot'
-import { kitty } from '../nuxt/auth'
+import type { AuthUser } from '~~/shared/auth'
 
 // The splash of the installed app (#674, spec #927, screen 01): the cookie line the page writes and the rule that decides, once per page load and on
 // the server, whether the layer is in the first byte. Whether it then shows is the stylesheet's (`display-mode: standalone`), not this rule's.
@@ -17,7 +17,9 @@ describe('the cookie line the page writes', () => {
 })
 
 describe('the splash is in the first byte', () => {
-  const due = (path: string, cookie?: string | null) => bootSplashDue({ path, user: kitty, cookie })
+  // The rule only asks whether somebody is signed in, not who.
+  const signedIn = {} as AuthUser
+  const due = (path: string, cookie?: string | null) => bootSplashDue({ path, user: signedIn, cookie })
 
   it('for Home, signed in, without the cookie', () => {
     expect(due('/')).toBe(true)
