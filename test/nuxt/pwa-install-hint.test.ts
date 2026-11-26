@@ -151,7 +151,9 @@ describe('„Installieren“', () => {
 
   it('keeps the banner, with a busy button, while the browser\'s dialog is open', async () => {
     let close!: () => void
-    prompt.open = new Promise<void>((resolve) => { close = resolve })
+    prompt.open = new Promise<void>((resolve) => {
+      close = resolve
+    })
     const page = await mountHint()
 
     await button(page, 'Installieren')!.trigger('click')

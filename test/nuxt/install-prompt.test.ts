@@ -45,7 +45,9 @@ describe('useInstallPrompt', () => {
   it('keeps the event held, and ignores a second tap, while the browser\'s dialog is open', async () => {
     let close!: (choice: { outcome: 'accepted' | 'dismissed' }) => void
     const prompt = vi.fn(async () => {})
-    window.dispatchEvent(browserEvent(new Promise((resolve) => { close = resolve }), prompt))
+    window.dispatchEvent(browserEvent(new Promise((resolve) => {
+      close = resolve
+    }), prompt))
     const installPrompt = useInstallPrompt()
 
     const first = installPrompt.prompt()

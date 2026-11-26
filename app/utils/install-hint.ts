@@ -11,10 +11,10 @@ export const PWA_LATER_DAYS = 14
 export type Platform = 'ios' | 'android' | 'computer'
 /** What `compies-pwa` holds; `day` is a Berlin `YYYY-MM-DD` (ADR 0003). */
 export type PwaEntry = { kind: 'none' } | { kind: 'done' } | { kind: 'later', day: string }
-export type InstallHint =
-  | { kind: 'none' }
-  | { kind: 'banner', via: 'prompt' | 'sheet' } // prompt: Android's held install prompt; sheet: the iOS steps (#929)
-  | { kind: 'done' } // „Installiert“
+export type InstallHint
+  = | { kind: 'none' }
+    | { kind: 'banner', via: 'prompt' | 'sheet' } // prompt: Android's held install prompt; sheet: the iOS steps (#929)
+    | { kind: 'done' } // „Installiert“
 
 const DAY_MS = 86_400_000
 

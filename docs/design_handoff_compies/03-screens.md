@@ -384,6 +384,7 @@ Every screen exists in the design files at desktop 1280 and mobile 390, light an
 - **Host vs player:** —
 - **States:** Hinweis · iOS-Anleitung · Installiert
 - **Realtime:** —
+- **Deviation (0.23, #676):** the text no longer promises push („Eigenes Fenster und ein Icon auf dem Home-Bildschirm: Compies öffnet sich wie eine App.“); the banner shows only after the User has played and only on a phone (a coarse primary pointer), on Android while the browser holds its install prompt; „Später“ hides it for 14 days; the states are built as the spec's § The install hint (#927) says. The iOS sheet is #929.
 
 
 ### 30 Ton aktivieren
