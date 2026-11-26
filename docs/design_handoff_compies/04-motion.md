@@ -98,6 +98,7 @@ Each entry: trigger · targets · timeline · reduced twin. Durations in seconds
 - Toast: `y 20→0, opacity`, 0.22; out 0.14.
 - Reduced: opacity only, 0.14.
 - **Deviation (0.12, #425, #439):** the Team name in the TeamNameBuilder (02-components § TeamNameBuilder) folds and unfolds with the field in `dur-fast` on `ease-out` (opacity); a new or changed word pops in `dur-slow` on `ease-pop`. Reduced: no motion.
+- **Deviation (0.23, #931):** the Theme reveal. A new Appearance (Hell, Dunkel, System) spreads as a circle from the centre of the tapped option over the old picture, `dur-slower` on `ease-io` (a View Transition, `app/utils/theme-reveal.ts`). Under Reduced motion, without View Transitions or with no tapped option (the switch back after a failed save) the colours cross-fade in `dur-fast` on `ease-out`. Nothing moves when the look shown does not change (System on a device that already shows that look), nor for a device's own switch under System or another device's change. No sound.
 
 ### Hold to confirm [MVP]
 - Fill `scaleX 0→1` (origin left), 1.0 `none`. Release early: `scaleX → 0`, 0.2 `power2.out`. Confirm: button `scale 1→.96→1`, 0.18; icon swap.

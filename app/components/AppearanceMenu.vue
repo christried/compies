@@ -15,8 +15,10 @@ const { open, toggle, close, move, menuItems } = useDropdownMenu({
   initialFocus: () => menuItems().find(item => item.getAttribute('aria-checked') === 'true'),
 })
 
-function choose(value: Appearance) {
-  void appearance.choose(value)
+// The tapped item is the origin of the Theme reveal (#931), handed over before the menu closes: the menu is gone on the next
+// render, and a removed element has an empty rect.
+function choose(value: Appearance, event: MouseEvent) {
+  void appearance.choose(value, event.currentTarget as HTMLElement)
   close()
 }
 </script>
@@ -52,7 +54,7 @@ function choose(value: Appearance) {
         role="menuitemradio"
         :aria-checked="option.value === appearance.appearance.value"
         class="flex h-11 items-center gap-2.5 rounded-md px-3 text-left text-[15px] font-bold text-ink hover:bg-paper-2"
-        @click="choose(option.value)"
+        @click="choose(option.value, $event)"
       >
         <AppIcon :icon="appearance.icons[option.value]" />
         {{ option.label }}

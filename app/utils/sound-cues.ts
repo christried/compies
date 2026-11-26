@@ -352,6 +352,18 @@ export const STAMP_GAP_MS = 80
 export const ARRIVAL_LATE_MS = 2000
 
 /**
+ * How many Vetoes arrived revealed with this read (0: none), the one rule of the reveal (#673): the same draw, the reveal not in the previous read,
+ * in the new one, the window's end known and no more than `ARRIVAL_LATE_MS` past. The stamps (`vetoArrivalCues`) and the header's reaction
+ * (`vetoReaction`) both read it, so they cannot disagree. Reads `revealedCount` and the draw's fields only.
+ */
+export function revealedOnArrival(previous: VetoArrivalState | null, next: VetoArrivalState, now: number): number {
+  if (previous === null || next.draw === null) return 0
+  if (previous.draw?.drawId !== next.draw.drawId || previous.revealedCount !== null || next.revealedCount === null) return 0
+  if (next.draw.vetoEndsAt === null || now - msOf(next.draw.vetoEndsAt) > ARRIVAL_LATE_MS) return 0
+  return next.revealedCount
+}
+
+/**
  * The cues that the arrival of a read causes (#532, spec #504): the own Party's cast (`veto-seal`), the stamps of the reveal (one `veto-seal`
  * per Veto) and a set game's opening, which are no server time known ahead. A pure function of the page's previous read and its new one, so
  * a page's first read is the baseline (a reload, a late join and a page opened after the moment play nothing), a refetch of the same read
@@ -365,10 +377,8 @@ export function vetoArrivalCues(previous: VetoArrivalState | null, next: VetoArr
 
   if (next.draw.kind === 'set' && !sameDraw && now - msOf(next.draw.stopAt) <= ARRIVAL_LATE_MS) cues.push({ id: 'veto-open', delayMs: 0 })
   if (sameDraw && !previous.ownCast && next.ownCast) cues.push({ id: 'veto-seal', delayMs: 0 })
-  if (sameDraw && previous.revealedCount === null && next.revealedCount !== null
-    && next.draw.vetoEndsAt !== null && now - msOf(next.draw.vetoEndsAt) <= ARRIVAL_LATE_MS) {
-    for (let index = 0; index < next.revealedCount; index++) cues.push({ id: 'veto-seal', delayMs: index * STAMP_GAP_MS })
-  }
+  const stamps = revealedOnArrival(previous, next, now)
+  for (let index = 0; index < stamps; index++) cues.push({ id: 'veto-seal', delayMs: index * STAMP_GAP_MS })
   return cues
 }
 

@@ -26,7 +26,7 @@ type Page = Awaited<ReturnType<typeof mountSuspended<typeof CompibertRig>>>
 
 const pages: Page[] = []
 
-interface Props { state?: RigState, variant?: RigVariant, size?: number, look?: number | null, micro?: boolean, hopsFor?: number, rim?: boolean, reaction?: Reaction | null }
+interface Props { state?: RigState, variant?: RigVariant, size?: number, look?: number | null, micro?: boolean, hopsFor?: number, rim?: boolean, reaction?: Reaction | null, accessory?: 'partyhat' }
 
 async function mountRig(props: Props = {}) {
   const page = await mountSuspended(CompibertRig, { props })
@@ -470,6 +470,18 @@ describe('the head', () => {
     expect(attribute(page, 'data-state')).toBe(state)
     expect(errors).not.toHaveBeenCalled()
     expect(warnings).not.toHaveBeenCalled()
+  })
+
+  // The party hat survives the header's swap from the still head to the rig (#673): the rig draws it at the svg's root when asked, none by default.
+  it('draws one party hat with the accessory, and none without', async () => {
+    stubInView()
+    const bare = await mountRig({ variant: 'head' })
+    const hatted = await mountRig({ variant: 'head', accessory: 'partyhat' })
+
+    expect(bare.findAll('.compibert-hat')).toHaveLength(0)
+    expect(hatted.findAll('.compibert-hat')).toHaveLength(1)
+    await ready(hatted)
+    expect(hatted.findAll('.compibert-hat')).toHaveLength(1)
   })
 })
 
