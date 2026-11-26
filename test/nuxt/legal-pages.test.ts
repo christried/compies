@@ -213,8 +213,8 @@ describe('legal pages', () => {
     expect(text.indexOf('Sitzungs-Cookies (Better Auth)')).toBeGreaterThanOrEqual(0)
     expect(text.indexOf('Sitzungs-Cookies (Better Auth)')).toBeLessThan(text.indexOf(cookie))
     expect(text.indexOf(cookie)).toBeLessThan(text.indexOf('Lokaler Speicher (compies-sound)'))
-    expect(section!.findAll('p')).toHaveLength(11)
-    // The one place the date is pinned: the day of the last change, 26 November 2026 (0.23, § 9 for the splash's cookie, #674; on 25 November 2026 0.22, §§ 11 and 16 for the removal of a Member, #899; 0.21, §§ 6, 16 and 18 for the account deletion, #920; §§ 5, 6 and 7 for the own Profilbild, #912; before that 0.19, § 9 for the cookie of Reduced motion, #680, and for the Round card's memory, #838; before that 0.18, §4, §10, §11, §16 and §21 for the Chat and the Emotes, #775).
+    expect(section!.findAll('p')).toHaveLength(12)
+    // The one place the date is pinned: the day of the last change, 26 November 2026 (0.23, § 9 for the splash's cookie, #674, and for the install hint's entry, #676; on 25 November 2026 0.22, §§ 11 and 16 for the removal of a Member, #899; 0.21, §§ 6, 16 and 18 for the account deletion, #920; §§ 5, 6 and 7 for the own Profilbild, #912; before that 0.19, § 9 for the cookie of Reduced motion, #680, and for the Round card's memory, #838; before that 0.18, §4, §10, §11, §16 and §21 for the Chat and the Emotes, #775).
     expect(page.get('main').text()).toContain('Stand: 26. November 2026.')
   })
 
@@ -227,6 +227,18 @@ describe('legal pages', () => {
     const news = paragraphs.findIndex(p => p.startsWith('Lokaler Speicher (compies.news.seen)'))
     expect(news).toBeGreaterThan(0)
     expect(paragraphs[news + 1]).toBe(entry)
+  })
+
+  it('name the compies-pwa entry in section 9, right after compies-round-notes, word for word (#676, spec #927)', async () => {
+    const page = await mountSuspended(DatenschutzPage, { route: '/datenschutz' })
+    const section = page.findAll('section').find(s => s.get('h2').text() === '9. Cookies und Speicher im Browser')
+
+    const paragraphs = section!.findAll('p').map(p => p.text())
+    const entry = 'Lokaler Speicher (compies-pwa): merkt sich auf diesem Gerät, dass du den Hinweis zum Installieren der App mit „Später“ ausgeblendet hast, mit dem Tag, damit er nach 14 Tagen wiederkommt, oder dass du die Anleitung für iPhone und iPad abgeschlossen hast, damit er nicht wieder erscheint. Der Eintrag enthält nur diese Angabe, keine Kennung und keine Angaben zu dir, und bleibt, bis du die Browserdaten löschst.'
+    const roundNotes = paragraphs.findIndex(p => p.startsWith('Lokaler Speicher (compies-round-notes)'))
+    expect(roundNotes).toBeGreaterThan(0)
+    expect(paragraphs[roundNotes + 1]).toBe(entry)
+    expect(paragraphs[roundNotes + 2]).toMatch(/^Service Worker:/)
   })
 
   it('name the compies-motion cookie in section 9, right after compies-appearance, word for word (#680, spec #856)', async () => {
