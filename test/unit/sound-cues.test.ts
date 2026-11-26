@@ -7,7 +7,7 @@ import { CUE_LENGTHS } from '../../app/utils/cue-lengths'
 import { groupInput } from './group-input'
 import { pinCrossings } from '../../app/utils/wheel-pins'
 import {
-  ARRIVAL_LATE_MS, CUE_GROUPS, CUE_IDS, CUE_VOLUME, EMOTE_CUE, OTHERS_EMOTE_VOLUME, STAMP_GAP_MS, TICK_MIN_GAP_MS, countdownCuePlan, cueFilesOf, emoteCue, reachableGroups, thinTicks, vetoArrivalCues, vetoCuePlan, wheelCuePlan,
+  ARRIVAL_LATE_MS, CUE_GROUPS, CUE_IDS, CUE_VOLUME, EMOTE_CUE, OTHERS_EMOTE_VOLUME, STAMP_GAP_MS, TICK_MIN_GAP_MS, countdownCuePlan, cueFilesOf, emoteCue, reachableGroups, revealedOnArrival, thinTicks, vetoArrivalCues, vetoCuePlan, wheelCuePlan,
   type ArrivalCue, type CountdownCueInput, type Cue, type CueGroup, type CueId, type GroupInput, type VetoArrivalState, type VetoCueInput, type WheelCueInput,
 } from '../../app/utils/sound-cues'
 
@@ -533,6 +533,40 @@ describe('vetoArrivalCues', () => {
       expect(cues(state({ draw: null }), set(), START + 2000)).toHaveLength(1)
       expect(cues(state({ draw: null }), set(), START + 2001)).toEqual([])
     })
+  })
+})
+
+// The reveal's condition, shared by the stamps and the header's reaction (#673): the count of Vetoes that arrived revealed, 0 for none.
+describe('revealedOnArrival', () => {
+  const state = (rest: Partial<VetoArrivalState> = {}): VetoArrivalState => ({ draw: drawOf(40_000), ownCast: false, revealedCount: null, ...rest })
+  const afterEnd = START + 40_000 + 300
+
+  it('is the count of a reveal that arrives on the same draw', () => {
+    expect(revealedOnArrival(state(), state({ revealedCount: 1 }), afterEnd)).toBe(1)
+    expect(revealedOnArrival(state(), state({ revealedCount: 2 }), afterEnd)).toBe(2)
+  })
+
+  it('is 0 for a window that ended with no Veto', () => {
+    expect(revealedOnArrival(state(), state({ revealedCount: 0 }), afterEnd)).toBe(0)
+  })
+
+  it('is 0 on the first read, however much it shows, and without a window', () => {
+    expect(revealedOnArrival(null, state({ revealedCount: 2 }), afterEnd)).toBe(0)
+    expect(revealedOnArrival(state(), state({ draw: null, revealedCount: 2 }), afterEnd)).toBe(0)
+  })
+
+  it('is 0 for a read that already carried the reveal, read again', () => {
+    expect(revealedOnArrival(state({ revealedCount: 2 }), state({ revealedCount: 2 }), afterEnd)).toBe(0)
+  })
+
+  it('is 0 for another draw, and when the end is not known', () => {
+    expect(revealedOnArrival(state(), state({ revealedCount: 1, draw: { ...drawOf(40_000), drawId: 'd2' } }), afterEnd)).toBe(0)
+    expect(revealedOnArrival(state(), state({ revealedCount: 1, draw: drawOf(null) }), afterEnd)).toBe(0)
+  })
+
+  it('is the count 2000 ms after the end, 0 at 2001', () => {
+    expect(revealedOnArrival(state(), state({ revealedCount: 1 }), START + 40_000 + 2000)).toBe(1)
+    expect(revealedOnArrival(state(), state({ revealedCount: 1 }), START + 40_000 + 2001)).toBe(0)
   })
 })
 
