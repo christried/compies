@@ -9,6 +9,7 @@
 - Auf der Event-Seite reagiert die App-Figur im Kopf der Seite: auf deine eigenen Emotes, auf aufgedeckte Vetos und auf eine verlorene Verbindung ([#673](https://github.com/christried/compies/issues/673)).
 - Die installierte App begrüßt dich höchstens einmal am Tag mit einer kurzen Startanimation, in der die Buchstaben von Compies hochspringen; ein Tippen überspringt sie ([#674](https://github.com/christried/compies/issues/674)).
 - Auf dem Handy sagt dir Compies auf der Startseite, dass du es als App installieren kannst, sobald du schon gespielt hast ([#676](https://github.com/christried/compies/issues/676)).
+- Auf iPhone und iPad zeigt dir Compies auf der Startseite in drei Schritten, wie du es als App auf den Home-Bildschirm legst ([#929](https://github.com/christried/compies/issues/929)).
 
 ### Geändert
 

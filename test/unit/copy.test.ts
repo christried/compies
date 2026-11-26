@@ -95,6 +95,12 @@ describe('copy rules', () => {
   })
 
   // The board says less (#800): the lines under the Tribüne's title, next to the poll's title and under the Team word's field are gone.
+  // Push is #672 and not built, so the iPhone and iPad sheet (#929) drops the note that said push needs the installed app.
+  it('has no pwa.iosNote key left and no text that says push needs the installed app (#929)', () => {
+    expect('iosNote' in de.pwa).toBe(false)
+    expect(entries.some(e => e.value.includes('Push nur mit installierter App'))).toBe(false)
+  })
+
   it('has no board or Team word key left for the lines #800 removed', () => {
     expect('standsSub' in de.board).toBe(false)
     expect('poll' in de.board.meta).toBe(false)

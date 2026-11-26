@@ -29,12 +29,12 @@ function readEntry(): PwaEntry {
  * never mismatches). `accepted` lives with this component: „Installiert“ lasts until the User leaves Home, then the browser's prompt is used up and
  * nothing is stored for it.
  *
- * The seam for the iOS sheet (#929): `installHint()` already says `{ banner, via: 'sheet' }` on iOS; `PwaInstallHint.vue` widens `shown` and fills
- * the `'sheet'` branch of `install()`; `done()` (writes `done`) goes next to `later()`.
+ * On iPhone and iPad (#929) „Installieren“ opens the three steps in a sheet (`sheet`), and closing it, however it is closed, is `done()`.
  */
 export function useInstallHint(hasPlayed: MaybeRefOrGetter<boolean>) {
   const device = ref<Device | null>(null)
   const accepted = ref(false)
+  const sheet = ref(false)
   const installPrompt = useInstallPrompt()
 
   onMounted(() => {
@@ -54,26 +54,38 @@ export function useInstallHint(hasPlayed: MaybeRefOrGetter<boolean>) {
     return installHint({ ...facts, promptHeld: installPrompt.held.value, accepted: accepted.value, hasPlayed: toValue(hasPlayed) })
   })
 
-  /** „Installieren“: opens the browser's prompt (Android); an accepted install says „Installiert“. */
+  /** „Installieren“: opens the browser's prompt (Android) or the iOS steps (iPhone and iPad, #929); an accepted install says „Installiert“. */
   async function install() {
     if (hint.value.kind !== 'banner') return
-    // #929: the 'sheet' branch opens the iOS steps.
-    if (hint.value.via === 'prompt') accepted.value = (await installPrompt.prompt()) === 'accepted'
+    if (hint.value.via === 'sheet') sheet.value = true
+    else accepted.value = (await installPrompt.prompt()) === 'accepted'
   }
 
-  /** „Später“: the banner hides at once and the day is stored; blocked storage keeps it for this page view only. */
-  function later() {
+  /** Stores the entry for this device and hides the banner at once; blocked storage keeps it for this page view only. */
+  function remember(entry: string) {
     const facts = device.value
     if (!facts) return
-    const stored = laterEntry(facts.now)
-    device.value = { ...facts, entry: parseEntry(stored) }
+    device.value = { ...facts, entry: parseEntry(entry) }
     try {
-      localStorage.setItem(PWA_STORAGE_KEY, stored)
+      localStorage.setItem(PWA_STORAGE_KEY, entry)
     }
     catch {
       // Nothing is stored: the banner shows again on the next load.
     }
   }
 
-  return { hint, install, later }
+  /** „Später“: the banner hides at once and the day is stored. */
+  function later() {
+    const facts = device.value
+    if (!facts) return
+    remember(laterEntry(facts.now))
+  }
+
+  /** Closing the iOS sheet, however it is closed: `done` is stored, so the banner does not come back on this device (#929). */
+  function done() {
+    sheet.value = false
+    remember('done')
+  }
+
+  return { hint, sheet, install, later, done }
 }
