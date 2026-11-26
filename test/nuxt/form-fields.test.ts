@@ -628,18 +628,19 @@ describe('SegmentedControl', () => {
 
     await page.findAll('[role="radio"]')[1]!.trigger('click')
 
-    expect(page.emitted('update:modelValue')?.at(-1)).toEqual(['direct'])
+    // The second argument is the tapped option, where the Theme reveal spreads from (#931).
+    expect(page.emitted('update:modelValue')?.at(-1)).toEqual(['direct', page.findAll('[role="radio"]')[1]!.element])
   })
 
-  it('moves the selection with the arrow keys and wraps around', async () => {
+  it('moves the selection with the arrow keys and wraps around, handing over the radio now selected', async () => {
     const page = await mountSuspended(SegmentedControl, { props: { modelValue: 'poll', options, label: 'Termin' } })
     const radios = page.findAll('[role="radio"]')
 
     await radios[0]!.trigger('keydown', { key: 'ArrowRight' })
-    expect(page.emitted('update:modelValue')?.at(-1)).toEqual(['direct'])
+    expect(page.emitted('update:modelValue')?.at(-1)).toEqual(['direct', radios[1]!.element])
 
     await radios[0]!.trigger('keydown', { key: 'ArrowLeft' })
-    expect(page.emitted('update:modelValue')?.at(-1)).toEqual(['direct'])
+    expect(page.emitted('update:modelValue')?.at(-1)).toEqual(['direct', radios[1]!.element])
   })
 
   it('leaves ArrowUp and ArrowDown to the parent with arrows horizontal, and still moves on ArrowLeft and ArrowRight (#617)', async () => {
@@ -654,7 +655,7 @@ describe('SegmentedControl', () => {
     expect(page.emitted('update:modelValue')).toBeUndefined()
 
     await radio.trigger('keydown', { key: 'ArrowRight' })
-    expect(page.emitted('update:modelValue')?.at(-1)).toEqual(['direct'])
+    expect(page.emitted('update:modelValue')?.at(-1)).toEqual(['direct', page.findAll('[role="radio"]')[1]!.element])
   })
 
   it('selects on ArrowDown and ArrowUp by default', async () => {
@@ -662,7 +663,7 @@ describe('SegmentedControl', () => {
 
     await page.findAll('[role="radio"]')[0]!.trigger('keydown', { key: 'ArrowDown' })
 
-    expect(page.emitted('update:modelValue')?.at(-1)).toEqual(['direct'])
+    expect(page.emitted('update:modelValue')?.at(-1)).toEqual(['direct', page.findAll('[role="radio"]')[1]!.element])
   })
 
   it('fills the selected option with its own colour and draws its icon', async () => {

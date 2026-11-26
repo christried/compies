@@ -197,6 +197,25 @@
 }
 [data-motion=reduced] .aura::before { animation: none; background: color-mix(in srgb, var(--cp-hot) 70%, transparent); }
 
+/* The Theme reveal (#931, app/utils/theme-reveal.ts sets `data-theme-reveal`). `spread`: a new Appearance grows as a circle over the old
+   picture; the circle's clip-path is animated in script (its edge is `revealFrames`), so the browser's own cross-fade of the two
+   pictures is off and the new one covers the old with normal blending. `fade`: Reduced motion, no View Transitions or no tapped option:
+   the colours cross-fade over `dur-fast`. The `*` has more specificity than a utility class, so for those 140 ms it replaces every
+   element's `transition-property`: a CSS transition running at that moment is cut to its end value (GSAP and Web Animations are not). */
+html[data-theme-reveal="spread"]::view-transition-old(root),
+html[data-theme-reveal="spread"]::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+html[data-theme-reveal="fade"],
+html[data-theme-reveal="fade"] *,
+html[data-theme-reveal="fade"] *::before,
+html[data-theme-reveal="fade"] *::after {
+  transition-property: background-color, color, border-color, outline-color, fill, stroke, box-shadow;
+  transition-duration: var(--cp-dur-fast);
+  transition-timing-function: var(--cp-ease-out);
+}
+
 /* ---------- utilities ---------- */
 @utility layer-* { z-index: --value(--layer-*); }
 /* Transition only: a dur-* that also set animation-duration made Vue's TransitionGroup skip every move (#273). */
