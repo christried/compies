@@ -9,7 +9,7 @@ import { shownToasts } from './event-page'
 
 // The row menu of the Admin page and the removal of a Profile picture (#940, spec #938): „Profilbild entfernen“ shows only for a User with an uploaded
 // picture, asks first, and after the removal the row shows the provider's picture with no item, without a reload. Users are invented.
-let view: AdminView = { users: [], deletedUsers: 0 }
+let view: AdminView = { users: [], deletedUsers: 0, events: [] }
 let failRemovals = false
 const reads = vi.fn()
 const removals = vi.fn()
@@ -41,7 +41,7 @@ const larsi = person({ id: 'u-larsi', displayName: 'Larsi', providers: ['twitch'
 const neu = person({ id: 'u-neu', displayName: null, image: 'https://example.com/neu.png', firstSignInAt: '2026-04-01T10:00:00.000Z' })
 
 async function mountPage(next: Partial<AdminView> = {}) {
-  view = { users: [neu, larsi, kittyUser, sanne], deletedUsers: 0, ...next }
+  view = { users: [neu, larsi, kittyUser, sanne], deletedUsers: 0, events: [], ...next }
   const page = await mountSuspended(AdminPage, { route: '/admin', attachTo: document.body })
   await settle(page)
   return page
