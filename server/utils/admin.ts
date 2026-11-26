@@ -19,12 +19,20 @@ export async function requirePlatformAdmin(event: H3Event): Promise<AuthUser> {
 }
 
 /**
+ * The route's `:id` as the Admin routes that name one User read it (#682, #940, #941): text that is no id answers like a missing route, so the id never reaches a query.
+ */
+export function adminUserIdParam(event: H3Event): string {
+  const id = getRouterParam(event, 'id')
+  if (!isUuid(id)) throw apiNotFound()
+  return id
+}
+
+/**
  * The id of the User whose account the Platform admin may delete (#941, spec #938): the route's `:id`. Text that is no id, an unknown id and a Deleted User answer like a
  * missing route; a Platform admin's id, the signed-in admin's own included, answers `platform_admin_not_deletable`, so no route that deletes can be pointed at one.
  */
 export async function requireDeletableUserId(event: H3Event): Promise<string> {
-  const id = getRouterParam(event, 'id')
-  if (!isUuid(id)) throw apiNotFound()
+  const id = adminUserIdParam(event)
   const [row] = await useDb(event).select({ isAdmin: users.isAdmin, deletedAt: users.deletedAt }).from(users).where(eq(users.id, id))
   if (!row || row.deletedAt) throw apiNotFound()
   if (row.isAdmin) throw apiError('platform_admin_not_deletable')
