@@ -1,6 +1,6 @@
 import { eq } from 'drizzle-orm'
 import { expect } from 'vitest'
-import { activity, authAccounts, draws, eventMembers, eventPoolGames, events, games, pollSlots } from '../../server/db/schema'
+import { activity, authAccounts, draws, eventMembers, eventPoolGames, events, games, pollSlots, users } from '../../server/db/schema'
 import type { testClock } from '../../server/utils/clock'
 import type { Db } from '../../server/utils/db'
 import type { memoryRoomNotifier } from '../../server/utils/room-notifier'
@@ -9,7 +9,7 @@ import type { EventFinished, EventView } from '../../shared/event'
 import type { CeremonyStarted, CoinTossed } from '../../shared/stage'
 import { sendVia, type TestRequest } from './app'
 import { TEST_SETTINGS } from './fixtures'
-import { setAllowlist, signIn, type ProviderProfile } from './sign-in'
+import { signIn, type ProviderProfile } from './sign-in'
 
 // The Event scenario (#418, spec #413): glossary verbs over the HTTP surface. A verb is the happy path: it asserts `status === 200`
 // itself and answers what it created (an id, rows). A test that wants a refusal calls `send` (`sendVia`, ./app) and reads it with
@@ -117,13 +117,11 @@ export async function signInAs(rig: Rig, profile: ProviderProfile): Promise<Sign
   return { profile, cookie, id: account!.userId }
 }
 
-/**
- * Signs the Host in with the Host permission: it sets the allowlist to that one account (`HOST_PROVIDER_IDS`) first, and so overwrites
- * `ADMIN_PROVIDER_IDS` (empty). A test that needs an Admin calls `setAllowlist` (./sign-in) after this.
- */
+/** Signs the Host in and sets the Host permission in the database, as the Admin page's switch does (#682); no list grants it any more (#939). */
 export async function hostSignsIn(rig: Rig, profile: ProviderProfile): Promise<Signed> {
-  setAllowlist({ hosts: `${profile.provider}:${profile.id}` })
-  return await signInAs(rig, profile)
+  const signed = await signInAs(rig, profile)
+  await rig.db.update(users).set({ canHost: true }).where(eq(users.id, signed.id))
+  return signed
 }
 
 // --- Setting an Event up --------------------------------------------------------------------------------------------------

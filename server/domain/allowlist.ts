@@ -1,12 +1,8 @@
 import { isSignInProvider } from '../../shared/auth'
 
-// Host permission and Platform admin role from env allowlists of provider account ids (ADR 0002),
-// e.g. HOST_PROVIDER_IDS=discord:80351110224678912,twitch:141981764.
-
-export interface Allowlist {
-  hosts: Set<string>
-  admins: Set<string>
-}
+// The Platform admin role comes from an env allowlist of provider account ids (ADR 0002), e.g.
+// ADMIN_PROVIDER_IDS=discord:80351110224678912,twitch:141981764. The Host permission is stored and
+// granted in the app (ADR 0002, amendment of 2026-11-20); the sign-in only adds it for a Platform admin.
 
 export interface ProviderAccount {
   providerId: string
@@ -25,10 +21,11 @@ export function parseAllowlist(raw: string | undefined): Set<string> {
   return keys
 }
 
-/** A User's rights from all of their linked accounts. The Platform admin can always host. */
-export function permissionsFor(accounts: ProviderAccount[], allowlist: Allowlist) {
-  const keys = accounts.map(account => `${account.providerId}:${account.accountId}`)
-  const isAdmin = keys.some(key => allowlist.admins.has(key))
-  const canHost = isAdmin || keys.some(key => allowlist.hosts.has(key))
-  return { canHost, isAdmin }
+/**
+ * The columns a sign-in sets, from all of a User's linked accounts. The role is recomputed every time; the Host permission
+ * is only ever switched on, for a Platform admin (who always hosts), and otherwise left as stored.
+ */
+export function permissionsFor(accounts: ProviderAccount[], admins: Set<string>): { isAdmin: boolean, canHost?: true } {
+  const isAdmin = accounts.some(account => admins.has(`${account.providerId}:${account.accountId}`))
+  return isAdmin ? { isAdmin, canHost: true } : { isAdmin }
 }
