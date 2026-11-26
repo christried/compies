@@ -203,7 +203,7 @@
 [data-motion=reduced] .aura::before { animation: none; background: color-mix(in srgb, var(--cp-hot) 70%, transparent); }
 
 /* The Theme reveal (#931, app/utils/theme-reveal.ts sets `data-theme-reveal`). `spread`: a new Appearance grows as a circle over the old
-   picture; the circle's clip-path is animated in script (its edge is `revealFrames`), so the browser's own cross-fade of the two
+   picture; the circle's clip-path is animated in script (its edge is the `.theme-edge` block below, #933), so the browser's own cross-fade of the two
    pictures is off and the new one covers the old with normal blending. `fade`: Reduced motion, no View Transitions or no tapped option:
    the colours cross-fade over `dur-fast`. The `*` has more specificity than a utility class, so for those 140 ms it replaces every
    element's `transition-property`: a CSS transition running at that moment is cut to its end value (GSAP and Web Animations are not). */
@@ -212,6 +212,26 @@ html[data-theme-reveal="spread"]::view-transition-new(root) {
   animation: none;
   mix-blend-mode: normal;
 }
+
+/* The circle's edge (#933, design note 20 „Kartenkante“, 1b): a cream line on the rim and an ink shadow outside it, both directions.
+   The markup is `themeEdge` in app/utils/theme-reveal.ts: `.theme-edge` (`data-to`: the look the circle goes to), its `.theme-edge__disc`
+   grows with the circle's clip, and the children `.theme-edge__line` (Dunkel's tokens) and `.theme-edge__shadow` (Hell's tokens). Its
+   animations stay paused until the transition is ready (`is-running`). The children are not named after a bare line or shadow class: a
+   Tailwind utility named `shadow` sets box-shadow. */
+.theme-edge { position: fixed; inset: 0; pointer-events: none; contain: strict; view-transition-name: theme-edge; }
+::view-transition-group(theme-edge), ::view-transition-new(theme-edge) { animation: none; }
+.theme-edge__disc { position: absolute; left: var(--vt-x); top: var(--vt-y); translate: -50% -50%; border-radius: 50%;
+  animation: cp-vt-disc var(--cp-dur-slower) var(--cp-ease-io) both; }
+.theme-edge__disc > i { position: absolute; inset: 0; border-radius: inherit; }
+.theme-edge:not(.is-running) * { animation-play-state: paused; }
+@keyframes cp-vt-disc { from { width: 0; height: 0; } to { width: calc(2 * var(--vt-r)); height: calc(2 * var(--vt-r)); } }
+.theme-edge[data-to="dark"] .theme-edge__line { box-shadow: inset 0 0 0 var(--cp-bw) var(--cp-line); }
+.theme-edge[data-to="light"] .theme-edge__line { box-shadow: 0 0 0 var(--cp-bw) var(--cp-line); }
+.theme-edge[data-to="dark"] .theme-edge__shadow { animation: cp-vt-shadow var(--cp-dur-slower) var(--cp-ease-linear) both; }
+.theme-edge[data-to="light"] .theme-edge__shadow { animation: cp-vt-shadow-in var(--cp-dur-slower) var(--cp-ease-linear) both; }
+@keyframes cp-vt-shadow { from { box-shadow: var(--cp-shadow-modal); } to { box-shadow: var(--cp-shadow-sm); } }
+@keyframes cp-vt-shadow-in { from { box-shadow: inset var(--cp-shadow-modal); } to { box-shadow: inset var(--cp-shadow-sm); } }
+
 html[data-theme-reveal="fade"],
 html[data-theme-reveal="fade"] *,
 html[data-theme-reveal="fade"] *::before,
