@@ -255,7 +255,7 @@ watch(() => tour.shown.value, (isShown) => {
     >
       <!-- Under the Clip's backdrop and the Tour too (#587, #647): AppShell cannot wrap a slot, so the wrapper takes the `inert` itself. -->
       <div
-        class="px-3.5 pt-3 empty:hidden md:px-6"
+        class="relative layer-content px-3.5 pt-3 empty:hidden md:px-6"
         :inert="covered || undefined"
       >
         <ConnectionBanner
@@ -339,6 +339,18 @@ watch(() => tour.shown.value, (isShown) => {
     >
       {{ news?.announcement }}
     </p>
+
+    <!-- The smoke behind the stage (#675): where the stage is, so not on a phone's other views nor in the load and error states. -->
+    <template
+      v-if="data && pageState && (wide !== false || activeView === 'event')"
+      #decor
+    >
+      <StageSmoke
+        :view="data"
+        :server-now="serverClock.now"
+        :clip-shown="clipShown"
+      />
+    </template>
 
     <EventStage
       v-if="data && pageState && (wide !== false || activeView === 'event')"

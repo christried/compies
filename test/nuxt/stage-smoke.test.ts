@@ -42,10 +42,20 @@ function wheel(spin: { startedAgo: number, stopsIn: number } | null, vetoEndedAg
 type FakeAnimation = { playbackRate: number, updatePlaybackRate: (rate: number) => void }
 let animations: FakeAnimation[] = []
 
+function fakeAnimation(): FakeAnimation {
+  const animation = {
+    playbackRate: 1,
+    updatePlaybackRate(rate: number) {
+      animation.playbackRate = rate
+    },
+  }
+  return animation
+}
+
 beforeEach(() => {
   // The clock stands still, so a window of a second is the same second however long the first mount takes.
   vi.useFakeTimers({ toFake: ['Date'] })
-  animations = [1, 2].map(() => ({ playbackRate: 1, updatePlaybackRate(rate: number) { this.playbackRate = rate } }))
+  animations = [1, 2].map(fakeAnimation)
   Object.defineProperty(HTMLElement.prototype, 'getAnimations', { configurable: true, writable: true, value: () => animations })
 })
 
@@ -177,7 +187,7 @@ describe('the stage smoke layer', () => {
 
   it('applies the rate to an animation that starts later, on animationstart', async () => {
     const page = await mount(none, true)
-    const late: FakeAnimation = { playbackRate: 1, updatePlaybackRate(rate) { this.playbackRate = rate } }
+    const late = fakeAnimation()
     animations.push(late)
 
     await page.get('[data-layer="stage-smoke"]').trigger('animationstart')
