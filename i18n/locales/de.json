@@ -881,7 +881,7 @@
   },
   "pwa": {
     "title": "Compies als App installieren",
-    "text": "Eigenes Fenster, Icon auf dem Home-Bildschirm und Push auch bei geschlossenem Browser.",
+    "text": "Eigenes Fenster und ein Icon auf dem Home-Bildschirm: Compies öffnet sich wie eine App.",
     "later": "Später",
     "install": "Installieren",
     "iosTitle": "Auf den Home-Bildschirm",
