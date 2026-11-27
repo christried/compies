@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest'
 import { CUE_LENGTHS } from '../../app/utils/cue-lengths'
 import { CUE_IDS } from '../../app/utils/sound-cues'
 
-// The one table of the cues' lengths (#740) that the file test, the generator and the listening page share, held against
+// The one table of the cues' lengths (#740) that the file test reads, held against
 // `compibert-sound.md`: a row the document has cleanly (the cue id alone in its cell) must say the same, and a row flagged `docRow: false`
 // must be one the document does not have cleanly, so the flag cannot lie either way.
 

@@ -2,8 +2,7 @@ import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 
-// The two baked poses the Share image renders (#313 reads them from the Nitro server assets). CI cannot run the bake itself (it
-// needs GSAP stepped by hand); `node scripts/bake-compibert.mjs --check` is the manual guard that the files match the engine.
+// The two baked poses the Share image renders (#313 reads them from the Nitro server assets). The files are committed; this test checks their shape.
 const DIR = resolve(import.meta.dirname, '../../server/assets/compibert')
 const read = (file: string) => readFileSync(resolve(DIR, file), 'utf8')
 

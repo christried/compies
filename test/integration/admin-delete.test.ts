@@ -14,7 +14,7 @@ import { hostSignsIn, signInAs, startRunningEvent, type Rig, type Signed } from 
 import { setAllowlist, stubAuthEnv } from './sign-in'
 
 // The Platform admin deletes another User's account on that User's request (#941, spec #938, ADR 0020): GET /api/admin/users/:id/deletion counts what would go (the
-// counts of the operator's dry run, one function), DELETE /api/admin/users/:id runs the module of #681 and #917 and then does what the User's own route does
+// dry run of `deleteAccount`), DELETE /api/admin/users/:id runs the module of #681 and #917 and then does what the User's own route does
 // after the commit (test/integration/delete-account.test.ts, delete-host.test.ts cover the module). It leaves the Platform admin's own session alone, refuses a
 // Platform admin's id, and answers like a missing route to everyone else.
 

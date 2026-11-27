@@ -1,8 +1,7 @@
 import type { CueId } from './cue-ids'
 
-// The one table of the cues' lengths (#740), read by the file test (test/unit/sound-files.test.ts), the listening page (app/dev/) and the
-// candidate generator (scripts/make-cue-candidates.mjs). The generator imports it with plain Node, so this file is a leaf: a type import and
-// nothing at runtime, no alias. Its rows are the Length column of `reference/docs/compibert-sound.md` where the document has a clean row.
+// The one table of the cues' lengths (#740), read by the file test (test/unit/sound-files.test.ts). A leaf: a type import and nothing at
+// runtime, no alias. Its rows are the Length column of `reference/docs/compibert-sound.md` where the document has a clean row.
 
 export interface CueLength {
   /** The longest the cue's file may be, in ms. */

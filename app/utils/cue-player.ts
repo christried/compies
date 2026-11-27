@@ -324,7 +324,7 @@ export function createCuePlayer(options: CuePlayerOptions): CuePlayer {
     }
     onChange?.()
   }
-  // A listener, not the one `onstatechange` slot: two players on one context (the listening page) must not take each other's handler (#594).
+  // A listener, not the one `onstatechange` slot: two players on one context must not take each other's handler (#594).
   context.addEventListener('statechange', onState)
 
   return {

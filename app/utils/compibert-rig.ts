@@ -2,8 +2,8 @@
 // `docs/design_handoff_compies/reference/compibert-options.js` with its numbers (its timings agree with `Compibert Rig.dc.html`); `excited`
 // is the eighth, for the mascot at the wheel (#526), and `wave` the ninth, for the Tour's greeting (#460); `angry`, `sad`, `clap` and `roar` (#928) are the reactions of the header and the empty states. The Tour's face also looks at a point
 // (`lookAt`), nods (`nod`), idles without micro actions (`micro: false`) and lands its hops after a few seconds (`hopsFor`): the same figure, no new part.
-// Pure TS on purpose: no Nuxt auto-imports, no `~/` aliases, only erasable syntax. Node runs this file directly in `scripts/bake-compibert.mjs`,
-// and it is imported on the server too, so nothing here touches `window` or `navigator` at the top level.
+// Pure TS on purpose: no Nuxt auto-imports, no `~/` aliases, only erasable syntax. It is imported on the server too, so nothing here touches
+// `window` or `navigator` at the top level.
 // The unit test imports this file under the node tsconfig, which has no DOM types; the DOM is what the rig works on. A triple-slash
 // directive only counts before the first statement.
 /// <reference lib="dom" />
@@ -49,7 +49,7 @@ export interface Rig {
   nod: () => void
   /** false: pause everything this rig owns (breath/tail loops, the state timeline, blink call, idle micro call, a pending landing wait); true: resume. */
   setActive: (on: boolean) => void
-  /** Kills the blink and idle-micro delayed calls only (the bake needs a deterministic frame). */
+  /** Kills the blink and idle-micro delayed calls only, for a deterministic frame. */
   stopAmbient: () => void
   /** Kills every tween, timeline and delayed call it made. */
   destroy: () => void

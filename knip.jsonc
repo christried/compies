@@ -16,22 +16,8 @@
         // Registered by the inline module in nuxt.config.ts through addServerHandler with a path string; dev server and
         // staging build only (#178, #247).
         "server/dev/sign-in.ts!",
-        // Registered by the inline listening-page module in nuxt.config.ts through path strings (the page via pages:extend, the handler via
-        // addServerHandler); dev server only (#534).
-        "app/dev/**!",
-        "server/dev/cue-candidates.ts!",
-        // Run by hand with node after a change to the rig; its output (server/assets/compibert/*.svg) is committed, `--check` guards it (#311).
-        "scripts/bake-compibert.mjs!",
-        // Run by hand with node; its output under sound-candidates/ (the listening session's candidates, #535) is committed.
-        "scripts/make-cue-candidates.mjs!",
-        // Loaded by make-cue-candidates.mjs by listing the folder, one file per moment (#740), so no import of a file reaches them.
-        "scripts/cue-recipes/*.mjs!",
-        // Run by hand with node (#536, #593): copies a candidate to public/sounds/cues/ and writes its credits entry; the result is committed.
-        "scripts/ship-cue-sound.mjs!",
         // Run by hand with node by the operator's skill christried-tag-review (#619); nothing imports it.
-        ".claude/skills/christried-tag-review/library-tags.mjs!",
-        // Run by hand with node by the operator (#919): deletes one account against the database its environment names; nothing imports it.
-        "scripts/prod/delete-account.mjs!"
+        ".claude/skills/christried-tag-review/library-tags.mjs!"
       ],
       "ignore": [
         // The design hand-off and its prototype scripts are reference material, not shipped (also ignored by eslint).

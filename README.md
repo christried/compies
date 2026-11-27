@@ -30,10 +30,10 @@ Requirements: Node 24 (`.nvmrc`) and pnpm (the version is pinned in `package.jso
 
    The admin list applies at each sign-in, so a change takes effect at that User's next sign-in.
 
-   The R2 variables are set in Vercel, not in your `.env`, by `scripts/wizards/r2-setup.sh` (#139); on Windows, run it from Git Bash, since WSL's bash can't run the Windows Vercel CLI. Image upload needs them; tests use an in-memory store, so leave them empty locally.
+   The R2 variables are set in Vercel, not in your `.env` (#139): for the Production environment with `R2_BUCKET=compies-production`, and for the Preview environment limited to the git branch `staging` with `R2_BUCKET=compies-staging`. The API token needs Object Read & Write on both buckets, which stay private. Image upload needs them; tests use an in-memory store, so leave them empty locally.
 
 4. Apply the migrations to your branch: `pnpm db:migrate`
-5. Start the dev server: `pnpm dev`, then open http://localhost:3000. `GET /api/health` answers `{"status":"ok"}` when the database is reachable and migrated. To sign in without Discord or Twitch, open http://localhost:3000/api/dev/sign-in?as=host (or `member`, `admin`; `&to=/bibliothek` picks the page, `&appearance=dark` the Appearance, or `system`, `light`; `&name=unset` leaves the Display name empty, for Profile setup). The route exists in the dev server and the staging build only, never in production. The listening page for the cue sounds (#534, dev server only) opens with http://localhost:3000/api/dev/sign-in?as=host&to=/dev/ton.
+5. Start the dev server: `pnpm dev`, then open http://localhost:3000. `GET /api/health` answers `{"status":"ok"}` when the database is reachable and migrated. To sign in without Discord or Twitch, open http://localhost:3000/api/dev/sign-in?as=host (or `member`, `admin`; `&to=/bibliothek` picks the page, `&appearance=dark` the Appearance, or `system`, `light`; `&name=unset` leaves the Display name empty, for Profile setup). The route exists in the dev server and the staging build only, never in production.
 
 ## Realtime (the Worker in `realtime/`)
 
@@ -45,9 +45,9 @@ The Event page updates live through a Cloudflare Worker with one PartyServer roo
 
 ### Deploying the Worker
 
-`.github/workflows/realtime-deploy.yml` deploys it: a push to `staging` deploys `compies-rt-staging`, a push to `main` deploys `compies-rt`, each only when the push touches `realtime/` or a `shared/` file the Worker imports. A production deploy drops every open socket, so it first asks the app's deploy check (`GET /api/internal/deploy-check`, signed with the room's internal key) and fails on a day with a Session Date (Europe/Berlin) or while a Session runs (for 16 h after its start). To deploy anyway, or to deploy by hand, run the workflow from the Actions tab: `target` picks the Worker, `override` skips the check. Releases to `main` wait for a day without a Session (`docs/agents/release.md`).
+`.github/workflows/realtime-deploy.yml` deploys it: a push to `staging` deploys `compies-rt-staging`, a push to `main` deploys `compies-rt`, each only when the push touches `realtime/` or a `shared/` file the Worker imports. A production deploy drops every open socket, so it first asks the app's deploy check (`GET /api/internal/deploy-check`, signed with the room's internal key) and fails on a day with a Session Date (Europe/Berlin) or while a Session runs (for 16 h after its start). To deploy anyway, or to deploy by hand, run the workflow from the Actions tab: `target` picks the Worker, `override` skips the check. Releases to `main` wait for a day without a Session.
 
-One-off setup, once per Cloudflare account: run `scripts/wizards/realtime-setup.sh` (`--dry-run` walks it without access; on Windows use Git Bash). It deploys both Workers, gives each its two secrets, sets the Vercel variables and these GitHub Actions secrets:
+The workflow needs these GitHub Actions secrets:
 
 | Secret | What |
 |---|---|

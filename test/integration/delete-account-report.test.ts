@@ -1,16 +1,13 @@
 import { eq } from 'drizzle-orm'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
-import { deleteAccount, reportLines, Stopped } from '../../scripts/prod/delete-account-core.mjs'
-import * as schema from '../../server/db/schema'
+import { deleteAccount, Stopped } from '../../server/utils/delete-account'
 import { authAccounts, eventMembers, eventPoolGames, events, gameTags, games, messages, pollSlots, pollVotes, users } from '../../server/db/schema'
 import { deleteUser, removeImages, UserNotDeletable } from '../../server/utils/delete-user'
 import { memoryImageStore, type ImageStore } from '../../server/utils/image-store'
 import { createTestDb, resetDatabase } from './harness'
 
-// The operator's script that deletes one account (#919, spec #907): its core takes a database, a store and the functions of server/utils/delete-user.ts, and
-// returns what the deletion removes or ends. The command (scripts/prod/delete-account.mjs) only reads its arguments and the environment and prints; a process
-// cannot reach PGlite, so the work is driven here with the real module (test/unit/delete-account-script.test.ts covers the process). What a test pins is the
-// report, the rows afterwards, and that what is printed holds nothing personal.
+// The deletion of one account as a report (#919, spec #907; server/utils/delete-account.ts, whose dry run gives the Admin page's counts): it takes a database, a store
+// and the functions of server/utils/delete-user.ts, and returns what the deletion removes or ends. What a test pins is the report and the rows afterwards.
 
 const id = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, '0')}`
 const H = id(1) // the User who is deleted
@@ -31,7 +28,7 @@ const TEXT = 'Zebrageheim Nachricht'
 const EVENT_NAME = 'Zebra Abend'
 const SLUG = 'zebra-abend'
 
-describe('the operator\'s script that deletes one account (#919)', () => {
+describe('the deletion of one account as a report (#919)', () => {
   let testDb: Awaited<ReturnType<typeof createTestDb>>
   const store = memoryImageStore()
   const deletion = { deleteUser, removeImages, UserNotDeletable }
@@ -134,7 +131,7 @@ describe('the operator\'s script that deletes one account (#919)', () => {
   }
 
   const run = (userId: string, apply: boolean, withStore: ImageStore = store) =>
-    deleteAccount({ db: testDb.db, schema, userId, apply, now: NOW, deletion, store: apply ? withStore : undefined })
+    deleteAccount({ db: testDb.db, userId, apply, now: NOW, deletion, store: apply ? withStore : undefined })
 
   const sorted = <T extends { hostedEvents: string[] }>(report: T) => ({ ...report, hostedEvents: [...report.hostedEvents].sort() })
   const withoutLeft = <T extends { imagesLeft: number | null }>({ imagesLeft: _left, ...report }: T) => report
@@ -147,7 +144,7 @@ describe('the operator\'s script that deletes one account (#919)', () => {
       const touched = vi.fn()
       const watching = { put: touched, get: touched, delete: touched }
 
-      const report = await deleteAccount({ db: testDb.db, schema, userId: H, apply: false, now: NOW, deletion, store: watching })
+      const report = await deleteAccount({ db: testDb.db, userId: H, apply: false, now: NOW, deletion, store: watching })
 
       expect(sorted(report)).toEqual({ ...REPORT, imagesLeft: null })
       expect(await snapshot()).toEqual(before)
@@ -159,11 +156,11 @@ describe('the operator\'s script that deletes one account (#919)', () => {
     it('runs without a store at all', async () => {
       await world()
 
-      expect(sorted(await deleteAccount({ db: testDb.db, schema, userId: H, apply: false, now: NOW, deletion }))).toEqual({ ...REPORT, imagesLeft: null })
+      expect(sorted(await deleteAccount({ db: testDb.db, userId: H, apply: false, now: NOW, deletion }))).toEqual({ ...REPORT, imagesLeft: null })
     })
   })
 
-  describe('--apply', () => {
+  describe('with apply', () => {
     it('commits the deletion and removes the images, with the report the dry run gave', async () => {
       await world()
       const dry = await run(H, false)
@@ -223,10 +220,9 @@ describe('the operator\'s script that deletes one account (#919)', () => {
       const report = await run(H, true, flaky)
 
       expect(report).toMatchObject({ imageObjects: 2, imagesLeft: 1 })
-      expect(reportLines(report, { apply: true })).toContain('Image objects removed: 1 of 2')
       expect((await testDb.db.select().from(users).where(eq(users.id, H)))[0]).toMatchObject({ name: '', deletedAt: NOW })
       expect(store.keys().sort()).toEqual([K1, K2, 'unbenannt'])
-      // `removeImages` logs the key and the failure: neither reaches the operator's screen.
+      // `removeImages` logs the key and the failure: neither is logged.
       expect(log).not.toHaveBeenCalled()
       expect(console.error).toBe(log)
     })
@@ -249,7 +245,7 @@ describe('the operator\'s script that deletes one account (#919)', () => {
       expect((error as Error).message).toBe('no User has this id.')
     })
 
-    it('stops for a User who is deleted already, in a dry run and with --apply', async () => {
+    it('stops for a User who is deleted already, in a dry run and with apply', async () => {
       await world()
       await run(H, true)
 
@@ -271,60 +267,21 @@ describe('the operator\'s script that deletes one account (#919)', () => {
       }
     })
 
-    it('passes any other error on: the command words it without the message', async () => {
+    it('passes any other error on', async () => {
       await world()
       const failing = { ...deletion, deleteUser: () => Promise.reject(new TypeError('connect ECONNREFUSED 127.0.0.1:5432')) }
 
-      await expect(deleteAccount({ db: testDb.db, schema, userId: H, apply: false, now: NOW, deletion: failing })).rejects.toBeInstanceOf(TypeError)
-    })
-  })
-
-  describe('the output', () => {
-    it('holds no name, no email address, no Message text, no id of the User, no image key, in a dry run and with --apply', async () => {
-      await world()
-      const dry = reportLines(await run(H, false), { apply: false })
-      const applied = reportLines(await run(H, true), { apply: true })
-
-      for (const lines of [dry, applied]) {
-        const output = lines.join('\n')
-        for (const personal of [NAME, 'Zebrafink', EMAIL, 'zebra', DISPLAY, TEXT, 'Zebrageheim', EVENT_NAME, SLUG, H, PICTURE, K1, K2, 'games/', 'profile/', 'discord', '4711']) {
-          expect(output, personal).not.toContain(personal)
-        }
-        // What it does say: the Event ids and counts.
-        expect(output).toContain(E1)
-        expect(output).toContain(E2)
-        expect(lines.at(-1)).toBe('No room is told: nobody is told live, every open page finds out at its next read.')
-      }
-      expect(dry).toContain('Dry run: nothing is deleted. Add --apply to delete.')
-      expect(applied.join('\n')).not.toContain('Dry run')
-    })
-
-    it('prints the table of the ticket in the tense of the mode', async () => {
-      await world()
-      const report = await run(H, false)
-
-      expect(reportLines(report, { apply: false })).toEqual([
-        `Events hosted, to be removed with everything on them: 2 (${report.hostedEvents.join(', ')})`,
-        'Games to be removed with their Tags: 4',
-        'Messages that would lose their text: 3',
-        'Votes to be removed: 3',
-        'Memberships that would end: 1',
-        'Memberships that stay (finished Events): 1',
-        'Image objects that would be removed: 2',
-        'Dry run: nothing is deleted. Add --apply to delete.',
-        'No room is told: nobody is told live, every open page finds out at its next read.',
-      ])
+      await expect(deleteAccount({ db: testDb.db, userId: H, apply: false, now: NOW, deletion: failing })).rejects.toBeInstanceOf(TypeError)
     })
   })
 
   describe('the edges', () => {
-    it('reports zeros for a User with nothing, and prints no id list', async () => {
+    it('reports zeros for a User with nothing', async () => {
       await testDb.db.insert(users).values({ id: H, name: NAME, email: EMAIL })
 
       const report = await run(H, false)
 
       expect(report).toEqual({ hostedEvents: [], games: 0, messages: 0, votes: 0, membershipsEnding: 0, membershipsStaying: 0, imageObjects: 0, imagesLeft: null })
-      expect(reportLines(report, { apply: false })[0]).toBe('Events hosted, to be removed with everything on them: 0')
     })
 
     it('counts a Host whose only Event is a Deleted Event', async () => {

@@ -21,7 +21,7 @@ export const SHARE_FONTS = [
   { name: 'Bricolage Grotesque Ext', weight: 800, file: 'bricolage-grotesque-latin-ext-800-normal.woff' },
 ] as const
 
-/** The pictures the renderer draws, and where each lives under `server/assets/` (the Compibert stills are baked by scripts/bake-compibert.mjs, #311). */
+/** The pictures the renderer draws, and where each lives under `server/assets/` (the Compibert stills are baked from the rig, #311). */
 export const SHARE_SVGS = {
   sunburst: 'share/sunburst.svg',
   dance: 'compibert/compibert-dance.svg',
