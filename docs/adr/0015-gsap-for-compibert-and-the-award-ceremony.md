@@ -1,10 +1,8 @@
 # GSAP for Compibert's rig and the Award ceremony
 
-Decided on 2026-11-05 in the grilling for 0.9 „Siegerehrung“. Until 0.8, all motion in the app is our own Web Animations code (`app/utils/motion.ts`, `StickerConfetti`, `CpNum`). The Award ceremony needs Compibert's animated rig and the „Pokal-Lauf“, and both references (`reference/compibert-options.js`, `reference/AwardCeremony.dc.html`, timings in `Compibert Rig.dc.html`) are GSAP timelines with labels, handed off as „port it, keep the numbers“. A Member who opens the Event mid-ceremony has to join the timeline at „now − startAt“, which GSAP does with `seek`. So the rig and the ceremony use GSAP, loaded lazily with them, and everything else keeps using `motion.ts`.
+All motion in the app is our own Web Animations code (`app/utils/motion.ts`, `StickerConfetti`, `CpNum`), except Compibert's animated rig and the Award ceremony's „Pokal-Lauf“. Their references are GSAP timelines with labels, handed off as „port it, keep the numbers“, and a Member who opens the Event mid-ceremony has to join the timeline at „now − startAt“, which GSAP does with `seek`. So the rig and the ceremony use GSAP, loaded lazily with them.
 
-## Considered Options
-
-- **Port both to our own Web Animations code**: one motion system and no new dependency, but every timeline, label, `svgOrigin` pivot and state transition of the rig would be rewritten by hand and checked against the reference frame by frame, and seeking into a sequenced timeline would be ours to build.
+Rejected: porting both to our own Web Animations code. Every timeline, label, `svgOrigin` pivot and state transition of the rig would be rewritten by hand and checked against the reference frame by frame, and seeking into a sequenced timeline would be ours to build.
 
 ## Consequences
 
