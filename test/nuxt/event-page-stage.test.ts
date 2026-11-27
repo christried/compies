@@ -63,7 +63,7 @@ describe('the stage of an Event page that plays', () => {
   })
 
   // The blocks glide when one above them leaves or arrives (#276, F4 of the s5 check): the page's group moves them with Vue's FLIP. This proves what the group
-  // asks for, not that it glides: the browser check (scripts/browser/standings.mjs) does.
+  // asks for, not that it glides.
   describe('when a block above moves them', () => {
     /** The page's group of blocks: the group with the width of the page. */
     const blocks = () => mountedPage()!.findAllComponents({ name: 'TransitionGroup' }).find((group: VueWrapper) => group.classes().includes('max-w-[1100px]'))!

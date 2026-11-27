@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import de from '~~/i18n/locales/de.json'
-import { RETIRED } from '../../scripts/wording/retired-words.mjs'
+import { RETIRED } from '../support/retired-words.mjs'
 
 // Copy rules (06-copy § Rules for developers): the app is „Compies“ in every text, Compibert is never
 // named, and the calendar is about the Date, not the file (no „.ics“ outside the legal texts and the

@@ -561,7 +561,7 @@ else
   if (( check_ok )) || [[ "$check" == *"game day"* ]]; then
     printf '  %s✓%s the production app answers the signed deploy check\n' "$GREEN" "$RESET"
   elif [[ "$check" == *"answered 404"* ]]; then
-    note "the production app has no deploy check yet: it arrives with the 1.4 Release. After the Release, run the check by hand (docs/agents/release.md, No game days)."
+    note "the production app has no deploy check yet: it arrives with the 1.4 Release. After the Release, run the check by hand."
   else
     SKIPPED+=("the signed deploy check against production failed: $check")
     warn "the signed deploy check against production failed: $check"

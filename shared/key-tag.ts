@@ -1,6 +1,6 @@
 // A translated text that carries its message key in invisible characters (#627, spec #620 § Telling the texts apart), so a script that
 // reads a dev-server page back learns which message each text came from. Pure and import-free, with erasable syntax only, so the app
-// (`~~/shared/key-tag`) and a node script (scripts/wording/read-keys.mjs, Node runs a .ts file natively) import the same file.
+// (`~~/shared/key-tag`) and a node script (Node runs a .ts file natively) import the same file.
 //
 // The characters are U+2060 (word joiner) as the frame and U+2062 / U+2063 (invisible times / separator) as the bits 0 / 1: zero width,
 // painted as nothing, no line-break opportunity (U+200B would add one). Plane 14 Tag characters came first and were measured in Chrome:
@@ -44,6 +44,7 @@ function keyOf(bits: string): string | null {
   return ASCII_KEY.test(key) ? key : null
 }
 
+/** @public Read by the key-tag tests (knip: no production caller). */
 export function decodeTags(raw: string): { text: string, tags: Tag[] } {
   const tags: Tag[] = []
   // A tag whose key did not decode still takes its close, so the tags around it stay balanced.

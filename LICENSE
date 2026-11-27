@@ -15,9 +15,6 @@ Parts of this repository that keep their own licence:
 - The font files in server/assets/share/fonts/ (Bricolage Grotesque, Bungee,
   Lilita One) are under the SIL Open Font License 1.1; the LICENSE-*.txt
   files beside them hold the texts.
-- The skills in .claude/skills/ that were copied from mattpocock/skills are
-  under the MIT license; .claude/skills/README.md names them and holds the
-  text.
 
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 IMPLIED. IN NO EVENT SHALL THE COPYRIGHT HOLDER BE LIABLE FOR ANY CLAIM,

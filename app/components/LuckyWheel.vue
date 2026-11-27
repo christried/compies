@@ -346,7 +346,7 @@ const headingId = useId()
       </p>
     </div>
 
-    <!-- The disc is the Show-Rad (#519): a stage piece in fixed colours, hooked for the Dunkel-Check (scripts/browser/dark-read.mjs). The top margin
+    <!-- The disc is the Show-Rad (#519): a stage piece in fixed colours, hooked for the Dunkel-Check. The top margin
          clears the flapper, which hangs past the box's top edge; the shadow reaches past its right and bottom edge, inside the card's padding. -->
     <div
       data-testid="wheel-disc"

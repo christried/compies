@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { compile } from 'tailwindcss'
-import { ratio } from '../../scripts/browser/contrast.mjs'
+import { ratio } from '../support/contrast.mjs'
 
 // The one home of what the stylesheet tests share (#409, #411, #431, #433, #402): the token file and the theme as text, a
 // token's colour, the contrast of two colours, and Tailwind's compiler with the `dark` variant. jsdom computes no cascade,

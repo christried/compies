@@ -498,7 +498,7 @@ export function ceremonyRun(now: number, gag: CeremonyGag): Cue[] {
 
 // The Clip's duck (#670) -------------------------------------------------------------------------------------------------------------
 
-/** The video the duck section plays: the one the repo's walk script uses (scripts/browser/walk-states-forms.mjs); the operator can paste another link. */
+/** The video the duck section plays; the operator can paste another link. */
 export const LISTENING_TEST_VIDEO = 'dQw4w9WgXcQ'
 
 /** The video id of a pasted link or of a bare id; null for anything else. The link rules are the Clip form's (`parseYouTubeId`). */
