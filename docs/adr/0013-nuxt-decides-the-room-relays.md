@@ -1,52 +1,36 @@
 # Nuxt decides, the realtime room relays
 
-Release 1.4 makes the Event page live through the PartyServer room of ADR 0012, and we sharpen who holds the truth: every change (a move on the Game board, a Team word, starting or ending a Session, a Vote, a settings change) is an HTTP call to Nuxt, checked by the domain rules and written to Postgres in one transaction, and only then sent to the Event's room over a signed server-to-server call. The room holds sockets, Online state, clock sync and fan-out, never Event state, so a Worker deploy or a hibernated room loses nothing and the Hidden wheel secrecy stays in the one place that already enforces it. Timed moments that need a single clock (the 1.5 wheel stop and veto window alarms) are the room's job, but their outcome is still written through Nuxt. Superseded for timed moments by the amendment below.
+The Event page is live through the PartyServer room of ADR 0012. Every change (a move on the Game board, a Team word, starting or ending a Session, a Vote, a settings change, a Chat Message) is an HTTP call to Nuxt, checked by the domain rules and written to Postgres in one transaction, and only then sent to the Event's room over a signed server-to-server call. The room holds sockets, Online state, clock sync and fan-out, never Event state and no schedule, so a Worker deploy or a hibernated room loses nothing and the Hidden wheel secrecy stays in the one place that already enforces it.
 
-## Considered Options
+Rejected: the room decides (intents over the socket, state in Durable Object storage). It saves one Vercel and Neon hop per move (about 100–300 ms) but puts the settings rules and a second copy of the state into the Worker.
 
-- **The room decides** (intents over the socket, state in Durable Object storage, written back to Nuxt at durable moments, as ADR 0012 first put it): saves one Vercel and Neon hop per move (about 100–300 ms), but puts the settings rules and a second copy of the state into the Worker. A lobby move can afford the hop.
+## Nuxt owns the deadlines (amendment, 2026-10-31)
 
-## Consequences
-
-- A race for the last free team slot is settled by a row lock in Postgres, not by the room.
-- The room's messages carry no game data in 1.4; the Hidden wheel secrecy test covers what the room sends. Replaced by the 2026-11-05 amendment below.
-
-## Amendment, 2026-10-31: Nuxt owns the deadlines too
-
-Settled in the 0.7 „Glücksrad“ grilling (finding A2 of review 1.4, the Release now numbered 0.5.0). It replaces the sentence above that makes timed moments the room's job.
-
-- Nuxt owns every timed moment: the wheel stop, the end of a veto window, the clip start, the coin landing, the end of a Countdown. Each is an instant stamped by Nuxt's clock and stored in Postgres with the state it belongs to; messages carry it as an explicit instant.
+- Nuxt owns every timed moment: the wheel stop, the end of a veto window, the clip start, the coin landing, the end of a Countdown. Each is an instant stamped by Nuxt's clock and stored in Postgres with the state it belongs to.
 - No timer runs anywhere. What follows an instant (the reveal of the Vetoes, the outcome „neu drehen“ or „wird gespielt“) is a function of the stored state and the time; the first read or write after the instant settles it, idempotently. Reads are gated by time: under a Hidden wheel the drawn game reaches non-Hosts only from the stop instant on, and a Party sees other Parties' Vetoes only from the end of the window on.
-- The room keeps no Event state and no schedule, so a Worker deploy still loses nothing. It gains one ability: sending a message to named Users of the Event only. A sealed Veto goes only to the Players of the Party that cast it; broadcast to everyone, it would tell the other Parties that a Veto was cast.
-- Clients keep estimating their offset from the room's clock. Nuxt (Vercel) and the room (Cloudflare) both run NTP-synced clocks; the gap between them is accepted inside the 50 ms budget for server-timed moments.
+- Clients estimate their offset from the room's clock. Nuxt and the room both run NTP-synced clocks; the gap is accepted inside the 50 ms budget for server-timed moments.
+- A race for the last free team slot is settled by a row lock in Postgres, not by the room.
 
-Considered: the room owns the deadlines with Durable Object alarms. Rejected, because a stored schedule is Event state in the room (a deploy could drop a pending reveal, and the deploy guard would have to know about it), the room's one alarm already runs the presence sweep, and the outcome would still have to be written through Nuxt.
+Rejected: Durable Object alarms in the room. A stored schedule is Event state in the room (a deploy could drop a pending reveal), and the outcome would still have to be written through Nuxt.
 
-## Amendment, 2026-11-05: what the room's messages carry
-
-From the 0.7 Release review (standards S5, #260), written after 0.8 deleted the unread messages (#258). It replaces the Consequences line „The room's messages carry no game data in 1.4“ and, in the amendment above, the words „messages carry it as an explicit instant“.
+## What the room's messages carry (amendment, 2026-11-05)
 
 - A message carries only what every User it reaches may know at that instant. `event.changed` has no payload; clients refetch the Event read, which filters per viewer and is gated by time.
-- `activity.added` is the one message with game data: an Activity entry that names a game everyone may already know. An entry that waits for its instant (a draw's stop, the Vetoes' reveal, the coin's landing) is not published; the Event read shows it from that instant on.
-- No message carries the wheel's placeholder labels, a timed instant or the coin's side: 0.8 deleted `round.set`, `round.putBack`, `round.spun`, `countdown.changed` and `coin.tossed`, which no client read. The Event read still carries the coin's side (`coin.side`) before the landing, by decision; the UI hides it until `landsAt`.
-- The named send (`{ to, direct }` in `RoomPublishBody`, used by `veto.cast`) has its own shape so that it fails closed: a Worker older than the shape answers 400 (no `messages` array) and sends nothing, where `messages` plus `to` would have reached every Party.
+- `activity.added` is the one message with game data: an Activity entry that names a game everyone may already know. An entry that waits for its instant (a draw's stop, the Vetoes' reveal, the coin's landing) is not published; the Event read shows it from that instant on. A Chat Message is relayed with its text, like an Activity entry.
+- No message carries the wheel's placeholder labels, a timed instant or the coin's side. The Event read still carries the coin's side (`coin.side`) before the landing, by decision; the UI hides it until `landsAt`.
+- The named send (`{ to, direct }` in `RoomPublishBody`, used by `veto.cast`) sends to named Users of the Event only: a sealed Veto goes only to the Players of the Party that cast it. It has its own shape so that it fails closed: a Worker older than the shape answers 400 and sends nothing, where `messages` plus `to` would have reached every Party.
 
-## Amendment, 2026-11-16: the room relays Emotes itself
+## Emotes go through the room alone (amendment, 2026-11-16)
 
-Settled in the grilling for 0.18 „Chat“ (Idea issues #667 and #668). It adds one exception to „every change is an HTTP call to Nuxt“; nothing else above changes.
+- An Emote is the one thing a Member sends over the socket that the room passes on without Nuxt. It is not Event state: nothing stores it, no rule depends on it, and a Member who opens the Event later never sees it.
+- The room enforces the Emote's two rules, because only it sees every Emote of an Event: one Emote per Member every two seconds, and at most three Emotes a second that carry a sound.
 
-- An Emote is the one thing a Member sends over the socket that the room passes on to the others without Nuxt. It is not Event state: nothing stores it, no rule of the Event depends on it, and a Member who opens the Event later never sees it.
-- The room enforces the Emote's own two rules, because only the room sees every Emote of an Event in one place: one Emote per Member every two seconds, and at most three Emotes a second that carry a sound. They are the first rules the room holds. It still keeps no Event state and no schedule, so a Worker deploy still loses nothing.
-- A Message of the Chat is Event state and goes the usual way: an HTTP call to Nuxt, stored in Postgres, then relayed with its text, like an Activity entry.
+Rejected: Emotes through Nuxt. The two-second rule would need a database write per Emote or a counter in one of several Vercel instances' memory, and the hop is felt on a reaction.
 
-Considered: Emotes through Nuxt as well. Rejected, because the two-second rule would need either a database write for every Emote or a counter in the memory of one of several Vercel instances, which does not hold, and because the hop (about 100–300 ms) is felt on a reaction.
+## The room closes the sockets of named Users (amendment, 2026-11-20)
 
-## Amendment, 2026-11-20: the room closes the sockets of named Users
+- The Worker checks a room token once, at connect. A User who stops being a Member (a Deleted User, ADR 0020, or a Member the Host removed) would otherwise keep receiving the Event's messages, count as Online and send Emotes.
+- So with the change that ends the membership, Nuxt tells the room to send a last message to the named Users and close their sockets. Nuxt still decides who is a Member: the room keeps no list of Members. A closed socket cannot come back, since the token endpoint refuses a User who is no Member.
+- The call has its own shape so that it fails closed, as the named send does: an older Worker answers 400, sends nothing and closes nothing. The Worker deploys before Nuxt.
 
-Settled in the grilling for 0.22 „Host-Werkzeuge“ (Idea issue #697) and built in 0.21, whose Deleted User needs it first (ADR 0020). It adds one ability to the room; nothing else above changes.
-
-- The Worker checks a room token once, at connect, so an open socket stays open for as long as its tab does, whatever happens to the User's membership. A User who stops being a Member (a Deleted User, or a Member the Host removed) would keep receiving the Event's messages, Messages of the Chat with their text included, would count as Online and could send Emotes.
-- Nuxt therefore tells the room, with the change that ends the membership, to send a last message to the named Users and to close their sockets. Nuxt still decides who is a Member: the room keeps no list of Members and no Event state. A closed socket cannot come back, since the token endpoint refuses a User who is no Member.
-- The call has its own shape, as the named send has, so that it fails closed: a Worker older than the shape answers 400, sends nothing and closes nothing, where a shape it half understands could send the last message to every Member. The Worker deploys before Nuxt.
-
-Considered: a socket that ends with its token, so every client reconnects once a minute. Rejected, because every Member would pay for a rare moment with a reconnect a minute, and a User who is no Member would still read along for up to that minute. Considered: the room asks Nuxt before each message whether a socket's User is still a Member. Rejected, because that is a call per socket and message, and a second place that knows about membership.
+Rejected: sockets that end with their token (a reconnect a minute for every Member, and up to a minute of reading along), and the room asking Nuxt per message whether a User is still a Member (a call per socket and message, and a second place that knows about membership).

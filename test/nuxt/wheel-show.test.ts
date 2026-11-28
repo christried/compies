@@ -6,7 +6,6 @@ import LuckyWheel from '~/components/LuckyWheel.vue'
 import { wheelPoint } from '~/utils/wheel-look'
 import { GAME_NAME_MAX, type HostGameFacts, type RoundGame } from '~~/shared/game'
 import type { SpinView, WheelView } from '~~/shared/stage'
-import { EXCLUDED } from '../../scripts/browser/dark-read.mjs'
 import { stubInView } from './in-view'
 
 // The Lucky Wheel drawn as the Show-Rad (#519, spec #503): the rim of bulbs, a pin at every slice edge, the flapper, the fixed
@@ -227,24 +226,5 @@ describe('the size', () => {
 
     await at(START + 3000)
     sized()
-  })
-})
-
-describe('the Dunkel-Check leaves the wheel out and still reads the card around it', () => {
-  it('matches only the disc, which holds the svg and the flapper but not the heading, the status line or the result card', async () => {
-    await mount(wheelOf(spinOf({ game: halo })))
-    await at(STOP + 100)
-
-    const root = page!.element as HTMLElement
-    const matched = EXCLUDED.flatMap(entry => Array.from(root.querySelectorAll(entry.selector)))
-    expect(matched).toEqual([disc()])
-    expect(disc().querySelector('svg')).not.toBeNull()
-    expect(disc().querySelector('[data-testid="wheel-flapper"]')).not.toBeNull()
-    expect(disc().querySelector('h2')).toBeNull()
-    expect(disc().querySelector('[role="status"]')).toBeNull()
-    expect(disc().querySelector('[data-testid="game-tile"], article')).toBeNull()
-    expect(root.querySelector('h2')!.closest('[data-testid="wheel-disc"]')).toBeNull()
-    expect(page!.get('[role="status"]').element.closest('[data-testid="wheel-disc"]')).toBeNull()
-    expect(page!.text()).toContain('Halo')
   })
 })

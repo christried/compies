@@ -64,8 +64,8 @@ export interface SavedHostPermission {
 }
 
 /**
- * What `GET /api/admin/users/:id/deletion` answers (#941, spec #938): the counts the deletion of the User's account would remove or end, the ones the operator's
- * script prints in its dry run (`scripts/prod/delete-account-core.mjs`). Counts only: no Event id, no name. `hostedEvents` counts finished and Deleted Events too;
+ * What `GET /api/admin/users/:id/deletion` answers (#941, spec #938): the counts the deletion of the User's account would remove or end, from the dry run of
+ * `deleteAccount` (`server/utils/delete-account.ts`). Counts only: no Event id, no name. `hostedEvents` counts finished and Deleted Events too;
  * `membershipsEnding` the Memberships of other Hosts' Events that have not finished, `membershipsStaying` those of finished ones (their Seat stays).
  */
 export interface AdminUserDeletion {

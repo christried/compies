@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import { backdrop, cut, hex, isLarge, judgeBox, judgeRing, judgeSurface, judgeText, label, lines, over, ratio, same } from '../../scripts/browser/contrast.mjs'
+import { backdrop, cut, hex, isLarge, judgeBox, judgeRing, judgeSurface, judgeText, label, lines, over, ratio, same } from '../support/contrast.mjs'
 
-// scripts/browser/contrast.mjs holds every rule that decides PASS or FAIL of the Dunkel-Check (#407); the page only reads
+// test/support/contrast.mjs holds every rule that decides PASS or FAIL of the Dunkel-Check (#407); the page only reads
 // computed values, Node judges. The colours are the dark token block of app/assets/css/compies-tokens.css.
 type Rgba = [number, number, number, number]
 const c = (value: string, alpha = 1): Rgba => [parseInt(value.slice(1, 3), 16), parseInt(value.slice(3, 5), 16), parseInt(value.slice(5, 7), 16), alpha]

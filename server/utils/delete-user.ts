@@ -4,14 +4,13 @@ import type { Db } from './db'
 import type { ImageStore } from './image-store'
 import { endMembership } from './invite'
 
-// Deleting a User (#681, spec #907, ADR 0020): one module, called by the route for the signed-in User on themselves (server/api/me.delete.ts) and by the
-// operator's script (0.21-13, #919), which runs it against a database and a store with no request. So it imports no `h3` and no Nuxt auto-import: the
+// Deleting a User (#681, spec #907, ADR 0020): one module, called by the route for the signed-in User on themselves (server/api/me.delete.ts), by the
+// Platform admin's (server/api/admin/users/[id].delete.ts) and by `deleteAccount` (server/utils/delete-account.ts). It imports no `h3` and no Nuxt auto-import: the
 // route owns the clock, the session cookie, the image store and the rooms.
 
 export type NotDeletable = 'unknown_user' | 'already_deleted' | 'games_held'
 
 /** The User cannot be deleted now. Nothing has changed when it is thrown. */
-// The operator's script (#919) runs this file in plain Node, which strips types but refuses the rest: keep it in erasable syntax (no `enum`, no parameter property, no `namespace`).
 export class UserNotDeletable extends Error {
   readonly reason: NotDeletable
   constructor(reason: NotDeletable) {

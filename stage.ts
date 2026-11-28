@@ -22,20 +22,6 @@ export function carriesDevSignIn(dev: boolean, env: Record<string, string | unde
   return dev || isStagingBuild(env)
 }
 
-// Which builds register the listening page for the cue sounds (app/dev/listening-page.vue, #534): the dev server only, NOT the staging
-// build (unlike carriesDevSignIn). Staging is a production build behind Vercel Authentication, and the page's candidate files
-// (sound-candidates/) must never be deployed. It takes no env, so no staging variable can switch it on.
-export function carriesListeningPage(dev: boolean): boolean {
-  return dev
-}
-
-// Whether translated texts carry their message key in invisible characters (app/dev/key-tags-plugin.ts, #627): the dev server only,
-// and only when COMPIES_WORDING=1 asks for it at its start (scripts/browser/serve.mjs start <run> --wording). Never a staging or
-// production build: `dev` is false in both, whatever the environment says.
-export function carriesKeyTags(dev: boolean, env: Record<string, string | undefined> = process.env): boolean {
-  return dev && env.COMPIES_WORDING === '1'
-}
-
 export function stageBranding(staging: boolean): StageBranding {
   return staging
     ? { name: 'Compies Staging', shortName: 'Staging', appleTitle: 'Compies Staging', iconDir: '/icons/staging' }

@@ -22,12 +22,12 @@ export const DUCK_STEP_MS = 25
 /** The cues that duck: the own Party's Veto seal and every Emote's. The stop's cues come from plans and never duck. A test checks that no `emo-*` cue is missing. */
 export const DUCKING_CUES: ReadonlySet<CueId> = new Set<CueId>(['veto-seal', 'emo-clap', 'emo-haha', 'emo-grr', 'emo-roar'])
 
-/** What a duck reads of the tunables; every function takes it as an optional last argument (the listening page passes its own). */
+/** What a duck reads of the tunables; every function takes it as an optional last argument. */
 export interface DuckConfig {
   duckVolume: number
   downMs: number
   upMs: number
-  /** The pace of the timer; `DUCK_STEP_MS` when absent. Only `createClipDuck` reads it, so the listening page can tune it. */
+  /** The pace of the timer; `DUCK_STEP_MS` when absent. Only `createClipDuck` reads it. */
   stepMs?: number
 }
 

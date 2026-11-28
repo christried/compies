@@ -182,7 +182,7 @@ describe('createClipDuck', () => {
     expect(last()).toBe(DUCK_VOLUME)
   })
 
-  it('steps at the pace its config says (the listening page tunes it)', () => {
+  it('steps at the pace its config says', () => {
     const duck = createClipDuck({ config: { duckVolume: DUCK_VOLUME, downMs: DUCK_DOWN_MS, upMs: DUCK_UP_MS, stepMs: 50 } })
     const volumes: number[] = []
     duck.attach(v => volumes.push(v))

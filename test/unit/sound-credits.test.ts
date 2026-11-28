@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { CUE_CREDITS_URL, isText, parseCredits } from '../../app/utils/sound-credits'
+import { CUE_CREDITS_URL, isText, parseCredits } from './sound-credits'
 import { CUE_IDS } from '../../app/utils/sound-cues'
 
 // The shape of the credits file beside the shipped cue sounds (#536): what the parser accepts, and the German problem line for each way an
 // entry can be wrong. The committed file itself is pinned in sound-files.test.ts.
 
-const entry = (fields: Record<string, unknown> = {}) => ({ candidate: 'holz-ratsche', source: 'scripts/make-cue-candidates.mjs, Rezept holz-ratsche', author: null, licence: 'generated', ...fields })
+const entry = (fields: Record<string, unknown> = {}) => ({ candidate: 'holz-ratsche', source: 'Rezept holz-ratsche', author: null, licence: 'generated', ...fields })
 const everyCue = () => Object.fromEntries(CUE_IDS.map(id => [id, entry()]))
 const withCue = (id: string, value: unknown) => ({ cues: { ...everyCue(), [id]: value } })
 const withoutCue = (id: string) => ({ cues: Object.fromEntries(Object.entries(everyCue()).filter(([key]) => key !== id)) })

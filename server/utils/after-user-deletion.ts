@@ -5,8 +5,7 @@ import { useImageStore } from './image-store'
 
 /**
  * Everything that follows the commit of `deleteUser` (#681, #917; shared by the User's own route, `server/api/me.delete.ts`, and the Platform admin's, #941), so the two
- * cannot drift: the objects of the store, then the rooms. It is a file of its own because `delete-user.ts` is loaded by the operator's script in plain Node and must
- * import no `h3`. Nothing here fails the answer: the deletion is committed. The session cookie is the own route's.
+ * cannot drift: the objects of the store, then the rooms. It is a file of its own because `delete-user.ts` imports no `h3`. Nothing here fails the answer: the deletion is committed. The session cookie is the own route's.
  */
 export async function afterUserDeletion(event: H3Event, userId: string, deletion: UserDeletion): Promise<void> {
   // A deployment without R2 configuration has no store to ask, and a User with no picture needs none.

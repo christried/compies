@@ -1,7 +1,4 @@
-import { existsSync } from 'node:fs'
-import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { standingsChangeCues } from '../../app/dev/listening-model'
 import { COUNT_TICK_MS, countAt, countTicks } from '../../app/utils/count-up'
 import { STAMP_DELAY_MS } from '../../app/utils/motion'
 import { CUE_IDS, CUE_GROUPS, claimCues, cueFilesOf, standingsCues, type ArrivalCue, type CueId, type StandingsCueInput } from '../../app/utils/sound-cues'
@@ -247,42 +244,6 @@ describe('the Standings\' group', () => {
     for (const id of ['lb-swap', 'lb-count', 'lb-winner'] as const) {
       expect(CUE_IDS).toContain(id)
       expect(CUE_GROUPS[id]).toEqual(['standings'])
-    }
-  })
-})
-
-describe('the listening page\'s Standings change', () => {
-  it('is the real function on a fixed change: the swap, the ticks of the gaining Party and the winner', () => {
-    const cues = standingsChangeCues(false, COUNT_MS)
-
-    expect(cues).toEqual(standingsCues({
-      before: [standing(1, 1, 12), standing(2, 2, 9), standing(3, 3, 0)],
-      after: [standing(2, 1, 15), standing(1, 2, 12), standing(3, 3, 0)],
-      winners: [2],
-      celebrate: true,
-      reducedMotion: false,
-      countMs: COUNT_MS,
-      stampDelayMs: STAMP_DELAY_MS,
-    }))
-    expect(new Set(idsOf(cues))).toEqual(new Set(['lb-swap', 'lb-count', 'lb-winner']))
-  })
-
-  it('honours the page\'s reduced switch: no ticks', () => {
-    expect(idsOf(standingsChangeCues(true, COUNT_MS))).toEqual(['lb-swap', 'lb-winner'])
-  })
-})
-
-describe('the recipes of the Standings\' cues', () => {
-  it('are a file of their own, scripts/cue-recipes/standings.mjs, with four recipes for each of the three ids', async () => {
-    const file = resolve(import.meta.dirname, '../../scripts/cue-recipes/standings.mjs')
-    expect(existsSync(file)).toBe(true)
-
-    const recipes = (await import(file)).default as Record<string, { name: string }[]>
-
-    expect(Object.keys(recipes).sort()).toEqual(['lb-count', 'lb-swap', 'lb-winner'])
-    for (const id of Object.keys(recipes)) {
-      expect(recipes[id]).toHaveLength(4)
-      expect(new Set(recipes[id]!.map(recipe => recipe.name)).size).toBe(4)
     }
   })
 })

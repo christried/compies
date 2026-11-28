@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest'
-import { ceremonyRun, LEAD_MS } from '../../app/dev/listening-model'
 import { CUE_LENGTHS } from '../../app/utils/cue-lengths'
 import { CUE_GROUPS, ROW_STEP_SEMITONES, ceremonyCuePlan, cueFilesOf } from '../../app/utils/sound-cues'
 import { CEREMONY_ROW_MS, CEREMONY_RUN_MS, CHIP_STEP_MS, GRID_FROM_WINNERS, ceremonyTimeline, type CeremonyGag, type RunShape } from '../../shared/ceremony'
@@ -199,14 +198,5 @@ describe('the files of the ceremony', () => {
 describe('the tables of the ceremony\'s cues', () => {
   it('gives the run a file as long as the run is', () => {
     expect(CUE_LENGTHS['cer-run'].ms).toBe(CEREMONY_RUN_MS)
-  })
-})
-
-describe('ceremonyRun (the listening page\'s test ceremony)', () => {
-  const NOW = Date.UTC(2090, 10, 7, 20, 0, 0)
-
-  it.each<CeremonyGag>(['trip', 'bonk'])('is the real plan of one Winner of four Parties, %s, from the lead on', (gag) => {
-    expect(ceremonyRun(NOW, gag)).toEqual(ceremonyCuePlan({ startsAt: NOW + LEAD_MS, shape: { partyCount: 4, winners: 1, gag, grid: false }, reducedMotion: false }))
-    expect(ids(ceremonyRun(NOW, gag)).filter(id => id === 'cer-row')).toHaveLength(3)
   })
 })

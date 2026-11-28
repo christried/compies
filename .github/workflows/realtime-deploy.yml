@@ -3,7 +3,7 @@ name: Realtime deploy
 # Deploys the realtime Worker (#157, ADR 0012, spec #153 § Deploys). Staging deploys on a push to `staging`, production
 # on a push to `main`, and only when the push touches the Worker or a shared file it imports. A production deploy drops
 # every open socket, so it first asks the app whether a Session is dated today (the game-day guard).
-# Setup is a one-off: scripts/wizards/realtime-setup.sh creates the secrets below and deploys both Workers once.
+# It needs the repository secrets CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID and ROOM_INTERNAL_SECRET_PRODUCTION (README, Deploying the Worker).
 
 on:
   push:
@@ -47,12 +47,12 @@ jobs:
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
     steps:
-      # Before the wizard has run there is no token. Staging then ends with a warning instead of a red run.
+      # Without the token secret, staging ends with a warning instead of a red run.
       - name: Check for the Cloudflare token
         id: token
         run: |
           if [ -z "$CLOUDFLARE_API_TOKEN" ]; then
-            echo "::warning::CLOUDFLARE_API_TOKEN is not set, so the staging Worker was not deployed. Run scripts/wizards/realtime-setup.sh."
+            echo "::warning::CLOUDFLARE_API_TOKEN is not set, so the staging Worker was not deployed. Set the repository secrets CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID."
             echo "deploy=false" >> "$GITHUB_OUTPUT"
           else
             echo "deploy=true" >> "$GITHUB_OUTPUT"
@@ -86,7 +86,7 @@ jobs:
       - name: Check for the Cloudflare token
         run: |
           if [ -z "$CLOUDFLARE_API_TOKEN" ]; then
-            echo "::error::CLOUDFLARE_API_TOKEN is not set, so the production Worker cannot be deployed. Run scripts/wizards/realtime-setup.sh."
+            echo "::error::CLOUDFLARE_API_TOKEN is not set, so the production Worker cannot be deployed. Set the repository secrets CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID."
             exit 1
           fi
       - name: Check the branch

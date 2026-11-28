@@ -178,7 +178,7 @@ describe('the Standings', () => {
 })
 
 // The Standings in motion (#276, 04-motion § Leaderboard). jsdom runs no transition, so these tests prove what the code asks for (the move
-// class, the delays, the keyframes, the counted numbers); that the rows glide is proven by scripts/browser/standings.mjs. rAF, timers and
+// class, the delays, the keyframes, the counted numbers), not that the rows glide. rAF, timers and
 // Date are fakes, `Element.prototype.animate` is a spy, and the page's motion setting is faked like coin-flip.test.ts does.
 
 const POP = 'cubic-bezier(.34,1.56,.64,1)'
@@ -274,7 +274,7 @@ describe('the Standings in motion (#276)', () => {
     it('move by Vue\'s move transition: spring, the slower duration, staggered, and still on reduced motion', async () => {
       await mount({ standings: AFTER })
 
-      // This proves what the group asks for, not that it glides: the browser check (scripts/browser/standings.mjs) does.
+      // This proves what the group asks for, not that it glides.
       const group = page!.findComponent({ name: 'TransitionGroup' })
       expect(group.props('tag')).toBe('tbody')
       const moveClass = String(group.props('moveClass')).split(' ')

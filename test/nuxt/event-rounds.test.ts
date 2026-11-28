@@ -275,7 +275,7 @@ describe('the open Rounds on the stage', () => {
 })
 
 // The cards that stay glide to their new cell, and the blocks below glide up, when a card leaves (#276, F4 of the s5 check). jsdom has no layout and no
-// transitions: this proves what the groups ask for, not that they glide: the browser check (scripts/browser/standings.mjs) does.
+// transitions: this proves what the groups ask for, not that they glide.
 describe('when a Round leaves the open Rounds (#276)', () => {
   const noop = () => Promise.resolve(true)
   const props = (rounds: RoundView[]) => ({ rounds, isHost: false, putBack: noop, teams: [], pointsTable: null, enterResult: noop, end: null })

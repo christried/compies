@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import fullSvg from '~/assets/compibert/compibert-full.svg?raw'
 import headSvg from '~/assets/compibert/compibert-head.svg?raw'
-// The baked stills of the head moods (#819): the same files the bake writes, so there is one copy; the rig and GSAP stay out (ADR 0015).
+// The baked stills of the head moods (#819): imported from server/assets/compibert/, so there is one copy; the rig and GSAP stay out (ADR 0015).
 import confusedSvg from '~~/server/assets/compibert/compibert-head-confused.svg?raw'
 import sadSvg from '~~/server/assets/compibert/compibert-head-sad.svg?raw'
 import { PARTY_HAT } from '~/utils/compibert-hat'

@@ -3,7 +3,7 @@ import { CARD_REFLOW_CLASS, leaveInPlace, REFLOW_CLASS, riseFade, unwatched } fr
 
 // What the page's reflow asks for (#276, F4 of the s5 check): the curve and duration of a block or a card that moves because something above it left,
 // and the leaver that goes out of the layout in the flush that starts its fade. jsdom has no layout and no transitions: this proves what the helpers
-// set, and the browser check (scripts/browser/standings.mjs) proves that the blocks glide.
+// set, not that the blocks glide.
 
 afterEach(() => {
   vi.restoreAllMocks()

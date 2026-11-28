@@ -6,7 +6,7 @@ name: CI
 # Every pushed branch runs, not only staging and main: an implementer's branch has no PR, and its first full run used
 # to come after the merge into the integration branch, which went red four times in 0.7 (retro 0.7). Actions minutes
 # are free on a public repo.
-# A run branch (`run/<spec>`) holds a cloud run's briefs and no code (docs/agents/cloud.md, #780): no run for it.
+# A run branch (`run/<spec>`) holds a cloud run's briefs and no code (#780): no run for it.
 on:
   push:
     branches: ['**', '!run/**']

@@ -16,73 +16,10 @@
         // Registered by the inline module in nuxt.config.ts through addServerHandler with a path string; dev server and
         // staging build only (#178, #247).
         "server/dev/sign-in.ts!",
-        // Registered by the inline listening-page module in nuxt.config.ts through path strings (the page via pages:extend, the handler via
-        // addServerHandler); dev server only (#534).
-        "app/dev/**!",
-        "server/dev/cue-candidates.ts!",
-        // The browser checks are run with node by agents (scripts/browser/README.md); chrome.mjs and kit.mjs are what they import.
-        // The Dunkel-Check (#407): the runner imports the state files by name pattern, which knip cannot follow.
-        "scripts/browser/dark.mjs!",
-        "scripts/browser/dark-states-*.mjs!",
-        // The wording walk's own state files (#630): loaded by name pattern too (`states.mjs` with `extra`); `walk-kit.mjs` is imported by them.
-        "scripts/browser/walk-states-*.mjs!",
-        "scripts/browser/moves.mjs!",
-        "scripts/browser/pool-preview.mjs!",
-        "scripts/browser/serve.mjs!",
-        "scripts/browser/shots.mjs!",
-        "scripts/browser/standings.mjs!",
-        // Run with node by the orchestrator: the FAIL lines of a run that no VOID line names (#833).
-        "scripts/browser/fails.mjs!",
-        // Run by hand with node (#626, spec #620): lists the texts of de.json that no code refers to; its data file lands in <tmp>/compies-browser/wording/.
-        "scripts/wording/unused.mjs!",
-        // Run by the PreToolUse hook on Bash in .claude/settings.json (the heredoc guard, #483), not imported.
-        "scripts/bash-guard.mjs!",
-        // Run by the SessionStart hook in .claude/settings.json (the session-start note, #484), not imported.
-        "scripts/session-start-note.mjs!",
-        // Run with node by /implement-spec before each new implementer (.claude/skills/implement-spec/SKILL.md).
-        "scripts/context-usage.mjs!",
-        // Run with node by implementers and the orchestrator to wait for CI on a pushed commit (docs/agents/implementer-frame.md).
-        "scripts/ci-wait.mjs!",
-        // Run with node by the orchestrator to remove finished agents' worktrees (docs/agents/delivery.md § Branch hygiene).
-        "scripts/worktree-clean.mjs!",
-        // Run with node by the orchestrator to merge a reviewed ticket branch into the integration branch without a working tree (docs/agents/subagents.md § Supervision, #478).
-        "scripts/merge-into.mjs!",
-        // Run with node by the orchestrator to add a line to a notes comment of a spec issue (docs/agents/delivery.md § Issues, #833).
-        "scripts/issue-note.mjs!",
-        // Run by hand with node after a change to the rig; its output (server/assets/compibert/*.svg) is committed, `--check` guards it (#311).
-        "scripts/bake-compibert.mjs!",
-        // Run by hand with node; its output under sound-candidates/ (the listening session's candidates, #535) is committed.
-        "scripts/make-cue-candidates.mjs!",
-        // Loaded by make-cue-candidates.mjs by listing the folder, one file per moment (#740), so no import of a file reaches them.
-        "scripts/cue-recipes/*.mjs!",
-        // Run by hand with node (#536, #593): copies a candidate to public/sounds/cues/ and writes its credits entry; the result is committed.
-        "scripts/ship-cue-sound.mjs!",
-        // Run by hand with node (#627): prints the message keys a dev-server page carries.
-        "scripts/wording/keys.mjs!",
-        // Run by hand with node (#629): walks the dark check's states with the key tags on and writes the recording of the wording review.
-        "scripts/wording/walk.mjs!",
-        // Run by hand with node (#628): checks an answers file of the wording review.
-        "scripts/wording/check-answers.mjs!",
-        // Run by hand with node (#631): the wording review page's command; it starts the server (review-server.mjs).
-        "scripts/wording/review.mjs!",
-        // The review page's script is loaded by the browser from the server (index.html, #631), nothing imports it.
-        "scripts/wording/review-page/page.mjs!",
-        // The review page imports these in the browser, from the server's /modules/, so no import of a file reaches them (#631, #628, #811).
-        "scripts/wording/review-model.mjs!",
-        "scripts/wording/answers.mjs!",
-        "scripts/wording/review-keys.mjs!",
         // Run by hand with node by the operator's skill christried-tag-review (#619); nothing imports it.
-        ".claude/skills/christried-tag-review/library-tags.mjs!",
-        // Run by hand with node by the operator (#919): deletes one account against the database its environment names; nothing imports it.
-        "scripts/prod/delete-account.mjs!"
+        ".claude/skills/christried-tag-review/library-tags.mjs!"
       ],
-      // Windows' own netstat, which serve.mjs calls to name the PID on a taken port.
-      "ignoreBinaries": ["netstat"],
-      // The review page's imports are URLs the server answers (/modules/…), not files knip can resolve (#631).
-      "ignoreUnresolved": ["^/modules/"],
       "ignore": [
-        // The review page's stylesheet is linked from its index.html, which knip does not read (#631).
-        "scripts/wording/review-page/page.css",
         // The design hand-off and its prototype scripts are reference material, not shipped (also ignored by eslint).
         "docs/**",
         // Test helpers and fixtures. Tests are not entry points in production mode, so helpers only they import look unused.

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
-import { cut, hex, over } from '../../scripts/browser/contrast.mjs'
+import { cut, hex, over } from '../support/contrast.mjs'
 import { colour, contrast, dark, light, theme, tokens } from './css-tokens'
 
 const button = readFileSync(resolve(import.meta.dirname, '../../app/components/AppButton.vue'), 'utf8')
